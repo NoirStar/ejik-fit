@@ -1,0 +1,52 @@
+import type {
+  PostingDetail,
+  PostingListResponse,
+} from "./types";
+
+
+const API_BASE_URL =
+  process.env.API_BASE_URL ?? "http://localhost:8000";
+
+
+export class ApiError extends Error {
+  constructor(
+    public readonly url: string,
+    public readonly status: number,
+  ) {
+    super(`API request failed: ${url} (${status})`);
+  }
+}
+
+
+async function request<T>(path: string): Promise<T> {
+  const url = new URL(path, API_BASE_URL);
+  const response = await fetch(url, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new ApiError(url.toString(), response.status);
+  }
+  return response.json() as Promise<T>;
+}
+
+
+export async function getPostings(filters: {
+  q?: string;
+  career_type?: string;
+}): Promise<PostingListResponse> {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set("q", filters.q);
+  }
+  if (filters.career_type) {
+    params.set("career_type", filters.career_type);
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  return request<PostingListResponse>(`/api/postings${query}`);
+}
+
+
+export function getPosting(id: string): Promise<PostingDetail> {
+  return request<PostingDetail>(
+    `/api/postings/${encodeURIComponent(id)}`,
+  );
+}
