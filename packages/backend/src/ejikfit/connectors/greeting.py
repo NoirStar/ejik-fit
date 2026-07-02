@@ -155,9 +155,11 @@ def parse_opening(html: str, page_url: str) -> ParsedOpening:
 
         place = position.get("workspacePlace")
         if isinstance(place, dict):
-            location = place.get("name")
-            if isinstance(location, str):
-                locations.append(location)
+            for key in ("name", "place", "location"):
+                location = place.get(key)
+                if isinstance(location, str) and location:
+                    locations.append(location)
+                    break
 
     detail = info.get("detail")
     description_html = detail if isinstance(detail, str) else ""
