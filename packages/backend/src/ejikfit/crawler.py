@@ -27,6 +27,7 @@ from ejikfit.models import (
     SourceType,
 )
 from ejikfit.storage import S3SnapshotStore, SnapshotStore
+from ejikfit.search import MeiliPostingIndex, PostingIndex
 
 
 class RetryableFetchError(RuntimeError):
@@ -155,6 +156,7 @@ async def crawl_source(
     store: SnapshotStore,
     now: datetime,
     request_delay_seconds: float = 1.0,
+    posting_index: PostingIndex | None = None,
 ) -> CrawlResult:
     if source.status != SourceStatus.ALLOWED:
         return CrawlResult()
@@ -195,6 +197,7 @@ async def crawl_source(
                     detail.text,
                     store,
                     now,
+                    posting_index,
                 )
                 ingested += 1
             except BlockedSourceError:
@@ -222,6 +225,7 @@ async def crawl_source(
                 listing.text,
                 store,
                 now,
+                posting_index,
             )
             ingested += 1
 
@@ -249,6 +253,10 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
         secret_key=settings.s3_secret_key,
         bucket=settings.s3_bucket,
     )
+    posting_index = MeiliPostingIndex(
+        settings.meili_url,
+        settings.meili_master_key,
+    )
 
     with SessionLocal() as session:
         source = session.get(CareerSource, uuid.UUID(source_id))
@@ -261,6 +269,7 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
                 fetcher=HttpFetcher(settings.crawler_user_agent),
                 store=store,
                 now=datetime.now(timezone.utc),
+                posting_index=posting_index,
             )
         )
     return asdict(result)

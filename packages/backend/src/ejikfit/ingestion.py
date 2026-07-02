@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -16,6 +17,10 @@ from ejikfit.models import (
     RawSnapshot,
 )
 from ejikfit.storage import SnapshotStore
+from ejikfit.search import PostingIndex
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -85,6 +90,7 @@ def ingest_opening(
     raw_html: str,
     store: SnapshotStore,
     now: datetime,
+    posting_index: PostingIndex | None = None,
 ) -> IngestionResult:
     storage_key, raw_hash = store.put(
         raw_html.encode(),
@@ -145,6 +151,14 @@ def ingest_opening(
         )
 
     session.commit()
+    if posting_index is not None:
+        try:
+            posting_index.upsert(posting)
+        except Exception:
+            logger.exception(
+                "Posting %s was stored but search indexing failed",
+                posting.id,
+            )
     return IngestionResult(
         posting=posting,
         created=created,
