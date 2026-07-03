@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ejikfit-backend"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic>=1.16,<2",
+  "beautifulsoup4>=4.13,<5",
+  "boto3>=1.39,<2",
+  "celery[redis]>=5.5,<6",
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<1",
+  "lxml>=6,<7",
+  "meilisearch>=0.34,<1",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.10,<3",
+  "sqlalchemy>=2.0.41,<3",
+  "tenacity>=9,<10",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4,<9",
+  "pytest-asyncio>=1.1,<2",
+  "respx>=0.22,<1",
+]
+
+[project.scripts]
+ejikfit = "ejikfit.cli:main"
+
+[tool.vercel]
+entrypoint = "ejikfit.api.app:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
