@@ -7,7 +7,7 @@ Create Date: 2026-07-03
 
 from collections.abc import Sequence
 
-from alembic import op
+from alembic import context, op
 
 
 revision: str = "20260703_0002"
@@ -16,7 +16,29 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+OFFLINE_PGROONGA_SQL = """
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM pg_available_extensions
+        WHERE name = 'pgroonga'
+    ) THEN
+        EXECUTE 'CREATE EXTENSION IF NOT EXISTS pgroonga';
+        EXECUTE 'CREATE INDEX IF NOT EXISTS ix_job_postings_pgroonga '
+                'ON job_postings USING pgroonga '
+                '(title, description_text, location)';
+    END IF;
+END
+$$
+"""
+
+
 def upgrade() -> None:
+    if context.is_offline_mode():
+        op.execute(OFFLINE_PGROONGA_SQL)
+        return
+
     bind = op.get_bind()
     if bind.dialect.name != "postgresql":
         return
