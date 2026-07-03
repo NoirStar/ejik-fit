@@ -165,17 +165,16 @@ alembic upgrade head   →   ejikfit seed-sources   →   ejikfit crawl-all
 ## 6. 지금 상태 / 남은 일
 
 **완료**
-- `codex/supabase-production` 브랜치, PR #1 (CI backend+web green)
+- `codex/supabase-production` 브랜치 → **PR #1 merged to `main`** (CI backend+web green)
 - Supabase 프로젝트 link (`lsqwfrvwuxievitogucc`)
-- GitHub secret 3개: `CRAWLER_DATABASE_URL`, `SUPABASE_S3_ENDPOINT_URL`, `SUPABASE_S3_REGION`
+- GitHub secret 5개 전부 등록: `CRAWLER_DATABASE_URL`, `SUPABASE_S3_ENDPOINT_URL`, `SUPABASE_S3_REGION`, `SUPABASE_S3_ACCESS_KEY`, `SUPABASE_S3_SECRET_KEY`
 - `.gitignore`: `.env.production`, `.env.local`, `.vercel/`, `supabase/.temp`
+- **첫 원격 수집 성공** (run `28641234937`, 2026-07-03): migration + seed(`created=10`) + crawl(`ingested=130, failed=0, sources=10`). Supabase PostgreSQL과 `raw-snapshots` Storage에 반영됨.
+- `raw-snapshots` private bucket + S3 access key 생성 완료(대시보드)
 
 **남음**
-1. Supabase 대시보드: `raw-snapshots` private bucket 생성 + S3 access key 생성
-2. GitHub secret 2개 등록: `SUPABASE_S3_ACCESS_KEY`, `SUPABASE_S3_SECRET_KEY`
-3. `crawl.yml` 수동 실행 → migration+seed+crawl 검증 (Actions 로그, Supabase DB, Storage 객체)
-4. PR #1 merge (`main`)
-5. Vercel API/Web 배포 (`docs/deployment/vercel.md` 참고)
-6. custom domain 연결
+1. Vercel API/Web 배포 (`docs/deployment/vercel.md` 참고) — Vercel CLI 로그인 필요
+2. custom domain 연결 (도메인명·DNS provider 필요)
+3. (선택) 멱등성 재확인: 다음 예약 수집 또는 배포된 API `/api/postings`로 revision 미증가 확인 (단위 테스트 `test_ingestion_is_idempotent_and_versions_changes`로 이미 커버됨)
 
 관련 문서: `docs/deployment/vercel.md`, `docs/handoff/2026-07-03-production-rollout-handoff.md`
