@@ -44,6 +44,23 @@ make smoke
 make test
 ```
 
+## 기술 스킬 인텔리전스
+
+공고 제목과 본문에서 기술 스킬을 사전 기반으로 추출해(별도 LLM 없음) 수요 통계를 제공합니다.
+
+- 수집(`crawl-all`) 시 자동으로 `posting_skills`에 저장됩니다.
+- 기존 공고를 다시 수집하지 않고 스킬만 다시 채우려면 backfill을 씁니다.
+
+```bash
+ejikfit backfill-skills            # 저장된 모든 공고의 스킬 재추출
+# API
+GET /api/skills/stats?career_type=new_comer   # 스킬 수요 랭킹
+GET /api/postings/{id}                          # 응답에 skills 포함
+```
+
+사전과 매칭 규칙은 `packages/backend/src/ejikfit/skills.py`에 있습니다. 짧고 모호한 이름
+(`Go`, 단독 `C`, 한글 `뷰`)은 오탐을 피하려고 명시 별칭으로만 매칭합니다.
+
 ## Vercel 배포
 
 Next.js 웹과 FastAPI 읽기 API는 Vercel 프로젝트 두 개로 배포합니다. 운영 데이터와 원문은 Supabase PostgreSQL·Storage에 저장하고, GitHub Actions가 6시간마다 Python crawler를 실행합니다. 운영 수집은 로컬 컴퓨터, Redis, Celery, MinIO, Meilisearch에 의존하지 않습니다.
@@ -97,4 +114,6 @@ docker compose logs web
 
 ## 다음 단계
 
-개인별 관심 직무·스킬 핏, 신입·경력 조건 통계, 기업 발견, 공고-스킬 관계 그래프는 후속 단계에서 추가합니다. 상세 설계와 구현 계획은 [`docs/superpowers`](docs/superpowers)에 있습니다.
+직무 인텔리전스 1차(스킬 추출·수요 통계)까지 반영되었습니다. 이어서 필수·우대 조건 구분과
+근거 문장 추출, 공고-스킬 관계 그래프, 수집 범위 확대(나인하이어·recruiter, 기업 100곳+),
+개인별 스킬 핏과 알림을 추가합니다. 상세 설계와 로드맵은 [`docs/superpowers`](docs/superpowers)에 있습니다.
