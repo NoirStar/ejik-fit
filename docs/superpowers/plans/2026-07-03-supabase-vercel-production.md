@@ -396,6 +396,7 @@ git commit -m "feat: crawl all career sources remotely"
 **Files:**
 - Create: `.github/workflows/crawl.yml`
 - Create: `packages/backend/tests/test_crawl_workflow.py`
+- Modify: `apps/api/Dockerfile`
 
 **Interfaces:**
 - Consumes secrets: `CRAWLER_DATABASE_URL`, `SUPABASE_S3_ENDPOINT_URL`, `SUPABASE_S3_REGION`, `SUPABASE_S3_ACCESS_KEY`, `SUPABASE_S3_SECRET_KEY`
@@ -466,16 +467,24 @@ jobs:
       - run: ejikfit crawl-all
 ```
 
-- [ ] **Step 4: Run the workflow contract test**
+- [ ] **Step 4: Include the workflow contract in the backend test image**
+
+Add this line before the development dependency install in `apps/api/Dockerfile`:
+
+```dockerfile
+COPY .github /app/.github
+```
+
+- [ ] **Step 5: Run the workflow contract test**
 
 Run: `pytest packages/backend/tests/test_crawl_workflow.py -v`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add .github/workflows/crawl.yml packages/backend/tests/test_crawl_workflow.py
+git add .github/workflows/crawl.yml apps/api/Dockerfile packages/backend/tests/test_crawl_workflow.py
 git commit -m "ci: crawl production sources every six hours"
 ```
 
@@ -485,6 +494,7 @@ git commit -m "ci: crawl production sources every six hours"
 - Modify: `apps/web/vercel.json`
 - Create: `packages/backend/vercel.json`
 - Create: `packages/backend/tests/test_deployment_contract.py`
+- Modify: `apps/api/Dockerfile`
 - Modify: `docs/deployment/vercel.md`
 - Modify: `README.md`
 
@@ -547,7 +557,15 @@ api.CUSTOM_DOMAIN   -> API project
 
 The domain value remains deployment input and is never committed.
 
-- [ ] **Step 5: Run contract and build checks**
+- [ ] **Step 5: Include the Web deployment contract in the backend test image**
+
+Add this line before the development dependency install in `apps/api/Dockerfile`:
+
+```dockerfile
+COPY apps/web/vercel.json /app/apps/web/vercel.json
+```
+
+- [ ] **Step 6: Run contract and build checks**
 
 Run: `pytest packages/backend/tests/test_deployment_contract.py -v`
 
@@ -555,10 +573,10 @@ Run: `cd apps/web && VERCEL=1 npm run build`
 
 Expected: test and Vercel build PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/web/vercel.json packages/backend/vercel.json packages/backend/tests/test_deployment_contract.py docs/deployment/vercel.md README.md
+git add apps/api/Dockerfile apps/web/vercel.json packages/backend/vercel.json packages/backend/tests/test_deployment_contract.py docs/deployment/vercel.md README.md
 git commit -m "chore: configure Vercel and Supabase production"
 ```
 
