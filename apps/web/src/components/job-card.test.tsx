@@ -25,6 +25,7 @@ describe("JobCard", () => {
 
     expect(screen.getByText("테스트 기업")).toBeInTheDocument();
     expect(screen.getByText("신입")).toBeInTheDocument();
+    expect(screen.getByText("정규직")).toBeInTheDocument();
     expect(screen.getByText(/마지막 확인/)).toBeInTheDocument();
   });
 });

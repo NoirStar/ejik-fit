@@ -111,7 +111,7 @@ def _career_summary(
     if {"NEW_COMER", "EXPERIENCED"} <= career_types:
         summary = "mixed"
     elif "NEW_COMER" in career_types:
-        summary = "newcomer"
+        summary = "new_comer"
     elif "EXPERIENCED" in career_types:
         summary = "experienced"
     elif career_types:

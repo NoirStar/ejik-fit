@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { SourceMeta } from "@/components/source-meta";
 import { ApiError, getPosting } from "@/lib/api";
+import { formatCareer, formatEmployment } from "@/lib/labels";
 
 
 export const dynamic = "force-dynamic";
@@ -21,17 +22,6 @@ function formatDate(value: string | null): string {
     dateStyle: "long",
     timeZone: "Asia/Seoul",
   }).format(new Date(value));
-}
-
-
-function formatCareer(value: string | null): string {
-  const labels: Record<string, string> = {
-    new_comer: "신입",
-    newcomer: "신입",
-    experienced: "경력",
-    mixed: "신입·경력",
-  };
-  return value ? labels[value] ?? value : "경력 무관";
 }
 
 
@@ -83,7 +73,7 @@ export default async function JobDetail({ params }: JobDetailProps) {
           </div>
           <div>
             <dt>고용 형태</dt>
-            <dd>{job.employment_type ?? "미정"}</dd>
+            <dd>{formatEmployment(job.employment_type)}</dd>
           </div>
           <div>
             <dt>근무지</dt>

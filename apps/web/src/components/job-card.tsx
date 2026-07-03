@@ -1,23 +1,12 @@
 import Link from "next/link";
 
+import { formatCareer, formatEmployment } from "@/lib/labels";
 import type { PostingSummary } from "@/lib/types";
 
 import { SourceMeta } from "./source-meta";
 
 
-const CAREER_LABELS: Record<string, string> = {
-  new_comer: "신입",
-  newcomer: "신입",
-  experienced: "경력",
-  mixed: "신입·경력",
-};
-
-
 export function JobCard({ job }: { job: PostingSummary }) {
-  const careerLabel = job.career_type
-    ? CAREER_LABELS[job.career_type] ?? job.career_type
-    : "경력 무관";
-
   return (
     <article className="job-row">
       <div className="job-row__company">
@@ -31,8 +20,10 @@ export function JobCard({ job }: { job: PostingSummary }) {
           {job.title}
         </Link>
         <div className="job-row__facts" aria-label="채용 조건">
-          <span>{careerLabel}</span>
-          {job.employment_type && <span>{job.employment_type}</span>}
+          <span>{formatCareer(job.career_type)}</span>
+          {job.employment_type && (
+            <span>{formatEmployment(job.employment_type)}</span>
+          )}
         </div>
         <SourceMeta
           sourceUrl={job.source_url}

@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Protocol
 
@@ -75,9 +76,11 @@ class MeiliPostingIndex:
     ) -> list[dict]:
         filters = ['status = "open"']
         if company:
-            filters.append(f'company_slug = "{company}"')
+            filters.append(f"company_slug = {json.dumps(company)}")
         if career_type:
-            filters.append(f'career_type = "{career_type}"')
+            filters.append(
+                f"career_type = {json.dumps(career_type)}"
+            )
 
         result = self.index.search(
             query,

@@ -54,6 +54,19 @@ class CrawlResult:
     closed: int = 0
 
 
+def contains_access_challenge(html: str) -> bool:
+    lowered = html.lower()
+    challenge_markers = (
+        "g-recaptcha",
+        "hcaptcha",
+        "cf-chl-captcha",
+        "verify you are human",
+        "cloudflare challenge",
+        "캡차를 입력",
+    )
+    return any(marker in lowered for marker in challenge_markers)
+
+
 class HttpFetcher:
     def __init__(self, user_agent: str) -> None:
         self.user_agent = user_agent
@@ -87,14 +100,7 @@ class HttpFetcher:
                     )
                 response.raise_for_status()
 
-                lowered = response.text.lower()
-                blocked_markers = (
-                    "captcha",
-                    "verify you are human",
-                    "cloudflare challenge",
-                    "캡차",
-                )
-                if any(marker in lowered for marker in blocked_markers):
+                if contains_access_challenge(response.text):
                     raise BlockedSourceError("source returned an access challenge")
 
                 return FetchedPage(

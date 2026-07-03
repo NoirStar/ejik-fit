@@ -1,4 +1,4 @@
-from ejikfit.crawler import next_missing_state
+from ejikfit.crawler import contains_access_challenge, next_missing_state
 from ejikfit.models import PostingStatus
 
 
@@ -34,3 +34,12 @@ def test_seen_posting_resets_counter() -> None:
         successful_listing=True,
         seen=True,
     ) == (0, PostingStatus.OPEN)
+
+
+def test_access_challenge_detection_avoids_job_description_false_positive() -> None:
+    assert contains_access_challenge(
+        "<p>CAPTCHA abuse detection experience is preferred.</p>"
+    ) is False
+    assert contains_access_challenge(
+        '<div class="g-recaptcha">verify you are human</div>'
+    ) is True

@@ -35,3 +35,17 @@ def test_parses_greeting_opening_with_mixed_career() -> None:
     assert opening.employment_type == "FULL_TIME_WORKER"
     assert opening.location == "서울특별시"
     assert "Python" in opening.description_text
+
+
+def test_normalizes_greeting_newcomer_for_api_filter() -> None:
+    html = (FIXTURES / "opening.html").read_text().replace(
+        '"EXPERIENCED"',
+        '"NEW_COMER"',
+    )
+
+    opening = parse_opening(
+        html,
+        "https://sample.career.greetinghr.com/ko/o/209187",
+    )
+
+    assert opening.career_type == "new_comer"
