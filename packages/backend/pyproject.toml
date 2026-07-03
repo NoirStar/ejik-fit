@@ -33,7 +33,7 @@ dev = [
 ejikfit = "ejikfit.cli:main"
 
 [tool.vercel]
-entrypoint = "ejikfit.api.app:app"
+entrypoint = "src.ejikfit.api.app:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]
