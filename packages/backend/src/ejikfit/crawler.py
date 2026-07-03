@@ -255,6 +255,7 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
     settings = get_settings()
     store = S3SnapshotStore(
         endpoint_url=settings.s3_endpoint_url,
+        region=settings.s3_region,
         access_key=settings.s3_access_key,
         secret_key=settings.s3_secret_key,
         bucket=settings.s3_bucket,
