@@ -46,7 +46,7 @@ make test
 
 ## Vercel 배포
 
-Next.js 웹은 Vercel의 Root Directory를 `apps/web`으로 지정해 배포합니다. FastAPI 읽기 API도 별도 Vercel 프로젝트로 배포할 수 있지만, PostgreSQL·Meilisearch는 외부 접속 가능한 서비스가 필요하고 Celery 수집 worker는 별도 상시 실행 환경에 둬야 합니다.
+Next.js 웹과 FastAPI 읽기 API는 Vercel 프로젝트 두 개로 배포합니다. 운영 데이터와 원문은 Supabase PostgreSQL·Storage에 저장하고, GitHub Actions가 6시간마다 Python crawler를 실행합니다. 운영 수집은 로컬 컴퓨터, Redis, Celery, MinIO, Meilisearch에 의존하지 않습니다.
 
 전체 설정과 배포 순서는 [`docs/deployment/vercel.md`](docs/deployment/vercel.md)를 참고하세요.
 
