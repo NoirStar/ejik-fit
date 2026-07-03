@@ -1,6 +1,8 @@
 import argparse
 import json
+import os
 from collections.abc import Sequence
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -31,6 +33,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="출처 UUID 하나를 즉시 수집합니다.",
     )
     crawl_parser.add_argument("source_id")
+    subparsers.add_parser(
+        "crawl-all",
+        help="허용된 모든 공식 채용 출처를 수집합니다.",
+    )
     return parser
 
 
@@ -78,5 +84,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
         return 0
+
+    if args.command == "crawl-all":
+        from ejikfit.crawler import render_crawl_summary, run_all_sources
+
+        report = run_all_sources()
+        print(
+            json.dumps(
+                report,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with Path(summary_path).open("a", encoding="utf-8") as summary:
+                summary.write(render_crawl_summary(report))
+        return 1 if report["failed"] else 0
 
     raise AssertionError(f"처리되지 않은 명령: {args.command}")

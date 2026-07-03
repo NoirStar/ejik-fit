@@ -1,3 +1,4 @@
+import json
 import uuid
 
 from sqlalchemy import create_engine
@@ -37,3 +38,36 @@ def test_list_sources_prints_machine_readable_first_id(
 
     assert cli.main(["list-sources", "--first-id"]) == 0
     assert capsys.readouterr().out.strip() == str(source_id)
+
+
+def test_crawl_all_writes_github_summary_and_returns_partial_failure(
+    monkeypatch,
+    capsys,
+    tmp_path,
+) -> None:
+    report = {
+        "sources": 1,
+        "discovered": 3,
+        "ingested": 2,
+        "failed": 1,
+        "closed": 0,
+        "results": [
+            {
+                "source_id": "source-1",
+                "discovered": 3,
+                "ingested": 2,
+                "failed": 1,
+                "closed": 0,
+            }
+        ],
+    }
+    summary_path = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
+    monkeypatch.setattr("ejikfit.crawler.run_all_sources", lambda: report)
+
+    assert cli.main(["crawl-all"]) == 1
+    assert json.loads(capsys.readouterr().out) == report
+    summary = summary_path.read_text()
+    assert "원격 수집 결과" in summary
+    assert "source-1" in summary
+    assert "| 합계 | 3 | 2 | 1 | 0 |" in summary

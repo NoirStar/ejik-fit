@@ -1,8 +1,9 @@
 import asyncio
+import logging
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Mapping
+from typing import Any, Mapping
 
 import httpx
 from sqlalchemy import select
@@ -14,7 +15,7 @@ from tenacity import (
     wait_exponential,
 )
 
-from ejikfit.config import get_settings
+from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.greeting import discover_openings, parse_opening
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.db import SessionLocal
@@ -28,6 +29,9 @@ from ejikfit.models import (
 )
 from ejikfit.storage import S3SnapshotStore, SnapshotStore
 from ejikfit.search import MeiliPostingIndex, PostingIndex
+
+
+logger = logging.getLogger(__name__)
 
 
 class RetryableFetchError(RuntimeError):
@@ -260,10 +264,7 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
         secret_key=settings.s3_secret_key,
         bucket=settings.s3_bucket,
     )
-    posting_index = MeiliPostingIndex(
-        settings.meili_url,
-        settings.meili_master_key,
-    )
+    posting_index = _posting_index(settings)
 
     with SessionLocal() as session:
         source = session.get(CareerSource, uuid.UUID(source_id))
@@ -280,3 +281,69 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
             )
         )
     return asdict(result)
+
+
+def _posting_index(settings: Settings) -> PostingIndex | None:
+    if settings.search_backend == "postgres":
+        return None
+    return MeiliPostingIndex(
+        settings.meili_url,
+        settings.meili_master_key,
+    )
+
+
+def _allowed_source_ids() -> list[str]:
+    with SessionLocal() as session:
+        statement = (
+            select(CareerSource.id)
+            .where(CareerSource.status == SourceStatus.ALLOWED)
+            .order_by(CareerSource.base_url)
+        )
+        return [str(source_id) for source_id in session.scalars(statement)]
+
+
+def run_all_sources() -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    for source_id in _allowed_source_ids():
+        try:
+            counts = run_source_by_id(source_id)
+        except Exception as error:
+            logger.exception("Source %s failed unexpectedly", source_id)
+            counts = {
+                "discovered": 0,
+                "ingested": 0,
+                "failed": 1,
+                "closed": 0,
+                "error": type(error).__name__,
+            }
+        results.append({"source_id": source_id, **counts})
+
+    return {
+        "sources": len(results),
+        "discovered": sum(item["discovered"] for item in results),
+        "ingested": sum(item["ingested"] for item in results),
+        "failed": sum(item["failed"] for item in results),
+        "closed": sum(item["closed"] for item in results),
+        "results": results,
+    }
+
+
+def render_crawl_summary(report: dict[str, Any]) -> str:
+    lines = [
+        "## 원격 수집 결과",
+        "",
+        "| 출처 | 발견 | 저장 | 실패 | 마감 |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    for result in report["results"]:
+        source_id = str(result["source_id"]).replace("|", "\\|")
+        lines.append(
+            f"| {source_id} | {result['discovered']} | "
+            f"{result['ingested']} | {result['failed']} | "
+            f"{result['closed']} |"
+        )
+    lines.append(
+        f"| 합계 | {report['discovered']} | {report['ingested']} | "
+        f"{report['failed']} | {report['closed']} |"
+    )
+    return "\n".join(lines) + "\n"
