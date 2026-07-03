@@ -1,6 +1,7 @@
 import { JobCard } from "@/components/job-card";
-import { getPostings } from "@/lib/api";
-import type { PostingListResponse } from "@/lib/types";
+import { SkillRanking } from "@/components/skill-ranking";
+import { getPostings, getSkillStats } from "@/lib/api";
+import type { PostingListResponse, SkillStat } from "@/lib/types";
 
 
 export const dynamic = "force-dynamic";
@@ -20,14 +21,22 @@ export default async function Home({ searchParams }: HomeProps) {
   const newcomerOnly = params.career_type === "new_comer";
   let result: PostingListResponse | null = null;
   let failed = false;
+  let skills: SkillStat[] = [];
 
-  try {
-    result = await getPostings({
-      q: q || undefined,
-      career_type: newcomerOnly ? "new_comer" : undefined,
-    });
-  } catch {
+  const careerType = newcomerOnly ? "new_comer" : undefined;
+
+  const [postingsResult, skillsResult] = await Promise.allSettled([
+    getPostings({ q: q || undefined, career_type: careerType }),
+    getSkillStats({ career_type: careerType, limit: 15 }),
+  ]);
+
+  if (postingsResult.status === "fulfilled") {
+    result = postingsResult.value;
+  } else {
     failed = true;
+  }
+  if (skillsResult.status === "fulfilled") {
+    skills = skillsResult.value.items;
   }
 
   return (
@@ -75,6 +84,18 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         </form>
       </section>
+
+      {skills.length > 0 && (
+        <section className="skills-section" aria-labelledby="skills-title">
+          <div className="results__header">
+            <h2 id="skills-title">
+              {newcomerOnly ? "신입 공고에서" : "공고에서"} 많이 요구되는 스킬
+            </h2>
+            <span>상위 {skills.length}개</span>
+          </div>
+          <SkillRanking stats={skills} />
+        </section>
+      )}
 
       <section className="results" aria-labelledby="results-title">
         <div className="results__header">

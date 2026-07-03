@@ -1,6 +1,7 @@
 import type {
   PostingDetail,
   PostingListResponse,
+  SkillStatsResponse,
 } from "./types";
 
 
@@ -49,4 +50,20 @@ export function getPosting(id: string): Promise<PostingDetail> {
   return request<PostingDetail>(
     `/api/postings/${encodeURIComponent(id)}`,
   );
+}
+
+
+export function getSkillStats(filters: {
+  career_type?: string;
+  limit?: number;
+} = {}): Promise<SkillStatsResponse> {
+  const params = new URLSearchParams();
+  if (filters.career_type) {
+    params.set("career_type", filters.career_type);
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  return request<SkillStatsResponse>(`/api/skills/stats${query}`);
 }

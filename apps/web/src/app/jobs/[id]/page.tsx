@@ -85,6 +85,19 @@ export default async function JobDetail({ params }: JobDetailProps) {
           </div>
         </dl>
 
+        {job.skills.length > 0 && (
+          <section className="job-skills" aria-labelledby="skills-heading">
+            <h2 id="skills-heading">기술 스킬</h2>
+            <ul className="skill-tags">
+              {job.skills.map((skill) => (
+                <li key={skill} className="skill-tag">
+                  {skill}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="job-description" aria-labelledby="description">
           <h2 id="description">공고 내용</h2>
           <div>{job.description_text}</div>

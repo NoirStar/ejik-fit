@@ -37,6 +37,10 @@ def build_parser() -> argparse.ArgumentParser:
         "crawl-all",
         help="허용된 모든 공식 채용 출처를 수집합니다.",
     )
+    subparsers.add_parser(
+        "backfill-skills",
+        help="저장된 모든 공고의 기술 스킬을 다시 추출합니다.",
+    )
     return parser
 
 
@@ -101,5 +105,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             with Path(summary_path).open("a", encoding="utf-8") as summary:
                 summary.write(render_crawl_summary(report))
         return 1 if report["failed"] else 0
+
+    if args.command == "backfill-skills":
+        from ejikfit.skills import backfill_all_skills
+
+        with SessionLocal() as session:
+            count = backfill_all_skills(session)
+        print(f"postings={count}")
+        return 0
 
     raise AssertionError(f"처리되지 않은 명령: {args.command}")

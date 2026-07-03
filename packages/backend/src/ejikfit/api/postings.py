@@ -6,7 +6,7 @@ from typing import Protocol
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session, contains_eager, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from ejikfit.db import SessionLocal
 from ejikfit.models import Company, JobPosting, PostingStatus
@@ -51,6 +51,7 @@ def _detail(posting: JobPosting) -> dict:
         "description_text": posting.description_text,
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,
+        "skills": sorted(skill.skill for skill in posting.skills),
     }
 
 
@@ -154,7 +155,10 @@ class DatabasePostingReader:
         with self.session_factory() as session:
             statement = (
                 select(JobPosting)
-                .options(joinedload(JobPosting.company))
+                .options(
+                    joinedload(JobPosting.company),
+                    selectinload(JobPosting.skills),
+                )
                 .where(JobPosting.id == identifier)
             )
             posting = session.scalar(statement)

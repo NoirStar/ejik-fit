@@ -5,6 +5,11 @@ from ejikfit.api.postings import (
     PostingReader,
     create_postings_router,
 )
+from ejikfit.api.skills import (
+    DatabaseSkillStatsReader,
+    SkillStatsReader,
+    create_skills_router,
+)
 from ejikfit.config import Settings, get_settings
 from ejikfit.search import MeiliPostingIndex
 
@@ -22,7 +27,10 @@ def create_default_posting_reader(settings: Settings) -> DatabasePostingReader:
     )
 
 
-def create_app(posting_reader: PostingReader | None = None) -> FastAPI:
+def create_app(
+    posting_reader: PostingReader | None = None,
+    skill_stats_reader: SkillStatsReader | None = None,
+) -> FastAPI:
     application = FastAPI(title="이직핏 API", version="0.1.0")
 
     @application.get("/health")
@@ -33,6 +41,10 @@ def create_app(posting_reader: PostingReader | None = None) -> FastAPI:
         settings = get_settings()
         posting_reader = create_default_posting_reader(settings)
     application.include_router(create_postings_router(posting_reader))
+
+    if skill_stats_reader is None:
+        skill_stats_reader = DatabaseSkillStatsReader()
+    application.include_router(create_skills_router(skill_stats_reader))
 
     return application
 
