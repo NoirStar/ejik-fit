@@ -18,6 +18,7 @@ from ejikfit.models import (
 )
 from ejikfit.storage import SnapshotStore
 from ejikfit.search import PostingIndex
+from ejikfit.skills import sync_posting_skills
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +130,8 @@ def ingest_opening(
 
     _apply_opening(posting, opening, now)
     session.flush()
+
+    sync_posting_skills(session, posting)
 
     payload = _normalized_payload(opening)
     content_hash = _revision_hash(payload)

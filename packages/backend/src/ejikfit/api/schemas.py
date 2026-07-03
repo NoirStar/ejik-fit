@@ -23,8 +23,20 @@ class PostingDetail(PostingSummary):
     description_text: str
     opens_at: datetime | None = None
     closes_at: datetime | None = None
+    skills: list[str] = []
 
 
 class PostingListResponse(BaseModel):
     items: list[PostingSummary]
+    total: int
+
+
+class SkillStat(BaseModel):
+    skill: str
+    category: str
+    count: int
+
+
+class SkillStatsResponse(BaseModel):
+    items: list[SkillStat]
     total: int

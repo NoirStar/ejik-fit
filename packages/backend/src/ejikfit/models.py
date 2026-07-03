@@ -137,6 +137,23 @@ class JobPosting(Base):
     missing_runs: Mapped[int] = mapped_column(Integer, default=0)
     company: Mapped[Company] = relationship()
     source: Mapped[CareerSource] = relationship()
+    skills: Mapped[list["PostingSkill"]] = relationship(
+        "PostingSkill", cascade="all, delete-orphan"
+    )
+
+
+class PostingSkill(Base):
+    __tablename__ = "posting_skills"
+    __table_args__ = (
+        UniqueConstraint("posting_id", "skill", name="uq_posting_skill"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    posting_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("job_postings.id"), index=True
+    )
+    skill: Mapped[str] = mapped_column(String(100), index=True)
+    category: Mapped[str] = mapped_column(String(50))
 
 
 class JobRevision(Base):
