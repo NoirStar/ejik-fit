@@ -49,6 +49,7 @@ make test
 Next.js 웹과 FastAPI 읽기 API는 Vercel 프로젝트 두 개로 배포합니다. 운영 데이터와 원문은 Supabase PostgreSQL·Storage에 저장하고, GitHub Actions가 6시간마다 Python crawler를 실행합니다. 운영 수집은 로컬 컴퓨터, Redis, Celery, MinIO, Meilisearch에 의존하지 않습니다.
 
 전체 설정과 배포 순서는 [`docs/deployment/vercel.md`](docs/deployment/vercel.md)를 참고하세요.
+운영 접근·인증 방법과 **다른 PC에서 이어 작업하는 절차**는 [`docs/deployment/access-and-auth.md`](docs/deployment/access-and-auth.md)에 정리되어 있습니다.
 
 로컬 도구로 빠르게 실행하려면 Python 3.12와 Node.js 20 이상이 필요합니다.
 

@@ -147,6 +147,49 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest -p pytest_asyncio.plugin packa
 
 ---
 
+## 4.5 Vercel 배포 구성 (재현용)
+
+모노레포라 **같은 저장소를 두 번 Import해 프로젝트 2개**를 만든다. 각각 Root Directory가 다르다.
+Web/API는 `main` 브랜치에서 자동 배포된다.
+
+| 프로젝트 | Root Directory | Framework | 배포 주소 |
+| --- | --- | --- | --- |
+| `ejik-fit-web` | `apps/web` | Next.js | `https://ejik-fit-web.vercel.app` |
+| `ejik-fit-api` | `packages/backend` | FastAPI | `https://ejik-fit-api.vercel.app` |
+
+두 프로젝트 모두 Function Region은 Seoul(`icn1`) — `vercel.json`에 고정.
+
+### API 프로젝트 필수 설정
+- **엔트리포인트**: `packages/backend/pyproject.toml`의 `[tool.vercel] entrypoint = "src.ejikfit.api.app:app"`
+  (Vercel FastAPI 빌더는 root 기준 파일 경로로 해석하므로 `src.` 접두사 필수. 빠지면 `No FastAPI entrypoint found` 빌드 실패)
+- **환경변수** (Settings → Environment Variables, Production):
+
+  | Key | Value |
+  | --- | --- |
+  | `DATABASE_URL` | Transaction Pooler URL — 포트 **6543** |
+  | `DATABASE_POOL_MODE` | `transaction` |
+  | `SEARCH_BACKEND` | `postgres` |
+  | `POSTGRES_SEARCH_MODE` | `pgroonga` |
+
+  API는 서버리스라 반드시 **Transaction Pooler(6543) + `transaction` 모드**를 쓴다(prepared statement/풀 비활성화).
+  미설정 시 `/health`는 200이지만 `/api/postings`는 500(DB 연결 실패).
+
+### Web 프로젝트 필수 설정
+- **환경변수**: `API_BASE_URL` = API 배포 주소(끝에 `/` 없이). 예: `https://ejik-fit-api.vercel.app`
+  미설정 시 `apps/web/src/lib/api.ts`가 `http://localhost:8000`으로 폴백 → "공고를 불러오지 못했습니다" 에러.
+- `API_BASE_URL`은 **Next.js 서버 전용**(브라우저 노출 안 됨). 그래서 Web/API가 다른 호스트여도 CORS 문제 없음.
+
+> 환경변수 변경은 **다음 배포부터** 적용된다. 변경 후 Deployments → 최신 → Redeploy.
+
+### 배포 검증 (HTTP만으로 확인 가능)
+```bash
+curl -s https://ejik-fit-api.vercel.app/health              # {"status":"ok",...}
+curl -s 'https://ejik-fit-api.vercel.app/api/postings?limit=1'  # 실제 공고 JSON
+curl -s https://ejik-fit-web.vercel.app/ | grep -q '공고를 불러오지 못' && echo "WEB FETCH FAIL" || echo "WEB OK"
+```
+
+---
+
 ## 5. 마이그레이션·seed·수집은 GitHub Actions에서
 
 `.github/workflows/crawl.yml`은 러너에서 다음을 순서대로 실행한다(러너는 네트워크 제약이 없다).
@@ -171,10 +214,12 @@ alembic upgrade head   →   ejikfit seed-sources   →   ejikfit crawl-all
 - `.gitignore`: `.env.production`, `.env.local`, `.vercel/`, `supabase/.temp`
 - **첫 원격 수집 성공** (run `28641234937`, 2026-07-03): migration + seed(`created=10`) + crawl(`ingested=130, failed=0, sources=10`). Supabase PostgreSQL과 `raw-snapshots` Storage에 반영됨.
 - `raw-snapshots` private bucket + S3 access key 생성 완료(대시보드)
+- **Vercel Web/API 배포 완료** (4.5절 참고): `ejik-fit-web`, `ejik-fit-api` 둘 다 Seoul, end-to-end 동작 확인
+  (Web → API → Supabase로 실제 공고 렌더링). API 엔트리포인트 수정 + 양쪽 환경변수 설정 완료.
 
 **남음**
-1. Vercel API/Web 배포 (`docs/deployment/vercel.md` 참고) — Vercel CLI 로그인 필요
-2. custom domain 연결 (도메인명·DNS provider 필요)
+1. custom domain 연결 (도메인명·DNS provider 필요) → 붙인 뒤 Web의 `API_BASE_URL`을 `https://api.도메인`으로 바꾸고 재배포
+2. (선택) `ejik-fit-api`가 SSO(Deployment Protection)로 막혀 있으면 공개 접근을 위해 해제 확인
 3. (선택) 멱등성 재확인: 다음 예약 수집 또는 배포된 API `/api/postings`로 revision 미증가 확인 (단위 테스트 `test_ingestion_is_idempotent_and_versions_changes`로 이미 커버됨)
 
 관련 문서: `docs/deployment/vercel.md`, `docs/handoff/2026-07-03-production-rollout-handoff.md`
