@@ -6,7 +6,7 @@ from typing import Protocol
 
 from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager, joinedload
 
 from ejikfit.db import SessionLocal
 from ejikfit.models import Company, JobPosting, PostingStatus
@@ -54,14 +54,34 @@ def _detail(posting: JobPosting) -> dict:
     }
 
 
+def _posting_search_clause(q: str, use_pgroonga: bool):
+    if use_pgroonga:
+        return or_(
+            JobPosting.title.bool_op("&@~")(q),
+            JobPosting.description_text.bool_op("&@~")(q),
+            JobPosting.location.bool_op("&@~")(q),
+            Company.name.ilike(f"%{q}%"),
+        )
+
+    pattern = f"%{q}%"
+    return or_(
+        JobPosting.title.ilike(pattern),
+        JobPosting.description_text.ilike(pattern),
+        JobPosting.location.ilike(pattern),
+        Company.name.ilike(pattern),
+    )
+
+
 class DatabasePostingReader:
     def __init__(
         self,
         session_factory=SessionLocal,
         search_index: MeiliPostingIndex | None = None,
+        use_pgroonga: bool = False,
     ) -> None:
         self.session_factory = session_factory
         self.search_index = search_index
+        self.use_pgroonga = use_pgroonga
 
     def list(
         self,
@@ -103,23 +123,18 @@ class DatabasePostingReader:
     ) -> list[dict]:
         statement = (
             select(JobPosting)
-            .options(joinedload(JobPosting.company))
+            .join(JobPosting.company)
+            .options(contains_eager(JobPosting.company))
             .where(JobPosting.status == PostingStatus.OPEN)
             .order_by(JobPosting.last_verified_at.desc())
             .limit(limit)
         )
         if q:
-            pattern = f"%{q}%"
             statement = statement.where(
-                or_(
-                    JobPosting.title.ilike(pattern),
-                    JobPosting.description_text.ilike(pattern),
-                )
+                _posting_search_clause(q, self.use_pgroonga)
             )
         if company:
-            statement = statement.join(JobPosting.company).where(
-                Company.slug == company
-            )
+            statement = statement.where(Company.slug == company)
         if career_type:
             statement = statement.where(
                 JobPosting.career_type == career_type

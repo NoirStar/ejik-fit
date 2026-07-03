@@ -16,7 +16,10 @@ def create_default_posting_reader(settings: Settings) -> DatabasePostingReader:
             settings.meili_url,
             settings.meili_master_key,
         )
-    return DatabasePostingReader(search_index=search_index)
+    return DatabasePostingReader(
+        search_index=search_index,
+        use_pgroonga=settings.postgres_search_mode == "pgroonga",
+    )
 
 
 def create_app(posting_reader: PostingReader | None = None) -> FastAPI:
