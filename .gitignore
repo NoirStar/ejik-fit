@@ -10,5 +10,7 @@ node_modules/
 coverage/
 *.tsbuildinfo
 
+.vercel/
+
 .DS_Store
 data/
