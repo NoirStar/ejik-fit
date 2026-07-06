@@ -255,7 +255,7 @@ export function SkillGraphExperience({
   return (
     <section className="graph-product" aria-label="스킬 관계 그래프">
       <div className="graph-toolbar">
-        <div>
+        <div className="graph-toolbar__skills">
           <p className="panel-label">나의 스킬</p>
           <div className="owned-skill-list" aria-label="저장된 보유 스킬">
             {ownedSkills.map((skill) => (
@@ -311,16 +311,16 @@ export function SkillGraphExperience({
               onReadyChange={setForceReady}
               reheatKey={reheatKey}
             />
-            <div className="graph-control-panel" aria-label="Graph view controls">
+            <div className="graph-control-panel" aria-label="그래프 보기 컨트롤">
               <div className="graph-control-section">
                 <div className="graph-control-section__title">
-                  <h3>Filters</h3>
+                  <h3>보기 필터</h3>
                   <button type="button" onClick={resetGraphView}>
-                    Reset
+                    초기화
                   </button>
                 </div>
                 <label className="graph-control-field" htmlFor="graph-filter-query">
-                  <span>Search</span>
+                  <span>검색</span>
                   <input
                     id="graph-filter-query"
                     value={filterQuery}
@@ -328,28 +328,28 @@ export function SkillGraphExperience({
                     placeholder="C++, ROS2, Security"
                   />
                 </label>
-                <div className="graph-mode-toggle" aria-label="Graph scope">
+                <div className="graph-mode-toggle" aria-label="그래프 범위">
                   <button
                     className={graphMode === "global" ? "is-active" : ""}
                     type="button"
                     onClick={() => setGraphMode("global")}
                   >
-                    Global
+                    전체
                   </button>
                   <button
                     className={graphMode === "local" ? "is-active" : ""}
                     type="button"
                     onClick={() => setGraphMode("local")}
                   >
-                    Local
+                    선택 주변
                   </button>
                 </div>
                 <label className="graph-control-range" htmlFor="graph-local-depth">
-                  <span>Local depth</span>
+                  <span>주변 깊이</span>
                   <b>{localDepth}</b>
                   <input
                     id="graph-local-depth"
-                    aria-label="Local depth"
+                    aria-label="주변 깊이"
                     type="range"
                     min="1"
                     max="3"
@@ -379,7 +379,7 @@ export function SkillGraphExperience({
 
               <div className="graph-control-section">
                 <div className="graph-control-section__title">
-                  <h3>Groups</h3>
+                  <h3>분야</h3>
                   <span>{enabledDomains.length}/{Math.max(1, allDomains.length)}</span>
                 </div>
                 <div className="graph-group-list">
@@ -408,16 +408,16 @@ export function SkillGraphExperience({
 
               <div className="graph-control-section">
                 <div className="graph-control-section__title">
-                  <h3>Display</h3>
+                  <h3>표시</h3>
                   <button
                     type="button"
                     onClick={() => setReheatKey((current) => current + 1)}
                   >
-                    Animate
+                    다시 펼치기
                   </button>
                 </div>
                 <label className="graph-control-range" htmlFor="graph-label-threshold">
-                  <span>Text fade threshold</span>
+                  <span>라벨 표시</span>
                   <b>{display.labelThreshold.toFixed(2)}</b>
                   <input
                     id="graph-label-threshold"
@@ -432,7 +432,7 @@ export function SkillGraphExperience({
                   />
                 </label>
                 <label className="graph-control-range" htmlFor="graph-node-size">
-                  <span>Node size</span>
+                  <span>노드 크기</span>
                   <b>{display.nodeScale.toFixed(2)}</b>
                   <input
                     id="graph-node-size"
@@ -447,7 +447,7 @@ export function SkillGraphExperience({
                   />
                 </label>
                 <label className="graph-control-range" htmlFor="graph-link-thickness">
-                  <span>Link thickness</span>
+                  <span>연결선 두께</span>
                   <b>{display.linkThickness.toFixed(2)}</b>
                   <input
                     id="graph-link-thickness"
@@ -467,7 +467,7 @@ export function SkillGraphExperience({
                     type="checkbox"
                     onChange={(event) => updateDisplay("arrows", event.target.checked)}
                   />
-                  Arrows
+                  방향 화살표
                 </label>
                 <label className="graph-control-check">
                   <input
@@ -475,16 +475,16 @@ export function SkillGraphExperience({
                     type="checkbox"
                     onChange={(event) => updateDisplay("animate", event.target.checked)}
                   />
-                  Live physics
+                  실시간 움직임
                 </label>
               </div>
 
               <div className="graph-control-section">
                 <div className="graph-control-section__title">
-                  <h3>Forces</h3>
+                  <h3>물리 값</h3>
                 </div>
                 <label className="graph-control-range" htmlFor="graph-center-force">
-                  <span>Center force</span>
+                  <span>중심 힘</span>
                   <b>{forces.center.toFixed(3)}</b>
                   <input
                     id="graph-center-force"
@@ -499,7 +499,7 @@ export function SkillGraphExperience({
                   />
                 </label>
                 <label className="graph-control-range" htmlFor="graph-repel-force">
-                  <span>Repel force</span>
+                  <span>밀어내기</span>
                   <b>{forces.repel}</b>
                   <input
                     id="graph-repel-force"
@@ -514,7 +514,7 @@ export function SkillGraphExperience({
                   />
                 </label>
                 <label className="graph-control-range" htmlFor="graph-link-force">
-                  <span>Link force</span>
+                  <span>연결 힘</span>
                   <b>{forces.link.toFixed(2)}</b>
                   <input
                     id="graph-link-force"
@@ -529,7 +529,7 @@ export function SkillGraphExperience({
                   />
                 </label>
                 <label className="graph-control-range" htmlFor="graph-link-distance">
-                  <span>Link distance</span>
+                  <span>연결 거리</span>
                   <b>{forces.linkDistance}</b>
                   <input
                     id="graph-link-distance"
@@ -546,10 +546,10 @@ export function SkillGraphExperience({
               </div>
             </div>
             <div className="graph-status-strip" aria-hidden="true">
-              <span>{graphMode === "local" ? "Local graph" : "Global graph"}</span>
-              <span>{viewData.stats.skillCount} skills</span>
-              <span>{viewData.stats.evidenceCount} postings</span>
-              <span>drag / zoom / click</span>
+              <span>{graphMode === "local" ? "선택 주변" : "전체 관계"}</span>
+              <span>{viewData.stats.skillCount}개 스킬</span>
+              <span>{viewData.stats.evidenceCount}개 공고 근거</span>
+              <span>드래그 / 확대 / 선택</span>
             </div>
             {viewData.nodes.length === 0 && (
               <div className="graph-empty-state">

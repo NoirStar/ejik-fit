@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-import Link from "next/link";
 
 import "./globals.css";
+import { SiteHeader } from "@/components/site-header";
 
 
 const geist = Geist({
@@ -27,21 +27,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={geist.variable}>
-        <header className="site-header">
-          <div className="site-header__inner">
-            <Link href="/" className="brand" aria-label="이직핏 홈">
-              ejik
-            </Link>
-            <nav className="site-nav" aria-label="주요 탐색">
-              <Link href="/skills/graph">스킬맵</Link>
-              <Link href="/#jobs">공고분석</Link>
-              <Link href="/#trends">기술통계</Link>
-              <Link href="/#roadmap">커리어 로드맵</Link>
-            </nav>
-            <p>Graph + Dashboard career intelligence</p>
-          </div>
-        </header>
-        {children}
+        <a className="skip-link" href="#main-content">
+          본문으로 건너뛰기
+        </a>
+        <SiteHeader />
+        <div id="main-content">{children}</div>
         <footer className="site-footer">
           <p>공식 채용페이지의 공개 정보만 수집합니다.</p>
           <a

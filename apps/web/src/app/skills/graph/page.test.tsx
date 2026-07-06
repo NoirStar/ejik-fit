@@ -79,10 +79,10 @@ describe("SkillGraphPage", () => {
     expect(screen.getAllByText("C++").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ROS2").length).toBeGreaterThan(0);
     expect(screen.getByText("자율주행 SW 엔지니어")).toBeInTheDocument();
-    expect(screen.getByText("Filters")).toBeInTheDocument();
-    expect(screen.getByText("Groups")).toBeInTheDocument();
-    expect(screen.getByText("Display")).toBeInTheDocument();
-    expect(screen.getByText("Forces")).toBeInTheDocument();
-    expect(screen.getByLabelText("Local depth")).toBeInTheDocument();
+    expect(screen.getByText("보기 필터")).toBeInTheDocument();
+    expect(screen.getByText("분야")).toBeInTheDocument();
+    expect(screen.getByText("표시")).toBeInTheDocument();
+    expect(screen.getByText("물리 값")).toBeInTheDocument();
+    expect(screen.getByLabelText("주변 깊이")).toBeInTheDocument();
   });
 });
