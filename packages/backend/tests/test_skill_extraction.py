@@ -21,9 +21,14 @@ RISKY_GOLDENS = {
     ("Flask", "flask"): ("Flask API 개발", "laboratory flask"),
     ("Kafka", "kafka"): ("Kafka 메시지 파이프라인", "Kafka 소설"),
     ("Unity", "unity"): ("Unity 게임 개발", "team unity matters"),
+    ("RAG", "rag"): ("RAG 엔진 개발", "rag cloth texture"),
+    ("Blender", "blender"): ("Blender 3D 아티스트", "kitchen blender sale"),
+    ("Maya", "maya"): ("Maya 3D 모델링 아티스트", "maya라는 이름의 사람"),
+    ("Illustrator", "illustrator"): ("Adobe Illustrator 디자인", "illustrator of a novel"),
     ("ROS", "ros"): ("ROS 로봇 개발", "ros라는 임의 문자열"),
     ("SLAM", "slam"): ("SLAM 로봇 알고리즘", "slam the door"),
     ("Gazebo", "gazebo"): ("Gazebo 로봇 시뮬레이션", "garden gazebo"),
+    ("CAN", "CAN"): ("임베디드 CAN 통신 개발", "You can join the event"),
     ("Android", "android"): ("Android 앱 개발", "android character"),
     ("Flutter", "flutter"): ("Flutter 모바일 앱 개발", "butterflies flutter"),
 }
@@ -51,6 +56,39 @@ def by_skill(html: str) -> dict:
         )
         if match.confidence >= 0.80
     }
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("CUDA 기반 모델 서빙 최적화", ["CUDA", "Model Serving"]),
+        ("OpenCV를 활용한 computer vision 개발", ["OpenCV"]),
+        ("MLOps 파이프라인과 Feature Store 운영", ["Feature Store", "MLOps"]),
+        ("LLM 기반 RAG 엔진과 LangChain 개발", ["LLM", "LangChain", "RAG"]),
+        ("Unity 3D 아티스트: Blender, Photoshop, Illustrator 경험", ["Blender", "Illustrator", "Photoshop", "Unity"]),
+        ("임베디드 Linux 환경에서 CAN, UART, SPI, I2C 통신 개발", ["CAN", "I2C", "Linux", "SPI", "UART"]),
+        ("웹 보안을 위한 OAuth, JWT, SSO, IAM 이해", ["IAM", "JWT", "OAuth", "SSO"]),
+        ("QA 자동화: Playwright와 Selenium 경험", ["Playwright", "Selenium"]),
+    ],
+)
+def test_confirms_seed_pack_skills_in_technical_context(
+    text: str,
+    expected: list[str],
+) -> None:
+    assert sorted(confirmed_names(text)) == sorted(expected)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "You can join the event tomorrow",
+        "maya라는 이름의 사람",
+        "rag cloth texture",
+        "illustrator of a novel",
+    ],
+)
+def test_rejects_seed_pack_non_technical_collisions(text: str) -> None:
+    assert confirmed_names(text) == []
 
 
 @pytest.mark.parametrize(

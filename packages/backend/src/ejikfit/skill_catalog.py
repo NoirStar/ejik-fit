@@ -26,6 +26,12 @@ class SkillDef:
     aliases: tuple[AliasDef, ...]
 
 
+@dataclass(frozen=True)
+class SkillMetadata:
+    kind: str
+    domains: tuple[str, ...]
+
+
 def distinct(value: str) -> AliasDef:
     return AliasDef(value=value, policy=AliasPolicy.DISTINCT)
 
@@ -296,10 +302,38 @@ SKILLS: tuple[SkillDef, ...] = (
     # ai
     SkillDef("TensorFlow", "ai", (distinct("tensorflow"),)),
     SkillDef("PyTorch", "ai", (distinct("pytorch"),)),
+    SkillDef("CUDA", "ai", (distinct("cuda"),)),
+    SkillDef(
+        "OpenCV",
+        "ai",
+        (
+            distinct("opencv"),
+            distinct("open cv"),
+        ),
+    ),
+    SkillDef("LLM", "ai", (distinct("llm"),)),
+    SkillDef(
+        "RAG",
+        "ai",
+        (
+            contextual(
+                "rag",
+                context_terms=("llm", "검색", "retrieval", "generation", "engine", "엔진", "ai"),
+            ),
+        ),
+    ),
+    SkillDef("LangChain", "ai", (distinct("langchain"),)),
+    SkillDef("MLOps", "ai", (distinct("mlops"),)),
+    SkillDef("Feature Store", "ai", (distinct("feature store"),)),
+    SkillDef("Model Serving", "ai", (distinct("model serving"), distinct("모델 서빙"))),
     # security
     SkillDef("OWASP", "security", (distinct("owasp"),)),
     SkillDef("SIEM", "security", (distinct("siem"),)),
     SkillDef("Wireshark", "security", (distinct("wireshark"),)),
+    SkillDef("OAuth", "security", (distinct("oauth"), distinct("oauth2"))),
+    SkillDef("JWT", "security", (distinct("jwt"),)),
+    SkillDef("IAM", "security", (distinct("iam"),)),
+    SkillDef("SSO", "security", (distinct("sso"),)),
     # game
     SkillDef(
         "Unity",
@@ -307,7 +341,7 @@ SKILLS: tuple[SkillDef, ...] = (
         (
             contextual(
                 "unity",
-                context_terms=("게임", "개발", "엔진", "game", "engine"),
+                context_terms=("게임", "개발", "엔진", "game", "engine", "3d", "아티스트", "artist"),
             ),
         ),
     ),
@@ -315,6 +349,37 @@ SKILLS: tuple[SkillDef, ...] = (
         "Unreal Engine",
         "game",
         (distinct("unreal engine"), distinct("unreal"), distinct("언리얼")),
+    ),
+    SkillDef(
+        "Blender",
+        "game",
+        (
+            contextual(
+                "blender",
+                context_terms=("3d", "artist", "아티스트", "모델링", "graphics", "game"),
+            ),
+        ),
+    ),
+    SkillDef(
+        "Maya",
+        "game",
+        (
+            contextual(
+                "maya",
+                context_terms=("3d", "artist", "아티스트", "모델링", "graphics", "game"),
+            ),
+        ),
+    ),
+    SkillDef("Photoshop", "game", (distinct("photoshop"),)),
+    SkillDef(
+        "Illustrator",
+        "game",
+        (
+            contextual(
+                "illustrator",
+                context_terms=("adobe", "design", "디자인", "아트", "artist", "game"),
+            ),
+        ),
     ),
     # robotics
     SkillDef(
@@ -356,6 +421,22 @@ SKILLS: tuple[SkillDef, ...] = (
             ),
         ),
     ),
+    # embedded
+    SkillDef(
+        "CAN",
+        "embedded",
+        (
+            strict(
+                "CAN",
+                context_terms=("임베디드", "차량", "자동차", "통신", "embedded", "automotive", "vehicle"),
+                negative_patterns=(r"\bcan\s+(?:join|use|work|make|see)\b",),
+            ),
+        ),
+    ),
+    SkillDef("RTOS", "embedded", (distinct("rtos"),)),
+    SkillDef("UART", "embedded", (distinct("uart"),)),
+    SkillDef("SPI", "embedded", (distinct("spi"),)),
+    SkillDef("I2C", "embedded", (distinct("i2c"),)),
     # mobile
     SkillDef(
         "Android",
@@ -378,6 +459,11 @@ SKILLS: tuple[SkillDef, ...] = (
             ),
         ),
     ),
+    # design/product/qa
+    SkillDef("Jira", "qa", (distinct("jira"),)),
+    SkillDef("Figma", "design", (distinct("figma"),)),
+    SkillDef("Selenium", "qa", (distinct("selenium"),)),
+    SkillDef("Playwright", "qa", (distinct("playwright"),)),
 )
 
 
@@ -385,9 +471,103 @@ SKILL_CATEGORY: dict[str, str] = {
     skill.canonical: skill.category for skill in SKILLS
 }
 
+SKILL_METADATA: dict[str, SkillMetadata] = {
+    "Python": SkillMetadata("language", ("backend", "data", "ai", "mlops")),
+    "Java": SkillMetadata("language", ("backend", "web")),
+    "JavaScript": SkillMetadata("language", ("frontend", "web", "backend")),
+    "TypeScript": SkillMetadata("language", ("frontend", "web", "backend")),
+    "Kotlin": SkillMetadata("language", ("backend", "mobile")),
+    "Swift": SkillMetadata("language", ("mobile",)),
+    "Go": SkillMetadata("language", ("backend", "cloud", "devops")),
+    "Rust": SkillMetadata("language", ("backend", "embedded", "high_performance")),
+    "C": SkillMetadata("language", ("embedded", "automotive", "robotics")),
+    "C++": SkillMetadata("language", ("game", "graphics", "robotics", "autonomy", "embedded", "backend", "ai")),
+    "C#": SkillMetadata("language", ("game", "backend")),
+    "R": SkillMetadata("language", ("data", "ai")),
+    "Ruby": SkillMetadata("language", ("backend", "web")),
+    "PHP": SkillMetadata("language", ("backend", "web")),
+    "Scala": SkillMetadata("language", ("backend", "data")),
+    "SQL": SkillMetadata("language", ("data", "backend", "ai")),
+    "React": SkillMetadata("framework", ("frontend", "web")),
+    "Vue": SkillMetadata("framework", ("frontend", "web")),
+    "Next.js": SkillMetadata("framework", ("frontend", "web", "backend")),
+    "Angular": SkillMetadata("framework", ("frontend", "web")),
+    "Svelte": SkillMetadata("framework", ("frontend", "web")),
+    "Node.js": SkillMetadata("platform", ("backend", "web")),
+    "Spring": SkillMetadata("framework", ("backend", "web")),
+    "FastAPI": SkillMetadata("framework", ("backend", "ai")),
+    "Django": SkillMetadata("framework", ("backend", "web")),
+    "Flask": SkillMetadata("framework", ("backend", "web", "ai")),
+    "NestJS": SkillMetadata("framework", ("backend", "web")),
+    "Docker": SkillMetadata("platform", ("devops", "cloud", "backend", "mlops")),
+    "Kubernetes": SkillMetadata("platform", ("devops", "cloud", "mlops")),
+    "AWS": SkillMetadata("cloud", ("cloud", "devops", "backend", "security")),
+    "GCP": SkillMetadata("cloud", ("cloud", "devops", "ai", "mlops")),
+    "Azure": SkillMetadata("cloud", ("cloud", "devops", "security")),
+    "Terraform": SkillMetadata("tool", ("devops", "cloud")),
+    "Kafka": SkillMetadata("platform", ("backend", "data", "devops")),
+    "Nginx": SkillMetadata("platform", ("backend", "web", "devops")),
+    "Linux": SkillMetadata("platform", ("devops", "embedded", "robotics", "security", "backend")),
+    "PostgreSQL": SkillMetadata("database", ("data", "backend")),
+    "MySQL": SkillMetadata("database", ("data", "backend")),
+    "MongoDB": SkillMetadata("database", ("data", "backend")),
+    "Redis": SkillMetadata("database", ("data", "backend")),
+    "Elasticsearch": SkillMetadata("database", ("data", "backend", "web")),
+    "TensorFlow": SkillMetadata("library", ("ai", "mlops")),
+    "PyTorch": SkillMetadata("library", ("ai", "mlops")),
+    "CUDA": SkillMetadata("platform", ("ai", "graphics", "high_performance")),
+    "OpenCV": SkillMetadata("library", ("ai", "computer_vision", "robotics", "graphics")),
+    "LLM": SkillMetadata("practice", ("ai",)),
+    "RAG": SkillMetadata("practice", ("ai", "data")),
+    "LangChain": SkillMetadata("framework", ("ai",)),
+    "MLOps": SkillMetadata("practice", ("ai", "mlops", "devops")),
+    "Feature Store": SkillMetadata("practice", ("ai", "mlops", "data")),
+    "Model Serving": SkillMetadata("practice", ("ai", "mlops", "backend")),
+    "OWASP": SkillMetadata("standard", ("security", "web")),
+    "SIEM": SkillMetadata("platform", ("security",)),
+    "Wireshark": SkillMetadata("tool", ("security",)),
+    "Unity": SkillMetadata("engine", ("game", "graphics")),
+    "Unreal Engine": SkillMetadata("engine", ("game", "graphics")),
+    "Blender": SkillMetadata("professional_tool", ("game", "graphics", "design")),
+    "Maya": SkillMetadata("professional_tool", ("game", "graphics", "design")),
+    "Photoshop": SkillMetadata("professional_tool", ("game", "graphics", "design")),
+    "Illustrator": SkillMetadata("professional_tool", ("game", "graphics", "design")),
+    "ROS": SkillMetadata("framework", ("robotics", "autonomy", "embedded")),
+    "SLAM": SkillMetadata("practice", ("robotics", "autonomy", "computer_vision")),
+    "Gazebo": SkillMetadata("tool", ("robotics",)),
+    "CAN": SkillMetadata("protocol", ("embedded", "automotive", "robotics")),
+    "RTOS": SkillMetadata("platform", ("embedded",)),
+    "UART": SkillMetadata("protocol", ("embedded", "hardware")),
+    "SPI": SkillMetadata("protocol", ("embedded", "hardware")),
+    "I2C": SkillMetadata("protocol", ("embedded", "hardware")),
+    "Android": SkillMetadata("platform", ("mobile",)),
+    "iOS": SkillMetadata("platform", ("mobile",)),
+    "Flutter": SkillMetadata("framework", ("mobile", "frontend")),
+    "OAuth": SkillMetadata("standard", ("security", "web")),
+    "JWT": SkillMetadata("standard", ("security", "web")),
+    "IAM": SkillMetadata("practice", ("security", "cloud")),
+    "SSO": SkillMetadata("practice", ("security", "web")),
+    "Jira": SkillMetadata("tool", ("product", "qa", "devops")),
+    "Figma": SkillMetadata("professional_tool", ("design", "frontend", "product")),
+    "Selenium": SkillMetadata("tool", ("qa", "web")),
+    "Playwright": SkillMetadata("tool", ("qa", "frontend", "web")),
+}
+
 
 def skill_category(canonical: str) -> str:
     return SKILL_CATEGORY.get(canonical, "")
+
+
+def skill_metadata(canonical: str) -> SkillMetadata:
+    return SKILL_METADATA.get(canonical, SkillMetadata("tool", ("web",)))
+
+
+def skill_kind(canonical: str) -> str:
+    return skill_metadata(canonical).kind
+
+
+def skill_domains(canonical: str) -> tuple[str, ...]:
+    return skill_metadata(canonical).domains
 
 
 def aliases_requiring_context() -> list[tuple[SkillDef, AliasDef]]:
