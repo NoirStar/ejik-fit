@@ -100,3 +100,36 @@ class SkillGraphResponse(BaseModel):
     edges: list[SkillGraphEdge]
     evidence: list[SkillGraphEvidence]
     meta: SkillGraphMeta
+
+
+class FitAnalyzeRequest(BaseModel):
+    owned_skills: list[str]
+    career_type: str | None = None
+    domains: list[str] = []
+
+
+class FitCoverageModel(BaseModel):
+    matching_posting_count: int
+    strong_fit_posting_count: int
+
+
+class FitDomainBranchModel(BaseModel):
+    domain: str
+    covered_skills: list[str]
+    missing_required_skills: list[str]
+    missing_preferred_skills: list[str]
+    supporting_posting_count: int
+
+
+class FitRecommendedSkillModel(BaseModel):
+    skill: str
+    reason: str
+    required_count: int
+    preferred_count: int
+    supporting_posting_count: int
+
+
+class FitAnalyzeResponse(BaseModel):
+    coverage: FitCoverageModel
+    domain_branches: list[FitDomainBranchModel]
+    recommended_next_skills: list[FitRecommendedSkillModel]

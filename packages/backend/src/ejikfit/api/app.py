@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 
+from ejikfit.api.fit import (
+    DatabaseFitAnalysisReader,
+    FitAnalysisReader,
+    create_fit_router,
+)
 from ejikfit.api.graph import (
     DatabaseSkillGraphReader,
     SkillGraphReader,
@@ -36,6 +41,7 @@ def create_app(
     posting_reader: PostingReader | None = None,
     skill_stats_reader: SkillStatsReader | None = None,
     skill_graph_reader: SkillGraphReader | None = None,
+    fit_analysis_reader: FitAnalysisReader | None = None,
 ) -> FastAPI:
     application = FastAPI(title="이직핏 API", version="0.1.0")
 
@@ -55,6 +61,10 @@ def create_app(
     if skill_graph_reader is None:
         skill_graph_reader = DatabaseSkillGraphReader()
     application.include_router(create_graph_router(skill_graph_reader))
+
+    if fit_analysis_reader is None:
+        fit_analysis_reader = DatabaseFitAnalysisReader()
+    application.include_router(create_fit_router(fit_analysis_reader))
 
     return application
 
