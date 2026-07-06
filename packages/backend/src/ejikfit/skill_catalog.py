@@ -65,11 +65,14 @@ DEVELOPMENT_CONTEXT = (
     "언어",
     "백엔드",
     "서버",
+    "구현",
+    "활용",
     "developer",
     "programming",
     "language",
     "backend",
     "server",
+    "implementation",
 )
 
 

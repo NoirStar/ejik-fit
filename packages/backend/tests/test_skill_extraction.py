@@ -161,3 +161,14 @@ def test_unrecognized_real_heading_resets_previous_section() -> None:
     """
     matches = by_skill(html)
     assert matches["Docker"].requirement_type is RequirementType.UNSPECIFIED
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Rust를 활용한 성능 최적화 경험",
+        "Rust를 활용한 고성능 컴포넌트 구현 경험",
+    ],
+)
+def test_rust_is_confirmed_by_implementation_context(text: str) -> None:
+    assert "Rust" in confirmed_names(text)
