@@ -13,6 +13,7 @@ coverage/
 *.tsbuildinfo
 
 .vercel/
+.worktrees/
 
 .DS_Store
 data/
