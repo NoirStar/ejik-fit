@@ -14,6 +14,7 @@ coverage/
 
 .vercel/
 .worktrees/
+.superpowers/
 
 .DS_Store
 data/
