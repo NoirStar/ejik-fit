@@ -11,6 +11,8 @@ import type {
   SkillGraphResponse,
 } from "@/lib/types";
 
+import { SkillGraphSigmaCanvas } from "./skill-graph-sigma-canvas";
+
 
 type PositionedNode = SkillGraphNode & {
   x: number;
@@ -154,6 +156,10 @@ export function SkillGraphExperience({
             </button>
           </div>
           <div className="graph-canvas" role="img" aria-label="스킬 노드 관계">
+            <SkillGraphSigmaCanvas
+              graph={initialGraph}
+              onNodeSelect={setSelectedId}
+            />
             <svg className="graph-edges" aria-hidden="true" viewBox="0 0 100 100">
               {initialGraph.edges.map((edge) => {
                 const source = nodeMap.get(edge.source);
