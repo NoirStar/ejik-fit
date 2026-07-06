@@ -72,17 +72,9 @@ export default async function Home({ searchParams }: HomeProps) {
       <section className="landing-hero">
         <div className="landing-hero__copy">
           <p className="eyebrow">Graph-first career intelligence</p>
-          <h1>
-            당신의 기술 스택은
-            <span
-              className="inline-title-image"
-              aria-hidden="true"
-            />
-            어디로 이어질까?
-          </h1>
+          <h1>당신의 기술 스택은 어디로 이어질까?</h1>
           <p>
-            공고가 요구하는 조합을 그래프로 해석합니다. 내 기술이 연결되는
-            분야, 부족한 핵심 스킬, fit한 공고를 한눈에 보여줍니다.
+            공고 속 기술 조합을 그래프로 해석해, 다음 준비 방향과 맞는 공고를 보여줍니다.
           </p>
           <div className="hero-actions">
             <Link className="button button--primary" href="/skills/graph">
@@ -94,7 +86,7 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         </div>
 
-        <div className="hero-visual gsap-image-reveal" aria-hidden="true">
+        <div className="hero-visual" aria-hidden="true">
           <div className="hero-visual__image" />
           <div className="hero-orbit hero-orbit--python">Python</div>
           <div className="hero-orbit hero-orbit--cpp">C++</div>
@@ -121,7 +113,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="bento-section" id="trends" aria-labelledby="bento-title">
         <div className="section-heading">
-          <p className="eyebrow">왜 그래프인가</p>
           <h2 id="bento-title">공고는 기술 하나가 아니라 조합을 요구합니다.</h2>
           <p>
             게임, AI, 보안, ROS, 임베디드처럼 섞이는 직무를 기술 관계와 공고
@@ -162,7 +153,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="accordion-section" aria-labelledby="accordion-title">
         <div className="section-heading section-heading--compact">
-          <p className="eyebrow">분야별 확장</p>
           <h2 id="accordion-title">어느 방향으로 준비할지 비교합니다.</h2>
         </div>
         <div className="horizontal-accordion">
@@ -183,7 +173,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="pin-section" id="roadmap" aria-labelledby="roadmap-title">
         <div className="pin-title">
-          <p className="eyebrow">준비 방향</p>
           <h2 id="roadmap-title">그래프는 공부 목록이 아니라 선택 근거입니다.</h2>
         </div>
         <div className="pin-content">
@@ -285,7 +274,6 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="final-cta" aria-labelledby="final-cta-title">
         <div>
-          <p className="eyebrow">시작점은 하나면 충분합니다</p>
           <h2 id="final-cta-title">지금 가진 기술에서 다음 방향을 확인하세요.</h2>
         </div>
         <Link className="button button--primary" href="/skills/graph">

@@ -48,6 +48,15 @@ function positionNodes(nodes: SkillGraphNode[]): PositionedNode[] {
 }
 
 
+const PREVIEW_NODES = [
+  { label: "C++", x: 49, y: 47 },
+  { label: "ROS2", x: 68, y: 39 },
+  { label: "Linux", x: 58, y: 66 },
+  { label: "Python", x: 34, y: 35 },
+  { label: "CAN", x: 76, y: 62 },
+];
+
+
 export function SkillGraphExperience({
   initialGraph,
   initialOwnedSkills,
@@ -113,7 +122,7 @@ export function SkillGraphExperience({
     <section className="graph-product" aria-label="스킬 관계 그래프">
       <div className="graph-toolbar">
         <div>
-          <p className="eyebrow">나의 스킬</p>
+          <p className="panel-label">나의 스킬</p>
           <div className="owned-skill-list" aria-label="저장된 보유 스킬">
             {ownedSkills.map((skill) => (
               <button
@@ -160,6 +169,35 @@ export function SkillGraphExperience({
               graph={initialGraph}
               onNodeSelect={setSelectedId}
             />
+            {nodes.length === 0 && (
+              <div className="graph-empty-state">
+                <div className="graph-empty-state__preview" aria-hidden="true">
+                  <svg viewBox="0 0 100 100">
+                    <line x1="49" y1="47" x2="68" y2="39" />
+                    <line x1="49" y1="47" x2="58" y2="66" />
+                    <line x1="49" y1="47" x2="34" y2="35" />
+                    <line x1="68" y1="39" x2="76" y2="62" />
+                  </svg>
+                  {PREVIEW_NODES.map((node) => (
+                    <span
+                      key={node.label}
+                      style={
+                        {
+                          left: `${node.x}%`,
+                          top: `${node.y}%`,
+                        } as CSSProperties
+                      }
+                    >
+                      {node.label}
+                    </span>
+                  ))}
+                </div>
+                <strong>그래프 데이터 연결 대기 중</strong>
+                <p>
+                  API가 연결되면 실제 공고 근거가 있는 스킬 관계만 표시됩니다.
+                </p>
+              </div>
+            )}
             <svg className="graph-edges" aria-hidden="true" viewBox="0 0 100 100">
               {initialGraph.edges.map((edge) => {
                 const source = nodeMap.get(edge.source);
@@ -203,7 +241,7 @@ export function SkillGraphExperience({
 
         <aside className="graph-insight-panel">
           <div className="panel-card">
-            <p className="eyebrow">선택한 관계</p>
+            <p className="panel-label">선택한 관계</p>
             {selected ? (
               <>
                 <h2>{selected.label}</h2>
@@ -231,7 +269,7 @@ export function SkillGraphExperience({
           </div>
 
           <div className="panel-card">
-            <p className="eyebrow">공고 근거</p>
+            <p className="panel-label">공고 근거</p>
             <ul className="evidence-list">
               {initialGraph.evidence.slice(0, 4).map((item) => (
                 <li key={item.posting_id}>
@@ -243,7 +281,7 @@ export function SkillGraphExperience({
           </div>
 
           <div className="panel-card">
-            <p className="eyebrow">Fit 분석</p>
+            <p className="panel-label">Fit 분석</p>
             {fitState === "loading" && <p>분석 중입니다.</p>}
             {fitState === "error" && (
               <p>분석 결과를 불러오지 못했습니다. API 상태를 확인해 주세요.</p>

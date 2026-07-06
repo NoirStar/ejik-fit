@@ -43,7 +43,7 @@ describe("Home", () => {
       screen.getByRole("link", { name: "스킬 그래프 열기" }),
     ).toHaveAttribute("href", "/skills/graph");
     expect(
-      screen.getByText(/공고가 요구하는 조합을 그래프로 해석합니다/),
+      screen.getByText(/공고 속 기술 조합을 그래프로 해석해/),
     ).toBeInTheDocument();
   });
 });

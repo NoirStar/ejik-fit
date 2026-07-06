@@ -66,10 +66,10 @@ export default async function SkillGraphPage() {
         </div>
         <div className="graph-hero__panel gsap-image-reveal">
           <span>현재 기준</span>
-          <strong>{graph.nodes.length}개 스킬 노드</strong>
-          <p>
-            필수, 우대, 언급 스킬을 분리하고 공고 근거가 있는 관계만 표시합니다.
-          </p>
+          <strong>
+            {failed ? "데이터 연결 대기" : `${graph.nodes.length}개 스킬 노드`}
+          </strong>
+          <p>공고 근거가 확인된 관계만 표시합니다.</p>
         </div>
       </section>
 

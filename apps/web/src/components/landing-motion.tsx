@@ -13,17 +13,20 @@ export function LandingMotion() {
     const media = gsap.matchMedia();
 
     media.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.fromTo(
-        ".hero-visual",
-        { opacity: 0, scale: 0.92, y: 48 },
-        {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 1.2,
-          ease: "power3.out",
-        },
-      );
+      const heroVisual = document.querySelector<HTMLElement>(".hero-visual");
+      if (heroVisual) {
+        gsap.fromTo(
+          heroVisual,
+          { opacity: 0.86, scale: 0.98, y: 14 },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 0.7,
+            ease: "power3.out",
+          },
+        );
+      }
 
       gsap.utils.toArray<HTMLElement>(".gsap-image-reveal").forEach((item) => {
         gsap.fromTo(
@@ -47,7 +50,7 @@ export function LandingMotion() {
       if (words.length > 0) {
         gsap.fromTo(
           words,
-          { opacity: 0.16, y: 18 },
+          { opacity: 0.46, y: 12 },
           {
             opacity: 1,
             y: 0,
