@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 from ejikfit.db import SessionLocal
 from ejikfit.models import Company, JobPosting, PostingStatus
 from ejikfit.search import MeiliPostingIndex
+from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
 from .schemas import PostingDetail, PostingListResponse
 
@@ -45,13 +46,40 @@ def _summary(posting: JobPosting) -> dict:
 
 
 def _detail(posting: JobPosting) -> dict:
+    requirement_order = {
+        "required": 0,
+        "preferred": 1,
+        "unspecified": 2,
+    }
+    confirmed = sorted(
+        (
+            skill
+            for skill in posting.skills
+            if skill.confidence >= CONFIRMED_CONFIDENCE
+        ),
+        key=lambda skill: (
+            requirement_order.get(skill.requirement_type, 3),
+            skill.skill,
+        ),
+    )
     return {
         **_summary(posting),
         "description_html": posting.description_html,
         "description_text": posting.description_text,
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,
-        "skills": sorted(skill.skill for skill in posting.skills),
+        "skills": sorted(skill.skill for skill in confirmed),
+        "skill_details": [
+            {
+                "skill": skill.skill,
+                "category": skill.category,
+                "requirement_type": skill.requirement_type,
+                "evidence_text": skill.evidence_text,
+                "confidence": skill.confidence,
+                "match_reason": skill.match_reason,
+            }
+            for skill in confirmed
+        ],
     }
 
 

@@ -18,12 +18,22 @@ class PostingSummary(BaseModel):
     last_verified_at: datetime
 
 
+class SkillDetail(BaseModel):
+    skill: str
+    category: str
+    requirement_type: str
+    evidence_text: str | None = None
+    confidence: float
+    match_reason: str
+
+
 class PostingDetail(PostingSummary):
     description_html: str
     description_text: str
     opens_at: datetime | None = None
     closes_at: datetime | None = None
     skills: list[str] = []
+    skill_details: list[SkillDetail] = []
 
 
 class PostingListResponse(BaseModel):
@@ -35,6 +45,9 @@ class SkillStat(BaseModel):
     skill: str
     category: str
     count: int
+    required_count: int
+    preferred_count: int
+    unspecified_count: int
 
 
 class SkillStatsResponse(BaseModel):

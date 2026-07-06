@@ -24,7 +24,16 @@ class FakeSkillStatsReader:
 
     def stats(self, career_type: str | None = None, limit: int = 30) -> list[dict]:
         self.calls.append({"career_type": career_type, "limit": limit})
-        return [{"skill": "Python", "category": "language", "count": 12}]
+        return [
+            {
+                "skill": "Python",
+                "category": "language",
+                "count": 12,
+                "required_count": 7,
+                "preferred_count": 3,
+                "unspecified_count": 2,
+            }
+        ]
 
 
 def test_skill_stats_endpoint_returns_ranked_items() -> None:
@@ -35,7 +44,14 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body["items"][0] == {"skill": "Python", "category": "language", "count": 12}
+    assert body["items"][0] == {
+        "skill": "Python",
+        "category": "language",
+        "count": 12,
+        "required_count": 7,
+        "preferred_count": 3,
+        "unspecified_count": 2,
+    }
     assert body["total"] == 1
     assert reader.calls == [{"career_type": "new_comer", "limit": 5}]
 
@@ -48,7 +64,7 @@ def _add_posting(
     *,
     career_type: str,
     status: PostingStatus,
-    skills: list[tuple[str, str]],
+    skills: list[tuple[str, str, str, float]],
 ) -> None:
     now = datetime(2026, 7, 4, tzinfo=timezone.utc)
     posting = JobPosting(
@@ -65,9 +81,16 @@ def _add_posting(
     )
     session.add(posting)
     session.flush()
-    for skill, category in skills:
+    for skill, category, requirement_type, confidence in skills:
         session.add(
-            PostingSkill(posting_id=posting.id, skill=skill, category=category)
+            PostingSkill(
+                posting_id=posting.id,
+                skill=skill,
+                category=category,
+                requirement_type=requirement_type,
+                confidence=confidence,
+                match_reason="test",
+            )
         )
 
 
@@ -89,17 +112,21 @@ def test_database_reader_counts_and_filters() -> None:
         _add_posting(
             session, company, source, "1",
             career_type="new_comer", status=PostingStatus.OPEN,
-            skills=[("Python", "language"), ("AWS", "infra")],
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("AWS", "infra", "unspecified", 1.0),
+                ("Go", "language", "required", 0.5),
+            ],
         )
         _add_posting(
             session, company, source, "2",
             career_type="experienced", status=PostingStatus.OPEN,
-            skills=[("Python", "language")],
+            skills=[("Python", "language", "preferred", 1.0)],
         )
         _add_posting(
             session, company, source, "3",
             career_type="new_comer", status=PostingStatus.CLOSED,
-            skills=[("Python", "language")],
+            skills=[("Python", "language", "required", 1.0)],
         )
         session.commit()
 
@@ -107,10 +134,39 @@ def test_database_reader_counts_and_filters() -> None:
 
     # closed posting is excluded, so Python appears in 2 open postings.
     everything = reader.stats()
-    assert everything[0] == {"skill": "Python", "category": "language", "count": 2}
-    assert {"skill": "AWS", "category": "infra", "count": 1} in everything
+    assert everything[0] == {
+        "skill": "Python",
+        "category": "language",
+        "count": 2,
+        "required_count": 1,
+        "preferred_count": 1,
+        "unspecified_count": 0,
+    }
+    assert {
+        "skill": "AWS",
+        "category": "infra",
+        "count": 1,
+        "required_count": 0,
+        "preferred_count": 0,
+        "unspecified_count": 1,
+    } in everything
+    assert not any(item["skill"] == "Go" for item in everything)
 
     # career_type filter narrows to the single new_comer open posting.
     newcomer = reader.stats(career_type="new_comer")
-    assert {"skill": "Python", "category": "language", "count": 1} in newcomer
-    assert {"skill": "AWS", "category": "infra", "count": 1} in newcomer
+    assert {
+        "skill": "Python",
+        "category": "language",
+        "count": 1,
+        "required_count": 1,
+        "preferred_count": 0,
+        "unspecified_count": 0,
+    } in newcomer
+    assert {
+        "skill": "AWS",
+        "category": "infra",
+        "count": 1,
+        "required_count": 0,
+        "preferred_count": 0,
+        "unspecified_count": 1,
+    } in newcomer

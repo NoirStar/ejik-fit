@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import Protocol
 
 from fastapi import APIRouter, Query
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from ejikfit.db import SessionLocal
 from ejikfit.models import JobPosting, PostingSkill, PostingStatus
+from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
 from .schemas import SkillStatsResponse
 
@@ -26,15 +27,51 @@ class DatabaseSkillStatsReader:
         self, career_type: str | None = None, limit: int = 30
     ) -> list[dict]:
         count_expr = func.count(func.distinct(PostingSkill.posting_id))
+        required_count = func.count(
+            func.distinct(
+                case(
+                    (
+                        PostingSkill.requirement_type == "required",
+                        PostingSkill.posting_id,
+                    ),
+                )
+            )
+        )
+        preferred_count = func.count(
+            func.distinct(
+                case(
+                    (
+                        PostingSkill.requirement_type == "preferred",
+                        PostingSkill.posting_id,
+                    ),
+                )
+            )
+        )
+        unspecified_count = func.count(
+            func.distinct(
+                case(
+                    (
+                        PostingSkill.requirement_type == "unspecified",
+                        PostingSkill.posting_id,
+                    ),
+                )
+            )
+        )
         with self.session_factory() as session:
             statement = (
                 select(
                     PostingSkill.skill,
                     PostingSkill.category,
                     count_expr.label("count"),
+                    required_count.label("required_count"),
+                    preferred_count.label("preferred_count"),
+                    unspecified_count.label("unspecified_count"),
                 )
                 .join(JobPosting, JobPosting.id == PostingSkill.posting_id)
-                .where(JobPosting.status == PostingStatus.OPEN)
+                .where(
+                    JobPosting.status == PostingStatus.OPEN,
+                    PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                )
             )
             if career_type:
                 statement = statement.where(
@@ -46,8 +83,22 @@ class DatabaseSkillStatsReader:
                 .limit(limit)
             )
             return [
-                {"skill": skill, "category": category, "count": count}
-                for skill, category, count in session.execute(statement)
+                {
+                    "skill": skill,
+                    "category": category,
+                    "count": count,
+                    "required_count": required,
+                    "preferred_count": preferred,
+                    "unspecified_count": unspecified,
+                }
+                for (
+                    skill,
+                    category,
+                    count,
+                    required,
+                    preferred,
+                    unspecified,
+                ) in session.execute(statement)
             ]
 
 
