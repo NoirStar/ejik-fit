@@ -36,14 +36,14 @@ describe("Home", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /당신의 기술 스택은 어디로 이어질까/,
+        name: /내 기술이 시장에서 어디로 이어지는지/,
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "스킬 그래프 열기" }),
+      screen.getByRole("link", { name: "대시보드 열기" }),
     ).toHaveAttribute("href", "/skills/graph");
     expect(
-      screen.getByText(/공고 속 기술 조합을 그래프로 해석해/),
+      screen.getByText(/공개 채용공고에서 반복되는 기술 조합을 분석해/),
     ).toBeInTheDocument();
   });
 });

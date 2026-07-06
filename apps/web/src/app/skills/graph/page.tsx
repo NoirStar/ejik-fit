@@ -11,9 +11,9 @@ export const dynamic = "force-dynamic";
 
 
 export const metadata: Metadata = {
-  title: "스킬 그래프",
+  title: "시장 적합도 대시보드",
   description:
-    "보유 기술과 채용공고 요구사항의 관계를 그래프로 탐색합니다.",
+    "보유 기술에서 연결되는 채용시장, 부족한 준비, 관련 공고를 한 화면에서 확인합니다.",
 };
 
 
@@ -49,27 +49,27 @@ export default async function SkillGraphPage() {
   }
 
   return (
-    <main className="graph-page overflow-x-hidden w-full max-w-full">
+    <main className="graph-page dashboard-page overflow-x-hidden w-full max-w-full">
       <LandingMotion />
 
-      <section className="graph-hero">
-        <div className="graph-hero__copy">
+      <section className="dashboard-hero">
+        <div className="dashboard-hero__copy">
           <Link href="/" className="back-link">
             홈으로 돌아가기
           </Link>
-          <p className="eyebrow">Skill Map</p>
-          <h1>스킬 그래프</h1>
+          <p className="eyebrow">Market fit dashboard</p>
+          <h1>스킬에서 시장 요구까지 한 화면으로.</h1>
           <p>
-            보유 기술을 입력하고, 공고 안에서 함께 등장하는 기술과 분야를
-            연결해서 봅니다. 혼합 직무도 하나의 그래프 안에서 해석합니다.
+            그래프는 탐색 도구이고, 목표는 준비 방향입니다. 보유 스킬을 기준으로
+            관련 분야, 부족한 기술, 근거 공고를 함께 봅니다.
           </p>
         </div>
-        <div className="graph-hero__panel gsap-image-reveal">
+        <div className="dashboard-hero__panel gsap-image-reveal">
           <span>현재 기준</span>
           <strong>
             {failed ? "데이터 연결 대기" : `${graph.nodes.length}개 스킬 노드`}
           </strong>
-          <p>공고 근거가 확인된 관계만 표시합니다.</p>
+          <p>공개 공고에서 확인된 관계만 시장 신호로 사용합니다.</p>
         </div>
       </section>
 

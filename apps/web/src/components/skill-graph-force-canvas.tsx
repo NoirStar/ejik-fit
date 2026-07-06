@@ -548,6 +548,9 @@ export function SkillGraphForceCanvas({
       return;
     }
     configureAnimation(graph, display.animate, reduceMotionRef.current);
+    if (!display.animate && reheatKey === 0) {
+      return;
+    }
     if (reduceMotionRef.current) {
       graph.d3ReheatSimulation();
       return;

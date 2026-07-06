@@ -7,10 +7,10 @@ import { usePathname } from "next/navigation";
 
 
 const NAV_ITEMS = [
-  { href: "/skills/graph", label: "스킬맵" },
-  { href: "/#jobs", label: "공고분석" },
-  { href: "/#trends", label: "기술통계" },
-  { href: "/#roadmap", label: "커리어 로드맵" },
+  { href: "/skills/graph", label: "대시보드" },
+  { href: "/#jobs", label: "공고" },
+  { href: "/#trends", label: "트렌드" },
+  { href: "/#roadmap", label: "로드맵" },
 ];
 
 
@@ -55,7 +55,7 @@ export function SiteHeader() {
           })}
         </nav>
         <p className="site-header__tagline">
-          Graph + Dashboard career intelligence
+          채용공고 기반 커리어 인텔리전스
         </p>
         <button
           aria-controls="site-mobile-menu"

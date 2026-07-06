@@ -74,15 +74,17 @@ describe("SkillGraphPage", () => {
     render(await SkillGraphPage());
 
     expect(
-      screen.getByRole("heading", { name: /스킬 그래프/ }),
+      screen.getByRole("heading", { name: /스킬에서 시장 요구까지/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /스킬 관계망/ }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("C++").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ROS2").length).toBeGreaterThan(0);
     expect(screen.getByText("자율주행 SW 엔지니어")).toBeInTheDocument();
-    expect(screen.getByText("보기 필터")).toBeInTheDocument();
-    expect(screen.getByText("분야")).toBeInTheDocument();
-    expect(screen.getByText("표시")).toBeInTheDocument();
-    expect(screen.getByText("물리 값")).toBeInTheDocument();
+    expect(screen.getByText("내 기준점")).toBeInTheDocument();
+    expect(screen.getByText("시장 fit")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "그래프 설정" })).toBeInTheDocument();
     expect(screen.getByLabelText("주변 깊이")).toBeInTheDocument();
   });
 });

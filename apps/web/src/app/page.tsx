@@ -48,21 +48,21 @@ export default async function Home({ searchParams }: HomeProps) {
       : ["Python", "C++", "ROS2", "Linux", "Go", "Kubernetes", "RAG"];
   const scrubWords = [
     "ejik은",
-    "공고가",
-    "요구하는",
-    "조합을",
-    "그래프로",
-    "해석합니다.",
+    "공고",
+    "검색보다",
+    "먼저",
+    "시장",
+    "요구를",
+    "읽습니다.",
     "내",
-    "스킬과",
-    "현업의",
-    "요구사항",
-    "사이에",
-    "있는",
-    "다음",
-    "준비물을",
-    "한눈에",
-    "보여줍니다.",
+    "스킬에서",
+    "관련",
+    "분야와",
+    "부족한",
+    "준비를",
+    "한",
+    "화면으로",
+    "연결합니다.",
   ];
 
   return (
@@ -71,17 +71,18 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="landing-hero">
         <div className="landing-hero__copy">
-          <p className="eyebrow">Graph-first career intelligence</p>
-          <h1>당신의 기술 스택은 어디로 이어질까?</h1>
+          <p className="eyebrow">채용공고 기반 커리어 인텔리전스</p>
+          <h1>내 기술이 시장에서 어디로 이어지는지 봅니다.</h1>
           <p>
-            공고 속 기술 조합을 그래프로 해석해, 다음 준비 방향과 맞는 공고를 보여줍니다.
+            공개 채용공고에서 반복되는 기술 조합을 분석해, 지금 가진 스킬과
+            부족한 준비, 관련 공고를 하나의 대시보드로 연결합니다.
           </p>
           <div className="hero-actions">
             <Link className="button button--primary" href="/skills/graph">
-              스킬 그래프 열기
+              대시보드 열기
             </Link>
             <a className="button button--ghost" href="#jobs">
-              공고 탐색하기
+              공고 보기
             </a>
           </div>
         </div>
@@ -113,17 +114,17 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="bento-section" id="trends" aria-labelledby="bento-title">
         <div className="section-heading">
-          <h2 id="bento-title">공고는 기술 하나가 아니라 조합을 요구합니다.</h2>
+          <h2 id="bento-title">공고 검색보다 먼저 시장 지도를 만듭니다.</h2>
           <p>
-            게임, AI, 보안, ROS, 임베디드처럼 섞이는 직무를 기술 관계와 공고
-            근거로 분해합니다.
+            게임, AI, 보안, ROS, 임베디드처럼 섞이는 직무를 기술 관계와
+            공고 근거로 분해해 다음 준비 방향을 보여줍니다.
           </p>
         </div>
 
         <div className="bento-grid">
           <article className="bento-card bento-card--large group-card">
             <div className="bento-card__media bento-card__media--graph" />
-            <h3>스킬 관계를 먼저 봅니다.</h3>
+            <h3>스킬 관계를 시장 신호로 봅니다.</h3>
             <p>
               C++ 하나를 눌러도 ROS2, RTOS, Unreal, CUDA처럼 분야별로 갈라지는
               다음 선택지가 보입니다.
@@ -274,10 +275,10 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <section className="final-cta" aria-labelledby="final-cta-title">
         <div>
-          <h2 id="final-cta-title">지금 가진 기술에서 다음 방향을 확인하세요.</h2>
+          <h2 id="final-cta-title">지금 가진 기술에서 시장 fit을 확인하세요.</h2>
         </div>
         <Link className="button button--primary" href="/skills/graph">
-          내 스킬 입력하기
+          대시보드에서 보기
         </Link>
       </section>
     </main>
