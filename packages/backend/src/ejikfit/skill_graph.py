@@ -150,7 +150,7 @@ def build_skill_graph(
     career_type: str | None = None,
     limit: int = 30,
 ) -> SkillGraph:
-    bounded_limit = max(1, min(limit, 60))
+    bounded_limit = max(5, min(limit, 60))
     statement = (
         select(JobPosting)
         .options(joinedload(JobPosting.company), selectinload(JobPosting.skills))

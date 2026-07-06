@@ -141,7 +141,7 @@ def test_required_required_edge_scores_above_required_preferred_edge() -> None:
     assert ros_edge.score > linux_edge.score
 
 
-def test_seed_graph_limits_nodes_by_relevance() -> None:
+def test_seed_graph_limits_nodes_by_relevance_with_public_lower_bound() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     with Session(engine) as session:
@@ -162,6 +162,6 @@ def test_seed_graph_limits_nodes_by_relevance() -> None:
 
         graph = build_skill_graph(session, seed="C++", limit=3)
 
-    assert len(graph.nodes) == 3
+    assert len(graph.nodes) == 5
     assert graph.node_by_id("C++").seed is True
-    assert len(graph.edges) == 2
+    assert len(graph.edges) == 4

@@ -115,6 +115,40 @@ def test_analyze_fit_reports_missing_required_and_recommended_skills() -> None:
     assert result.recommended_next_skills[0].supporting_posting_count == 2
 
 
+def test_analyze_fit_does_not_treat_backend_only_gaps_as_robotics_requirements() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _fixture(session)
+        _posting(
+            session,
+            company,
+            source,
+            "1",
+            title="Backend Platform Engineer",
+            career_type="experienced",
+            skills=[
+                ("C++", "language", "required", 1.0),
+                ("Kafka", "backend", "required", 1.0),
+                ("Go", "language", "required", 1.0),
+            ],
+        )
+        session.commit()
+
+        result = analyze_fit(session, owned_skills=["C++"], domains=["robotics"])
+
+    robotics = result.branch_by_domain("robotics")
+    assert result.coverage.matching_posting_count == 0
+    assert robotics.supporting_posting_count == 0
+    assert robotics.covered_skills == ()
+    assert robotics.missing_required_skills == ()
+    assert "Kafka" not in robotics.missing_required_skills
+    assert "Go" not in robotics.missing_required_skills
+    assert {item.skill for item in result.recommended_next_skills}.isdisjoint(
+        {"Kafka", "Go"}
+    )
+
+
 def test_analyze_fit_filters_by_career_type() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

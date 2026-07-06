@@ -64,6 +64,12 @@ def _posting_domains(skills: Sequence[str]) -> set[str]:
     return domains
 
 
+def _requested_skill(skill: str, requested_domains: set[str]) -> bool:
+    if not requested_domains:
+        return True
+    return not set(skill_domains(skill)).isdisjoint(requested_domains)
+
+
 def analyze_fit(
     session: Session,
     *,
@@ -100,32 +106,46 @@ def analyze_fit(
         if owned.isdisjoint(posting_skill_names):
             continue
 
-        posting_domains = _posting_domains(tuple(posting_skill_names))
-        if requested_domains and posting_domains.isdisjoint(requested_domains):
-            continue
-
-        matching_postings += 1
         required = {skill for skill, value in skills.items() if value == "required"}
         preferred = {skill for skill, value in skills.items() if value == "preferred"}
         covered_required = required & owned
         required_total = len(required)
+        missing_req = required - owned
+        missing_pref = preferred - owned
+        missing_domains = _posting_domains(tuple(missing_req | missing_pref))
+        covered = posting_skill_names & owned
+        posting_domains = missing_domains or _posting_domains(tuple(covered))
+        if requested_domains:
+            posting_domains &= requested_domains
+            if not posting_domains:
+                continue
+
+        matching_postings += 1
         if required_total > 0 and len(covered_required) / required_total >= 0.5:
             strong_fit_postings += 1
 
-        missing_req = required - owned
-        missing_pref = preferred - owned
         for skill in missing_req:
+            if not _requested_skill(skill, requested_domains):
+                continue
             missing_required[skill] += 1
             supporting[skill] += 1
         for skill in missing_pref:
+            if not _requested_skill(skill, requested_domains):
+                continue
             missing_preferred[skill] += 1
             supporting[skill] += 1
 
         for domain in posting_domains:
             branch_postings[domain] += 1
-            branch_covered[domain].update(posting_skill_names & owned)
-            branch_missing_required[domain].update(missing_req)
-            branch_missing_preferred[domain].update(missing_pref)
+        for skill in covered:
+            for domain in set(skill_domains(skill)) & posting_domains:
+                branch_covered[domain].add(skill)
+        for skill in missing_req:
+            for domain in set(skill_domains(skill)) & posting_domains:
+                branch_missing_required[domain][skill] += 1
+        for skill in missing_pref:
+            for domain in set(skill_domains(skill)) & posting_domains:
+                branch_missing_preferred[domain][skill] += 1
 
     branches = []
     domain_names = requested_domains or set(branch_postings)
