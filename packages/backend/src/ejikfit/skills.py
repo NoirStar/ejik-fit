@@ -44,9 +44,12 @@ def sync_posting_skills(session: "Session", posting: "JobPosting") -> list[str]:
     """
     from ejikfit.models import PostingSkill
 
-    text = f"{posting.title}\n{posting.description_text or ''}"
-    desired = extract_skills(text)
-    desired_set = set(desired)
+    matches = extract_skill_matches(
+        title=posting.title,
+        description_html=posting.description_html or "",
+        description_text=posting.description_text or "",
+    )
+    desired = {match.skill: match for match in matches}
 
     existing = {
         row.skill: row
@@ -55,18 +58,28 @@ def sync_posting_skills(session: "Session", posting: "JobPosting") -> list[str]:
         )
     }
     for skill, row in existing.items():
-        if skill not in desired_set:
+        if skill not in desired:
             session.delete(row)
-    for skill in desired:
-        if skill not in existing:
-            session.add(
-                PostingSkill(
-                    posting_id=posting.id,
-                    skill=skill,
-                    category=skill_category(skill),
-                )
+    for skill, match in desired.items():
+        row = existing.get(skill)
+        if row is None:
+            row = PostingSkill(
+                posting_id=posting.id,
+                skill=skill,
+                category=match.category,
             )
-    return desired
+            session.add(row)
+        row.category = match.category
+        row.requirement_type = match.requirement_type.value
+        row.evidence_text = match.evidence_text
+        row.confidence = match.confidence
+        row.match_reason = match.match_reason
+
+    return sorted(
+        skill
+        for skill, match in desired.items()
+        if match.confidence >= CONFIRMED_CONFIDENCE
+    )
 
 
 def backfill_all_skills(session: "Session") -> int:

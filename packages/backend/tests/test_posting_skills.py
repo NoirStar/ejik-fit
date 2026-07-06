@@ -107,3 +107,71 @@ def test_sync_updates_when_text_changes() -> None:
         sync_posting_skills(session, posting)
         session.commit()
         assert _skills(session, posting.id) == ["Docker", "Kubernetes"]
+
+
+def test_sync_stores_evidence_type_confidence_and_reason() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        posting = _make_posting(session, "백엔드 엔지니어", "")
+        posting.description_html = (
+            "<h2>자격 요건</h2>"
+            "<ul><li>Go 언어 기반 백엔드 개발 경험</li></ul>"
+        )
+        returned = sync_posting_skills(session, posting)
+        session.commit()
+
+        row = session.scalar(
+            select(PostingSkill).where(PostingSkill.skill == "Go")
+        )
+        assert returned == ["Go"]
+        assert row is not None
+        assert row.requirement_type == "required"
+        assert row.evidence_text == "Go 언어 기반 백엔드 개발 경험"
+        assert row.confidence == 0.95
+        assert row.match_reason == "strict_alias_with_context"
+
+
+def test_sync_preserves_but_does_not_return_low_confidence_candidate() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        posting = _make_posting(session, "개발자", "Go")
+        returned = sync_posting_skills(session, posting)
+        session.commit()
+
+        row = session.scalar(select(PostingSkill))
+        assert returned == []
+        assert row is not None
+        assert row.skill == "Go"
+        assert row.confidence == 0.50
+
+
+def test_sync_updates_evidence_without_duplicating_relation() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        posting = _make_posting(session, "개발자", "")
+        posting.description_html = (
+            "<h2>우대 사항</h2><p>Python 경험자 우대</p>"
+        )
+        sync_posting_skills(session, posting)
+        session.commit()
+
+        posting.description_html = (
+            "<h2>자격 요건</h2><p>Python 개발 경험 필수</p>"
+        )
+        sync_posting_skills(session, posting)
+        session.commit()
+
+        rows = session.scalars(
+            select(PostingSkill).where(
+                PostingSkill.posting_id == posting.id,
+                PostingSkill.skill == "Python",
+            )
+        ).all()
+        assert len(rows) == 1
+        assert rows[0].requirement_type == "required"
+        assert rows[0].evidence_text == "Python 개발 경험 필수"
+        assert rows[0].confidence == 1.0
+        assert rows[0].match_reason == "distinct_alias"

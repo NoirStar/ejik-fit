@@ -20,3 +20,7 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     sql = output.getvalue()
     assert "pg_available_extensions" in sql
     assert "ix_job_postings_pgroonga" in sql
+    assert "requirement_type" in sql
+    assert "evidence_text" in sql
+    assert "confidence" in sql
+    assert "match_reason" in sql

@@ -7,6 +7,7 @@ from sqlalchemy import (
     JSON,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -154,6 +155,14 @@ class PostingSkill(Base):
     )
     skill: Mapped[str] = mapped_column(String(100), index=True)
     category: Mapped[str] = mapped_column(String(50))
+    requirement_type: Mapped[str] = mapped_column(
+        String(20), default="unspecified"
+    )
+    evidence_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    confidence: Mapped[float] = mapped_column(Float, default=0.5)
+    match_reason: Mapped[str] = mapped_column(
+        String(100), default="legacy_backfill"
+    )
 
 
 class JobRevision(Base):
