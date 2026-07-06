@@ -1,6 +1,7 @@
 from ejikfit.skill_catalog import (
     AliasPolicy,
     SKILLS,
+    SKILL_METADATA,
     aliases_requiring_context,
     skill_category,
 )
@@ -62,6 +63,7 @@ def test_same_skill_can_have_aliases_with_different_risk() -> None:
 def test_every_skill_has_kind_and_domains() -> None:
     from ejikfit.skill_catalog import skill_domains, skill_kind
 
+    assert set(SKILL_METADATA) == {skill.canonical for skill in SKILLS}
     for skill in SKILLS:
         assert skill_kind(skill.canonical), skill.canonical
         assert skill_domains(skill.canonical), skill.canonical

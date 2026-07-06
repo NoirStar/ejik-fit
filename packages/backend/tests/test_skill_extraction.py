@@ -92,6 +92,20 @@ def test_rejects_seed_pack_non_technical_collisions(text: str) -> None:
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "rag cloth repair",
+        "rag cloth chain",
+        "rag cloth painting",
+    ],
+)
+def test_rejects_rag_when_non_technical_text_only_contains_ai_substring(
+    text: str,
+) -> None:
+    assert confirmed_names(text) == []
+
+
+@pytest.mark.parametrize(
     ("text", "expected"),
     [
         ("C/C++ 프로그래밍 능력", ["C", "C++"]),

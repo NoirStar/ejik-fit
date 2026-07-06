@@ -318,7 +318,7 @@ SKILLS: tuple[SkillDef, ...] = (
         (
             contextual(
                 "rag",
-                context_terms=("llm", "검색", "retrieval", "generation", "engine", "엔진", "ai"),
+                context_terms=("llm", "검색", "retrieval", "generation", "engine", "엔진"),
             ),
         ),
     ),
