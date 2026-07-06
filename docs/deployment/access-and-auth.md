@@ -203,6 +203,17 @@ alembic upgrade head   →   ejikfit seed-sources   →   ejikfit crawl-all
 - 필요한 secret 5개가 모두 있어야 crawl까지 성공한다(원문 스냅샷 저장에 S3 필요).
 - 실행 로그: `gh run list --workflow=crawl.yml` → `gh run view <id> --log`
 
+문맥 기반 스킬 근거 기능이 `main`에 병합된 뒤 즉시 운영 데이터에 반영하려면
+다음 명령으로 수집 workflow를 한 번 수동 실행한다.
+
+```bash
+gh workflow run crawl.yml --repo NoirStar/ejik-fit
+```
+
+workflow는 `alembic upgrade head`를 먼저 실행한 뒤 모든 공개 출처를 다시
+수집한다. 각 공고를 처리할 때 스킬의 필수·우대 유형, 근거 문장, 규칙 기반
+신뢰도를 다시 계산하므로 별도 운영 DB 수동 수정은 필요하지 않다.
+
 ---
 
 ## 6. 지금 상태 / 남은 일
