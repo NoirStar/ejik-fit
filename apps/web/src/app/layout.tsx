@@ -13,11 +13,11 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: {
-    default: "이직핏 | 기업 공식 채용공고 탐색",
+    default: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
     template: "%s | 이직핏",
   },
   description:
-    "한국 기술기업의 공식 채용페이지를 모아 검색하고 비교합니다.",
+    "한국 기술기업의 공식 채용공고를 분석해 기술 스택, 인접 분야, 부족한 준비 항목을 그래프로 보여줍니다.",
 };
 
 
@@ -30,9 +30,15 @@ export default function RootLayout({
         <header className="site-header">
           <div className="site-header__inner">
             <Link href="/" className="brand" aria-label="이직핏 홈">
-              이직핏
+              ejik
             </Link>
-            <p>기업이 올린 공고를, 기업에서 직접.</p>
+            <nav className="site-nav" aria-label="주요 탐색">
+              <Link href="/skills/graph">스킬맵</Link>
+              <Link href="/#jobs">공고분석</Link>
+              <Link href="/#trends">기술통계</Link>
+              <Link href="/#roadmap">커리어 로드맵</Link>
+            </nav>
+            <p>Graph + Dashboard career intelligence</p>
           </div>
         </header>
         {children}
