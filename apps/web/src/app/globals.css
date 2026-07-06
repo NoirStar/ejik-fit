@@ -657,6 +657,13 @@ main,
   font-variant-numeric: tabular-nums;
 }
 
+.skill-ranking__breakdown {
+  display: block;
+  margin: -2px 0 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .skill-ranking__bar {
   height: 6px;
   min-width: 6px;
@@ -664,30 +671,50 @@ main,
   background: var(--accent);
 }
 
-.job-skills {
-  margin-top: 28px;
+.skill-evidence {
+  padding: 48px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.job-skills h2 {
-  font-size: 18px;
+.skill-evidence__group + .skill-evidence__group {
+  margin-top: 36px;
+}
+
+.skill-evidence__group h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
   letter-spacing: -0.03em;
-  margin: 0 0 14px;
 }
 
-.skill-tags {
+.skill-evidence__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  border-top: 1px solid var(--line);
 }
 
-.skill-tag {
-  padding: 6px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  font-size: 14px;
-  font-weight: 560;
+.skill-evidence__item {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(0, 1fr);
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.skill-evidence__name {
+  color: var(--accent);
+  font-weight: 720;
+}
+
+.skill-evidence__quote {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+@media (max-width: 767px) {
+  .skill-evidence__item {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }

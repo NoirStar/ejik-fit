@@ -35,6 +35,10 @@ export function SkillRanking({ stats }: { stats: SkillStat[] }) {
               </span>
               <span className="skill-ranking__count">{stat.count}건</span>
             </div>
+            <span className="skill-ranking__breakdown">
+              필수 {stat.required_count ?? 0} · 우대{" "}
+              {stat.preferred_count ?? 0}
+            </span>
             <div
               className="skill-ranking__bar"
               style={{ width: `${Math.round((stat.count / max) * 100)}%` }}

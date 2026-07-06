@@ -12,12 +12,22 @@ export type PostingSummary = {
   last_verified_at: string;
 };
 
+export type SkillDetail = {
+  skill: string;
+  category: string;
+  requirement_type: "required" | "preferred" | "unspecified";
+  evidence_text: string | null;
+  confidence: number;
+  match_reason: string;
+};
+
 export type PostingDetail = PostingSummary & {
   description_html: string;
   description_text: string;
   opens_at: string | null;
   closes_at: string | null;
   skills: string[];
+  skill_details?: SkillDetail[];
 };
 
 export type PostingListResponse = {
@@ -29,6 +39,9 @@ export type SkillStat = {
   skill: string;
   category: string;
   count: number;
+  required_count?: number;
+  preferred_count?: number;
+  unspecified_count?: number;
 };
 
 export type SkillStatsResponse = {
