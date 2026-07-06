@@ -53,3 +53,50 @@ class SkillStat(BaseModel):
 class SkillStatsResponse(BaseModel):
     items: list[SkillStat]
     total: int
+
+
+class SkillGraphNode(BaseModel):
+    id: str
+    label: str
+    category: str
+    kind: str
+    domains: list[str]
+    demand_count: int
+    required_count: int
+    preferred_count: int
+    unspecified_count: int
+    owned: bool = False
+    seed: bool = False
+
+
+class SkillGraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    score: float
+    cooccurrence_count: int
+    required_pair_count: int
+    supporting_posting_ids: list[str]
+
+
+class SkillGraphEvidence(BaseModel):
+    posting_id: str
+    title: str
+    company_name: str
+    skills: list[str]
+    required: list[str]
+    preferred: list[str]
+    unspecified: list[str]
+
+
+class SkillGraphMeta(BaseModel):
+    limit: int
+    min_confidence: float
+
+
+class SkillGraphResponse(BaseModel):
+    seed: str | None = None
+    nodes: list[SkillGraphNode]
+    edges: list[SkillGraphEdge]
+    evidence: list[SkillGraphEvidence]
+    meta: SkillGraphMeta
