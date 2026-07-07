@@ -4935,3 +4935,197 @@ body:has(.daily-dashboard-page) {
     padding: 0.875rem;
   }
 }
+
+/* Redesign QA pass: complete light/dark theming and responsive alignment */
+body:has(.daily-dashboard-page),
+body:has(.dashboard-app-page) {
+  color-scheme: light dark;
+}
+
+body:has(.dashboard-app-page) {
+  background: #eef3fb;
+}
+
+body:has(.daily-dashboard-page) {
+  background: #f6f8fc;
+}
+
+.daily-dashboard-page,
+.daily-shell {
+  --daily-control: #ffffff;
+  --daily-card: #ffffff;
+  --daily-card-muted: #f7fbff;
+  --daily-soft-border: #dbe8ff;
+  --daily-success-bg: #f0fdf4;
+  --daily-warning-bg: #fffaf0;
+  --daily-warning-border: #fde3b2;
+  --daily-warning-text: #8a4b00;
+  --daily-danger-bg: #fff7ed;
+  --daily-danger-border: #fed7aa;
+  --daily-danger-text: #c2410c;
+}
+
+.daily-dashboard-page {
+  background:
+    radial-gradient(circle at 0 0, rgb(23 105 255 / 0.07), transparent 24rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--daily-surface) 68%, var(--daily-bg)) 0, var(--daily-bg) 28rem);
+}
+
+.daily-rail {
+  background: color-mix(in srgb, var(--daily-card) 94%, transparent);
+}
+
+.daily-topbar,
+.daily-search input,
+.daily-filter-button,
+.daily-icon-button,
+.daily-user-pill,
+.daily-summary-card,
+.recent-fit-panel,
+.job-inspector,
+.market-signal-card,
+.fit-job-row,
+.job-inspector__actions a + a {
+  background: var(--daily-card);
+}
+
+.daily-nav button.is-disabled small {
+  background: var(--daily-surface-muted);
+}
+
+.daily-stack-row b,
+.fit-job-row__skills b,
+.job-inspector__chips span {
+  border-color: var(--daily-soft-border);
+  background: var(--daily-card-muted);
+}
+
+.daily-alert {
+  border-color: var(--daily-warning-border);
+  background: var(--daily-warning-bg);
+  color: var(--daily-warning-text);
+}
+
+.daily-summary-card em {
+  background: var(--daily-success-bg);
+}
+
+.job-inspector__chips--missing span {
+  border-color: var(--daily-danger-border);
+  background: var(--daily-danger-bg);
+  color: var(--daily-danger-text);
+}
+
+.fit-job-row:hover,
+.fit-job-row.is-selected {
+  background: color-mix(in srgb, var(--daily-accent) 7%, var(--daily-card));
+}
+
+@media (prefers-color-scheme: dark) {
+  body:has(.dashboard-app-page) {
+    background: #050b14;
+  }
+
+  body:has(.daily-dashboard-page) {
+    color-scheme: dark;
+    background: #07111f;
+  }
+
+  .daily-dashboard-page,
+  .daily-shell {
+    --daily-bg: #07111f;
+    --daily-surface: #0d192b;
+    --daily-surface-muted: #13223a;
+    --daily-canvas: #0a1525;
+    --daily-line: #263954;
+    --daily-line-strong: #36506f;
+    --daily-text: #edf4ff;
+    --daily-muted: #a7b5ca;
+    --daily-faint: #78889f;
+    --daily-accent: #72a8ff;
+    --daily-accent-soft: rgb(114 168 255 / 0.16);
+    --daily-good: #4ad39d;
+    --daily-warn: #f0b15f;
+    --daily-danger: #ff8a74;
+    --daily-control: #0f1d31;
+    --daily-card: #0e1a2c;
+    --daily-card-muted: #12233b;
+    --daily-soft-border: rgb(114 168 255 / 0.24);
+    --daily-success-bg: rgb(74 211 157 / 0.14);
+    --daily-warning-bg: rgb(240 177 95 / 0.12);
+    --daily-warning-border: rgb(240 177 95 / 0.34);
+    --daily-warning-text: #ffd29a;
+    --daily-danger-bg: rgb(255 138 116 / 0.13);
+    --daily-danger-border: rgb(255 138 116 / 0.32);
+    --daily-danger-text: #ffb09f;
+    --daily-shadow: 0 1rem 2.75rem rgb(0 0 0 / 0.24);
+    --daily-shadow-soft: 0 0.75rem 2rem rgb(0 0 0 / 0.18);
+  }
+
+  .daily-dashboard-page {
+    background:
+      radial-gradient(circle at 0 0, rgb(79 130 255 / 0.18), transparent 24rem),
+      radial-gradient(circle at 92% 6%, rgb(74 211 157 / 0.10), transparent 22rem),
+      linear-gradient(180deg, #0a1627 0, var(--daily-bg) 28rem);
+  }
+
+  .daily-rail {
+    background: rgb(9 18 32 / 0.94);
+    box-shadow: 0.5rem 0 2rem rgb(0 0 0 / 0.18);
+  }
+
+  .daily-brand-mark {
+    background: linear-gradient(135deg, #72a8ff 0%, #2c6de4 100%);
+    color: #f8fbff;
+  }
+
+  .daily-nav a.is-active {
+    color: #061225;
+  }
+
+  .daily-nav a:hover {
+    background: color-mix(in srgb, var(--daily-accent) 10%, var(--daily-card));
+  }
+
+  .daily-search input::placeholder {
+    color: #71829a;
+  }
+
+  .daily-filter-button:hover,
+  .daily-icon-button:hover,
+  .job-inspector__actions a + a:hover {
+    background: var(--daily-accent-soft);
+  }
+
+  .recent-fit-panel__header > strong,
+  .daily-stack-row b,
+  .fit-job-row__skills b,
+  .job-inspector__chips span {
+    color: var(--daily-accent);
+  }
+
+  .job-inspector__brief-list li,
+  .job-inspector__section,
+  .market-signal-card li {
+    background: var(--daily-canvas);
+  }
+}
+
+@media (max-width: 1100px) {
+  .detail-page .job-detail {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.detail-page {
+  overflow-wrap: anywhere;
+}
+
+.job-detail {
+  max-width: 100%;
+}
+
+.job-description div {
+  overflow-wrap: anywhere;
+}
