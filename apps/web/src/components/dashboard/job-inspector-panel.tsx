@@ -70,10 +70,14 @@ function SelectedPanel({ job }: { job: DashboardJob }) {
       </section>
 
       <div className="job-inspector__actions">
-        <Link href={`/jobs/${job.id}`}>상세 보기</Link>
+        <Link href={`/jobs/${job.id}`}>
+          상세 보기
+          <span aria-hidden="true">›</span>
+        </Link>
         {job.sourceUrl && (
           <a href={job.sourceUrl} target="_blank" rel="noreferrer">
             원문 보기
+            <span aria-hidden="true">↗</span>
           </a>
         )}
       </div>
@@ -85,7 +89,9 @@ function SelectedPanel({ job }: { job: DashboardJob }) {
 export function JobInspectorPanel({ selectedJob, jobs }: JobInspectorPanelProps) {
   return (
     <aside className="job-inspector" aria-label="공고 상세 패널">
-      {selectedJob ? <SelectedPanel job={selectedJob} /> : <DefaultPanel jobs={jobs} />}
+      <div className="daily-card-core job-inspector__core">
+        {selectedJob ? <SelectedPanel job={selectedJob} /> : <DefaultPanel jobs={jobs} />}
+      </div>
     </aside>
   );
 }

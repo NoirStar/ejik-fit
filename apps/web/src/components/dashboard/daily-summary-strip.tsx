@@ -31,8 +31,10 @@ export function DailySummaryStrip({ summary }: DailySummaryStripProps) {
     <section className="daily-summary" aria-label="오늘 요약">
       {SUMMARY_ITEMS.map((item) => (
         <article className="daily-summary-card" key={item.key}>
-          <span>{item.label}</span>
-          <strong>{summary[item.key]}</strong>
+          <div className="daily-card-core daily-summary-card__core">
+            <span>{item.label}</span>
+            <strong>{summary[item.key]}</strong>
+          </div>
         </article>
       ))}
     </section>

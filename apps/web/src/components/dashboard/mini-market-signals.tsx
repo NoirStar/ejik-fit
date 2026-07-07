@@ -16,17 +16,19 @@ function SignalColumn({
 }) {
   return (
     <article className="market-signal-card">
-      <h2>{title}</h2>
-      <ul>
-        {signals.map((signal) => (
-          <li key={`${title}-${signal.label}`}>
-            <strong>{signal.label}</strong>
-            <span>{signal.value}</span>
-            <small>{signal.caption}</small>
-          </li>
-        ))}
-        {signals.length === 0 && <li>충분한 신호를 수집하는 중입니다.</li>}
-      </ul>
+      <div className="daily-card-core market-signal-card__core">
+        <h2>{title}</h2>
+        <ul>
+          {signals.map((signal) => (
+            <li key={`${title}-${signal.label}`}>
+              <strong>{signal.label}</strong>
+              <span>{signal.value}</span>
+              <small>{signal.caption}</small>
+            </li>
+          ))}
+          {signals.length === 0 && <li>충분한 신호를 수집하는 중입니다.</li>}
+        </ul>
+      </div>
     </article>
   );
 }

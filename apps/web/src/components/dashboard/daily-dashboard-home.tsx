@@ -1,5 +1,6 @@
 "use client";
 
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import { DashboardShell } from "./app-shell";
@@ -61,6 +62,9 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
           </div>
           <label className="daily-search" htmlFor="daily-search">
             <span>검색</span>
+            <i aria-hidden="true">
+              <MagnifyingGlass size={16} weight="light" />
+            </i>
             <input
               id="daily-search"
               type="search"
@@ -81,36 +85,38 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
 
         <section className="daily-content-grid">
           <section className="recent-fit-panel" id="jobs" aria-labelledby="recent-fit-title">
-            <header className="recent-fit-panel__header">
-              <div>
-                <span>최근 맞춤 공고</span>
-                <h2 id="recent-fit-title">최근 맞춤 공고</h2>
-                <p>{modeMessage(model.mode)}</p>
-              </div>
-              <strong>{filteredJobs.length}개</strong>
-            </header>
+            <div className="daily-card-core recent-fit-panel__core">
+              <header className="recent-fit-panel__header">
+                <div>
+                  <span>최근 맞춤 공고</span>
+                  <h2 id="recent-fit-title">최근 맞춤 공고</h2>
+                  <p>{modeMessage(model.mode)}</p>
+                </div>
+                <strong>{filteredJobs.length}개</strong>
+              </header>
 
-            {filteredJobs.length > 0 ? (
-              <ul className="fit-job-list" aria-label="최근 맞춤 공고 목록">
-                {filteredJobs.map((job) => (
-                  <FitJobRow
-                    job={job}
-                    key={job.id}
-                    selected={selectedJobId === job.id}
-                    onSelect={setSelectedJobId}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <div className="daily-empty" role="status">
-                <h3>{query ? "검색 결과가 없습니다." : "표시할 공고가 없습니다."}</h3>
-                <p>
-                  {query
-                    ? "다른 기술, 직무, 기업명으로 다시 검색해보세요."
-                    : "내 스택을 입력하거나 수집 데이터가 쌓이면 맞춤 공고가 표시됩니다."}
-                </p>
-              </div>
-            )}
+              {filteredJobs.length > 0 ? (
+                <ul className="fit-job-list" aria-label="최근 맞춤 공고 목록">
+                  {filteredJobs.map((job) => (
+                    <FitJobRow
+                      job={job}
+                      key={job.id}
+                      selected={selectedJobId === job.id}
+                      onSelect={setSelectedJobId}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="daily-empty" role="status">
+                  <h3>{query ? "검색 결과가 없습니다." : "표시할 공고가 없습니다."}</h3>
+                  <p>
+                    {query
+                      ? "다른 기술, 직무, 기업명으로 다시 검색해보세요."
+                      : "내 스택을 입력하거나 수집 데이터가 쌓이면 맞춤 공고가 표시됩니다."}
+                  </p>
+                </div>
+              )}
+            </div>
           </section>
 
           <JobInspectorPanel selectedJob={selectedJob} jobs={model.jobs} />

@@ -122,7 +122,8 @@ body:has(.daily-dashboard-page) .site-footer {
   gap: 6px;
 }
 
-.daily-nav a {
+.daily-nav a,
+.daily-nav button {
   min-height: 42px;
   display: flex;
   align-items: center;
@@ -130,9 +131,12 @@ body:has(.daily-dashboard-page) .site-footer {
   padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 12px;
+  background: transparent;
   color: var(--daily-muted);
+  cursor: pointer;
   font-size: 14px;
   font-weight: 720;
+  font-family: inherit;
   text-decoration: none;
   transition:
     background 180ms var(--daily-ease),
@@ -147,6 +151,18 @@ body:has(.daily-dashboard-page) .site-footer {
   background: color-mix(in srgb, var(--daily-accent) 11%, transparent);
   color: var(--daily-accent);
   transform: translateY(-1px);
+}
+
+.daily-nav button.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.54;
+}
+
+.daily-nav button.is-disabled small {
+  margin-left: auto;
+  color: var(--daily-faint);
+  font-size: 10px;
+  font-weight: 760;
 }
 
 .daily-main {
@@ -3030,4 +3046,869 @@ main.daily-dashboard-page main.daily-main {
 main.daily-dashboard-page .daily-shell {
   width: 100%;
   max-width: none;
+}
+
+/* Premium daily dashboard pass: soft structuralism + asymmetrical product bento */
+.daily-dashboard-page,
+.daily-shell {
+  --daily-bg: #eef2f7;
+  --daily-surface: #fbfcff;
+  --daily-surface-muted: #edf2f8;
+  --daily-canvas: #f7f9fd;
+  --daily-line: rgb(41 54 78 / 0.10);
+  --daily-line-strong: rgb(41 54 78 / 0.17);
+  --daily-text: #0d1523;
+  --daily-muted: #5d6980;
+  --daily-faint: #8a96aa;
+  --daily-accent: #1c6cff;
+  --daily-good: #148865;
+  --daily-warn: #a9651a;
+  --daily-radius: 24px;
+  --daily-radius-lg: 30px;
+  --daily-bezel: rgb(255 255 255 / 0.72);
+  --daily-core: rgb(255 255 255 / 0.86);
+  --daily-shadow: 0 28px 86px rgb(50 65 94 / 0.13);
+  --daily-shadow-soft: 0 18px 54px rgb(52 67 96 / 0.09);
+  --daily-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-dashboard-page,
+  .daily-shell {
+    --daily-bg: #050912;
+    --daily-surface: #0b1422;
+    --daily-surface-muted: #111c2d;
+    --daily-canvas: #07101c;
+    --daily-line: rgb(183 199 229 / 0.11);
+    --daily-line-strong: rgb(183 199 229 / 0.20);
+    --daily-text: #f3f7ff;
+    --daily-muted: #a4afc1;
+    --daily-faint: #778399;
+    --daily-accent: #72a2ff;
+    --daily-good: #37d099;
+    --daily-warn: #f1ac5e;
+    --daily-bezel: rgb(255 255 255 / 0.065);
+    --daily-core: rgb(10 18 30 / 0.92);
+    --daily-shadow: 0 32px 100px rgb(0 0 0 / 0.38);
+    --daily-shadow-soft: 0 20px 60px rgb(0 0 0 / 0.26);
+  }
+}
+
+.daily-dashboard-page {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background:
+    radial-gradient(circle at 18% 4%, color-mix(in srgb, var(--daily-accent) 15%, transparent), transparent 30rem),
+    radial-gradient(circle at 92% 6%, color-mix(in srgb, var(--daily-good) 10%, transparent), transparent 28rem),
+    linear-gradient(135deg, color-mix(in srgb, var(--daily-surface-muted) 70%, white), var(--daily-bg));
+}
+
+.daily-dashboard-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.032;
+  background-image:
+    linear-gradient(90deg, #111 1px, transparent 1px),
+    linear-gradient(#111 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-dashboard-page {
+    background:
+      radial-gradient(circle at 19% 3%, rgb(79 119 255 / 0.22), transparent 30rem),
+      radial-gradient(circle at 96% 2%, rgb(41 201 145 / 0.12), transparent 29rem),
+      linear-gradient(145deg, #060b15, var(--daily-bg));
+  }
+
+  .daily-dashboard-page::before {
+    opacity: 0.06;
+    background-image:
+      linear-gradient(90deg, #fff 1px, transparent 1px),
+      linear-gradient(#fff 1px, transparent 1px);
+  }
+}
+
+.daily-shell {
+  grid-template-columns: 236px minmax(0, 1fr);
+}
+
+.daily-rail {
+  gap: 26px;
+  padding: 20px 16px;
+  border-right: 1px solid color-mix(in srgb, var(--daily-line-strong) 72%, transparent);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.34)),
+    color-mix(in srgb, var(--daily-bg) 78%, white 22%);
+  box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.54);
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-rail {
+    background:
+      linear-gradient(180deg, rgb(12 21 36 / 0.92), rgb(8 13 23 / 0.78)),
+      var(--daily-bg);
+    box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.045);
+  }
+}
+
+.daily-brand {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 32% 22%, rgb(255 255 255 / 0.38), transparent 38%),
+    linear-gradient(135deg, var(--daily-accent), #0854d9);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 18px 38px color-mix(in srgb, var(--daily-accent) 28%, transparent);
+}
+
+.daily-nav {
+  gap: 8px;
+}
+
+.daily-nav a,
+.daily-nav button {
+  min-height: 46px;
+  border-radius: 16px;
+  font-weight: 760;
+  letter-spacing: -0.018em;
+  transition:
+    transform 520ms var(--daily-ease),
+    background 520ms var(--daily-ease),
+    border-color 520ms var(--daily-ease),
+    color 520ms var(--daily-ease),
+    box-shadow 520ms var(--daily-ease);
+}
+
+.daily-nav a:hover,
+.daily-nav button:not(.is-disabled):hover {
+  transform: translate3d(2px, 0, 0);
+}
+
+.daily-nav a.is-active {
+  border-color: color-mix(in srgb, var(--daily-accent) 26%, var(--daily-line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--daily-accent) 18%, transparent), transparent 64%),
+    color-mix(in srgb, var(--daily-surface) 72%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.56),
+    0 12px 28px color-mix(in srgb, var(--daily-accent) 12%, transparent);
+}
+
+.daily-nav button.is-disabled {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--daily-muted);
+  opacity: 0.46;
+  transform: none;
+}
+
+.daily-nav button.is-disabled small {
+  min-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--daily-line) 80%, transparent);
+  border-radius: 999px;
+  color: var(--daily-faint);
+  font-size: 9px;
+  font-weight: 820;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-nav a.is-active {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.10),
+      0 14px 34px rgb(0 0 0 / 0.22);
+  }
+}
+
+.daily-main {
+  gap: 18px;
+  padding: clamp(22px, 2.2vw, 34px);
+}
+
+.daily-topbar {
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 420px);
+  gap: clamp(18px, 3vw, 48px);
+}
+
+.daily-topbar p,
+.recent-fit-panel__header span,
+.job-inspector__header span {
+  display: inline-flex;
+  width: max-content;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--daily-line) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--daily-surface) 52%, transparent);
+  color: var(--daily-faint);
+  font-size: 10px;
+  font-weight: 780;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.daily-topbar h1 {
+  max-width: 880px;
+  margin-top: 10px;
+  font-size: clamp(31px, 2.8vw, 46px);
+  font-weight: 860;
+  line-height: 1;
+  letter-spacing: -0.068em;
+}
+
+.daily-search {
+  position: relative;
+  align-self: end;
+  gap: 8px;
+}
+
+.daily-search i {
+  position: absolute;
+  left: 16px;
+  bottom: 15px;
+  display: grid;
+  color: var(--daily-faint);
+  pointer-events: none;
+}
+
+.daily-search input {
+  min-height: 52px;
+  padding: 0 16px 0 44px;
+  border: 1px solid color-mix(in srgb, var(--daily-line-strong) 76%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.84), rgb(255 255 255 / 0.64)),
+    var(--daily-surface);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.82),
+    0 18px 48px rgb(49 65 95 / 0.08);
+  font-size: 15px;
+  transition:
+    transform 520ms var(--daily-ease),
+    border-color 520ms var(--daily-ease),
+    box-shadow 520ms var(--daily-ease);
+}
+
+.daily-search input:focus {
+  border-color: color-mix(in srgb, var(--daily-accent) 42%, var(--daily-line));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.86),
+    0 0 0 5px color-mix(in srgb, var(--daily-accent) 10%, transparent),
+    0 24px 64px rgb(49 65 95 / 0.10);
+  outline: 0;
+  transform: translate3d(0, -1px, 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-search input {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.025)),
+      var(--daily-surface);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.08),
+      0 18px 48px rgb(0 0 0 / 0.24);
+  }
+}
+
+.daily-alert {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-color: color-mix(in srgb, var(--daily-warn) 26%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--daily-warn) 9%, transparent), transparent 58%),
+    color-mix(in srgb, var(--daily-surface) 82%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.52);
+}
+
+.daily-summary {
+  gap: clamp(12px, 1vw, 18px);
+}
+
+.daily-summary-card,
+.recent-fit-panel,
+.job-inspector,
+.market-signal-card {
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--daily-line-strong) 64%, transparent);
+  border-radius: var(--daily-radius-lg);
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.64), rgb(255 255 255 / 0.22)),
+    color-mix(in srgb, var(--daily-bezel) 82%, transparent);
+  box-shadow: var(--daily-shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-summary-card,
+  .recent-fit-panel,
+  .job-inspector,
+  .market-signal-card {
+    background:
+      linear-gradient(145deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.018)),
+      var(--daily-bezel);
+  }
+}
+
+.daily-card-core {
+  min-height: 100%;
+  border: 1px solid color-mix(in srgb, var(--daily-line) 72%, transparent);
+  border-radius: calc(var(--daily-radius-lg) - 7px);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.50)),
+    var(--daily-core);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.74),
+    inset 0 -1px 0 rgb(20 35 60 / 0.035);
+}
+
+@media (prefers-color-scheme: dark) {
+  .daily-card-core {
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.045), rgb(255 255 255 / 0.018)),
+      var(--daily-core);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.07),
+      inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  }
+}
+
+.daily-summary-card {
+  min-height: 98px;
+}
+
+.daily-summary-card__core {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  padding: 18px;
+}
+
+.daily-summary-card span {
+  color: var(--daily-muted);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.daily-summary-card strong {
+  font-size: clamp(28px, 2.1vw, 38px);
+  font-weight: 880;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.daily-content-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 360px);
+  gap: clamp(16px, 1.4vw, 22px);
+}
+
+.recent-fit-panel,
+.job-inspector {
+  overflow: clip;
+}
+
+.recent-fit-panel__core {
+  overflow: hidden;
+}
+
+.recent-fit-panel__header {
+  min-height: 116px;
+  padding: 20px 20px 18px;
+  border-bottom: 1px solid color-mix(in srgb, var(--daily-line) 72%, transparent);
+}
+
+.recent-fit-panel__header h2,
+.job-inspector__header h2,
+.market-signal-card h2 {
+  margin-top: 10px;
+  font-size: 20px;
+  font-weight: 850;
+  letter-spacing: -0.055em;
+}
+
+.recent-fit-panel__header p,
+.job-inspector__header p {
+  margin-top: 8px;
+  color: var(--daily-muted);
+  line-height: 1.58;
+}
+
+.recent-fit-panel__header > strong {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid color-mix(in srgb, var(--daily-accent) 20%, transparent);
+  background:
+    radial-gradient(circle at 32% 20%, rgb(255 255 255 / 0.62), transparent 42%),
+    color-mix(in srgb, var(--daily-accent) 11%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.42);
+  font-weight: 820;
+}
+
+.fit-job-list {
+  gap: 4px;
+  padding: 8px;
+}
+
+.fit-job-list li + li {
+  border-top: 0;
+}
+
+.fit-job-row {
+  grid-template-columns: minmax(220px, 1.45fr) minmax(170px, 0.78fr) minmax(130px, 0.48fr);
+  min-height: 70px;
+  padding: 14px 14px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  transition:
+    transform 560ms var(--daily-ease),
+    border-color 560ms var(--daily-ease),
+    background 560ms var(--daily-ease),
+    box-shadow 560ms var(--daily-ease);
+}
+
+.fit-job-row:hover,
+.fit-job-row.is-selected {
+  border-color: color-mix(in srgb, var(--daily-accent) 18%, var(--daily-line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--daily-accent) 7%, transparent), transparent 62%),
+    color-mix(in srgb, var(--daily-surface-muted) 46%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.58),
+    0 14px 34px rgb(47 62 92 / 0.08);
+  transform: translate3d(0, -1px, 0);
+}
+
+.fit-job-row:active {
+  transform: translate3d(0, 0, 0) scale(0.996);
+}
+
+.fit-job-row__main strong {
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.fit-job-row__main span,
+.fit-job-row__meta {
+  color: var(--daily-muted);
+  font-size: 13px;
+}
+
+.fit-job-row__skills {
+  justify-content: flex-end;
+}
+
+.fit-job-row__skills b,
+.job-inspector__chips span {
+  min-height: 30px;
+  padding: 0 11px;
+  border-color: color-mix(in srgb, var(--daily-line-strong) 68%, transparent);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.52), rgb(255 255 255 / 0.20)),
+    color-mix(in srgb, var(--daily-surface-muted) 86%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.52);
+  font-weight: 800;
+}
+
+.job-inspector {
+  padding: 6px;
+  top: clamp(18px, 2vw, 28px);
+}
+
+.job-inspector__core {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.job-inspector__header {
+  gap: 0;
+}
+
+.job-inspector__brief-list,
+.job-inspector__section ul,
+.market-signal-card ul {
+  gap: 8px;
+}
+
+.job-inspector__brief-list li,
+.job-inspector__section,
+.market-signal-card li {
+  border-color: color-mix(in srgb, var(--daily-line-strong) 58%, transparent);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.42), rgb(255 255 255 / 0.18)),
+    color-mix(in srgb, var(--daily-surface-muted) 60%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.38);
+}
+
+.job-inspector__brief-list li {
+  gap: 5px;
+  padding: 14px;
+}
+
+.job-inspector__section {
+  padding: 14px;
+}
+
+.job-inspector__actions {
+  gap: 10px;
+}
+
+.job-inspector__actions a {
+  min-height: 44px;
+  gap: 8px;
+  justify-content: center;
+  border-color: transparent;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 32% 20%, rgb(255 255 255 / 0.24), transparent 38%),
+    linear-gradient(135deg, var(--daily-accent), #0755dc);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 16px 34px color-mix(in srgb, var(--daily-accent) 23%, transparent);
+  transition:
+    transform 520ms var(--daily-ease),
+    box-shadow 520ms var(--daily-ease);
+}
+
+.job-inspector__actions a span {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  transition: transform 520ms var(--daily-ease);
+}
+
+.job-inspector__actions a:hover {
+  transform: translate3d(0, -1px, 0);
+}
+
+.job-inspector__actions a:hover span {
+  transform: translate3d(2px, -1px, 0) scale(1.04);
+}
+
+.job-inspector__actions a:active {
+  transform: scale(0.985);
+}
+
+.job-inspector__actions a + a {
+  border: 1px solid color-mix(in srgb, var(--daily-line-strong) 72%, transparent);
+  background: color-mix(in srgb, var(--daily-surface) 58%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.44);
+  color: var(--daily-text);
+}
+
+.market-signals {
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 1.4vw, 22px);
+}
+
+.market-signal-card {
+  padding: 6px;
+}
+
+.market-signal-card__core {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.market-signal-card h2 {
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.052em;
+}
+
+.market-signal-card li {
+  padding: 13px 14px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .daily-summary-card,
+  .recent-fit-panel,
+  .job-inspector,
+  .market-signal-card,
+  .daily-alert {
+    animation: daily-panel-in 780ms var(--daily-ease) both;
+  }
+
+  .daily-summary-card:nth-child(2) {
+    animation-delay: 70ms;
+  }
+
+  .daily-summary-card:nth-child(3) {
+    animation-delay: 140ms;
+  }
+
+  .daily-summary-card:nth-child(4) {
+    animation-delay: 210ms;
+  }
+}
+
+@keyframes daily-panel-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (max-width: 1180px) {
+  .daily-rail {
+    padding: 16px 12px;
+  }
+
+  .daily-content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .job-inspector {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .daily-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-rail {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: auto;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto;
+    align-items: center;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--daily-line);
+    background: color-mix(in srgb, var(--daily-surface) 86%, transparent);
+  }
+
+  .daily-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(42px, 1fr);
+    overflow-x: auto;
+  }
+
+  .daily-nav a,
+  .daily-nav button {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .daily-nav span,
+  .daily-nav small {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .daily-main {
+    padding: 16px;
+  }
+
+  .daily-topbar,
+  .market-signals {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .daily-topbar h1 {
+    font-size: clamp(32px, 9vw, 42px);
+  }
+
+  .fit-job-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .fit-job-row__skills {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .daily-rail {
+    padding: 9px 10px;
+  }
+
+  .daily-brand {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
+  .daily-nav {
+    gap: 6px;
+  }
+
+  .daily-nav a,
+  .daily-nav button {
+    min-height: 40px;
+    border-radius: 13px;
+  }
+
+  .daily-main {
+    gap: 14px;
+    padding: 14px 16px 18px;
+  }
+
+  .daily-topbar {
+    gap: 13px;
+  }
+
+  .daily-topbar p,
+  .recent-fit-panel__header span,
+  .job-inspector__header span {
+    min-height: 22px;
+    padding: 0 9px;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+
+  .daily-topbar h1 {
+    margin-top: 8px;
+    font-size: clamp(29px, 8.2vw, 36px);
+    line-height: 1;
+    letter-spacing: -0.065em;
+  }
+
+  .daily-search {
+    gap: 7px;
+  }
+
+  .daily-search i {
+    left: 14px;
+    bottom: 13px;
+  }
+
+  .daily-search input {
+    min-height: 48px;
+    border-radius: 16px;
+    font-size: 14px;
+  }
+
+  .daily-alert {
+    min-height: auto;
+    padding: 12px 14px;
+    line-height: 1.45;
+  }
+
+  .daily-summary {
+    gap: 10px;
+  }
+
+  .daily-summary-card,
+  .recent-fit-panel,
+  .job-inspector,
+  .market-signal-card {
+    padding: 5px;
+    border-radius: 24px;
+  }
+
+  .daily-card-core {
+    border-radius: 18px;
+  }
+
+  .daily-summary-card {
+    min-height: 82px;
+  }
+
+  .daily-summary-card__core {
+    gap: 6px;
+    padding: 12px 13px;
+  }
+
+  .daily-summary-card span {
+    font-size: 11px;
+  }
+
+  .daily-summary-card strong {
+    font-size: 27px;
+  }
+
+  .daily-content-grid,
+  .market-signals {
+    gap: 13px;
+  }
+
+  .recent-fit-panel__header {
+    min-height: auto;
+    padding: 16px 15px 14px;
+  }
+
+  .recent-fit-panel__header h2,
+  .job-inspector__header h2,
+  .market-signal-card h2 {
+    margin-top: 8px;
+    font-size: 18px;
+    letter-spacing: -0.045em;
+  }
+
+  .recent-fit-panel__header p,
+  .job-inspector__header p {
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .recent-fit-panel__header > strong {
+    min-height: 32px;
+    padding: 0 11px;
+  }
+
+  .fit-job-list {
+    padding: 5px;
+  }
+
+  .fit-job-row {
+    min-height: 0;
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  .fit-job-row__skills b,
+  .job-inspector__chips span {
+    min-height: 28px;
+    padding: 0 9px;
+  }
+
+  .job-inspector__core,
+  .market-signal-card__core {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .job-inspector__brief-list li,
+  .job-inspector__section,
+  .market-signal-card li {
+    border-radius: 14px;
+  }
 }
