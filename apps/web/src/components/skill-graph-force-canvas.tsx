@@ -15,23 +15,20 @@ import type {
   SkillGraphViewLink,
   SkillGraphViewNode,
 } from "@/lib/skill-graph-view";
+import type {
+  GraphRendererDisplaySettings,
+  GraphRendererForceSettings,
+  GraphRendererProps,
+} from "@/lib/graph-renderer";
+export {
+  FORCE_CANVAS_RENDERER as SKILL_GRAPH_FORCE_CANVAS_RENDERER,
+} from "@/lib/graph-renderer";
 
 
-export type SkillGraphDisplaySettings = {
-  animate: boolean;
-  arrows: boolean;
-  labelThreshold: number;
-  linkThickness: number;
-  nodeScale: number;
-};
+export type SkillGraphDisplaySettings = GraphRendererDisplaySettings;
 
 
-export type SkillGraphForceSettings = {
-  center: number;
-  link: number;
-  linkDistance: number;
-  repel: number;
-};
+export type SkillGraphForceSettings = GraphRendererForceSettings;
 
 
 type SkillForceNode = SkillGraphViewNode & NodeObject;
@@ -44,15 +41,7 @@ type SkillForceLink = Omit<SkillGraphViewLink, "source" | "target"> &
   };
 
 
-type SkillGraphForceCanvasProps = {
-  data: SkillGraphViewData;
-  display: SkillGraphDisplaySettings;
-  forces: SkillGraphForceSettings;
-  selectedId: string | null;
-  onNodeSelect: (nodeId: string) => void;
-  onReadyChange?: (ready: boolean) => void;
-  reheatKey?: number;
-};
+type SkillGraphForceCanvasProps = GraphRendererProps;
 
 
 type ForceGraphInstance = ForceGraph<SkillForceNode, SkillForceLink>;

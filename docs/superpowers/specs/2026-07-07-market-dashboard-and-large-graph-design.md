@@ -98,8 +98,8 @@ type MarketGraphEdge = {
 
 ## 다음 구현 항목
 
-1. `GraphRenderer` 인터페이스를 만들고 현재 Canvas renderer를 어댑터로 분리한다.
-2. 대규모 artifact 생성 API를 설계한다.
+1. [x] `GraphRenderer` 인터페이스를 만들고 현재 Canvas renderer를 어댑터로 분리한다.
+2. [x] 대규모 artifact 생성 API를 설계한다.
 3. Cosmograph 또는 Sigma.js 중 하나로 `/skills/graph`의 renderer를 교체하는 spike를 만든다.
 4. 5천, 2만, 5만 노드 fixture로 렌더링 시간을 측정한다.
 5. LOD 규칙을 구현한다.
