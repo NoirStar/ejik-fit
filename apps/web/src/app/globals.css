@@ -3009,3 +3009,25 @@ main[aria-busy="true"] {
     font-size: 18px;
   }
 }
+
+body:has(.daily-dashboard-page) {
+  overflow-x: hidden;
+}
+
+#main-content:has(.daily-dashboard-page),
+main.daily-dashboard-page,
+main.daily-dashboard-page main.daily-main {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+main.daily-dashboard-page,
+main.daily-dashboard-page main.daily-main {
+  min-width: 0;
+}
+
+main.daily-dashboard-page .daily-shell {
+  width: 100%;
+  max-width: none;
+}
