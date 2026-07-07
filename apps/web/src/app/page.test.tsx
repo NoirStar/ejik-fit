@@ -3,47 +3,33 @@ import { describe, expect, it, vi } from "vitest";
 
 import Home from "./page";
 
-import { getPostings, getSkillStats } from "@/lib/api";
+import { getSkillGraph } from "@/lib/api";
 
 
 vi.mock("@/lib/api", () => ({
-  getPostings: vi.fn(),
-  getSkillStats: vi.fn(),
+  getSkillGraph: vi.fn(),
 }));
 
 
 describe("Home", () => {
-  it("introduces ejik as a graph-first career intelligence product", async () => {
-    vi.mocked(getPostings).mockResolvedValue({
-      items: [],
-      total: 0,
-    });
-    vi.mocked(getSkillStats).mockResolvedValue({
-      items: [
-        {
-          skill: "Python",
-          category: "language",
-          count: 42,
-          required_count: 28,
-          preferred_count: 10,
-          unspecified_count: 4,
-        },
-      ],
-      total: 1,
+  it("renders the product dashboard instead of a landing page", async () => {
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: "C++",
+      nodes: [],
+      edges: [],
+      evidence: [],
+      meta: {
+        limit: 30,
+        min_confidence: 0.8,
+      },
     });
 
-    render(await Home({ searchParams: Promise.resolve({}) }));
+    render(await Home());
 
     expect(
-      screen.getByRole("heading", {
-        name: /내 기술이 시장에서 어디로 이어지는지/,
-      }),
+      screen.getByRole("heading", { name: "기술 채용 인텔리전스" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "대시보드 열기" }),
-    ).toHaveAttribute("href", "/skills/graph");
-    expect(
-      screen.getByText(/공개 채용공고에서 반복되는 기술 조합을 분석해/),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("기술 채용 인텔리전스 대시보드")).toBeInTheDocument();
+    expect(screen.getByText("채용 캘린더")).toBeInTheDocument();
   });
 });

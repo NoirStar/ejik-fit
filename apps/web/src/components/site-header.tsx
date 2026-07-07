@@ -29,9 +29,16 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  const dashboardShell =
+    pathname === "/" || pathname === "/skills/graph" || pathname.startsWith("/skills/graph/");
+
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  if (dashboardShell) {
+    return null;
+  }
 
   return (
     <header className={`site-header ${open ? "site-header--open" : ""}`}>
