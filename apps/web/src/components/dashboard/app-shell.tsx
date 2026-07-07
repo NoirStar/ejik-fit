@@ -26,7 +26,11 @@ export function DashboardShell({
     <section className="daily-shell" aria-label="기술 채용 인텔리전스 대시보드">
       <aside className="daily-rail" aria-label="주요 메뉴">
         <Link className="daily-brand" href="/" aria-label="ejik 대시보드 홈">
-          e
+          <span className="daily-brand-mark" aria-hidden="true">e</span>
+          <span className="daily-brand-copy">
+            <strong>기술 채용<br />인텔리전스</strong>
+            <small>Tech Hiring Intelligence</small>
+          </span>
         </Link>
         <nav className="daily-nav" aria-label="대시보드 탐색">
           {NAV_ITEMS.map((item) => {

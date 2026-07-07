@@ -1,6 +1,11 @@
 "use client";
 
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  Bell,
+  MagnifyingGlass,
+  SlidersHorizontal,
+  UserCircle,
+} from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 
 import { DashboardShell } from "./app-shell";
@@ -31,6 +36,7 @@ function modeMessage(mode: DailyDashboardModel["mode"]) {
 export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProps) {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const visibleOwnedSkills = model.ownedSkills.slice(0, 5);
   const filteredJobs = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) {
@@ -56,12 +62,13 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
     <DashboardShell>
       <main className="daily-main">
         <header className="daily-topbar">
-          <div>
-            <p>오늘의 채용 브리핑</p>
+          <div className="daily-welcome">
+            <span>오늘의 채용 브리핑</span>
             <h1>기술 채용 인텔리전스</h1>
+            <p>최근 공고와 내 스택 기준 신호만 빠르게 확인하세요.</p>
           </div>
           <label className="daily-search" htmlFor="daily-search">
-            <span>검색</span>
+            <span>통합 검색</span>
             <i aria-hidden="true">
               <MagnifyingGlass size={16} weight="light" />
             </i>
@@ -73,6 +80,29 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
+          <div className="daily-top-actions" aria-label="대시보드 필터와 계정">
+            <button className="daily-filter-button" type="button">
+              <SlidersHorizontal size={15} weight="bold" aria-hidden />
+              지역 전체
+            </button>
+            <button className="daily-filter-button" type="button">경력 전체</button>
+            <button className="daily-icon-button" type="button" aria-label="알림">
+              <Bell size={18} weight="regular" aria-hidden />
+            </button>
+            <span className="daily-user-pill">
+              <UserCircle size={20} weight="duotone" aria-hidden />
+              김민준
+            </span>
+          </div>
+          <div className="daily-stack-row" aria-label="현재 기준 스택">
+            <span>내 기술스택</span>
+            {visibleOwnedSkills.map((skill) => (
+              <b key={skill}>{skill}</b>
+            ))}
+            {model.ownedSkills.length > visibleOwnedSkills.length && (
+              <b>+{model.ownedSkills.length - visibleOwnedSkills.length}</b>
+            )}
+          </div>
         </header>
 
         {dataFailed && (
