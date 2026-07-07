@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "bench:graph": "vitest bench src/lib/large-graph.bench.ts --run",
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest"

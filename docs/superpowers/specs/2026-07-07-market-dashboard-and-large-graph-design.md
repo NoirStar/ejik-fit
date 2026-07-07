@@ -102,8 +102,22 @@ type MarketGraphEdge = {
 2. [x] 대규모 artifact 생성 API를 설계한다.
 3. Cosmograph 또는 Sigma.js 중 하나로 `/skills/graph`의 renderer를 교체하는 spike를 만든다.
 4. 5천, 2만, 5만 노드 fixture로 렌더링 시간을 측정한다.
+   - [x] 5천, 2만, 5만 노드 fixture와 artifact/renderer decision 벤치를 추가한다.
+   - [ ] 브라우저에서 Canvas/WebGL renderer 실제 render timing을 측정한다.
 5. LOD 규칙을 구현한다.
    - zoom 낮음: node only
    - zoom 중간: hub label
    - zoom 높음: selected neighborhood label과 edge
 6. 모바일은 global graph보다 검색, 선택 주변, 관련 공고를 우선한다.
+
+## 대규모 fixture 벤치 기록
+
+2026-07-07 로컬 `npm run bench:graph` 기준으로 renderer 선택과 artifact 변환 비용은 다음과 같다.
+
+| 노드 수 | 평균 시간 |
+| --- | ---: |
+| 5,000 | 7.52ms |
+| 20,000 | 41.88ms |
+| 50,000 | 167.23ms |
+
+이 수치는 브라우저 실제 렌더 시간이 아니라 데이터 변환 비용이다. 따라서 다음 병목 검증은 Canvas/WebGL renderer의 mount, zoom, hover, selected-neighborhood timing에서 해야 한다.
