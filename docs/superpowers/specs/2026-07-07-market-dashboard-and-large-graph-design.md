@@ -104,7 +104,7 @@ type MarketGraphEdge = {
 4. 5천, 2만, 5만 노드 fixture로 렌더링 시간을 측정한다.
    - [x] 5천, 2만, 5만 노드 fixture와 artifact/renderer decision 벤치를 추가한다.
    - [ ] 브라우저에서 Canvas/WebGL renderer 실제 render timing을 측정한다.
-5. LOD 규칙을 구현한다.
+5. [x] LOD 규칙을 구현한다.
    - zoom 낮음: node only
    - zoom 중간: hub label
    - zoom 높음: selected neighborhood label과 edge
