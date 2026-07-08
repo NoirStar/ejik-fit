@@ -86,7 +86,38 @@ function dashboardModel(ownedSkills: string[]): DailyDashboardModel {
   return {
     mode: "personalized",
     ownedSkills,
-    jobs: [],
+    jobs: [
+      {
+        id: "job-remember",
+        title: "Backend Engineer",
+        companyName: "리멤버",
+        location: "서울 강남",
+        careerLabel: "경력",
+        statusLabel: "진행 중",
+        freshnessLabel: "2시간 전",
+        sourceUrl: "https://example.com/remember",
+        fitScore: 88,
+        matchedSkills: ["Java", "Spring"],
+        missingSkills: [],
+        recommendationReasons: [],
+        isSupplemental: false,
+      },
+      {
+        id: "job-oliveyoung",
+        title: "Frontend Engineer",
+        companyName: "올리브영",
+        location: "경기 성남",
+        careerLabel: "신입",
+        statusLabel: "진행 중",
+        freshnessLabel: "7월 1일",
+        sourceUrl: "https://example.com/oliveyoung",
+        fitScore: 76,
+        matchedSkills: ["React", "TypeScript"],
+        missingSkills: [],
+        recommendationReasons: [],
+        isSupplemental: false,
+      },
+    ],
     summary: {
       matchedJobCount: 18,
       highFitJobCount: 7,
@@ -126,9 +157,9 @@ describe("Home", () => {
       "placeholder",
       "기술, 직무, 기업을 검색하세요",
     );
-    expect(screen.getByRole("button", { name: "지역" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "경력" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "기간" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "지역" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "경력" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "기간" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "신규 매칭 공고" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "80% 이상 Fit" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "상승 기술" })).toBeInTheDocument();
@@ -193,6 +224,35 @@ describe("Home", () => {
     ]);
     expect(navigationMocks.replace).toHaveBeenLastCalledWith(
       "/?owned_skills=Go&owned_skills=Java#my-stack",
+      { scroll: false },
+    );
+  });
+
+  it("filters visible jobs by search text and dashboard selects", () => {
+    render(<DailyDashboardHome model={dashboardModel(["Java", "Spring"])} dataFailed={false} />);
+
+    fireEvent.change(screen.getByLabelText("검색어"), {
+      target: { value: "리멤버" },
+    });
+
+    expect(screen.getByText("리멤버")).toBeInTheDocument();
+    expect(screen.queryByText("올리브영")).not.toBeInTheDocument();
+    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
+      "/?q=%EB%A6%AC%EB%A9%A4%EB%B2%84#weekly-jobs",
+      { scroll: false },
+    );
+
+    fireEvent.change(screen.getByLabelText("검색어"), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByLabelText("지역"), {
+      target: { value: "gyeonggi" },
+    });
+
+    expect(screen.queryByText("리멤버")).not.toBeInTheDocument();
+    expect(screen.getByText("올리브영")).toBeInTheDocument();
+    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
+      "/?region=gyeonggi#weekly-jobs",
       { scroll: false },
     );
   });

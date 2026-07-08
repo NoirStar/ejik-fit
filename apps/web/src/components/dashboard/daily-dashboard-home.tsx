@@ -20,6 +20,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { DashboardShell } from "./app-shell";
+import {
+  dashboardFiltersToHref,
+  DEFAULT_DASHBOARD_FILTERS,
+  filterJobRows,
+  type DashboardFilters,
+  type FilterableJobRow,
+} from "./dashboard-filters";
 import type { DailyDashboardModel, DashboardJob, MarketSignal } from "./types";
 import {
   normalizeOwnedSkills,
@@ -32,21 +39,16 @@ import {
 type DailyDashboardHomeProps = {
   model: DailyDashboardModel;
   dataFailed: boolean;
+  initialFilters?: DashboardFilters;
 };
 
 
-type WeeklyJobRow = {
-  companyName: string;
-  title: string;
-  location: string;
-  time: string;
+type WeeklyJobRow = FilterableJobRow & {
   tone: string;
 };
 
 
-type DeadlineRow = {
-  companyName: string;
-  title: string;
+type DeadlineRow = FilterableJobRow & {
   badge: string;
   date: string;
   tone: string;
@@ -59,6 +61,8 @@ const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
     title: "백엔드 개발자 (Java/Spring)",
     location: "경기 성남",
     time: "2시간 전",
+    careerLabel: "경력",
+    skills: ["Java", "Spring"],
     tone: "green",
   },
   {
@@ -66,6 +70,8 @@ const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
     title: "Backend Engineer (Spring)",
     location: "경기 성남",
     time: "4시간 전",
+    careerLabel: "경력",
+    skills: ["Spring"],
     tone: "yellow",
   },
   {
@@ -73,6 +79,8 @@ const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
     title: "백엔드 개발자 (Java/AWS)",
     location: "서울 송파",
     time: "6시간 전",
+    careerLabel: "경력",
+    skills: ["Java", "AWS"],
     tone: "cyan",
   },
   {
@@ -80,6 +88,8 @@ const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
     title: "백엔드 엔지니어 (Kotlin/Java)",
     location: "서울 강남",
     time: "8시간 전",
+    careerLabel: "경력",
+    skills: ["Kotlin", "Java"],
     tone: "blue",
   },
   {
@@ -87,6 +97,8 @@ const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
     title: "서버 개발자 (Java/Kubernetes)",
     location: "서울 서초",
     time: "11시간 전",
+    careerLabel: "경력",
+    skills: ["Java", "Kubernetes"],
     tone: "red",
   },
 ];
@@ -96,6 +108,10 @@ const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
   {
     companyName: "삼성SDS",
     title: "클라우드 개발자 (AWS)",
+    location: "서울 강남",
+    time: "D-2",
+    careerLabel: "경력",
+    skills: ["AWS"],
     badge: "D-2",
     date: "5/17 (금)",
     tone: "blue",
@@ -103,6 +119,10 @@ const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
   {
     companyName: "라인플러스",
     title: "백엔드 개발자 (Kotlin)",
+    location: "경기 성남",
+    time: "D-3",
+    careerLabel: "경력",
+    skills: ["Kotlin"],
     badge: "D-3",
     date: "5/18 (토)",
     tone: "green",
@@ -110,6 +130,10 @@ const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
   {
     companyName: "LG CNS",
     title: "DevOps 엔지니어 (AWS)",
+    location: "서울 마곡",
+    time: "D-4",
+    careerLabel: "경력",
+    skills: ["AWS", "DevOps"],
     badge: "D-4",
     date: "5/19 (일)",
     tone: "red",
@@ -117,6 +141,10 @@ const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
   {
     companyName: "야놀자",
     title: "백엔드 개발자 (Java)",
+    location: "서울 강남",
+    time: "5/14 변경",
+    careerLabel: "경력",
+    skills: ["Java"],
     badge: "변경됨",
     date: "5/14 (화) 변경",
     tone: "pink",
@@ -124,6 +152,10 @@ const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
   {
     companyName: "컬리",
     title: "SRE 엔지니어 (Kubernetes)",
+    location: "서울 송파",
+    time: "5/13 변경",
+    careerLabel: "경력",
+    skills: ["Kubernetes", "SRE"],
     badge: "변경됨",
     date: "5/13 (월) 변경",
     tone: "purple",
@@ -141,10 +173,23 @@ const FALLBACK_TRENDS = [
 
 
 const CHART_DATES = ["4/15", "4/21", "4/27", "5/3", "5/9", "5/15"];
-const FILTERS = [
-  { label: "지역", icon: MapPin },
-  { label: "경력", icon: Briefcase },
-  { label: "기간", icon: FunnelSimple },
+const REGION_OPTIONS = [
+  { value: "all", label: "지역 전체", icon: MapPin },
+  { value: "seoul", label: "서울" },
+  { value: "gyeonggi", label: "경기" },
+  { value: "remote", label: "원격" },
+] as const;
+const CAREER_OPTIONS = [
+  { value: "all", label: "경력 전체", icon: Briefcase },
+  { value: "experienced", label: "경력" },
+  { value: "newcomer", label: "신입" },
+  { value: "any", label: "무관" },
+] as const;
+const PERIOD_OPTIONS = [
+  { value: "all", label: "기간 전체", icon: FunnelSimple },
+  { value: "today", label: "오늘" },
+  { value: "week", label: "7일" },
+  { value: "deadline", label: "마감" },
 ] as const;
 
 
@@ -152,8 +197,10 @@ function buildWeeklyJobs(jobs: DashboardJob[]): WeeklyJobRow[] {
   const mappedJobs = jobs.slice(0, 5).map((job, index) => ({
     companyName: job.companyName,
     title: job.title,
-    location: SAMPLE_WEEKLY_JOBS[index]?.location ?? job.location,
-    time: SAMPLE_WEEKLY_JOBS[index]?.time ?? job.freshnessLabel,
+    location: job.location,
+    time: job.freshnessLabel,
+    careerLabel: job.careerLabel,
+    skills: [...job.matchedSkills, ...job.missingSkills],
     tone: SAMPLE_WEEKLY_JOBS[index]?.tone ?? "blue",
   }));
 
@@ -301,13 +348,25 @@ function sameSkillSet(first: string[], second: string[]) {
 }
 
 
-export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProps) {
+export function DailyDashboardHome({
+  model,
+  dataFailed,
+  initialFilters = DEFAULT_DASHBOARD_FILTERS,
+}: DailyDashboardHomeProps) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState(initialFilters);
   const [ownedSkills, setOwnedSkills] = useState(model.ownedSkills);
   const [skillInput, setSkillInput] = useState("");
   const [stackMessage, setStackMessage] = useState("");
   const weeklyJobs = useMemo(() => buildWeeklyJobs(model.jobs), [model.jobs]);
+  const filteredWeeklyJobs = useMemo(
+    () => filterJobRows(weeklyJobs, filters),
+    [weeklyJobs, filters],
+  );
+  const filteredDeadlineJobs = useMemo(
+    () => filterJobRows(SAMPLE_DEADLINE_JOBS, filters),
+    [filters],
+  );
   const trendRows = useMemo(
     () => buildTrendRows(model.trendingSkills),
     [model.trendingSkills],
@@ -342,6 +401,14 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
     setOwnedSkills(savedSkills);
     setStackMessage(message);
     router.replace(ownedSkillsToDashboardHref(savedSkills), { scroll: false });
+  }
+
+  function syncFilters(nextFilters: DashboardFilters) {
+    setFilters(nextFilters);
+    router.replace(
+      dashboardFiltersToHref(nextFilters, window.location.search),
+      { scroll: false },
+    );
   }
 
   function handleAddSkill(event: FormEvent<HTMLFormElement>) {
@@ -392,22 +459,77 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
               id="daily-search"
               type="search"
               placeholder="기술, 직무, 기업을 검색하세요"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={filters.query}
+              onChange={(event) =>
+                syncFilters({ ...filters, query: event.target.value })
+              }
             />
           </label>
 
           <div className="reference-filterbar" aria-label="대시보드 필터">
-            {FILTERS.map((filter) => {
-              const Icon = filter.icon;
-              return (
-                <button className="reference-filter" key={filter.label} type="button">
-                  <Icon size={18} weight="regular" aria-hidden />
-                  {filter.label}
-                  <CaretDown size={15} weight="bold" aria-hidden />
-                </button>
-              );
-            })}
+            <label className="reference-filter">
+              <MapPin size={18} weight="regular" aria-hidden />
+              <span className="sr-only">지역</span>
+              <select
+                aria-label="지역"
+                value={filters.region}
+                onChange={(event) =>
+                  syncFilters({
+                    ...filters,
+                    region: event.target.value as DashboardFilters["region"],
+                  })
+                }
+              >
+                {REGION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <CaretDown size={15} weight="bold" aria-hidden />
+            </label>
+            <label className="reference-filter">
+              <Briefcase size={18} weight="regular" aria-hidden />
+              <span className="sr-only">경력</span>
+              <select
+                aria-label="경력"
+                value={filters.career}
+                onChange={(event) =>
+                  syncFilters({
+                    ...filters,
+                    career: event.target.value as DashboardFilters["career"],
+                  })
+                }
+              >
+                {CAREER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <CaretDown size={15} weight="bold" aria-hidden />
+            </label>
+            <label className="reference-filter">
+              <FunnelSimple size={18} weight="regular" aria-hidden />
+              <span className="sr-only">기간</span>
+              <select
+                aria-label="기간"
+                value={filters.period}
+                onChange={(event) =>
+                  syncFilters({
+                    ...filters,
+                    period: event.target.value as DashboardFilters["period"],
+                  })
+                }
+              >
+                {PERIOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <CaretDown size={15} weight="bold" aria-hidden />
+            </label>
           </div>
 
           <div className="reference-account">
@@ -554,15 +676,21 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
               <a href="#weekly-jobs">전체 보기</a>
             </header>
             <div className="reference-table">
-              {weeklyJobs.map((job) => (
-                <div className="reference-table-row" key={`${job.companyName}-${job.title}`}>
-                  <CompanyMark companyName={job.companyName} tone={job.tone} />
-                  <strong>{job.companyName}</strong>
-                  <span>{job.title}</span>
-                  <small>{job.location}</small>
-                  <time>{job.time}</time>
+              {filteredWeeklyJobs.length > 0 ? (
+                filteredWeeklyJobs.map((job) => (
+                  <div className="reference-table-row" key={`${job.companyName}-${job.title}`}>
+                    <CompanyMark companyName={job.companyName} tone={job.tone} />
+                    <strong>{job.companyName}</strong>
+                    <span>{job.title}</span>
+                    <small>{job.location}</small>
+                    <time>{job.time}</time>
+                  </div>
+                ))
+              ) : (
+                <div className="reference-empty-row" role="status">
+                  조건에 맞는 신규 공고가 없습니다.
                 </div>
-              ))}
+              )}
             </div>
           </article>
 
@@ -594,17 +722,23 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
               <a href="#weekly-jobs">전체 보기</a>
             </header>
             <div className="reference-table reference-table--deadline">
-              {SAMPLE_DEADLINE_JOBS.map((job) => (
-                <div className="reference-table-row" key={`${job.companyName}-${job.date}`}>
-                  <CompanyMark companyName={job.companyName} tone={job.tone} />
-                  <strong>{job.companyName}</strong>
-                  <span>{job.title}</span>
-                  <b className={job.badge.startsWith("D-") ? "is-urgent" : "is-changed"}>
-                    {job.badge}
-                  </b>
-                  <time>{job.date}</time>
+              {filteredDeadlineJobs.length > 0 ? (
+                filteredDeadlineJobs.map((job) => (
+                  <div className="reference-table-row" key={`${job.companyName}-${job.date}`}>
+                    <CompanyMark companyName={job.companyName} tone={job.tone} />
+                    <strong>{job.companyName}</strong>
+                    <span>{job.title}</span>
+                    <b className={job.badge.startsWith("D-") ? "is-urgent" : "is-changed"}>
+                      {job.badge}
+                    </b>
+                    <time>{job.date}</time>
+                  </div>
+                ))
+              ) : (
+                <div className="reference-empty-row" role="status">
+                  조건에 맞는 마감 공고가 없습니다.
                 </div>
-              ))}
+              )}
             </div>
           </article>
         </section>

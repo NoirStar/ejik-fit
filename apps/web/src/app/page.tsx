@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { DailyDashboardHome } from "@/components/dashboard/daily-dashboard-home";
+import { dashboardFiltersFromSearchParams } from "@/components/dashboard/dashboard-filters";
 import { buildDailyDashboardModel } from "@/components/dashboard/dashboard-model";
 import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 import {
@@ -37,6 +38,7 @@ function fulfilledOrNull<T>(result: PromiseSettledResult<T>) {
 export default async function Home({ searchParams }: HomeProps = {}) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const requestedOwnedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
+  const initialFilters = dashboardFiltersFromSearchParams(resolvedSearchParams);
   const ownedSkills = requestedOwnedSkills.length > 0
     ? requestedOwnedSkills
     : DEFAULT_OWNED_SKILLS;
@@ -66,7 +68,11 @@ export default async function Home({ searchParams }: HomeProps = {}) {
 
   return (
     <main className="daily-dashboard-page">
-      <DailyDashboardHome model={model} dataFailed={failedCount > 0} />
+      <DailyDashboardHome
+        model={model}
+        dataFailed={failedCount > 0}
+        initialFilters={initialFilters}
+      />
     </main>
   );
 }
