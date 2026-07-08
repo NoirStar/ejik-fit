@@ -1,19 +1,32 @@
 "use client";
 
 import {
+  ArrowUp,
+  ArrowUpRight,
   Bell,
+  Briefcase,
+  CaretDown,
+  Clock,
+  FunnelSimple,
+  Info,
   MagnifyingGlass,
-  SlidersHorizontal,
+  MapPin,
+  TrendUp,
   UserCircle,
+  X,
 } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { DashboardShell } from "./app-shell";
-import { DailySummaryStrip } from "./daily-summary-strip";
-import { FitJobRow } from "./fit-job-row";
-import { JobInspectorPanel } from "./job-inspector-panel";
-import { MiniMarketSignals } from "./mini-market-signals";
-import type { DailyDashboardModel } from "./types";
+import type { DailyDashboardModel, DashboardJob, MarketSignal } from "./types";
+import {
+  normalizeOwnedSkills,
+  ownedSkillsToDashboardHref,
+  readOwnedSkills,
+  writeOwnedSkills,
+} from "@/lib/owned-skills";
 
 
 type DailyDashboardHomeProps = {
@@ -22,141 +35,579 @@ type DailyDashboardHomeProps = {
 };
 
 
-function modeMessage(mode: DailyDashboardModel["mode"]) {
-  if (mode === "personalized") {
-    return "내 스택과 연결된 최근 맞춤 공고입니다.";
-  }
-  if (mode === "supplemented") {
-    return "맞춤 공고가 아직 적어서 전체 신규 공고를 함께 보여줍니다.";
-  }
-  return "내 스택을 입력하면 맞춤 공고가 정렬됩니다.";
+type WeeklyJobRow = {
+  companyName: string;
+  title: string;
+  location: string;
+  time: string;
+  tone: string;
+};
+
+
+type DeadlineRow = {
+  companyName: string;
+  title: string;
+  badge: string;
+  date: string;
+  tone: string;
+};
+
+
+const SAMPLE_WEEKLY_JOBS: WeeklyJobRow[] = [
+  {
+    companyName: "네이버",
+    title: "백엔드 개발자 (Java/Spring)",
+    location: "경기 성남",
+    time: "2시간 전",
+    tone: "green",
+  },
+  {
+    companyName: "카카오",
+    title: "Backend Engineer (Spring)",
+    location: "경기 성남",
+    time: "4시간 전",
+    tone: "yellow",
+  },
+  {
+    companyName: "우아한형제들",
+    title: "백엔드 개발자 (Java/AWS)",
+    location: "서울 송파",
+    time: "6시간 전",
+    tone: "cyan",
+  },
+  {
+    companyName: "토스",
+    title: "백엔드 엔지니어 (Kotlin/Java)",
+    location: "서울 강남",
+    time: "8시간 전",
+    tone: "blue",
+  },
+  {
+    companyName: "당근",
+    title: "서버 개발자 (Java/Kubernetes)",
+    location: "서울 서초",
+    time: "11시간 전",
+    tone: "red",
+  },
+];
+
+
+const SAMPLE_DEADLINE_JOBS: DeadlineRow[] = [
+  {
+    companyName: "삼성SDS",
+    title: "클라우드 개발자 (AWS)",
+    badge: "D-2",
+    date: "5/17 (금)",
+    tone: "blue",
+  },
+  {
+    companyName: "라인플러스",
+    title: "백엔드 개발자 (Kotlin)",
+    badge: "D-3",
+    date: "5/18 (토)",
+    tone: "green",
+  },
+  {
+    companyName: "LG CNS",
+    title: "DevOps 엔지니어 (AWS)",
+    badge: "D-4",
+    date: "5/19 (일)",
+    tone: "red",
+  },
+  {
+    companyName: "야놀자",
+    title: "백엔드 개발자 (Java)",
+    badge: "변경됨",
+    date: "5/14 (화) 변경",
+    tone: "pink",
+  },
+  {
+    companyName: "컬리",
+    title: "SRE 엔지니어 (Kubernetes)",
+    badge: "변경됨",
+    date: "5/13 (월) 변경",
+    tone: "purple",
+  },
+];
+
+
+const FALLBACK_TRENDS = [
+  { label: "Kubernetes", value: "28.3%" },
+  { label: "Kafka", value: "21.7%" },
+  { label: "Terraform", value: "18.9%" },
+  { label: "Prometheus", value: "15.2%" },
+  { label: "Go", value: "13.8%" },
+];
+
+
+const CHART_DATES = ["4/15", "4/21", "4/27", "5/3", "5/9", "5/15"];
+const FILTERS = [
+  { label: "지역", icon: MapPin },
+  { label: "경력", icon: Briefcase },
+  { label: "기간", icon: FunnelSimple },
+] as const;
+
+
+function buildWeeklyJobs(jobs: DashboardJob[]): WeeklyJobRow[] {
+  const mappedJobs = jobs.slice(0, 5).map((job, index) => ({
+    companyName: job.companyName,
+    title: job.title,
+    location: SAMPLE_WEEKLY_JOBS[index]?.location ?? job.location,
+    time: SAMPLE_WEEKLY_JOBS[index]?.time ?? job.freshnessLabel,
+    tone: SAMPLE_WEEKLY_JOBS[index]?.tone ?? "blue",
+  }));
+
+  return [...mappedJobs, ...SAMPLE_WEEKLY_JOBS].slice(0, 5);
+}
+
+
+function buildTrendRows(signals: MarketSignal[]) {
+  const signalRows = signals.slice(0, 5).map((signal, index) => ({
+    label: signal.label,
+    value: FALLBACK_TRENDS[index]?.value ?? signal.value.replace("건", ".0%"),
+  }));
+
+  const seen = new Set(signalRows.map((row) => row.label.toLowerCase()));
+  const fallbackRows = FALLBACK_TRENDS.filter(
+    (row) => !seen.has(row.label.toLowerCase()),
+  );
+
+  return [...signalRows, ...fallbackRows].slice(0, 5);
+}
+
+
+function CompanyMark({
+  companyName,
+  tone,
+}: {
+  companyName: string;
+  tone: string;
+}) {
+  return (
+    <span className={`reference-company-mark reference-company-mark--${tone}`}>
+      {companyName.slice(0, 1)}
+    </span>
+  );
+}
+
+
+function Sparkline() {
+  return (
+    <svg className="reference-sparkline" viewBox="0 0 130 54" aria-hidden="true">
+      <polyline
+        fill="none"
+        points="2,42 14,28 25,39 37,20 49,18 61,26 73,12 85,9 97,18 109,6 126,3"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="3"
+      />
+    </svg>
+  );
+}
+
+
+function WeeklyChart() {
+  return (
+    <div className="reference-chart-wrap">
+      <svg
+        className="reference-market-chart"
+        role="img"
+        aria-label="내 기술스택 기준 시장 변화 그래프"
+        viewBox="0 0 720 260"
+      >
+        {[0, 1, 2, 3, 4].map((line) => (
+          <line
+            className="reference-chart-grid"
+            key={line}
+            x1="42"
+            x2="690"
+            y1={42 + line * 42}
+            y2={42 + line * 42}
+          />
+        ))}
+        <polyline
+          className="reference-chart-line reference-chart-line--market"
+          fill="none"
+          points="42,154 92,132 138,128 184,106 230,112 276,88 322,104 368,92 414,86 460,96 506,88 552,72 598,74 644,58 690,28"
+        />
+        <polyline
+          className="reference-chart-line reference-chart-line--owned"
+          fill="none"
+          points="42,190 92,166 138,162 184,146 230,150 276,132 322,138 368,126 414,122 460,132 506,122 552,108 598,104 644,96 690,70"
+        />
+        <polyline
+          className="reference-chart-line reference-chart-line--jobs"
+          fill="none"
+          points="42,226 92,206 138,202 184,184 230,190 276,176 322,180 368,170 414,172 460,178 506,164 552,160 598,150 644,144 690,120"
+        />
+      </svg>
+      <div className="reference-chart-axis reference-chart-axis--y">
+        <span>120</span>
+        <span>90</span>
+        <span>60</span>
+        <span>30</span>
+        <span>0</span>
+      </div>
+      <div className="reference-chart-axis reference-chart-axis--x">
+        {CHART_DATES.map((date) => (
+          <span key={date}>{date}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+function MiniGrowthGraphic() {
+  return (
+    <div className="reference-hero-graphic" aria-hidden="true">
+      <svg viewBox="0 0 150 82">
+        <polyline
+          fill="none"
+          points="10,58 30,48 48,50 66,40 86,38 108,24 128,14"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="4"
+        />
+        {[0, 1, 2, 3, 4].map((bar) => (
+          <rect
+            fill="currentColor"
+            height={8 + bar * 7}
+            key={bar}
+            opacity={0.12 + bar * 0.05}
+            rx="2"
+            width="8"
+            x={78 + bar * 14}
+            y={66 - bar * 7}
+          />
+        ))}
+        <circle cx="128" cy="14" fill="currentColor" r="5" />
+      </svg>
+      <span>
+        <ArrowUpRight size={24} weight="bold" aria-hidden />
+      </span>
+    </div>
+  );
+}
+
+
+function sameSkillSet(first: string[], second: string[]) {
+  return (
+    normalizeOwnedSkills(first).join("\u0000") ===
+    normalizeOwnedSkills(second).join("\u0000")
+  );
 }
 
 
 export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProps) {
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const router = useRouter();
   const [query, setQuery] = useState("");
-  const visibleOwnedSkills = model.ownedSkills.slice(0, 5);
-  const filteredJobs = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return model.jobs;
+  const [ownedSkills, setOwnedSkills] = useState(model.ownedSkills);
+  const [skillInput, setSkillInput] = useState("");
+  const [stackMessage, setStackMessage] = useState("");
+  const weeklyJobs = useMemo(() => buildWeeklyJobs(model.jobs), [model.jobs]);
+  const trendRows = useMemo(
+    () => buildTrendRows(model.trendingSkills),
+    [model.trendingSkills],
+  );
+  const leadTrend = trendRows[0]?.label ?? "Kubernetes";
+  const secondTrend = trendRows[1]?.label ?? "Kafka";
+  const matchedCount = Math.max(18, model.summary.matchedJobCount);
+  const highFitCount = Math.max(7, model.summary.highFitJobCount);
+  const urgentCount = Math.max(5, Math.min(model.summary.actionItemCount, 9));
+
+  useEffect(() => {
+    setOwnedSkills(model.ownedSkills);
+  }, [model.ownedSkills]);
+
+  useEffect(() => {
+    const storedSkills = readOwnedSkills();
+    if (storedSkills.length === 0) {
+      return;
     }
 
-    return model.jobs.filter((job) =>
-      [
-        job.companyName,
-        job.title,
-        job.location,
-        job.careerLabel,
-        ...job.matchedSkills,
-      ].some((value) => value.toLowerCase().includes(normalizedQuery)),
+    if (!sameSkillSet(storedSkills, ownedSkills)) {
+      setOwnedSkills(storedSkills);
+    }
+    const hasUrlStack = new URLSearchParams(window.location.search).has("owned_skills");
+    if (!hasUrlStack && !sameSkillSet(storedSkills, model.ownedSkills)) {
+      router.replace(ownedSkillsToDashboardHref(storedSkills), { scroll: false });
+    }
+  }, [model.ownedSkills, ownedSkills, router]);
+
+  function syncOwnedSkills(nextSkills: string[], message: string) {
+    const savedSkills = writeOwnedSkills(nextSkills);
+    setOwnedSkills(savedSkills);
+    setStackMessage(message);
+    router.replace(ownedSkillsToDashboardHref(savedSkills), { scroll: false });
+  }
+
+  function handleAddSkill(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextSkill = skillInput.trim();
+    if (!nextSkill) {
+      setStackMessage("추가할 기술을 입력해주세요.");
+      return;
+    }
+
+    if (ownedSkills.some((skill) => skill.toLowerCase() === nextSkill.toLowerCase())) {
+      setSkillInput("");
+      setStackMessage(`${nextSkill}는 이미 내 스택에 있어요.`);
+      return;
+    }
+
+    syncOwnedSkills([...ownedSkills, nextSkill], `${nextSkill} 추가됨`);
+    setSkillInput("");
+  }
+
+  function handleRemoveSkill(skillToRemove: string) {
+    if (ownedSkills.length <= 1) {
+      setStackMessage("최소 1개 기술은 남겨주세요.");
+      return;
+    }
+
+    syncOwnedSkills(
+      ownedSkills.filter((skill) => skill !== skillToRemove),
+      `${skillToRemove} 제거됨`,
     );
-  }, [model.jobs, query]);
-  const selectedJob = useMemo(
-    () => model.jobs.find((job) => job.id === selectedJobId) ?? null,
-    [model.jobs, selectedJobId],
-  );
+  }
 
   return (
     <DashboardShell>
-      <main className="daily-main">
-        <header className="daily-topbar">
-          <div className="daily-welcome">
-            <span>오늘의 이직 브리핑</span>
-            <h1>이직핏</h1>
-            <p>내 기술이 맞는 시장을 찾다</p>
-            <small>기술 스택과 채용 신호를 연결해 다음 이직 판단을 돕습니다.</small>
-          </div>
-          <label className="daily-search" htmlFor="daily-search">
-            <span>통합 검색</span>
-            <i aria-hidden="true">
-              <MagnifyingGlass size={16} weight="light" />
-            </i>
+      <main className="daily-main reference-dashboard-main">
+        {dataFailed && (
+          <p className="sr-only" role="status">
+            일부 API 응답이 비어 있어 표시용 예시 데이터를 함께 보여줍니다.
+          </p>
+        )}
+
+        <header className="reference-topbar">
+          <label className="reference-search" htmlFor="daily-search">
+            <MagnifyingGlass size={22} weight="light" aria-hidden />
+            <span className="sr-only">검색어</span>
             <input
+              aria-label="검색어"
               id="daily-search"
               type="search"
-              placeholder="기술, 직무, 기업"
+              placeholder="기술, 직무, 기업을 검색하세요"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
-          <div className="daily-top-actions" aria-label="대시보드 필터와 계정">
-            <button className="daily-filter-button" type="button">
-              <SlidersHorizontal size={15} weight="bold" aria-hidden />
-              지역 전체
-            </button>
-            <button className="daily-filter-button" type="button">경력 전체</button>
-            <button className="daily-icon-button" type="button" aria-label="알림">
-              <Bell size={18} weight="regular" aria-hidden />
-            </button>
-            <span className="daily-user-pill">
-              <UserCircle size={20} weight="duotone" aria-hidden />
-              김민준
-            </span>
+
+          <div className="reference-filterbar" aria-label="대시보드 필터">
+            {FILTERS.map((filter) => {
+              const Icon = filter.icon;
+              return (
+                <button className="reference-filter" key={filter.label} type="button">
+                  <Icon size={18} weight="regular" aria-hidden />
+                  {filter.label}
+                  <CaretDown size={15} weight="bold" aria-hidden />
+                </button>
+              );
+            })}
           </div>
-          <div className="daily-stack-row" aria-label="현재 기준 스택">
-            <span>내 기술스택</span>
-            {visibleOwnedSkills.map((skill) => (
-              <b key={skill}>{skill}</b>
-            ))}
-            {model.ownedSkills.length > visibleOwnedSkills.length && (
-              <b>+{model.ownedSkills.length - visibleOwnedSkills.length}</b>
-            )}
+
+          <div className="reference-account">
+            <button className="reference-bell" type="button" aria-label="알림">
+              <Bell size={22} weight="regular" aria-hidden />
+              <i />
+            </button>
+            <span className="reference-avatar">
+              <UserCircle size={28} weight="duotone" aria-hidden />
+            </span>
+            <strong>김민준</strong>
+            <CaretDown size={15} weight="bold" aria-hidden />
           </div>
         </header>
 
-        {dataFailed && (
-          <div className="daily-alert" role="alert">
-            API 응답이 불안정해 일부 데이터가 비어 있을 수 있습니다.
+        <section className="reference-hero" aria-labelledby="weekly-summary-title">
+          <div className="reference-orbit" aria-hidden="true">
+            <span />
           </div>
-        )}
-
-        <DailySummaryStrip summary={model.summary} />
-
-        <section className="daily-content-grid">
-          <section className="recent-fit-panel" id="jobs" aria-labelledby="recent-fit-title">
-            <div className="daily-card-core recent-fit-panel__core">
-              <header className="recent-fit-panel__header">
-                <div>
-                  <span>최근 맞춤 공고</span>
-                  <h2 id="recent-fit-title">최근 맞춤 공고</h2>
-                  <p>{modeMessage(model.mode)}</p>
-                </div>
-                <strong>{filteredJobs.length}개</strong>
-              </header>
-
-              {filteredJobs.length > 0 ? (
-                <ul className="fit-job-list" aria-label="최근 맞춤 공고 목록">
-                  {filteredJobs.map((job) => (
-                    <FitJobRow
-                      job={job}
-                      key={job.id}
-                      selected={selectedJobId === job.id}
-                      onSelect={setSelectedJobId}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <div className="daily-empty" role="status">
-                  <h3>{query ? "검색 결과가 없습니다." : "표시할 공고가 없습니다."}</h3>
-                  <p>
-                    {query
-                      ? "다른 기술, 직무, 기업명으로 다시 검색해보세요."
-                      : "내 스택을 입력하거나 수집 데이터가 쌓이면 맞춤 공고가 표시됩니다."}
-                  </p>
-                </div>
-              )}
+          <div className="reference-hero-copy">
+            <h1 id="weekly-summary-title">내 기술스택 기준 이번 주 요약</h1>
+            <div className="reference-stack-editor" id="my-stack">
+              <div className="reference-stack-chips" aria-label="분석 기준 기술스택">
+                {ownedSkills.map((skill) => (
+                  <button
+                    aria-label={`${skill} 제거`}
+                    className="reference-stack-chip"
+                    key={skill}
+                    onClick={() => handleRemoveSkill(skill)}
+                    type="button"
+                  >
+                    <span>{skill}</span>
+                    <X size={13} weight="bold" aria-hidden />
+                  </button>
+                ))}
+              </div>
+              <form
+                aria-label="내 스택 편집"
+                className="reference-stack-form"
+                onSubmit={handleAddSkill}
+              >
+                <label className="sr-only" htmlFor="owned-skill-input">
+                  내 스택에 추가할 기술
+                </label>
+                <input
+                  aria-label="내 스택에 추가할 기술"
+                  id="owned-skill-input"
+                  placeholder="기술 추가"
+                  value={skillInput}
+                  onChange={(event) => setSkillInput(event.target.value)}
+                />
+                <button type="submit">추가</button>
+              </form>
+              <p className="reference-stack-status" role="status">
+                {stackMessage}
+              </p>
             </div>
-          </section>
-
-          <JobInspectorPanel selectedJob={selectedJob} jobs={model.jobs} />
+            <p>
+              {leadTrend}와 {secondTrend} 관련 공고가 이번 주 크게 증가했어요.
+            </p>
+          </div>
+          <MiniGrowthGraphic />
         </section>
 
-        <MiniMarketSignals
-          trendingSkills={model.trendingSkills}
-          cooccurringSkills={model.cooccurringSkills}
-        />
+        <section className="reference-kpis" aria-label="이번 주 핵심 지표">
+          <article className="reference-kpi-card">
+            <header>
+              <h2>신규 매칭 공고</h2>
+              <Info size={16} weight="regular" aria-hidden />
+            </header>
+            <strong>{matchedCount}</strong>
+            <p>
+              <ArrowUp size={15} weight="bold" aria-hidden />
+              38% <span>(지난주 대비)</span>
+            </p>
+            <Sparkline />
+          </article>
+          <article className="reference-kpi-card">
+            <header>
+              <h2>80% 이상 Fit</h2>
+              <Info size={16} weight="regular" aria-hidden />
+            </header>
+            <strong>{highFitCount}</strong>
+            <p>
+              <ArrowUp size={15} weight="bold" aria-hidden />
+              17% <span>(지난주 대비)</span>
+            </p>
+            <Sparkline />
+          </article>
+          <article className="reference-kpi-card reference-kpi-card--skill">
+            <header>
+              <h2>상승 기술</h2>
+              <Info size={16} weight="regular" aria-hidden />
+            </header>
+            <strong>{leadTrend}</strong>
+            <p>
+              <ArrowUp size={15} weight="bold" aria-hidden />
+              28% <span>(지난주 대비)</span>
+            </p>
+            <span className="reference-kpi-icon reference-kpi-icon--green">
+              <TrendUp size={34} weight="bold" aria-hidden />
+            </span>
+          </article>
+          <article className="reference-kpi-card reference-kpi-card--deadline">
+            <header>
+              <h2>마감 임박</h2>
+              <Info size={16} weight="regular" aria-hidden />
+            </header>
+            <strong>{urgentCount}</strong>
+            <p>
+              <ArrowUp size={15} weight="bold" aria-hidden />
+              2 <span>(지난주 대비)</span>
+            </p>
+            <span className="reference-kpi-icon reference-kpi-icon--orange">
+              <Clock size={34} weight="bold" aria-hidden />
+            </span>
+          </article>
+        </section>
+
+        <section className="reference-dashboard-grid">
+          <article className="reference-panel reference-panel--chart">
+            <header className="reference-panel-header">
+              <div>
+                <h2>내 기술스택 기준 시장 변화</h2>
+                <Info size={16} weight="regular" aria-hidden />
+              </div>
+              <div className="reference-range-tabs" aria-label="기간 선택">
+                <button type="button">7일</button>
+                <button className="is-active" type="button">30일</button>
+                <button type="button">90일</button>
+              </div>
+            </header>
+            <div className="reference-legend" aria-hidden="true">
+              <span className="is-market">전체 시장</span>
+              <span className="is-owned">내 기술스택 관련</span>
+              <span className="is-jobs">신규 공고</span>
+            </div>
+            <WeeklyChart />
+          </article>
+
+          <article className="reference-panel" id="weekly-jobs">
+            <header className="reference-panel-header">
+              <h2>이번 주 신규 공고</h2>
+              <a href="#weekly-jobs">전체 보기</a>
+            </header>
+            <div className="reference-table">
+              {weeklyJobs.map((job) => (
+                <div className="reference-table-row" key={`${job.companyName}-${job.title}`}>
+                  <CompanyMark companyName={job.companyName} tone={job.tone} />
+                  <strong>{job.companyName}</strong>
+                  <span>{job.title}</span>
+                  <small>{job.location}</small>
+                  <time>{job.time}</time>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="reference-panel">
+            <header className="reference-panel-header">
+              <div>
+                <h2>급상승 관련 기술 TOP 5</h2>
+                <Info size={16} weight="regular" aria-hidden />
+              </div>
+              <a href="/skills/graph">전체 보기</a>
+            </header>
+            <ol className="reference-trend-list">
+              {trendRows.map((skill, index) => (
+                <li key={skill.label}>
+                  <span>{index + 1}</span>
+                  <b>{skill.label}</b>
+                  <strong>
+                    <ArrowUp size={14} weight="bold" aria-hidden />
+                    {skill.value}
+                  </strong>
+                </li>
+              ))}
+            </ol>
+          </article>
+
+          <article className="reference-panel">
+            <header className="reference-panel-header">
+              <h2>변경 / 마감 임박 공고</h2>
+              <a href="#weekly-jobs">전체 보기</a>
+            </header>
+            <div className="reference-table reference-table--deadline">
+              {SAMPLE_DEADLINE_JOBS.map((job) => (
+                <div className="reference-table-row" key={`${job.companyName}-${job.date}`}>
+                  <CompanyMark companyName={job.companyName} tone={job.tone} />
+                  <strong>{job.companyName}</strong>
+                  <span>{job.title}</span>
+                  <b className={job.badge.startsWith("D-") ? "is-urgent" : "is-changed"}>
+                    {job.badge}
+                  </b>
+                  <time>{job.date}</time>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
       </main>
     </DashboardShell>
   );

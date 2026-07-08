@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addOwnedSkill,
+  ownedSkillsFromSearchParams,
   readOwnedSkills,
   removeOwnedSkill,
   writeOwnedSkills,
@@ -45,5 +46,21 @@ describe("owned skill storage", () => {
     expect(addOwnedSkill("ROS", fake)).toEqual(["ROS"]);
     expect(addOwnedSkill("C++", fake)).toEqual(["C++", "ROS"]);
     expect(removeOwnedSkill("ROS", fake)).toEqual(["C++"]);
+  });
+
+  it("normalizes owned skills from repeated URL search params", () => {
+    expect(
+      ownedSkillsFromSearchParams({
+        owned_skills: [" Spring ", "Java", "Spring", ""],
+      }),
+    ).toEqual(["Java", "Spring"]);
+  });
+
+  it("normalizes owned skills from comma separated URL search params", () => {
+    expect(
+      ownedSkillsFromSearchParams({
+        owned_skills: "Java, Spring,AWS",
+      }),
+    ).toEqual(["AWS", "Java", "Spring"]);
   });
 });

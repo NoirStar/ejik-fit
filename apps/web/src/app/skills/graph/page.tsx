@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
 import { getSkillGraph } from "@/lib/api";
+import { DEFAULT_OWNED_SKILLS } from "@/lib/owned-skills";
 import type { SkillGraphResponse } from "@/lib/types";
 
 
@@ -15,12 +16,9 @@ export const metadata: Metadata = {
 };
 
 
-const DEFAULT_OWNED_SKILLS = ["C++", "Python", "Linux"];
-
-
 function emptyGraph(): SkillGraphResponse {
   return {
-    seed: "C++",
+    seed: DEFAULT_OWNED_SKILLS[0],
     nodes: [],
     edges: [],
     evidence: [],
@@ -38,7 +36,7 @@ export default async function SkillGraphPage() {
 
   try {
     graph = await getSkillGraph({
-      seed: "C++",
+      seed: DEFAULT_OWNED_SKILLS[0],
       owned_skills: DEFAULT_OWNED_SKILLS,
       limit: 30,
     });

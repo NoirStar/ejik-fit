@@ -2,9 +2,9 @@ import Link from "next/link";
 import {
   Briefcase,
   CalendarDots,
-  ChartLineUp,
   GearSix,
   Graph,
+  Question,
   SquaresFour,
 } from "@phosphor-icons/react";
 
@@ -13,11 +13,10 @@ import { BrandMark } from "@/components/brand/brand-mark";
 
 const NAV_ITEMS = [
   { type: "link", href: "/", label: "대시보드", icon: SquaresFour, active: true },
-  { type: "link", href: "/#jobs", label: "공고 탐색", icon: Briefcase, active: false },
-  { type: "link", href: "/#signals", label: "트렌드", icon: ChartLineUp, active: false },
-  { type: "link", href: "/skills/graph", label: "기술 맵", icon: Graph, active: false },
-  { type: "disabled", label: "채용 캘린더", icon: CalendarDots },
-  { type: "disabled", label: "내 스택", icon: GearSix },
+  { type: "link", href: "/#weekly-jobs", label: "공고", icon: Briefcase, active: false },
+  { type: "link", href: "/skills/graph", label: "기술맵", icon: Graph, active: false },
+  { type: "disabled", label: "채용달력", icon: CalendarDots },
+  { type: "link", href: "/#my-stack", label: "내 스택", icon: GearSix, active: false },
 ] as const;
 
 
@@ -63,6 +62,10 @@ export function DashboardShell({
             );
           })}
         </nav>
+        <button className="daily-help-button" type="button">
+          <Question size={18} weight="bold" aria-hidden />
+          도움말
+        </button>
       </aside>
       {children}
     </section>
