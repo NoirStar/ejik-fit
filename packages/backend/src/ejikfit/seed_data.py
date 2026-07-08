@@ -52,6 +52,27 @@ INITIAL_GREETING_SOURCES = (
         "supercent",
         "https://supercent.career.greetinghr.com/ko",
     ),
+    SeedSource(
+        "카카오페이",
+        "kakaopay",
+        "https://kakaopay.career.greetinghr.com/ko",
+    ),
+    SeedSource(
+        "카카오모빌리티",
+        "kakaomobility",
+        "https://kakaomobility.career.greetinghr.com/ko",
+    ),
+    SeedSource(
+        "넥스트증권",
+        "nextsecurities",
+        "https://nextsecurities.career.greetinghr.com/ko",
+    ),
+    SeedSource(
+        "현대오토에버",
+        "hyundai-autoever",
+        "https://hyundai-autoever.career.greetinghr.com/ko",
+    ),
+    SeedSource("S2W", "s2w", "https://s2w.career.greetinghr.com/ko"),
 )
 
 
