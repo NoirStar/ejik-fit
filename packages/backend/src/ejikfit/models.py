@@ -27,6 +27,9 @@ def utcnow() -> datetime:
 class SourceType(str, enum.Enum):
     GREETING = "greeting"
     JSON_LD = "json_ld"
+    NAVER_JSON = "naver_json"
+    KAKAO_JSON = "kakao_json"
+    LINE_GATSBY = "line_gatsby"
 
 
 class SourceStatus(str, enum.Enum):

@@ -11,9 +11,11 @@ class SeedSource:
     name: str
     slug: str
     base_url: str
+    source_type: SourceType = SourceType.GREETING
+    homepage_url: str | None = None
 
 
-INITIAL_GREETING_SOURCES = (
+INITIAL_SOURCE_CATALOG = (
     SeedSource(
         "DeepAuto.ai",
         "deepauto-ai",
@@ -73,18 +75,51 @@ INITIAL_GREETING_SOURCES = (
         "https://hyundai-autoever.career.greetinghr.com/ko",
     ),
     SeedSource("S2W", "s2w", "https://s2w.career.greetinghr.com/ko"),
+    SeedSource(
+        "네이버",
+        "naver",
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
+        SourceType.NAVER_JSON,
+        "https://www.navercorp.com",
+    ),
+    SeedSource(
+        "카카오",
+        "kakao",
+        "https://careers.kakao.com/public/api/job-list?lang=ko&skillSet=&page=1&company=KAKAO&part=TECHNOLOGY&employeeType=&keyword=",
+        SourceType.KAKAO_JSON,
+        "https://www.kakaocorp.com",
+    ),
+    SeedSource(
+        "LINE Plus",
+        "line-plus",
+        "https://careers.linecorp.com/page-data/jobs/page-data.json",
+        SourceType.LINE_GATSBY,
+        "https://linepluscorp.com",
+    ),
+)
+
+INITIAL_GREETING_SOURCES = tuple(
+    item
+    for item in INITIAL_SOURCE_CATALOG
+    if item.source_type == SourceType.GREETING
 )
 
 
 def seed_sources(session: Session) -> int:
     created = 0
 
-    for item in INITIAL_GREETING_SOURCES:
+    for item in INITIAL_SOURCE_CATALOG:
         company = session.scalar(select(Company).where(Company.slug == item.slug))
         if company is None:
-            company = Company(name=item.name, slug=item.slug)
+            company = Company(
+                name=item.name,
+                slug=item.slug,
+                homepage_url=item.homepage_url,
+            )
             session.add(company)
             session.flush()
+        elif item.homepage_url and company.homepage_url is None:
+            company.homepage_url = item.homepage_url
 
         source = session.scalar(
             select(CareerSource).where(CareerSource.base_url == item.base_url)
@@ -94,7 +129,7 @@ def seed_sources(session: Session) -> int:
                 CareerSource(
                     company_id=company.id,
                     base_url=item.base_url,
-                    source_type=SourceType.GREETING,
+                    source_type=item.source_type,
                     status=SourceStatus.ALLOWED,
                 )
             )

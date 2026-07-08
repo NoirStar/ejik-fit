@@ -24,3 +24,6 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "evidence_text" in sql
     assert "confidence" in sql
     assert "match_reason" in sql
+    assert "NAVER_JSON" in sql
+    assert "KAKAO_JSON" in sql
+    assert "LINE_GATSBY" in sql

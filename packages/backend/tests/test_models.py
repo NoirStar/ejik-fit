@@ -35,3 +35,9 @@ def test_source_and_external_id_identify_one_posting() -> None:
 
         assert posting.company.slug == "test-company"
         assert posting.source.external_id_namespace == "greeting"
+
+
+def test_official_json_source_namespaces_are_stable() -> None:
+    assert SourceType.NAVER_JSON.value == "naver_json"
+    assert SourceType.KAKAO_JSON.value == "kakao_json"
+    assert SourceType.LINE_GATSBY.value == "line_gatsby"
