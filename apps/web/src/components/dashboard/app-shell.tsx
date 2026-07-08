@@ -8,6 +8,8 @@ import {
   SquaresFour,
 } from "@phosphor-icons/react";
 
+import { BrandMark } from "@/components/brand/brand-mark";
+
 
 const NAV_ITEMS = [
   { type: "link", href: "/", label: "대시보드", icon: SquaresFour, active: true },
@@ -23,14 +25,10 @@ export function DashboardShell({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <section className="daily-shell" aria-label="기술 채용 인텔리전스 대시보드">
+    <section className="daily-shell" aria-label="이직핏 대시보드">
       <aside className="daily-rail" aria-label="주요 메뉴">
-        <Link className="daily-brand" href="/" aria-label="ejik 대시보드 홈">
-          <span className="daily-brand-mark" aria-hidden="true">e</span>
-          <span className="daily-brand-copy">
-            <strong>기술 채용<br />인텔리전스</strong>
-            <small>Tech Hiring Intelligence</small>
-          </span>
+        <Link className="daily-brand" href="/" aria-label="이직핏 대시보드 홈">
+          <BrandMark size="md" />
         </Link>
         <nav className="daily-nav" aria-label="대시보드 탐색">
           {NAV_ITEMS.map((item) => {

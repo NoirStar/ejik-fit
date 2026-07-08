@@ -63,9 +63,10 @@ export function DailyDashboardHome({ model, dataFailed }: DailyDashboardHomeProp
       <main className="daily-main">
         <header className="daily-topbar">
           <div className="daily-welcome">
-            <span>오늘의 채용 브리핑</span>
-            <h1>기술 채용 인텔리전스</h1>
-            <p>최근 공고와 내 스택 기준 신호만 빠르게 확인하세요.</p>
+            <span>오늘의 이직 브리핑</span>
+            <h1>이직핏</h1>
+            <p>내 기술이 맞는 시장을 찾다</p>
+            <small>기술 스택과 채용 신호를 연결해 다음 이직 판단을 돕습니다.</small>
           </div>
           <label className="daily-search" htmlFor="daily-search">
             <span>통합 검색</span>

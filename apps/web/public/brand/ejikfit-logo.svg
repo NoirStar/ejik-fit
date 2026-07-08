@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="72" viewBox="0 0 240 72" role="img" aria-labelledby="title">
+  <title>이직핏 로고</title>
+  <rect x="8" y="8" width="56" height="56" rx="16" fill="#1769ff"/>
+  <path d="M25.5 43.2V29.4L36 23.2l10.5 6.2v13.8L36 49.2l-10.5-6Z" fill="none" stroke="white" stroke-width="5.2" stroke-linejoin="round"/>
+  <path d="M30.4 37.2 34.7 41.5 44.5 30.4" fill="none" stroke="#37d099" stroke-width="4.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="25.5" cy="43.2" r="4" fill="#9fc1ff"/>
+  <circle cx="46.5" cy="29.4" r="4" fill="#9fc1ff"/>
+  <text x="80" y="35" fill="#101827" font-family="Geist, Pretendard, system-ui, sans-serif" font-size="25" font-weight="850" letter-spacing="-1.4">이직핏</text>
+  <text x="81" y="53" fill="#66758e" font-family="Geist, Pretendard, system-ui, sans-serif" font-size="12" font-weight="720" letter-spacing="2.8">EJIK FIT</text>
+</svg>

@@ -73,9 +73,10 @@ describe("SkillGraphPage", () => {
 
     render(await SkillGraphPage());
 
-    expect(
-      screen.getByRole("heading", { name: "기술 채용 인텔리전스" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "이직핏 기술 맵" })).toBeInTheDocument();
+    expect(screen.getByText("내 기술이 맞는 시장을 찾다")).toBeInTheDocument();
+    expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
     expect(screen.getAllByText("C++").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ROS2").length).toBeGreaterThan(0);
     expect(screen.getByText("자율주행 SW 엔지니어")).toBeInTheDocument();

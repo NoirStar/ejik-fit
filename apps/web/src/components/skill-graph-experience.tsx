@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 
+import { BrandMark } from "@/components/brand/brand-mark";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
 import { domainColor, summarizeGraph } from "@/lib/skill-graph";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
@@ -438,10 +439,10 @@ export function SkillGraphExperience({
   }
 
   return (
-    <section className="ti-app-shell" aria-label="기술 채용 인텔리전스 대시보드">
+    <section className="ti-app-shell" aria-label="이직핏 기술 맵">
       <aside className="ti-rail" aria-label="주요 메뉴">
-        <a className="ti-rail__brand" href="/skills/graph" aria-label="ejik 대시보드">
-          e
+        <a className="ti-rail__brand" href="/skills/graph" aria-label="이직핏 기술 맵 홈">
+          <BrandMark size="sm" showWordmark={false} />
         </a>
         <nav className="ti-rail__nav">
           {TOOL_ITEMS.map((item, index) => {
@@ -462,7 +463,7 @@ export function SkillGraphExperience({
 
       <aside className="ti-workbench" aria-label="필터와 보유 스킬">
         <header className="ti-workbench__brand">
-          <strong>기술 채용 인텔리전스</strong>
+          <strong>이직핏</strong>
           <span>{summarizeGraph(initialGraph)}</span>
         </header>
 
@@ -603,7 +604,8 @@ export function SkillGraphExperience({
       <main className="ti-stage" aria-label="그래프 작업 영역">
         <header className="ti-topbar">
           <div>
-            <h1>기술 채용 인텔리전스</h1>
+            <h1>이직핏 기술 맵</h1>
+            <p>내 기술이 맞는 시장을 찾다</p>
             <span>{graphMode === "local" ? "선택 주변" : "전체 시장"} 보기</span>
           </div>
           <label className="ti-command-search" htmlFor="dashboard-command-search">

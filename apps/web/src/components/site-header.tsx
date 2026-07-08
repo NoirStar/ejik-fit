@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { BrandMark } from "@/components/brand/brand-mark";
+
 
 const NAV_ITEMS = [
   { href: "/skills/graph", label: "대시보드" },
@@ -44,7 +46,7 @@ export function SiteHeader() {
     <header className={`site-header ${open ? "site-header--open" : ""}`}>
       <div className="site-header__inner site-header__shell">
         <Link href="/" className="brand" aria-label="이직핏 홈">
-          ejik
+          <BrandMark size="sm" />
         </Link>
         <nav className="site-nav site-nav--desktop" aria-label="주요 탐색">
           {NAV_ITEMS.map((item) => {
@@ -62,7 +64,7 @@ export function SiteHeader() {
           })}
         </nav>
         <p className="site-header__tagline">
-          채용공고 기반 커리어 인텔리전스
+          내 기술이 맞는 시장을 찾다
         </p>
         <button
           aria-controls="site-mobile-menu"

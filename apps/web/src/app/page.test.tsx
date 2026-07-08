@@ -69,9 +69,10 @@ describe("Home", () => {
 
     render(await Home());
 
-    expect(
-      screen.getByRole("heading", { name: "기술 채용 인텔리전스" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "이직핏" })).toBeInTheDocument();
+    expect(screen.getByText("내 기술이 맞는 시장을 찾다")).toBeInTheDocument();
+    expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "최근 맞춤 공고" }),
     ).toBeInTheDocument();

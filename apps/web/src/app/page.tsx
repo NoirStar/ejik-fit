@@ -12,9 +12,9 @@ import type {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "데일리 채용 대시보드",
+  title: "이직핏 대시보드",
   description:
-    "최근 맞춤 공고, 보완 기술, 시장 변화를 매일 확인하는 기술 채용 인텔리전스 홈입니다.",
+    "내 기술 스택과 채용 신호를 연결해 맞춤 공고, 보완 기술, 시장 변화를 매일 확인하는 이직핏 홈입니다.",
 };
 
 const DEFAULT_OWNED_SKILLS = ["C++", "Python", "Linux"];
