@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -361,7 +362,15 @@ def _allowed_source_ids() -> list[str]:
 
 def run_all_sources() -> dict[str, Any]:
     results: list[dict[str, Any]] = []
-    for target in _allowed_sources():
+    targets = _allowed_sources()
+    total_sources = len(targets)
+
+    for index, target in enumerate(targets, start=1):
+        print(
+            f"crawl source {index}/{total_sources} started: {target.label}",
+            flush=True,
+        )
+        started_at = time.monotonic()
         try:
             counts = run_source_by_id(target.source_id)
         except Exception as error:
@@ -373,10 +382,21 @@ def run_all_sources() -> dict[str, Any]:
                 "closed": 0,
                 "error": type(error).__name__,
             }
+        elapsed_seconds = time.monotonic() - started_at
+        print(
+            f"crawl source {index}/{total_sources} finished: {target.label} "
+            f"discovered={counts['discovered']} "
+            f"ingested={counts['ingested']} "
+            f"failed={counts['failed']} "
+            f"closed={counts['closed']} "
+            f"elapsed={elapsed_seconds:.1f}s",
+            flush=True,
+        )
         results.append(
             {
                 "source_id": target.source_id,
                 "source_label": target.label,
+                "elapsed_seconds": elapsed_seconds,
                 **counts,
             }
         )

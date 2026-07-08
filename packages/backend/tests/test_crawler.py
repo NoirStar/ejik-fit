@@ -110,6 +110,34 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
     )
 
 
+def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        crawler,
+        "_allowed_sources",
+        lambda: [crawler.SourceRunTarget("first", "네이버 / naver_json")],
+    )
+    monkeypatch.setattr(
+        crawler,
+        "run_source_by_id",
+        lambda source_id: {
+            "discovered": 1,
+            "ingested": 1,
+            "failed": 0,
+            "closed": 0,
+        },
+    )
+
+    report = crawler.run_all_sources()
+    output = capsys.readouterr().out
+
+    assert "crawl source 1/1 started: 네이버 / naver_json" in output
+    assert (
+        "crawl source 1/1 finished: 네이버 / naver_json "
+        "discovered=1 ingested=1 failed=0 closed=0"
+    ) in output
+    assert isinstance(report["results"][0]["elapsed_seconds"], float)
+
+
 class StaticFetcher:
     def __init__(self, text: str) -> None:
         self.text = text
