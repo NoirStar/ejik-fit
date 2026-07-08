@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 import httpx
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from tenacity import (
     AsyncRetrying,
     retry_if_exception_type,
@@ -18,6 +18,9 @@ from tenacity import (
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.greeting import discover_openings, parse_opening
 from ejikfit.connectors.jsonld import parse_jsonld_openings
+from ejikfit.connectors.kakao import parse_kakao_openings
+from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
+from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
 from ejikfit.models import (
@@ -27,8 +30,8 @@ from ejikfit.models import (
     SourceStatus,
     SourceType,
 )
-from ejikfit.storage import S3SnapshotStore, SnapshotStore
 from ejikfit.search import MeiliPostingIndex, PostingIndex
+from ejikfit.storage import S3SnapshotStore, SnapshotStore
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +59,12 @@ class CrawlResult:
     ingested: int = 0
     failed: int = 0
     closed: int = 0
+
+
+@dataclass(frozen=True)
+class SourceRunTarget:
+    source_id: str
+    label: str
 
 
 def contains_access_challenge(html: str) -> bool:
@@ -159,6 +168,20 @@ def reconcile_missing(
     return closed
 
 
+def _parse_list_json_openings(
+    source_type: SourceType,
+    text: str,
+    url: str,
+):
+    if source_type == SourceType.NAVER_JSON:
+        return parse_naver_openings(text, url)
+    if source_type == SourceType.KAKAO_JSON:
+        return parse_kakao_openings(text, url)
+    if source_type == SourceType.LINE_GATSBY:
+        return parse_line_gatsby_openings(text, url)
+    raise ValueError(f"unsupported list-json source type: {source_type.value}")
+
+
 async def crawl_source(
     session: Session,
     source: CareerSource,
@@ -238,6 +261,29 @@ async def crawl_source(
                 posting_index,
             )
             ingested += 1
+    elif source.source_type in {
+        SourceType.NAVER_JSON,
+        SourceType.KAKAO_JSON,
+        SourceType.LINE_GATSBY,
+    }:
+        openings = _parse_list_json_openings(
+            source.source_type,
+            listing.text,
+            listing.url,
+        )
+        discovered = len(openings)
+        for opening in openings:
+            seen_external_ids.add(opening.external_id)
+            ingest_opening(
+                session,
+                source,
+                opening,
+                listing.text,
+                store,
+                now,
+                posting_index,
+            )
+            ingested += 1
 
     source.last_verified_at = now
     session.commit()
@@ -292,23 +338,34 @@ def _posting_index(settings: Settings) -> PostingIndex | None:
     )
 
 
-def _allowed_source_ids() -> list[str]:
+def _allowed_sources() -> list[SourceRunTarget]:
     with SessionLocal() as session:
         statement = (
-            select(CareerSource.id)
+            select(CareerSource)
+            .options(joinedload(CareerSource.company))
             .where(CareerSource.status == SourceStatus.ALLOWED)
             .order_by(CareerSource.base_url)
         )
-        return [str(source_id) for source_id in session.scalars(statement)]
+        return [
+            SourceRunTarget(
+                str(source.id),
+                f"{source.company.name} / {source.source_type.value}",
+            )
+            for source in session.scalars(statement)
+        ]
+
+
+def _allowed_source_ids() -> list[str]:
+    return [target.source_id for target in _allowed_sources()]
 
 
 def run_all_sources() -> dict[str, Any]:
     results: list[dict[str, Any]] = []
-    for source_id in _allowed_source_ids():
+    for target in _allowed_sources():
         try:
-            counts = run_source_by_id(source_id)
+            counts = run_source_by_id(target.source_id)
         except Exception as error:
-            logger.exception("Source %s failed unexpectedly", source_id)
+            logger.exception("Source %s failed unexpectedly", target.source_id)
             counts = {
                 "discovered": 0,
                 "ingested": 0,
@@ -316,7 +373,13 @@ def run_all_sources() -> dict[str, Any]:
                 "closed": 0,
                 "error": type(error).__name__,
             }
-        results.append({"source_id": source_id, **counts})
+        results.append(
+            {
+                "source_id": target.source_id,
+                "source_label": target.label,
+                **counts,
+            }
+        )
 
     return {
         "sources": len(results),
@@ -336,9 +399,11 @@ def render_crawl_summary(report: dict[str, Any]) -> str:
         "| --- | ---: | ---: | ---: | ---: |",
     ]
     for result in report["results"]:
-        source_id = str(result["source_id"]).replace("|", "\\|")
+        source_label = str(
+            result.get("source_label") or result["source_id"]
+        ).replace("|", "\\|")
         lines.append(
-            f"| {source_id} | {result['discovered']} | "
+            f"| {source_label} | {result['discovered']} | "
             f"{result['ingested']} | {result['failed']} | "
             f"{result['closed']} |"
         )

@@ -1,7 +1,22 @@
+import asyncio
+from datetime import datetime, timezone
+
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+
 from ejikfit import crawler
 from ejikfit.config import Settings
 from ejikfit.crawler import contains_access_challenge, next_missing_state
-from ejikfit.models import PostingStatus
+from ejikfit.models import (
+    Base,
+    CareerSource,
+    Company,
+    JobPosting,
+    PostingStatus,
+    SourceStatus,
+    SourceType,
+)
+from ejikfit.storage import MemorySnapshotStore
 
 
 def test_failed_listing_never_advances_missing_counter() -> None:
@@ -47,11 +62,16 @@ def test_access_challenge_detection_avoids_job_description_false_positive() -> N
     ) is True
 
 
-def test_crawl_all_continues_after_one_source_failure(monkeypatch) -> None:
+def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         crawler,
-        "_allowed_source_ids",
-        lambda: ["first", "second"],
+        "_allowed_sources",
+        lambda: [
+            crawler.SourceRunTarget("first", "네이버 / naver_json"),
+            crawler.SourceRunTarget("second", "카카오 / kakao_json"),
+        ],
     )
 
     def fake_run(source_id: str) -> dict[str, int]:
@@ -80,6 +100,66 @@ def test_crawl_all_continues_after_one_source_failure(monkeypatch) -> None:
         "first",
         "second",
     ]
+    assert [item["source_label"] for item in report["results"]] == [
+        "네이버 / naver_json",
+        "카카오 / kakao_json",
+    ]
+    assert (
+        "| 네이버 / naver_json | 0 | 0 | 1 | 0 |"
+        in crawler.render_crawl_summary(report)
+    )
+
+
+class StaticFetcher:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        return crawler.FetchedPage(
+            url=url,
+            text=self.text,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_crawl_source_routes_naver_json_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="네이버", slug="naver")
+        session.add(company)
+        session.flush()
+        source = CareerSource(
+            company_id=company.id,
+            base_url="https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
+            source_type=SourceType.NAVER_JSON,
+            status=SourceStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    '{"list":[{"annoId":1001,'
+                    '"annoSubject":"Backend Engineer",'
+                    '"jobDetailLink":"https://recruit.navercorp.com/rcrt/view.do?annoId=1001"}]}'
+                ),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "1001"
+        assert postings[0].title == "Backend Engineer"
 
 
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:
