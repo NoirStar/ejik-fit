@@ -404,3 +404,52 @@ def test_parse_enterprise_json_openings_maps_hyundai_motor_apply_list_api() -> N
     assert opening.opens_at.isoformat() == "2026-06-15T09:00:00+09:00"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-14T17:05:00+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_hanwha_recruit_api() -> None:
+    payload = {
+        "success": True,
+        "code": "SUCCESS",
+        "message": "채용공고 목록 조회 성공",
+        "data": {
+            "filteredCount": 1,
+            "size": 100,
+            "hasNext": False,
+            "page": 0,
+            "list": [
+                {
+                    "sdNm": "한화시스템/ICT",
+                    "rtNm": "금융프로젝트 PM(프로젝트매니저) 경력사원 채용",
+                    "rtAcptStrtDttm": "2026.07.02 09:00",
+                    "rtAcptEndDttm": "2026.07.12 23:59",
+                    "rtSeq": 19162,
+                    "rtNrcrtYn": "N",
+                    "rtCarrYn": "Y",
+                    "rtIntnYn": "N",
+                    "rtPermanentWorkYn": "Y",
+                    "rtTempWorkYn": "N",
+                    "tagList": [{"tagNm": "PM"}, {"tagNm": "금융"}],
+                }
+            ],
+        },
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://hwadm.hanwhain.com/new-backend/portal/api/rcRecruit/search-rcrt",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "19162"
+    assert opening.url == (
+        "https://www.hanwhain.com/portal/apply/recruit/detail?rtSeq=19162"
+    )
+    assert opening.title == "금융프로젝트 PM(프로젝트매니저) 경력사원 채용"
+    assert opening.employment_type == "정규직"
+    assert opening.career_type == "experienced"
+    assert opening.description_text == "한화시스템/ICT 정규직 PM 금융"
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-07-02T09:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-12T23:59:00+09:00"

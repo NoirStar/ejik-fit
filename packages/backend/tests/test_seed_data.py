@@ -74,6 +74,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "hyundai-motor",
         "kia",
         "cj-olivenetworks",
+        "hanwha-systems",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -116,6 +117,10 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         SourceType.ENTERPRISE_JSON
     )
     assert catalog_by_slug["cj-olivenetworks"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["hanwha-systems"].source_type == (
+        SourceType.ENTERPRISE_JSON
+    )
+    assert catalog_by_slug["hanwha-systems"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].connector_family == "enterprise_json"
 
 
@@ -239,6 +244,29 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "?COMPANY=E10&BUSINESS_UNIT=E10BU&ZZ_TARGET_1=Z&ROWNO=100"
             "&PAGENO=1&TOTAL_COUNT=1&ZZ_TITLE=&callback=list"
         )
+
+        hanwha = sources_by_slug["hanwha-systems"]
+        assert hanwha.status == SourceStatus.ALLOWED
+        assert hanwha.connector_family == "enterprise_json"
+        assert hanwha.base_url == (
+            "https://hwadm.hanwhain.com/new-backend/portal/api/rcRecruit/"
+            "search-rcrt"
+        )
+        assert hanwha.request_method == "POST"
+        assert hanwha.request_body == {
+            "langCd": "ko",
+            "searchText": "",
+            "sdSeqList": [215, 328],
+            "rtNrcrtYn": "",
+            "rtCarrYn": "",
+            "rtIntnYn": "",
+            "rtPermanentWorkYn": "",
+            "rtTempWorkYn": "",
+            "djSeqList": None,
+            "rjSeqList": None,
+            "page": 0,
+            "size": 100,
+        }
 
 
 def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:

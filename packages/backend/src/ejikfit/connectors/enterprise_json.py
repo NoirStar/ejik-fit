@@ -281,6 +281,93 @@ def _hyundai_apply_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _flag_names(item: dict[str, Any], mapping: tuple[tuple[str, str], ...]) -> str:
+    return " | ".join(label for key, label in mapping if item.get(key) == "Y")
+
+
+def _hanwha_tag_names(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+
+    names: list[str] = []
+    for item in value:
+        if isinstance(item, str):
+            name = item.strip()
+        elif isinstance(item, dict):
+            name = str(
+                item.get("tagNm")
+                or item.get("tagName")
+                or item.get("name")
+                or item.get("label")
+                or ""
+            ).strip()
+        else:
+            name = ""
+        if name:
+            names.append(name)
+    return list(dict.fromkeys(names))
+
+
+def _hanwha_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    payload = data.get("data")
+    if not isinstance(payload, dict):
+        return None
+    recruit_list = payload.get("list")
+    if not isinstance(recruit_list, list):
+        return None
+    if not any(
+        isinstance(item, dict) and "rtSeq" in item and "rtNm" in item
+        for item in recruit_list
+    ):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in recruit_list:
+        if not isinstance(item, dict):
+            continue
+        posting_id = item.get("rtSeq")
+        title = item.get("rtNm")
+        if posting_id is None or not isinstance(title, str):
+            continue
+
+        career_type_name = _flag_names(
+            item,
+            (
+                ("rtNrcrtYn", "신입"),
+                ("rtCarrYn", "경력"),
+                ("rtIntnYn", "인턴"),
+            ),
+        )
+        employment_type = _flag_names(
+            item,
+            (
+                ("rtPermanentWorkYn", "정규직"),
+                ("rtTempWorkYn", "계약직"),
+            ),
+        )
+        posting_id_text = str(posting_id)
+        jobs.append(
+            {
+                "id": posting_id_text,
+                "title": unescape(title),
+                "jobDetailUrl": (
+                    "https://www.hanwhain.com/portal/apply/recruit/detail?"
+                    f"{urlencode({'rtSeq': posting_id_text})}"
+                ),
+                "employmentType": employment_type or career_type_name,
+                "careerTypeName": career_type_name,
+                "startDate": item.get("rtAcptStrtDttm"),
+                "closeDate": item.get("rtAcptEndDttm"),
+                "companyName": item.get("sdNm"),
+                "jobGroupName": employment_type,
+                "skills": _hanwha_tag_names(item.get("tagList")),
+                "active": True,
+                "live": True,
+            }
+        )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -303,4 +390,7 @@ def parse_enterprise_json_openings(
         hyundai_payload = _hyundai_apply_payload(data)
         if hyundai_payload is not None:
             return parse_static_payload_openings(hyundai_payload, listing_url)
+        hanwha_payload = _hanwha_recruit_payload(data)
+        if hanwha_payload is not None:
+            return parse_static_payload_openings(hanwha_payload, listing_url)
     return parse_static_payload_openings(data, listing_url)

@@ -16,6 +16,7 @@ ejikfit preview-source --company-slug kt
 ejikfit preview-source --company-slug hyundai-motor
 ejikfit preview-source --company-slug kia
 ejikfit preview-source --company-slug cj-olivenetworks
+ejikfit preview-source --company-slug hanwha-systems
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -30,6 +31,8 @@ ejikfit preview-source --company-slug cj-olivenetworks
 | 한화시스템 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 
 처음 실행에서는 삼성SDS 직무소개, SK Careers 블로그/유튜브, 기아/한화 채용 안내 링크가 공고처럼 잡혔다. `html_listing_detail`는 날짜 또는 직무 제목 신호가 있는 링크만 후보로 보도록 조정했고, `더보기` 직무소개 링크를 제외했다.
+
+2026-07-10 한화시스템 승격 후 임시 DB에서 `preview-sources --status needs_connector --limit 12`를 재확인한 결과, 남은 항목은 삼성SDS 1개뿐이다.
 
 ## needs_browser 결과
 
@@ -97,6 +100,16 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 
 임시 SQLite DB에서 `preview-source --company-slug cj-olivenetworks`를 실행한 결과 `discovered=40`, `error=null`이 확인됐다. 샘플에는 `[경력] 팩토리사업 영업대표`, `[경력] 프로젝트 DBA`, `[경력] CJ ONE 회원 서비스 백엔드 개발자` 등이 포함된다.
 
+## 한화시스템 공식 JSON API 승격
+
+한화시스템 공식 채용 안내 페이지 `https://www.hanwhasystems.com/kr/recruit/recruit3.do`는 실제 공고 확인/지원 동선을 한화인 `https://www.hanwhain.com/`으로 연결한다. 한화인 `지원하기 > 채용공고` 화면은 공개 POST endpoint `https://hwadm.hanwhain.com/new-backend/portal/api/rcRecruit/search-rcrt`를 호출한다.
+
+계열사 목록 endpoint `search-sbsd`에서 한화시스템 계열사 코드는 `한화시스템/ICT=215`, `한화시스템/방산=328`로 확인했다. seed는 `request_method=POST`와 `sdSeqList=[215,328]`, `size=100`을 포함한 한화인 프론트와 동일한 검색 body를 사용한다.
+
+응답은 `data.list[]` 안에 `rtSeq`, `rtNm`, `sdNm`, `rtAcptStrtDttm`, `rtAcptEndDttm`, `rtNrcrtYn`, `rtCarrYn`, `rtIntnYn`, `rtPermanentWorkYn`, `rtTempWorkYn`를 포함한다. 상세 URL은 한화인 공유 URL과 동일하게 `https://www.hanwhain.com/portal/apply/recruit/detail?rtSeq={rtSeq}`로 구성한다.
+
+임시 SQLite DB에서 `preview-source --company-slug hanwha-systems`를 실행한 결과 `discovered=24`, `error=null`이 확인됐다. 샘플에는 `한화시스템 구미사업장 운영지원 및 홍보/의전 계약직 채용`, `한화시스템 Talent Sourcer 계약직 채용`, `한화시스템 통신단말 및 ESA 빔 추적/제어 R&D 엔지니어 경력사원 채용` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -110,6 +123,8 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 - 현대자동차는 Hyundai Motor 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=30`이다.
 - 기아는 Kia 공식 렌더 목록으로 승격했고, 현재 preview `discovered=3`이다.
 - CJ올리브네트웍스는 CJ Group 공식 JSONP 목록 API로 승격했고, 현재 preview `discovered=40`이다.
+- 한화시스템은 HanwhaIn 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=24`이다.
+- 남은 `needs_connector` 항목은 삼성SDS 1개다.
 
 ## 2026-07-10 LG API 승격
 

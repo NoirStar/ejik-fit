@@ -395,20 +395,41 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="한화시스템",
         slug="hanwha-systems",
-        base_url="https://www.hanwhasystems.com/kr/recruit/recruit3.do",
-        source_type=SourceType.HTML_LISTING_DETAIL,
+        base_url=(
+            "https://hwadm.hanwhain.com/new-backend/portal/api/rcRecruit/"
+            "search-rcrt"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.hanwhasystems.com",
         sector="enterprise_it",
-        connector_family="html_listing_detail",
+        connector_family="enterprise_json",
+        request_method="POST",
+        request_body={
+            "langCd": "ko",
+            "searchText": "",
+            "sdSeqList": [215, 328],
+            "rtNrcrtYn": "",
+            "rtCarrYn": "",
+            "rtIntnYn": "",
+            "rtPermanentWorkYn": "",
+            "rtTempWorkYn": "",
+            "djSeqList": None,
+            "rjSeqList": None,
+            "page": 0,
+            "size": 100,
+        },
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
         tech_job_priority=5,
-        expected_job_volume=3,
-        connector_reuse_score=1,
+        expected_job_volume=5,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=2,
-        notes="Official Hanwha Systems recruitment page; applications route through HanwhaIn.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes=(
+            "Official HanwhaIn JSON listing filtered to Hanwha Systems ICT "
+            "and Defense subsidiaries."
+        ),
+        status=SourceStatus.ALLOWED,
     ),
 )
 
