@@ -241,6 +241,29 @@ class StaticFetcher:
         )
 
 
+class RecordingFetcher:
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append(
+            {"url": url, "method": method, "json_body": json_body}
+        )
+        return crawler.FetchedPage(
+            url=url,
+            text=self.text,
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -264,6 +287,29 @@ class BlockedFetcher:
 class TemporaryFailureFetcher:
     async def fetch(self, url: str) -> crawler.FetchedPage:
         raise crawler.RetryableFetchError("temporary upstream status 503")
+
+
+def test_fetch_listing_page_uses_source_post_json_request_options() -> None:
+    company = Company(name="LG CNS", slug="lg-cns")
+    source = CareerSource(
+        company=company,
+        base_url="https://api.careers.lg.com/rmk/job/retrieveJobNoticesList",
+        source_type=SourceType.ENTERPRISE_JSON,
+        request_method="POST",
+        request_body={"companyCodeList": ["CNS"]},
+    )
+    fetcher = RecordingFetcher('{"data":{"jobNoticeList":[]}}')
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+
+    assert page.url == source.base_url
+    assert fetcher.calls == [
+        {
+            "url": "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList",
+            "method": "POST",
+            "json_body": {"companyCodeList": ["CNS"]},
+        }
+    ]
 
 
 def _as_utc(value: datetime) -> datetime:

@@ -41,8 +41,17 @@ ejikfit preview-sources --status needs_browser --source-type browser_public_rend
 
 ## 다음 판단
 
-- 이 smoke 결과만으로 새 `allowed` 승격 대상은 없다.
-- LG 계열은 실제 응답 구조 확인 후 `static_next_data` 설정 또는 별도 엔드포인트 커넥터가 필요하다.
+- LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
+  - LG전자: `GET https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20`, preview `discovered=9`
+  - LG CNS: `POST https://api.careers.lg.com/rmk/job/retrieveJobNoticesList`, `companyCodeList=["CNS"]`, preview `discovered=21`
 - SK하이닉스는 브라우저 렌더링 이후 공개 JSON/API 탐색 또는 추가 wait/selector 전략이 필요하다.
 - 삼성전자는 접근 challenge가 확인되어 `blocked` 또는 `review`로 운영 분류하는 편이 안전하다.
 - 포스코DX는 네트워크 접근성 확인 후 대체 공식 출처를 찾아야 한다.
+
+## 2026-07-10 LG API 승격
+
+LG전자 `jobs` 페이지의 Next.js 청크에서 `https://globalcareers.lge.com/api/job/v1/jobs/` 호출을 확인했다. 응답은 `data.list` 안에 `id`, `title`, `content`, `location`, `empType`, `postCreateDtm` 등을 담고 있으며, 상세 URL은 `/jobs/{id}`로 구성된다.
+
+LG CNS는 Vite 번들에서 `https://api.careers.lg.com/rmk` base URL과 `/job/retrieveJobNoticesList` POST 호출을 확인했다. 프론트가 보내는 검색 바디는 `lnbSearch`, `hashTagText`, `recDate`, `order`, `careerList`, `companyCodeList`, `desireLocList`, `jobGroupList`이며, `companyCodeList=["CNS"]`로 LG CNS 공고만 필터링된다.
+
+이를 위해 `career_sources`에 `request_method`, `request_body`를 추가했고, `enterprise_json` 파서는 LG전자/LG CNS의 공개 JSON 필드와 상세 URL 파생 규칙을 처리한다. 임시 SQLite DB에서 `preview-sources --status allowed --source-type enterprise_json`을 실행해 LG CNS 21건, LG전자 9건을 저장 없이 확인했다.

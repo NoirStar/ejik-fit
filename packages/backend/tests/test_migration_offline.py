@@ -40,6 +40,8 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "BLOCKED" in sql
     assert "policystatus" in sql
     assert "connector_family" in sql
+    assert "request_method" in sql
+    assert "request_body" in sql
     assert "last_success_at" in sql
     assert "last_error_code" in sql
     assert "last_error_reason" in sql

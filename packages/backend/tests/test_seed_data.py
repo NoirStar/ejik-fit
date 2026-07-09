@@ -44,7 +44,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
     )
 
 
-def test_initial_sources_include_phase_two_enterprise_sources_as_non_runnable() -> None:
+def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enabled() -> None:
     enterprise_slugs = {
         "samsung-electronics",
         "samsung-sds",
@@ -63,22 +63,32 @@ def test_initial_sources_include_phase_two_enterprise_sources_as_non_runnable() 
 
     assert enterprise_slugs <= set(catalog_by_slug)
     assert len(seed_data.INITIAL_SOURCE_CATALOG) == 30
+    non_runnable_enterprise_slugs = enterprise_slugs - {
+        "lg-cns",
+        "lg-electronics",
+    }
     assert all(
         catalog_by_slug[slug].status
         in {SourceStatus.NEEDS_CONNECTOR, SourceStatus.NEEDS_BROWSER}
-        for slug in enterprise_slugs
+        for slug in non_runnable_enterprise_slugs
     )
     assert all(
         catalog_by_slug[slug].policy_status == PolicyStatus.ALLOWED
         for slug in enterprise_slugs
     )
+    assert catalog_by_slug["lg-electronics"].source_type == (
+        SourceType.ENTERPRISE_JSON
+    )
+    assert catalog_by_slug["lg-electronics"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["lg-cns"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["lg-cns"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
         SourceType.BROWSER_PUBLIC_RENDER
     )
     assert catalog_by_slug["hyundai-motor"].source_type == (
         SourceType.HTML_LISTING_DETAIL
     )
-    assert catalog_by_slug["lg-cns"].connector_family == "static_next_data"
+    assert catalog_by_slug["lg-cns"].connector_family == "enterprise_json"
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:
@@ -114,6 +124,31 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert samsung.policy_status == PolicyStatus.ALLOWED
         assert samsung.connector_family == "browser_public_render"
         assert samsung.sector == "enterprise_it"
+
+        lg_electronics = sources_by_slug["lg-electronics"]
+        assert lg_electronics.status == SourceStatus.ALLOWED
+        assert lg_electronics.connector_family == "enterprise_json"
+        assert lg_electronics.base_url == (
+            "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20"
+        )
+
+        lg_cns = sources_by_slug["lg-cns"]
+        assert lg_cns.status == SourceStatus.ALLOWED
+        assert lg_cns.connector_family == "enterprise_json"
+        assert lg_cns.base_url == (
+            "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
+        )
+        assert lg_cns.request_method == "POST"
+        assert lg_cns.request_body == {
+            "lnbSearch": "",
+            "hashTagText": "",
+            "recDate": "CREATION_DATE",
+            "order": "DESC",
+            "careerList": [],
+            "companyCodeList": ["CNS"],
+            "desireLocList": [],
+            "jobGroupList": [],
+        }
 
         hyundai = sources_by_slug["hyundai-motor"]
         assert hyundai.status == SourceStatus.NEEDS_CONNECTOR

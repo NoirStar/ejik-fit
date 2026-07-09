@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -30,6 +31,8 @@ class SeedSource:
     non_tech_noise: int = 1
     notes: str | None = None
     status: SourceStatus = SourceStatus.ALLOWED
+    request_method: str = "GET"
+    request_body: dict[str, Any] | None = None
 
 
 INITIAL_SOURCE_CATALOG = (
@@ -218,38 +221,49 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="LG전자",
         slug="lg-electronics",
-        base_url="https://globalcareers.lge.com/jobs",
-        source_type=SourceType.STATIC_NEXT_DATA,
+        base_url="https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20",
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.lge.co.kr",
         sector="enterprise_it",
-        connector_family="static_next_data",
+        connector_family="enterprise_json",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=4,
         expected_job_volume=5,
-        connector_reuse_score=2,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=3,
-        notes="Official LG Electronics global careers jobs page.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official LG Electronics global careers JSON jobs endpoint.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="LG CNS",
         slug="lg-cns",
-        base_url="https://careers.lg.com/apply?c=CNS",
-        source_type=SourceType.STATIC_NEXT_DATA,
+        base_url="https://api.careers.lg.com/rmk/job/retrieveJobNoticesList",
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.lgcns.com",
         sector="enterprise_it",
-        connector_family="static_next_data",
+        connector_family="enterprise_json",
+        request_method="POST",
+        request_body={
+            "lnbSearch": "",
+            "hashTagText": "",
+            "recDate": "CREATION_DATE",
+            "order": "DESC",
+            "careerList": [],
+            "companyCodeList": ["CNS"],
+            "desireLocList": [],
+            "jobGroupList": [],
+        },
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=5,
         expected_job_volume=3,
-        connector_reuse_score=2,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=1,
-        notes="Official LG Careers listing filtered to LG CNS.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official LG Careers JSON jobs endpoint filtered to LG CNS.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="SK하이닉스",
@@ -370,6 +384,8 @@ INITIAL_GREETING_SOURCES = tuple(
 
 def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
     source.source_type = item.source_type
+    source.request_method = item.request_method
+    source.request_body = item.request_body
     if source.status not in {SourceStatus.BLOCKED, SourceStatus.STOPPED}:
         source.status = item.status
     if (

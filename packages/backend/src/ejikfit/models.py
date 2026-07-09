@@ -97,6 +97,8 @@ class CareerSource(Base):
     )
     base_url: Mapped[str] = mapped_column(String(1000), unique=True)
     source_type: Mapped[SourceType] = mapped_column(Enum(SourceType))
+    request_method: Mapped[str] = mapped_column(String(12), default="GET")
+    request_body: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     status: Mapped[SourceStatus] = mapped_column(
         Enum(SourceStatus), default=SourceStatus.REVIEW
     )

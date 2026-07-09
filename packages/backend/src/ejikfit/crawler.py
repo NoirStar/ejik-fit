@@ -98,7 +98,14 @@ class HttpFetcher:
     def __init__(self, user_agent: str) -> None:
         self.user_agent = user_agent
 
-    async def fetch(self, url: str) -> FetchedPage:
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+    ) -> FetchedPage:
+        request_method = method.upper()
         retrying = AsyncRetrying(
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=1, max=8),
@@ -115,7 +122,11 @@ class HttpFetcher:
                     timeout=20.0,
                     headers={"User-Agent": self.user_agent},
                 ) as client:
-                    response = await client.get(url)
+                    response = await client.request(
+                        request_method,
+                        url,
+                        json=json_body if request_method != "GET" else None,
+                    )
 
                 if response.status_code in {401, 403}:
                     raise BlockedSourceError(
@@ -339,6 +350,13 @@ async def _fetch_listing_page(
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
     if source.source_type != SourceType.BROWSER_PUBLIC_RENDER:
+        request_method = (source.request_method or "GET").upper()
+        if request_method != "GET":
+            return await fetcher.fetch(
+                source.base_url,
+                method=request_method,
+                json_body=source.request_body,
+            )
         return await fetcher.fetch(source.base_url)
     if browser_renderer is None:
         raise ValueError("browser renderer is not configured")

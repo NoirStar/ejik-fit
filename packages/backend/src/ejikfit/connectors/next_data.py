@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from html import unescape
 from typing import Any
 from urllib.parse import urljoin, urlparse
 from zoneinfo import ZoneInfo
@@ -18,6 +19,7 @@ TITLE_KEYS = (
     "recruitTitle",
     "postingTitle",
     "announcementTitle",
+    "jobNoticeName",
     "name",
 )
 ID_KEYS = (
@@ -30,6 +32,7 @@ ID_KEYS = (
     "requisitionId",
     "reqId",
     "positionId",
+    "jobNoticeId",
     "code",
 )
 URL_KEYS = (
@@ -58,6 +61,7 @@ EMPLOYMENT_KEYS = (
     "employment",
     "jobType",
     "contractType",
+    "empType",
 )
 CAREER_KEYS = (
     "careerType",
@@ -65,6 +69,7 @@ CAREER_KEYS = (
     "experience",
     "experienceType",
     "requiredExperience",
+    "careerTypeName",
 )
 OPENS_AT_KEYS = (
     "startDate",
@@ -73,6 +78,7 @@ OPENS_AT_KEYS = (
     "openDate",
     "datePosted",
     "postedAt",
+    "postCreateDtm",
 )
 CLOSES_AT_KEYS = (
     "endDate",
@@ -81,8 +87,11 @@ CLOSES_AT_KEYS = (
     "validThrough",
     "closeDate",
     "closedAt",
+    "recEndDateTime",
 )
 DESCRIPTION_KEYS = (
+    "content",
+    "description",
     "jobCategory",
     "category",
     "departmentName",
@@ -92,6 +101,13 @@ DESCRIPTION_KEYS = (
     "jobGroup",
     "jobField",
     "companyName",
+    "jobGroupName",
+    "jobGroupName2",
+    "hashtagText",
+    "jobFamily",
+    "corpCd",
+    "corpType",
+    "cntryNm",
 )
 SKILL_KEYS = (
     "skillTags",
@@ -108,6 +124,8 @@ PRIVATE_FALSE_KEYS = (
     "publish",
     "published",
     "isPublished",
+    "active",
+    "live",
 )
 PRIVATE_TRUE_KEYS = (
     "private",
@@ -128,6 +146,7 @@ STATUS_KEYS = (
     "recruitStatus",
     "state",
     "displayStatus",
+    "noticeStatus",
 )
 CLOSED_STATUSES = {
     "closed",
@@ -194,6 +213,13 @@ def _first_text(item: dict[str, Any], keys: tuple[str, ...]) -> str | None:
     return None
 
 
+def _first_value(item: dict[str, Any], keys: tuple[str, ...]) -> Any:
+    for key in keys:
+        if key in item:
+            return item[key]
+    return None
+
+
 def _names(value: Any) -> list[str]:
     if isinstance(value, str):
         text = _text(value)
@@ -224,7 +250,24 @@ def _unique_join(values: list[str | None]) -> str:
     return " ".join(dict.fromkeys(value for value in values if value))
 
 
+def _markup_text(value: Any) -> str | None:
+    text = _scalar_text(value)
+    if text is None:
+        return None
+    if "<" not in text and "&" not in text:
+        return text
+    soup = BeautifulSoup(unescape(text), "lxml")
+    return _text(soup.get_text(" "))
+
+
 def _parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, list) and 3 <= len(value) <= 7:
+        try:
+            parts = [int(part) for part in value]
+            return datetime(*parts[:6], tzinfo=KST)
+        except (TypeError, ValueError):
+            return None
+
     raw = _text(value)
     if raw is None:
         return None
@@ -320,6 +363,20 @@ def _is_public_open(item: dict[str, Any]) -> bool:
 def _url(item: dict[str, Any], listing_url: str) -> str | None:
     raw_url = _first_text(item, URL_KEYS)
     if raw_url is None:
+        external_id = _first_text(item, ID_KEYS)
+        parsed = urlparse(listing_url)
+        if (
+            parsed.netloc == "globalcareers.lge.com"
+            and parsed.path.rstrip("/") == "/api/job/v1/jobs"
+            and external_id
+        ):
+            return urljoin(listing_url, f"/jobs/{external_id}")
+        if (
+            parsed.netloc == "api.careers.lg.com"
+            and parsed.path.rstrip("/") == "/rmk/job/retrieveJobNoticesList"
+            and external_id
+        ):
+            return f"https://careers.lg.com/apply/detail?id={external_id}"
         return None
     if raw_url.startswith(("#", "mailto:", "tel:", "javascript:")):
         return None
@@ -339,7 +396,7 @@ def _external_id(item: dict[str, Any], url: str) -> str:
 
 
 def _description_text(item: dict[str, Any]) -> str:
-    values = [_first_text(item, DESCRIPTION_KEYS)]
+    values = [_markup_text(item[key]) for key in DESCRIPTION_KEYS if key in item]
     for key in SKILL_KEYS:
         values.extend(_names(item.get(key)))
     return _unique_join(values)
@@ -374,8 +431,8 @@ def _opening_from_item(
             item,
             LOCATION_KEYS,
         ),
-        opens_at=_parse_datetime(_first_text(item, OPENS_AT_KEYS)),
-        closes_at=_parse_datetime(_first_text(item, CLOSES_AT_KEYS)),
+        opens_at=_parse_datetime(_first_value(item, OPENS_AT_KEYS)),
+        closes_at=_parse_datetime(_first_value(item, CLOSES_AT_KEYS)),
     )
 
 
