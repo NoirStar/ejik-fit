@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import json
 import os
 import uuid
@@ -76,6 +77,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["json", "markdown"],
         default="json",
     )
+    discovery_parser = subparsers.add_parser(
+        "discover-sitemap",
+        help="sitemap.xml 또는 robots.txt에서 공식 채용 URL 후보를 출력합니다.",
+    )
+    discovery_parser.add_argument("url")
+    discovery_parser.add_argument("--sample-limit", type=int, default=20)
     subparsers.add_parser(
         "crawl-all",
         help="허용된 모든 공식 채용 출처를 수집합니다.",
@@ -199,6 +206,23 @@ def _set_source_status(
     return _source_status_payload(source)
 
 
+def _discover_sitemap(url: str, sample_limit: int) -> dict:
+    from ejikfit.config import get_settings
+    from ejikfit.connectors.sitemap_discovery import parse_sitemap_discovery
+    from ejikfit.crawler import HttpFetcher
+
+    settings = get_settings()
+    page = asyncio.run(HttpFetcher(settings.crawler_user_agent).fetch(url))
+    candidates = parse_sitemap_discovery(page.text, page.url)
+    return {
+        "url": page.url,
+        "discovered": len(candidates),
+        "candidates": [
+            candidate.to_dict() for candidate in candidates[:sample_limit]
+        ],
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
@@ -282,6 +306,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(source_report.render_source_report_markdown(report))
         else:
             print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        return 0
+
+    if args.command == "discover-sitemap":
+        print(
+            json.dumps(
+                _discover_sitemap(args.url, args.sample_limit),
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
         return 0
 
     if args.command == "crawl-all":

@@ -432,3 +432,26 @@ def test_source_report_prints_markdown(monkeypatch, capsys) -> None:
     output = capsys.readouterr().out
     assert "공식 출처 운영 리포트" in output
     assert "| 네이버 | naver_json | allowed | 18 | 2 |" in output
+
+
+def test_discover_sitemap_prints_json_candidates(monkeypatch, capsys) -> None:
+    report = {
+        "url": "https://example.com/sitemap.xml",
+        "discovered": 2,
+        "candidates": [
+            {
+                "url": "https://example.com/careers",
+                "source": "sitemap",
+                "reason": "career_url",
+            },
+            {
+                "url": "https://example.com/jobs/backend",
+                "source": "sitemap",
+                "reason": "job_url",
+            },
+        ],
+    }
+    monkeypatch.setattr(cli, "_discover_sitemap", lambda url, sample_limit: report)
+
+    assert cli.main(["discover-sitemap", "https://example.com/sitemap.xml"]) == 0
+    assert json.loads(capsys.readouterr().out) == report

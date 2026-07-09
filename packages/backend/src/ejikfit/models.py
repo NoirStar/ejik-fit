@@ -36,6 +36,7 @@ class SourceType(str, enum.Enum):
     LEVER_GREENHOUSE = "lever_greenhouse"
     WORKDAY = "workday"
     SAP_SUCCESSFACTORS = "sap_successfactors"
+    SITEMAP_DISCOVERY = "sitemap_discovery"
     BROWSER_PUBLIC_RENDER = "browser_public_render"
 
 

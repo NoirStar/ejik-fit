@@ -51,6 +51,7 @@ def test_future_enterprise_source_namespaces_are_stable() -> None:
     assert SourceType.LEVER_GREENHOUSE.value == "lever_greenhouse"
     assert SourceType.WORKDAY.value == "workday"
     assert SourceType.SAP_SUCCESSFACTORS.value == "sap_successfactors"
+    assert SourceType.SITEMAP_DISCOVERY.value == "sitemap_discovery"
     assert SourceType.BROWSER_PUBLIC_RENDER.value == "browser_public_render"
 
 
