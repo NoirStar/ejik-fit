@@ -327,6 +327,15 @@ async def crawl_source(
                 posting_index,
             )
             ingested += 1
+    else:
+        _mark_source_error(
+            source,
+            "unsupported_connector",
+            f"connector is not implemented: {source.source_type.value}",
+            status=SourceStatus.NEEDS_CONNECTOR,
+        )
+        session.commit()
+        return CrawlResult(failed=1)
 
     _mark_source_success(source, now)
     if discovered > 0:

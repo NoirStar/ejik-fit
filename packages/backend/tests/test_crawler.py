@@ -305,6 +305,50 @@ def test_temporary_listing_failure_records_error_without_blocking_source() -> No
         assert posting.status == PostingStatus.OPEN
 
 
+def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="현대자동차", slug="hyundai-motor")
+        source = CareerSource(
+            company=company,
+            base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="existing",
+            url="https://talent.hyundai.com/eng/apply/existing",
+            title="Backend Engineer",
+            missing_runs=2,
+        )
+        session.add(posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher("<html><body>No parser yet</body></html>"),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        assert result.failed == 1
+        assert source.status == SourceStatus.NEEDS_CONNECTOR
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code == "unsupported_connector"
+        assert "html_listing_detail" in (source.last_error_reason or "")
+        assert posting.missing_runs == 2
+        assert posting.status == PostingStatus.OPEN
+
+
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:
     settings = Settings(search_backend="postgres")
 

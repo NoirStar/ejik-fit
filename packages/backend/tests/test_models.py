@@ -44,6 +44,12 @@ def test_official_json_source_namespaces_are_stable() -> None:
     assert SourceType.LINE_GATSBY.value == "line_gatsby"
 
 
+def test_future_enterprise_source_namespaces_are_stable() -> None:
+    assert SourceType.HTML_LISTING_DETAIL.value == "html_listing_detail"
+    assert SourceType.STATIC_NEXT_DATA.value == "static_next_data"
+    assert SourceType.BROWSER_PUBLIC_RENDER.value == "browser_public_render"
+
+
 def test_source_registry_status_namespaces_are_stable() -> None:
     assert SourceStatus.NEEDS_CONNECTOR.value == "needs_connector"
     assert SourceStatus.NEEDS_BROWSER.value == "needs_browser"

@@ -27,6 +27,9 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "NAVER_JSON" in sql
     assert "KAKAO_JSON" in sql
     assert "LINE_GATSBY" in sql
+    assert "HTML_LISTING_DETAIL" in sql
+    assert "STATIC_NEXT_DATA" in sql
+    assert "BROWSER_PUBLIC_RENDER" in sql
     assert "NEEDS_CONNECTOR" in sql
     assert "NEEDS_BROWSER" in sql
     assert "BLOCKED" in sql

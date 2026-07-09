@@ -30,6 +30,9 @@ class SourceType(str, enum.Enum):
     NAVER_JSON = "naver_json"
     KAKAO_JSON = "kakao_json"
     LINE_GATSBY = "line_gatsby"
+    HTML_LISTING_DETAIL = "html_listing_detail"
+    STATIC_NEXT_DATA = "static_next_data"
+    BROWSER_PUBLIC_RENDER = "browser_public_render"
 
 
 class SourceStatus(str, enum.Enum):
