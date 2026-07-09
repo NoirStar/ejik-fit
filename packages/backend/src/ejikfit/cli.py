@@ -53,6 +53,15 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[status.value for status in PolicyStatus],
         default=None,
     )
+    report_parser = subparsers.add_parser(
+        "source-report",
+        help="공식 출처 운영 상태 리포트를 출력합니다.",
+    )
+    report_parser.add_argument(
+        "--format",
+        choices=["json", "markdown"],
+        default="json",
+    )
     subparsers.add_parser(
         "crawl-all",
         help="허용된 모든 공식 채용 출처를 수집합니다.",
@@ -166,8 +175,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True))
         return 0
 
+    if args.command == "source-report":
+        from ejikfit import source_report
+
+        with SessionLocal() as session:
+            report = source_report.build_source_report(session)
+        if args.format == "markdown":
+            print(source_report.render_source_report_markdown(report))
+        else:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        return 0
+
     if args.command == "crawl-all":
         from ejikfit.crawler import render_crawl_summary, run_all_sources
+        from ejikfit import source_report
 
         report = run_all_sources()
         print(
@@ -181,6 +202,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if summary_path:
             with Path(summary_path).open("a", encoding="utf-8") as summary:
                 summary.write(render_crawl_summary(report))
+                with SessionLocal() as session:
+                    summary.write(
+                        source_report.render_source_report_markdown(
+                            source_report.build_source_report(session)
+                        )
+                    )
         return 1 if report["failed"] else 0
 
     if args.command == "backfill-skills":

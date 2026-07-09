@@ -65,6 +65,32 @@ def test_crawl_all_writes_github_summary_and_returns_partial_failure(
     summary_path = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
     monkeypatch.setattr("ejikfit.crawler.run_all_sources", lambda: report)
+    monkeypatch.setattr(
+        "ejikfit.source_report.build_source_report",
+        lambda session: {
+            "totals": {
+                "sources": 1,
+                "open_postings": 2,
+                "allowed_sources": 1,
+                "blocked_sources": 0,
+            },
+            "status_counts": {"allowed": 1},
+            "policy_status_counts": {"allowed": 1},
+            "connector_family_counts": {"naver_json": 1},
+            "error_counts": {},
+            "top_priority_sources": [
+                {
+                    "company_name": "네이버",
+                    "source_type": "naver_json",
+                    "status": "allowed",
+                    "priority_score": 18,
+                    "open_postings": 2,
+                }
+            ],
+            "top_error_sources": [],
+            "sources": [],
+        },
+    )
 
     assert cli.main(["crawl-all"]) == 1
     assert json.loads(capsys.readouterr().out) == report
@@ -72,6 +98,8 @@ def test_crawl_all_writes_github_summary_and_returns_partial_failure(
     assert "원격 수집 결과" in summary
     assert "source-1" in summary
     assert "| 합계 | 3 | 2 | 1 | 0 |" in summary
+    assert "공식 출처 운영 리포트" in summary
+    assert "| 네이버 | naver_json | allowed | 18 | 2 |" in summary
 
 
 def test_preview_source_prints_json_report(monkeypatch, capsys) -> None:
@@ -183,3 +211,59 @@ def test_set_source_status_accepts_policy_status_override(
         assert source is not None
         assert source.status == SourceStatus.BLOCKED
         assert source.policy_status == PolicyStatus.BLOCKED
+
+
+def test_source_report_prints_json(monkeypatch, capsys) -> None:
+    report = {
+        "totals": {
+            "sources": 1,
+            "open_postings": 2,
+            "allowed_sources": 1,
+            "blocked_sources": 0,
+        },
+        "status_counts": {"allowed": 1},
+        "policy_status_counts": {"allowed": 1},
+        "connector_family_counts": {"naver_json": 1},
+        "error_counts": {},
+        "top_priority_sources": [],
+        "top_error_sources": [],
+        "sources": [],
+    }
+    monkeypatch.setattr("ejikfit.source_report.build_source_report", lambda session: report)
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(create_engine("sqlite+pysqlite:///:memory:")))
+
+    assert cli.main(["source-report"]) == 0
+    assert json.loads(capsys.readouterr().out) == report
+
+
+def test_source_report_prints_markdown(monkeypatch, capsys) -> None:
+    report = {
+        "totals": {
+            "sources": 1,
+            "open_postings": 2,
+            "allowed_sources": 1,
+            "blocked_sources": 0,
+        },
+        "status_counts": {"allowed": 1},
+        "policy_status_counts": {"allowed": 1},
+        "connector_family_counts": {"naver_json": 1},
+        "error_counts": {},
+        "top_priority_sources": [
+            {
+                "company_name": "네이버",
+                "source_type": "naver_json",
+                "status": "allowed",
+                "priority_score": 18,
+                "open_postings": 2,
+            }
+        ],
+        "top_error_sources": [],
+        "sources": [],
+    }
+    monkeypatch.setattr("ejikfit.source_report.build_source_report", lambda session: report)
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(create_engine("sqlite+pysqlite:///:memory:")))
+
+    assert cli.main(["source-report", "--format", "markdown"]) == 0
+    output = capsys.readouterr().out
+    assert "공식 출처 운영 리포트" in output
+    assert "| 네이버 | naver_json | allowed | 18 | 2 |" in output
