@@ -27,6 +27,7 @@ from ejikfit.ingestion import ingest_opening
 from ejikfit.models import (
     CareerSource,
     JobPosting,
+    PolicyStatus,
     PostingStatus,
     SourceStatus,
     SourceType,
@@ -169,6 +170,29 @@ def reconcile_missing(
     return closed
 
 
+def _mark_source_success(source: CareerSource, now: datetime) -> None:
+    source.last_verified_at = now
+    source.last_success_at = now
+    source.last_error_code = None
+    source.last_error_reason = None
+
+
+def _mark_source_error(
+    source: CareerSource,
+    code: str,
+    reason: str,
+    *,
+    status: SourceStatus | None = None,
+    policy_status: PolicyStatus | None = None,
+) -> None:
+    if status is not None:
+        source.status = status
+    if policy_status is not None:
+        source.policy_status = policy_status
+    source.last_error_code = code
+    source.last_error_reason = reason[:1000]
+
+
 def _parse_list_json_openings(
     source_type: SourceType,
     text: str,
@@ -197,11 +221,23 @@ async def crawl_source(
 
     try:
         listing = await fetcher.fetch(source.base_url)
-    except BlockedSourceError:
-        source.status = SourceStatus.REVIEW
+    except BlockedSourceError as error:
+        _mark_source_error(
+            source,
+            "blocked",
+            str(error),
+            status=SourceStatus.BLOCKED,
+            policy_status=PolicyStatus.BLOCKED,
+        )
         session.commit()
         return CrawlResult(failed=1)
-    except (httpx.HTTPError, RetryableFetchError):
+    except (httpx.HTTPError, RetryableFetchError) as error:
+        _mark_source_error(
+            source,
+            "temporary_fetch_error",
+            str(error),
+        )
+        session.commit()
         return CrawlResult(failed=1)
 
     discovered = 0
@@ -234,8 +270,14 @@ async def crawl_source(
                     posting_index,
                 )
                 ingested += 1
-            except BlockedSourceError:
-                source.status = SourceStatus.REVIEW
+            except BlockedSourceError as error:
+                _mark_source_error(
+                    source,
+                    "blocked",
+                    str(error),
+                    status=SourceStatus.BLOCKED,
+                    policy_status=PolicyStatus.BLOCKED,
+                )
                 session.commit()
                 failed += 1
                 break
@@ -286,7 +328,9 @@ async def crawl_source(
             )
             ingested += 1
 
-    source.last_verified_at = now
+    _mark_source_success(source, now)
+    if discovered > 0:
+        source.last_discovered_at = now
     session.commit()
     closed = reconcile_missing(
         session,

@@ -2,7 +2,14 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
 from ejikfit import seed_data
-from ejikfit.models import Base, CareerSource, Company, SourceType
+from ejikfit.models import (
+    Base,
+    CareerSource,
+    Company,
+    PolicyStatus,
+    SourceStatus,
+    SourceType,
+)
 
 
 def test_initial_sources_include_existing_greeting_pages_and_official_json_sources() -> None:
@@ -54,3 +61,35 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert actual_types["naver"] == SourceType.NAVER_JSON
         assert actual_types["kakao"] == SourceType.KAKAO_JSON
         assert actual_types["line-plus"] == SourceType.LINE_GATSBY
+
+        sources_by_slug = {source.company.slug: source for source in sources}
+        naver = sources_by_slug["naver"]
+        assert naver.connector_family == "naver_json"
+        assert naver.policy_status == PolicyStatus.ALLOWED
+        assert naver.sector == "platform"
+        assert naver.brand_tier_weight == 6
+        assert naver.tech_job_priority == 5
+        assert naver.expected_job_volume == 5
+        assert naver.priority_score > sources_by_slug["deepauto-ai"].priority_score
+
+
+def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        seed_data.seed_sources(session)
+        source = session.scalar(
+            select(CareerSource).join(Company).where(Company.slug == "naver")
+        )
+        assert source is not None
+        source.status = SourceStatus.BLOCKED
+        source.policy_status = PolicyStatus.BLOCKED
+        source.last_error_code = "blocked"
+        session.commit()
+
+        assert seed_data.seed_sources(session) == 0
+
+        assert source.status == SourceStatus.BLOCKED
+        assert source.policy_status == PolicyStatus.BLOCKED
+        assert source.last_error_code == "blocked"

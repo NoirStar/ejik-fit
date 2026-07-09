@@ -12,6 +12,7 @@ from ejikfit.models import (
     CareerSource,
     Company,
     JobPosting,
+    PolicyStatus,
     PostingStatus,
     SourceStatus,
     SourceType,
@@ -151,9 +152,26 @@ class StaticFetcher:
         )
 
 
+class BlockedFetcher:
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        raise crawler.BlockedSourceError("source denied access with 403")
+
+
+class TemporaryFailureFetcher:
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        raise crawler.RetryableFetchError("temporary upstream status 503")
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 def test_crawl_source_routes_naver_json_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
 
     with Session(engine) as session:
         company = Company(name="네이버", slug="naver")
@@ -164,6 +182,9 @@ def test_crawl_source_routes_naver_json_into_ingestion() -> None:
             base_url="https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
             source_type=SourceType.NAVER_JSON,
             status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="temporary_fetch_error",
+            last_error_reason="previous failure",
         )
         session.add(source)
         session.commit()
@@ -178,7 +199,7 @@ def test_crawl_source_routes_naver_json_into_ingestion() -> None:
                     '"jobDetailLink":"https://recruit.navercorp.com/rcrt/view.do?annoId=1001"}]}'
                 ),
                 store=MemorySnapshotStore(),
-                now=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                now=now,
                 request_delay_seconds=0,
             )
         )
@@ -188,6 +209,100 @@ def test_crawl_source_routes_naver_json_into_ingestion() -> None:
         assert result.ingested == 1
         assert postings[0].external_id == "1001"
         assert postings[0].title == "Backend Engineer"
+        assert source.last_success_at is not None
+        assert source.last_discovered_at is not None
+        assert _as_utc(source.last_success_at) == now
+        assert _as_utc(source.last_discovered_at) == now
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
+
+
+def test_blocked_listing_marks_source_blocked_without_closing_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="테스트 기업", slug="test-company")
+        source = CareerSource(
+            company=company,
+            base_url="https://example.com/careers",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="existing",
+            url="https://example.com/jobs/existing",
+            title="Backend Engineer",
+            missing_runs=2,
+        )
+        session.add(posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=BlockedFetcher(),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        assert result.failed == 1
+        assert source.status == SourceStatus.BLOCKED
+        assert source.policy_status == PolicyStatus.BLOCKED
+        assert source.last_error_code == "blocked"
+        assert "403" in (source.last_error_reason or "")
+        assert posting.missing_runs == 2
+        assert posting.status == PostingStatus.OPEN
+
+
+def test_temporary_listing_failure_records_error_without_blocking_source() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="테스트 기업", slug="test-company")
+        source = CareerSource(
+            company=company,
+            base_url="https://example.com/careers",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="existing",
+            url="https://example.com/jobs/existing",
+            title="Backend Engineer",
+            missing_runs=2,
+        )
+        session.add(posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=TemporaryFailureFetcher(),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 9, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        assert result.failed == 1
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code == "temporary_fetch_error"
+        assert "503" in (source.last_error_reason or "")
+        assert posting.missing_runs == 2
+        assert posting.status == PostingStatus.OPEN
 
 
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:

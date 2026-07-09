@@ -3,7 +3,13 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ejikfit.models import CareerSource, Company, SourceStatus, SourceType
+from ejikfit.models import (
+    CareerSource,
+    Company,
+    PolicyStatus,
+    SourceStatus,
+    SourceType,
+)
 
 
 @dataclass(frozen=True)
@@ -13,6 +19,16 @@ class SeedSource:
     base_url: str
     source_type: SourceType = SourceType.GREETING
     homepage_url: str | None = None
+    sector: str | None = "startup"
+    connector_family: str | None = None
+    policy_status: PolicyStatus = PolicyStatus.ALLOWED
+    brand_tier_weight: int = 2
+    tech_job_priority: int = 3
+    expected_job_volume: int = 1
+    connector_reuse_score: int = 3
+    policy_risk: int = 0
+    non_tech_noise: int = 1
+    notes: str | None = None
 
 
 INITIAL_SOURCE_CATALOG = (
@@ -81,6 +97,16 @@ INITIAL_SOURCE_CATALOG = (
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
         SourceType.NAVER_JSON,
         "https://www.navercorp.com",
+        "platform",
+        "naver_json",
+        PolicyStatus.ALLOWED,
+        6,
+        5,
+        5,
+        2,
+        0,
+        1,
+        "Official Naver recruitment JSON list.",
     ),
     SeedSource(
         "카카오",
@@ -88,6 +114,16 @@ INITIAL_SOURCE_CATALOG = (
         "https://careers.kakao.com/public/api/job-list?lang=ko&skillSet=&page=1&company=KAKAO&part=TECHNOLOGY&employeeType=&keyword=",
         SourceType.KAKAO_JSON,
         "https://www.kakaocorp.com",
+        "platform",
+        "kakao_json",
+        PolicyStatus.ALLOWED,
+        6,
+        5,
+        5,
+        2,
+        0,
+        1,
+        "Official Kakao technology jobs API.",
     ),
     SeedSource(
         "LINE Plus",
@@ -95,6 +131,16 @@ INITIAL_SOURCE_CATALOG = (
         "https://careers.linecorp.com/page-data/jobs/page-data.json",
         SourceType.LINE_GATSBY,
         "https://linepluscorp.com",
+        "platform",
+        "line_gatsby",
+        PolicyStatus.ALLOWED,
+        6,
+        5,
+        4,
+        2,
+        0,
+        1,
+        "Official LINE Careers Gatsby page-data.",
     ),
 )
 
@@ -103,6 +149,24 @@ INITIAL_GREETING_SOURCES = tuple(
     for item in INITIAL_SOURCE_CATALOG
     if item.source_type == SourceType.GREETING
 )
+
+
+def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
+    source.source_type = item.source_type
+    if (
+        source.policy_status not in {PolicyStatus.BLOCKED, PolicyStatus.STOPPED}
+        and source.last_error_code is None
+    ):
+        source.policy_status = item.policy_status
+    source.connector_family = item.connector_family or item.source_type.value
+    source.sector = item.sector
+    source.brand_tier_weight = item.brand_tier_weight
+    source.tech_job_priority = item.tech_job_priority
+    source.expected_job_volume = item.expected_job_volume
+    source.connector_reuse_score = item.connector_reuse_score
+    source.policy_risk = item.policy_risk
+    source.non_tech_noise = item.non_tech_noise
+    source.notes = item.notes
 
 
 def seed_sources(session: Session) -> int:
@@ -125,15 +189,15 @@ def seed_sources(session: Session) -> int:
             select(CareerSource).where(CareerSource.base_url == item.base_url)
         )
         if source is None:
-            session.add(
-                CareerSource(
-                    company_id=company.id,
-                    base_url=item.base_url,
-                    source_type=item.source_type,
-                    status=SourceStatus.ALLOWED,
-                )
+            source = CareerSource(
+                company_id=company.id,
+                base_url=item.base_url,
+                source_type=item.source_type,
+                status=SourceStatus.ALLOWED,
             )
+            session.add(source)
             created += 1
+        _apply_source_metadata(source, item)
 
     session.commit()
     return created

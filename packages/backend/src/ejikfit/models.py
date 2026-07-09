@@ -34,7 +34,17 @@ class SourceType(str, enum.Enum):
 
 class SourceStatus(str, enum.Enum):
     ALLOWED = "allowed"
+    NEEDS_CONNECTOR = "needs_connector"
+    NEEDS_BROWSER = "needs_browser"
     REVIEW = "review"
+    BLOCKED = "blocked"
+    STOPPED = "stopped"
+
+
+class PolicyStatus(str, enum.Enum):
+    ALLOWED = "allowed"
+    REVIEW = "review"
+    BLOCKED = "blocked"
     STOPPED = "stopped"
 
 
@@ -57,6 +67,22 @@ class Company(Base):
 class CareerSource(Base):
     __tablename__ = "career_sources"
 
+    def __init__(self, **kwargs: Any) -> None:
+        source_type = kwargs.get("source_type")
+        if "connector_family" not in kwargs and source_type is not None:
+            if isinstance(source_type, SourceType):
+                kwargs["connector_family"] = source_type.value
+            else:
+                kwargs["connector_family"] = str(source_type)
+        kwargs.setdefault("policy_status", PolicyStatus.REVIEW)
+        kwargs.setdefault("brand_tier_weight", 0)
+        kwargs.setdefault("tech_job_priority", 0)
+        kwargs.setdefault("expected_job_volume", 0)
+        kwargs.setdefault("connector_reuse_score", 0)
+        kwargs.setdefault("policy_risk", 0)
+        kwargs.setdefault("non_tech_noise", 0)
+        super().__init__(**kwargs)
+
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     company_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("companies.id"), index=True
@@ -66,15 +92,46 @@ class CareerSource(Base):
     status: Mapped[SourceStatus] = mapped_column(
         Enum(SourceStatus), default=SourceStatus.REVIEW
     )
+    policy_status: Mapped[PolicyStatus] = mapped_column(
+        Enum(PolicyStatus), default=PolicyStatus.REVIEW
+    )
+    connector_family: Mapped[str] = mapped_column(String(80), default="")
+    sector: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    brand_tier_weight: Mapped[int] = mapped_column(Integer, default=0)
+    tech_job_priority: Mapped[int] = mapped_column(Integer, default=0)
+    expected_job_volume: Mapped[int] = mapped_column(Integer, default=0)
+    connector_reuse_score: Mapped[int] = mapped_column(Integer, default=0)
+    policy_risk: Mapped[int] = mapped_column(Integer, default=0)
+    non_tech_noise: Mapped[int] = mapped_column(Integer, default=0)
     crawl_interval_minutes: Mapped[int] = mapped_column(Integer, default=360)
     last_verified_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    last_discovered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_error_code: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    last_error_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     company: Mapped[Company] = relationship(back_populates="sources")
 
     @property
     def external_id_namespace(self) -> str:
         return self.source_type.value
+
+    @property
+    def priority_score(self) -> int:
+        return (
+            (self.brand_tier_weight or 0)
+            + (self.tech_job_priority or 0)
+            + (self.expected_job_volume or 0)
+            + (self.connector_reuse_score or 0)
+            - (self.policy_risk or 0)
+            - (self.non_tech_noise or 0)
+        )
 
 
 class RawSnapshot(Base):
