@@ -153,6 +153,21 @@ class StaticFetcher:
         )
 
 
+class StaticBrowserRenderer:
+    def __init__(self, text: str) -> None:
+        self.text = text
+        self.rendered_urls: list[str] = []
+
+    async def render(self, url: str) -> crawler.FetchedPage:
+        self.rendered_urls.append(url)
+        return crawler.FetchedPage(
+            url=url,
+            text=self.text,
+            status_code=200,
+            headers={},
+        )
+
+
 class BlockedFetcher:
     async def fetch(self, url: str) -> crawler.FetchedPage:
         raise crawler.BlockedSourceError("source denied access with 403")
@@ -345,9 +360,63 @@ def test_unsupported_allowed_browser_connector_fails_without_closing_postings() 
         assert source.status == SourceStatus.NEEDS_BROWSER
         assert source.policy_status == PolicyStatus.ALLOWED
         assert source.last_error_code == "unsupported_connector"
-        assert "browser_public_render" in (source.last_error_reason or "")
+        assert "browser renderer is not configured" in (
+            source.last_error_reason or ""
+        )
         assert posting.missing_runs == 2
         assert posting.status == PostingStatus.OPEN
+
+
+def test_crawl_source_routes_browser_public_render_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
+    renderer = StaticBrowserRenderer(
+        """
+        <article>
+          <a href="/jobs/rendered-backend">Rendered Backend Engineer</a>
+          <p>정규직 · 경력 · 서울</p>
+        </article>
+        """
+    )
+
+    with Session(engine) as session:
+        company = Company(name="브라우저 기업", slug="browser-company")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.example.com/careers",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="unsupported_connector",
+            last_error_reason="previous missing renderer",
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher("ordinary fetch should not be used"),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+                browser_renderer=renderer,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert renderer.rendered_urls == ["https://careers.example.com/careers"]
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "rendered-backend"
+        assert postings[0].title == "Rendered Backend Engineer"
+        assert postings[0].url == "https://careers.example.com/jobs/rendered-backend"
+        assert source.status == SourceStatus.ALLOWED
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
+        assert source.last_success_at is not None
 
 
 def test_crawl_source_routes_static_next_data_into_ingestion() -> None:
@@ -749,10 +818,63 @@ def test_preview_source_reports_unsupported_browser_connector_without_mutating()
         assert preview["sample_openings"] == []
         assert preview["error"] == {
             "code": "unsupported_connector",
-            "reason": "connector is not implemented: browser_public_render",
+            "reason": "browser renderer is not configured",
         }
         assert source.status == SourceStatus.NEEDS_BROWSER
         assert source.last_error_code is None
+
+
+def test_preview_source_parses_browser_public_render_without_persisting_or_mutating() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    renderer = StaticBrowserRenderer(
+        """
+        <article>
+          <a href="/jobs/rendered-backend">Rendered Backend Engineer</a>
+          <p>정규직 · 경력 · 서울</p>
+        </article>
+        """
+    )
+
+    with Session(engine) as session:
+        company = Company(name="브라우저 기업", slug="browser-company")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.example.com/careers",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            status=SourceStatus.NEEDS_BROWSER,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="unsupported_connector",
+            last_error_reason="previous missing renderer",
+        )
+        session.add(source)
+        session.commit()
+
+        preview = asyncio.run(
+            crawler.preview_source(
+                source=source,
+                fetcher=StaticFetcher("ordinary fetch should not be used"),
+                sample_limit=3,
+                browser_renderer=renderer,
+            )
+        )
+
+        assert renderer.rendered_urls == ["https://careers.example.com/careers"]
+        assert preview["source_label"] == "브라우저 기업 / browser_public_render"
+        assert preview["source_type"] == "browser_public_render"
+        assert preview["discovered"] == 1
+        assert preview["sample_openings"] == [
+            {
+                "external_id": "rendered-backend",
+                "title": "Rendered Backend Engineer",
+                "url": "https://careers.example.com/jobs/rendered-backend",
+            }
+        ]
+        assert preview["error"] is None
+        assert session.scalars(select(JobPosting)).all() == []
+        assert source.status == SourceStatus.NEEDS_BROWSER
+        assert source.last_error_code == "unsupported_connector"
+        assert source.last_error_reason == "previous missing renderer"
 
 
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:

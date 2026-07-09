@@ -4,7 +4,7 @@ import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 import httpx
 from sqlalchemy import select
@@ -17,6 +17,7 @@ from tenacity import (
 )
 
 from ejikfit.config import Settings, get_settings
+from ejikfit.connectors.browser_public import parse_browser_public_render_openings
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import discover_openings, parse_opening
 from ejikfit.connectors.html_listing import parse_html_listing_openings
@@ -73,6 +74,11 @@ class CrawlResult:
 class SourceRunTarget:
     source_id: str
     label: str
+
+
+class BrowserRenderer(Protocol):
+    async def render(self, url: str) -> FetchedPage:
+        ...
 
 
 def contains_access_challenge(html: str) -> bool:
@@ -132,6 +138,51 @@ class HttpFetcher:
                 )
 
         raise AssertionError("retry loop exited without a response")
+
+
+class PlaywrightBrowserRenderer:
+    def __init__(self, timeout_ms: int = 20_000) -> None:
+        self.timeout_ms = timeout_ms
+
+    async def render(self, url: str) -> FetchedPage:
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError as error:
+            raise ValueError("browser renderer is not configured") from error
+
+        try:
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(headless=True)
+                try:
+                    page = await browser.new_page()
+                    response = await page.goto(
+                        url,
+                        wait_until="networkidle",
+                        timeout=self.timeout_ms,
+                    )
+                    text = await page.content()
+                    rendered_url = page.url
+                finally:
+                    await browser.close()
+        except Exception as error:
+            raise RetryableFetchError(f"browser render failed: {error}") from error
+
+        status_code = response.status if response is not None else 200
+        if status_code in {401, 403}:
+            raise BlockedSourceError(f"source denied access with {status_code}")
+        if status_code == 429 or status_code >= 500:
+            raise RetryableFetchError(
+                f"temporary upstream status {status_code}"
+            )
+        if contains_access_challenge(text):
+            raise BlockedSourceError("source returned an access challenge")
+
+        return FetchedPage(
+            url=rendered_url,
+            text=text,
+            status_code=status_code,
+            headers={},
+        )
 
 
 def next_missing_state(
@@ -238,6 +289,8 @@ def _parse_listing_openings(
         return parse_workday_openings(text, url)
     if source_type == SourceType.SAP_SUCCESSFACTORS:
         return parse_successfactors_openings(text, url)
+    if source_type == SourceType.BROWSER_PUBLIC_RENDER:
+        return parse_browser_public_render_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
 
 
@@ -268,13 +321,26 @@ def _preview_payload(
     }
 
 
+async def _fetch_listing_page(
+    source: CareerSource,
+    fetcher: HttpFetcher,
+    browser_renderer: BrowserRenderer | None,
+) -> FetchedPage:
+    if source.source_type != SourceType.BROWSER_PUBLIC_RENDER:
+        return await fetcher.fetch(source.base_url)
+    if browser_renderer is None:
+        raise ValueError("browser renderer is not configured")
+    return await browser_renderer.render(source.base_url)
+
+
 async def preview_source(
     source: CareerSource,
     fetcher: HttpFetcher,
     sample_limit: int = 5,
+    browser_renderer: BrowserRenderer | None = None,
 ) -> dict[str, Any]:
     try:
-        listing = await fetcher.fetch(source.base_url)
+        listing = await _fetch_listing_page(source, fetcher, browser_renderer)
         openings = _parse_listing_openings(
             source.source_type,
             listing.text,
@@ -322,12 +388,13 @@ async def crawl_source(
     now: datetime,
     request_delay_seconds: float = 1.0,
     posting_index: PostingIndex | None = None,
+    browser_renderer: BrowserRenderer | None = None,
 ) -> CrawlResult:
     if source.status != SourceStatus.ALLOWED:
         return CrawlResult()
 
     try:
-        listing = await fetcher.fetch(source.base_url)
+        listing = await _fetch_listing_page(source, fetcher, browser_renderer)
     except BlockedSourceError as error:
         _mark_source_error(
             source,
@@ -335,6 +402,15 @@ async def crawl_source(
             str(error),
             status=SourceStatus.BLOCKED,
             policy_status=PolicyStatus.BLOCKED,
+        )
+        session.commit()
+        return CrawlResult(failed=1)
+    except ValueError as error:
+        _mark_source_error(
+            source,
+            "unsupported_connector",
+            str(error),
+            status=_unsupported_connector_status(source.source_type),
         )
         session.commit()
         return CrawlResult(failed=1)
@@ -424,6 +500,7 @@ async def crawl_source(
         SourceType.LEVER_GREENHOUSE,
         SourceType.WORKDAY,
         SourceType.SAP_SUCCESSFACTORS,
+        SourceType.BROWSER_PUBLIC_RENDER,
     }:
         openings = _parse_listing_openings(
             source.source_type,
@@ -513,6 +590,7 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
                 store=store,
                 now=datetime.now(timezone.utc),
                 posting_index=posting_index,
+                browser_renderer=PlaywrightBrowserRenderer(),
             )
         )
     return asdict(result)
@@ -529,6 +607,7 @@ def preview_source_by_id(source_id: str) -> dict[str, Any]:
             preview_source(
                 source=source,
                 fetcher=HttpFetcher(settings.crawler_user_agent),
+                browser_renderer=PlaywrightBrowserRenderer(),
             )
         )
 
