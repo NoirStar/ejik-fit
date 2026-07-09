@@ -10,6 +10,7 @@
 - `docs/superpowers/specs/2026-07-08-ejikfit-brand-dashboard-redesign-design.md`: 브랜드/홈 대시보드 방향
 - `docs/superpowers/specs/2026-07-09-official-company-source-expansion-design.md`: 공식 기업 채용 소스 확장 전략
 - `docs/superpowers/plans/2026-07-09-official-company-source-expansion.md`: 네이버/카카오/LINE 1차 소스 확장 구현 계획
+- `docs/superpowers/plans/2026-07-09-browser-public-render.md`: 공개 JS 렌더링 출처 수집 구현 계획
 - `docs/superpowers/plans/2026-07-09-dashboard-hero-dedupe-dark-tone.md`: 홈 대시보드 중복 제거와 다크 톤 개선 계획
 
 주의: 일부 계획서의 체크박스는 실제 커밋 이후 갱신되지 않았다. 다음 구현 판단은 이 문서와 현재 코드 상태를 함께 본다.
@@ -37,9 +38,29 @@
 - 네이버 공식 채용 JSON 소스가 추가되어 있다.
 - 카카오 공식 채용 JSON 소스가 추가되어 있다.
 - LINE Careers Gatsby page-data 소스가 추가되어 있다.
-- `SourceType.NAVER_JSON`, `SourceType.KAKAO_JSON`, `SourceType.LINE_GATSBY`가 모델과 마이그레이션에 추가되어 있다.
-- 각 커넥터 테스트가 있다.
+- `naver_json`, `kakao_json`, `line_gatsby` 커넥터 테스트가 있다.
 - crawler가 세 커넥터 타입을 라우팅한다.
+
+### 운영 레지스트리와 소스 상태
+
+- `CareerSource`에 source status, policy status, connector family, sector, priority 점수 필드가 있다.
+- `SourceStatus`에 `allowed`, `needs_connector`, `needs_browser`, `review`, `blocked`, `stopped`가 있다.
+- `PolicyStatus`에 `allowed`, `review`, `blocked`, `stopped`가 있다.
+- `last_discovered_at`, `last_verified_at`, `last_success_at`, `last_error_code`, `last_error_reason`을 기록한다.
+- `source-report` CLI가 전체 상태 분포, 우선순위, 오류 출처를 JSON/Markdown으로 출력한다.
+- `source-monitor` CLI가 최근 신규/변경/마감 수와 출처별 건강도를 JSON/Markdown으로 출력한다.
+- `crawl-all` GitHub Actions summary에 crawl 결과, source report, source monitor가 함께 기록된다.
+
+### 추가 커넥터와 발견 도구
+
+- `html_listing_detail`, `static_next_data`, `enterprise_json` 커넥터가 있다.
+- `lever_greenhouse`, `workday`, `sap_successfactors` 커넥터가 있다.
+- `sitemap_discovery` 커넥터와 `discover-sitemap` CLI가 있다.
+- `browser_public_render` 커넥터가 렌더된 HTML을 JSON-LD, Next data, HTML listing 파서로 재사용한다.
+- `PlaywrightBrowserRenderer`가 공개 JS 렌더링 페이지를 렌더링하고, CAPTCHA/접근 통제는 차단 상태로 표면화한다.
+- backend `browser` extra와 production crawler workflow의 Chromium 설치 경로가 있다.
+- 각 커넥터 테스트가 있다.
+- crawler가 구현된 커넥터 타입을 라우팅한다.
 - `run_all_sources()` summary에 회사/소스 라벨을 포함하는 테스트가 있다.
 
 ### 기술 추출과 기술 그래프
@@ -64,20 +85,23 @@
 
 ### 공식 기업 카탈로그
 
-- 현재는 코드의 `INITIAL_SOURCE_CATALOG`와 `Company`/`CareerSource` 모델을 사용한다.
-- 설계서의 운영 레지스트리 필드인 `brand_tier`, `sector`, `connector_family`, `policy_status`, `tech_job_priority`, `expected_job_volume`, `last_error_reason` 등은 아직 별도 DB 필드로 구현되지 않았다.
-- 출처 상태는 현재 `allowed`, `review`, `stopped` 수준이다. 설계서의 `needs_connector`, `needs_browser`, `blocked` 상태는 아직 모델에 없다.
+- 현재는 코드의 `INITIAL_SOURCE_CATALOG`를 seed registry로 사용하고, 실제 운영 상태는 `Company`/`CareerSource` 테이블에 저장한다.
+- 2단계 대기업/제조/통신 12개 출처가 등록되어 있지만 대부분 `needs_connector` 또는 `needs_browser`로 남아 있다.
+- 별도 관리자 화면이나 DB 기반 카탈로그 편집 UI는 아직 없다.
+- 100개 이상 후보 전체가 운영 카탈로그로 등록된 상태는 아니다.
 
 ### 수집 규모
 
-- 네이버, 카카오, LINE, Greeting 15개까지 1차 확장 기반은 들어왔다.
-- 삼성전자, 현대자동차, LG, SK, 넥슨, 엔씨소프트, 토스 계열 등 2단계 이후 기업은 아직 조사/분류/커넥터 구현이 남아 있다.
-- 100개 이상 후보 목록은 스펙에 있지만 운영 카탈로그로 등록된 상태는 아니다.
+- 네이버, 카카오, LINE, Greeting 15개까지는 `allowed` 기반이 들어왔다.
+- 2단계 대기업 12개는 공식 URL과 커넥터 후보가 seed에 있지만 live smoke check와 승격이 남아 있다.
+- 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보는 스펙에 있지만 대부분 아직 운영 카탈로그에 없다.
 
 ### 브라우저 기반 수집
 
-- CloakBrowser/Playwright 기반 공개 렌더러는 아직 구현되지 않았다.
-- 허용 범위는 공개 JS 렌더링과 공개 네트워크 응답 발견으로 제한되어 있다.
+- Playwright 기반 공개 렌더러와 `browser_public_render` crawler route가 구현되어 있다.
+- 기본 테스트/개발 설치는 브라우저 의존성을 포함하지 않고, `packages/backend[browser]` extra로 명시 설치한다.
+- production crawler workflow는 browser extra와 Chromium을 설치한다.
+- 허용 범위는 공개 JS 렌더링 결과 읽기로 제한되어 있다.
 - CAPTCHA 풀이, 로그인 우회, Cloudflare/봇 차단 우회는 계속 비목표다.
 
 ### 사용자 기능
@@ -90,15 +114,16 @@
 
 ### 1. 소스 카탈로그를 운영 가능한 레지스트리로 확장
 
-- `CareerSource` 또는 별도 registry에 source status, policy status, connector family, sector, priority score 필드를 추가한다.
-- 상태값에 `needs_connector`, `needs_browser`, `blocked`를 추가한다.
-- 출처별 최근 성공/실패, 실패 사유, 기술 직무 비율을 기록한다.
+- DB seed가 아닌 운영 UI 또는 관리 API로 source catalog를 편집할 수 있게 한다.
+- 100개 이상 후보 회사를 실제 `CareerSource`로 확장한다.
+- 출처별 기술 직무 비율과 비기술 노이즈 점수를 수집 결과에서 자동 보정한다.
 
 ### 2. 대기업/제조/통신 소스 조사와 커넥터 분류
 
-- 삼성전자, 삼성SDS, 현대자동차, 기아, LG전자, LG CNS, SK하이닉스, SK텔레콤, KT, 포스코DX, CJ올리브네트웍스, 한화시스템을 우선 조사한다.
-- 공개 JSON/API면 `enterprise_json`, 정적 HTML이면 `html_listing_detail`, JS 렌더링 필요면 `needs_browser`로 분류한다.
-- 12개 이상 등록, 6개 이상 allowed 수집을 2단계 완료 기준으로 둔다.
+- seed에 등록된 삼성전자, 삼성SDS, 현대자동차, 기아, LG전자, LG CNS, SK하이닉스, SK텔레콤, KT, 포스코DX, CJ올리브네트웍스, 한화시스템을 live smoke check한다.
+- preview 결과가 정상인 출처는 `allowed`로 승격한다.
+- 구조가 맞지 않는 출처는 connector 설정 또는 전용 파서 테스트를 추가한다.
+- 6개 이상 allowed 수집을 2단계 완료 기준으로 둔다.
 
 ### 3. 게임/콘텐츠, 핀테크/금융, AI/SaaS 단계 확장
 
@@ -108,8 +133,9 @@
 
 ### 4. 수집 운영 관측
 
-- GitHub Actions summary와 CLI에 회사별 open count, 신규/변경/마감 수, 실패 원인을 더 자세히 출력한다.
-- 장기적으로 관리자 화면 또는 운영 리포트에서 source status 분포를 확인한다.
+- GitHub Actions summary와 CLI에 기본 source report/source monitor는 들어왔다.
+- 다음 단계는 회사별 open count, 기술 직무 비율, 평균 수집 시간, 실패 재시도 수를 더 자세히 출력하는 것이다.
+- 장기적으로 관리자 화면에서 source status 분포와 개별 오류 이력을 확인한다.
 
 ### 5. 실제 사용자 기능
 
@@ -126,13 +152,13 @@
 
 ## 다음 작업 추천 순서
 
-1. 공식 소스 카탈로그 상태값과 운영 필드를 먼저 추가한다.
-2. 삼성전자/현대자동차/LG/SK/KT 등 2단계 기업 12개를 조사해 `allowed`, `needs_connector`, `needs_browser`, `blocked`로 분류한다.
-3. 분류 결과 중 공개 JSON/API가 있는 2-3개를 커넥터로 구현한다.
-4. crawler summary에 회사별 성공/실패/신규/변경/마감 수를 더 선명하게 출력한다.
+1. seed에 있는 2단계 대기업 12개를 `preview-source`로 live smoke check한다.
+2. 정상 preview가 나오는 `html_listing_detail`, `static_next_data`, `browser_public_render` 출처를 `allowed`로 승격한다.
+3. 실패 출처는 `last_error_code`와 preview 결과를 기준으로 connector 설정/파서 fixture를 추가한다.
+4. 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보를 운영 카탈로그에 추가한다.
 5. 홈 대시보드가 운영 집계 데이터를 더 직접적으로 쓰도록 연결한다.
 
 ## 마지막 확인
 
-- 최신 푸시 커밋: `6b810da feat: refine dashboard stack UX`
-- 현재 작업트리에서 추적되지 않은 로컬 항목: `.agents/`
+- 이 문서는 브라우저 렌더러 런타임 준비성 반영 이후의 feature worktree 상태를 기준으로 갱신했다.
+- 문서 갱신 직전 코드 변경 사항은 모두 커밋되어 있었다.
