@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine, select
@@ -305,7 +306,7 @@ def test_temporary_listing_failure_records_error_without_blocking_source() -> No
         assert posting.status == PostingStatus.OPEN
 
 
-def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
+def test_unsupported_allowed_browser_connector_fails_without_closing_postings() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -313,8 +314,8 @@ def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
         company = Company(name="현대자동차", slug="hyundai-motor")
         source = CareerSource(
             company=company,
-            base_url="https://careers.lg.com/apply?c=CNS",
-            source_type=SourceType.STATIC_NEXT_DATA,
+            base_url="https://careers.example.com/rendered",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
             status=SourceStatus.ALLOWED,
             policy_status=PolicyStatus.ALLOWED,
         )
@@ -341,12 +342,71 @@ def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
         )
 
         assert result.failed == 1
-        assert source.status == SourceStatus.NEEDS_CONNECTOR
+        assert source.status == SourceStatus.NEEDS_BROWSER
         assert source.policy_status == PolicyStatus.ALLOWED
         assert source.last_error_code == "unsupported_connector"
-        assert "static_next_data" in (source.last_error_reason or "")
+        assert "browser_public_render" in (source.last_error_reason or "")
         assert posting.missing_runs == 2
         assert posting.status == PostingStatus.OPEN
+
+
+def test_crawl_source_routes_static_next_data_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="LG CNS", slug="lg-cns")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.lg.com/apply?c=CNS",
+            source_type=SourceType.STATIC_NEXT_DATA,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "props": {
+                                "pageProps": {
+                                    "jobs": [
+                                        {
+                                            "id": "LG-CNS-200",
+                                            "title": "Cloud Backend Engineer",
+                                            "detailUrl": "/apply/jobs/LG-CNS-200",
+                                            "location": "서울",
+                                            "employmentType": "정규직",
+                                            "careerType": "경력",
+                                            "isPublic": True,
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        ensure_ascii=False,
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "LG-CNS-200"
+        assert postings[0].title == "Cloud Backend Engineer"
+        assert postings[0].url == "https://careers.lg.com/apply/jobs/LG-CNS-200"
+        assert source.last_error_code is None
+        assert source.last_success_at is not None
 
 
 def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
@@ -446,7 +506,7 @@ def test_preview_source_parses_listing_without_persisting_or_mutating() -> None:
         assert source.last_error_reason == "previous reason"
 
 
-def test_preview_source_reports_unsupported_connector_without_mutating() -> None:
+def test_preview_source_reports_unsupported_browser_connector_without_mutating() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -454,9 +514,9 @@ def test_preview_source_reports_unsupported_connector_without_mutating() -> None
         company = Company(name="LG CNS", slug="lg-cns")
         source = CareerSource(
             company=company,
-            base_url="https://careers.lg.com/apply?c=CNS",
-            source_type=SourceType.STATIC_NEXT_DATA,
-            status=SourceStatus.NEEDS_CONNECTOR,
+            base_url="https://careers.example.com/rendered",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            status=SourceStatus.NEEDS_BROWSER,
             policy_status=PolicyStatus.ALLOWED,
         )
         session.add(source)
@@ -473,9 +533,9 @@ def test_preview_source_reports_unsupported_connector_without_mutating() -> None
         assert preview["sample_openings"] == []
         assert preview["error"] == {
             "code": "unsupported_connector",
-            "reason": "connector is not implemented: static_next_data",
+            "reason": "connector is not implemented: browser_public_render",
         }
-        assert source.status == SourceStatus.NEEDS_CONNECTOR
+        assert source.status == SourceStatus.NEEDS_BROWSER
         assert source.last_error_code is None
 
 

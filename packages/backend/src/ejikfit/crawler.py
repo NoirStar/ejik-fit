@@ -23,6 +23,7 @@ from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
+from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
 from ejikfit.models import (
@@ -223,7 +224,15 @@ def _parse_listing_openings(
         return _parse_list_json_openings(source_type, text, url)
     if source_type == SourceType.HTML_LISTING_DETAIL:
         return parse_html_listing_openings(text, url)
+    if source_type == SourceType.STATIC_NEXT_DATA:
+        return parse_static_next_data_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
+
+
+def _unsupported_connector_status(source_type: SourceType) -> SourceStatus:
+    if source_type == SourceType.BROWSER_PUBLIC_RENDER:
+        return SourceStatus.NEEDS_BROWSER
+    return SourceStatus.NEEDS_CONNECTOR
 
 
 def _source_label(source: CareerSource) -> str:
@@ -398,6 +407,7 @@ async def crawl_source(
         SourceType.NAVER_JSON,
         SourceType.KAKAO_JSON,
         SourceType.LINE_GATSBY,
+        SourceType.STATIC_NEXT_DATA,
     }:
         openings = _parse_listing_openings(
             source.source_type,
@@ -441,7 +451,7 @@ async def crawl_source(
             source,
             "unsupported_connector",
             f"connector is not implemented: {source.source_type.value}",
-            status=SourceStatus.NEEDS_CONNECTOR,
+            status=_unsupported_connector_status(source.source_type),
         )
         session.commit()
         return CrawlResult(failed=1)
