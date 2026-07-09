@@ -323,20 +323,23 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="KT",
         slug="kt",
-        base_url="https://recruit.kt.com/careers",
-        source_type=SourceType.HTML_LISTING_DETAIL,
+        base_url=(
+            "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
+            "&isContainsContents=0"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://corp.kt.com",
         sector="enterprise_it",
-        connector_family="html_listing_detail",
+        connector_family="enterprise_json",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=5,
         expected_job_volume=4,
-        connector_reuse_score=2,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=3,
-        notes="Official KT group careers listing.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official KT Group careers JSON listing.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="포스코DX",

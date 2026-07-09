@@ -12,6 +12,7 @@ ejikfit preview-sources --status needs_browser --source-type browser_public_rend
 ejikfit preview-source --company-slug sk-hynix
 ejikfit preview-source --company-slug posco-dx
 ejikfit preview-source --company-slug sk-telecom
+ejikfit preview-source --company-slug kt
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -23,7 +24,6 @@ ejikfit preview-source --company-slug sk-telecom
 | LG CNS | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | LG전자 | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | 삼성SDS | `html_listing_detail` | `discovered=0` after false-positive filtering |
-| KT | `html_listing_detail` | `discovered=0` |
 | 현대자동차 | `html_listing_detail` | `discovered=0` |
 | CJ올리브네트웍스 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 기아 | `html_listing_detail` | `discovered=0` after false-positive filtering |
@@ -67,6 +67,12 @@ seed는 `request_method=POST`와 `request_body={"sort":"2","searchText":"","corp
 
 임시 SQLite DB에서 `preview-source --company-slug sk-telecom`을 실행한 결과 `discovered=8`, `error=null`이 확인됐다. 샘플에는 `SKT 뉴스룸 운영 지원 담당자`, `유선망 현황관리 및 사무지원 담당자`, `T우주 서비스 운영지원 및 정산 담당자` 등이 포함된다.
 
+## KT 공식 JSON API 승격
+
+KT 그룹 채용 화면은 Nuxt 앱이며 `https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1&isContainsContents=0` JSON API를 직접 호출한다. 응답은 `data[]` 안에 `recruitNoticeSn`, `recruitNoticeName`, `recruitNoticeUrl`, `recruitClassName`, `receiveStartDatetime`, `receiveEndDatetime`, `company`, `recruitSectorList`를 포함한다.
+
+seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다. 임시 SQLite DB에서 `preview-source --company-slug kt`를 실행한 결과 `discovered=55`, `error=null`이 확인됐다. 샘플에는 `[KT] 2026년 경력채용 (AX기술연구 및 개발)`, `[KT] 2026년 KT 경력채용(네트워크 보안기술 연구개발)`, `[KT] 2026년 경력채용(데이터센터 네트워크 기술 연구)` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -76,6 +82,7 @@ seed는 `request_method=POST`와 `request_body={"sort":"2","searchText":"","corp
 - 삼성전자는 접근 challenge가 재현되어 `blocked`로 운영 분류했다.
 - 포스코DX는 POSCO Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=5`다.
 - SK텔레콤은 SK Careers 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=8`이다.
+- KT는 KT Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=55`다.
 
 ## 2026-07-10 LG API 승격
 

@@ -243,3 +243,55 @@ def test_parse_enterprise_json_openings_maps_sk_careers_recruit_list_api() -> No
     assert opening.opens_at.isoformat() == "2026-07-03T00:00:00+09:00"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-12T00:00:00+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
+    payload = {
+        "isSuccess": True,
+        "errorMessage": None,
+        "data": [
+            {
+                "recruitNoticeSn": 258054,
+                "recruitNoticeName": "[KT] 2026년 경력채용 (AX기술연구 및 개발)",
+                "recruitSectorList": [
+                    {
+                        "recruitSectorSn": 716082,
+                        "recruitSectorName": "AI Foundation 모델 개발",
+                    },
+                    {"recruitSectorSn": 716083, "recruitSectorName": "Data Governance"},
+                    {"recruitSectorSn": 716084, "recruitSectorName": "AI Engineering"},
+                ],
+                "recruitNoticeUrl": "https://kt.recruiter.co.kr/career/jobs/119898",
+                "isPost": True,
+                "isInProgress": True,
+                "recruitTypeName": "일반채용",
+                "recruitClassName": "경력",
+                "receiveStartDatetime": "2026-06-25 00:00:00",
+                "receiveEndDatetime": "2026-07-12 23:55:59",
+                "company": "KT",
+                "title": "2026년 경력채용 (AX기술연구 및 개발)",
+                "dday": 3,
+            }
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
+        "&isContainsContents=0",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "258054"
+    assert opening.url == "https://kt.recruiter.co.kr/career/jobs/119898"
+    assert opening.title == "[KT] 2026년 경력채용 (AX기술연구 및 개발)"
+    assert opening.employment_type == "경력"
+    assert opening.career_type == "experienced"
+    assert opening.description_text == (
+        "KT AI Foundation 모델 개발 Data Governance AI Engineering"
+    )
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-06-25T00:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-12T23:55:59+09:00"

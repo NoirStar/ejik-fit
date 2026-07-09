@@ -84,6 +84,47 @@ def _sk_careers_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _kt_sector_names(value: Any) -> str:
+    if not isinstance(value, list):
+        return ""
+    names: list[str] = []
+    for item in value:
+        if isinstance(item, dict) and isinstance(item.get("recruitSectorName"), str):
+            names.append(item["recruitSectorName"])
+    return " ".join(dict.fromkeys(names))
+
+
+def _kt_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    recruit_list = data.get("data")
+    if not isinstance(recruit_list, list):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in recruit_list:
+        if not isinstance(item, dict) or "recruitNoticeSn" not in item:
+            continue
+        posting_id = item.get("recruitNoticeSn")
+        title = item.get("recruitNoticeName") or item.get("title")
+        if posting_id is None or not isinstance(title, str):
+            continue
+        jobs.append(
+            {
+                "id": str(posting_id),
+                "title": unescape(title),
+                "jobDetailUrl": item.get("recruitNoticeUrl"),
+                "employmentType": item.get("recruitClassName"),
+                "careerTypeName": item.get("recruitClassName"),
+                "startDate": item.get("receiveStartDatetime"),
+                "closeDate": item.get("receiveEndDatetime"),
+                "department": item.get("company"),
+                "jobGroup": _kt_sector_names(item.get("recruitSectorList")),
+                "active": item.get("isPost"),
+                "live": item.get("isInProgress"),
+            }
+        )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -96,4 +137,7 @@ def parse_enterprise_json_openings(
         sk_payload = _sk_careers_payload(data)
         if sk_payload is not None:
             return parse_static_payload_openings(sk_payload, listing_url)
+        kt_payload = _kt_recruit_payload(data)
+        if kt_payload is not None:
+            return parse_static_payload_openings(kt_payload, listing_url)
     return parse_static_payload_openings(data, listing_url)

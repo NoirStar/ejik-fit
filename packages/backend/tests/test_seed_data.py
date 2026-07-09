@@ -70,6 +70,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "sk-hynix",
         "posco-dx",
         "sk-telecom",
+        "kt",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -91,6 +92,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["posco-dx"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-telecom"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["sk-telecom"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["kt"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["kt"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-hynix"].source_type == (
         SourceType.HTML_LISTING_DETAIL
     )
@@ -197,6 +200,14 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "workingType": "",
             "workingRegion": "",
         }
+
+        kt = sources_by_slug["kt"]
+        assert kt.status == SourceStatus.ALLOWED
+        assert kt.connector_family == "enterprise_json"
+        assert kt.base_url == (
+            "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
+            "&isContainsContents=0"
+        )
 
         hyundai = sources_by_slug["hyundai-motor"]
         assert hyundai.status == SourceStatus.NEEDS_CONNECTOR
