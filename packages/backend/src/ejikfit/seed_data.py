@@ -268,20 +268,23 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="SK하이닉스",
         slug="sk-hynix",
-        base_url="https://talent.skhynix.com/hub/ko/home",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        base_url="https://talent.skhynix.com/hub/ko/apply/job",
+        source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://www.skhynix.com",
         sector="enterprise_it",
-        connector_family="browser_public_render",
+        connector_family="html_listing_detail",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=5,
         expected_job_volume=4,
-        connector_reuse_score=1,
+        connector_reuse_score=2,
         policy_risk=0,
         non_tech_noise=2,
-        notes="Official SK hynix talent hub; public rendering likely needed.",
-        status=SourceStatus.NEEDS_BROWSER,
+        notes=(
+            "Official SK hynix Talent Hub jobs page; server-rendered listing "
+            "currently shows an empty state when no postings are open."
+        ),
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="SK텔레콤",

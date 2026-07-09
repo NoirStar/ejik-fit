@@ -9,6 +9,7 @@ DATABASE_URL=sqlite+pysqlite:////tmp/ejikfit-preview.sqlite
 ejikfit seed-sources
 ejikfit preview-sources --status needs_connector --limit 12
 ejikfit preview-sources --status needs_browser --source-type browser_public_render
+ejikfit preview-source --company-slug sk-hynix
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -33,18 +34,23 @@ ejikfit preview-sources --status needs_browser --source-type browser_public_rend
 
 | Source | Type | Result |
 | --- | --- | --- |
-| SK하이닉스 | `browser_public_render` | renderer timeout resolved, current parser result `discovered=0` |
 | 삼성전자 | `browser_public_render` | `blocked`: source returned an access challenge |
 | 포스코DX | `browser_public_render` | `temporary_fetch_error`: `net::ERR_TUNNEL_CONNECTION_FAILED` |
 
 처음 실행에서 SK하이닉스는 `Page.goto`의 `networkidle` 대기 때문에 20초 timeout이 발생했다. renderer를 `domcontentloaded` 필수 대기와 5초 best-effort `networkidle` settle로 바꾼 뒤 timeout은 사라졌다.
+
+## SK하이닉스 정적 공고 페이지 재분류
+
+SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hub/ko/apply/job`이다. 이 페이지는 공개 서버 렌더링 HTML로 내려오며, 현재 `7월 모집 중 공고` 영역에는 `곧 공개될 새로운 공고를 기대해 주세요.` 빈 상태가 포함되어 있다. Playwright 네트워크 관찰에서도 별도 공고 JSON/API 호출은 확인되지 않았다.
+
+따라서 SK하이닉스는 `browser_public_render`가 아니라 `html_listing_detail`로 분류하고, 공식 공개 페이지를 오류 없이 확인할 수 있으므로 `allowed`로 승격한다. 현재 preview 결과는 정상적인 빈 상태인 `discovered=0`이다.
 
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
   - LG전자: `GET https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20`, preview `discovered=9`
   - LG CNS: `POST https://api.careers.lg.com/rmk/job/retrieveJobNoticesList`, `companyCodeList=["CNS"]`, preview `discovered=21`
-- SK하이닉스는 브라우저 렌더링 이후 공개 JSON/API 탐색 또는 추가 wait/selector 전략이 필요하다.
+- SK하이닉스는 공식 정적 공고 페이지의 현재 빈 상태를 `html_listing_detail`로 확인하도록 승격했다.
 - 삼성전자는 접근 challenge가 확인되어 `blocked` 또는 `review`로 운영 분류하는 편이 안전하다.
 - 포스코DX는 네트워크 접근성 확인 후 대체 공식 출처를 찾아야 한다.
 

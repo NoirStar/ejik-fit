@@ -66,6 +66,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     non_runnable_enterprise_slugs = enterprise_slugs - {
         "lg-cns",
         "lg-electronics",
+        "sk-hynix",
     }
     assert all(
         catalog_by_slug[slug].status
@@ -82,6 +83,10 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["lg-electronics"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["lg-cns"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["sk-hynix"].source_type == (
+        SourceType.HTML_LISTING_DETAIL
+    )
+    assert catalog_by_slug["sk-hynix"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
         SourceType.BROWSER_PUBLIC_RENDER
     )
@@ -149,6 +154,11 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "desireLocList": [],
             "jobGroupList": [],
         }
+
+        sk_hynix = sources_by_slug["sk-hynix"]
+        assert sk_hynix.status == SourceStatus.ALLOWED
+        assert sk_hynix.connector_family == "html_listing_detail"
+        assert sk_hynix.base_url == "https://talent.skhynix.com/hub/ko/apply/job"
 
         hyundai = sources_by_slug["hyundai-motor"]
         assert hyundai.status == SourceStatus.NEEDS_CONNECTOR
