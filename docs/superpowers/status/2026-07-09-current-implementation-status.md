@@ -152,7 +152,7 @@
 
 ## 다음 작업 추천 순서
 
-1. seed에 있는 2단계 대기업 12개를 `preview-source`로 live smoke check한다.
+1. seed에 있는 2단계 대기업 12개를 `preview-sources`로 live smoke check한다.
 2. 정상 preview가 나오는 `html_listing_detail`, `static_next_data`, `browser_public_render` 출처를 `allowed`로 승격한다.
 3. 실패 출처는 `last_error_code`와 preview 결과를 기준으로 connector 설정/파서 fixture를 추가한다.
 4. 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보를 운영 카탈로그에 추가한다.

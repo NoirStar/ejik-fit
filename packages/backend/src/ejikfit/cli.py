@@ -45,6 +45,21 @@ def build_parser() -> argparse.ArgumentParser:
     preview_parser.add_argument("source_id", nargs="?")
     preview_parser.add_argument("--company-slug")
     preview_parser.add_argument("--source-type", choices=source_type_choices)
+    preview_many_parser = subparsers.add_parser(
+        "preview-sources",
+        help="여러 출처를 저장 없이 fetch/parse 미리보기합니다.",
+    )
+    preview_many_parser.add_argument(
+        "--status",
+        choices=[status.value for status in SourceStatus],
+        default=None,
+    )
+    preview_many_parser.add_argument(
+        "--source-type",
+        choices=source_type_choices,
+        default=None,
+    )
+    preview_many_parser.add_argument("--limit", type=int, default=None)
     status_parser = subparsers.add_parser(
         "set-source-status",
         help="출처 상태를 명시적으로 변경합니다.",
@@ -216,6 +231,70 @@ def _set_source_status(
     return _source_status_payload(source)
 
 
+def _priority_score_expression():
+    return (
+        CareerSource.brand_tier_weight
+        + CareerSource.tech_job_priority
+        + CareerSource.expected_job_volume
+        + CareerSource.connector_reuse_score
+        - CareerSource.policy_risk
+        - CareerSource.non_tech_noise
+    )
+
+
+def _preview_source_targets(
+    session,
+    status_value: str | None,
+    source_type_value: str | None,
+    limit: int | None,
+) -> list[str]:
+    if limit is not None and limit < 1:
+        raise ValueError("--limit must be greater than 0")
+
+    statement = (
+        select(CareerSource)
+        .join(CareerSource.company)
+        .options(joinedload(CareerSource.company))
+    )
+    if status_value is not None:
+        statement = statement.where(CareerSource.status == SourceStatus(status_value))
+    if source_type_value is not None:
+        statement = statement.where(
+            CareerSource.source_type == SourceType(source_type_value)
+        )
+
+    statement = statement.order_by(
+        _priority_score_expression().desc(),
+        Company.name,
+        CareerSource.base_url,
+    )
+    if limit is not None:
+        statement = statement.limit(limit)
+
+    return [
+        str(source.id)
+        for source in session.scalars(statement).unique().all()
+    ]
+
+
+def _preview_sources(
+    status_value: str | None,
+    source_type_value: str | None,
+    limit: int | None,
+) -> dict:
+    from ejikfit.crawler import preview_source_by_id
+
+    with SessionLocal() as session:
+        source_ids = _preview_source_targets(
+            session,
+            status_value,
+            source_type_value,
+            limit,
+        )
+    results = [preview_source_by_id(source_id) for source_id in source_ids]
+    return {"sources": len(results), "results": results}
+
+
 def _discover_sitemap(url: str, sample_limit: int) -> dict:
     from ejikfit.config import get_settings
     from ejikfit.connectors.sitemap_discovery import parse_sitemap_discovery
@@ -285,6 +364,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             json.dumps(
                 preview_source_by_id(source_id),
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.command == "preview-sources":
+        print(
+            json.dumps(
+                _preview_sources(args.status, args.source_type, args.limit),
                 ensure_ascii=False,
                 sort_keys=True,
             )

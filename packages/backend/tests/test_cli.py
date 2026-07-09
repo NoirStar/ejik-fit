@@ -200,6 +200,76 @@ def test_preview_source_accepts_company_slug_selector(monkeypatch, capsys) -> No
     assert json.loads(capsys.readouterr().out) == report
 
 
+def test_preview_sources_filters_targets_and_prints_json_report(
+    monkeypatch,
+    capsys,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000021")
+    _insert_source(
+        engine,
+        source_id=source_id,
+        company_name="LG CNS",
+        company_slug="lg-cns",
+        source_type=SourceType.STATIC_NEXT_DATA,
+        status=SourceStatus.NEEDS_CONNECTOR,
+    )
+    _insert_source(
+        engine,
+        source_id=uuid.UUID("00000000-0000-0000-0000-000000000022"),
+        company_name="현대자동차",
+        company_slug="hyundai-motor",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        status=SourceStatus.NEEDS_CONNECTOR,
+    )
+    _insert_source(
+        engine,
+        source_id=uuid.UUID("00000000-0000-0000-0000-000000000023"),
+        company_name="네이버",
+        company_slug="naver",
+        source_type=SourceType.STATIC_NEXT_DATA,
+        status=SourceStatus.ALLOWED,
+    )
+    report = {
+        "source_id": str(source_id),
+        "source_label": "LG CNS / static_next_data",
+        "source_type": "static_next_data",
+        "discovered": 1,
+        "sample_openings": [],
+        "error": None,
+    }
+    called_with: list[str] = []
+
+    def fake_preview(selected_source_id: str) -> dict:
+        called_with.append(selected_source_id)
+        return report
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr("ejikfit.crawler.preview_source_by_id", fake_preview)
+
+    assert (
+        cli.main(
+            [
+                "preview-sources",
+                "--status",
+                "needs_connector",
+                "--source-type",
+                "static_next_data",
+                "--limit",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    assert called_with == [str(source_id)]
+    assert json.loads(capsys.readouterr().out) == {
+        "sources": 1,
+        "results": [report],
+    }
+
+
 def test_crawl_source_accepts_company_slug_selector(monkeypatch, capsys) -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
