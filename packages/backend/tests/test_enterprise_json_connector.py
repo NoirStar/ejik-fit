@@ -297,6 +297,58 @@ def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
     assert opening.closes_at.isoformat() == "2026-07-12T23:55:59+09:00"
 
 
+def test_parse_enterprise_json_openings_maps_cj_recruit_jsonp_api() -> None:
+    payload = [
+        {
+            "RNUM": "9",
+            "ACTIVE_CNT": "40",
+            "TOTAL_COUNT": "41",
+            "COMPANY": "E10",
+            "BUSINESS_UNIT": "E10BU",
+            "ZZ_TARGET_1": "B",
+            "ZZ_TITLE": "[경력] CJ ONE 회원 서비스 백엔드 개발자",
+            "ZZ_STR_DT": "2026-06-16 11:00",
+            "ZZ_END_DT": "2026-07-31 23:59",
+            "ZZ_REMOVE_DT": "2026-07-31",
+            "ZZ_JO_NUM": "J20260616038263",
+        },
+        {
+            "RNUM": "41",
+            "ACTIVE_CNT": "40",
+            "TOTAL_COUNT": "41",
+            "ZZ_TARGET_1": "A",
+            "ZZ_TITLE": "[계약] 영상 콘텐츠 가공 및 유통",
+            "ZZ_STR_DT": "2026-06-24 00:00",
+            "ZZ_END_DT": "2026-07-06 18:10",
+            "ZZ_REMOVE_DT": "2026-07-09",
+            "ZZ_JO_NUM": "J20260112037655",
+        },
+    ]
+
+    openings = parse_enterprise_json_openings(
+        f"list({json.dumps(payload, ensure_ascii=False)})",
+        "https://recruit.cj.net/recruit/ko/common/common/jobListInfo.fo"
+        "?COMPANY=E10&BUSINESS_UNIT=E10BU&ZZ_TARGET_1=Z&ROWNO=100"
+        "&PAGENO=1&TOTAL_COUNT=1&ZZ_TITLE=&callback=list",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "J20260616038263"
+    assert opening.url == (
+        "https://recruit.cj.net/recruit/ko/recruit/recruit/bestDetail.fo"
+        "?zz_jo_num=J20260616038263"
+    )
+    assert opening.title == "[경력] CJ ONE 회원 서비스 백엔드 개발자"
+    assert opening.employment_type == "경력"
+    assert opening.career_type == "experienced"
+    assert opening.description_text == "CJ OliveNetworks 경력"
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-06-16T11:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-31T23:59:00+09:00"
+
+
 def test_parse_enterprise_json_openings_maps_hyundai_motor_apply_list_api() -> None:
     payload = {
         "status": 200,

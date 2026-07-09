@@ -15,6 +15,7 @@ ejikfit preview-source --company-slug sk-telecom
 ejikfit preview-source --company-slug kt
 ejikfit preview-source --company-slug hyundai-motor
 ejikfit preview-source --company-slug kia
+ejikfit preview-source --company-slug cj-olivenetworks
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -26,7 +27,6 @@ ejikfit preview-source --company-slug kia
 | LG CNS | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | LG전자 | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | 삼성SDS | `html_listing_detail` | `discovered=0` after false-positive filtering |
-| CJ올리브네트웍스 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 한화시스템 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 
 처음 실행에서는 삼성SDS 직무소개, SK Careers 블로그/유튜브, 기아/한화 채용 안내 링크가 공고처럼 잡혔다. `html_listing_detail`는 날짜 또는 직무 제목 신호가 있는 링크만 후보로 보도록 조정했고, `더보기` 직무소개 링크를 제외했다.
@@ -89,6 +89,14 @@ seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다. 임시 SQ
 
 임시 SQLite DB에서 `preview-source --company-slug kia`를 실행한 결과 `discovered=3`, `error=null`이 확인됐다. 샘플에는 `[계약직] 기아 채용운영`, `[계약직] 렌터카사업 운영 지원`, `[계약직] AutoLand화성 의전 지원 및 차량 관리 업무`가 포함된다.
 
+## CJ올리브네트웍스 공식 JSONP API 승격
+
+CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recruit.js`를 통해 CJ Group 채용 JSONP endpoint `https://recruit.cj.net/recruit/ko/common/common/jobListInfo.fo`를 호출한다. 회사 코드는 `COMPANY=E10`, 비즈니스 유닛은 `BUSINESS_UNIT=E10BU`로 고정되어 있으며, `ZZ_TARGET_1=Z`, `ROWNO=100`, `PAGENO=1`로 전체 채용 목록을 받을 수 있다.
+
+응답은 `list([...])` JSONP이며 각 항목은 `ZZ_JO_NUM`, `ZZ_TITLE`, `ZZ_TARGET_1`, `ZZ_STR_DT`, `ZZ_END_DT`, `RNUM`, `ACTIVE_CNT`를 포함한다. `ZZ_JO_NUM`이 숫자가 아니면 프론트와 동일하게 `bestDetail.fo?zz_jo_num={ZZ_JO_NUM}` 상세 URL을 사용하고, `RNUM > ACTIVE_CNT`인 닫힌 공고는 제외한다.
+
+임시 SQLite DB에서 `preview-source --company-slug cj-olivenetworks`를 실행한 결과 `discovered=40`, `error=null`이 확인됐다. 샘플에는 `[경력] 팩토리사업 영업대표`, `[경력] 프로젝트 DBA`, `[경력] CJ ONE 회원 서비스 백엔드 개발자` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -101,6 +109,7 @@ seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다. 임시 SQ
 - KT는 KT Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=55`다.
 - 현대자동차는 Hyundai Motor 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=30`이다.
 - 기아는 Kia 공식 렌더 목록으로 승격했고, 현재 preview `discovered=3`이다.
+- CJ올리브네트웍스는 CJ Group 공식 JSONP 목록 API로 승격했고, 현재 preview `discovered=40`이다.
 
 ## 2026-07-10 LG API 승격
 

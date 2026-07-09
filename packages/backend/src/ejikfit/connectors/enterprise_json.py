@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 from html import unescape
 from typing import Any
@@ -126,6 +127,81 @@ def _kt_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _loads_json_or_jsonp(raw_json: str) -> Any:
+    try:
+        return json.loads(raw_json)
+    except json.JSONDecodeError as json_error:
+        match = re.match(r"\s*[\w$.]+\((.*)\)\s*;?\s*$", raw_json, re.DOTALL)
+        if match is None:
+            raise json_error
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            raise json_error
+
+
+def _parse_int(value: Any) -> int | None:
+    try:
+        return int(str(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def _cj_target_name(value: Any) -> str:
+    return {
+        "A": "신입",
+        "B": "경력",
+        "C": "인턴",
+        "D": "산학실습",
+        "E": "신입/경력",
+        "K": "리턴십",
+    }.get(value, "신입")
+
+
+def _cj_active(item: dict[str, Any]) -> bool:
+    row_number = _parse_int(item.get("RNUM"))
+    active_count = _parse_int(item.get("ACTIVE_CNT"))
+    if row_number is None or active_count is None:
+        return True
+    return row_number <= active_count
+
+
+def _cj_recruit_payload(data: list[Any]) -> dict[str, Any] | None:
+    if not any(isinstance(item, dict) and "ZZ_JO_NUM" in item for item in data):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        posting_id = item.get("ZZ_JO_NUM")
+        title = item.get("ZZ_TITLE")
+        if posting_id is None or not isinstance(title, str):
+            continue
+        posting_id_text = str(posting_id)
+        detail_file = "detail.fo" if posting_id_text.isdigit() else "bestDetail.fo"
+        target_name = _cj_target_name(item.get("ZZ_TARGET_1"))
+        jobs.append(
+            {
+                "id": posting_id_text,
+                "title": unescape(title),
+                "jobDetailUrl": (
+                    "https://recruit.cj.net/recruit/ko/recruit/recruit/"
+                    f"{detail_file}?{urlencode({'zz_jo_num': posting_id_text})}"
+                ),
+                "employmentType": target_name,
+                "careerTypeName": target_name,
+                "startDate": item.get("ZZ_STR_DT"),
+                "closeDate": item.get("ZZ_END_DT"),
+                "companyName": "CJ OliveNetworks",
+                "jobGroupName": target_name,
+                "active": _cj_active(item),
+                "live": _cj_active(item),
+            }
+        )
+    return {"jobs": jobs}
+
+
 def _hyundai_datetime(date_value: Any, time_value: Any) -> str | None:
     if not isinstance(date_value, str):
         return None
@@ -209,7 +285,11 @@ def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
 ) -> list[ParsedOpening]:
-    data = json.loads(raw_json)
+    data = _loads_json_or_jsonp(raw_json)
+    if isinstance(data, list):
+        cj_payload = _cj_recruit_payload(data)
+        if cj_payload is not None:
+            return parse_static_payload_openings(cj_payload, listing_url)
     if isinstance(data, dict):
         posco_payload = _posco_recruit_payload(data)
         if posco_payload is not None:

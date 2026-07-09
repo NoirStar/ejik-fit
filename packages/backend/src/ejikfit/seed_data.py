@@ -373,20 +373,24 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="CJ올리브네트웍스",
         slug="cj-olivenetworks",
-        base_url="https://en.cjolivenetworks.co.kr/recruit/job_notice",
-        source_type=SourceType.HTML_LISTING_DETAIL,
+        base_url=(
+            "https://recruit.cj.net/recruit/ko/common/common/jobListInfo.fo"
+            "?COMPANY=E10&BUSINESS_UNIT=E10BU&ZZ_TARGET_1=Z&ROWNO=100"
+            "&PAGENO=1&TOTAL_COUNT=1&ZZ_TITLE=&callback=list"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.cjolivenetworks.co.kr",
         sector="enterprise_it",
-        connector_family="html_listing_detail",
+        connector_family="enterprise_json",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
         tech_job_priority=5,
-        expected_job_volume=3,
-        connector_reuse_score=2,
+        expected_job_volume=5,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=2,
-        notes="Official CJ OliveNetworks job notice page.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official CJ Group JSONP listing filtered to CJ OliveNetworks.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="한화시스템",
