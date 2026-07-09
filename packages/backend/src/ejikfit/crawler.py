@@ -26,6 +26,8 @@ from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
+from ejikfit.connectors.successfactors import parse_successfactors_openings
+from ejikfit.connectors.workday import parse_workday_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
 from ejikfit.models import (
@@ -232,6 +234,10 @@ def _parse_listing_openings(
         return parse_enterprise_json_openings(text, url)
     if source_type == SourceType.LEVER_GREENHOUSE:
         return parse_lever_greenhouse_openings(text, url)
+    if source_type == SourceType.WORKDAY:
+        return parse_workday_openings(text, url)
+    if source_type == SourceType.SAP_SUCCESSFACTORS:
+        return parse_successfactors_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
 
 
@@ -416,6 +422,8 @@ async def crawl_source(
         SourceType.STATIC_NEXT_DATA,
         SourceType.ENTERPRISE_JSON,
         SourceType.LEVER_GREENHOUSE,
+        SourceType.WORKDAY,
+        SourceType.SAP_SUCCESSFACTORS,
     }:
         openings = _parse_listing_openings(
             source.source_type,

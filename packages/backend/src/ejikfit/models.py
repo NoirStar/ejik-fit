@@ -34,6 +34,8 @@ class SourceType(str, enum.Enum):
     STATIC_NEXT_DATA = "static_next_data"
     ENTERPRISE_JSON = "enterprise_json"
     LEVER_GREENHOUSE = "lever_greenhouse"
+    WORKDAY = "workday"
+    SAP_SUCCESSFACTORS = "sap_successfactors"
     BROWSER_PUBLIC_RENDER = "browser_public_render"
 
 

@@ -49,6 +49,8 @@ def test_future_enterprise_source_namespaces_are_stable() -> None:
     assert SourceType.STATIC_NEXT_DATA.value == "static_next_data"
     assert SourceType.ENTERPRISE_JSON.value == "enterprise_json"
     assert SourceType.LEVER_GREENHOUSE.value == "lever_greenhouse"
+    assert SourceType.WORKDAY.value == "workday"
+    assert SourceType.SAP_SUCCESSFACTORS.value == "sap_successfactors"
     assert SourceType.BROWSER_PUBLIC_RENDER.value == "browser_public_render"
 
 
