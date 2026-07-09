@@ -158,7 +158,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         for slug in game_content_slugs
     )
 
-    runnable_slugs = {"krafton", "neowiz", "pearl-abyss"}
+    runnable_slugs = {"krafton", "neowiz", "pearl-abyss", "smilegate"}
     assert all(
         catalog_by_slug[slug].status
         in {SourceStatus.NEEDS_BROWSER, SourceStatus.NEEDS_CONNECTOR}
@@ -185,6 +185,26 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     assert catalog_by_slug["pearl-abyss"].base_url == (
         "https://www.pearlabyss.com/ko-KR/Company/Careers/List"
     )
+
+    assert catalog_by_slug["smilegate"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["smilegate"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["smilegate"].base_url == (
+        "https://careers.smilegate.com/api/apply/announce/guest"
+    )
+    assert catalog_by_slug["smilegate"].request_method == "POST"
+    assert catalog_by_slug["smilegate"].request_body == {
+        "careerTypeCd": [],
+        "companyCd": [],
+        "gameGenreCd": [],
+        "hireTypeCd": [],
+        "jobDtlCd": [],
+        "jobMainCd": [],
+        "keyword": None,
+        "pageIndex": 1,
+        "pageSize": 150,
+        "projectSeq": None,
+        "usreId": None,
+    }
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER

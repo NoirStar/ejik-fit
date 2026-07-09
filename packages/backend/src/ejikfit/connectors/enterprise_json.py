@@ -86,6 +86,56 @@ def _sk_careers_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _compact_yyyymmdd(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    digits = value.strip()
+    if len(digits) != 8 or not digits.isdigit():
+        return value
+    return f"{digits[:4]}-{digits[4:6]}-{digits[6:]}"
+
+
+def _smilegate_announce_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    announce_list = data.get("announce")
+    if not isinstance(announce_list, list):
+        return None
+    if not any(
+        isinstance(item, dict) and "announceSeq" in item and "title" in item
+        for item in announce_list
+    ):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in announce_list:
+        if not isinstance(item, dict):
+            continue
+        posting_id = item.get("announceSeq")
+        title = item.get("title")
+        if posting_id is None or not isinstance(title, str):
+            continue
+        posting_id_text = str(posting_id)
+        jobs.append(
+            {
+                "id": posting_id_text,
+                "title": unescape(title),
+                "jobDetailUrl": (
+                    "https://careers.smilegate.com/apply/announce/view?"
+                    f"{urlencode({'seq': posting_id_text})}"
+                ),
+                "employmentType": item.get("hireTypeNm"),
+                "careerTypeName": item.get("careerTypeNm"),
+                "closeDate": _compact_yyyymmdd(item.get("endDate")),
+                "companyName": item.get("companyNm"),
+                "jobGroupName": item.get("jobMainNm"),
+                "jobGroupName2": item.get("jobDtlNm"),
+                "hashtagText": item.get("gameGenreNm") or item.get("projectNm"),
+                "active": True,
+                "live": True,
+            }
+        )
+    return {"jobs": jobs}
+
+
 def _kt_sector_names(value: Any) -> str:
     if not isinstance(value, list):
         return ""
@@ -384,6 +434,9 @@ def parse_enterprise_json_openings(
         sk_payload = _sk_careers_payload(data)
         if sk_payload is not None:
             return parse_static_payload_openings(sk_payload, listing_url)
+        smilegate_payload = _smilegate_announce_payload(data)
+        if smilegate_payload is not None:
+            return parse_static_payload_openings(smilegate_payload, listing_url)
         kt_payload = _kt_recruit_payload(data)
         if kt_payload is not None:
             return parse_static_payload_openings(kt_payload, listing_url)

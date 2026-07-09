@@ -245,6 +245,62 @@ def test_parse_enterprise_json_openings_maps_sk_careers_recruit_list_api() -> No
     assert opening.closes_at.isoformat() == "2026-07-12T00:00:00+09:00"
 
 
+def test_parse_enterprise_json_openings_maps_smilegate_announce_api() -> None:
+    payload = {
+        "count": 2,
+        "announceCount": 2,
+        "announce": [
+            {
+                "announceSeq": 6142,
+                "title": "[글로벌운영] 리스크관리 담당",
+                "companyNm": "스마일게이트",
+                "jobMainNm": "게임제작",
+                "jobDtlNm": "운영서비스",
+                "careerTypeNm": "신입/경력",
+                "hireTypeNm": "정규직",
+                "gameGenreNm": "",
+                "projectNm": None,
+                "endDate": "20260731",
+            },
+            {
+                "announceSeq": 6141,
+                "title": "[글로벌운영] 운영기획 담당",
+                "companyNm": "스마일게이트",
+                "jobMainNm": "게임제작",
+                "jobDtlNm": "운영서비스",
+                "careerTypeNm": "경력",
+                "hireTypeNm": "계약직",
+                "gameGenreNm": "Crossfire",
+                "projectNm": "Crossfire",
+                "endDate": "20260731",
+            },
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://careers.smilegate.com/api/apply/announce/guest",
+    )
+
+    assert len(openings) == 2
+    opening = openings[0]
+    assert opening.external_id == "6142"
+    assert opening.url == "https://careers.smilegate.com/apply/announce/view?seq=6142"
+    assert opening.title == "[글로벌운영] 리스크관리 담당"
+    assert opening.employment_type == "정규직"
+    assert opening.career_type == "mixed"
+    assert opening.description_text == "스마일게이트 게임제작 운영서비스"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-31T00:00:00+09:00"
+
+    second = openings[1]
+    assert second.external_id == "6141"
+    assert second.career_type == "experienced"
+    assert second.description_text == (
+        "스마일게이트 게임제작 운영서비스 Crossfire"
+    )
+
+
 def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
     payload = {
         "isSuccess": True,

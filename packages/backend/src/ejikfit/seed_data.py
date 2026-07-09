@@ -544,11 +544,25 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="스마일게이트",
         slug="smilegate",
-        base_url="https://careers.smilegate.com/api/apply/main",
+        base_url="https://careers.smilegate.com/api/apply/announce/guest",
         source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.smilegate.com",
         sector="game_content",
         connector_family="smilegate_api",
+        request_method="POST",
+        request_body={
+            "careerTypeCd": [],
+            "companyCd": [],
+            "gameGenreCd": [],
+            "hireTypeCd": [],
+            "jobDtlCd": [],
+            "jobMainCd": [],
+            "keyword": None,
+            "pageIndex": 1,
+            "pageSize": 150,
+            "projectSeq": None,
+            "usreId": None,
+        },
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
         tech_job_priority=4,
@@ -556,11 +570,8 @@ INITIAL_SOURCE_CATALOG = (
         connector_reuse_score=2,
         policy_risk=0,
         non_tech_noise=3,
-        notes=(
-            "Official Smilegate Careers API exposes category counts; posting "
-            "list endpoint and parser still need connector work."
-        ),
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official Smilegate Careers announcement JSON API.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="펄어비스",
