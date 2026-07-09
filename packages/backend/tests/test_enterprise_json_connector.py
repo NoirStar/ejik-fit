@@ -200,3 +200,46 @@ def test_parse_enterprise_json_openings_maps_posco_recruit_list_api() -> None:
     )
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-12T00:00:00+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_sk_careers_recruit_list_api() -> None:
+    payload = {
+        "success": True,
+        "totalCount": 1,
+        "list": [
+            {
+                "jobNoticeNo": 5936,
+                "noticeID": "R261484",
+                "title": "SKT 뉴스룸 운영 지원 담당자",
+                "jobRole": "기술/현장지원/디자인/콘텐츠제작",
+                "recruitType": "Experienced",
+                "workingType": "Contract",
+                "workingArea": "Seoul",
+                "remainDay": 3,
+                "corpName": "SK telecom",
+                "start": "July 03, 2026(Fri)",
+                "end": "July 12, 2026(Sun)",
+            }
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://www.skcareers.com/Recruit/GetRecruitList",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "R261484"
+    assert opening.url == "https://www.skcareers.com/Recruit/Detail/R261484"
+    assert opening.title == "SKT 뉴스룸 운영 지원 담당자"
+    assert opening.employment_type == "Contract"
+    assert opening.career_type == "experienced"
+    assert opening.location == "Seoul"
+    assert opening.description_text == (
+        "SK telecom 기술/현장지원/디자인/콘텐츠제작"
+    )
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-07-03T00:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-12T00:00:00+09:00"

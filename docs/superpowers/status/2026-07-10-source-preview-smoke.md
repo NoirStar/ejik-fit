@@ -11,6 +11,7 @@ ejikfit preview-sources --status needs_connector --limit 12
 ejikfit preview-sources --status needs_browser --source-type browser_public_render
 ejikfit preview-source --company-slug sk-hynix
 ejikfit preview-source --company-slug posco-dx
+ejikfit preview-source --company-slug sk-telecom
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -23,7 +24,6 @@ ejikfit preview-source --company-slug posco-dx
 | LG전자 | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | 삼성SDS | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | KT | `html_listing_detail` | `discovered=0` |
-| SK텔레콤 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 현대자동차 | `html_listing_detail` | `discovered=0` |
 | CJ올리브네트웍스 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 기아 | `html_listing_detail` | `discovered=0` after false-positive filtering |
@@ -59,6 +59,14 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
 
 임시 SQLite DB에서 `preview-source --company-slug posco-dx`를 실행한 결과 `discovered=5`, `error=null`이 확인됐다. 샘플에는 `(포항/광양) IT&AI 분야 경력사원 채용 [정규직]`, `기술연구 분야 신입/경력사원 채용 [정규직]` 등이 포함된다.
 
+## SK텔레콤 공식 JSON API 승격
+
+SK Careers의 `Recruit` 화면은 공개 POST endpoint `https://www.skcareers.com/Recruit/GetRecruitList`를 호출한다. 회사 자동완성 endpoint에서 SK telecom 코드는 `corpCode=10005`로 확인했다.
+
+seed는 `request_method=POST`와 `request_body={"sort":"2","searchText":"","corpCode":"10005","jobRole":"0","recruitType":"","workingType":"","workingRegion":""}`를 사용한다. 이 endpoint는 JSON POST를 직접 받아주므로 별도 브라우저 렌더링이 필요 없다.
+
+임시 SQLite DB에서 `preview-source --company-slug sk-telecom`을 실행한 결과 `discovered=8`, `error=null`이 확인됐다. 샘플에는 `SKT 뉴스룸 운영 지원 담당자`, `유선망 현황관리 및 사무지원 담당자`, `T우주 서비스 운영지원 및 정산 담당자` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -67,6 +75,7 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
 - SK하이닉스는 공식 정적 공고 페이지의 현재 빈 상태를 `html_listing_detail`로 확인하도록 승격했다.
 - 삼성전자는 접근 challenge가 재현되어 `blocked`로 운영 분류했다.
 - 포스코DX는 POSCO Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=5`다.
+- SK텔레콤은 SK Careers 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=8`이다.
 
 ## 2026-07-10 LG API 승격
 

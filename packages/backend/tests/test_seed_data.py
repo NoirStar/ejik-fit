@@ -69,6 +69,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "lg-electronics",
         "sk-hynix",
         "posco-dx",
+        "sk-telecom",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -88,6 +89,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["lg-cns"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["posco-dx"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["posco-dx"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["sk-telecom"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["sk-telecom"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-hynix"].source_type == (
         SourceType.HTML_LISTING_DETAIL
     )
@@ -177,6 +180,23 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "?rowCount=20&pageSize=10&currPage=1&offset=0&SEARCH_TYPE="
             "&SEARCH_ORDER=s1&SEARCH_KEYWORD=&SEARCH_COMP=01&SEARCH_VALUE="
         )
+
+        sk_telecom = sources_by_slug["sk-telecom"]
+        assert sk_telecom.status == SourceStatus.ALLOWED
+        assert sk_telecom.connector_family == "enterprise_json"
+        assert sk_telecom.base_url == (
+            "https://www.skcareers.com/Recruit/GetRecruitList"
+        )
+        assert sk_telecom.request_method == "POST"
+        assert sk_telecom.request_body == {
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10005",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        }
 
         hyundai = sources_by_slug["hyundai-motor"]
         assert hyundai.status == SourceStatus.NEEDS_CONNECTOR

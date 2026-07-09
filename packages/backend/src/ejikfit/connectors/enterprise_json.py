@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from html import unescape
 from typing import Any
 
@@ -35,6 +36,54 @@ def _posco_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _sk_date(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    date_text = value.split("(", maxsplit=1)[0].strip()
+    try:
+        return datetime.strptime(date_text, "%B %d, %Y").strftime("%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _sk_career_type(value: Any) -> str | None:
+    if value == "New":
+        return "신입"
+    if value == "Experienced":
+        return "경력"
+    return value if isinstance(value, str) else None
+
+
+def _sk_careers_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    recruit_list = data.get("list")
+    if not isinstance(recruit_list, list):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in recruit_list:
+        if not isinstance(item, dict):
+            continue
+        posting_id = item.get("noticeID") or item.get("jobNoticeNo")
+        title = item.get("title")
+        if posting_id is None or not isinstance(title, str):
+            continue
+        jobs.append(
+            {
+                "id": str(posting_id),
+                "title": unescape(title),
+                "jobDetailUrl": f"/Recruit/Detail/{posting_id}",
+                "employmentType": item.get("workingType"),
+                "careerTypeName": _sk_career_type(item.get("recruitType")),
+                "location": item.get("workingArea"),
+                "startDate": _sk_date(item.get("start")),
+                "closeDate": _sk_date(item.get("end")),
+                "department": item.get("corpName"),
+                "jobGroup": item.get("jobRole"),
+            }
+        )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -44,4 +93,7 @@ def parse_enterprise_json_openings(
         posco_payload = _posco_recruit_payload(data)
         if posco_payload is not None:
             return parse_static_payload_openings(posco_payload, listing_url)
+        sk_payload = _sk_careers_payload(data)
+        if sk_payload is not None:
+            return parse_static_payload_openings(sk_payload, listing_url)
     return parse_static_payload_openings(data, listing_url)
