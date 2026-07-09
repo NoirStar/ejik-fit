@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Home from "./page";
@@ -160,10 +160,23 @@ describe("Home", () => {
     expect(screen.getByRole("combobox", { name: "지역" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "경력" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "기간" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "신규 매칭 공고" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "80% 이상 Fit" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "상승 기술" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "마감 임박" })).toBeInTheDocument();
+    expect(screen.getByText("신규 매칭 공고")).toBeInTheDocument();
+    expect(screen.getByText("80% 이상 Fit")).toBeInTheDocument();
+    expect(screen.getByText("마감 임박")).toBeInTheDocument();
+    expect(screen.queryByLabelText("이번 주 핵심 지표")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "상승 기술" })).not.toBeInTheDocument();
+    const weeklySummary = screen.getByRole("region", {
+      name: "내 기술스택 기준 이번 주 요약",
+    });
+    expect(
+      within(weeklySummary).queryByLabelText("내 스택에 추가할 기술"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(weeklySummary).queryByLabelText("분석 기준 기술스택"),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("5개 기술")).toBeInTheDocument();
+    expect(screen.getAllByText("Spring 중심").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("button", { name: "스택 관리" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "내 기술스택 기준 시장 변화" }),
     ).toBeInTheDocument();
@@ -194,12 +207,24 @@ describe("Home", () => {
       owned_skills: ["Go", "React"],
       limit: 30,
     });
-    expect(screen.getByRole("button", { name: "Go 제거" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "React 제거" })).toBeInTheDocument();
+    const stackManager = screen.getByRole("region", { name: "내 스택 관리" });
+    expect(within(stackManager).getByText("Go 중심")).toBeInTheDocument();
+    expect(within(stackManager).getByText("Go")).toBeInTheDocument();
+    expect(within(stackManager).getByText("React")).toBeInTheDocument();
+    const weeklySummary = screen.getByRole("region", {
+      name: "내 기술스택 기준 이번 주 요약",
+    });
+    expect(within(weeklySummary).queryByRole("button", { name: "Go 제거" })).not.toBeInTheDocument();
+    expect(within(weeklySummary).queryByRole("button", { name: "React 제거" })).not.toBeInTheDocument();
   });
 
   it("persists edited owned skills and syncs the dashboard URL", () => {
     render(<DailyDashboardHome model={dashboardModel(["Java", "Spring"])} dataFailed={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "스택 관리" }));
+
+    expect(screen.getByRole("region", { name: "내 스택 편집 패널" })).toBeInTheDocument();
+    expect(screen.getByText("분석 기준 기술을 조정합니다.")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("내 스택에 추가할 기술"), {
       target: { value: "Go" },

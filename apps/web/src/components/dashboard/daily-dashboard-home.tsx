@@ -6,12 +6,10 @@ import {
   Bell,
   Briefcase,
   CaretDown,
-  Clock,
   FunnelSimple,
   Info,
   MagnifyingGlass,
   MapPin,
-  TrendUp,
   UserCircle,
   X,
 } from "@phosphor-icons/react";
@@ -238,22 +236,6 @@ function CompanyMark({
 }
 
 
-function Sparkline() {
-  return (
-    <svg className="reference-sparkline" viewBox="0 0 130 54" aria-hidden="true">
-      <polyline
-        fill="none"
-        points="2,42 14,28 25,39 37,20 49,18 61,26 73,12 85,9 97,18 109,6 126,3"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="3"
-      />
-    </svg>
-  );
-}
-
-
 function WeeklyChart() {
   return (
     <div className="reference-chart-wrap">
@@ -358,6 +340,7 @@ export function DailyDashboardHome({
   const [ownedSkills, setOwnedSkills] = useState(model.ownedSkills);
   const [skillInput, setSkillInput] = useState("");
   const [stackMessage, setStackMessage] = useState("");
+  const [isStackManagerOpen, setIsStackManagerOpen] = useState(false);
   const weeklyJobs = useMemo(() => buildWeeklyJobs(model.jobs), [model.jobs]);
   const filteredWeeklyJobs = useMemo(
     () => filterJobRows(weeklyJobs, filters),
@@ -372,7 +355,10 @@ export function DailyDashboardHome({
     [model.trendingSkills],
   );
   const leadTrend = trendRows[0]?.label ?? "Kubernetes";
-  const secondTrend = trendRows[1]?.label ?? "Kafka";
+  const focusSkill =
+    ownedSkills.find((skill) => skill.toLowerCase() === "spring") ??
+    ownedSkills[0] ??
+    leadTrend;
   const matchedCount = Math.max(18, model.summary.matchedJobCount);
   const highFitCount = Math.max(7, model.summary.highFitJobCount);
   const urgentCount = Math.max(5, Math.min(model.summary.actionItemCount, 9));
@@ -441,8 +427,77 @@ export function DailyDashboardHome({
     );
   }
 
+  const stackPanel = (
+    <section className="reference-stack-panel" id="my-stack" aria-label="내 스택 관리">
+      <header className="reference-stack-panel__head">
+        <h2>내 스택 요약</h2>
+        <span>{ownedSkills.length}개 기술</span>
+      </header>
+      <strong className="reference-stack-panel__focus">{focusSkill} 중심</strong>
+      <div className="reference-stack-panel__chips" aria-label="현재 내 스택">
+        {ownedSkills.slice(0, 5).map((skill) => (
+          <span key={skill}>{skill}</span>
+        ))}
+      </div>
+      <button
+        aria-controls="stack-manager-panel"
+        aria-expanded={isStackManagerOpen}
+        className="reference-stack-manage-button"
+        onClick={() => setIsStackManagerOpen((isOpen) => !isOpen)}
+        type="button"
+      >
+        스택 관리
+      </button>
+      {isStackManagerOpen && (
+        <section
+          aria-label="내 스택 편집 패널"
+          className="reference-stack-manager"
+          id="stack-manager-panel"
+        >
+          <header>
+            <strong>스택 관리</strong>
+            <span>분석 기준 기술을 조정합니다.</span>
+          </header>
+          <div className="reference-stack-manager__chips" aria-label="내 스택 삭제">
+            {ownedSkills.map((skill) => (
+              <button
+                aria-label={`${skill} 제거`}
+                key={skill}
+                onClick={() => handleRemoveSkill(skill)}
+                type="button"
+              >
+                <span>{skill}</span>
+                <X size={12} weight="bold" aria-hidden />
+              </button>
+            ))}
+          </div>
+          <form
+            aria-label="내 스택 편집"
+            className="reference-stack-form"
+            onSubmit={handleAddSkill}
+          >
+            <label className="sr-only" htmlFor="owned-skill-input">
+              내 스택에 추가할 기술
+            </label>
+            <input
+              aria-label="내 스택에 추가할 기술"
+              id="owned-skill-input"
+              placeholder="기술 추가"
+              value={skillInput}
+              onChange={(event) => setSkillInput(event.target.value)}
+            />
+              <button type="submit">추가</button>
+            </form>
+        </section>
+      )}
+      <p className="reference-stack-status" role="status">
+        {stackMessage}
+      </p>
+    </section>
+  );
+
   return (
-    <DashboardShell>
+    <DashboardShell stackPanel={stackPanel}>
       <main className="daily-main reference-dashboard-main">
         {dataFailed && (
           <p className="sr-only" role="status">
@@ -551,102 +606,37 @@ export function DailyDashboardHome({
           </div>
           <div className="reference-hero-copy">
             <h1 id="weekly-summary-title">내 기술스택 기준 이번 주 요약</h1>
-            <div className="reference-stack-editor" id="my-stack">
-              <div className="reference-stack-chips" aria-label="분석 기준 기술스택">
-                {ownedSkills.map((skill) => (
-                  <button
-                    aria-label={`${skill} 제거`}
-                    className="reference-stack-chip"
-                    key={skill}
-                    onClick={() => handleRemoveSkill(skill)}
-                    type="button"
-                  >
-                    <span>{skill}</span>
-                    <X size={13} weight="bold" aria-hidden />
-                  </button>
-                ))}
-              </div>
-              <form
-                aria-label="내 스택 편집"
-                className="reference-stack-form"
-                onSubmit={handleAddSkill}
-              >
-                <label className="sr-only" htmlFor="owned-skill-input">
-                  내 스택에 추가할 기술
-                </label>
-                <input
-                  aria-label="내 스택에 추가할 기술"
-                  id="owned-skill-input"
-                  placeholder="기술 추가"
-                  value={skillInput}
-                  onChange={(event) => setSkillInput(event.target.value)}
-                />
-                <button type="submit">추가</button>
-              </form>
-              <p className="reference-stack-status" role="status">
-                {stackMessage}
-              </p>
+            <div className="reference-stack-overview">
+              <span className="reference-focus-badge">{focusSkill} 중심</span>
             </div>
             <p>
-              {leadTrend}와 {secondTrend} 관련 공고가 이번 주 크게 증가했어요.
+              {focusSkill} 기반 백엔드 개발자 수요가 지난주 대비 38% 증가했어요.
+              <small>특히 금융/핀테크, 커머스 기업에서 적극적으로 채용 중이에요.</small>
             </p>
+            <dl className="reference-hero-stats" aria-label="이번 주 요약 지표">
+              <div>
+                <dt>FIT SCORE</dt>
+                <dd>82%</dd>
+                <span>지난주 대비 +12%</span>
+              </div>
+              <div>
+                <dt>신규 매칭 공고</dt>
+                <dd>{matchedCount}</dd>
+                <span>지난주 대비 +38%</span>
+              </div>
+              <div>
+                <dt>80% 이상 Fit</dt>
+                <dd>{highFitCount}</dd>
+                <span>지난주 대비 +17%</span>
+              </div>
+              <div>
+                <dt>마감 임박</dt>
+                <dd>{urgentCount}</dd>
+                <span>확인 필요</span>
+              </div>
+            </dl>
           </div>
           <MiniGrowthGraphic />
-        </section>
-
-        <section className="reference-kpis" aria-label="이번 주 핵심 지표">
-          <article className="reference-kpi-card">
-            <header>
-              <h2>신규 매칭 공고</h2>
-              <Info size={16} weight="regular" aria-hidden />
-            </header>
-            <strong>{matchedCount}</strong>
-            <p>
-              <ArrowUp size={15} weight="bold" aria-hidden />
-              38% <span>(지난주 대비)</span>
-            </p>
-            <Sparkline />
-          </article>
-          <article className="reference-kpi-card">
-            <header>
-              <h2>80% 이상 Fit</h2>
-              <Info size={16} weight="regular" aria-hidden />
-            </header>
-            <strong>{highFitCount}</strong>
-            <p>
-              <ArrowUp size={15} weight="bold" aria-hidden />
-              17% <span>(지난주 대비)</span>
-            </p>
-            <Sparkline />
-          </article>
-          <article className="reference-kpi-card reference-kpi-card--skill">
-            <header>
-              <h2>상승 기술</h2>
-              <Info size={16} weight="regular" aria-hidden />
-            </header>
-            <strong>{leadTrend}</strong>
-            <p>
-              <ArrowUp size={15} weight="bold" aria-hidden />
-              28% <span>(지난주 대비)</span>
-            </p>
-            <span className="reference-kpi-icon reference-kpi-icon--green">
-              <TrendUp size={34} weight="bold" aria-hidden />
-            </span>
-          </article>
-          <article className="reference-kpi-card reference-kpi-card--deadline">
-            <header>
-              <h2>마감 임박</h2>
-              <Info size={16} weight="regular" aria-hidden />
-            </header>
-            <strong>{urgentCount}</strong>
-            <p>
-              <ArrowUp size={15} weight="bold" aria-hidden />
-              2 <span>(지난주 대비)</span>
-            </p>
-            <span className="reference-kpi-icon reference-kpi-icon--orange">
-              <Clock size={34} weight="bold" aria-hidden />
-            </span>
-          </article>
         </section>
 
         <section className="reference-dashboard-grid">
