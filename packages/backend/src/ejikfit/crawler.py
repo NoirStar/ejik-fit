@@ -17,6 +17,7 @@ from tenacity import (
 )
 
 from ejikfit.config import Settings, get_settings
+from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import discover_openings, parse_opening
 from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
@@ -226,6 +227,8 @@ def _parse_listing_openings(
         return parse_html_listing_openings(text, url)
     if source_type == SourceType.STATIC_NEXT_DATA:
         return parse_static_next_data_openings(text, url)
+    if source_type == SourceType.ENTERPRISE_JSON:
+        return parse_enterprise_json_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
 
 
@@ -408,6 +411,7 @@ async def crawl_source(
         SourceType.KAKAO_JSON,
         SourceType.LINE_GATSBY,
         SourceType.STATIC_NEXT_DATA,
+        SourceType.ENTERPRISE_JSON,
     }:
         openings = _parse_listing_openings(
             source.source_type,

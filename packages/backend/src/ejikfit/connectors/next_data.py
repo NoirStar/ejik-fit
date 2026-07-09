@@ -383,7 +383,13 @@ def parse_static_next_data_openings(
     raw: str,
     listing_url: str,
 ) -> list[ParsedOpening]:
-    data = _payload(raw)
+    return parse_static_payload_openings(_payload(raw), listing_url)
+
+
+def parse_static_payload_openings(
+    data: Any,
+    listing_url: str,
+) -> list[ParsedOpening]:
     openings: list[ParsedOpening] = []
     seen_urls: set[str] = set()
 

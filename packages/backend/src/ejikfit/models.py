@@ -32,6 +32,7 @@ class SourceType(str, enum.Enum):
     LINE_GATSBY = "line_gatsby"
     HTML_LISTING_DETAIL = "html_listing_detail"
     STATIC_NEXT_DATA = "static_next_data"
+    ENTERPRISE_JSON = "enterprise_json"
     BROWSER_PUBLIC_RENDER = "browser_public_render"
 
 

@@ -409,6 +409,62 @@ def test_crawl_source_routes_static_next_data_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_crawl_source_routes_enterprise_json_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="테스트 엔터프라이즈", slug="enterprise")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.example.com/api/jobs",
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "data": {
+                                "jobs": [
+                                    {
+                                        "postingId": "ENT-200",
+                                        "postingTitle": "Platform Engineer",
+                                        "jobDetailUrl": "/jobs/ENT-200",
+                                        "workLocation": "서울",
+                                        "employmentType": "정규직",
+                                        "public": True,
+                                    }
+                                ]
+                            }
+                        },
+                        ensure_ascii=False,
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "ENT-200"
+        assert postings[0].title == "Platform Engineer"
+        assert postings[0].url == "https://careers.example.com/jobs/ENT-200"
+        assert source.last_error_code is None
+        assert source.last_success_at is not None
+
+
 def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

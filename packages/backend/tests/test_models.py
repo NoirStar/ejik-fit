@@ -47,6 +47,7 @@ def test_official_json_source_namespaces_are_stable() -> None:
 def test_future_enterprise_source_namespaces_are_stable() -> None:
     assert SourceType.HTML_LISTING_DETAIL.value == "html_listing_detail"
     assert SourceType.STATIC_NEXT_DATA.value == "static_next_data"
+    assert SourceType.ENTERPRISE_JSON.value == "enterprise_json"
     assert SourceType.BROWSER_PUBLIC_RENDER.value == "browser_public_render"
 
 
