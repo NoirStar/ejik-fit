@@ -128,6 +128,33 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 
 임시 SQLite DB에서 `preview-source --company-slug hanwha-systems`를 실행한 결과 `discovered=24`, `error=null`이 확인됐다. 샘플에는 `한화시스템 구미사업장 운영지원 및 홍보/의전 계약직 채용`, `한화시스템 Talent Sourcer 계약직 채용`, `한화시스템 통신단말 및 ESA 빔 추적/제어 R&D 엔지니어 경력사원 채용` 등이 포함된다.
 
+## Phase 3 게임/콘텐츠 후보 등록
+
+2026-07-10 Phase 3 대상으로 게임/콘텐츠 회사 12개를 `INITIAL_SOURCE_CATALOG`에 추가했다.
+
+| Source | Type | Status | Result |
+| --- | --- | --- | --- |
+| 크래프톤 | `lever_greenhouse` | `allowed` | Greenhouse API preview `discovered=64`, `error=null` |
+| 네오위즈 | `lever_greenhouse` | `allowed` | Lever API preview `discovered=31`, `error=null` |
+| 펄어비스 | `html_listing_detail` | `allowed` | HTML listing preview `discovered=2`, `error=null` |
+| 넥슨 | `browser_public_render` | `needs_browser` | direct HTTP preview returns public anti-bot page |
+| 엔씨소프트 | `browser_public_render` | `needs_browser` | listing page references JS apply APIs |
+| 넷마블 | `browser_public_render` | `needs_browser` | official announcement page needs browser/API extraction |
+| 스마일게이트 | `enterprise_json` | `needs_connector` | public API exposes category counts; posting list parser pending |
+| 카카오게임즈 | `static_next_data` | `needs_connector` | Greeting-powered custom page embeds listing data; detail mapping pending |
+| 위메이드 | `static_next_data` | `needs_connector` | Next data embeds Ninehire links; Ninehire-aware parser pending |
+| 컴투스 | `browser_public_render` | `needs_browser` | recruiter.co.kr Next page needs browser/API extraction |
+| 데브시스터즈 | `static_next_data` | `needs_connector` | Greeting-powered custom page currently exposes no open postings |
+| 시프트업 | `html_listing_detail` | `needs_connector` | official recruit page needs site-specific HTML parser |
+
+임시 SQLite DB에서 `seed-sources`를 재실행한 결과 `created=42`가 확인됐다.
+
+`preview-source --company-slug krafton` 결과는 `discovered=64`, 샘플에는 `[AI Frontier Div.] AI Native Full Stack Engineer (7년 이상)`, `[AI Research Div.] AI Companion Team Internship (2년 이상 / 인턴)` 등이 포함된다.
+
+`preview-source --company-slug neowiz` 결과는 `discovered=31`, 샘플에는 `[Onetake Studio] JRPG 신작 프로젝트 시니어 클라이언트 프로그래머` 등이 포함된다.
+
+`preview-source --company-slug pearl-abyss` 결과는 `discovered=2`, 샘플은 `[경력] 네트워크 엔지니어 모집`, `[경력] 개인정보보호 담당자 모집`이다. Pearl Abyss 상세 URL은 `detail?_jobOpeningNo={id}` 형태라 generic HTML 파서가 쿼리 기반 공고 번호를 external id로 사용하도록 보강했다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -143,8 +170,9 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 - 기아는 Kia 공식 렌더 목록으로 승격했고, 현재 preview `discovered=3`이다.
 - CJ올리브네트웍스는 CJ Group 공식 JSONP 목록 API로 승격했고, 현재 preview `discovered=40`이다.
 - 한화시스템은 HanwhaIn 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=24`이다.
-- 남은 `needs_connector` 항목은 없다.
-- 남은 `blocked` / `needs_browser` 항목도 없다.
+- Phase 2 엔터프라이즈 기준 남은 `needs_connector` 항목은 없다.
+- Phase 2 엔터프라이즈 기준 남은 `blocked` / `needs_browser` 항목도 없다.
+- Phase 3 기준 남은 후보는 `needs_connector=5`, `needs_browser=4`이며, 다음 우선순위는 Smilegate API, Kakao Games/Devsisters Greeting embedded listing, Wemade Ninehire Next data, Shift Up HTML parser다.
 
 ## 2026-07-10 LG API 승격
 

@@ -1,7 +1,7 @@
 import hashlib
 import re
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qsl, urljoin, urlparse
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
@@ -107,6 +107,15 @@ def _candidate_links(soup: BeautifulSoup) -> list[Tag]:
     return links
 
 
+def _link_title(link: Tag) -> str:
+    title_node = link.select_one(".title")
+    if isinstance(title_node, Tag):
+        title = _clean_text(title_node.get_text(" ", strip=True))
+        if title:
+            return title
+    return _clean_text(link.get_text(" ", strip=True))
+
+
 def _container_text(link: Tag) -> str:
     container = link.find_parent(["article", "li", "tr", "div", "section"])
     if not isinstance(container, Tag):
@@ -116,6 +125,19 @@ def _container_text(link: Tag) -> str:
 
 def _external_id(url: str) -> str:
     parsed = urlparse(url)
+    query_values = dict(parse_qsl(parsed.query))
+    for key in (
+        "_jobOpeningNo",
+        "jobOpeningNo",
+        "jobId",
+        "job_id",
+        "id",
+        "no",
+        "seq",
+    ):
+        value = query_values.get(key)
+        if value:
+            return value
     path = parsed.path.rstrip("/")
     tail = path.rsplit("/", maxsplit=1)[-1]
     if tail:
@@ -281,7 +303,7 @@ def parse_html_listing_openings(
     seen_urls: set[str] = set()
 
     for link in _candidate_links(soup):
-        title = _clean_text(link.get_text(" ", strip=True))
+        title = _link_title(link)
         url = urljoin(listing_url, str(link.get("href")))
         if url in seen_urls:
             continue

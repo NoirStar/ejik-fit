@@ -47,6 +47,40 @@ def test_parse_html_listing_openings_maps_static_job_cards() -> None:
     assert second.closes_at is not None
 
 
+def test_parse_html_listing_openings_uses_query_identifier_for_detail_urls() -> None:
+    html = """
+    <main>
+      <article>
+        <a href="/Company/Careers/detail?_jobOpeningNo=757">
+          <p class="title">[경력] 네트워크 엔지니어 모집</p>
+          <span>상시채용 경력 정규직 과천 IT 인프라</span>
+        </a>
+      </article>
+      <article>
+        <a href="/Company/Careers/detail?_jobOpeningNo=806">
+          <p class="title">[경력] 정보보안 엔지니어 모집</p>
+          <span>상시채용 경력 정규직 과천 정보보안</span>
+        </a>
+      </article>
+    </main>
+    """
+
+    openings = parse_html_listing_openings(
+        html,
+        "https://www.pearlabyss.com/ko-KR/Company/Careers/List",
+    )
+
+    assert [opening.external_id for opening in openings] == ["757", "806"]
+    assert [opening.title for opening in openings] == [
+        "[경력] 네트워크 엔지니어 모집",
+        "[경력] 정보보안 엔지니어 모집",
+    ]
+    assert [opening.url for opening in openings] == [
+        "https://www.pearlabyss.com/Company/Careers/detail?_jobOpeningNo=757",
+        "https://www.pearlabyss.com/Company/Careers/detail?_jobOpeningNo=806",
+    ]
+
+
 def test_parse_html_listing_openings_ignores_empty_and_navigation_links() -> None:
     html = """
     <nav>

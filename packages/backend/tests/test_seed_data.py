@@ -62,7 +62,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert enterprise_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 30
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) >= 30
     blocked_enterprise_slugs: set[str] = set()
     non_runnable_enterprise_slugs = enterprise_slugs - {
         "lg-cns",
@@ -128,6 +128,69 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     )
     assert catalog_by_slug["hanwha-systems"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].connector_family == "enterprise_json"
+
+
+def test_initial_sources_include_phase_three_game_content_sources() -> None:
+    game_content_slugs = {
+        "nexon",
+        "ncsoft",
+        "netmarble",
+        "krafton",
+        "smilegate",
+        "pearl-abyss",
+        "neowiz",
+        "kakao-games",
+        "wemade",
+        "com2us",
+        "devsisters",
+        "shiftup",
+    }
+    catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    assert game_content_slugs <= set(catalog_by_slug)
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 42
+    assert all(
+        catalog_by_slug[slug].sector == "game_content"
+        for slug in game_content_slugs
+    )
+    assert all(
+        catalog_by_slug[slug].policy_status == PolicyStatus.ALLOWED
+        for slug in game_content_slugs
+    )
+
+    runnable_slugs = {"krafton", "neowiz", "pearl-abyss"}
+    assert all(
+        catalog_by_slug[slug].status
+        in {SourceStatus.NEEDS_BROWSER, SourceStatus.NEEDS_CONNECTOR}
+        for slug in game_content_slugs - runnable_slugs
+    )
+
+    assert catalog_by_slug["krafton"].source_type == SourceType.LEVER_GREENHOUSE
+    assert catalog_by_slug["krafton"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["krafton"].connector_family == "lever_greenhouse"
+    assert catalog_by_slug["krafton"].base_url == (
+        "https://boards-api.greenhouse.io/v1/boards/krafton/jobs?content=true"
+    )
+
+    assert catalog_by_slug["neowiz"].source_type == SourceType.LEVER_GREENHOUSE
+    assert catalog_by_slug["neowiz"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["neowiz"].base_url == (
+        "https://api.lever.co/v0/postings/neowiz?mode=json"
+    )
+
+    assert catalog_by_slug["pearl-abyss"].source_type == (
+        SourceType.HTML_LISTING_DETAIL
+    )
+    assert catalog_by_slug["pearl-abyss"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["pearl-abyss"].base_url == (
+        "https://www.pearlabyss.com/ko-KR/Company/Careers/List"
+    )
+
+    assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
+    assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+    assert catalog_by_slug["kakao-games"].connector_family == (
+        "greeting_embedded_next_data"
+    )
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:
