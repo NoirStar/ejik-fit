@@ -138,10 +138,10 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 | 네오위즈 | `lever_greenhouse` | `allowed` | Lever API preview `discovered=31`, `error=null` |
 | 펄어비스 | `html_listing_detail` | `allowed` | HTML listing preview `discovered=2`, `error=null` |
 | 스마일게이트 | `enterprise_json` | `allowed` | announcement API preview `discovered=127`, `error=null` |
+| 카카오게임즈 | `greeting` | `allowed` | Greeting crawl with memory store `discovered=2`, `ingested=2`, `failed=0` |
 | 넥슨 | `browser_public_render` | `needs_browser` | direct HTTP preview returns public anti-bot page |
 | 엔씨소프트 | `browser_public_render` | `needs_browser` | listing page references JS apply APIs |
 | 넷마블 | `browser_public_render` | `needs_browser` | official announcement page needs browser/API extraction |
-| 카카오게임즈 | `static_next_data` | `needs_connector` | Greeting-powered custom page embeds listing data; detail mapping pending |
 | 위메이드 | `static_next_data` | `needs_connector` | Next data embeds Ninehire links; Ninehire-aware parser pending |
 | 컴투스 | `browser_public_render` | `needs_browser` | recruiter.co.kr Next page needs browser/API extraction |
 | 데브시스터즈 | `static_next_data` | `needs_connector` | Greeting-powered custom page currently exposes no open postings |
@@ -156,6 +156,8 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 `preview-source --company-slug pearl-abyss` 결과는 `discovered=2`, 샘플은 `[경력] 네트워크 엔지니어 모집`, `[경력] 개인정보보호 담당자 모집`이다. Pearl Abyss 상세 URL은 `detail?_jobOpeningNo={id}` 형태라 generic HTML 파서가 쿼리 기반 공고 번호를 external id로 사용하도록 보강했다.
 
 Smilegate 공고 화면 `https://careers.smilegate.com/apply/announce?mainCategory=`는 비로그인 기준 `POST https://careers.smilegate.com/api/apply/announce/guest`를 호출한다. 검색 body는 `careerTypeCd`, `companyCd`, `gameGenreCd`, `hireTypeCd`, `jobDtlCd`, `jobMainCd`, `keyword`, `pageIndex`, `pageSize`, `projectSeq`, `usreId`로 구성된다. `pageSize=150`에서 `announceCount=127` 전체를 한 번에 받을 수 있음을 확인했고, 임시 SQLite DB에서 preview 결과 `discovered=127`, `error=null`이 확인됐다.
+
+Kakao Games 채용 페이지 `https://recruit.kakaogames.com/ko`는 `https://recruit.kakaogames.com/ko/homekr`로 리다이렉트되어 Greeting listing 데이터를 포함한다. 기존 Greeting 커넥터는 `source.base_url` 기준으로 `/o/{openingId}` 상세 URL을 구성하므로 base를 `/ko`로 유지하면 상세 페이지 `https://recruit.kakaogames.com/ko/o/{openingId}`가 정상 동작한다. 메모리 저장소 기반 로컬 crawl 결과는 `discovered=2`, `ingested=2`, `failed=0`이다.
 
 ## 다음 판단
 
@@ -174,7 +176,7 @@ Smilegate 공고 화면 `https://careers.smilegate.com/apply/announce?mainCatego
 - 한화시스템은 HanwhaIn 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=24`이다.
 - Phase 2 엔터프라이즈 기준 남은 `needs_connector` 항목은 없다.
 - Phase 2 엔터프라이즈 기준 남은 `blocked` / `needs_browser` 항목도 없다.
-- Phase 3 기준 남은 후보는 `needs_connector=4`, `needs_browser=4`이며, 다음 우선순위는 Kakao Games/Devsisters Greeting embedded listing, Wemade Ninehire Next data, Shift Up HTML parser다.
+- Phase 3 기준 남은 후보는 `needs_connector=3`, `needs_browser=4`이며, 다음 우선순위는 Devsisters Greeting embedded listing, Wemade Ninehire Next data, Shift Up HTML parser다.
 
 ## 2026-07-10 LG API 승격
 

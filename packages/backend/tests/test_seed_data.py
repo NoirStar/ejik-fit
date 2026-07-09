@@ -23,7 +23,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "nextsecurities",
         "s2w",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 15
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 16
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -158,7 +158,13 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         for slug in game_content_slugs
     )
 
-    runnable_slugs = {"krafton", "neowiz", "pearl-abyss", "smilegate"}
+    runnable_slugs = {
+        "krafton",
+        "neowiz",
+        "pearl-abyss",
+        "smilegate",
+        "kakao-games",
+    }
     assert all(
         catalog_by_slug[slug].status
         in {SourceStatus.NEEDS_BROWSER, SourceStatus.NEEDS_CONNECTOR}
@@ -206,11 +212,15 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "usreId": None,
     }
 
+    assert catalog_by_slug["kakao-games"].source_type == SourceType.GREETING
+    assert catalog_by_slug["kakao-games"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["kakao-games"].base_url == (
+        "https://recruit.kakaogames.com/ko"
+    )
+    assert catalog_by_slug["kakao-games"].connector_family == "greeting"
+
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
-    assert catalog_by_slug["kakao-games"].connector_family == (
-        "greeting_embedded_next_data"
-    )
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:

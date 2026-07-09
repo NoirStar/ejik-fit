@@ -612,11 +612,11 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="카카오게임즈",
         slug="kakao-games",
-        base_url="https://recruit.kakaogames.com/ko/homekr",
-        source_type=SourceType.STATIC_NEXT_DATA,
+        base_url="https://recruit.kakaogames.com/ko",
+        source_type=SourceType.GREETING,
         homepage_url="https://www.kakaogamescorp.com",
         sector="game_content",
-        connector_family="greeting_embedded_next_data",
+        connector_family="greeting",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
         tech_job_priority=4,
@@ -626,10 +626,10 @@ INITIAL_SOURCE_CATALOG = (
         non_tech_noise=2,
         notes=(
             "Official Kakao Games Greeting-powered custom careers page; "
-            "listing data is embedded, but detail URL mapping needs a "
-            "custom connector."
+            "listing redirects to /ko/homekr while detail pages resolve at "
+            "/ko/o/{openingId}."
         ),
-        status=SourceStatus.NEEDS_CONNECTOR,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="위메이드",
