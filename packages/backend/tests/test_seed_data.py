@@ -63,10 +63,12 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
 
     assert enterprise_slugs <= set(catalog_by_slug)
     assert len(seed_data.INITIAL_SOURCE_CATALOG) == 30
+    blocked_enterprise_slugs = {"samsung-electronics"}
     non_runnable_enterprise_slugs = enterprise_slugs - {
         "lg-cns",
         "lg-electronics",
         "sk-hynix",
+        *blocked_enterprise_slugs,
     }
     assert all(
         catalog_by_slug[slug].status
@@ -75,7 +77,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     )
     assert all(
         catalog_by_slug[slug].policy_status == PolicyStatus.ALLOWED
-        for slug in enterprise_slugs
+        for slug in enterprise_slugs - blocked_enterprise_slugs
     )
     assert catalog_by_slug["lg-electronics"].source_type == (
         SourceType.ENTERPRISE_JSON
@@ -89,6 +91,10 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["sk-hynix"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
         SourceType.BROWSER_PUBLIC_RENDER
+    )
+    assert catalog_by_slug["samsung-electronics"].status == SourceStatus.BLOCKED
+    assert catalog_by_slug["samsung-electronics"].policy_status == (
+        PolicyStatus.BLOCKED
     )
     assert catalog_by_slug["hyundai-motor"].source_type == (
         SourceType.HTML_LISTING_DETAIL
@@ -125,8 +131,8 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert naver.priority_score > sources_by_slug["deepauto-ai"].priority_score
 
         samsung = sources_by_slug["samsung-electronics"]
-        assert samsung.status == SourceStatus.NEEDS_BROWSER
-        assert samsung.policy_status == PolicyStatus.ALLOWED
+        assert samsung.status == SourceStatus.BLOCKED
+        assert samsung.policy_status == PolicyStatus.BLOCKED
         assert samsung.connector_family == "browser_public_render"
         assert samsung.sector == "enterprise_it"
 

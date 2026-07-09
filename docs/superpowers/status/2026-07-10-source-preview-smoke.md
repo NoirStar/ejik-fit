@@ -45,13 +45,19 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
 
 따라서 SK하이닉스는 `browser_public_render`가 아니라 `html_listing_detail`로 분류하고, 공식 공개 페이지를 오류 없이 확인할 수 있으므로 `allowed`로 승격한다. 현재 preview 결과는 정상적인 빈 상태인 `discovered=0`이다.
 
+## 삼성전자 접근 차단 분류
+
+삼성전자 공식 Samsung Careers 진입점은 fresh preview에서도 `blocked` / `source returned an access challenge`를 반환했다. crawler가 실제 crawl 중 동일한 차단을 만나면 `SourceStatus.BLOCKED`와 `PolicyStatus.BLOCKED`로 기록하는 패턴과 맞춰, seed에서도 삼성전자를 `blocked`로 분류한다.
+
+이 소스는 공식 URL 추적 대상에는 남기되, 정상 수집 대기열에는 포함하지 않는다. 다음 작업은 Samsung Careers의 허용 가능한 공개 API 또는 계열사별 대체 공식 공고 페이지를 별도로 찾는 것이다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
   - LG전자: `GET https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20`, preview `discovered=9`
   - LG CNS: `POST https://api.careers.lg.com/rmk/job/retrieveJobNoticesList`, `companyCodeList=["CNS"]`, preview `discovered=21`
 - SK하이닉스는 공식 정적 공고 페이지의 현재 빈 상태를 `html_listing_detail`로 확인하도록 승격했다.
-- 삼성전자는 접근 challenge가 확인되어 `blocked` 또는 `review`로 운영 분류하는 편이 안전하다.
+- 삼성전자는 접근 challenge가 재현되어 `blocked`로 운영 분류했다.
 - 포스코DX는 네트워크 접근성 확인 후 대체 공식 출처를 찾아야 한다.
 
 ## 2026-07-10 LG API 승격

@@ -154,15 +154,18 @@ INITIAL_SOURCE_CATALOG = (
         homepage_url="https://www.samsung.com/sec/",
         sector="enterprise_it",
         connector_family="browser_public_render",
-        policy_status=PolicyStatus.ALLOWED,
+        policy_status=PolicyStatus.BLOCKED,
         brand_tier_weight=6,
         tech_job_priority=5,
         expected_job_volume=5,
         connector_reuse_score=1,
-        policy_risk=1,
+        policy_risk=5,
         non_tech_noise=4,
-        notes="Official Samsung group careers site; public rendering needed.",
-        status=SourceStatus.NEEDS_BROWSER,
+        notes=(
+            "Official Samsung group careers site; public preview currently "
+            "returns an access challenge."
+        ),
+        status=SourceStatus.BLOCKED,
     ),
     SeedSource(
         name="삼성SDS",
