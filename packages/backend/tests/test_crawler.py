@@ -1,6 +1,8 @@
 import asyncio
 import json
+import sys
 from datetime import datetime, timezone
+from types import ModuleType
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
@@ -62,6 +64,92 @@ def test_access_challenge_detection_avoids_job_description_false_positive() -> N
     assert contains_access_challenge(
         '<div class="g-recaptcha">verify you are human</div>'
     ) is True
+
+
+def test_playwright_renderer_uses_domcontentloaded_and_tolerates_networkidle_timeout(
+    monkeypatch,
+) -> None:
+    fake_page = _FakePlaywrightPage()
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakePlaywrightManager(fake_page)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+
+    result = asyncio.run(
+        crawler.PlaywrightBrowserRenderer(
+            timeout_ms=20_000,
+            settle_timeout_ms=5_000,
+        ).render("https://example.com/careers")
+    )
+
+    assert fake_page.goto_wait_until == "domcontentloaded"
+    assert fake_page.waited_load_states == [("networkidle", 5_000)]
+    assert result.url == "https://example.com/rendered"
+    assert result.text == "<html><body>Rendered jobs</body></html>"
+
+
+class _FakePlaywrightResponse:
+    status = 200
+
+
+class _FakePlaywrightPage:
+    url = "https://example.com/rendered"
+
+    def __init__(self) -> None:
+        self.goto_wait_until: str | None = None
+        self.waited_load_states: list[tuple[str, int]] = []
+
+    async def goto(
+        self,
+        url: str,
+        *,
+        wait_until: str,
+        timeout: int,
+    ) -> _FakePlaywrightResponse:
+        self.goto_wait_until = wait_until
+        return _FakePlaywrightResponse()
+
+    async def wait_for_load_state(self, state: str, *, timeout: int) -> None:
+        self.waited_load_states.append((state, timeout))
+        raise TimeoutError("network never went idle")
+
+    async def content(self) -> str:
+        return "<html><body>Rendered jobs</body></html>"
+
+
+class _FakePlaywrightBrowser:
+    def __init__(self, page: _FakePlaywrightPage) -> None:
+        self.page = page
+
+    async def new_page(self) -> _FakePlaywrightPage:
+        return self.page
+
+    async def close(self) -> None:
+        pass
+
+
+class _FakePlaywrightChromium:
+    def __init__(self, page: _FakePlaywrightPage) -> None:
+        self.page = page
+
+    async def launch(self, *, headless: bool) -> _FakePlaywrightBrowser:
+        return _FakePlaywrightBrowser(self.page)
+
+
+class _FakePlaywright:
+    def __init__(self, page: _FakePlaywrightPage) -> None:
+        self.chromium = _FakePlaywrightChromium(page)
+
+
+class _FakePlaywrightManager:
+    def __init__(self, page: _FakePlaywrightPage) -> None:
+        self.page = page
+
+    async def __aenter__(self) -> _FakePlaywright:
+        return _FakePlaywright(self.page)
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        pass
 
 
 def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(

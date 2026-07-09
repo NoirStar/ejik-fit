@@ -141,8 +141,13 @@ class HttpFetcher:
 
 
 class PlaywrightBrowserRenderer:
-    def __init__(self, timeout_ms: int = 20_000) -> None:
+    def __init__(
+        self,
+        timeout_ms: int = 20_000,
+        settle_timeout_ms: int = 5_000,
+    ) -> None:
         self.timeout_ms = timeout_ms
+        self.settle_timeout_ms = settle_timeout_ms
 
     async def render(self, url: str) -> FetchedPage:
         try:
@@ -157,9 +162,16 @@ class PlaywrightBrowserRenderer:
                     page = await browser.new_page()
                     response = await page.goto(
                         url,
-                        wait_until="networkidle",
+                        wait_until="domcontentloaded",
                         timeout=self.timeout_ms,
                     )
+                    try:
+                        await page.wait_for_load_state(
+                            "networkidle",
+                            timeout=self.settle_timeout_ms,
+                        )
+                    except Exception:
+                        pass
                     text = await page.content()
                     rendered_url = page.url
                 finally:

@@ -30,12 +30,59 @@ NAVIGATION_TITLES = {
     "culture",
     "hiring process",
     "jobs",
+    "job openings",
     "top",
 }
+JOB_TITLE_MARKERS = (
+    "ai",
+    "android",
+    "architect",
+    "backend",
+    "cloud",
+    "data",
+    "developer",
+    "devops",
+    "engineer",
+    "frontend",
+    "ios",
+    "machine learning",
+    "ml",
+    "platform",
+    "qa",
+    "security",
+    "server",
+    "software",
+    "개발자",
+    "데이터",
+    "백엔드",
+    "보안",
+    "서버",
+    "소프트웨어",
+    "앱",
+    "엔지니어",
+    "인프라",
+    "클라우드",
+    "프론트엔드",
+    "플랫폼",
+)
 
 
 def _clean_text(value: str) -> str:
     return " ".join(value.split())
+
+
+def _has_job_title_signal(title: str) -> bool:
+    lowered = title.lower()
+    return any(marker in lowered for marker in JOB_TITLE_MARKERS)
+
+
+def _has_posting_signal(link: Tag, title: str) -> bool:
+    container_text = _container_text(link)
+    dates = _date_values(container_text)
+    time_date = _time_date(link)
+    if "더보기" in title and not dates and time_date is None:
+        return False
+    return _has_job_title_signal(title) or bool(dates) or time_date is not None
 
 
 def _candidate_links(soup: BeautifulSoup) -> list[Tag]:
@@ -53,6 +100,8 @@ def _candidate_links(soup: BeautifulSoup) -> list[Tag]:
         if not any(marker in lowered_href for marker in JOB_PATH_MARKERS):
             continue
         if len(title) < 4:
+            continue
+        if not _has_posting_signal(link, title):
             continue
         links.append(link)
     return links
