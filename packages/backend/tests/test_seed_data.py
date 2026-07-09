@@ -72,6 +72,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "sk-telecom",
         "kt",
         "hyundai-motor",
+        "kia",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -108,6 +109,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     )
     assert catalog_by_slug["hyundai-motor"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["hyundai-motor"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["kia"].source_type == SourceType.BROWSER_PUBLIC_RENDER
+    assert catalog_by_slug["kia"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].connector_family == "enterprise_json"
 
 
@@ -217,6 +220,11 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "&lang=en&page=1&pageblock=100&searchFieldList=&searchOccupList="
             "&searchPlaceList=&searchSectorList=&searchText=&jdSec=&srcOrd="
         )
+
+        kia = sources_by_slug["kia"]
+        assert kia.status == SourceStatus.ALLOWED
+        assert kia.connector_family == "browser_public_render"
+        assert kia.base_url == "https://career.kia.com/apply/applyList.kc"
 
 
 def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
