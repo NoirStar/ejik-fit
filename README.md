@@ -44,6 +44,30 @@ make smoke
 make test
 ```
 
+## 공개 브라우저 렌더링 출처
+
+일부 공식 채용 페이지는 로그인 없이 공개되어 있지만 JavaScript 렌더링 후에만
+공고 목록이 보입니다. 이런 출처는 `browser_public_render`로 등록하고, Playwright
+Chromium으로 렌더링한 HTML을 기존 JSON-LD, Next data, HTML listing 파서에 다시
+통과시킵니다.
+
+로컬에서 브라우저 렌더링 출처를 미리보기하려면 browser extra와 Chromium을 설치합니다.
+
+```bash
+.venv/bin/pip install -e 'packages/backend[dev,browser]'
+.venv/bin/python -m playwright install chromium
+ejikfit preview-source --company-slug samsung-electronics --source-type browser_public_render
+```
+
+미리보기 결과가 정상이고 정책상 공개 수집이 가능할 때만 명시적으로 승격합니다.
+
+```bash
+ejikfit set-source-status --company-slug samsung-electronics --source-type browser_public_render allowed
+```
+
+CAPTCHA, 로그인, Cloudflare challenge, 접근 통제는 우회하지 않습니다. 이런 화면이
+감지되면 해당 출처는 `blocked` 또는 `review`로 남기고 대체 공식 출처를 찾습니다.
+
 ## 기술 스킬 인텔리전스
 
 공고 제목과 본문에서 기술 스킬을 사전 기반으로 추출해(별도 LLM 없음) 수요 통계를 제공합니다.

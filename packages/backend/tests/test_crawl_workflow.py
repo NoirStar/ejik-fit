@@ -13,6 +13,8 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert "workflow_dispatch:" in workflow
     assert "cancel-in-progress: false" in workflow
     assert "ejikfit crawl-all" in workflow
+    assert "pip install './packages/backend[browser]'" in workflow
+    assert "python -m playwright install --with-deps chromium" in workflow
     assert "SEARCH_BACKEND: postgres" in workflow
     assert "POSTGRES_SEARCH_MODE: pgroonga" in workflow
     assert "secrets.CRAWLER_DATABASE_URL" in workflow

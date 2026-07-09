@@ -195,13 +195,15 @@ curl -s https://ejik-fit-web.vercel.app/ | grep -q '공고를 불러오지 못' 
 `.github/workflows/crawl.yml`은 러너에서 다음을 순서대로 실행한다(러너는 네트워크 제약이 없다).
 
 ```text
-alembic upgrade head   →   ejikfit seed-sources   →   ejikfit crawl-all
+pip install backend[browser]   →   playwright install chromium   →   alembic upgrade head   →   ejikfit seed-sources   →   ejikfit crawl-all
 ```
 
 - 예약: 6시간마다 (`17 */6 * * *`)
 - 수동 실행: `gh workflow run crawl.yml --repo NoirStar/ejik-fit` 또는 Actions 화면의 Run workflow
 - 필요한 secret 5개가 모두 있어야 crawl까지 성공한다(원문 스냅샷 저장에 S3 필요).
 - 실행 로그: `gh run list --workflow=crawl.yml` → `gh run view <id> --log`
+- `browser_public_render` 출처를 `allowed`로 승격한 경우에도 workflow가 Playwright Chromium을 준비한다.
+- 브라우저 수집은 공개 JavaScript 렌더링 결과만 읽으며 CAPTCHA, 로그인, 접근 통제는 우회하지 않는다.
 
 문맥 기반 스킬 근거 기능이 `main`에 병합된 뒤 즉시 운영 데이터에 반영하려면
 다음 명령으로 수집 workflow를 한 번 수동 실행한다.

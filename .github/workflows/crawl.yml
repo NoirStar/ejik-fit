@@ -34,7 +34,8 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: packages/backend/pyproject.toml
-      - run: pip install ./packages/backend
+      - run: pip install './packages/backend[browser]'
+      - run: python -m playwright install --with-deps chromium
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
       - run: ejikfit crawl-all

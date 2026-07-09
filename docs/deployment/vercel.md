@@ -55,8 +55,12 @@ GitHub 저장소 Settings → Secrets and variables → Actions에 다음 Reposi
 - 6시간마다 17분에 예약 실행
 - Actions 화면의 Run workflow로 수동 실행
 - 동시 실행 방지
+- backend `browser` extra와 Playwright Chromium 설치
 - migration → source seed → 전체 출처 수집
 - 출처별 결과를 Actions Summary에 기록
+
+`browser_public_render` 출처는 공개 JavaScript 렌더링 결과만 읽습니다. CAPTCHA,
+로그인, Cloudflare challenge, 접근 통제는 우회하지 않고 출처 상태로 남깁니다.
 
 workflow는 기본 브랜치에 들어간 뒤 예약 실행됩니다. 처음에는 수동 실행하고 Supabase의 공고와 Storage 객체를 확인합니다.
 
