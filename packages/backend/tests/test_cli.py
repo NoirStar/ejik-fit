@@ -1,6 +1,7 @@
 import json
 import uuid
 
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,31 @@ from ejikfit.models import (
     SourceStatus,
     SourceType,
 )
+
+
+def _insert_source(
+    engine,
+    *,
+    source_id: uuid.UUID,
+    company_name: str = "LG CNS",
+    company_slug: str = "lg-cns",
+    source_type: SourceType = SourceType.STATIC_NEXT_DATA,
+    status: SourceStatus = SourceStatus.NEEDS_CONNECTOR,
+) -> None:
+    with Session(engine) as session:
+        session.add(
+            CareerSource(
+                id=source_id,
+                company=Company(name=company_name, slug=company_slug),
+                base_url=f"https://example.com/{company_slug}/{source_type.value}",
+                source_type=source_type,
+                status=status,
+                policy_status=PolicyStatus.ALLOWED,
+                last_error_code="unsupported_connector",
+                last_error_reason="previous failure",
+            )
+        )
+        session.commit()
 
 
 def test_list_sources_prints_machine_readable_first_id(
@@ -123,6 +149,75 @@ def test_preview_source_prints_json_report(monkeypatch, capsys) -> None:
     assert json.loads(capsys.readouterr().out) == report
 
 
+def test_preview_source_accepts_company_slug_selector(monkeypatch, capsys) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000010")
+    _insert_source(engine, source_id=source_id)
+    report = {
+        "source_id": str(source_id),
+        "source_label": "LG CNS / static_next_data",
+        "source_type": "static_next_data",
+        "discovered": 0,
+        "sample_openings": [],
+        "error": None,
+    }
+    called_with: list[str] = []
+
+    def fake_preview(selected_source_id: str) -> dict:
+        called_with.append(selected_source_id)
+        return report
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr("ejikfit.crawler.preview_source_by_id", fake_preview)
+
+    assert (
+        cli.main(
+            [
+                "preview-source",
+                "--company-slug",
+                "lg-cns",
+                "--source-type",
+                "static_next_data",
+            ]
+        )
+        == 0
+    )
+    assert called_with == [str(source_id)]
+    assert json.loads(capsys.readouterr().out) == report
+
+
+def test_crawl_source_accepts_company_slug_selector(monkeypatch, capsys) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000011")
+    _insert_source(engine, source_id=source_id)
+    report = {"discovered": 1, "ingested": 1, "failed": 0, "closed": 0}
+    called_with: list[str] = []
+
+    def fake_run(selected_source_id: str) -> dict:
+        called_with.append(selected_source_id)
+        return report
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr("ejikfit.crawler.run_source_by_id", fake_run)
+
+    assert (
+        cli.main(
+            [
+                "crawl-source",
+                "--company-slug",
+                "lg-cns",
+                "--source-type",
+                "static_next_data",
+            ]
+        )
+        == 0
+    )
+    assert called_with == [str(source_id)]
+    assert json.loads(capsys.readouterr().out) == report
+
+
 def test_set_source_status_promotes_source_and_clears_stale_errors(
     monkeypatch,
     capsys,
@@ -165,6 +260,76 @@ def test_set_source_status_promotes_source_and_clears_stale_errors(
         assert source.policy_status == PolicyStatus.ALLOWED
         assert source.last_error_code is None
         assert source.last_error_reason is None
+
+
+def test_set_source_status_accepts_company_slug_selector(
+    monkeypatch,
+    capsys,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000012")
+    _insert_source(engine, source_id=source_id)
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+
+    assert (
+        cli.main(
+            [
+                "set-source-status",
+                "--company-slug",
+                "lg-cns",
+                "--source-type",
+                "static_next_data",
+                "--status",
+                "allowed",
+            ]
+        )
+        == 0
+    )
+    output = json.loads(capsys.readouterr().out)
+    assert output == {
+        "source_id": str(source_id),
+        "source_label": "LG CNS / static_next_data",
+        "status": "allowed",
+        "policy_status": "allowed",
+        "last_error_code": None,
+    }
+
+    with Session(engine) as session:
+        source = session.get(CareerSource, source_id)
+        assert source is not None
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
+
+
+def test_company_slug_selector_requires_source_type_for_multiple_sources(
+    monkeypatch,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000013")
+    _insert_source(engine, source_id=source_id)
+    with Session(engine) as session:
+        company = session.query(Company).filter_by(slug="lg-cns").one()
+        session.add(
+            CareerSource(
+                id=uuid.UUID("00000000-0000-0000-0000-000000000014"),
+                company=company,
+                base_url="https://example.com/lg-cns/html",
+                source_type=SourceType.HTML_LISTING_DETAIL,
+                status=SourceStatus.NEEDS_CONNECTOR,
+                policy_status=PolicyStatus.ALLOWED,
+            )
+        )
+        session.commit()
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+
+    with pytest.raises(ValueError, match="multiple career sources"):
+        cli.main(["preview-source", "--company-slug", "lg-cns"])
 
 
 def test_set_source_status_accepts_policy_status_override(

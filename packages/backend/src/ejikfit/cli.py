@@ -9,13 +9,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from ejikfit.db import SessionLocal
-from ejikfit.models import CareerSource, PolicyStatus, SourceStatus
+from ejikfit.models import CareerSource, Company, PolicyStatus, SourceStatus, SourceType
 from ejikfit.seed_data import seed_sources
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ejikfit")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    source_type_choices = [source_type.value for source_type in SourceType]
     subparsers.add_parser(
         "seed-sources",
         help="초기 공식 채용 출처를 데이터베이스에 등록합니다.",
@@ -33,21 +34,34 @@ def build_parser() -> argparse.ArgumentParser:
         "crawl-source",
         help="출처 UUID 하나를 즉시 수집합니다.",
     )
-    crawl_parser.add_argument("source_id")
+    crawl_parser.add_argument("source_id", nargs="?")
+    crawl_parser.add_argument("--company-slug")
+    crawl_parser.add_argument("--source-type", choices=source_type_choices)
     preview_parser = subparsers.add_parser(
         "preview-source",
         help="출처 UUID 하나를 저장 없이 fetch/parse 미리보기합니다.",
     )
-    preview_parser.add_argument("source_id")
+    preview_parser.add_argument("source_id", nargs="?")
+    preview_parser.add_argument("--company-slug")
+    preview_parser.add_argument("--source-type", choices=source_type_choices)
     status_parser = subparsers.add_parser(
         "set-source-status",
         help="출처 상태를 명시적으로 변경합니다.",
     )
-    status_parser.add_argument("source_id")
+    status_parser.add_argument("source_id", nargs="?")
     status_parser.add_argument(
         "status",
+        nargs="?",
         choices=[status.value for status in SourceStatus],
     )
+    status_parser.add_argument(
+        "--status",
+        dest="status_option",
+        choices=[status.value for status in SourceStatus],
+        default=None,
+    )
+    status_parser.add_argument("--company-slug")
+    status_parser.add_argument("--source-type", choices=source_type_choices)
     status_parser.add_argument(
         "--policy-status",
         choices=[status.value for status in PolicyStatus],
@@ -90,6 +104,75 @@ def _source_status_payload(source: CareerSource) -> dict[str, str | None]:
         "policy_status": source.policy_status.value,
         "last_error_code": source.last_error_code,
     }
+
+
+def _selected_source_id(
+    source_id: str | None,
+    company_slug: str | None,
+    source_type_value: str | None,
+) -> str:
+    if company_slug is None:
+        if source_type_value is not None:
+            raise ValueError("--source-type requires --company-slug")
+        if source_id is None:
+            raise ValueError("source id or --company-slug is required")
+        uuid.UUID(source_id)
+        return source_id
+
+    with SessionLocal() as session:
+        return _resolve_source_id(
+            session,
+            source_id=source_id,
+            company_slug=company_slug,
+            source_type_value=source_type_value,
+        )
+
+
+def _resolve_source_id(
+    session,
+    *,
+    source_id: str | None,
+    company_slug: str | None,
+    source_type_value: str | None,
+) -> str:
+    if source_id is not None:
+        raise ValueError("provide either source id or --company-slug, not both")
+    if company_slug is None:
+        raise ValueError("source id or --company-slug is required")
+
+    statement = (
+        select(CareerSource)
+        .join(CareerSource.company)
+        .options(joinedload(CareerSource.company))
+        .where(Company.slug == company_slug)
+        .order_by(CareerSource.base_url)
+    )
+    if source_type_value is not None:
+        statement = statement.where(
+            CareerSource.source_type == SourceType(source_type_value)
+        )
+
+    sources = list(session.scalars(statement).unique().all())
+    if not sources:
+        selector = f"{company_slug}"
+        if source_type_value is not None:
+            selector = f"{selector} / {source_type_value}"
+        raise ValueError(f"career source not found: {selector}")
+    if len(sources) > 1:
+        raise ValueError(
+            f"multiple career sources found for company slug {company_slug!r}; "
+            "pass --source-type"
+        )
+    return str(sources[0].id)
+
+
+def _status_value(positional: str | None, option: str | None) -> str:
+    if positional is not None and option is not None:
+        raise ValueError("provide status either positionally or with --status")
+    status_value = option or positional
+    if status_value is None:
+        raise ValueError("status is required")
+    return status_value
 
 
 def _set_source_status(
@@ -143,9 +226,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "crawl-source":
         from ejikfit.crawler import run_source_by_id
 
+        source_id = _selected_source_id(
+            args.source_id,
+            args.company_slug,
+            args.source_type,
+        )
         print(
             json.dumps(
-                run_source_by_id(args.source_id),
+                run_source_by_id(source_id),
                 ensure_ascii=False,
                 sort_keys=True,
             )
@@ -155,9 +243,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "preview-source":
         from ejikfit.crawler import preview_source_by_id
 
+        source_id = _selected_source_id(
+            args.source_id,
+            args.company_slug,
+            args.source_type,
+        )
         print(
             json.dumps(
-                preview_source_by_id(args.source_id),
+                preview_source_by_id(source_id),
                 ensure_ascii=False,
                 sort_keys=True,
             )
@@ -165,11 +258,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     if args.command == "set-source-status":
+        source_id = _selected_source_id(
+            args.source_id,
+            args.company_slug,
+            args.source_type,
+        )
         with SessionLocal() as session:
             report = _set_source_status(
                 session,
-                args.source_id,
-                args.status,
+                source_id,
+                _status_value(args.status, args.status_option),
                 args.policy_status,
             )
         print(json.dumps(report, ensure_ascii=False, sort_keys=True))
