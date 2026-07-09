@@ -465,6 +465,60 @@ def test_crawl_source_routes_enterprise_json_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="테스트 ATS", slug="ats-company")
+        source = CareerSource(
+            company=company,
+            base_url="https://boards.greenhouse.io/acme",
+            source_type=SourceType.LEVER_GREENHOUSE,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "jobs": [
+                                {
+                                    "id": 3300,
+                                    "title": "Backend Engineer",
+                                    "absolute_url": "https://boards.greenhouse.io/acme/jobs/3300",
+                                    "location": {"name": "Seoul"},
+                                    "departments": [{"name": "Engineering"}],
+                                    "active": True,
+                                }
+                            ]
+                        },
+                        ensure_ascii=False,
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "3300"
+        assert postings[0].title == "Backend Engineer"
+        assert postings[0].url == "https://boards.greenhouse.io/acme/jobs/3300"
+        assert source.last_error_code is None
+        assert source.last_success_at is not None
+
+
 def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

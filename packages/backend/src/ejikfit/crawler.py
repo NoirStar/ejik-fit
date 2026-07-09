@@ -22,6 +22,7 @@ from ejikfit.connectors.greeting import discover_openings, parse_opening
 from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
+from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
@@ -229,6 +230,8 @@ def _parse_listing_openings(
         return parse_static_next_data_openings(text, url)
     if source_type == SourceType.ENTERPRISE_JSON:
         return parse_enterprise_json_openings(text, url)
+    if source_type == SourceType.LEVER_GREENHOUSE:
+        return parse_lever_greenhouse_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
 
 
@@ -412,6 +415,7 @@ async def crawl_source(
         SourceType.LINE_GATSBY,
         SourceType.STATIC_NEXT_DATA,
         SourceType.ENTERPRISE_JSON,
+        SourceType.LEVER_GREENHOUSE,
     }:
         openings = _parse_listing_openings(
             source.source_type,

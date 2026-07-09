@@ -33,6 +33,7 @@ class SourceType(str, enum.Enum):
     HTML_LISTING_DETAIL = "html_listing_detail"
     STATIC_NEXT_DATA = "static_next_data"
     ENTERPRISE_JSON = "enterprise_json"
+    LEVER_GREENHOUSE = "lever_greenhouse"
     BROWSER_PUBLIC_RENDER = "browser_public_render"
 
 

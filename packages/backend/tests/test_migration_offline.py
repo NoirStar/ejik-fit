@@ -30,6 +30,7 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "HTML_LISTING_DETAIL" in sql
     assert "STATIC_NEXT_DATA" in sql
     assert "ENTERPRISE_JSON" in sql
+    assert "LEVER_GREENHOUSE" in sql
     assert "BROWSER_PUBLIC_RENDER" in sql
     assert "NEEDS_CONNECTOR" in sql
     assert "NEEDS_BROWSER" in sql
