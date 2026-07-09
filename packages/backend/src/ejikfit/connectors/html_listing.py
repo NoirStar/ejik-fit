@@ -187,11 +187,96 @@ def _location(text: str) -> str | None:
     return None
 
 
+def _is_samsung_careers_listing(listing_url: str) -> bool:
+    parsed = urlparse(listing_url)
+    return (
+        parsed.netloc == "www.samsungcareers.com"
+        and parsed.path.rstrip("/") == "/hr/list.data"
+    )
+
+
+def _samsung_careers_id(value: str) -> str:
+    return re.sub(r"\D", "", value)
+
+
+def _samsung_careers_openings(
+    soup: BeautifulSoup,
+    listing_url: str,
+) -> list[ParsedOpening]:
+    parsed_url = urlparse(listing_url)
+    base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    openings: list[ParsedOpening] = []
+    seen_ids: set[str] = set()
+
+    for link in soup.select("li a[data-value]"):
+        if not isinstance(link, Tag):
+            continue
+        external_id = _samsung_careers_id(str(link.get("data-value") or ""))
+        title_node = link.select_one(".title")
+        company_node = link.select_one(".company")
+        if not external_id or not isinstance(title_node, Tag):
+            continue
+        if external_id in seen_ids:
+            continue
+        seen_ids.add(external_id)
+
+        title = _clean_text(title_node.get_text(" ", strip=True))
+        company = (
+            _clean_text(company_node.get_text(" ", strip=True))
+            if isinstance(company_node, Tag)
+            else ""
+        )
+        info = _clean_text(
+            " ".join(
+                node.get_text(" ", strip=True)
+                for node in link.select(".info span")
+                if isinstance(node, Tag)
+            )
+        )
+        container = link.find_parent("li")
+        flags = ""
+        if isinstance(container, Tag):
+            flags = _clean_text(
+                " ".join(
+                    node.get_text(" ", strip=True)
+                    for node in container.select(".flagWrap .flag.grey")
+                    if isinstance(node, Tag)
+                )
+            )
+        description_text = _clean_text(
+            " ".join(value for value in (company, title, info, flags) if value)
+        )
+        dates = _date_values(description_text)
+
+        openings.append(
+            ParsedOpening(
+                external_id=external_id,
+                url=f"{base_url}/hr/?no={external_id}",
+                title=title,
+                status="open",
+                description_html="",
+                description_text=description_text,
+                employment_type=_employment_type(description_text),
+                career_type=_career_type(description_text),
+                career_min=None,
+                career_max=None,
+                location=_location(description_text),
+                opens_at=dates[0] if len(dates) >= 2 else None,
+                closes_at=dates[-1] if dates else None,
+            )
+        )
+
+    return openings
+
+
 def parse_html_listing_openings(
     html: str,
     listing_url: str,
 ) -> list[ParsedOpening]:
     soup = BeautifulSoup(html, "lxml")
+    if _is_samsung_careers_listing(listing_url):
+        return _samsung_careers_openings(soup, listing_url)
+
     openings: list[ParsedOpening] = []
     seen_urls: set[str] = set()
 

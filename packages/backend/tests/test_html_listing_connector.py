@@ -98,3 +98,68 @@ def test_parse_html_listing_openings_ignores_career_navigation_and_intro_links()
     assert len(openings) == 1
     assert openings[0].external_id == "backend-1"
     assert openings[0].title == "Backend Engineer"
+
+
+def test_parse_html_listing_openings_maps_samsung_careers_fragment() -> None:
+    html = """
+    <input type="hidden" class="divCnt" data-value="1" data-max="1">
+    <li>
+      <div>
+        <div>
+          <div class="btnWrap">
+            <button type="button" class="btnShare" data-value="22,590"></button>
+          </div>
+          <a href="/#none" data-value="22,590">
+            <p class="company">삼성중공업</p>
+            <h3 class="title">경력사원 채용(설계, 공정관리, 구매, SW개발)</h3>
+            <p class="info">
+              <span>경력</span>
+              <span class="period">2026.07.02 ~ 2026.07.15</span>
+            </p>
+          </a>
+        </div>
+        <div class="flagWrap">
+          <span class="flag blue">D- 6</span>
+          <span class="flag grey">데이터센터 설계</span>
+          <span class="flag grey">SW 개발</span>
+        </div>
+      </div>
+    </li>
+    """
+
+    openings = parse_html_listing_openings(
+        html,
+        "https://www.samsungcareers.com/hr/list.data",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "22590"
+    assert opening.url == "https://www.samsungcareers.com/hr/?no=22590"
+    assert opening.title == "경력사원 채용(설계, 공정관리, 구매, SW개발)"
+    assert opening.career_type == "experienced"
+    assert opening.description_text == (
+        "삼성중공업 경력사원 채용(설계, 공정관리, 구매, SW개발) "
+        "경력 2026.07.02 ~ 2026.07.15 데이터센터 설계 SW 개발"
+    )
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-07-02T00:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-15T00:00:00+09:00"
+
+
+def test_parse_html_listing_openings_accepts_samsung_careers_empty_state() -> None:
+    html = """
+    <input type="hidden" class="divCnt" data-value="0" data-max="0">
+    <div class="noData">
+      <p class="text1">현재 채용중인 공고가 없습니다.</p>
+    </div>
+    """
+
+    assert (
+        parse_html_listing_openings(
+            html,
+            "https://www.samsungcareers.com/hr/list.data",
+        )
+        == []
+    )

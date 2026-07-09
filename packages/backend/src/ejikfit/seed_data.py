@@ -170,11 +170,23 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="삼성SDS",
         slug="samsung-sds",
-        base_url="https://www.samsungsds.com/kr/careers/overview/about_care_over.html",
+        base_url="https://www.samsungcareers.com/hr/list.data",
         source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://www.samsungsds.com",
         sector="enterprise_it",
         connector_family="html_listing_detail",
+        request_method="POST",
+        request_body={
+            "currentPageNo": "1",
+            "intNo": "0",
+            "strVal": "",
+            "strTxt": "",
+            "strKey": "",
+            "strCompany": "C60",
+            "strType": "",
+            "strOrderBy": "",
+            "strEntity": "",
+        },
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=5,
@@ -182,8 +194,12 @@ INITIAL_SOURCE_CATALOG = (
         connector_reuse_score=2,
         policy_risk=0,
         non_tech_noise=1,
-        notes="Official Samsung SDS careers page; postings route through Samsung Careers.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes=(
+            "Official Samsung Careers HTML listing filtered to Samsung SDS "
+            "company code C60; currently returns an empty state when no "
+            "postings are open."
+        ),
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="현대자동차",

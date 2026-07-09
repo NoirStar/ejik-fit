@@ -10,6 +10,7 @@ ejikfit seed-sources
 ejikfit preview-sources --status needs_connector --limit 12
 ejikfit preview-sources --status needs_browser --source-type browser_public_render
 ejikfit preview-source --company-slug sk-hynix
+ejikfit preview-source --company-slug samsung-sds
 ejikfit preview-source --company-slug posco-dx
 ejikfit preview-source --company-slug sk-telecom
 ejikfit preview-source --company-slug kt
@@ -34,6 +35,8 @@ ejikfit preview-source --company-slug hanwha-systems
 
 2026-07-10 한화시스템 승격 후 임시 DB에서 `preview-sources --status needs_connector --limit 12`를 재확인한 결과, 남은 항목은 삼성SDS 1개뿐이다.
 
+2026-07-10 삼성SDS 승격 후 임시 DB에서 `preview-sources --status needs_connector --limit 12`를 재확인한 결과, 남은 항목은 없다.
+
 ## needs_browser 결과
 
 | Source | Type | Result |
@@ -53,6 +56,16 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
 삼성전자 공식 Samsung Careers 진입점은 fresh preview에서도 `blocked` / `source returned an access challenge`를 반환했다. crawler가 실제 crawl 중 동일한 차단을 만나면 `SourceStatus.BLOCKED`와 `PolicyStatus.BLOCKED`로 기록하는 패턴과 맞춰, seed에서도 삼성전자를 `blocked`로 분류한다.
 
 이 소스는 공식 URL 추적 대상에는 남기되, 정상 수집 대기열에는 포함하지 않는다. 다음 작업은 Samsung Careers의 허용 가능한 공개 API 또는 계열사별 대체 공식 공고 페이지를 별도로 찾는 것이다.
+
+## 삼성SDS 공식 HTML fragment 승격
+
+삼성SDS 공식 채용 페이지 `https://www.samsungsds.com/kr/careers/overview/about_care_over.html`의 `지원하기` 버튼은 SDS 전용 공고 URL이 아니라 Samsung Careers `https://www.samsungcareers.com/` 루트로 연결된다. Samsung Careers 채용공고 화면 `https://www.samsungcareers.com/hr/`은 공개 form POST endpoint `https://www.samsungcareers.com/hr/list.data`를 호출한다.
+
+관계사 소개 페이지에서 삼성SDS 코드는 `C60`으로 확인했다. 프론트는 관계사 선택 시 회사 코드를 그대로 한 번, 앞 3자리 코드를 한 번 더 보내지만, `strCompany=C60` 단독 POST도 정상 동작한다. seed는 이 endpoint를 `request_method=POST`, form body `currentPageNo=1`, `strCompany=C60`으로 호출한다.
+
+응답은 JSON이 아니라 `<li>` 카드 HTML 조각이며, 각 카드에는 `data-value`, `.company`, `.title`, `.period`, `.flagWrap`가 포함된다. 상세 공유 URL은 프론트와 동일하게 `https://www.samsungcareers.com/hr/?no={data-value}`로 구성한다.
+
+현재 `strCompany=C60` 응답은 공식 빈 상태 `현재 채용중인 공고가 없습니다.`이며, 임시 SQLite DB에서 `preview-source --company-slug samsung-sds`를 실행한 결과 `discovered=0`, `error=null`이 확인됐다.
 
 ## 포스코DX 공식 JSON API 승격
 
@@ -117,6 +130,7 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
   - LG CNS: `POST https://api.careers.lg.com/rmk/job/retrieveJobNoticesList`, `companyCodeList=["CNS"]`, preview `discovered=21`
 - SK하이닉스는 공식 정적 공고 페이지의 현재 빈 상태를 `html_listing_detail`로 확인하도록 승격했다.
 - 삼성전자는 접근 challenge가 재현되어 `blocked`로 운영 분류했다.
+- 삼성SDS는 Samsung Careers 공식 HTML fragment 목록으로 승격했고, 현재 preview `discovered=0`, `error=null`인 공식 빈 상태다.
 - 포스코DX는 POSCO Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=5`다.
 - SK텔레콤은 SK Careers 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=8`이다.
 - KT는 KT Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=55`다.
@@ -124,7 +138,7 @@ CJ올리브네트웍스 공식 홈페이지 `job_notice` 페이지는 `/js/recru
 - 기아는 Kia 공식 렌더 목록으로 승격했고, 현재 preview `discovered=3`이다.
 - CJ올리브네트웍스는 CJ Group 공식 JSONP 목록 API로 승격했고, 현재 preview `discovered=40`이다.
 - 한화시스템은 HanwhaIn 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=24`이다.
-- 남은 `needs_connector` 항목은 삼성SDS 1개다.
+- 남은 `needs_connector` 항목은 없다.
 
 ## 2026-07-10 LG API 승격
 

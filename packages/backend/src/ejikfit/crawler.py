@@ -104,6 +104,7 @@ class HttpFetcher:
         *,
         method: str = "GET",
         json_body: object | None = None,
+        form_body: object | None = None,
     ) -> FetchedPage:
         request_method = method.upper()
         retrying = AsyncRetrying(
@@ -126,6 +127,7 @@ class HttpFetcher:
                         request_method,
                         url,
                         json=json_body if request_method != "GET" else None,
+                        data=form_body if request_method != "GET" else None,
                     )
 
                 if response.status_code in {401, 403}:
@@ -352,6 +354,12 @@ async def _fetch_listing_page(
     if source.source_type != SourceType.BROWSER_PUBLIC_RENDER:
         request_method = (source.request_method or "GET").upper()
         if request_method != "GET":
+            if source.source_type == SourceType.HTML_LISTING_DETAIL:
+                return await fetcher.fetch(
+                    source.base_url,
+                    method=request_method,
+                    form_body=source.request_body,
+                )
             return await fetcher.fetch(
                 source.base_url,
                 method=request_method,

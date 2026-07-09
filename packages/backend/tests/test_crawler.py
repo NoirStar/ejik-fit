@@ -252,9 +252,15 @@ class RecordingFetcher:
         *,
         method: str = "GET",
         json_body: object | None = None,
+        form_body: object | None = None,
     ) -> crawler.FetchedPage:
         self.calls.append(
-            {"url": url, "method": method, "json_body": json_body}
+            {
+                "url": url,
+                "method": method,
+                "json_body": json_body,
+                "form_body": form_body,
+            }
         )
         return crawler.FetchedPage(
             url=url,
@@ -308,6 +314,31 @@ def test_fetch_listing_page_uses_source_post_json_request_options() -> None:
             "url": "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList",
             "method": "POST",
             "json_body": {"companyCodeList": ["CNS"]},
+            "form_body": None,
+        }
+    ]
+
+
+def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:
+    company = Company(name="삼성SDS", slug="samsung-sds")
+    source = CareerSource(
+        company=company,
+        base_url="https://www.samsungcareers.com/hr/list.data",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        request_method="POST",
+        request_body={"currentPageNo": "1", "strCompany": "C60"},
+    )
+    fetcher = RecordingFetcher("<div class='noData'></div>")
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+
+    assert page.url == source.base_url
+    assert fetcher.calls == [
+        {
+            "url": "https://www.samsungcareers.com/hr/list.data",
+            "method": "POST",
+            "json_body": None,
+            "form_body": {"currentPageNo": "1", "strCompany": "C60"},
         }
     ]
 

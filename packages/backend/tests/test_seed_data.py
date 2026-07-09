@@ -75,6 +75,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "kia",
         "cj-olivenetworks",
         "hanwha-systems",
+        "samsung-sds",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -109,6 +110,10 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["samsung-electronics"].policy_status == (
         PolicyStatus.BLOCKED
     )
+    assert catalog_by_slug["samsung-sds"].source_type == (
+        SourceType.HTML_LISTING_DETAIL
+    )
+    assert catalog_by_slug["samsung-sds"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["hyundai-motor"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["hyundai-motor"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["kia"].source_type == SourceType.BROWSER_PUBLIC_RENDER
@@ -157,6 +162,23 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert samsung.policy_status == PolicyStatus.BLOCKED
         assert samsung.connector_family == "browser_public_render"
         assert samsung.sector == "enterprise_it"
+
+        samsung_sds = sources_by_slug["samsung-sds"]
+        assert samsung_sds.status == SourceStatus.ALLOWED
+        assert samsung_sds.connector_family == "html_listing_detail"
+        assert samsung_sds.base_url == "https://www.samsungcareers.com/hr/list.data"
+        assert samsung_sds.request_method == "POST"
+        assert samsung_sds.request_body == {
+            "currentPageNo": "1",
+            "intNo": "0",
+            "strVal": "",
+            "strTxt": "",
+            "strKey": "",
+            "strCompany": "C60",
+            "strType": "",
+            "strOrderBy": "",
+            "strEntity": "",
+        }
 
         lg_electronics = sources_by_slug["lg-electronics"]
         assert lg_electronics.status == SourceStatus.ALLOWED
