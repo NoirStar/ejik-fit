@@ -153,3 +153,50 @@ def test_parse_enterprise_json_openings_maps_lg_cns_job_notice_api() -> None:
     assert opening.description_text == "LG CNS IT서비스 AWS,Cloud"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-31T23:00:00+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_posco_recruit_list_api() -> None:
+    payload = {
+        "summary": [{"TOT_CNT": 1, "CNT": 1, "S_NM": "경력"}],
+        "recuList": [
+            {
+                "HR_AFTC_MRG_ADOP_CLTA_TP_TP": "B",
+                "COMPANY_NAME": "포스코DX",
+                "RECU_FIELD": "경력_SW개발,경력_AI Agent",
+                "END_ACTIVE_DATE": "2026.07.12",
+                "DDAY": 3,
+                "HR_AFTC_MRG_ADOP_CLTA_TP_TP_NM": "전문경력",
+                "HR_ADOP_CDDT_ELCN_GRD_NM": (
+                    "SW개발,정보보안,수학/통계,Big Data/AI"
+                ),
+                "HR_AFTC_MRG_ADOP_NTIC_ID": 653001,
+                "HR_AFTC_MRG_ADOP_NTIC_SUJX": (
+                    "(포항/광양) IT&amp;AI 분야 경력사원 채용 [정규직]"
+                ),
+            }
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://recruit.posco.com/h22a01-recruit/H22A1000/list"
+        "?rowCount=20&pageSize=10&currPage=1&offset=0&SEARCH_TYPE="
+        "&SEARCH_ORDER=s1&SEARCH_KEYWORD=&SEARCH_COMP=01&SEARCH_VALUE=",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "653001"
+    assert opening.url == (
+        "https://recruit.posco.com/h22a01-front/H22A1001.html?id=653001"
+    )
+    assert opening.title == "(포항/광양) IT&AI 분야 경력사원 채용 [정규직]"
+    assert opening.employment_type == "전문경력"
+    assert opening.career_type == "experienced"
+    assert opening.location is None
+    assert opening.description_text == (
+        "포스코DX 경력_SW개발,경력_AI Agent "
+        "SW개발,정보보안,수학/통계,Big Data/AI"
+    )
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-12T00:00:00+09:00"

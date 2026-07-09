@@ -68,6 +68,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "lg-cns",
         "lg-electronics",
         "sk-hynix",
+        "posco-dx",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -85,6 +86,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["lg-electronics"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["lg-cns"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["posco-dx"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["posco-dx"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-hynix"].source_type == (
         SourceType.HTML_LISTING_DETAIL
     )
@@ -165,6 +168,15 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert sk_hynix.status == SourceStatus.ALLOWED
         assert sk_hynix.connector_family == "html_listing_detail"
         assert sk_hynix.base_url == "https://talent.skhynix.com/hub/ko/apply/job"
+
+        posco_dx = sources_by_slug["posco-dx"]
+        assert posco_dx.status == SourceStatus.ALLOWED
+        assert posco_dx.connector_family == "enterprise_json"
+        assert posco_dx.base_url == (
+            "https://recruit.posco.com/h22a01-recruit/H22A1000/list"
+            "?rowCount=20&pageSize=10&currPage=1&offset=0&SEARCH_TYPE="
+            "&SEARCH_ORDER=s1&SEARCH_KEYWORD=&SEARCH_COMP=01&SEARCH_VALUE="
+        )
 
         hyundai = sources_by_slug["hyundai-motor"]
         assert hyundai.status == SourceStatus.NEEDS_CONNECTOR

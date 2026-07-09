@@ -328,20 +328,27 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="포스코DX",
         slug="posco-dx",
-        base_url="https://gorecruit.posco.net",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        base_url=(
+            "https://recruit.posco.com/h22a01-recruit/H22A1000/list"
+            "?rowCount=20&pageSize=10&currPage=1&offset=0&SEARCH_TYPE="
+            "&SEARCH_ORDER=s1&SEARCH_KEYWORD=&SEARCH_COMP=01&SEARCH_VALUE="
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.poscodx.com",
         sector="enterprise_it",
-        connector_family="browser_public_render",
+        connector_family="enterprise_json",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
         tech_job_priority=5,
         expected_job_volume=3,
-        connector_reuse_score=1,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=1,
-        notes="Official POSCO group recruiting entry for POSCO DX roles.",
-        status=SourceStatus.NEEDS_BROWSER,
+        notes=(
+            "Official POSCO Group recruit JSON listing filtered to POSCO DX "
+            "with SEARCH_COMP=01."
+        ),
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="CJ올리브네트웍스",

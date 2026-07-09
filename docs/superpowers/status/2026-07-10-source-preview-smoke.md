@@ -10,6 +10,7 @@ ejikfit seed-sources
 ejikfit preview-sources --status needs_connector --limit 12
 ejikfit preview-sources --status needs_browser --source-type browser_public_render
 ejikfit preview-source --company-slug sk-hynix
+ejikfit preview-source --company-slug posco-dx
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -35,7 +36,6 @@ ejikfit preview-source --company-slug sk-hynix
 | Source | Type | Result |
 | --- | --- | --- |
 | 삼성전자 | `browser_public_render` | `blocked`: source returned an access challenge |
-| 포스코DX | `browser_public_render` | `temporary_fetch_error`: `net::ERR_TUNNEL_CONNECTION_FAILED` |
 
 처음 실행에서 SK하이닉스는 `Page.goto`의 `networkidle` 대기 때문에 20초 timeout이 발생했다. renderer를 `domcontentloaded` 필수 대기와 5초 best-effort `networkidle` settle로 바꾼 뒤 timeout은 사라졌다.
 
@@ -51,6 +51,14 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
 
 이 소스는 공식 URL 추적 대상에는 남기되, 정상 수집 대기열에는 포함하지 않는다. 다음 작업은 Samsung Careers의 허용 가능한 공개 API 또는 계열사별 대체 공식 공고 페이지를 별도로 찾는 것이다.
 
+## 포스코DX 공식 JSON API 승격
+
+포스코DX 홈페이지의 공식 채용 링크는 `https://recruit.posco.com/`로 연결된다. 루트 페이지는 `/h22a01-front/`로 진입하고, 채용 공고 목록 화면 `H22A1000.html`은 `/h22a01-recruit/H22A1000/list` JSON API를 호출한다.
+
+`/h22a01-recruit/H22A1000/init` 응답의 회사 목록에서 포스코DX 코드는 `SEARCH_COMP=01`로 확인했다. 따라서 seed는 `https://recruit.posco.com/h22a01-recruit/H22A1000/list?rowCount=20&pageSize=10&currPage=1&offset=0&SEARCH_TYPE=&SEARCH_ORDER=s1&SEARCH_KEYWORD=&SEARCH_COMP=01&SEARCH_VALUE=`를 `enterprise_json` / `allowed`로 사용한다.
+
+임시 SQLite DB에서 `preview-source --company-slug posco-dx`를 실행한 결과 `discovered=5`, `error=null`이 확인됐다. 샘플에는 `(포항/광양) IT&AI 분야 경력사원 채용 [정규직]`, `기술연구 분야 신입/경력사원 채용 [정규직]` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -58,7 +66,7 @@ SK하이닉스 Talent Hub의 공식 공고 URL은 `https://talent.skhynix.com/hu
   - LG CNS: `POST https://api.careers.lg.com/rmk/job/retrieveJobNoticesList`, `companyCodeList=["CNS"]`, preview `discovered=21`
 - SK하이닉스는 공식 정적 공고 페이지의 현재 빈 상태를 `html_listing_detail`로 확인하도록 승격했다.
 - 삼성전자는 접근 challenge가 재현되어 `blocked`로 운영 분류했다.
-- 포스코DX는 네트워크 접근성 확인 후 대체 공식 출처를 찾아야 한다.
+- 포스코DX는 POSCO Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=5`다.
 
 ## 2026-07-10 LG API 승격
 
