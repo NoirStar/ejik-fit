@@ -63,7 +63,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
 
     assert enterprise_slugs <= set(catalog_by_slug)
     assert len(seed_data.INITIAL_SOURCE_CATALOG) == 30
-    blocked_enterprise_slugs = {"samsung-electronics"}
+    blocked_enterprise_slugs: set[str] = set()
     non_runnable_enterprise_slugs = enterprise_slugs - {
         "lg-cns",
         "lg-electronics",
@@ -76,6 +76,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "cj-olivenetworks",
         "hanwha-systems",
         "samsung-sds",
+        "samsung-electronics",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -104,11 +105,11 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     )
     assert catalog_by_slug["sk-hynix"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
-        SourceType.BROWSER_PUBLIC_RENDER
+        SourceType.HTML_LISTING_DETAIL
     )
-    assert catalog_by_slug["samsung-electronics"].status == SourceStatus.BLOCKED
+    assert catalog_by_slug["samsung-electronics"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].policy_status == (
-        PolicyStatus.BLOCKED
+        PolicyStatus.ALLOWED
     )
     assert catalog_by_slug["samsung-sds"].source_type == (
         SourceType.HTML_LISTING_DETAIL
@@ -158,15 +159,32 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert naver.priority_score > sources_by_slug["deepauto-ai"].priority_score
 
         samsung = sources_by_slug["samsung-electronics"]
-        assert samsung.status == SourceStatus.BLOCKED
-        assert samsung.policy_status == PolicyStatus.BLOCKED
-        assert samsung.connector_family == "browser_public_render"
+        assert samsung.status == SourceStatus.ALLOWED
+        assert samsung.policy_status == PolicyStatus.ALLOWED
+        assert samsung.connector_family == "html_listing_detail"
         assert samsung.sector == "enterprise_it"
+        assert samsung.base_url == (
+            "https://www.samsungcareers.com/hr/list.data#samsung-electronics"
+        )
+        assert samsung.request_method == "POST"
+        assert samsung.request_body == {
+            "currentPageNo": "1",
+            "intNo": "0",
+            "strVal": "",
+            "strTxt": "",
+            "strKey": "",
+            "strCompany": ["C10CAA", "C10", "C10CAH", "C10"],
+            "strType": "",
+            "strOrderBy": "",
+            "strEntity": "",
+        }
 
         samsung_sds = sources_by_slug["samsung-sds"]
         assert samsung_sds.status == SourceStatus.ALLOWED
         assert samsung_sds.connector_family == "html_listing_detail"
-        assert samsung_sds.base_url == "https://www.samsungcareers.com/hr/list.data"
+        assert samsung_sds.base_url == (
+            "https://www.samsungcareers.com/hr/list.data#samsung-sds"
+        )
         assert samsung_sds.request_method == "POST"
         assert samsung_sds.request_body == {
             "currentPageNo": "1",

@@ -149,28 +149,41 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="삼성전자",
         slug="samsung-electronics",
-        base_url="https://www.samsungcareers.com/",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        base_url="https://www.samsungcareers.com/hr/list.data#samsung-electronics",
+        source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://www.samsung.com/sec/",
         sector="enterprise_it",
-        connector_family="browser_public_render",
-        policy_status=PolicyStatus.BLOCKED,
+        connector_family="html_listing_detail",
+        request_method="POST",
+        request_body={
+            "currentPageNo": "1",
+            "intNo": "0",
+            "strVal": "",
+            "strTxt": "",
+            "strKey": "",
+            "strCompany": ["C10CAA", "C10", "C10CAH", "C10"],
+            "strType": "",
+            "strOrderBy": "",
+            "strEntity": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=5,
         expected_job_volume=5,
-        connector_reuse_score=1,
-        policy_risk=5,
+        connector_reuse_score=2,
+        policy_risk=0,
         non_tech_noise=4,
         notes=(
-            "Official Samsung group careers site; public preview currently "
-            "returns an access challenge."
+            "Official Samsung Careers HTML listing filtered to Samsung "
+            "Electronics DX and DS company codes; currently returns an empty "
+            "state when no postings are open."
         ),
-        status=SourceStatus.BLOCKED,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="삼성SDS",
         slug="samsung-sds",
-        base_url="https://www.samsungcareers.com/hr/list.data",
+        base_url="https://www.samsungcareers.com/hr/list.data#samsung-sds",
         source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://www.samsungsds.com",
         sector="enterprise_it",
