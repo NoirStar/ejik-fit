@@ -13,6 +13,7 @@ ejikfit preview-source --company-slug sk-hynix
 ejikfit preview-source --company-slug posco-dx
 ejikfit preview-source --company-slug sk-telecom
 ejikfit preview-source --company-slug kt
+ejikfit preview-source --company-slug hyundai-motor
 ```
 
 브라우저 렌더링 확인 전에는 로컬 `.venv`에 `packages/backend[dev,browser]`와 Playwright Chromium을 설치했다.
@@ -24,7 +25,6 @@ ejikfit preview-source --company-slug kt
 | LG CNS | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | LG전자 | `static_next_data` | `unsupported_connector`: static Next data payload is not valid JSON |
 | 삼성SDS | `html_listing_detail` | `discovered=0` after false-positive filtering |
-| 현대자동차 | `html_listing_detail` | `discovered=0` |
 | CJ올리브네트웍스 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 기아 | `html_listing_detail` | `discovered=0` after false-positive filtering |
 | 한화시스템 | `html_listing_detail` | `discovered=0` after false-positive filtering |
@@ -73,6 +73,14 @@ KT 그룹 채용 화면은 Nuxt 앱이며 `https://recruit.kt.com/api/recruit?is
 
 seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다. 임시 SQLite DB에서 `preview-source --company-slug kt`를 실행한 결과 `discovered=55`, `error=null`이 확인됐다. 샘플에는 `[KT] 2026년 경력채용 (AX기술연구 및 개발)`, `[KT] 2026년 KT 경력채용(네트워크 보안기술 연구개발)`, `[KT] 2026년 경력채용(데이터센터 네트워크 기술 연구)` 등이 포함된다.
 
+## 현대자동차 공식 JSON API 승격
+
+현대자동차 인재채용 Apply 화면은 공개 목록 API `https://talent.hyundai.com/api/rec/AP-HM-FO-02700?hgrCd=1&lang=en&page=1&pageblock=100&searchFieldList=&searchOccupList=&searchPlaceList=&searchSectorList=&searchText=&jdSec=&srcOrd=`를 호출한다. 응답은 `data.list[]` 안에 `recuYy`, `recuType`, `recuCls`, `recuNoticeNm`, `secCodeNm`, `fldCodeNm`, `workPlaceCodeNm`, `channelCodeNm`, `applyStartDt`, `applyEndDt`를 포함한다.
+
+목록 카드 클릭 시 실제 상세 페이지는 `https://talent.hyundai.com/eng/apply/applyView.hc?recuYy={recuYy}&recuType={recuType}&recuCls={recuCls}`로 이동하는 것을 Playwright 네트워크 관찰로 확인했다. seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다.
+
+임시 SQLite DB에서 `preview-source --company-slug hyundai-motor`를 실행한 결과 `discovered=30`, `error=null`이 확인됐다. 샘플에는 `[Security] Service Security Engineer - Application Security`, `[Security] Information Security Inspection - Containers and Kubernetes Security`, `[ICT] Service Planner - Global Owner App` 등이 포함된다.
+
 ## 다음 판단
 
 - LG전자와 LG CNS는 `static_next_data`가 아니라 공식 JSON API로 확인되어 `enterprise_json`으로 승격했다.
@@ -83,6 +91,7 @@ seed는 이 endpoint를 `enterprise_json` / `allowed`로 사용한다. 임시 SQ
 - 포스코DX는 POSCO Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=5`다.
 - SK텔레콤은 SK Careers 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=8`이다.
 - KT는 KT Group 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=55`다.
+- 현대자동차는 Hyundai Motor 공식 JSON 목록 API로 승격했고, 현재 preview `discovered=30`이다.
 
 ## 2026-07-10 LG API 승격
 

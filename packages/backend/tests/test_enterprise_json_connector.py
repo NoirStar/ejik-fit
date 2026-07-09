@@ -295,3 +295,60 @@ def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
     assert opening.opens_at.isoformat() == "2026-06-25T00:00:00+09:00"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-12T23:55:59+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_hyundai_motor_apply_list_api() -> None:
+    payload = {
+        "status": 200,
+        "message": "OK",
+        "data": {
+            "listCnt": 1,
+            "list": [
+                {
+                    "recuYy": "2026",
+                    "recuType": "N2",
+                    "recuCls": 261,
+                    "recuNoticeNm": (
+                        "[Security] Service Security Engineer - Application Security"
+                    ),
+                    "applyStartDt": "20260615",
+                    "applyStartTm": "0900",
+                    "applyEndDt": "20260714",
+                    "applyEndTm": "1705",
+                    "secCodeNm": "IT",
+                    "fldCodeNm": "Security Engineering",
+                    "workPlaceCodeNm": "HQ(Seoul)",
+                    "channelCodeNm": "Experienced",
+                    "hashTag": None,
+                    "collectMark": "Experienced Recruitment - June",
+                }
+            ],
+        },
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://talent.hyundai.com/api/rec/AP-HM-FO-02700?hgrCd=1"
+        "&lang=en&page=1&pageblock=100&searchFieldList=&searchOccupList="
+        "&searchPlaceList=&searchSectorList=&searchText=&jdSec=&srcOrd=",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "2026-N2-261"
+    assert opening.url == (
+        "https://talent.hyundai.com/eng/apply/applyView.hc"
+        "?recuYy=2026&recuType=N2&recuCls=261"
+    )
+    assert (
+        opening.title
+        == "[Security] Service Security Engineer - Application Security"
+    )
+    assert opening.employment_type == "Experienced"
+    assert opening.career_type == "experienced"
+    assert opening.location == "HQ(Seoul)"
+    assert opening.description_text == "IT Security Engineering"
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-06-15T09:00:00+09:00"
+    assert opening.closes_at is not None
+    assert opening.closes_at.isoformat() == "2026-07-14T17:05:00+09:00"

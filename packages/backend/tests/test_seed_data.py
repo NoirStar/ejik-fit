@@ -71,6 +71,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "posco-dx",
         "sk-telecom",
         "kt",
+        "hyundai-motor",
         *blocked_enterprise_slugs,
     }
     assert all(
@@ -105,9 +106,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["samsung-electronics"].policy_status == (
         PolicyStatus.BLOCKED
     )
-    assert catalog_by_slug["hyundai-motor"].source_type == (
-        SourceType.HTML_LISTING_DETAIL
-    )
+    assert catalog_by_slug["hyundai-motor"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["hyundai-motor"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].connector_family == "enterprise_json"
 
 
@@ -210,8 +210,13 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         )
 
         hyundai = sources_by_slug["hyundai-motor"]
-        assert hyundai.status == SourceStatus.NEEDS_CONNECTOR
-        assert hyundai.connector_family == "html_listing_detail"
+        assert hyundai.status == SourceStatus.ALLOWED
+        assert hyundai.connector_family == "enterprise_json"
+        assert hyundai.base_url == (
+            "https://talent.hyundai.com/api/rec/AP-HM-FO-02700?hgrCd=1"
+            "&lang=en&page=1&pageblock=100&searchFieldList=&searchOccupList="
+            "&searchPlaceList=&searchSectorList=&searchText=&jdSec=&srcOrd="
+        )
 
 
 def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:

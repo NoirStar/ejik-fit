@@ -188,20 +188,24 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="현대자동차",
         slug="hyundai-motor",
-        base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
-        source_type=SourceType.HTML_LISTING_DETAIL,
+        base_url=(
+            "https://talent.hyundai.com/api/rec/AP-HM-FO-02700?hgrCd=1"
+            "&lang=en&page=1&pageblock=100&searchFieldList=&searchOccupList="
+            "&searchPlaceList=&searchSectorList=&searchText=&jdSec=&srcOrd="
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.hyundai.com",
         sector="enterprise_it",
-        connector_family="html_listing_detail",
+        connector_family="enterprise_json",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=4,
         expected_job_volume=4,
-        connector_reuse_score=2,
+        connector_reuse_score=3,
         policy_risk=0,
         non_tech_noise=3,
-        notes="Official Hyundai Motor talent job listing.",
-        status=SourceStatus.NEEDS_CONNECTOR,
+        notes="Official Hyundai Motor careers JSON listing.",
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="기아",

@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from html import unescape
 from typing import Any
+from urllib.parse import urlencode
 
 from ejikfit.connectors.next_data import parse_static_payload_openings
 from ejikfit.connectors.types import ParsedOpening
@@ -125,6 +126,85 @@ def _kt_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _hyundai_datetime(date_value: Any, time_value: Any) -> str | None:
+    if not isinstance(date_value, str):
+        return None
+    date_text = date_value.strip()
+    if not date_text:
+        return None
+    time_text = time_value.strip() if isinstance(time_value, str) else "0000"
+    try:
+        parsed = datetime.strptime(f"{date_text}{time_text}", "%Y%m%d%H%M")
+    except ValueError:
+        return None
+    return parsed.strftime("%Y-%m-%d %H:%M")
+
+
+def _hyundai_apply_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    payload = data.get("data")
+    if not isinstance(payload, dict):
+        return None
+    recruit_list = payload.get("list")
+    if not isinstance(recruit_list, list):
+        return None
+    if "listCnt" not in payload and not any(
+        isinstance(item, dict)
+        and "recuYy" in item
+        and "recuNoticeNm" in item
+        for item in recruit_list
+    ):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in recruit_list:
+        if not isinstance(item, dict):
+            continue
+        recu_yy = item.get("recuYy")
+        recu_type = item.get("recuType")
+        recu_cls = item.get("recuCls")
+        title = item.get("recuNoticeNm")
+        if (
+            recu_yy is None
+            or recu_type is None
+            or recu_cls is None
+            or not isinstance(title, str)
+        ):
+            continue
+        query = urlencode(
+            {
+                "recuYy": str(recu_yy),
+                "recuType": str(recu_type),
+                "recuCls": str(recu_cls),
+            }
+        )
+        jobs.append(
+            {
+                "id": f"{recu_yy}-{recu_type}-{recu_cls}",
+                "title": unescape(title),
+                "jobDetailUrl": (
+                    f"https://talent.hyundai.com/eng/apply/applyView.hc?{query}"
+                ),
+                "employmentType": item.get("channelCodeNm"),
+                "careerTypeName": item.get("channelCodeNm"),
+                "location": item.get("workPlaceCodeNm"),
+                "startDate": _hyundai_datetime(
+                    item.get("applyStartDt"),
+                    item.get("applyStartTm"),
+                ),
+                "closeDate": _hyundai_datetime(
+                    item.get("applyEndDt"),
+                    item.get("applyEndTm"),
+                ),
+                "department": item.get("secCodeNm"),
+                "jobGroup": item.get("fldCodeNm"),
+                "hashtagText": item.get("hashTag"),
+                "active": True,
+                "live": True,
+            }
+        )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -140,4 +220,7 @@ def parse_enterprise_json_openings(
         kt_payload = _kt_recruit_payload(data)
         if kt_payload is not None:
             return parse_static_payload_openings(kt_payload, listing_url)
+        hyundai_payload = _hyundai_apply_payload(data)
+        if hyundai_payload is not None:
+            return parse_static_payload_openings(hyundai_payload, listing_url)
     return parse_static_payload_openings(data, listing_url)
