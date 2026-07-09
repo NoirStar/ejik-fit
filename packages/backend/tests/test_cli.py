@@ -117,6 +117,17 @@ def test_crawl_all_writes_github_summary_and_returns_partial_failure(
             "sources": [],
         },
     )
+    monkeypatch.setattr(
+        "ejikfit.source_monitor.build_source_monitor_report",
+        lambda session: {
+            "window_hours": 24,
+            "totals": {"new_postings": 1},
+        },
+    )
+    monkeypatch.setattr(
+        "ejikfit.source_monitor.render_source_monitor_markdown",
+        lambda monitor: "\n## 공식 출처 모니터\n\n| 신규 공고 | 1 |\n",
+    )
 
     assert cli.main(["crawl-all"]) == 1
     assert json.loads(capsys.readouterr().out) == report
@@ -126,6 +137,8 @@ def test_crawl_all_writes_github_summary_and_returns_partial_failure(
     assert "| 합계 | 3 | 2 | 1 | 0 |" in summary
     assert "공식 출처 운영 리포트" in summary
     assert "| 네이버 | naver_json | allowed | 18 | 2 |" in summary
+    assert "공식 출처 모니터" in summary
+    assert "| 신규 공고 | 1 |" in summary
 
 
 def test_preview_source_prints_json_report(monkeypatch, capsys) -> None:
@@ -432,6 +445,50 @@ def test_source_report_prints_markdown(monkeypatch, capsys) -> None:
     output = capsys.readouterr().out
     assert "공식 출처 운영 리포트" in output
     assert "| 네이버 | naver_json | allowed | 18 | 2 |" in output
+
+
+def test_source_monitor_prints_json(monkeypatch, capsys) -> None:
+    report = {
+        "window_hours": 12,
+        "totals": {"sources": 1, "new_postings": 2},
+        "sources": [],
+    }
+    monkeypatch.setattr(
+        "ejikfit.source_monitor.build_source_monitor_report",
+        lambda session, window_hours: report,
+    )
+    monkeypatch.setattr(
+        cli,
+        "SessionLocal",
+        lambda: Session(create_engine("sqlite+pysqlite:///:memory:")),
+    )
+
+    assert cli.main(["source-monitor", "--hours", "12"]) == 0
+    assert json.loads(capsys.readouterr().out) == report
+
+
+def test_source_monitor_prints_markdown(monkeypatch, capsys) -> None:
+    report = {
+        "window_hours": 24,
+        "totals": {"sources": 1, "new_postings": 2},
+        "sources": [],
+    }
+    monkeypatch.setattr(
+        "ejikfit.source_monitor.build_source_monitor_report",
+        lambda session, window_hours: report,
+    )
+    monkeypatch.setattr(
+        "ejikfit.source_monitor.render_source_monitor_markdown",
+        lambda monitor: "## 공식 출처 모니터\n",
+    )
+    monkeypatch.setattr(
+        cli,
+        "SessionLocal",
+        lambda: Session(create_engine("sqlite+pysqlite:///:memory:")),
+    )
+
+    assert cli.main(["source-monitor", "--format", "markdown"]) == 0
+    assert "공식 출처 모니터" in capsys.readouterr().out
 
 
 def test_discover_sitemap_prints_json_candidates(monkeypatch, capsys) -> None:

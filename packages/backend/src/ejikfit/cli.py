@@ -77,6 +77,16 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["json", "markdown"],
         default="json",
     )
+    monitor_parser = subparsers.add_parser(
+        "source-monitor",
+        help="최근 출처 활동과 건강도 모니터를 출력합니다.",
+    )
+    monitor_parser.add_argument("--hours", type=int, default=24)
+    monitor_parser.add_argument(
+        "--format",
+        choices=["json", "markdown"],
+        default="json",
+    )
     discovery_parser = subparsers.add_parser(
         "discover-sitemap",
         help="sitemap.xml 또는 robots.txt에서 공식 채용 URL 후보를 출력합니다.",
@@ -308,6 +318,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(json.dumps(report, ensure_ascii=False, sort_keys=True))
         return 0
 
+    if args.command == "source-monitor":
+        from ejikfit import source_monitor
+
+        with SessionLocal() as session:
+            report = source_monitor.build_source_monitor_report(
+                session,
+                window_hours=args.hours,
+            )
+        if args.format == "markdown":
+            print(source_monitor.render_source_monitor_markdown(report))
+        else:
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        return 0
+
     if args.command == "discover-sitemap":
         print(
             json.dumps(
@@ -321,6 +345,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "crawl-all":
         from ejikfit.crawler import render_crawl_summary, run_all_sources
         from ejikfit import source_report
+        from ejikfit import source_monitor
 
         report = run_all_sources()
         print(
@@ -338,6 +363,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                     summary.write(
                         source_report.render_source_report_markdown(
                             source_report.build_source_report(session)
+                        )
+                    )
+                    summary.write(
+                        source_monitor.render_source_monitor_markdown(
+                            source_monitor.build_source_monitor_report(session)
                         )
                     )
         return 1 if report["failed"] else 0
