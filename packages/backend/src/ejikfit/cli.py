@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import uuid
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -8,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from ejikfit.db import SessionLocal
-from ejikfit.models import CareerSource
+from ejikfit.models import CareerSource, PolicyStatus, SourceStatus
 from ejikfit.seed_data import seed_sources
 
 
@@ -38,6 +39,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="출처 UUID 하나를 저장 없이 fetch/parse 미리보기합니다.",
     )
     preview_parser.add_argument("source_id")
+    status_parser = subparsers.add_parser(
+        "set-source-status",
+        help="출처 상태를 명시적으로 변경합니다.",
+    )
+    status_parser.add_argument("source_id")
+    status_parser.add_argument(
+        "status",
+        choices=[status.value for status in SourceStatus],
+    )
+    status_parser.add_argument(
+        "--policy-status",
+        choices=[status.value for status in PolicyStatus],
+        default=None,
+    )
     subparsers.add_parser(
         "crawl-all",
         help="허용된 모든 공식 채용 출처를 수집합니다.",
@@ -56,6 +71,40 @@ def _sources(session) -> list[CareerSource]:
         .order_by(CareerSource.base_url)
     )
     return list(session.scalars(statement).unique().all())
+
+
+def _source_status_payload(source: CareerSource) -> dict[str, str | None]:
+    return {
+        "source_id": str(source.id),
+        "source_label": f"{source.company.name} / {source.source_type.value}",
+        "status": source.status.value,
+        "policy_status": source.policy_status.value,
+        "last_error_code": source.last_error_code,
+    }
+
+
+def _set_source_status(
+    session,
+    source_id: str,
+    status_value: str,
+    policy_status_value: str | None,
+) -> dict[str, str | None]:
+    source = session.get(CareerSource, uuid.UUID(source_id))
+    if source is None:
+        raise ValueError(f"career source not found: {source_id}")
+
+    source.status = SourceStatus(status_value)
+    if policy_status_value is not None:
+        source.policy_status = PolicyStatus(policy_status_value)
+    elif source.status == SourceStatus.ALLOWED:
+        source.policy_status = PolicyStatus.ALLOWED
+
+    if source.status == SourceStatus.ALLOWED:
+        source.last_error_code = None
+        source.last_error_reason = None
+
+    session.commit()
+    return _source_status_payload(source)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -104,6 +153,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 sort_keys=True,
             )
         )
+        return 0
+
+    if args.command == "set-source-status":
+        with SessionLocal() as session:
+            report = _set_source_status(
+                session,
+                args.source_id,
+                args.status,
+                args.policy_status,
+            )
+        print(json.dumps(report, ensure_ascii=False, sort_keys=True))
         return 0
 
     if args.command == "crawl-all":

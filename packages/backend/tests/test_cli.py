@@ -9,6 +9,7 @@ from ejikfit.models import (
     Base,
     CareerSource,
     Company,
+    PolicyStatus,
     SourceStatus,
     SourceType,
 )
@@ -92,3 +93,93 @@ def test_preview_source_prints_json_report(monkeypatch, capsys) -> None:
 
     assert cli.main(["preview-source", "00000000-0000-0000-0000-000000000001"]) == 0
     assert json.loads(capsys.readouterr().out) == report
+
+
+def test_set_source_status_promotes_source_and_clears_stale_errors(
+    monkeypatch,
+    capsys,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000002")
+
+    with Session(engine) as session:
+        session.add(
+            CareerSource(
+                id=source_id,
+                company=Company(name="현대자동차", slug="hyundai-motor"),
+                base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
+                source_type=SourceType.HTML_LISTING_DETAIL,
+                status=SourceStatus.NEEDS_CONNECTOR,
+                policy_status=PolicyStatus.ALLOWED,
+                last_error_code="unsupported_connector",
+                last_error_reason="previous failure",
+            )
+        )
+        session.commit()
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+
+    assert cli.main(["set-source-status", str(source_id), "allowed"]) == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output == {
+        "source_id": str(source_id),
+        "source_label": "현대자동차 / html_listing_detail",
+        "status": "allowed",
+        "policy_status": "allowed",
+        "last_error_code": None,
+    }
+
+    with Session(engine) as session:
+        source = session.get(CareerSource, source_id)
+        assert source is not None
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
+
+
+def test_set_source_status_accepts_policy_status_override(
+    monkeypatch,
+    capsys,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000003")
+
+    with Session(engine) as session:
+        session.add(
+            CareerSource(
+                id=source_id,
+                company=Company(name="테스트 기업", slug="test-company"),
+                base_url="https://example.com/careers",
+                source_type=SourceType.JSON_LD,
+                status=SourceStatus.ALLOWED,
+                policy_status=PolicyStatus.ALLOWED,
+            )
+        )
+        session.commit()
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+
+    assert (
+        cli.main(
+            [
+                "set-source-status",
+                str(source_id),
+                "blocked",
+                "--policy-status",
+                "blocked",
+            ]
+        )
+        == 0
+    )
+    output = json.loads(capsys.readouterr().out)
+    assert output["status"] == "blocked"
+    assert output["policy_status"] == "blocked"
+
+    with Session(engine) as session:
+        source = session.get(CareerSource, source_id)
+        assert source is not None
+        assert source.status == SourceStatus.BLOCKED
+        assert source.policy_status == PolicyStatus.BLOCKED
