@@ -208,6 +208,91 @@ def _parse_list_json_openings(
     raise ValueError(f"unsupported list-json source type: {source_type.value}")
 
 
+def _parse_listing_openings(
+    source_type: SourceType,
+    text: str,
+    url: str,
+):
+    if source_type == SourceType.JSON_LD:
+        return parse_jsonld_openings(text, url)
+    if source_type in {
+        SourceType.NAVER_JSON,
+        SourceType.KAKAO_JSON,
+        SourceType.LINE_GATSBY,
+    }:
+        return _parse_list_json_openings(source_type, text, url)
+    if source_type == SourceType.HTML_LISTING_DETAIL:
+        return parse_html_listing_openings(text, url)
+    raise ValueError(f"connector is not implemented: {source_type.value}")
+
+
+def _source_label(source: CareerSource) -> str:
+    return f"{source.company.name} / {source.source_type.value}"
+
+
+def _preview_payload(
+    source: CareerSource,
+    *,
+    discovered: int = 0,
+    sample_openings: list[dict[str, str]] | None = None,
+    error: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    return {
+        "source_id": str(source.id),
+        "source_label": _source_label(source),
+        "source_type": source.source_type.value,
+        "discovered": discovered,
+        "sample_openings": sample_openings or [],
+        "error": error,
+    }
+
+
+async def preview_source(
+    source: CareerSource,
+    fetcher: HttpFetcher,
+    sample_limit: int = 5,
+) -> dict[str, Any]:
+    try:
+        listing = await fetcher.fetch(source.base_url)
+        openings = _parse_listing_openings(
+            source.source_type,
+            listing.text,
+            listing.url,
+        )
+    except BlockedSourceError as error:
+        return _preview_payload(
+            source,
+            error={"code": "blocked", "reason": str(error)},
+        )
+    except (httpx.HTTPError, RetryableFetchError) as error:
+        return _preview_payload(
+            source,
+            error={"code": "temporary_fetch_error", "reason": str(error)},
+        )
+    except (KeyError, TypeError, ValueError) as error:
+        return _preview_payload(
+            source,
+            error={
+                "code": "unsupported_connector",
+                "reason": str(error),
+            },
+        )
+
+    samples = [
+        {
+            "external_id": opening.external_id,
+            "title": opening.title,
+            "url": opening.url,
+        }
+        for opening in openings[:sample_limit]
+    ]
+    return _preview_payload(
+        source,
+        discovered=len(openings),
+        sample_openings=samples,
+    )
+
+
 async def crawl_source(
     session: Session,
     source: CareerSource,
@@ -291,7 +376,11 @@ async def crawl_source(
             ):
                 failed += 1
     elif source.source_type == SourceType.JSON_LD:
-        openings = parse_jsonld_openings(listing.text, listing.url)
+        openings = _parse_listing_openings(
+            source.source_type,
+            listing.text,
+            listing.url,
+        )
         discovered = len(openings)
         for opening in openings:
             seen_external_ids.add(opening.external_id)
@@ -310,7 +399,7 @@ async def crawl_source(
         SourceType.KAKAO_JSON,
         SourceType.LINE_GATSBY,
     }:
-        openings = _parse_list_json_openings(
+        openings = _parse_listing_openings(
             source.source_type,
             listing.text,
             listing.url,
@@ -329,7 +418,11 @@ async def crawl_source(
             )
             ingested += 1
     elif source.source_type == SourceType.HTML_LISTING_DETAIL:
-        openings = parse_html_listing_openings(listing.text, listing.url)
+        openings = _parse_listing_openings(
+            source.source_type,
+            listing.text,
+            listing.url,
+        )
         discovered = len(openings)
         for opening in openings:
             seen_external_ids.add(opening.external_id)
@@ -397,6 +490,21 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
             )
         )
     return asdict(result)
+
+
+def preview_source_by_id(source_id: str) -> dict[str, Any]:
+    settings = get_settings()
+
+    with SessionLocal() as session:
+        source = session.get(CareerSource, uuid.UUID(source_id))
+        if source is None:
+            raise ValueError(f"career source not found: {source_id}")
+        return asyncio.run(
+            preview_source(
+                source=source,
+                fetcher=HttpFetcher(settings.crawler_user_agent),
+            )
+        )
 
 
 def _posting_index(settings: Settings) -> PostingIndex | None:

@@ -395,6 +395,90 @@ def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_preview_source_parses_listing_without_persisting_or_mutating() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="현대자동차", slug="hyundai-motor")
+        source = CareerSource(
+            company=company,
+            base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            status=SourceStatus.NEEDS_CONNECTOR,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="previous_error",
+            last_error_reason="previous reason",
+        )
+        session.add(source)
+        session.commit()
+
+        preview = asyncio.run(
+            crawler.preview_source(
+                source=source,
+                fetcher=StaticFetcher(
+                    """
+                    <article>
+                      <a href="/eng/apply/detail/backend-1">Backend Engineer</a>
+                      <p>정규직 · 경력 · 서울</p>
+                    </article>
+                    """
+                ),
+                sample_limit=3,
+            )
+        )
+
+        assert preview["source_id"] == str(source.id)
+        assert preview["source_label"] == "현대자동차 / html_listing_detail"
+        assert preview["source_type"] == "html_listing_detail"
+        assert preview["discovered"] == 1
+        assert preview["sample_openings"] == [
+            {
+                "external_id": "backend-1",
+                "title": "Backend Engineer",
+                "url": "https://talent.hyundai.com/eng/apply/detail/backend-1",
+            }
+        ]
+        assert preview["error"] is None
+        assert session.scalars(select(JobPosting)).all() == []
+        assert source.status == SourceStatus.NEEDS_CONNECTOR
+        assert source.last_error_code == "previous_error"
+        assert source.last_error_reason == "previous reason"
+
+
+def test_preview_source_reports_unsupported_connector_without_mutating() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="LG CNS", slug="lg-cns")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.lg.com/apply?c=CNS",
+            source_type=SourceType.STATIC_NEXT_DATA,
+            status=SourceStatus.NEEDS_CONNECTOR,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        preview = asyncio.run(
+            crawler.preview_source(
+                source=source,
+                fetcher=StaticFetcher("{}"),
+            )
+        )
+
+        assert preview["discovered"] == 0
+        assert preview["sample_openings"] == []
+        assert preview["error"] == {
+            "code": "unsupported_connector",
+            "reason": "connector is not implemented: static_next_data",
+        }
+        assert source.status == SourceStatus.NEEDS_CONNECTOR
+        assert source.last_error_code is None
+
+
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:
     settings = Settings(search_backend="postgres")
 

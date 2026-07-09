@@ -71,3 +71,24 @@ def test_crawl_all_writes_github_summary_and_returns_partial_failure(
     assert "원격 수집 결과" in summary
     assert "source-1" in summary
     assert "| 합계 | 3 | 2 | 1 | 0 |" in summary
+
+
+def test_preview_source_prints_json_report(monkeypatch, capsys) -> None:
+    report = {
+        "source_id": "source-1",
+        "source_label": "현대자동차 / html_listing_detail",
+        "source_type": "html_listing_detail",
+        "discovered": 1,
+        "sample_openings": [
+            {
+                "external_id": "backend-1",
+                "title": "Backend Engineer",
+                "url": "https://example.com/jobs/backend-1",
+            }
+        ],
+        "error": None,
+    }
+    monkeypatch.setattr("ejikfit.crawler.preview_source_by_id", lambda source_id: report)
+
+    assert cli.main(["preview-source", "00000000-0000-0000-0000-000000000001"]) == 0
+    assert json.loads(capsys.readouterr().out) == report

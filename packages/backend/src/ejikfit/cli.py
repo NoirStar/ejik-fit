@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="출처 UUID 하나를 즉시 수집합니다.",
     )
     crawl_parser.add_argument("source_id")
+    preview_parser = subparsers.add_parser(
+        "preview-source",
+        help="출처 UUID 하나를 저장 없이 fetch/parse 미리보기합니다.",
+    )
+    preview_parser.add_argument("source_id")
     subparsers.add_parser(
         "crawl-all",
         help="허용된 모든 공식 채용 출처를 수집합니다.",
@@ -83,6 +88,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             json.dumps(
                 run_source_by_id(args.source_id),
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.command == "preview-source":
+        from ejikfit.crawler import preview_source_by_id
+
+        print(
+            json.dumps(
+                preview_source_by_id(args.source_id),
                 ensure_ascii=False,
                 sort_keys=True,
             )
