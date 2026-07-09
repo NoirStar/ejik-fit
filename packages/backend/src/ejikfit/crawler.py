@@ -18,6 +18,7 @@ from tenacity import (
 
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.greeting import discover_openings, parse_opening
+from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
@@ -314,6 +315,21 @@ async def crawl_source(
             listing.text,
             listing.url,
         )
+        discovered = len(openings)
+        for opening in openings:
+            seen_external_ids.add(opening.external_id)
+            ingest_opening(
+                session,
+                source,
+                opening,
+                listing.text,
+                store,
+                now,
+                posting_index,
+            )
+            ingested += 1
+    elif source.source_type == SourceType.HTML_LISTING_DETAIL:
+        openings = parse_html_listing_openings(listing.text, listing.url)
         discovered = len(openings)
         for opening in openings:
             seen_external_ids.add(opening.external_id)

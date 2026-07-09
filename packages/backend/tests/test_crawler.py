@@ -313,8 +313,8 @@ def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
         company = Company(name="현대자동차", slug="hyundai-motor")
         source = CareerSource(
             company=company,
-            base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
-            source_type=SourceType.HTML_LISTING_DETAIL,
+            base_url="https://careers.lg.com/apply?c=CNS",
+            source_type=SourceType.STATIC_NEXT_DATA,
             status=SourceStatus.ALLOWED,
             policy_status=PolicyStatus.ALLOWED,
         )
@@ -344,9 +344,55 @@ def test_unsupported_allowed_connector_fails_without_closing_postings() -> None:
         assert source.status == SourceStatus.NEEDS_CONNECTOR
         assert source.policy_status == PolicyStatus.ALLOWED
         assert source.last_error_code == "unsupported_connector"
-        assert "html_listing_detail" in (source.last_error_reason or "")
+        assert "static_next_data" in (source.last_error_reason or "")
         assert posting.missing_runs == 2
         assert posting.status == PostingStatus.OPEN
+
+
+def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 9, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="현대자동차", slug="hyundai-motor")
+        source = CareerSource(
+            company=company,
+            base_url="https://talent.hyundai.com/eng/apply/applyList.hc",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    """
+                    <article>
+                      <a href="/eng/apply/detail/backend-1">Backend Engineer</a>
+                      <p>정규직 · 경력 · 서울</p>
+                      <span>2026.07.01 ~ 2026.07.31</span>
+                    </article>
+                    """
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert postings[0].external_id == "backend-1"
+        assert postings[0].title == "Backend Engineer"
+        assert postings[0].employment_type == "regular"
+        assert source.last_error_code is None
+        assert source.last_success_at is not None
 
 
 def test_postgres_crawler_does_not_construct_meilisearch() -> None:
