@@ -2,7 +2,7 @@
 
 작성일: 2026-07-10
 
-상태: 설계 방향 승인 완료, 작성 문서 검토 대기
+상태: 사용자 작성 문서 검토 승인 완료
 
 관련 감사: `docs/audits/2026-07-10-ui-ux-trust-audit.md`
 
@@ -65,11 +65,10 @@
 ```text
 apps/web/src/
   app/
-    (product)/
-      layout.tsx
-      page.tsx
-      jobs/
-      skills/graph/
+    layout.tsx
+    page.tsx
+    jobs/
+    skills/graph/
     data-policy/
     methodology/
     privacy/
@@ -111,7 +110,8 @@ apps/web/src/
 
 ### 5.1 경계 원칙
 
-- `app`은 route와 server data orchestration만 담당한다.
+- `app`은 route와 server data orchestration만 담당하며 root layout에서 공통 앱 셸을
+  한 번 적용한다.
 - `features/*/model`은 API 응답을 화면 모델로 변환한다.
 - 화면 컴포넌트는 샘플이나 임의 수치를 생성하지 않는다.
 - `ui`는 제품 도메인을 모르는 공통 primitive만 가진다.
