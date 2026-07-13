@@ -26,6 +26,7 @@ const postings: PostingListResponse = {
       id: "job-1",
       title: "Backend Engineer",
       company_name: "토스",
+      company_slug: "toss",
       career_type: "experienced",
       employment_type: "FULL_TIME",
       career_min: 3,
@@ -110,6 +111,9 @@ describe("HomeFeed", () => {
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
     expect(screen.getByText("7월 13일 00:00")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "토스 기업 채용 현황" }),
+    ).toHaveAttribute("href", "/companies/toss");
   });
 
   it("keeps only followed community content on the following tab", () => {

@@ -16,6 +16,7 @@ const postings: PostingListResponse = {
       id: "job-1",
       title: "Backend Engineer",
       company_name: "토스",
+      company_slug: "toss",
       career_type: "experienced",
       employment_type: "FULL_TIME",
       career_min: 3,
@@ -106,6 +107,7 @@ describe("buildHomeFeedSnapshot", () => {
     ]);
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       companyName: "토스",
+      companyHref: "/companies/toss",
       matchedRequiredSkills: ["Java"],
       missingRequiredSkills: ["Spring"],
       matchedPreferredSkills: ["Kafka"],

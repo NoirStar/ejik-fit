@@ -575,6 +575,20 @@
   font-weight: 700;
 }
 
+.companyLink {
+  display: inline-flex;
+  width: fit-content;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.companyLink:hover {
+  color: var(--color-accent-strong);
+}
+
 .jobMeta {
   display: flex;
   flex-wrap: wrap;

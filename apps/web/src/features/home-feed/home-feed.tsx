@@ -246,7 +246,19 @@ function JobCard({
       <div className={styles.jobIdentity}>
         <CompanyMark companyName={item.companyName} sourceUrl={item.sourceUrl} size={52} />
         <div>
-          <p>{item.companyName}</p>
+          <p>
+            {item.companyHref ? (
+              <Link
+                aria-label={`${item.companyName} 기업 채용 현황`}
+                className={styles.companyLink}
+                href={item.companyHref}
+              >
+                {item.companyName}
+              </Link>
+            ) : (
+              item.companyName
+            )}
+          </p>
           <h2 id={titleId}>
             <Link href={item.href}>{item.title}</Link>
           </h2>

@@ -100,6 +100,11 @@ function buildJobs(
     postingId: posting.id,
     type: "recommended_job",
     companyName: posting.company_name,
+    ...(posting.company_slug
+      ? {
+          companyHref: `/companies/${encodeURIComponent(posting.company_slug)}`,
+        }
+      : {}),
     title: posting.title,
     location: posting.location ?? "근무지 미기재",
     careerLabel: formatCareer(posting.career_type),
