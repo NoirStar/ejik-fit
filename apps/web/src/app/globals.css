@@ -1,14 +1,14 @@
 :root {
-  color-scheme: light dark;
-  --background: #f4f5f1;
-  --surface: #e9ebe5;
-  --text: #171b18;
-  --muted: #606761;
-  --line: #cdd1ca;
-  --accent: #177b59;
-  --accent-strong: #0c5c40;
-  --button-text: #f5fff9;
-  --focus: #0f7251;
+  color-scheme: light;
+  --background: var(--color-bg);
+  --surface: var(--color-surface);
+  --text: var(--color-text);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --accent: var(--color-accent);
+  --accent-strong: var(--color-accent-strong);
+  --button-text: #ffffff;
+  --focus: var(--color-accent);
   --radius-control: 8px;
 }
 

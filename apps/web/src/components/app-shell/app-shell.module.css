@@ -15,7 +15,7 @@
 .utilityRow {
   display: grid;
   width: min(100%, var(--content-max));
-  min-height: 4.25rem;
+  min-height: 4rem;
   grid-template-columns: minmax(8.5rem, 1fr) minmax(18rem, 32rem) minmax(18rem, 1fr);
   align-items: center;
   gap: clamp(1rem, 2.5vw, 2.5rem);
@@ -261,14 +261,14 @@
 }
 
 .desktopNav {
-  min-height: 3.25rem;
+  min-height: 3rem;
   border-top: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent);
 }
 
 .navInner {
   display: flex;
   width: min(100%, 42rem);
-  height: 3.25rem;
+  height: 3rem;
   align-items: stretch;
   justify-content: space-between;
   margin: 0 auto;
@@ -314,7 +314,7 @@
 .content {
   display: flex;
   min-width: 0;
-  min-height: calc(100dvh - 7.5rem);
+  min-height: calc(100dvh - var(--header-height-desktop));
   flex-direction: column;
 }
 
@@ -369,7 +369,7 @@
 
 @media (max-width: 820px) {
   .shell {
-    padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
 
   .header {
@@ -404,7 +404,7 @@
     left: 0;
     z-index: 35;
     display: grid;
-    height: calc(4.25rem + env(safe-area-inset-bottom));
+    height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     grid-template-columns: repeat(5, minmax(0, 1fr));
     padding-bottom: env(safe-area-inset-bottom);
     border-top: 1px solid var(--color-line);
@@ -416,7 +416,7 @@
     position: relative;
     display: flex;
     min-width: 0;
-    min-height: 4.25rem;
+    min-height: var(--mobile-nav-height);
     flex-direction: column;
     align-items: center;
     justify-content: center;

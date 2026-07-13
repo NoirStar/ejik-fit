@@ -19,7 +19,7 @@
 .leftRail,
 .rightRail {
   position: sticky;
-  top: 8.75rem;
+  top: 8.25rem;
   display: grid;
   gap: 0.875rem;
 }
@@ -969,6 +969,130 @@
   white-space: nowrap;
 }
 
+.loadingPage.loadingPage[aria-busy="true"] {
+  width: 100%;
+  min-height: calc(100dvh - var(--header-height-desktop));
+  padding-top: 1.25rem;
+}
+
+.skeletonRailCard,
+.skeletonCard,
+.skeletonTabs {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.skeletonRailCard,
+.skeletonCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.125rem;
+}
+
+.skeletonCard {
+  gap: 0.875rem;
+  padding: 1.375rem;
+}
+
+.skeletonFeedHeader {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem 0.375rem;
+}
+
+.skeletonTabs {
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.skeletonTabs span,
+.skeletonActions span {
+  width: 5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+}
+
+.skeletonIdentity {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.skeletonIdentity > div {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.skeletonAvatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+}
+
+.skeletonTitle {
+  width: min(72%, 24rem);
+  height: 1.125rem;
+  border-radius: 0.375rem;
+}
+
+.skeletonLine,
+.skeletonHalfLine,
+.skeletonShortLine {
+  display: block;
+  width: 100%;
+  height: 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.skeletonHalfLine {
+  width: 52%;
+}
+
+.skeletonShortLine {
+  width: min(45%, 8rem);
+}
+
+.skeletonActions {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.skeletonTitle,
+.skeletonLine,
+.skeletonHalfLine,
+.skeletonShortLine,
+.skeletonAvatar,
+.skeletonTabs span,
+.skeletonActions span {
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--color-surface) 72%, transparent),
+      transparent
+    ),
+    var(--color-surface-muted);
+  background-size: 220% 100%;
+  animation: feed-skeleton 1.35s ease-in-out infinite;
+}
+
+@keyframes feed-skeleton {
+  from {
+    background-position: 120% 0;
+  }
+
+  to {
+    background-position: -120% 0;
+  }
+}
+
 .tabs button:focus-visible,
 .composeButton:focus-visible,
 .cardActions button:focus-visible,
@@ -1137,5 +1261,15 @@
   .jobCard,
   .marketCard {
     transition: none;
+  }
+
+  .skeletonTitle,
+  .skeletonLine,
+  .skeletonHalfLine,
+  .skeletonShortLine,
+  .skeletonAvatar,
+  .skeletonTabs span,
+  .skeletonActions span {
+    animation: none;
   }
 }

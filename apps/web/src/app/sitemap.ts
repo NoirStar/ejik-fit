@@ -4,6 +4,9 @@ import { siteUrl } from "@/lib/site-url";
 
 const ROUTES = [
   "",
+  "/market",
+  "/skill-map",
+  "/career",
   "/jobs",
   "/skills/graph",
   "/data-policy",

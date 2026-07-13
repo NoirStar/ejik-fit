@@ -1,39 +1,28 @@
 :root {
-  color-scheme: light dark;
-  --color-bg: #f2f5f4;
+  color-scheme: light;
+  --color-bg: #f6f7f9;
   --color-surface: #ffffff;
-  --color-surface-muted: #e9efed;
-  --color-text: #101714;
-  --color-muted: #58665f;
-  --color-faint: #73827a;
-  --color-line: #d5dfda;
-  --color-accent: #17b77a;
-  --color-accent-strong: #087b52;
-  --color-info: #356fe5;
-  --color-warning: #a65f12;
-  --color-danger: #b63e4a;
+  --color-surface-subtle: #fafbfc;
+  --color-surface-muted: #f1f3f6;
+  --color-brand-subtle: #f1edff;
+  --color-text: #16181d;
+  --color-muted: #667085;
+  --color-faint: #98a2b3;
+  --color-line: #e5e7eb;
+  --color-accent: #7657f6;
+  --color-accent-strong: #5b3fd1;
+  --color-info: #4f6bed;
+  --color-success: #14804a;
+  --color-warning: #b54708;
+  --color-danger: #d92d20;
   --color-graph: #07111d;
   --radius-control: 0.625rem;
   --radius-panel: 0.875rem;
   --radius-overlay: 1.125rem;
+  --shadow-subtle: 0 0.75rem 2rem rgb(29 41 57 / 0.08);
   --touch-target: 2.75rem;
+  --header-height-desktop: 7rem;
+  --mobile-nav-height: 4.25rem;
   --content-max: 90rem;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #09100d;
-    --color-surface: #111a16;
-    --color-surface-muted: #18231e;
-    --color-text: #edf5f1;
-    --color-muted: #a8b7af;
-    --color-faint: #829189;
-    --color-line: #2a3932;
-    --color-accent: #32d493;
-    --color-accent-strong: #62e8ad;
-    --color-info: #79a2ff;
-    --color-warning: #e2a55c;
-    --color-danger: #f17b86;
-  }
 }

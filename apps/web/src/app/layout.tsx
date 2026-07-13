@@ -19,11 +19,11 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
+    default: "이직핏 | 커리어 네트워크",
     template: "%s | 이직핏",
   },
   description:
-    "한국 기술기업의 공식 채용공고를 분석해 기술 스택, 인접 분야, 부족한 준비 항목을 그래프로 보여줍니다.",
+    "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
   applicationName: "이직핏",
   alternates: { canonical: "/" },
   openGraph: {
@@ -31,13 +31,15 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     url: "/",
     siteName: "이직핏",
-    title: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
-    description: "공식 채용공고에서 확인한 요구 기술과 연결 관계를 보여줍니다.",
+    title: "이직핏 | 커리어 네트워크",
+    description:
+      "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
   },
   twitter: {
     card: "summary",
-    title: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
-    description: "공식 채용공고에서 확인한 요구 기술과 연결 관계를 보여줍니다.",
+    title: "이직핏 | 커리어 네트워크",
+    description:
+      "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
   },
   icons: {
     icon: "/icon.svg",
