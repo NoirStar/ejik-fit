@@ -26,9 +26,11 @@
 .brand {
   display: inline-flex;
   width: fit-content;
+  min-width: var(--touch-target);
   min-height: var(--touch-target);
   flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
   text-decoration: none;
 }
 
@@ -526,8 +528,14 @@
   .iconButton,
   .userButton {
     width: var(--touch-target);
+    min-width: var(--touch-target);
     min-height: var(--touch-target);
+    flex: 0 0 var(--touch-target);
     padding: 0;
+  }
+
+  .menuAnchor {
+    flex: 0 0 var(--touch-target);
   }
 
   .writeButton span {
@@ -542,6 +550,12 @@
 
   .footer {
     padding-bottom: 2rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .utilityRow {
+    gap: 0.375rem;
   }
 }
 

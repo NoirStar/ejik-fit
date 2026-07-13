@@ -8,7 +8,8 @@
     "bench:graph": "vitest bench src/lib/large-graph.bench.ts --run",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
