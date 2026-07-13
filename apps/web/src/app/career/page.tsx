@@ -1,25 +1,40 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { RouteShell } from "@/components/route-shell/route-shell";
+import {
+  CareerOverview,
+  type CareerSkillSuggestion,
+} from "@/features/career/career-overview";
+import { settledResource } from "@/features/home-feed/resource-state";
+import { getSkillStats } from "@/lib/api";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "내 커리어",
-  description: "로그인 없이 내 기술을 저장하고 관련 공식 채용 데이터를 확인합니다.",
+  description: "브라우저에 저장한 내 기술과 현재 공식 채용공고의 요구사항을 비교합니다.",
 };
 
-export default function CareerPage() {
+export default async function CareerPage() {
+  const skillStats = await settledResource(
+    getSkillStats({ limit: 12 }),
+    "상위 기술 제안을 불러오지 못했습니다.",
+  );
+  const seen = new Set<string>();
+  const suggestions: CareerSkillSuggestion[] =
+    skillStats.status === "ready"
+      ? skillStats.data.items.flatMap((item) => {
+          const name = item.skill.trim();
+          const key = name.toLocaleLowerCase("en-US");
+          if (!name || seen.has(key)) return [];
+          seen.add(key);
+          return [{ name, postingCount: item.count }];
+        })
+      : [];
+
   return (
-    <RouteShell
-      action={<Link href="/#my-stack">홈에서 내 스택 설정하기</Link>}
-      description="프로필을 꾸며내지 않고, 직접 고른 기술을 기준으로 관련 공고와 시장 근거를 연결합니다."
-      eyebrow="브라우저에만 저장"
-      title="내 커리어"
-    >
-      <p>
-        로그인 기능이 준비되기 전에는 <strong>내 스택이 현재 브라우저에만 저장</strong>됩니다.
-      </p>
-      <p>이름, 연차, 회사 같은 개인정보를 임의로 만들거나 서버에 전송하지 않습니다.</p>
-    </RouteShell>
+    <CareerOverview
+      suggestions={suggestions}
+      suggestionsUnavailable={skillStats.status === "error"}
+    />
   );
 }
