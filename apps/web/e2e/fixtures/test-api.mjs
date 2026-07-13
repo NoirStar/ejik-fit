@@ -42,6 +42,42 @@ const postings = {
   ],
 };
 
+const postingDetails = {
+  "job-python": {
+    ...postings.items[0],
+    description_html: "<p>Do not render this HTML</p>",
+    description_text:
+      "제품 소개입니다. ### 주요 업무 * Python API를 개발합니다. * Docker 기반 배포 환경을 운영합니다. ### 우대 사항 • Kubernetes 운영 경험",
+    skills: ["Python", "Docker", "Kubernetes"],
+    skill_details: [
+      {
+        skill: "Python",
+        category: "language",
+        requirement_type: "required",
+        evidence_text: "Python API를 개발합니다.",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+      {
+        skill: "Docker",
+        category: "infra",
+        requirement_type: "required",
+        evidence_text: "Docker 기반 배포 환경을 운영합니다.",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+      {
+        skill: "Kubernetes",
+        category: "infra",
+        requirement_type: "preferred",
+        evidence_text: "Kubernetes 운영 경험",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+    ],
+  },
+};
+
 const skillStats = {
   total: 2,
   items: [
@@ -52,8 +88,10 @@ const skillStats = {
 
 const server = createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
-  const body =
-    pathname === "/api/postings"
+  const detailId = pathname.match(/^\/api\/postings\/([^/]+)$/)?.[1];
+  const body = detailId
+    ? postingDetails[detailId] ?? null
+    : pathname === "/api/postings"
       ? postings
       : pathname === "/api/skills/stats"
         ? skillStats
