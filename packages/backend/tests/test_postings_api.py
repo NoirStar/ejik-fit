@@ -20,6 +20,11 @@ class FakePostingReader:
                 "company_name": "테스트 기업",
                 "career_type": "new_comer",
                 "location": "서울",
+                "opens_at": datetime(2026, 7, 1, tzinfo=timezone.utc),
+                "closes_at": datetime(2026, 7, 31, tzinfo=timezone.utc),
+                "required_skills": ["Python"],
+                "preferred_skills": ["Docker"],
+                "unspecified_skills": ["Linux"],
                 "source_url": "https://example.com/o/1",
                 "last_verified_at": datetime(
                     2026,
@@ -71,6 +76,11 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     item = response.json()["items"][0]
     assert item["source_url"] == "https://example.com/o/1"
     assert item["last_verified_at"] == "2026-07-03T00:00:00Z"
+    assert item["opens_at"] == "2026-07-01T00:00:00Z"
+    assert item["closes_at"] == "2026-07-31T00:00:00Z"
+    assert item["required_skills"] == ["Python"]
+    assert item["preferred_skills"] == ["Docker"]
+    assert item["unspecified_skills"] == ["Linux"]
 
 
 def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:

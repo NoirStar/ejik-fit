@@ -10,6 +10,11 @@ export type PostingSummary = {
   status: string;
   source_url: string;
   last_verified_at: string;
+  opens_at?: string | null;
+  closes_at?: string | null;
+  required_skills?: string[];
+  preferred_skills?: string[];
+  unspecified_skills?: string[];
 };
 
 export type SkillDetail = {

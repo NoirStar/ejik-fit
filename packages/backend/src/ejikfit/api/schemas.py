@@ -16,6 +16,11 @@ class PostingSummary(BaseModel):
     status: str = "open"
     source_url: str
     last_verified_at: datetime
+    opens_at: datetime | None = None
+    closes_at: datetime | None = None
+    required_skills: list[str] = []
+    preferred_skills: list[str] = []
+    unspecified_skills: list[str] = []
 
 
 class SkillDetail(BaseModel):

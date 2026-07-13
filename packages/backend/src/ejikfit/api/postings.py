@@ -12,6 +12,7 @@ from ejikfit.db import SessionLocal
 from ejikfit.models import Company, JobPosting, PostingStatus
 from ejikfit.search import MeiliPostingIndex
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
+from ejikfit.skills import confirmed_skill_groups
 
 from .schemas import PostingDetail, PostingListResponse
 
@@ -30,6 +31,7 @@ class PostingReader(Protocol):
 
 
 def _summary(posting: JobPosting) -> dict:
+    skill_groups = confirmed_skill_groups(posting.skills)
     return {
         "id": posting.id,
         "title": posting.title,
@@ -42,6 +44,11 @@ def _summary(posting: JobPosting) -> dict:
         "status": posting.status.value,
         "source_url": posting.url,
         "last_verified_at": posting.last_verified_at,
+        "opens_at": posting.opens_at,
+        "closes_at": posting.closes_at,
+        "required_skills": list(skill_groups.required),
+        "preferred_skills": list(skill_groups.preferred),
+        "unspecified_skills": list(skill_groups.unspecified),
     }
 
 
@@ -153,7 +160,10 @@ class DatabasePostingReader:
         statement = (
             select(JobPosting)
             .join(JobPosting.company)
-            .options(contains_eager(JobPosting.company))
+            .options(
+                contains_eager(JobPosting.company),
+                selectinload(JobPosting.skills),
+            )
             .where(JobPosting.status == PostingStatus.OPEN)
             .order_by(JobPosting.last_verified_at.desc())
             .limit(limit)

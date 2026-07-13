@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from sqlalchemy import select
@@ -20,7 +22,38 @@ from ejikfit.skill_extraction import (
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-    from ejikfit.models import JobPosting
+    from ejikfit.models import JobPosting, PostingSkill
+
+
+@dataclass(frozen=True)
+class ConfirmedSkillGroups:
+    required: tuple[str, ...]
+    preferred: tuple[str, ...]
+    unspecified: tuple[str, ...]
+
+
+def confirmed_skill_groups(
+    skills: Iterable["PostingSkill"],
+) -> ConfirmedSkillGroups:
+    grouped: dict[str, list[str]] = {
+        "required": [],
+        "preferred": [],
+        "unspecified": [],
+    }
+    for skill in sorted(skills, key=lambda item: item.skill):
+        if skill.confidence < CONFIRMED_CONFIDENCE:
+            continue
+        requirement = (
+            skill.requirement_type
+            if skill.requirement_type in grouped
+            else "unspecified"
+        )
+        grouped[requirement].append(skill.skill)
+    return ConfirmedSkillGroups(
+        required=tuple(grouped["required"]),
+        preferred=tuple(grouped["preferred"]),
+        unspecified=tuple(grouped["unspecified"]),
+    )
 
 
 def extract_skills(text: str) -> list[str]:
