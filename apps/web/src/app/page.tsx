@@ -1,51 +1,51 @@
 import type { Metadata } from "next";
 
-import { DashboardHome } from "@/features/dashboard/dashboard-home";
-import { buildDashboardSnapshot } from "@/features/dashboard/model";
-import { settledResource } from "@/features/dashboard/state";
+import { HomeFeed } from "@/features/home-feed/home-feed";
+import { buildHomeFeedSnapshot } from "@/features/home-feed/model";
+import { settledResource } from "@/features/home-feed/resource-state";
 import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "이직핏 대시보드",
+  title: "이직핏 홈",
   description:
-    "내 기술 스택과 채용 신호를 연결해 맞춤 공고, 보완 기술, 시장 변화를 매일 확인하는 이직핏 홈입니다.",
+    "커리어 커뮤니티의 경험과 공식 채용공고의 기술 수요를 한 피드에서 확인합니다.",
 };
 
 type HomeSearchParams = Record<string, string | string[] | undefined>;
-
 
 type HomeProps = {
   searchParams?: Promise<HomeSearchParams>;
 };
 
-
 export default async function Home({ searchParams }: HomeProps = {}) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const resolvedSearchParams = (await searchParams) ?? {};
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
   const seed = ownedSkills[0];
 
   const [postings, skillStats, graph] = await Promise.all([
-    settledResource(getPostings({ limit: 100 })),
+    settledResource(getPostings({ limit: 40 })),
     settledResource(getSkillStats({ limit: 8 })),
-    settledResource(getSkillGraph({
-      ...(seed ? { seed } : {}),
-      owned_skills: ownedSkills,
-      limit: 30,
-    })),
+    settledResource(
+      getSkillGraph({
+        ...(seed ? { seed } : {}),
+        owned_skills: ownedSkills,
+        limit: 30,
+      }),
+    ),
   ]);
 
-  const snapshot = buildDashboardSnapshot({
-    postings,
-    skillStats,
-    graph,
-    ownedSkills,
-  });
-  const resourceErrors = [postings, skillStats, graph].flatMap((resource) =>
-    resource.status === "error" ? [resource.message] : [],
+  return (
+    <HomeFeed
+      composeInitiallyOpen={resolvedSearchParams.compose === "1"}
+      snapshot={buildHomeFeedSnapshot({
+        postings,
+        skillStats,
+        graph,
+        ownedSkills,
+      })}
+    />
   );
-
-  return <DashboardHome resourceErrors={resourceErrors} snapshot={snapshot} />;
 }

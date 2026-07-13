@@ -11,7 +11,7 @@ vi.mock("@/lib/api", () => ({
   getSkillStats: vi.fn(),
 }));
 
-function mockDashboardApi() {
+function mockHomeApi() {
   vi.mocked(getPostings).mockResolvedValue({
     total: 1,
     items: [
@@ -67,21 +67,28 @@ describe("Home", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockDashboardApi();
+    mockHomeApi();
   });
 
-  it("renders the honest dashboard from API responses", async () => {
+  it("renders mock community beside API-backed jobs and skill counts", async () => {
     render(
       await Home({
         searchParams: Promise.resolve({ owned_skills: ["Java", "Spring"] }),
       }),
     );
 
-    expect(screen.getByRole("heading", { name: "오늘의 공식 채용 신호" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
-    expect(screen.getByText("Kubernetes")).toBeInTheDocument();
-    expect(screen.queryByText("지난주 대비")).not.toBeInTheDocument();
-    expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
+    expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
+    expect(screen.getByText("필수 8건")).toBeInTheDocument();
+    expect(screen.queryByText(/지난주 대비|합격 가능성|\d+\.\d+점/)).not.toBeInTheDocument();
+    expect(getPostings).toHaveBeenCalledWith({ limit: 40 });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Java",
       owned_skills: ["Java", "Spring"],
@@ -97,7 +104,7 @@ describe("Home", () => {
       limit: 30,
     });
     expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
-    expect(screen.queryByText("Java")).not.toBeInTheDocument();
+    expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });
 
   it("keeps successful data visible when a resource fails", async () => {
@@ -105,8 +112,20 @@ describe("Home", () => {
 
     render(await Home());
 
-    expect(screen.getByText("일부 데이터를 불러오지 못했습니다")).toBeInTheDocument();
+    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
     expect(screen.getByText("graph offline")).toBeInTheDocument();
+  });
+
+  it("opens the composer from the shell write query", async () => {
+    render(
+      await Home({
+        searchParams: Promise.resolve({ compose: "1" }),
+      }),
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "커뮤니티 글쓰기" }),
+    ).toBeInTheDocument();
   });
 });
