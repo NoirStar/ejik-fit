@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell/app-shell";
+import { CareerOverview } from "@/features/career/career-overview";
 
 const navigation = vi.hoisted(() => ({
   search: "",
@@ -92,5 +93,21 @@ describe("OwnedSkillsSheet", () => {
     close.focus();
     fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
     expect(add).toHaveFocus();
+  });
+
+  it("keeps the dialog label unique on the career page", () => {
+    render(
+      <AppShell>
+        <CareerOverview suggestions={[]} suggestionsUnavailable={false} />
+      </AppShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+
+    expect(screen.getByRole("dialog", { name: "내 스택" })).toBeInTheDocument();
+    expect(document.querySelectorAll("#owned-skills-title")).toHaveLength(1);
+    expect(
+      document.querySelectorAll("#career-owned-skills-title"),
+    ).toHaveLength(1);
   });
 });

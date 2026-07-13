@@ -50,6 +50,14 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
+function isCount(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0
+  );
+}
+
 function isFitAnalyzeResponse(value: unknown): value is FitAnalyzeResponse {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<FitAnalyzeResponse>;
@@ -57,16 +65,18 @@ function isFitAnalyzeResponse(value: unknown): value is FitAnalyzeResponse {
 
   return Boolean(
     coverage &&
-      typeof coverage.matching_posting_count === "number" &&
-      typeof coverage.strong_fit_posting_count === "number" &&
+      isCount(coverage.matching_posting_count) &&
+      isCount(coverage.strong_fit_posting_count) &&
+      coverage.strong_fit_posting_count <= coverage.matching_posting_count &&
       Array.isArray(candidate.recommended_next_skills) &&
       candidate.recommended_next_skills.every(
         (item) =>
           item &&
           typeof item.skill === "string" &&
-          typeof item.required_count === "number" &&
-          typeof item.preferred_count === "number" &&
-          typeof item.supporting_posting_count === "number",
+          typeof item.reason === "string" &&
+          isCount(item.required_count) &&
+          isCount(item.preferred_count) &&
+          isCount(item.supporting_posting_count),
       ) &&
       Array.isArray(candidate.domain_branches) &&
       candidate.domain_branches.every(
@@ -76,7 +86,7 @@ function isFitAnalyzeResponse(value: unknown): value is FitAnalyzeResponse {
           isStringArray(branch.covered_skills) &&
           isStringArray(branch.missing_required_skills) &&
           isStringArray(branch.missing_preferred_skills) &&
-          typeof branch.supporting_posting_count === "number",
+          isCount(branch.supporting_posting_count),
       ),
   );
 }
@@ -331,11 +341,17 @@ export function CareerOverview({
   }, [careerCondition, hydrated, ownedSkillsSignature, retrySequence]);
 
   function saveSkill(skill: string) {
-    const normalized = skill.trim();
-    if (!normalized) {
+    const trimmed = skill.trim();
+    if (!trimmed) {
       setInputError("기술 이름을 입력해 주세요.");
       return;
     }
+    const normalized =
+      suggestions.find(
+        (suggestion) =>
+          suggestion.name.toLocaleLowerCase("en-US") ===
+          trimmed.toLocaleLowerCase("en-US"),
+      )?.name ?? trimmed;
     if (
       ownedSkills.some(
         (ownedSkill) =>
@@ -397,11 +413,14 @@ export function CareerOverview({
       </div>
 
       <div className={styles.workspace}>
-        <aside aria-labelledby="owned-skills-title" className={styles.stackPanel}>
+        <aside
+          aria-labelledby="career-owned-skills-title"
+          className={styles.stackPanel}
+        >
           <header className={styles.panelHeader}>
             <div>
               <p>분석 기준</p>
-              <h2 id="owned-skills-title">내 기술</h2>
+              <h2 id="career-owned-skills-title">내 기술</h2>
             </div>
             <span>{ownedSkills.length}개</span>
           </header>

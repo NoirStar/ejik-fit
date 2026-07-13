@@ -14,27 +14,50 @@ export const metadata: Metadata = {
   description: "브라우저에 저장한 내 기술과 현재 공식 채용공고의 요구사항을 비교합니다.",
 };
 
+function buildCareerSkillSuggestions(value: unknown): CareerSkillSuggestion[] {
+  if (!value || typeof value !== "object") {
+    throw new Error("invalid skill suggestion response");
+  }
+  const items = (value as { items?: unknown }).items;
+  if (!Array.isArray(items)) {
+    throw new Error("invalid skill suggestion response");
+  }
+
+  const seen = new Set<string>();
+  return items.flatMap((item) => {
+    if (!item || typeof item !== "object") {
+      throw new Error("invalid skill suggestion item");
+    }
+    const candidate = item as { skill?: unknown; count?: unknown };
+    if (
+      typeof candidate.skill !== "string" ||
+      typeof candidate.count !== "number" ||
+      !Number.isSafeInteger(candidate.count) ||
+      candidate.count < 0
+    ) {
+      throw new Error("invalid skill suggestion item");
+    }
+
+    const name = candidate.skill.trim();
+    const key = name.toLocaleLowerCase("en-US");
+    if (!name || seen.has(key)) return [];
+    seen.add(key);
+    return [{ name, postingCount: candidate.count }];
+  });
+}
+
 export default async function CareerPage() {
-  const skillStats = await settledResource(
-    getSkillStats({ limit: 12 }),
+  const skillSuggestions = await settledResource(
+    getSkillStats({ limit: 12 }).then(buildCareerSkillSuggestions),
     "상위 기술 제안을 불러오지 못했습니다.",
   );
-  const seen = new Set<string>();
-  const suggestions: CareerSkillSuggestion[] =
-    skillStats.status === "ready"
-      ? skillStats.data.items.flatMap((item) => {
-          const name = item.skill.trim();
-          const key = name.toLocaleLowerCase("en-US");
-          if (!name || seen.has(key)) return [];
-          seen.add(key);
-          return [{ name, postingCount: item.count }];
-        })
-      : [];
 
   return (
     <CareerOverview
-      suggestions={suggestions}
-      suggestionsUnavailable={skillStats.status === "error"}
+      suggestions={
+        skillSuggestions.status === "ready" ? skillSuggestions.data : []
+      }
+      suggestionsUnavailable={skillSuggestions.status === "error"}
     />
   );
 }

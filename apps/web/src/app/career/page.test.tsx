@@ -36,7 +36,9 @@ describe("CareerPage", () => {
   });
 
   it("keeps direct skill entry available when suggestions fail", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     vi.mocked(getSkillStats).mockRejectedValue(new Error("backend unavailable"));
 
     render(await CareerPage());
@@ -44,6 +46,22 @@ describe("CareerPage", () => {
     expect(screen.getByText("상위 기술 제안을 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
     expect(screen.queryByText("backend unavailable")).not.toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
+  it("treats a malformed successful suggestion payload as unavailable", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    vi.mocked(getSkillStats).mockResolvedValue({
+      items: null,
+      total: 1,
+    } as unknown as Awaited<ReturnType<typeof getSkillStats>>);
+
+    render(await CareerPage());
+
+    expect(screen.getByText("상위 기술 제안을 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
     consoleError.mockRestore();
   });
 });

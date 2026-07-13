@@ -103,7 +103,7 @@ describe("CareerOverview", () => {
     await screen.findByText("먼저 보유 기술을 저장해 주세요.");
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
-      target: { value: " Python " },
+      target: { value: " python " },
     });
     fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
 
@@ -284,6 +284,34 @@ describe("CareerOverview", () => {
     expect(
       await screen.findByRole("heading", { level: 2, name: "공고 비교 결과" }),
     ).toBeInTheDocument();
+  });
+
+  it("rejects malformed successful responses instead of showing invalid counts", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        ...fitResponse,
+        coverage: {
+          matching_posting_count: -1,
+          strong_fit_posting_count: 0,
+        },
+      }),
+    );
+
+    render(
+      <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 2,
+        name: "공고 비교를 불러오지 못했습니다.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("-1건")).not.toBeInTheDocument();
   });
 
   it("distinguishes zero overlap from request failure", async () => {
