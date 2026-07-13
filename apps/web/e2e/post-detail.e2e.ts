@@ -102,3 +102,23 @@ for (const width of [1440, 390]) {
     expect(browserErrors).toEqual([]);
   });
 }
+
+test("wraps a maximum-length browser comment on mobile", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 390 });
+  await page.goto("/posts/career-move-3y-backend");
+  await page
+    .getByRole("textbox", { name: "댓글 내용" })
+    .fill("x".repeat(600));
+  await page.getByRole("button", { name: "댓글 등록" }).click();
+
+  const localComment = page.locator('[data-local="true"] p');
+  await expect(localComment).toBeVisible();
+  expect(
+    await localComment.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth + 1,
+    ),
+  ).toBe(true);
+  expect(
+    await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+});
