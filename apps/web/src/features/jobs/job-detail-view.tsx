@@ -136,6 +136,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               jobTitle={job.title}
               skills={skillDetails}
               sourceUrl={job.source_url}
+              status={job.status}
             />
 
             <section aria-label="공고 신뢰 정보" className={styles.trust}>

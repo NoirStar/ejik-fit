@@ -17,6 +17,7 @@ const props = {
   jobId: "job-1",
   jobTitle: "Backend Engineer",
   sourceUrl: "https://careers.example.com/job-1",
+  status: "open",
   skills: [
     {
       skill: "Go",
@@ -112,5 +113,19 @@ describe("JobDetailActions", () => {
     expect(
       screen.getByRole("link", { name: "공식 채용페이지에서 지원" }),
     ).toHaveAttribute("target", "_blank");
+  });
+
+  it("uses verification language instead of application language when closed", () => {
+    render(<JobDetailActions {...props} status="closed" />);
+
+    expect(
+      screen.getByRole("region", { name: "공고 확인" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "공식 채용페이지에서 확인" }),
+    ).toHaveAttribute("href", props.sourceUrl);
+    expect(
+      screen.queryByRole("link", { name: "공식 채용페이지에서 지원" }),
+    ).not.toBeInTheDocument();
   });
 });

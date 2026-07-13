@@ -26,6 +26,7 @@ type JobDetailActionsProps = {
   jobId: string;
   jobTitle: string;
   sourceUrl: string;
+  status: string;
   skills: SkillDetail[];
 };
 
@@ -33,6 +34,7 @@ export function JobDetailActions({
   jobId,
   jobTitle,
   sourceUrl,
+  status,
   skills,
 }: JobDetailActionsProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -55,6 +57,7 @@ export function JobDetailActions({
     [ownedSkills, skills],
   );
   const saved = savedIds.includes(jobId);
+  const acceptsApplications = status === "open";
 
   return (
     <section
@@ -62,8 +65,14 @@ export function JobDetailActions({
       className={styles.panel}
     >
       <header className={styles.header}>
-        <p>공식 원문에서 계속</p>
-        <h2 id="job-actions-title">지원 준비</h2>
+        <p>
+          {acceptsApplications
+            ? "공식 원문에서 계속"
+            : "마감 여부를 공식 원문에서 확인"}
+        </p>
+        <h2 id="job-actions-title">
+          {acceptsApplications ? "지원 준비" : "공고 확인"}
+        </h2>
       </header>
 
       <a
@@ -72,7 +81,7 @@ export function JobDetailActions({
         rel="noreferrer"
         target="_blank"
       >
-        공식 채용페이지에서 지원
+        공식 채용페이지에서 {acceptsApplications ? "지원" : "확인"}
         <ArrowSquareOut aria-hidden="true" size={18} weight="bold" />
       </a>
       <button
