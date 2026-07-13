@@ -122,7 +122,11 @@ describe("CareerOverview", () => {
         "Python",
       ]);
     });
-    expect(screen.getByText("Python")).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("list", { name: "저장한 기술 목록" }),
+      ).getByText("Python"),
+    ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "python" },
@@ -140,7 +144,11 @@ describe("CareerOverview", () => {
         name: "Kubernetes 빠르게 추가, 공개 공고 12건",
       }),
     );
-    await screen.findByText("Kubernetes");
+    expect(
+      within(
+        screen.getByRole("list", { name: "저장한 기술 목록" }),
+      ).getByText("Kubernetes"),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "전체 삭제" }));
     expect(window.localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
   });
