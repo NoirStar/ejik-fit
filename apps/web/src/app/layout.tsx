@@ -52,7 +52,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html data-scroll-behavior="smooth" lang="ko">
       <body className={geist.variable}>
         <a className="skip-link" href="#main-content">
           본문으로 건너뛰기

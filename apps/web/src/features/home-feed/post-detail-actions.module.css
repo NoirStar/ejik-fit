@@ -237,6 +237,7 @@
 
 .form button {
   display: inline-flex;
+  flex: 0 0 auto;
   min-width: var(--touch-target);
   min-height: var(--touch-target);
   align-items: center;
@@ -250,6 +251,7 @@
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 }
 

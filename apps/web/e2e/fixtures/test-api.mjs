@@ -92,6 +92,33 @@ const skillStats = {
   ],
 };
 
+const skillGraph = {
+  seed: null,
+  nodes: [],
+  edges: [],
+  evidence: [
+    {
+      posting_id: "job-python",
+      title: "Python Backend Engineer",
+      company_name: "NAVER",
+      skills: ["Python", "Docker", "Kubernetes"],
+      required: ["Python", "Docker"],
+      preferred: ["Kubernetes"],
+      unspecified: [],
+    },
+    {
+      posting_id: "job-go",
+      title: "Go Platform Engineer",
+      company_name: "S2W",
+      skills: ["Go", "Linux"],
+      required: ["Go"],
+      preferred: [],
+      unspecified: ["Linux"],
+    },
+  ],
+  meta: { limit: 30, min_confidence: 0.8 },
+};
+
 const server = createServer((request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
   const detailId = pathname.match(/^\/api\/postings\/([^/]+)$/)?.[1];
@@ -101,7 +128,9 @@ const server = createServer((request, response) => {
       ? postings
       : pathname === "/api/skills/stats"
         ? skillStats
-        : null;
+        : pathname === "/api/graph/skills"
+          ? skillGraph
+          : null;
 
   response.setHeader("content-type", "application/json; charset=utf-8");
   if (body === null) {
