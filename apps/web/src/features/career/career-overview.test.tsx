@@ -205,6 +205,54 @@ describe("CareerOverview", () => {
     });
   });
 
+  it("does not replace a newer result when an aborted response finishes late", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    let resolveFirstPayload: (value: FitAnalyzeResponse) => void = () => undefined;
+    const firstPayload = new Promise<FitAnalyzeResponse>((resolve) => {
+      resolveFirstPayload = resolve;
+    });
+    const newerResponse: FitAnalyzeResponse = {
+      ...fitResponse,
+      coverage: {
+        matching_posting_count: 3,
+        strong_fit_posting_count: 1,
+      },
+    };
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => firstPayload,
+      } as Response)
+      .mockResolvedValueOnce(jsonResponse(newerResponse));
+
+    render(
+      <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    fireEvent.change(screen.getByRole("combobox", { name: "경력 조건" }), {
+      target: { value: "experienced" },
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(screen.getByText("겹치는 공개 공고").closest("div")).toHaveTextContent(
+        "3건",
+      ),
+    );
+
+    await act(async () => {
+      resolveFirstPayload(fitResponse);
+      await firstPayload;
+    });
+
+    expect(screen.getByText("겹치는 공개 공고").closest("div")).toHaveTextContent(
+      "3건",
+    );
+  });
+
   it("shows a safe retry state without leaking the proxy error", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",

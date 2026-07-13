@@ -307,6 +307,7 @@ export function CareerOverview({
         if (!response.ok) throw new Error("comparison request failed");
 
         const payload: unknown = await response.json();
+        if (controller.signal.aborted) return;
         if (!isFitAnalyzeResponse(payload)) {
           throw new Error("invalid comparison response");
         }
@@ -315,7 +316,12 @@ export function CareerOverview({
           snapshot: buildCareerSnapshot(payload, careerCondition),
         });
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") return;
+        if (
+          controller.signal.aborted ||
+          (error instanceof Error && error.name === "AbortError")
+        ) {
+          return;
+        }
         setComparison({ status: "error" });
       }
     }
