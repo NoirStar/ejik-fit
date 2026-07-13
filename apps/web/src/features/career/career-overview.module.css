@@ -20,14 +20,14 @@
 .resultHeader p,
 .resultHeader h2,
 .sectionHeader p,
-.sectionHeader h2,
+.sectionHeader h3,
 .messagePanel h2,
 .messagePanel p,
 .errorPanel h2,
 .errorPanel p,
 .methodPanel p,
 .methodPanel h2,
-.compactState h3,
+.compactState h4,
 .compactState p,
 .zeroState h3,
 .zeroState p {
@@ -127,7 +127,7 @@
 .panelHeader h2,
 .conditionPanel h2,
 .resultHeader h2,
-.sectionHeader h2,
+.sectionHeader h3,
 .methodPanel h2 {
   color: var(--color-text);
   font-size: 1.0625rem;
@@ -449,7 +449,7 @@
 .messagePanel h2,
 .errorPanel h2,
 .zeroState h3,
-.compactState h3 {
+.compactState h4 {
   color: var(--color-text);
   font-size: 1rem;
   font-weight: 820;
@@ -528,7 +528,7 @@
   font-weight: 700;
 }
 
-.metrics dd {
+.metricValue {
   margin: 0;
   color: var(--color-text);
   font-size: clamp(1.5rem, 3vw, 2rem);
@@ -537,7 +537,7 @@
   letter-spacing: -0.04em;
 }
 
-.metrics p {
+.metricDescription {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.6875rem;
@@ -670,7 +670,7 @@
   border-bottom: 0;
 }
 
-.branch > header h3 {
+.branch > header h4 {
   margin: 0;
   color: var(--color-text);
   font-size: 0.9375rem;
@@ -689,7 +689,7 @@
   gap: 0.375rem;
 }
 
-.evidenceGroup h4 {
+.evidenceGroup h5 {
   margin: 0;
   color: var(--color-muted);
   font-size: 0.6875rem;

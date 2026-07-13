@@ -115,6 +115,7 @@ export function getSkillGraph(filters: {
 
 export function analyzeFit(
   payload: FitAnalyzeRequest,
+  signal?: AbortSignal,
 ): Promise<FitAnalyzeResponse> {
   return request<FitAnalyzeResponse>("/api/fit/analyze", {
     method: "POST",
@@ -122,5 +123,6 @@ export function analyzeFit(
       "content-type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal,
   });
 }

@@ -93,6 +93,16 @@ describe("CareerOverview", () => {
     expect(screen.getByText("실제 공고 수 기준")).toBeInTheDocument();
   });
 
+  it("distinguishes an empty suggestion response from saving every suggestion", async () => {
+    render(
+      <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
+    );
+
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+    expect(screen.getByText("현재 확인된 상위 기술 제안이 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByText("현재 제안 기술을 모두 저장했습니다.")).not.toBeInTheDocument();
+  });
+
   it("adds, validates, removes and clears browser-owned skills", async () => {
     render(
       <CareerOverview
@@ -182,13 +192,25 @@ describe("CareerOverview", () => {
     expect(
       screen.getByRole("link", { name: "Kubernetes 관련 공고 보기" }),
     ).toHaveAttribute("href", "/jobs?q=Kubernetes");
+    expect(
+      screen.getByRole("heading", { level: 3, name: "다음 준비 기술" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "분야별 근거" }),
+    ).toBeInTheDocument();
+    expect(
+      screen
+        .getByText("겹치는 공개 공고")
+        .closest("div")
+        ?.querySelectorAll(":scope > dd"),
+    ).toHaveLength(2);
     const backendBranch = screen.getByRole("heading", {
-      level: 3,
+      level: 4,
       name: "백엔드",
     }).closest("article")!;
-    expect(within(backendBranch).getByText("보유 기술").parentElement).toHaveTextContent(
-      "Python",
-    );
+    expect(
+      within(backendBranch).getByText("보유 기술").parentElement,
+    ).toHaveTextContent("Python");
     expect(
       within(backendBranch).getByText("부족 필수").parentElement,
     ).toHaveTextContent("Kubernetes");

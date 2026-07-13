@@ -7,7 +7,7 @@ import type { FitAnalyzeRequest } from "@/lib/types";
 export async function POST(request: Request) {
   const payload = (await request.json()) as FitAnalyzeRequest;
   try {
-    const result = await analyzeFit(payload);
+    const result = await analyzeFit(payload, request.signal);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ApiError) {

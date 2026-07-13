@@ -44,18 +44,22 @@ function defaultStorage(): Storage | null {
   if (typeof window === "undefined") {
     return null;
   }
-  return window.localStorage;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function readOwnedSkills(storage = defaultStorage()): string[] {
   if (!storage) {
     return [];
   }
-  const raw = storage.getItem(KEY);
-  if (!raw) {
-    return [];
-  }
   try {
+    const raw = storage.getItem(KEY);
+    if (!raw) {
+      return [];
+    }
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed)
       ? normalizeOwnedSkills(
@@ -70,7 +74,8 @@ export function readOwnedSkills(storage = defaultStorage()): string[] {
 function notifyOwnedSkillsChange(storage: Storage | null) {
   if (
     typeof window !== "undefined" &&
-    storage === window.localStorage
+    storage !== null &&
+    storage === defaultStorage()
   ) {
     window.dispatchEvent(new Event(CHANGE_EVENT));
   }
@@ -81,7 +86,11 @@ export function writeOwnedSkills(
   storage = defaultStorage(),
 ): string[] {
   const normalized = normalizeOwnedSkills(skills);
-  storage?.setItem(KEY, JSON.stringify(normalized));
+  try {
+    storage?.setItem(KEY, JSON.stringify(normalized));
+  } catch {
+    return normalized;
+  }
   notifyOwnedSkillsChange(storage);
   return normalized;
 }
@@ -104,7 +113,11 @@ export function removeOwnedSkill(
 }
 
 export function clearOwnedSkills(storage = defaultStorage()): string[] {
-  storage?.removeItem(KEY);
+  try {
+    storage?.removeItem(KEY);
+  } catch {
+    return [];
+  }
   notifyOwnedSkillsChange(storage);
   return [];
 }
@@ -116,9 +129,10 @@ export function subscribeOwnedSkills(listener: OwnedSkillsListener) {
 
   const emitCurrentSkills = () => listener(readOwnedSkills());
   const handleStorage = (event: StorageEvent) => {
+    const browserStorage = defaultStorage();
     if (
       (event.key === KEY || event.key === null) &&
-      (!event.storageArea || event.storageArea === window.localStorage)
+      (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrentSkills();
     }

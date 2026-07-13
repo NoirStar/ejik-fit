@@ -46,6 +46,25 @@ describe("owned skill storage", () => {
     expect(readOwnedSkills(fake)).toEqual([]);
   });
 
+  it("stays usable when browser storage access is blocked", () => {
+    const blocked = {
+      ...storage(),
+      getItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      setItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      removeItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+    } satisfies Storage;
+
+    expect(readOwnedSkills(blocked)).toEqual([]);
+    expect(writeOwnedSkills([" Python "], blocked)).toEqual(["Python"]);
+    expect(clearOwnedSkills(blocked)).toEqual([]);
+  });
+
   it("adds and removes a skill", () => {
     const fake = storage();
 

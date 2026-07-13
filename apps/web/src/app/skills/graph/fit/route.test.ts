@@ -53,6 +53,7 @@ describe("skill graph fit route", () => {
 
   it("forwards fit payloads to the backend helper", async () => {
     vi.mocked(analyzeFit).mockResolvedValue(fitResponse);
+    const controller = new AbortController();
 
     const response = await POST(
       new Request("http://localhost/skills/graph/fit", {
@@ -61,14 +62,19 @@ describe("skill graph fit route", () => {
           owned_skills: ["C++"],
           domains: ["robotics"],
         }),
+        signal: controller.signal,
       }),
     );
 
     expect(response.status).toBe(200);
-    expect(analyzeFit).toHaveBeenCalledWith({
-      owned_skills: ["C++"],
-      domains: ["robotics"],
-    });
+    expect(analyzeFit).toHaveBeenCalledWith(
+      {
+        owned_skills: ["C++"],
+        domains: ["robotics"],
+      },
+      expect.any(AbortSignal),
+    );
+    expect(vi.mocked(analyzeFit).mock.calls[0][1]?.aborted).toBe(false);
     expect(await response.json()).toEqual(fitResponse);
   });
 });

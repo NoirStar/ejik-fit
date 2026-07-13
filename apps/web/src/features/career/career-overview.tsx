@@ -125,18 +125,30 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
       <dl className={styles.metrics}>
         <div>
           <dt>겹치는 공개 공고</dt>
-          <dd>{formatCount(snapshot.metrics.matchingPostingCount, "건")}</dd>
-          <p>보유 기술이 한 개 이상 확인된 공고</p>
+          <dd className={styles.metricValue}>
+            {formatCount(snapshot.metrics.matchingPostingCount, "건")}
+          </dd>
+          <dd className={styles.metricDescription}>
+            보유 기술이 한 개 이상 확인된 공고
+          </dd>
         </div>
         <div>
           <dt>필수 기술 절반 이상</dt>
-          <dd>{formatCount(snapshot.metrics.strongFitPostingCount, "건")}</dd>
-          <p>명시된 필수 기술의 절반 이상을 보유한 공고</p>
+          <dd className={styles.metricValue}>
+            {formatCount(snapshot.metrics.strongFitPostingCount, "건")}
+          </dd>
+          <dd className={styles.metricDescription}>
+            명시된 필수 기술의 절반 이상을 보유한 공고
+          </dd>
         </div>
         <div>
           <dt>다음 준비 후보</dt>
-          <dd>{formatCount(snapshot.metrics.recommendationCount, "개")}</dd>
-          <p>겹치는 공고에서 반복된 부족 요구사항</p>
+          <dd className={styles.metricValue}>
+            {formatCount(snapshot.metrics.recommendationCount, "개")}
+          </dd>
+          <dd className={styles.metricDescription}>
+            겹치는 공고에서 반복된 부족 요구사항
+          </dd>
         </div>
       </dl>
 
@@ -163,14 +175,14 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             <header className={styles.sectionHeader}>
               <div>
                 <p>부족 요구사항</p>
-                <h2 id="career-next-skills-title">다음 준비 기술</h2>
+                <h3 id="career-next-skills-title">다음 준비 기술</h3>
               </div>
               <span>최대 6개</span>
             </header>
 
             {snapshot.recommendations.length === 0 ? (
               <div className={styles.compactState}>
-                <h3>반복해서 확인된 다음 기술이 없습니다.</h3>
+                <h4>반복해서 확인된 다음 기술이 없습니다.</h4>
                 <p>현재 보유 기술과 겹치는 공고는 있지만 부족 요구사항이 추출되지 않았습니다.</p>
               </div>
             ) : (
@@ -220,14 +232,14 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             <header className={styles.sectionHeader}>
               <div>
                 <p>공고 기술 묶음</p>
-                <h2 id="career-domain-title">분야별 근거</h2>
+                <h3 id="career-domain-title">분야별 근거</h3>
               </div>
               <span>근거 공고 순</span>
             </header>
 
             {snapshot.branches.length === 0 ? (
               <div className={styles.compactState}>
-                <h3>분야별 근거가 아직 없습니다.</h3>
+                <h4>분야별 근거가 아직 없습니다.</h4>
                 <p>비교 결과에 분야가 확인되면 보유 기술과 부족 기술을 나눠 보여드립니다.</p>
               </div>
             ) : (
@@ -235,19 +247,19 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
                 {snapshot.branches.map((branch) => (
                   <article className={styles.branch} key={branch.domain} role="listitem">
                     <header>
-                      <h3>{branch.label}</h3>
+                      <h4>{branch.label}</h4>
                       <span>근거 공고 {formatCount(branch.supportingPostingCount, "건")}</span>
                     </header>
                     <div className={styles.evidenceGroup}>
-                      <h4>보유 기술</h4>
+                      <h5>보유 기술</h5>
                       <EvidenceSkills skills={branch.coveredSkills} />
                     </div>
                     <div className={styles.evidenceGroup}>
-                      <h4>부족 필수</h4>
+                      <h5>부족 필수</h5>
                       <EvidenceSkills skills={branch.missingRequiredSkills} />
                     </div>
                     <div className={styles.evidenceGroup}>
-                      <h4>부족 우대</h4>
+                      <h5>부족 우대</h5>
                       <EvidenceSkills skills={branch.missingPreferredSkills} />
                     </div>
                   </article>
@@ -491,6 +503,10 @@ export function CareerOverview({
             {suggestionsUnavailable ? (
               <p className={styles.suggestionState}>
                 상위 기술 제안을 불러오지 못했습니다.
+              </p>
+            ) : suggestions.length === 0 ? (
+              <p className={styles.suggestionState}>
+                현재 확인된 상위 기술 제안이 없습니다.
               </p>
             ) : availableSuggestions.length === 0 ? (
               <p className={styles.suggestionState}>
