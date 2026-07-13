@@ -260,6 +260,11 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
     setSavedIds(toggleSavedJob(id));
   }
 
+  const retryParams = new URLSearchParams();
+  if (filters.query) retryParams.set("q", filters.query);
+  if (filters.careerType) retryParams.set("career_type", filters.careerType);
+  const retryQuery = retryParams.toString();
+  const retryHref = `/jobs${retryQuery ? `?${retryQuery}` : ""}`;
   const resultAnnouncement = !hydrated
     ? "저장한 공고와 기술을 확인하고 있습니다."
     : `${visibleJobs.length}개 공고를 표시합니다.`;
@@ -274,24 +279,45 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
           겹치는 근거를 확인하세요.
         </p>
         <ul className={styles.summary} aria-label="현재 공고 데이터 범위" role="list">
-          <li>
-            <strong>현재 결과 {summary.postingCount}건</strong>
-            <span>최대 100건 응답</span>
-          </li>
-          <li>
-            <strong>기업 {summary.companyCount}곳</strong>
-            <span>현재 결과 기준</span>
-          </li>
-          <li>
-            <strong>{summary.latestVerifiedLabel}</strong>
-            <span>가장 최근 확인</span>
-          </li>
+          {error ? (
+            <>
+              <li>
+                <strong>공고 집계 불가</strong>
+                <span>API 응답 확인 필요</span>
+              </li>
+              <li>
+                <strong>기업 집계 불가</strong>
+                <span>현재 결과 없음 아님</span>
+              </li>
+              <li>
+                <strong>확인일 확인 불가</strong>
+                <span>복구 후 다시 표시</span>
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <strong>현재 결과 {summary.postingCount}건</strong>
+                <span>최대 100건 응답</span>
+              </li>
+              <li>
+                <strong>기업 {summary.companyCount}곳</strong>
+                <span>현재 결과 기준</span>
+              </li>
+              <li>
+                <strong>{summary.latestVerifiedLabel}</strong>
+                <span>가장 최근 확인</span>
+              </li>
+            </>
+          )}
         </ul>
       </header>
 
-      <div aria-live="polite" className={styles.srOnly}>
-        {resultAnnouncement}
-      </div>
+      {!error && (
+        <div aria-live="polite" className={styles.srOnly}>
+          {resultAnnouncement}
+        </div>
+      )}
 
       <div className={styles.workspace}>
         <aside aria-labelledby="job-filter-title" className={styles.filterPanel}>
@@ -299,7 +325,12 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
             <p>탐색 기준</p>
             <h2 id="job-filter-title">검색 조건</h2>
           </header>
-          <form action="/jobs" className={styles.filters} method="get">
+          <form
+            action="/jobs"
+            className={styles.filters}
+            key={retryQuery || "all-jobs"}
+            method="get"
+          >
             <div className={styles.field}>
               <label htmlFor="job-query">공고 검색</label>
               <div className={styles.searchField}>
@@ -348,38 +379,40 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
         <section aria-labelledby="job-results-title" className={styles.results}>
           <header className={styles.resultHeader}>
             <div>
-              <p>공식 원문 확인순</p>
+              <p>{error ? "공식 원문 데이터" : "공식 원문 확인순"}</p>
               <h2 id="job-results-title">검색 결과</h2>
             </div>
-            <span>{visibleJobs.length}개 표시</span>
+            <span>{error ? "표시 불가" : `${visibleJobs.length}개 표시`}</span>
           </header>
 
-          <div aria-label="공고 보기" className={styles.viewTabs} role="group">
-            <button
-              aria-label={`전체 공고 ${items.length}`}
-              aria-pressed={view === "all"}
-              onClick={() => setView("all")}
-              type="button"
-            >
-              전체 공고 <span>{items.length}</span>
-            </button>
-            <button
-              aria-label={`내 기술 겹침 ${matchingCount}`}
-              aria-pressed={view === "matched"}
-              onClick={() => setView("matched")}
-              type="button"
-            >
-              내 기술 겹침 <span>{matchingCount}</span>
-            </button>
-            <button
-              aria-label={`저장한 공고 ${savedCount}`}
-              aria-pressed={view === "saved"}
-              onClick={() => setView("saved")}
-              type="button"
-            >
-              저장한 공고 <span>{savedCount}</span>
-            </button>
-          </div>
+          {!error && (
+            <div aria-label="공고 보기" className={styles.viewTabs} role="group">
+              <button
+                aria-label={`전체 공고 ${items.length}`}
+                aria-pressed={view === "all"}
+                onClick={() => setView("all")}
+                type="button"
+              >
+                전체 공고 <span>{items.length}</span>
+              </button>
+              <button
+                aria-label={`내 기술 겹침 ${matchingCount}`}
+                aria-pressed={view === "matched"}
+                onClick={() => setView("matched")}
+                type="button"
+              >
+                내 기술 겹침 <span>{matchingCount}</span>
+              </button>
+              <button
+                aria-label={`저장한 공고 ${savedCount}`}
+                aria-pressed={view === "saved"}
+                onClick={() => setView("saved")}
+                type="button"
+              >
+                저장한 공고 <span>{savedCount}</span>
+              </button>
+            </div>
+          )}
 
           {error ? (
             <div className={styles.errorState} role="alert">
@@ -389,7 +422,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
                 <p>검색 조건은 유지했습니다. 잠시 뒤 다시 확인해 주세요.</p>
               </div>
               <nav aria-label="공고 오류 안내">
-                <Link href="/jobs">다시 시도</Link>
+                <Link href={retryHref}>다시 시도</Link>
                 <Link href="/data-policy">데이터 정책 보기</Link>
               </nav>
             </div>

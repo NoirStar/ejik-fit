@@ -65,6 +65,7 @@ export type MarketInsightFeedItem = {
 
 export type RecommendedJobFeedItem = {
   id: string;
+  postingId: string;
   type: "recommended_job";
   companyName: string;
   title: string;

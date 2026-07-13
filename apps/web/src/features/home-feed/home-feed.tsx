@@ -22,6 +22,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CompanyMark } from "./company-mark";
 import { trapTabKey } from "@/lib/focus-trap";
+import {
+  readSavedJobIds,
+  subscribeSavedJobs,
+  toggleSavedJob,
+} from "@/lib/saved-jobs";
 import { itemsForTab } from "./feed-order";
 import { MOCK_COMMUNITY_POSTS, MOCK_SOCIAL_ITEMS } from "./mock-community";
 import styles from "./home-feed.module.css";
@@ -362,6 +367,7 @@ export function HomeFeed({
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const [reactions, setReactions] = useState<ReactionState>({});
   const [saves, setSaves] = useState<ReactionState>({});
+  const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<CommunityPostFeedItem[]>([]);
   const [composerOpen, setComposerOpen] = useState(composeInitiallyOpen);
   const [draft, setDraft] = useState<LocalPostDraft>(EMPTY_DRAFT);
@@ -370,6 +376,11 @@ export function HomeFeed({
   const composerButtonRef = useRef<HTMLButtonElement>(null);
   const composerTitleRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setSavedJobIds(readSavedJobIds());
+    return subscribeSavedJobs(setSavedJobIds);
+  }, []);
 
   const closeComposer = useCallback(() => {
     setComposerOpen(false);
@@ -605,17 +616,30 @@ export function HomeFeed({
             role="tabpanel"
           >
             {visibleItems.length > 0 ? (
-              visibleItems.map((item) => (
-                <FeedCard
-                  item={item}
-                  key={item.id}
-                  onReact={() => toggleState(setReactions, item.id)}
-                  onSave={() => toggleState(setSaves, item.id)}
-                  ownedSkills={snapshot.ownedSkills}
-                  reacted={Boolean(reactions[item.id])}
-                  saved={Boolean(saves[item.id])}
-                />
-              ))
+              visibleItems.map((item) => {
+                const recommendedJob = item.type === "recommended_job";
+                return (
+                  <FeedCard
+                    item={item}
+                    key={item.id}
+                    onReact={() => toggleState(setReactions, item.id)}
+                    onSave={() => {
+                      if (recommendedJob) {
+                        setSavedJobIds(toggleSavedJob(item.postingId));
+                      } else {
+                        toggleState(setSaves, item.id);
+                      }
+                    }}
+                    ownedSkills={snapshot.ownedSkills}
+                    reacted={Boolean(reactions[item.id])}
+                    saved={
+                      recommendedJob
+                        ? savedJobIds.includes(item.postingId)
+                        : Boolean(saves[item.id])
+                    }
+                  />
+                );
+              })
             ) : (
               <div className={styles.emptyFeed}>
                 <strong>이 탭에 표시할 글이 없습니다.</strong>

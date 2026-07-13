@@ -49,13 +49,25 @@ export function writeSavedJobIds(
   storage = defaultStorage(),
 ): string[] {
   const normalized = normalizeSavedJobIds(ids);
+  if (!storage) return [];
   try {
-    storage?.setItem(KEY, JSON.stringify(normalized));
+    storage.setItem(KEY, JSON.stringify(normalized));
   } catch {
-    return normalized;
+    return readSavedJobIds(storage);
   }
   notifySavedJobsChange(storage);
   return normalized;
+}
+
+export function clearSavedJobs(storage = defaultStorage()): string[] {
+  if (!storage) return [];
+  try {
+    storage.removeItem(KEY);
+  } catch {
+    return readSavedJobIds(storage);
+  }
+  notifySavedJobsChange(storage);
+  return [];
 }
 
 export function toggleSavedJob(

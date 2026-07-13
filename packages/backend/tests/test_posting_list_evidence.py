@@ -101,3 +101,27 @@ def test_search_document_keeps_the_same_confirmed_evidence_contract() -> None:
     assert document["required_skills"] == ["Python"]
     assert document["preferred_skills"] == ["Docker"]
     assert document["unspecified_skills"] == ["Linux"]
+
+
+def test_database_search_matches_only_confirmed_canonical_skills() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    with factory() as session:
+        posting = _posting_with_skills(session)
+        posting.description_text = "플랫폼 운영"
+        posting.skills.append(
+            PostingSkill(
+                skill="Kubernetes",
+                category="infra",
+                requirement_type="preferred",
+                confidence=0.95,
+                match_reason="distinct_alias",
+            )
+        )
+        session.commit()
+
+    reader = DatabasePostingReader(session_factory=factory)
+
+    assert len(reader.list(q="Kubernetes", limit=10)) == 1
+    assert reader.list(q="Go", limit=10) == []

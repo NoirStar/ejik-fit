@@ -100,4 +100,15 @@ describe("JobDetail", () => {
       trust.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it("rejects a non-http source URL before rendering application links", async () => {
+    vi.mocked(getPosting).mockResolvedValue({
+      ...job,
+      source_url: "javascript:alert('unsafe')",
+    });
+
+    await expect(
+      JobDetail({ params: Promise.resolve({ id: "job-1" }) }),
+    ).rejects.toThrow("Invalid source_url");
+  });
 });

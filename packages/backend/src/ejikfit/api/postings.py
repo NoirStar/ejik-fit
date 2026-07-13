@@ -5,11 +5,11 @@ import uuid
 from typing import Protocol
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from ejikfit.db import SessionLocal
-from ejikfit.models import Company, JobPosting, PostingStatus
+from ejikfit.models import Company, JobPosting, PostingSkill, PostingStatus
 from ejikfit.search import MeiliPostingIndex
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 from ejikfit.skills import confirmed_skill_groups
@@ -91,12 +91,19 @@ def _detail(posting: JobPosting) -> dict:
 
 
 def _posting_search_clause(q: str, use_pgroonga: bool):
+    confirmed_skill = JobPosting.skills.any(
+        and_(
+            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+            PostingSkill.skill.ilike(f"%{q}%"),
+        )
+    )
     if use_pgroonga:
         return or_(
             JobPosting.title.bool_op("&@~")(q),
             JobPosting.description_text.bool_op("&@~")(q),
             JobPosting.location.bool_op("&@~")(q),
             Company.name.ilike(f"%{q}%"),
+            confirmed_skill,
         )
 
     pattern = f"%{q}%"
@@ -105,6 +112,7 @@ def _posting_search_clause(q: str, use_pgroonga: bool):
         JobPosting.description_text.ilike(pattern),
         JobPosting.location.ilike(pattern),
         Company.name.ilike(pattern),
+        confirmed_skill,
     )
 
 

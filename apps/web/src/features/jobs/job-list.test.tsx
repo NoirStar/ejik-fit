@@ -135,6 +135,25 @@ describe("JobList", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("keeps uncontrolled filter controls synchronized with URL props", () => {
+    const { rerender } = render(
+      <JobList
+        filters={{ query: "backend", careerType: "experienced" }}
+        postings={postings}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("공고 검색"), {
+      target: { value: "edited" },
+    });
+
+    rerender(
+      <JobList filters={{ query: "", careerType: "" }} postings={postings} />,
+    );
+
+    expect(screen.getByLabelText("공고 검색")).toHaveValue("");
+    expect(screen.getByLabelText("경력 조건")).toHaveValue("");
+  });
+
   it("distinguishes empty, missing-stack, and API error states", async () => {
     const { rerender } = render(
       <JobList

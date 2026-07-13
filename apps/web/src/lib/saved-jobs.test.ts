@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  clearSavedJobs,
   normalizeSavedJobIds,
   readSavedJobIds,
   subscribeSavedJobs,
@@ -56,7 +57,20 @@ describe("saved job storage", () => {
 
     expect(readSavedJobIds(malformed)).toEqual([]);
     expect(readSavedJobIds(blocked)).toEqual([]);
-    expect(writeSavedJobIds(["job-a"], blocked)).toEqual(["job-a"]);
+    expect(writeSavedJobIds(["job-a"], blocked)).toEqual([]);
+    expect(writeSavedJobIds(["job-a"], null)).toEqual([]);
+    expect(toggleSavedJob("job-a", null)).toEqual([]);
+  });
+
+  it("clears the saved-job key and notifies same-tab listeners", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSavedJobs(listener);
+    writeSavedJobIds(["job-a"]);
+
+    expect(clearSavedJobs()).toEqual([]);
+    expect(localStorage.getItem("ejik-fit:saved-job-ids")).toBeNull();
+    expect(listener).toHaveBeenLastCalledWith([]);
+    unsubscribe();
   });
 
   it("notifies and unsubscribes same-tab listeners", () => {

@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type {
@@ -76,7 +83,10 @@ function buildSnapshot() {
 }
 
 describe("HomeFeed", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
 
   it("renders mixed social and verified market content", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
@@ -133,6 +143,24 @@ describe("HomeFeed", () => {
     fireEvent.click(save);
     expect(save).toHaveAttribute("aria-pressed", "true");
     expect(save).toHaveTextContent("19");
+  });
+
+  it("persists recommended job saves in the shared browser list", async () => {
+    const { unmount } = render(<HomeFeed snapshot={buildSnapshot()} />);
+    const save = await screen.findByRole("button", {
+      name: "Backend Engineer 저장",
+    });
+
+    fireEvent.click(save);
+    expect(localStorage.getItem("ejik-fit:saved-job-ids")).toBe('["job-1"]');
+    unmount();
+
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Backend Engineer 저장" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
   });
 
   it("validates the composer and adds a browser-only post first", () => {

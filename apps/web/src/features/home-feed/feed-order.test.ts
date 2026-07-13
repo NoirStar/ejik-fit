@@ -23,6 +23,7 @@ const items: FeedItem[] = [
   },
   {
     id: "job-1",
+    postingId: "job-1",
     type: "recommended_job",
     companyName: "회사",
     title: "백엔드 개발자",

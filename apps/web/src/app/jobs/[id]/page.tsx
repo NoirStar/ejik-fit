@@ -6,6 +6,7 @@ import { SkillEvidence } from "@/components/skill-evidence";
 import { SourceMeta } from "@/components/source-meta";
 import { ApiError, getPosting } from "@/lib/api";
 import { formatCareer, formatEmployment } from "@/lib/labels";
+import { normalizePostingDetail } from "@/lib/posting-contract";
 import type { PostingDetail } from "@/lib/types";
 
 import styles from "./job-detail.module.css";
@@ -33,7 +34,7 @@ function formatPeriod(opensAt: string | null, closesAt: string | null): string {
 
 async function postingOrNotFound(id: string) {
   try {
-    return await getPosting(id);
+    return normalizePostingDetail(await getPosting(id));
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;

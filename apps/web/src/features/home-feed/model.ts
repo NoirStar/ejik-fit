@@ -97,6 +97,7 @@ function buildJobs(
   const ownedSet = new Set(ownedSkills.map(normalize));
   return (postings?.items ?? []).slice(0, 2).map((posting) => ({
     id: `job-${posting.id}`,
+    postingId: posting.id,
     type: "recommended_job",
     companyName: posting.company_name,
     title: posting.title,

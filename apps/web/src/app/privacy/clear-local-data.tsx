@@ -2,15 +2,28 @@
 
 import { useState } from "react";
 
+import { clearOwnedSkills } from "@/lib/owned-skills";
+import { clearSavedJobs } from "@/lib/saved-jobs";
+
 import styles from "../trust-pages.module.css";
 
 export function ClearLocalData() {
-  const [cleared, setCleared] = useState(false);
+  const [result, setResult] = useState<"success" | "failure" | null>(null);
 
   function clearData() {
-    window.localStorage.removeItem("ejik-fit:owned-skills");
+    let storageCleared = false;
+    try {
+      const storage = window.localStorage;
+      clearOwnedSkills(storage);
+      clearSavedJobs(storage);
+      storageCleared =
+        storage.getItem("ejik-fit:owned-skills") === null &&
+        storage.getItem("ejik-fit:saved-job-ids") === null;
+    } catch {
+      storageCleared = false;
+    }
     window.history.replaceState({}, "", window.location.pathname);
-    setCleared(true);
+    setResult(storageCleared ? "success" : "failure");
   }
 
   return (
@@ -18,7 +31,17 @@ export function ClearLocalData() {
       <button className={styles.clearButton} onClick={clearData} type="button">
         이 브라우저의 저장 데이터 삭제
       </button>
-      {cleared && <p className={styles.status} role="status">저장 데이터를 삭제했습니다.</p>}
+      {result === "success" && (
+        <p className={styles.status} role="status">
+          저장 데이터를 삭제했습니다.
+        </p>
+      )}
+      {result === "failure" && (
+        <p className={styles.status} role="alert">
+          일부 저장 데이터를 삭제하지 못했습니다. 브라우저 저장소 설정을 확인해
+          주세요.
+        </p>
+      )}
     </div>
   );
 }

@@ -79,6 +79,12 @@ describe("JobsPage", () => {
 
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByLabelText("공고 검색")).toHaveValue("Rust");
+    expect(screen.getByText("공고 집계 불가")).toBeInTheDocument();
+    expect(screen.queryByText("현재 결과 0건")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
+      "href",
+      "/jobs?q=Rust",
+    );
     expect(screen.queryByText(/internal-api|503/)).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -96,6 +102,27 @@ describe("JobsPage", () => {
 
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("조건에 맞는 공식 공고가 없습니다.")).not.toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
+  it("rejects unsafe source links from an otherwise valid response", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    vi.mocked(getPostings).mockResolvedValue({
+      ...response,
+      items: [
+        {
+          ...response.items[0],
+          source_url: "javascript:alert('unsafe')",
+        },
+      ],
+    });
+
+    render(await JobsPage());
+
+    expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "공식 원문" })).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 });

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import CorrectionsPage from "./corrections/page";
 import DataPolicyPage from "./data-policy/page";
@@ -8,6 +8,7 @@ import PrivacyPage from "./privacy/page";
 
 describe("public trust pages", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     cleanup();
     localStorage.clear();
     window.history.replaceState({}, "", "/");
@@ -28,16 +29,41 @@ describe("public trust pages", () => {
 
   it("explains browser storage and provides a clear-data action", () => {
     localStorage.setItem("ejik-fit:owned-skills", '["Java"]');
+    localStorage.setItem("ejik-fit:saved-job-ids", '["job-1"]');
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "개인정보와 브라우저 저장" })).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:owned-skills/)).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:saved-job-ids/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "이 브라우저의 저장 데이터 삭제" }));
     expect(localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
+    expect(localStorage.getItem("ejik-fit:saved-job-ids")).toBeNull();
     expect(window.location.search).toBe("");
+  });
+
+  it("does not claim deletion when browser storage rejects removal", () => {
+    localStorage.setItem("ejik-fit:saved-job-ids", '["job-1"]');
+    const removeItem = vi
+      .spyOn(Storage.prototype, "removeItem")
+      .mockImplementation(() => {
+        throw new DOMException("blocked", "SecurityError");
+      });
+    render(<PrivacyPage />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "이 브라우저의 저장 데이터 삭제",
+      }),
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "일부 저장 데이터를 삭제하지 못했습니다.",
+    );
+    expect(screen.queryByText("저장 데이터를 삭제했습니다.")).not.toBeInTheDocument();
+    removeItem.mockRestore();
   });
 
   it("routes corrections to the public issue tracker", () => {

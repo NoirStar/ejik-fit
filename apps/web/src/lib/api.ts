@@ -6,6 +6,10 @@ import type {
   SkillGraphResponse,
   SkillStatsResponse,
 } from "./types";
+import {
+  normalizePostingDetail,
+  normalizePostingList,
+} from "./posting-contract";
 
 
 const API_BASE_URL =
@@ -62,13 +66,15 @@ export async function getPostings(filters: {
     params.set("limit", String(filters.limit));
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
-  return request<PostingListResponse>(`/api/postings${query}`);
+  return normalizePostingList(
+    await request<unknown>(`/api/postings${query}`),
+  );
 }
 
 
-export function getPosting(id: string): Promise<PostingDetail> {
-  return request<PostingDetail>(
-    `/api/postings/${encodeURIComponent(id)}`,
+export async function getPosting(id: string): Promise<PostingDetail> {
+  return normalizePostingDetail(
+    await request<unknown>(`/api/postings/${encodeURIComponent(id)}`),
   );
 }
 

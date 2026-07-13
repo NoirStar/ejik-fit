@@ -11,12 +11,20 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
-      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술은 사용 중인 브라우저에 저장됩니다."
+      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술과 저장한 공고는 사용 중인 브라우저에 저장됩니다."
       title="개인정보와 브라우저 저장"
     >
       <section>
         <h2>계정과 로그인</h2>
         <p>현재 회원가입과 로그인 기능이 없으며 가짜 사용자 프로필을 표시하지 않습니다.</p>
+      </section>
+
+      <section>
+        <h2>저장한 공고</h2>
+        <p>
+          저장 버튼을 누른 공고 ID는 <code>ejik-fit:saved-job-ids</code> 키에
+          저장됩니다. 공고 내용이나 기업 정보는 브라우저 저장소에 복사하지 않습니다.
+        </p>
       </section>
 
       <section>
@@ -37,7 +45,10 @@ export default function PrivacyPage() {
 
       <section>
         <h2>저장 데이터 삭제</h2>
-        <p>아래 버튼은 내 스택 localStorage와 현재 URL query를 이 브라우저에서 지웁니다.</p>
+        <p>
+          아래 버튼은 내 스택, 저장한 공고 ID, 현재 URL query를 이 브라우저에서
+          지웁니다.
+        </p>
         <ClearLocalData />
       </section>
     </TrustPageLayout>
