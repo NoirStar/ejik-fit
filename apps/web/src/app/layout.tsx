@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell/app-shell";
+import { siteUrl } from "@/lib/site-url";
 import "@/styles/tokens.css";
 import "@/styles/reset.css";
 import "@/styles/typography.css";
@@ -16,12 +17,28 @@ const geist = Geist({
 
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
     default: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
     template: "%s | 이직핏",
   },
   description:
     "한국 기술기업의 공식 채용공고를 분석해 기술 스택, 인접 분야, 부족한 준비 항목을 그래프로 보여줍니다.",
+  applicationName: "이직핏",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: "/",
+    siteName: "이직핏",
+    title: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
+    description: "공식 채용공고에서 확인한 요구 기술과 연결 관계를 보여줍니다.",
+  },
+  twitter: {
+    card: "summary",
+    title: "이직핏 | 기술 스택 기반 커리어 인텔리전스",
+    description: "공식 채용공고에서 확인한 요구 기술과 연결 관계를 보여줍니다.",
+  },
   icons: {
     icon: "/icon.svg",
     apple: "/apple-icon.svg",
