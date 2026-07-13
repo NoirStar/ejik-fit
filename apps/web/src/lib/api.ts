@@ -45,13 +45,21 @@ async function request<T>(
 export async function getPostings(filters: {
   q?: string;
   career_type?: string;
-}): Promise<PostingListResponse> {
+  company?: string;
+  limit?: number;
+} = {}): Promise<PostingListResponse> {
   const params = new URLSearchParams();
   if (filters.q) {
     params.set("q", filters.q);
   }
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.company) {
+    params.set("company", filters.company);
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<PostingListResponse>(`/api/postings${query}`);
