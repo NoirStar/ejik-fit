@@ -52,7 +52,7 @@ function normalizedDescriptionLines(text: string): string[] {
   return text
     .replace(/\r\n?/g, "\n")
     .replace(/[ \t]+(?=#{2,4}\s+)/g, "\n")
-    .replace(/[ \t]+(?=[*•◦]\s+)/g, "\n")
+    .replace(/[ \t]+(?=[*•◦-]\s+)/g, "\n")
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -83,7 +83,7 @@ export function parsePostingDescription(
       continue;
     }
 
-    const bullet = line.match(/^[*•◦]\s+(.+)$/);
+    const bullet = line.match(/^[*•◦-]\s+(.+)$/);
     if (bullet) {
       listItems.push(bullet[1].trim());
       continue;

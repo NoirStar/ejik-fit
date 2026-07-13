@@ -77,6 +77,15 @@ describe("job detail model", () => {
     ]);
   });
 
+  it("keeps source hyphen bullets as one semantic list", () => {
+    expect(
+      parsePostingDescription("## 기술 스택\n- Python\n- Docker"),
+    ).toEqual([
+      { kind: "heading", level: 2, text: "기술 스택" },
+      { kind: "list", items: ["Python", "Docker"] },
+    ]);
+  });
+
   it("returns no blocks for an empty description", () => {
     expect(parsePostingDescription("  \n ")).toEqual([]);
   });
