@@ -18,6 +18,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   game: "게임",
   robotics: "로보틱스",
   mobile: "모바일",
+  design: "디자인",
+  embedded: "임베디드",
+  qa: "QA",
   tool: "도구",
 };
 

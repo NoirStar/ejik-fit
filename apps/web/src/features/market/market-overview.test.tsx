@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
@@ -106,6 +106,64 @@ describe("MarketOverview", () => {
     expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent(
       "확인 불가",
     );
+  });
+
+  it("labels every category returned by the current skill API", () => {
+    const categoryStats: SkillStatsResponse = {
+      total: 3,
+      items: [
+        {
+          skill: "Figma",
+          category: "design",
+          count: 3,
+          required_count: 1,
+          preferred_count: 1,
+          unspecified_count: 1,
+        },
+        {
+          skill: "FreeRTOS",
+          category: "embedded",
+          count: 2,
+          required_count: 1,
+          preferred_count: 1,
+          unspecified_count: 0,
+        },
+        {
+          skill: "Selenium",
+          category: "qa",
+          count: 1,
+          required_count: 0,
+          preferred_count: 1,
+          unspecified_count: 0,
+        },
+      ],
+    };
+
+    render(
+      <MarketOverview
+        snapshot={buildMarketOverviewSnapshot({
+          careerType: "",
+          postings: { status: "ready", data: postings },
+          skillStats: { status: "ready", data: categoryStats },
+        })}
+      />,
+    );
+
+    expect(
+      within(
+        screen.getByRole("link", { name: "Figma 스킬맵" }).parentElement!,
+      ).getByText("디자인"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("link", { name: "FreeRTOS 스킬맵" }).parentElement!,
+      ).getByText("임베디드"),
+    ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("link", { name: "Selenium 스킬맵" }).parentElement!,
+      ).getByText("QA"),
+    ).toBeInTheDocument();
   });
 
   it("distinguishes empty market results from errors", () => {
