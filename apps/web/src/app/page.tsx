@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DashboardHome } from "@/features/dashboard/dashboard-home";
 import { buildDashboardSnapshot } from "@/features/dashboard/model";
 import { settledResource } from "@/features/dashboard/state";
 import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
@@ -42,12 +43,9 @@ export default async function Home({ searchParams }: HomeProps = {}) {
     graph,
     ownedSkills,
   });
-
-  return (
-    <main className="daily-dashboard-page">
-      <h1>공식 채용 데이터</h1>
-      <p>상태: {snapshot.status}</p>
-      <p data-numeric>{snapshot.displayedPostingCount}개 공고를 확인했습니다.</p>
-    </main>
+  const resourceErrors = [postings, skillStats, graph].flatMap((resource) =>
+    resource.status === "error" ? [resource.message] : [],
   );
+
+  return <DashboardHome resourceErrors={resourceErrors} snapshot={snapshot} />;
 }
