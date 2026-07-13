@@ -82,6 +82,7 @@ describe("MarketOverview", () => {
       "/jobs/job-1",
     );
     expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
+    expect(screen.getByText(/상위 최대 30개/)).toBeInTheDocument();
     expect(screen.queryByText(/증가|감소|실시간|예측/)).not.toBeInTheDocument();
   });
 

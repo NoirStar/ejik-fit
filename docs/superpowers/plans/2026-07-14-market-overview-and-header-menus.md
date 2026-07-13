@@ -374,6 +374,7 @@ The component test must render a ready snapshot and assert:
 expect(screen.getByRole("heading", { name: "채용 시장", level: 1 })).toBeInTheDocument();
 expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent("2건");
 expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
+expect(screen.getByText(/상위 최대 30개/)).toBeInTheDocument();
 expect(screen.getByRole("link", { name: "Kubernetes 스킬맵" })).toHaveAttribute(
   "href",
   "/skill-map?skill=Kubernetes",

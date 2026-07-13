@@ -220,9 +220,10 @@ export function MarketOverview({
       <section aria-labelledby="market-method-title" className={styles.method}>
         <h2 id="market-method-title">데이터를 읽는 기준</h2>
         <p>
-          공고는 현재 조건에서 API가 반환한 최대 100개를 기준으로 표시합니다.
-          필수와 우대는 공고에 명시된 문구를 기준으로 구분합니다. 현재 비교 기간
-          데이터가 없어 변화율은 표시하지 않습니다.
+          공고는 현재 조건에서 API가 반환한 최대 100개를, 기술 순위는 공고 수
+          상위 최대 30개를 기준으로 표시합니다. 필수와 우대는 공고에 명시된
+          문구를 기준으로 구분합니다. 현재 비교 기간 데이터가 없어 변화율은
+          표시하지 않습니다.
         </p>
         <div className={styles.methodLinks}>
           <Link className={styles.textLink} href="/methodology">
