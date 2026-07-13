@@ -41,7 +41,6 @@ function formatLocalCommentDate(value: string) {
     timeZone: "Asia/Seoul",
   }).format(date)} 작성`;
 }
-
 function LocalComment({ comment }: { comment: LocalPostComment }) {
   return (
     <li className={styles.comment} data-local="true">
@@ -224,4 +223,3 @@ export function PostDetailActions({
     </section>
   );
 }
-

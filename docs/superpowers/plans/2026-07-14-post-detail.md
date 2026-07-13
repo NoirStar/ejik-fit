@@ -89,4 +89,3 @@
 - console error 0
 - 전체 Vitest, Playwright, TypeScript, production build
 - 독립 리뷰 후 main fast-forward, push, CI/Vercel 운영 확인
-
