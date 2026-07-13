@@ -4,8 +4,10 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
+import { buildSkillGraphHref } from "@/lib/product-routes";
 import { domainColor, summarizeGraph } from "@/lib/skill-graph";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
 import type { SkillGraphViewMode } from "@/lib/skill-graph-view";
@@ -34,6 +36,7 @@ type SkillGraphExperienceProps = {
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
   loadFailed?: boolean;
+  retryHref?: string;
 };
 
 
@@ -174,7 +177,9 @@ export function SkillGraphExperience({
   initialGraph,
   initialOwnedSkills,
   loadFailed = false,
+  retryHref = "/skills/graph",
 }: SkillGraphExperienceProps) {
+  const router = useRouter();
   const initialSelection = useMemo(
     () => chooseInitialSelection(initialGraph, initialOwnedSkills),
     [initialGraph, initialOwnedSkills],
@@ -286,7 +291,8 @@ export function SkillGraphExperience({
     ];
     return Array.from(new Set(suggested)).slice(0, 8);
   }, [initialGraph.nodes, ownedSkills]);
-  const topNextSkill = fit?.recommended_next_skills[0] ?? null;
+  const topNextSkill =
+    fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
   const isFilteredEmpty = initialGraph.nodes.length > 0 && viewData.nodes.length === 0;
   const showFallbackGraph = nodes.length > 0 && !forceReady;
   const isLargeGraph = viewData.nodes.length > 1500;
@@ -323,10 +329,10 @@ export function SkillGraphExperience({
   }, []);
 
   useEffect(() => {
-    if (initialSelection && !selectedId) {
-      setSelectedId(initialSelection);
-    }
-  }, [initialSelection, selectedId]);
+    setSelectedId(initialSelection);
+    setGraphMode("local");
+    setForceReady(false);
+  }, [initialGraph.seed, initialSelection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -338,6 +344,7 @@ export function SkillGraphExperience({
         return;
       }
 
+      setFit(null);
       setFitState("loading");
       try {
         const response = await fetch("/skills/graph/fit", {
@@ -357,6 +364,7 @@ export function SkillGraphExperience({
         }
       } catch {
         if (!cancelled) {
+          setFit(null);
           setFitState("error");
         }
       }
@@ -369,10 +377,23 @@ export function SkillGraphExperience({
     };
   }, [ownedSkills]);
 
-  const selectSkill = useCallback((nodeId: string) => {
-    setSelectedId(nodeId);
-    setGraphMode("local");
-  }, []);
+  const selectSkill = useCallback(
+    (nodeId: string) => {
+      if (nodeId === initialGraph.seed) {
+        setSelectedId(nodeId);
+        setGraphMode("local");
+        return;
+      }
+      setAnnouncement(`${nodeId} 중심의 공고 관계를 불러옵니다.`);
+      router.push(
+        buildSkillGraphHref({
+          skill: nodeId,
+          owned_skills: ownedSkills,
+        }),
+      );
+    },
+    [initialGraph.seed, ownedSkills, router],
+  );
 
   function addSkill(nextSkill = input.trim()) {
     const next = nextSkill.trim();
@@ -380,10 +401,6 @@ export function SkillGraphExperience({
       return;
     }
     setOwnedSkills((current) => writeOwnedSkills([...current, next]));
-    if (graphNodeMap.has(next)) {
-      setSelectedId(next);
-      setGraphMode("local");
-    }
     setInput("");
     setAnnouncement(`${next} 기술을 현재 목록에 추가했습니다.`);
   }
@@ -423,7 +440,9 @@ export function SkillGraphExperience({
               근거를 확인하세요.
             </p>
             <div className={styles.trustLine}>
-              <span>{summarizeGraph(initialGraph)}</span>
+              <span>
+                {loadFailed ? "그래프 범위 확인 불가" : summarizeGraph(initialGraph)}
+              </span>
               <Link href="/methodology">분석 방법</Link>
               <Link href="/data-policy">데이터 범위</Link>
             </div>
@@ -441,18 +460,22 @@ export function SkillGraphExperience({
                 value={filterQuery}
               />
             </label>
-            <dl aria-label="현재 그래프 규모" className={styles.graphMetrics}>
+            <dl
+              aria-label="현재 그래프 규모"
+              className={styles.graphMetrics}
+              role="group"
+            >
               <div>
                 <dt>스킬</dt>
-                <dd>{viewData.stats.skillCount}</dd>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.skillCount}</dd>
               </div>
               <div>
                 <dt>연결</dt>
-                <dd>{viewData.stats.linkCount}</dd>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.linkCount}</dd>
               </div>
               <div>
                 <dt>근거 공고</dt>
-                <dd>{viewData.stats.evidenceCount}</dd>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.evidenceCount}</dd>
               </div>
             </dl>
           </div>
@@ -464,7 +487,7 @@ export function SkillGraphExperience({
               <strong>스킬 관계 데이터를 불러오지 못했습니다.</strong>
               <p>잠시 후 다시 시도해 주세요. 임의 데이터로 채우지 않았습니다.</p>
             </div>
-            <Link href="/skill-map">다시 시도</Link>
+            <Link href={retryHref}>다시 시도</Link>
           </section>
         )}
 
@@ -495,7 +518,7 @@ export function SkillGraphExperience({
               <summary>
                 <span>내 스택과 필터</span>
                 <small>
-                  {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "전체"}
+                  {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "현재 범위"}
                 </small>
               </summary>
 
@@ -576,7 +599,7 @@ export function SkillGraphExperience({
                       onClick={() => setGraphMode("global")}
                       type="button"
                     >
-                      전체 시장
+                      현재 범위
                     </button>
                   </div>
 
@@ -680,7 +703,7 @@ export function SkillGraphExperience({
               />
 
               <div className={styles.graphStatus}>
-                <span>{graphMode === "local" ? "선택 주변" : "전체 시장"}</span>
+                <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
                 <span>드래그 · 확대 · 선택</span>
               </div>
 
@@ -911,10 +934,20 @@ export function SkillGraphExperience({
 
             <section className={styles.recommendation}>
               <p className={styles.eyebrow}>다음 경로</p>
-              <strong>{topNextSkill?.skill ?? "보유 기술 비교 대기"}</strong>
+              <strong>
+                {fitState === "loading"
+                  ? "보유 기술 비교 중"
+                  : fitState === "error"
+                    ? "보유 기술 비교 불가"
+                    : topNextSkill?.skill ?? "보유 기술 비교 대기"}
+              </strong>
               <span>
-                {topNextSkill?.reason ??
-                  "내 스택을 추가하면 공개 공고 요구와 비교해 다음 기술 근거를 보여드립니다."}
+                {fitState === "loading"
+                  ? "변경된 내 스택을 공개 공고 요구와 다시 비교하고 있습니다."
+                  : fitState === "error"
+                    ? "현재 비교 데이터를 불러오지 못했습니다. 잠시 후 다시 변경해 주세요."
+                    : topNextSkill?.reason ??
+                      "내 스택을 추가하면 공개 공고 요구와 비교해 다음 기술 근거를 보여드립니다."}
               </span>
             </section>
           </aside>

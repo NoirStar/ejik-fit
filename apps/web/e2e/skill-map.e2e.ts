@@ -1,5 +1,25 @@
 import { expect, test } from "@playwright/test";
 
+test("keeps fixture graph scope aligned with the production API contract", async ({
+  request,
+}) => {
+  const unseededResponse = await request.get(
+    "http://127.0.0.1:8011/api/graph/skills?limit=30",
+  );
+  const unknownResponse = await request.get(
+    "http://127.0.0.1:8011/api/graph/skills?seed=UnknownSkill&limit=30",
+  );
+  const unseeded = await unseededResponse.json();
+  const unknown = await unknownResponse.json();
+
+  expect(unseeded.seed).toBeNull();
+  expect(unseeded.evidence).toHaveLength(2);
+  expect(unseeded.nodes.map((node: { id: string }) => node.id)).toContain("Go");
+  expect(unknown.seed).toBe("UnknownSkill");
+  expect(unknown.edges).toEqual([]);
+  expect(unknown.evidence).toEqual([]);
+});
+
 for (const width of [1440, 820, 390]) {
   test(`keeps the evidence-led skill map usable at ${width}px`, async ({
     page,
@@ -40,9 +60,16 @@ for (const width of [1440, 820, 390]) {
       name: "빠른 기술 선택",
     });
     await quickSkills.getByRole("button", { name: "Docker" }).click();
+    await expect(page).toHaveURL(/\/skills\/graph\?seed=Docker$/);
     await expect(
       inspector.getByRole("heading", { name: "Docker" }),
     ).toBeVisible();
+    await expect(
+      inspector.getByText("언급 공고").locator("..").getByText("2건"),
+    ).toBeVisible();
+    await expect(
+      inspector.getByRole("link", { name: /Go Platform Engineer/ }),
+    ).toHaveAttribute("href", "/jobs/job-go");
 
     const graphFrame = page.getByTestId("skill-graph-frame");
     const graphBox = await graphFrame.boundingBox();
@@ -60,6 +87,22 @@ for (const width of [1440, 820, 390]) {
       await expect(disclosure).not.toHaveAttribute("open", "");
       await disclosure.locator("summary").click();
       await expect(page.getByLabel("스킬 추가")).toBeVisible();
+
+      if (width === 390) {
+        await page.getByLabel("스킬 추가").fill("Rust");
+        await page.getByRole("button", { name: "추가" }).click();
+
+        for (const target of [
+          page.getByRole("button", { name: "Rust 제거" }),
+          page.getByRole("button", { name: "초기화" }),
+          page.getByRole("button", { name: "선택 주변" }),
+          page.getByText("공고 근거 노드", { exact: true }).locator(".."),
+          page.getByRole("button", { name: /클라우드/ }),
+        ]) {
+          const box = await target.boundingBox();
+          expect(box?.height).toBeGreaterThanOrEqual(44);
+        }
+      }
     }
 
     if (width === 390) {

@@ -946,6 +946,14 @@
     padding: 0 0.75rem 0.75rem;
   }
 
+  .ownedSkills button,
+  .resetButton,
+  .segmented button,
+  .checks label,
+  .domainFilters button {
+    min-height: var(--touch-target);
+  }
+
   .layoutControl {
     align-content: center;
   }

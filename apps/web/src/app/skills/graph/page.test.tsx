@@ -1,9 +1,17 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import SkillGraphPage from "./page";
 
 import { getSkillGraph } from "@/lib/api";
+
+const navigation = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: navigation.push }),
+}));
 
 
 vi.mock("@/lib/api", () => ({
@@ -14,6 +22,7 @@ vi.mock("@/lib/api", () => ({
 describe("SkillGraphPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    navigation.push.mockReset();
   });
 
   afterEach(() => cleanup());
@@ -127,15 +136,29 @@ describe("SkillGraphPage", () => {
   it("keeps an API failure honest instead of filling the graph", async () => {
     vi.mocked(getSkillGraph).mockRejectedValue(new Error("backend unavailable"));
 
-    render(await SkillGraphPage());
+    render(
+      await SkillGraphPage({
+        searchParams: Promise.resolve({
+          seed: "Kubernetes",
+          owned_skills: "Linux",
+        }),
+      }),
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "스킬 관계 데이터를 불러오지 못했습니다.",
     );
     expect(screen.getByText(/임의 데이터로 채우지 않았습니다/)).toBeInTheDocument();
+    expect(screen.getByText("그래프 범위 확인 불가")).toBeInTheDocument();
+    expect(screen.queryByText(/0개 스킬/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
       "href",
-      "/skill-map",
+      "/skills/graph?seed=Kubernetes&owned_skills=Linux",
     );
+    expect(
+      within(screen.getByRole("group", { name: "현재 그래프 규모" })).getAllByText(
+        "확인 불가",
+      ),
+    ).toHaveLength(3);
   });
 });

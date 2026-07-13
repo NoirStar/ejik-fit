@@ -43,6 +43,18 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function buildRetryHref(searchParams: SkillGraphSearchParams) {
+  const output = new URLSearchParams();
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value === undefined) return;
+    (Array.isArray(value) ? value : [value]).forEach((item) => {
+      if (item) output.append(key, item);
+    });
+  });
+  const query = output.toString();
+  return `/skills/graph${query ? `?${query}` : ""}`;
+}
+
 export default async function SkillGraphPage({
   searchParams,
 }: SkillGraphPageProps = {}) {
@@ -67,6 +79,7 @@ export default async function SkillGraphPage({
       initialGraph={graph}
       initialOwnedSkills={ownedSkills}
       loadFailed={failed}
+      retryHref={buildRetryHref(resolvedSearchParams)}
     />
   );
 }

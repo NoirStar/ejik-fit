@@ -12,6 +12,14 @@ import type { FitAnalyzeResponse, SkillGraphResponse } from "@/lib/types";
 
 import { SkillGraphExperience } from "./skill-graph-experience";
 
+const navigation = vi.hoisted(() => ({
+  push: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: navigation.push }),
+}));
+
 const graph: SkillGraphResponse = {
   seed: "C++",
   nodes: [
@@ -104,6 +112,7 @@ describe("SkillGraphExperience", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    navigation.push.mockReset();
     fetchMock.mockReset();
     fetchMock.mockImplementation(async () => jsonResponse(fitResponse));
     vi.stubGlobal("fetch", fetchMock);
@@ -114,7 +123,7 @@ describe("SkillGraphExperience", () => {
     vi.unstubAllGlobals();
   });
 
-  it("updates official evidence when a quick skill is selected", () => {
+  it("requests a newly seeded graph when a quick skill is selected", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -124,14 +133,7 @@ describe("SkillGraphExperience", () => {
     });
     fireEvent.click(within(quickSkills).getByRole("button", { name: "ROS2" }));
 
-    const inspector = screen.getByRole("complementary", {
-      name: "선택 기술 분석",
-    });
-    expect(within(inspector).getByRole("heading", { name: "ROS2" })).toBeInTheDocument();
-    expect(within(inspector).getByText("9건")).toBeInTheDocument();
-    expect(within(inspector).getByText("7건")).toBeInTheDocument();
-    expect(within(inspector).getByText("2건")).toBeInTheDocument();
-    expect(within(inspector).getByText("0건")).toBeInTheDocument();
+    expect(navigation.push).toHaveBeenCalledWith("/skills/graph?seed=ROS2");
   });
 
   it("persists owned skills and renders API-backed next-skill evidence", async () => {
@@ -204,5 +206,51 @@ describe("SkillGraphExperience", () => {
       screen.queryByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("확인 가능한 관련 공고가 없습니다.")).toBeInTheDocument();
+  });
+
+  it("clears an earlier recommendation while an updated stack fails to load", async () => {
+    let resolveSecondRequest: ((response: Response) => void) | undefined;
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(fitResponse))
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveSecondRequest = resolve;
+          }),
+      );
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={["C++"]} />,
+    );
+
+    expect(
+      await screen.findByText(
+        "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("스킬 추가"), {
+      target: { value: "ROS2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(
+      screen.queryByText(
+        "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("보유 기술 비교 중")).toBeInTheDocument();
+
+    resolveSecondRequest?.(jsonResponse(fitResponse, 503));
+
+    expect(
+      await screen.findByText("보유 기술 비교 불가"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
+      ),
+    ).not.toBeInTheDocument();
   });
 });

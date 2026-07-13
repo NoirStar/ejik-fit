@@ -36,7 +36,7 @@ const postings = {
       opens_at: null,
       closes_at: null,
       required_skills: ["Go"],
-      preferred_skills: [],
+      preferred_skills: ["Docker"],
       unspecified_skills: ["Linux"],
     },
   ],
@@ -82,13 +82,54 @@ const postingDetails = {
       },
     ],
   },
+  "job-go": {
+    ...postings.items[1],
+    description_html: "<p>Do not render this HTML</p>",
+    description_text: [
+      "플랫폼 엔지니어 채용입니다.",
+      "## 주요 업무",
+      "• Go 서비스와 Linux 운영 환경을 개발합니다.",
+      "## 우대 사항",
+      "• Docker 기반 배포 경험",
+    ].join("\n"),
+    skills: ["Go", "Docker", "Linux"],
+    skill_details: [
+      {
+        skill: "Go",
+        category: "language",
+        requirement_type: "required",
+        evidence_text: "Go 서비스를 개발합니다.",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+      {
+        skill: "Docker",
+        category: "infra",
+        requirement_type: "preferred",
+        evidence_text: "Docker 기반 배포 경험",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+      {
+        skill: "Linux",
+        category: "infra",
+        requirement_type: "unspecified",
+        evidence_text: "Linux 운영 환경을 개발합니다.",
+        confidence: 1,
+        match_reason: "distinct_alias",
+      },
+    ],
+  },
 };
 
 const skillStats = {
-  total: 2,
+  total: 5,
   items: [
+    { skill: "Docker", category: "infra", count: 2 },
     { skill: "Python", category: "language", count: 1 },
     { skill: "Go", category: "language", count: 1 },
+    { skill: "Kubernetes", category: "infra", count: 1 },
+    { skill: "Linux", category: "infra", count: 1 },
   ],
 };
 
@@ -114,22 +155,9 @@ const skillGraph = {
       category: "infra",
       kind: "platform",
       domains: ["backend", "devops"],
-      demand_count: 1,
+      demand_count: 2,
       required_count: 1,
-      preferred_count: 0,
-      unspecified_count: 0,
-      owned: false,
-      seed: false,
-    },
-    {
-      id: "Python",
-      label: "Python",
-      category: "language",
-      kind: "language",
-      domains: ["backend"],
-      demand_count: 1,
-      required_count: 1,
-      preferred_count: 0,
+      preferred_count: 1,
       unspecified_count: 0,
       owned: false,
       seed: false,
@@ -160,6 +188,19 @@ const skillGraph = {
       owned: false,
       seed: false,
     },
+    {
+      id: "Python",
+      label: "Python",
+      category: "language",
+      kind: "language",
+      domains: ["backend"],
+      demand_count: 1,
+      required_count: 1,
+      preferred_count: 0,
+      unspecified_count: 0,
+      owned: false,
+      seed: false,
+    },
   ],
   edges: [
     {
@@ -172,6 +213,15 @@ const skillGraph = {
       supporting_posting_ids: ["job-python"],
     },
     {
+      id: "Docker:Python",
+      source: "Docker",
+      target: "Python",
+      score: 1,
+      cooccurrence_count: 1,
+      required_pair_count: 1,
+      supporting_posting_ids: ["job-python"],
+    },
+    {
       id: "Kubernetes:Python",
       source: "Kubernetes",
       target: "Python",
@@ -179,6 +229,24 @@ const skillGraph = {
       cooccurrence_count: 1,
       required_pair_count: 0,
       supporting_posting_ids: ["job-python"],
+    },
+    {
+      id: "Docker:Go",
+      source: "Docker",
+      target: "Go",
+      score: 1,
+      cooccurrence_count: 1,
+      required_pair_count: 0,
+      supporting_posting_ids: ["job-go"],
+    },
+    {
+      id: "Docker:Linux",
+      source: "Docker",
+      target: "Linux",
+      score: 1,
+      cooccurrence_count: 1,
+      required_pair_count: 0,
+      supporting_posting_ids: ["job-go"],
     },
     {
       id: "Go:Linux",
@@ -204,17 +272,57 @@ const skillGraph = {
       posting_id: "job-go",
       title: "Go Platform Engineer",
       company_name: "S2W",
-      skills: ["Go", "Linux"],
+      skills: ["Go", "Docker", "Linux"],
       required: ["Go"],
-      preferred: [],
+      preferred: ["Docker"],
       unspecified: ["Linux"],
     },
   ],
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
+function skillGraphForSeed(requestedSeed, ownedSkills) {
+  const knownSeed = skillGraph.nodes.some((node) => node.id === requestedSeed);
+  if (!requestedSeed || !knownSeed) {
+    return {
+      ...skillGraph,
+      seed: requestedSeed,
+      nodes: skillGraph.nodes.map((node) => ({
+        ...node,
+        owned: ownedSkills.includes(node.id),
+        seed: false,
+      })),
+      edges: requestedSeed ? [] : skillGraph.edges,
+      evidence: requestedSeed ? [] : skillGraph.evidence,
+    };
+  }
+
+  const seed = requestedSeed;
+  const evidence = skillGraph.evidence.filter((item) => item.skills.includes(seed));
+  const visibleSkills = new Set(evidence.flatMap((item) => item.skills));
+  return {
+    ...skillGraph,
+    seed,
+    nodes: skillGraph.nodes
+      .filter((node) => visibleSkills.has(node.id))
+      .map((node) => ({
+        ...node,
+        owned: ownedSkills.includes(node.id),
+        seed: node.id === seed,
+      })),
+    edges: skillGraph.edges.filter(
+      (edge) =>
+        visibleSkills.has(edge.source) &&
+        visibleSkills.has(edge.target) &&
+        (edge.source === seed || edge.target === seed),
+    ),
+    evidence,
+  };
+}
+
 const server = createServer((request, response) => {
-  const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
+  const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
+  const pathname = requestUrl.pathname;
   const detailId = pathname.match(/^\/api\/postings\/([^/]+)$/)?.[1];
   const body = detailId
     ? postingDetails[detailId] ?? null
@@ -223,7 +331,10 @@ const server = createServer((request, response) => {
       : pathname === "/api/skills/stats"
         ? skillStats
         : pathname === "/api/graph/skills"
-          ? skillGraph
+          ? skillGraphForSeed(
+              requestUrl.searchParams.get("seed"),
+              requestUrl.searchParams.getAll("owned_skills"),
+            )
           : null;
 
   response.setHeader("content-type", "application/json; charset=utf-8");
