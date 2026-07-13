@@ -109,6 +109,7 @@ describe("HomeFeed", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
+    expect(screen.getByText("7월 13일 00:00")).toBeInTheDocument();
   });
 
   it("keeps only followed community content on the following tab", () => {

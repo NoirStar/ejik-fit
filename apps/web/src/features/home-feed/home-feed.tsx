@@ -101,13 +101,23 @@ function formatVerificationDate(value: string | null) {
   if (!value) return "확인 시각 없음";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "확인 시각 없음";
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
+
+  const parts = new Intl.DateTimeFormat("en-US-u-nu-latn", {
+    month: "numeric",
     day: "numeric",
-    hour: "numeric",
+    hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
     timeZone: "Asia/Seoul",
-  }).format(date);
+  }).formatToParts(date);
+  const valueByType = new Map(parts.map((part) => [part.type, part.value]));
+  const month = valueByType.get("month");
+  const day = valueByType.get("day");
+  const hour = valueByType.get("hour");
+  const minute = valueByType.get("minute");
+
+  if (!month || !day || !hour || !minute) return "확인 시각 없음";
+  return `${Number(month)}월 ${Number(day)}일 ${hour}:${minute}`;
 }
 
 function SocialCard({
