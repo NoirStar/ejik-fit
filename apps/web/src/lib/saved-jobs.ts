@@ -1,0 +1,96 @@
+const KEY = "ejik-fit:saved-job-ids";
+const CHANGE_EVENT = "ejik-fit:saved-job-ids-change";
+
+type SavedJobsListener = (ids: string[]) => void;
+
+export function normalizeSavedJobIds(ids: string[]) {
+  return Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean))).sort(
+    (left, right) => left.localeCompare(right),
+  );
+}
+
+function defaultStorage(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function readSavedJobIds(storage = defaultStorage()): string[] {
+  if (!storage) return [];
+  try {
+    const raw = storage.getItem(KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? normalizeSavedJobIds(
+          parsed.filter((value): value is string => typeof value === "string"),
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function notifySavedJobsChange(storage: Storage | null) {
+  if (
+    typeof window !== "undefined" &&
+    storage !== null &&
+    storage === defaultStorage()
+  ) {
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  }
+}
+
+export function writeSavedJobIds(
+  ids: string[],
+  storage = defaultStorage(),
+): string[] {
+  const normalized = normalizeSavedJobIds(ids);
+  try {
+    storage?.setItem(KEY, JSON.stringify(normalized));
+  } catch {
+    return normalized;
+  }
+  notifySavedJobsChange(storage);
+  return normalized;
+}
+
+export function toggleSavedJob(
+  id: string,
+  storage = defaultStorage(),
+): string[] {
+  const normalizedId = id.trim();
+  const current = readSavedJobIds(storage);
+  if (!normalizedId) return current;
+  return writeSavedJobIds(
+    current.includes(normalizedId)
+      ? current.filter((savedId) => savedId !== normalizedId)
+      : [...current, normalizedId],
+    storage,
+  );
+}
+
+export function subscribeSavedJobs(listener: SavedJobsListener) {
+  if (typeof window === "undefined") return () => undefined;
+
+  const emitCurrent = () => listener(readSavedJobIds());
+  const handleStorage = (event: StorageEvent) => {
+    const browserStorage = defaultStorage();
+    if (
+      (event.key === KEY || event.key === null) &&
+      (!event.storageArea || event.storageArea === browserStorage)
+    ) {
+      emitCurrent();
+    }
+  };
+
+  window.addEventListener(CHANGE_EVENT, emitCurrent);
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    window.removeEventListener(CHANGE_EVENT, emitCurrent);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
