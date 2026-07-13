@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  MAX_LOCAL_COMMENT_LENGTH,
   addLocalPostComment,
   togglePostReaction,
   togglePostSave,
@@ -126,6 +127,21 @@ describe("PostDetailActions", () => {
     expect(screen.getByRole("list", { name: "댓글 목록" })).not.toHaveTextContent(
       "저장 시도",
     );
+  });
+
+  it("defensively rejects a comment beyond the browser input limit", () => {
+    render(<PostDetailActions {...props} />);
+
+    const textarea = screen.getByRole("textbox", { name: "댓글 내용" });
+    fireEvent.change(textarea, {
+      target: { value: "가".repeat(MAX_LOCAL_COMMENT_LENGTH + 1) },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      `댓글은 ${MAX_LOCAL_COMMENT_LENGTH}자까지 입력할 수 있습니다.`,
+    );
+    expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
   });
 
   it("reacts to interaction changes elsewhere in the same tab", async () => {

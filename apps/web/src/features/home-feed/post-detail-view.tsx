@@ -80,9 +80,7 @@ export function PostDetailView({
           <header className={styles.hero}>
             <div className={styles.contextRow}>
               <span className={styles.category}>{post.category}</span>
-              <span aria-label="화면 검증용 mock 콘텐츠" className={styles.mockBadge}>
-                MOCK
-              </span>
+              <span className={styles.mockBadge}>커뮤니티 예시 콘텐츠</span>
             </div>
 
             <h1>{post.title}</h1>

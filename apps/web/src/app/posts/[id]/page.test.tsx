@@ -59,6 +59,9 @@ describe("PostPage", () => {
         name: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("커뮤니티 예시 콘텐츠", { exact: true }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/mock 데이터/).length).toBeGreaterThan(0);
     expect(
       screen.getByRole("region", { name: "글 반응과 댓글" }),

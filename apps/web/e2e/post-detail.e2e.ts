@@ -23,6 +23,9 @@ for (const width of [1440, 390]) {
       page.getByRole("heading", { exact: true, level: 1, name: postTitle }),
     ).toBeVisible();
     await expect(
+      page.getByText("커뮤니티 예시 콘텐츠", { exact: true }),
+    ).toBeVisible();
+    await expect(
       page.getByRole("complementary", { name: "이 글 안내" }),
     ).toContainText("mock 데이터");
     await expect(

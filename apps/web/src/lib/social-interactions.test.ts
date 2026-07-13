@@ -68,6 +68,35 @@ describe("social interaction storage", () => {
     });
   });
 
+  it("merges normalized post aliases without duplicating comment ids", () => {
+    expect(
+      normalizeSocialInteractions({
+        commentsByPostId: {
+          " post-a ": [
+            {
+              id: "comment-1",
+              body: "먼저 읽은 값",
+              createdAt: "2026-07-14T00:00:00.000Z",
+            },
+          ],
+          "post-a": [
+            {
+              id: "comment-1",
+              body: "나중에 읽은 값",
+              createdAt: "2026-07-14T00:01:00.000Z",
+            },
+          ],
+        },
+      }).commentsByPostId["post-a"],
+    ).toEqual([
+      {
+        id: "comment-1",
+        body: "나중에 읽은 값",
+        createdAt: "2026-07-14T00:01:00.000Z",
+      },
+    ]);
+  });
+
   it("persists reaction and save toggles", () => {
     const fake = storage();
 

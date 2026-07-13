@@ -96,10 +96,10 @@ export function normalizeSocialInteractions(value: unknown): SocialInteractions 
       const postId = normalizedId(rawPostId);
       const comments = normalizedComments(rawComments);
       if (postId && comments.length > 0) {
-        commentsByPostId[postId] = [
+        commentsByPostId[postId] = normalizedComments([
           ...(commentsByPostId[postId] ?? []),
           ...comments,
-        ].slice(-MAX_COMMENTS_PER_POST);
+        ]);
       }
     }
   }
