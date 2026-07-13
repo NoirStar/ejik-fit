@@ -119,7 +119,7 @@ describe("Home", () => {
     expect(screen.queryByText("graph offline")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "데이터 다시 불러오기" })).toBeInTheDocument();
     expect(log).toHaveBeenCalledWith(
-      "[home-feed] resource request failed",
+      "[resource] request failed",
       expect.any(Error),
     );
     log.mockRestore();
