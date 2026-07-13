@@ -9,7 +9,7 @@ export async function settledResource<T>(
   try {
     return { status: "ready", data: await promise };
   } catch (error) {
-    console.error("[home-feed] resource request failed", error);
+    console.error("[resource] request failed", error);
     return {
       status: "error",
       message: failureMessage,

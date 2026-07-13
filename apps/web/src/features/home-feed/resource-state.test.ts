@@ -18,7 +18,10 @@ describe("settledResource", () => {
       message: "공고 데이터를 불러오지 못했습니다.",
     });
     expect(JSON.stringify(result)).not.toContain("internal-api");
-    expect(log).toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith(
+      "[resource] request failed",
+      expect.any(Error),
+    );
     log.mockRestore();
   });
 });

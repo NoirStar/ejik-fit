@@ -103,7 +103,7 @@ describe("MarketOverview", () => {
       screen.getByRole("link", { name: /플랫폼 엔지니어/ }).closest("ul"),
     ).toHaveAttribute("role", "list");
     expect(screen.getAllByText("2026. 7. 14. 확인").length).toBeGreaterThan(0);
-    expect(screen.getByText("확인 시각 없음")).toBeInTheDocument();
+    expect(screen.getByText("확인 시각 없음").tagName).toBe("SPAN");
     expect(screen.queryByText("기록 없음 확인")).not.toBeInTheDocument();
     expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
     expect(screen.getByText(/상위 최대 30개/)).toBeInTheDocument();

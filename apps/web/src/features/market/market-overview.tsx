@@ -41,12 +41,13 @@ function formatVerifiedDate(value: string | null) {
 function VerifiedTime({ value }: { value: string }) {
   const verifiedDate = formatVerifiedDate(value);
 
+  if (!verifiedDate) {
+    return <span className={styles.verified}>확인 시각 없음</span>;
+  }
+
   return (
-    <time
-      className={styles.verified}
-      dateTime={verifiedDate ? value : undefined}
-    >
-      {verifiedDate ? `${verifiedDate} 확인` : "확인 시각 없음"}
+    <time className={styles.verified} dateTime={value}>
+      {verifiedDate} 확인
     </time>
   );
 }
