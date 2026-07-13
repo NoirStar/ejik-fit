@@ -95,7 +95,19 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             sourceUrl={job.source_url}
           />
           <div className={styles.heroIdentity}>
-            <p>{job.company_name}</p>
+            <p>
+              {job.company_slug ? (
+                <Link
+                  aria-label={`${job.company_name} 기업 채용 현황`}
+                  className={styles.companyLink}
+                  href={`/companies/${encodeURIComponent(job.company_slug)}`}
+                >
+                  {job.company_name}
+                </Link>
+              ) : (
+                job.company_name
+              )}
+            </p>
             <h1>{job.title}</h1>
           </div>
           <span className={styles.status} data-state={job.status}>

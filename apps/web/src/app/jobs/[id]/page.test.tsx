@@ -20,6 +20,7 @@ const job = {
   id: "job-1",
   title: "Backend Engineer",
   company_name: "토스",
+  company_slug: "toss",
   career_type: "experienced",
   employment_type: "FULL_TIME",
   career_min: 3,
@@ -84,6 +85,9 @@ describe("JobDetail", () => {
     );
     expect(screen.getByTitle("토스")).toBeInTheDocument();
     expect(
+      screen.getByRole("link", { name: "토스 기업 채용 현황" }),
+    ).toHaveAttribute("href", "/companies/toss");
+    expect(
       screen.getByRole("heading", { level: 2, name: "채용 조건" }),
     ).toBeInTheDocument();
     expect(
@@ -120,6 +124,20 @@ describe("JobDetail", () => {
     expect(
       trust.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("keeps the company name as text when a compatible response has no slug", async () => {
+    vi.mocked(getPosting).mockResolvedValue({
+      ...job,
+      company_slug: undefined,
+    });
+
+    render(await JobDetail({ params: Promise.resolve({ id: "job-1" }) }));
+
+    expect(screen.getByText("토스")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "토스 기업 채용 현황" }),
+    ).not.toBeInTheDocument();
   });
 
   it("states when the API provides no body or confirmed skill evidence", async () => {

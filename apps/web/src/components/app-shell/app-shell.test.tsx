@@ -69,6 +69,20 @@ describe("AppShell", () => {
     );
   });
 
+  it("keeps company hiring profiles inside the jobs destination", () => {
+    navigation.pathname = "/companies/naver";
+
+    render(
+      <AppShell>
+        <main>기업 채용 현황</main>
+      </AppShell>,
+    );
+
+    for (const link of screen.getAllByRole("link", { name: "공고" })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
+  });
+
   it("marks the desktop skill graph as an immersive route", () => {
     navigation.pathname = "/skills/graph";
 

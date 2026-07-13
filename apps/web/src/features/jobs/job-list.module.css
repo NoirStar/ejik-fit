@@ -378,6 +378,15 @@
   text-decoration: none;
 }
 
+.identity .companyLink {
+  width: fit-content;
+  color: var(--color-muted);
+}
+
+.identity .companyLink:hover {
+  color: var(--color-accent-strong);
+}
+
 .saveButton {
   display: inline-grid;
   width: var(--touch-target);

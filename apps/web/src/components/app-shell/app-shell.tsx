@@ -39,6 +39,7 @@ const NAV_ITEMS = [
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   if (href === "/skill-map" && pathname.startsWith("/skills/graph")) return true;
+  if (href === "/jobs" && pathname.startsWith("/companies/")) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

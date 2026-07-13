@@ -21,6 +21,7 @@ const postings: PostingListResponse = {
       id: "job-1",
       title: "Backend Engineer",
       company_name: "NAVER",
+      company_slug: "naver",
       career_type: "experienced",
       employment_type: "FULL_TIME",
       career_min: 3,
@@ -38,6 +39,7 @@ const postings: PostingListResponse = {
       id: "job-2",
       title: "Go Platform Engineer",
       company_name: "라인플러스",
+      company_slug: "line-plus",
       career_type: "new_comer",
       employment_type: "FULL_TIME_WORKER",
       career_min: null,
@@ -74,6 +76,9 @@ describe("JobList", () => {
     const job = screen
       .getByRole("link", { name: "Backend Engineer" })
       .closest("article")!;
+    expect(
+      within(job).getByRole("link", { name: "NAVER 기업 채용 현황" }),
+    ).toHaveAttribute("href", "/companies/naver");
     expect(within(job).getByText("경력 3~7년")).toBeInTheDocument();
     expect(within(job).getByText("7월 31일 마감")).toBeInTheDocument();
     expect(within(job).getByText("필수 기술").parentElement).toHaveTextContent(
@@ -99,6 +104,23 @@ describe("JobList", () => {
     expect(
       await screen.findByRole("button", { name: "Backend Engineer 저장" }),
     ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("keeps a plain company label for an older response without a slug", () => {
+    render(
+      <JobList
+        filters={{ query: "", careerType: "" }}
+        postings={{
+          items: [{ ...postings.items[0], company_slug: undefined }],
+          total: 1,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("NAVER")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "NAVER 기업 채용 현황" }),
+    ).not.toBeInTheDocument();
   });
 
   it("switches between skill overlap and browser-saved views", async () => {

@@ -94,7 +94,19 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
           sourceUrl={job.source_url}
         />
         <div className={styles.identity}>
-          <p>{job.company_name}</p>
+          <p>
+            {job.company_slug ? (
+              <Link
+                aria-label={`${job.company_name} 기업 채용 현황`}
+                className={styles.companyLink}
+                href={`/companies/${encodeURIComponent(job.company_slug)}`}
+              >
+                {job.company_name}
+              </Link>
+            ) : (
+              job.company_name
+            )}
+          </p>
           <h3>
             <Link href={`/jobs/${encodeURIComponent(job.id)}`}>{job.title}</Link>
           </h3>
