@@ -63,18 +63,10 @@ export default async function SkillGraphPage({
   }
 
   return (
-    <main className="dashboard-app-page overflow-x-hidden w-full max-w-full">
-      {failed && (
-        <div className="dashboard-app-error" role="alert">
-          <strong>그래프 데이터를 불러오지 못했습니다.</strong>
-          <p>API 서버가 준비되면 대시보드에서 바로 표시됩니다.</p>
-        </div>
-      )}
-
-      <SkillGraphExperience
-        initialGraph={graph}
-        initialOwnedSkills={ownedSkills}
-      />
-    </main>
+    <SkillGraphExperience
+      initialGraph={graph}
+      initialOwnedSkills={ownedSkills}
+      loadFailed={failed}
+    />
   );
 }

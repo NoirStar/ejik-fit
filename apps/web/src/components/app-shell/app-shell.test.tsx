@@ -74,11 +74,14 @@ describe("AppShell", () => {
 
     const { container } = render(
       <AppShell>
-        <main className="dashboard-app-page">그래프</main>
+        <main>그래프</main>
       </AppShell>,
     );
 
     expect(container.querySelector('[data-immersive="true"]')).toBeInTheDocument();
+    for (const link of screen.getAllByRole("link", { name: "스킬맵" })) {
+      expect(link).toHaveAttribute("aria-current", "page");
+    }
   });
 
   it("dismisses utility disclosures and restores opener focus", () => {
