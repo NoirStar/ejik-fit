@@ -1,0 +1,215 @@
+import { formatCareer } from "@/lib/labels";
+import type {
+  PostingListResponse,
+  SkillGraphEvidence,
+  SkillGraphResponse,
+  SkillStatsResponse,
+} from "@/lib/types";
+
+import {
+  MOCK_COMMUNITY_POSTS,
+  MOCK_INTERVIEW_REVIEWS,
+  MOCK_SOCIAL_ITEMS,
+} from "./mock-community";
+import type { ResourceState } from "./resource-state";
+import type {
+  DataStatus,
+  FeedItem,
+  HomeFeedSnapshot,
+  MarketInsightFeedItem,
+  RecommendedJobFeedItem,
+  SkillDemandSummary,
+} from "./types";
+
+export type BuildHomeFeedSnapshotInput = {
+  postings: ResourceState<PostingListResponse>;
+  skillStats: ResourceState<SkillStatsResponse>;
+  graph: ResourceState<SkillGraphResponse>;
+  ownedSkills: string[];
+};
+
+function readyData<T>(resource: ResourceState<T>): T | null {
+  return resource.status === "ready" ? resource.data : null;
+}
+
+function normalize(value: string) {
+  return value.trim().toLocaleLowerCase("en-US");
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values));
+}
+
+function formatVerifiedDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "확인 시각 미상";
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Seoul",
+  }).format(date);
+}
+
+function formatEmployment(value: string | null) {
+  const labels: Record<string, string> = {
+    FULL_TIME: "정규직",
+    CONTRACT: "계약직",
+    INTERN: "인턴",
+  };
+  return value ? labels[value.toLocaleUpperCase("en-US")] ?? value : "고용 형태 미기재";
+}
+
+function safeHostname(value: string) {
+  try {
+    return new URL(value).hostname.toLocaleLowerCase("en-US");
+  } catch {
+    return value;
+  }
+}
+
+function latestVerifiedAt(values: string[]) {
+  return values
+    .filter((value) => !Number.isNaN(Date.parse(value)))
+    .sort((left, right) => Date.parse(right) - Date.parse(left))[0] ?? null;
+}
+
+function evidenceByPostingId(graph: SkillGraphResponse | null) {
+  return new Map(
+    (graph?.evidence ?? []).map((evidence) => [evidence.posting_id, evidence]),
+  );
+}
+
+function skillMatches(
+  evidence: SkillGraphEvidence | undefined,
+  ownedSet: ReadonlySet<string>,
+) {
+  if (!evidence) {
+    return {
+      matchedRequiredSkills: [],
+      missingRequiredSkills: [],
+      matchedPreferredSkills: [],
+    };
+  }
+  return {
+    matchedRequiredSkills: evidence.required.filter((skill) => ownedSet.has(normalize(skill))),
+    missingRequiredSkills: evidence.required.filter((skill) => !ownedSet.has(normalize(skill))),
+    matchedPreferredSkills: evidence.preferred.filter((skill) => ownedSet.has(normalize(skill))),
+  };
+}
+
+function buildJobs(
+  postings: PostingListResponse | null,
+  graph: SkillGraphResponse | null,
+  ownedSkills: string[],
+): RecommendedJobFeedItem[] {
+  const evidenceMap = evidenceByPostingId(graph);
+  const ownedSet = new Set(ownedSkills.map(normalize));
+  return (postings?.items ?? []).slice(0, 2).map((posting) => ({
+    id: `job-${posting.id}`,
+    type: "recommended_job",
+    companyName: posting.company_name,
+    title: posting.title,
+    location: posting.location ?? "근무지 미기재",
+    careerLabel: formatCareer(posting.career_type),
+    employmentLabel: formatEmployment(posting.employment_type),
+    sourceUrl: posting.source_url,
+    verifiedLabel: formatVerifiedDate(posting.last_verified_at),
+    ...skillMatches(evidenceMap.get(posting.id), ownedSet),
+    href: `/jobs/${encodeURIComponent(posting.id)}`,
+    source: "api",
+  }));
+}
+
+function buildSkillDemand(skillStats: SkillStatsResponse | null): SkillDemandSummary[] {
+  return (skillStats?.items ?? []).slice(0, 5).map((skill) => ({
+    skillName: skill.skill,
+    postingCount: skill.count,
+    requiredCount: skill.required_count ?? 0,
+    preferredCount: skill.preferred_count ?? 0,
+  }));
+}
+
+function buildMarketInsights(
+  skillDemand: SkillDemandSummary[],
+): MarketInsightFeedItem[] {
+  return skillDemand.slice(0, 2).map((skill) => ({
+    id: `market-${normalize(skill.skillName).replaceAll(" ", "-")}`,
+    type: "market_insight",
+    skillName: skill.skillName,
+    title: `${skill.skillName}을 요구하는 공식 공고를 확인했어요`,
+    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건으로 확인됐습니다.`,
+    postingCount: skill.postingCount,
+    requiredCount: skill.requiredCount,
+    preferredCount: skill.preferredCount,
+    sampleLabel: `기술 언급 공고 ${skill.postingCount}건`,
+    sourceLabel: "공식 채용페이지 수집 데이터",
+    href: `/skill-map?skill=${encodeURIComponent(skill.skillName)}`,
+    source: "api",
+  }));
+}
+
+function mergeFeed(
+  jobs: RecommendedJobFeedItem[],
+  insights: MarketInsightFeedItem[],
+): FeedItem[] {
+  const ordered: Array<FeedItem | undefined> = [
+    MOCK_COMMUNITY_POSTS[0],
+    jobs[0],
+    MOCK_INTERVIEW_REVIEWS[0],
+    insights[0],
+    MOCK_COMMUNITY_POSTS[1],
+    jobs[1],
+    insights[1],
+    ...MOCK_SOCIAL_ITEMS.slice(3),
+  ];
+  return ordered.filter((item): item is FeedItem => Boolean(item));
+}
+
+function dataStatus(
+  resources: Array<ResourceState<unknown>>,
+  hasVerifiedData: boolean,
+): DataStatus {
+  const errors = resources.filter((resource) => resource.status === "error").length;
+  if (errors === resources.length) return "error";
+  if (errors > 0) return "partial";
+  return hasVerifiedData ? "ready" : "empty";
+}
+
+export function buildHomeFeedSnapshot(
+  input: BuildHomeFeedSnapshotInput,
+): HomeFeedSnapshot {
+  const postings = readyData(input.postings);
+  const skillStats = readyData(input.skillStats);
+  const graph = readyData(input.graph);
+  const ownedSkills = unique(input.ownedSkills.map((skill) => skill.trim()).filter(Boolean));
+  const recommendedJobs = buildJobs(postings, graph, ownedSkills);
+  const skillDemand = buildSkillDemand(skillStats);
+  const marketInsights = buildMarketInsights(skillDemand);
+  const resourceErrors = [input.postings, input.skillStats, input.graph].flatMap(
+    (resource) => resource.status === "error" ? [resource.message] : [],
+  );
+  const hasVerifiedData = recommendedJobs.length > 0
+    || skillDemand.length > 0
+    || (graph?.evidence.length ?? 0) > 0;
+
+  return {
+    dataStatus: dataStatus(
+      [input.postings, input.skillStats, input.graph],
+      hasVerifiedData,
+    ),
+    feedItems: mergeFeed(recommendedJobs, marketInsights),
+    communityItems: MOCK_SOCIAL_ITEMS,
+    recommendedJobs,
+    marketInsights,
+    skillDemand,
+    ownedSkills,
+    postingCount: postings?.items.length ?? 0,
+    sourceCount: new Set(
+      (postings?.items ?? []).map((posting) => safeHostname(posting.source_url)),
+    ).size,
+    lastVerifiedAt: latestVerifiedAt(
+      (postings?.items ?? []).map((posting) => posting.last_verified_at),
+    ),
+    resourceErrors,
+  };
+}
