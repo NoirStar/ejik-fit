@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
+import { AppShell } from "@/components/app-shell/app-shell";
 import "@/styles/tokens.css";
 import "@/styles/reset.css";
 import "@/styles/typography.css";
@@ -37,7 +38,9 @@ export default function RootLayout({
         <a className="skip-link" href="#main-content">
           본문으로 건너뛰기
         </a>
-        <div id="main-content">{children}</div>
+        <div id="main-content">
+          <AppShell>{children}</AppShell>
+        </div>
       </body>
     </html>
   );

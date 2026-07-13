@@ -1,12 +1,6 @@
 const KEY = "ejik-fit:owned-skills";
 
-export const DEFAULT_OWNED_SKILLS = [
-  "Java",
-  "Spring",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-];
+export const EMPTY_OWNED_SKILLS: readonly string[] = [];
 
 type SearchParamValue = string | string[] | undefined;
 type SearchParamsRecord = Record<string, SearchParamValue>;
@@ -97,4 +91,10 @@ export function removeOwnedSkill(
     readOwnedSkills(storage).filter((item) => item !== skill),
     storage,
   );
+}
+
+
+export function clearOwnedSkills(storage = defaultStorage()): string[] {
+  storage?.removeItem(KEY);
+  return [];
 }
