@@ -2,6 +2,7 @@ export type PostingSummary = {
   id: string;
   title: string;
   company_name: string;
+  company_slug?: string;
   career_type: string | null;
   employment_type: string | null;
   career_min: number | null;

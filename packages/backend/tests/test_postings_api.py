@@ -18,6 +18,7 @@ class FakePostingReader:
                 "id": "00000000-0000-0000-0000-000000000001",
                 "title": "신입 백엔드 개발자",
                 "company_name": "테스트 기업",
+                "company_slug": "test-company",
                 "career_type": "new_comer",
                 "location": "서울",
                 "opens_at": datetime(2026, 7, 1, tzinfo=timezone.utc),
@@ -42,6 +43,7 @@ class FakePostingReader:
             "id": posting_id,
             "title": "백엔드 개발자",
             "company_name": "테스트 기업",
+            "company_slug": "test-company",
             "location": "서울",
             "source_url": "https://example.com/o/1",
             "last_verified_at": datetime(
@@ -74,6 +76,7 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
 
     assert response.status_code == 200
     item = response.json()["items"][0]
+    assert item["company_slug"] == "test-company"
     assert item["source_url"] == "https://example.com/o/1"
     assert item["last_verified_at"] == "2026-07-03T00:00:00Z"
     assert item["opens_at"] == "2026-07-01T00:00:00Z"
@@ -91,6 +94,7 @@ def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:
 
     assert response.status_code == 200
     body = response.json()
+    assert body["company_slug"] == "test-company"
     assert body["skills"] == ["Go"]
     assert body["skill_details"] == [
         {

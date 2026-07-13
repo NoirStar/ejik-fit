@@ -82,6 +82,7 @@ def test_database_list_exposes_confirmed_requirement_evidence() -> None:
 
     item = DatabasePostingReader(session_factory=factory).list(limit=10)[0]
 
+    assert item["company_slug"] == "verified-company"
     assert item["opens_at"].date().isoformat() == "2026-07-01"
     assert item["closes_at"].date().isoformat() == "2026-07-31"
     assert item["required_skills"] == ["Python"]
@@ -108,6 +109,7 @@ def test_database_detail_restores_plain_text_structure_from_source_html() -> Non
     item = DatabasePostingReader(session_factory=factory).get(posting_id)
 
     assert item is not None
+    assert item["company_slug"] == "verified-company"
     assert item["description_text"] == (
         "## 주요 업무\n• Python API 개발\n• Docker 운영\nRustUnique"
     )
@@ -120,6 +122,7 @@ def test_search_document_keeps_the_same_confirmed_evidence_contract() -> None:
         posting = _posting_with_skills(session)
         document = posting_document(posting)
 
+    assert document["company_slug"] == "verified-company"
     assert document["opens_at"] == "2026-07-01T00:00:00"
     assert document["closes_at"] == "2026-07-31T00:00:00"
     assert document["required_skills"] == ["Python"]

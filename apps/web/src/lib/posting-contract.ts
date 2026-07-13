@@ -68,6 +68,17 @@ function strings(record: Record<string, unknown>, key: string) {
   return value;
 }
 
+function optionalCompanySlug(record: Record<string, unknown>) {
+  const value = record.company_slug;
+  if (
+    typeof value !== "string" ||
+    !/^[a-z0-9][a-z0-9-]{0,119}$/.test(value)
+  ) {
+    return undefined;
+  }
+  return value;
+}
+
 export function normalizePostingSummary(value: unknown): PostingSummary {
   if (!isRecord(value)) throw new Error("Invalid posting item");
 
@@ -75,6 +86,7 @@ export function normalizePostingSummary(value: unknown): PostingSummary {
     id: stringField(value, "id"),
     title: stringField(value, "title"),
     company_name: stringField(value, "company_name"),
+    company_slug: optionalCompanySlug(value),
     career_type: nullableString(value, "career_type"),
     employment_type: nullableString(value, "employment_type"),
     career_min: nullableYear(value, "career_min"),

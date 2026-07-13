@@ -8,6 +8,7 @@ class PostingSummary(BaseModel):
     id: uuid.UUID
     title: str
     company_name: str
+    company_slug: str
     career_type: str | None = None
     employment_type: str | None = None
     career_min: int | None = None

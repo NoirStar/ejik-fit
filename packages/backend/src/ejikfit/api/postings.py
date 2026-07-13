@@ -37,6 +37,7 @@ def _summary(posting: JobPosting) -> dict:
         "id": posting.id,
         "title": posting.title,
         "company_name": posting.company.name,
+        "company_slug": posting.company.slug,
         "career_type": posting.career_type,
         "employment_type": posting.employment_type,
         "career_min": posting.career_min,
