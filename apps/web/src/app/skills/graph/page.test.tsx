@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import SkillGraphPage from "./page";
 
@@ -12,6 +12,10 @@ vi.mock("@/lib/api", () => ({
 
 
 describe("SkillGraphPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders the skill graph product shell with initial evidence", async () => {
     vi.mocked(getSkillGraph).mockResolvedValue({
       seed: "C++",
@@ -85,5 +89,25 @@ describe("SkillGraphPage", () => {
     expect(screen.getByText("그래프 필터")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "설정" })).toBeInTheDocument();
     expect(screen.getByLabelText("주변 깊이")).toBeInTheDocument();
+  });
+
+  it("loads the graph with the requested seed", async () => {
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: "Kubernetes",
+      nodes: [],
+      edges: [],
+      evidence: [],
+      meta: { limit: 30, min_confidence: 0.8 },
+    });
+
+    await SkillGraphPage({
+      searchParams: Promise.resolve({ seed: "Kubernetes" }),
+    });
+
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      seed: "Kubernetes",
+      owned_skills: [],
+      limit: 30,
+    });
   });
 });
