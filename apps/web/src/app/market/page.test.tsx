@@ -1,0 +1,57 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { getPostings, getSkillStats } from "@/lib/api";
+
+import MarketPage from "./page";
+
+vi.mock("@/lib/api", () => ({
+  getPostings: vi.fn(),
+  getSkillStats: vi.fn(),
+}));
+
+describe("MarketPage", () => {
+  afterEach(() => cleanup());
+
+  beforeEach(() => {
+    vi.mocked(getPostings).mockReset();
+    vi.mocked(getSkillStats).mockReset();
+    vi.mocked(getPostings).mockResolvedValue({ total: 0, items: [] });
+    vi.mocked(getSkillStats).mockResolvedValue({ total: 0, items: [] });
+  });
+
+  it("loads both market resources with the selected career filter", async () => {
+    render(
+      await MarketPage({
+        searchParams: Promise.resolve({ career_type: "experienced" }),
+      }),
+    );
+
+    expect(getPostings).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 100,
+    });
+    expect(getSkillStats).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 30,
+    });
+    expect(
+      screen.getByRole("heading", { name: "채용 시장", level: 1 }),
+    ).toBeInTheDocument();
+  });
+
+  it("normalizes an unsupported career filter to the whole market", async () => {
+    render(
+      await MarketPage({
+        searchParams: Promise.resolve({ career_type: "unsupported" }),
+      }),
+    );
+
+    expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 30 });
+    expect(screen.getByRole("link", { name: "전체" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+});
