@@ -13,6 +13,7 @@ import type {
   SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
+import { addLocalPostComment } from "@/lib/social-interactions";
 
 import { HomeFeed } from "./home-feed";
 import { buildHomeFeedSnapshot } from "./model";
@@ -143,6 +144,42 @@ describe("HomeFeed", () => {
     fireEvent.click(save);
     expect(save).toHaveAttribute("aria-pressed", "true");
     expect(save).toHaveTextContent("19");
+  });
+
+  it("restores shared post reactions, saves, and browser comment counts", async () => {
+    addLocalPostComment("career-move-3y-backend", "상세에서 남긴 댓글", {
+      createdAt: "2026-07-14T02:00:00.000Z",
+      id: "home-sync-comment",
+    });
+    const { unmount } = render(<HomeFeed snapshot={buildSnapshot()} />);
+    const firstArticle = screen.getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
+
+    expect(
+      await within(firstArticle).findByRole("link", {
+        name: /댓글 48개/,
+      }),
+    ).toBeInTheDocument();
+    fireEvent.click(within(firstArticle).getByRole("button", { name: /공감/ }));
+    fireEvent.click(within(firstArticle).getByRole("button", { name: /저장/ }));
+    unmount();
+
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    const restoredArticle = screen.getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
+    await waitFor(() => {
+      expect(
+        within(restoredArticle).getByRole("button", { name: /공감/ }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(
+        within(restoredArticle).getByRole("button", { name: /저장/ }),
+      ).toHaveAttribute("aria-pressed", "true");
+    });
+    expect(
+      within(restoredArticle).getByRole("link", { name: /댓글 48개/ }),
+    ).toBeInTheDocument();
   });
 
   it("persists recommended job saves in the shared browser list", async () => {

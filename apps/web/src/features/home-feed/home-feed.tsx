@@ -23,6 +23,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompanyMark } from "./company-mark";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
+  EMPTY_SOCIAL_INTERACTIONS,
+  readSocialInteractions,
+  subscribeSocialInteractions,
+  togglePostReaction,
+  togglePostSave,
+  type SocialInteractions,
+} from "@/lib/social-interactions";
+import {
   readSavedJobIds,
   subscribeSavedJobs,
   toggleSavedJob,
@@ -45,7 +53,6 @@ export type HomeFeedProps = {
   composeInitiallyOpen?: boolean;
 };
 
-type ReactionState = Record<string, boolean>;
 type LocalPostDraft = {
   title: string;
   body: string;
@@ -105,12 +112,14 @@ function formatVerificationDate(value: string | null) {
 
 function SocialCard({
   item,
+  localCommentCount,
   onReact,
   onSave,
   reacted,
   saved,
 }: {
   item: SocialItem;
+  localCommentCount: number;
   onReact(): void;
   onSave(): void;
   reacted: boolean;
@@ -158,7 +167,7 @@ function SocialCard({
 
       <footer className={styles.cardActions}>
         <button
-          aria-label={`${item.title} 공감`}
+          aria-label={`${item.title} ${reacted ? "공감 취소" : "공감"}`}
           aria-pressed={reacted}
           data-active={reacted ? "true" : undefined}
           onClick={onReact}
@@ -168,13 +177,16 @@ function SocialCard({
           <span>공감</span>
           <strong>{item.metrics.reactions + (reacted ? 1 : 0)}</strong>
         </button>
-        <Link aria-label={`${item.title} 댓글 ${item.metrics.comments}개`} href={item.href}>
+        <Link
+          aria-label={`${item.title} 댓글 ${item.metrics.comments + localCommentCount}개`}
+          href={item.href}
+        >
           <ChatCircle aria-hidden="true" size={19} />
           <span>댓글</span>
-          <strong>{item.metrics.comments}</strong>
+          <strong>{item.metrics.comments + localCommentCount}</strong>
         </Link>
         <button
-          aria-label={`${item.title} 저장`}
+          aria-label={`${item.title} ${saved ? "저장 해제" : "저장"}`}
           aria-pressed={saved}
           className={styles.saveAction}
           data-active={saved ? "true" : undefined}
@@ -326,6 +338,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
 
 function FeedCard({
   item,
+  localCommentCount,
   onReact,
   onSave,
   ownedSkills,
@@ -333,6 +346,7 @@ function FeedCard({
   saved,
 }: {
   item: FeedItem;
+  localCommentCount: number;
   onReact(): void;
   onSave(): void;
   ownedSkills: string[];
@@ -343,6 +357,7 @@ function FeedCard({
     return (
       <SocialCard
         item={item}
+        localCommentCount={localCommentCount}
         onReact={onReact}
         onSave={onSave}
         reacted={reacted}
@@ -365,8 +380,8 @@ export function HomeFeed({
   snapshot,
 }: HomeFeedProps) {
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
-  const [reactions, setReactions] = useState<ReactionState>({});
-  const [saves, setSaves] = useState<ReactionState>({});
+  const [socialInteractions, setSocialInteractions] =
+    useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<CommunityPostFeedItem[]>([]);
   const [composerOpen, setComposerOpen] = useState(composeInitiallyOpen);
@@ -380,6 +395,11 @@ export function HomeFeed({
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
     return subscribeSavedJobs(setSavedJobIds);
+  }, []);
+
+  useEffect(() => {
+    setSocialInteractions(readSocialInteractions());
+    return subscribeSocialInteractions(setSocialInteractions);
   }, []);
 
   const closeComposer = useCallback(() => {
@@ -408,13 +428,6 @@ export function HomeFeed({
     () => itemsForTab([...localPosts, ...snapshot.feedItems], activeTab),
     [activeTab, localPosts, snapshot.feedItems],
   );
-
-  function toggleState(
-    setter: React.Dispatch<React.SetStateAction<ReactionState>>,
-    id: string,
-  ) {
-    setter((current) => ({ ...current, [id]: !current[id] }));
-  }
 
   function openComposer() {
     setDraftErrors({});
@@ -622,20 +635,25 @@ export function HomeFeed({
                   <FeedCard
                     item={item}
                     key={item.id}
-                    onReact={() => toggleState(setReactions, item.id)}
+                    localCommentCount={
+                      socialInteractions.commentsByPostId[item.id]?.length ?? 0
+                    }
+                    onReact={() =>
+                      setSocialInteractions(togglePostReaction(item.id))
+                    }
                     onSave={() => {
                       if (recommendedJob) {
                         setSavedJobIds(toggleSavedJob(item.postingId));
                       } else {
-                        toggleState(setSaves, item.id);
+                        setSocialInteractions(togglePostSave(item.id));
                       }
                     }}
                     ownedSkills={snapshot.ownedSkills}
-                    reacted={Boolean(reactions[item.id])}
+                    reacted={socialInteractions.reactedPostIds.includes(item.id)}
                     saved={
                       recommendedJob
                         ? savedJobIds.includes(item.postingId)
-                        : Boolean(saves[item.id])
+                        : socialInteractions.savedPostIds.includes(item.id)
                     }
                   />
                 );
