@@ -5,6 +5,10 @@ from typing import Protocol
 from fastapi import APIRouter, Query
 
 from ejikfit.db import SessionLocal
+from ejikfit.skill_catalog import (
+    canonicalize_skill_input,
+    canonicalize_skill_inputs,
+)
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 from ejikfit.skill_graph import SkillGraph, build_skill_graph
 
@@ -104,8 +108,8 @@ def create_graph_router(reader: SkillGraphReader) -> APIRouter:
         limit: int = Query(default=30, ge=5, le=60),
     ) -> dict:
         return reader.graph(
-            seed=seed,
-            owned_skills=owned_skills or [],
+            seed=canonicalize_skill_input(seed) if seed else None,
+            owned_skills=canonicalize_skill_inputs(owned_skills or []),
             career_type=career_type,
             limit=limit,
         )

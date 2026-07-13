@@ -165,3 +165,34 @@ def test_seed_graph_limits_nodes_by_relevance_with_public_lower_bound() -> None:
     assert len(graph.nodes) == 5
     assert graph.node_by_id("C++").seed is True
     assert len(graph.edges) == 4
+
+
+def test_build_skill_graph_canonicalizes_seed_and_owned_skill_inputs() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _source(session)
+        _posting(
+            session,
+            company,
+            source,
+            "canonical-input",
+            title="플랫폼 엔지니어",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("Kubernetes", "infra", "preferred", 1.0),
+            ],
+        )
+        session.commit()
+
+        graph = build_skill_graph(
+            session,
+            seed="python",
+            owned_skills=["PYTHON", "k8s"],
+            limit=10,
+        )
+
+    assert graph.seed == "Python"
+    assert graph.node_by_id("Python").seed is True
+    assert graph.node_by_id("Python").owned is True
+    assert graph.node_by_id("Kubernetes").owned is True

@@ -184,3 +184,28 @@ def test_analyze_fit_filters_by_career_type() -> None:
 
     assert result.coverage.matching_posting_count == 1
     assert result.recommended_next_skills[0].skill == "Docker"
+
+
+def test_analyze_fit_canonicalizes_owned_skill_case_for_direct_callers() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _fixture(session)
+        _posting(
+            session,
+            company,
+            source,
+            "case-normalization",
+            title="신입 백엔드",
+            career_type="new_comer",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("Docker", "infra", "required", 1.0),
+            ],
+        )
+        session.commit()
+
+        result = analyze_fit(session, owned_skills=["python"])
+
+    assert result.coverage.matching_posting_count == 1
+    assert result.recommended_next_skills[0].skill == "Docker"

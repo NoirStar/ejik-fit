@@ -36,6 +36,20 @@ class FakeFitAnalysisReader:
         }
 
 
+class RecordingFitAnalysisReader(FakeFitAnalysisReader):
+    def __init__(self) -> None:
+        self.owned_skills: list[str] = []
+
+    def analyze(
+        self,
+        owned_skills: list[str],
+        career_type: str | None = None,
+        domains: list[str] | None = None,
+    ) -> dict:
+        self.owned_skills = owned_skills
+        return super().analyze(owned_skills, career_type, domains)
+
+
 def test_fit_endpoint_returns_requirement_coverage() -> None:
     app = create_app(fit_analysis_reader=FakeFitAnalysisReader())
     response = TestClient(app).post(
@@ -55,3 +69,16 @@ def test_fit_endpoint_requires_owned_skills() -> None:
     response = TestClient(app).post("/api/fit/analyze", json={"owned_skills": []})
 
     assert response.status_code == 422
+
+
+def test_fit_endpoint_canonicalizes_explicit_skill_names() -> None:
+    reader = RecordingFitAnalysisReader()
+    app = create_app(fit_analysis_reader=reader)
+
+    response = TestClient(app).post(
+        "/api/fit/analyze",
+        json={"owned_skills": [" python ", "PYTHON", "K8S", "Custom Tool"]},
+    )
+
+    assert response.status_code == 200
+    assert reader.owned_skills == ["Python", "Kubernetes", "Custom Tool"]
