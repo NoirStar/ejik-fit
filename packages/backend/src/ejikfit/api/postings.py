@@ -9,6 +9,7 @@ from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from ejikfit.db import SessionLocal
+from ejikfit.html_text import structured_plain_text
 from ejikfit.models import Company, JobPosting, PostingSkill, PostingStatus
 from ejikfit.search import MeiliPostingIndex
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
@@ -72,7 +73,10 @@ def _detail(posting: JobPosting) -> dict:
     return {
         **_summary(posting),
         "description_html": posting.description_html,
-        "description_text": posting.description_text,
+        "description_text": structured_plain_text(
+            posting.description_html,
+            posting.description_text,
+        ),
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,
         "skills": sorted(skill.skill for skill in confirmed),

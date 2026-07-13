@@ -46,8 +46,14 @@ const postingDetails = {
   "job-python": {
     ...postings.items[0],
     description_html: "<p>Do not render this HTML</p>",
-    description_text:
-      "제품 소개입니다. ### 주요 업무 * Python API를 개발합니다. * Docker 기반 배포 환경을 운영합니다. ### 우대 사항 • Kubernetes 운영 경험",
+    description_text: [
+      "제품 소개입니다.",
+      "## 주요 업무",
+      "• Python API를 개발합니다.",
+      "• Docker 기반 배포 환경을 운영합니다.",
+      "## 우대 사항",
+      "• Kubernetes 운영 경험",
+    ].join("\n"),
     skills: ["Python", "Docker", "Kubernetes"],
     skill_details: [
       {

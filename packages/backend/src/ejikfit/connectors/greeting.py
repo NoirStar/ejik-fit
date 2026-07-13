@@ -1,10 +1,9 @@
 from datetime import datetime
 from typing import Any
 
-from bs4 import BeautifulSoup
-
 from ejikfit.connectors.next_data import extract_next_data
 from ejikfit.connectors.types import OpeningRef, ParsedOpening
+from ejikfit.html_text import structured_plain_text
 
 
 def _queries(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -163,10 +162,7 @@ def parse_opening(html: str, page_url: str) -> ParsedOpening:
 
     detail = info.get("detail")
     description_html = detail if isinstance(detail, str) else ""
-    description_text = BeautifulSoup(
-        description_html,
-        "lxml",
-    ).get_text(" ", strip=True)
+    description_text = structured_plain_text(description_html)
 
     external_id = info.get("openingId")
     title = info.get("title")

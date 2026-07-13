@@ -89,6 +89,28 @@ def test_database_list_exposes_confirmed_requirement_evidence() -> None:
     assert item["unspecified_skills"] == ["Linux"]
 
 
+def test_database_detail_restores_plain_text_structure_from_source_html() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    with factory() as session:
+        posting = _posting_with_skills(session)
+        posting.description_html = (
+            "<h2>주요 업무</h2><ul><li>Python API 개발</li>"
+            "<li>Docker 운영</li></ul>"
+        )
+        posting.description_text = "주요 업무 Python API 개발 Docker 운영"
+        posting_id = str(posting.id)
+        session.commit()
+
+    item = DatabasePostingReader(session_factory=factory).get(posting_id)
+
+    assert item is not None
+    assert item["description_text"] == (
+        "## 주요 업무\n• Python API 개발\n• Docker 운영"
+    )
+
+
 def test_search_document_keeps_the_same_confirmed_evidence_contract() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
