@@ -8,7 +8,7 @@ describe("posting labels", () => {
     ["experienced", "경력"],
     ["mixed", "신입·경력"],
     ["not_matter", "경력 무관"],
-    [null, "경력 무관"],
+    [null, "경력 미기재"],
   ])("formats career value %s", (value, expected) => {
     expect(formatCareer(value)).toBe(expected);
   });
@@ -21,6 +21,7 @@ describe("posting labels", () => {
     ["정규", "정규직"],
     ["계약", "계약직"],
     ["인턴", "인턴"],
+    [null, "고용 형태 미기재"],
   ])("formats employment value %s", (value, expected) => {
     expect(formatEmployment(value)).toBe(expected);
   });

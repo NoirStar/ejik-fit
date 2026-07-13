@@ -30,8 +30,8 @@ const postings: PostingListResponse = {
       id: "job-old",
       title: "백엔드 엔지니어",
       company_name: "예시회사",
-      career_type: "experienced",
-      employment_type: "FULL_TIME_WORKER",
+      career_type: null,
+      employment_type: null,
       career_min: 2,
       career_max: 5,
       location: null,
@@ -114,6 +114,8 @@ describe("market overview model", () => {
       }),
       expect.objectContaining({
         id: "job-old",
+        careerLabel: "경력 미기재",
+        employmentLabel: "고용 형태 미기재",
         location: "근무지 미기재",
       }),
     ]);

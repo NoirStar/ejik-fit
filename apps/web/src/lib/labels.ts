@@ -24,10 +24,10 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
 
 
 export function formatCareer(value: string | null): string {
-  return value ? CAREER_LABELS[value] ?? value : "경력 무관";
+  return value ? CAREER_LABELS[value] ?? value : "경력 미기재";
 }
 
 
 export function formatEmployment(value: string | null): string {
-  return value ? EMPLOYMENT_LABELS[value] ?? value : "미정";
+  return value ? EMPLOYMENT_LABELS[value] ?? value : "고용 형태 미기재";
 }

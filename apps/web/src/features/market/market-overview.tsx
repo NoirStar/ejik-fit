@@ -28,15 +28,27 @@ function formatCount(value: number | null, unit: string) {
   return value === null ? "확인 불가" : `${value.toLocaleString("ko-KR")}${unit}`;
 }
 
-function formatVerifiedAt(value: string | null) {
+function formatVerifiedDate(value: string | null) {
   if (!value || Number.isNaN(Date.parse(value))) {
-    return "기록 없음";
+    return null;
   }
   return new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
-    day: "numeric",
+    dateStyle: "medium",
     timeZone: "Asia/Seoul",
   }).format(new Date(value));
+}
+
+function VerifiedTime({ value }: { value: string }) {
+  const verifiedDate = formatVerifiedDate(value);
+
+  return (
+    <time
+      className={styles.verified}
+      dateTime={verifiedDate ? value : undefined}
+    >
+      {verifiedDate ? `${verifiedDate} 확인` : "확인 시각 없음"}
+    </time>
+  );
 }
 
 export function MarketOverview({
@@ -46,7 +58,10 @@ export function MarketOverview({
 }) {
   const latestVerifiedLabel = snapshot.postingError
     ? "확인 불가"
-    : formatVerifiedAt(snapshot.latestVerifiedAt);
+    : (formatVerifiedDate(snapshot.latestVerifiedAt) ?? "확인 시각 없음");
+  const marketUnavailable = Boolean(
+    snapshot.postingError && snapshot.skillError,
+  );
 
   return (
     <main className={styles.page}>
@@ -92,130 +107,150 @@ export function MarketOverview({
         </dl>
       </section>
 
-      <div className={styles.contentGrid}>
-        <section aria-labelledby="skill-demand-title" className={styles.panel}>
-          <header className={styles.sectionHeader}>
-            <h2 id="skill-demand-title">기술 수요 순위</h2>
-            <p>한 개 이상의 공개 공고에서 확인된 기술을 공고 수 기준으로 정렬했습니다.</p>
-          </header>
+      {marketUnavailable ? (
+        <section
+          aria-labelledby="market-unavailable-title"
+          className={styles.completeFailure}
+          role="alert"
+        >
+          <h2 id="market-unavailable-title">
+            시장 데이터를 불러오지 못했습니다.
+          </h2>
+          <p>잠시 후 다시 시도하거나 전체 공고를 확인해 주세요.</p>
+          <div className={styles.methodLinks}>
+            <Link
+              className={styles.textLink}
+              href={buildMarketFilterHref(snapshot.careerType)}
+            >
+              다시 시도
+            </Link>
+            <Link className={styles.textLink} href="/jobs">
+              전체 공고 보기
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <div className={styles.contentGrid}>
+          <section aria-labelledby="skill-demand-title" className={styles.panel}>
+            <header className={styles.sectionHeader}>
+              <h2 id="skill-demand-title">기술 수요 순위</h2>
+              <p>한 개 이상의 공개 공고에서 확인된 기술을 공고 수 기준으로 정렬했습니다.</p>
+            </header>
 
-          {snapshot.skillError ? (
-            <div className={styles.state} role="alert">
-              <strong>{snapshot.skillError}</strong>
-              <p>공고 목록은 확인 가능한 범위에서 계속 제공합니다.</p>
-              <Link
-                className={styles.textLink}
-                href={buildMarketFilterHref(snapshot.careerType)}
-              >
-                다시 시도
-              </Link>
-            </div>
-          ) : snapshot.skills.length === 0 ? (
-            <div className={styles.state}>
-              <strong>이 조건에서 확인된 기술 수요가 없습니다.</strong>
-              <p>전체 조건에서 현재 수집된 기술을 확인해 보세요.</p>
-              <Link className={styles.textLink} href="/market">
-                전체 시장 보기
-              </Link>
-            </div>
-          ) : (
-            <ol className={styles.skillList}>
-              {snapshot.skills.map((skill, index) => (
-                <li className={styles.skillItem} key={skill.name}>
-                  <div className={styles.skillIdentity}>
-                    <span className={styles.rank} aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <Link
-                        aria-label={`${skill.name} 스킬맵`}
-                        className={styles.skillLink}
-                        href={skill.skillHref}
-                      >
-                        {skill.name}
-                      </Link>
-                      <span className={styles.category}>
-                        {CATEGORY_LABELS[skill.category] ?? skill.category}
+            {snapshot.skillError ? (
+              <div className={styles.state} role="alert">
+                <h3>{snapshot.skillError}</h3>
+                <p>공고 목록은 확인 가능한 범위에서 계속 제공합니다.</p>
+                <Link
+                  className={styles.textLink}
+                  href={buildMarketFilterHref(snapshot.careerType)}
+                >
+                  다시 시도
+                </Link>
+              </div>
+            ) : snapshot.skills.length === 0 ? (
+              <div className={styles.state}>
+                <h3>이 조건에서 확인된 기술 수요가 없습니다.</h3>
+                <p>전체 조건에서 현재 수집된 기술을 확인해 보세요.</p>
+                <Link className={styles.textLink} href="/market">
+                  전체 시장 보기
+                </Link>
+              </div>
+            ) : (
+              <ol className={styles.skillList} role="list">
+                {snapshot.skills.map((skill, index) => (
+                  <li className={styles.skillItem} key={skill.name}>
+                    <div className={styles.skillIdentity}>
+                      <span className={styles.rank} aria-hidden="true">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <Link
+                          aria-label={`${skill.name} 스킬맵`}
+                          className={styles.skillLink}
+                          href={skill.skillHref}
+                        >
+                          {skill.name}
+                        </Link>
+                        <span className={styles.category}>
+                          {CATEGORY_LABELS[skill.category] ?? skill.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles.demand}>
+                      <strong>{skill.postingCount.toLocaleString("ko-KR")}건</strong>
+                      <span className={styles.bar} aria-hidden="true">
+                        <span style={{ width: `${skill.relativeDemand}%` }} />
+                      </span>
+                      <span className={styles.counts}>
+                        <span>필수 {skill.requiredCount.toLocaleString("ko-KR")}건</span>
+                        <span>우대 {skill.preferredCount.toLocaleString("ko-KR")}건</span>
+                        <span>
+                          미분류 {skill.unspecifiedCount.toLocaleString("ko-KR")}건
+                        </span>
                       </span>
                     </div>
-                  </div>
 
-                  <div className={styles.demand}>
-                    <strong>{skill.postingCount.toLocaleString("ko-KR")}건</strong>
-                    <span className={styles.bar} aria-hidden="true">
-                      <span style={{ width: `${skill.relativeDemand}%` }} />
-                    </span>
-                    <span className={styles.counts}>
-                      <span>필수 {skill.requiredCount.toLocaleString("ko-KR")}건</span>
-                      <span>우대 {skill.preferredCount.toLocaleString("ko-KR")}건</span>
-                      {skill.unspecifiedCount > 0 && (
-                        <span>
-                          기타 {skill.unspecifiedCount.toLocaleString("ko-KR")}건
-                        </span>
-                      )}
-                    </span>
-                  </div>
+                    <Link
+                      aria-label={`${skill.name} 관련 공고`}
+                      className={styles.jobsLink}
+                      href={skill.jobsHref}
+                    >
+                      관련 공고
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
 
-                  <Link
-                    aria-label={`${skill.name} 관련 공고`}
-                    className={styles.jobsLink}
-                    href={skill.jobsHref}
-                  >
-                    관련 공고
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+          <aside aria-labelledby="recent-jobs-title" className={styles.panel}>
+            <header className={styles.sectionHeader}>
+              <h2 id="recent-jobs-title">최근 확인 공고</h2>
+              <p>공식 원문에서 현재 공개 상태를 다시 확인한 공고입니다.</p>
+            </header>
 
-        <aside aria-labelledby="recent-jobs-title" className={styles.panel}>
-          <header className={styles.sectionHeader}>
-            <h2 id="recent-jobs-title">최근 확인 공고</h2>
-            <p>공식 원문에서 현재 공개 상태를 다시 확인한 공고입니다.</p>
-          </header>
-
-          {snapshot.postingError ? (
-            <div className={styles.state} role="alert">
-              <strong>{snapshot.postingError}</strong>
-              <p>기술 수요는 확인 가능한 범위에서 계속 제공합니다.</p>
-              <Link
-                className={styles.textLink}
-                href={buildMarketFilterHref(snapshot.careerType)}
-              >
-                다시 시도
-              </Link>
-            </div>
-          ) : snapshot.jobs.length === 0 ? (
-            <div className={styles.state}>
-              <strong>이 조건에서 확인된 공개 공고가 없습니다.</strong>
-              <p>전체 공고에서 다른 경력 조건을 살펴보세요.</p>
-              <Link className={styles.textLink} href="/jobs">
-                전체 공고 보기
-              </Link>
-            </div>
-          ) : (
-            <ul className={styles.jobList}>
-              {snapshot.jobs.map((job) => (
-                <li key={job.id}>
-                  <Link className={styles.job} href={job.href}>
-                    <span className={styles.company}>{job.companyName}</span>
-                    <strong>{job.title}</strong>
-                    <span className={styles.jobMeta}>
-                      <span>{job.careerLabel}</span>
-                      <span>{job.employmentLabel}</span>
-                      <span>{job.location}</span>
-                    </span>
-                    <time className={styles.verified} dateTime={job.verifiedAt}>
-                      {formatVerifiedAt(job.verifiedAt)} 확인
-                    </time>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
-      </div>
+            {snapshot.postingError ? (
+              <div className={styles.state} role="alert">
+                <h3>{snapshot.postingError}</h3>
+                <p>기술 수요는 확인 가능한 범위에서 계속 제공합니다.</p>
+                <Link
+                  className={styles.textLink}
+                  href={buildMarketFilterHref(snapshot.careerType)}
+                >
+                  다시 시도
+                </Link>
+              </div>
+            ) : snapshot.jobs.length === 0 ? (
+              <div className={styles.state}>
+                <h3>이 조건에서 확인된 공개 공고가 없습니다.</h3>
+                <p>전체 공고에서 다른 경력 조건을 살펴보세요.</p>
+                <Link className={styles.textLink} href="/jobs">
+                  전체 공고 보기
+                </Link>
+              </div>
+            ) : (
+              <ul className={styles.jobList} role="list">
+                {snapshot.jobs.map((job) => (
+                  <li key={job.id}>
+                    <Link className={styles.job} href={job.href}>
+                      <span className={styles.company}>{job.companyName}</span>
+                      <strong>{job.title}</strong>
+                      <span className={styles.jobMeta}>
+                        <span>{job.careerLabel}</span>
+                        <span>{job.employmentLabel}</span>
+                        <span>{job.location}</span>
+                      </span>
+                      <VerifiedTime value={job.verifiedAt} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        </div>
+      )}
 
       <section aria-labelledby="market-method-title" className={styles.method}>
         <h2 id="market-method-title">데이터를 읽는 기준</h2>

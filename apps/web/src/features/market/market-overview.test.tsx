@@ -22,6 +22,19 @@ const postings: PostingListResponse = {
       source_url: "https://example.com/jobs/1",
       last_verified_at: "2026-07-14T03:00:00Z",
     },
+    {
+      id: "job-2",
+      title: "데이터 엔지니어",
+      company_name: "예시회사",
+      career_type: null,
+      employment_type: null,
+      career_min: null,
+      career_max: null,
+      location: null,
+      status: "open",
+      source_url: "https://example.com/jobs/2",
+      last_verified_at: "invalid-date",
+    },
   ],
 };
 
@@ -70,6 +83,9 @@ describe("MarketOverview", () => {
       screen.getByRole("link", { name: "Kubernetes 스킬맵" }),
     ).toHaveAttribute("href", "/skill-map?skill=Kubernetes");
     expect(
+      screen.getByRole("link", { name: "Kubernetes 스킬맵" }).closest("ol"),
+    ).toHaveAttribute("role", "list");
+    expect(
       screen.getByRole("link", { name: "Kubernetes 관련 공고" }),
     ).toHaveAttribute(
       "href",
@@ -77,10 +93,18 @@ describe("MarketOverview", () => {
     );
     expect(screen.getByText("필수 5건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
+    expect(screen.getByText("미분류 3건")).toBeInTheDocument();
+    expect(screen.queryByText("기타 3건")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /플랫폼 엔지니어/ })).toHaveAttribute(
       "href",
       "/jobs/job-1",
     );
+    expect(
+      screen.getByRole("link", { name: /플랫폼 엔지니어/ }).closest("ul"),
+    ).toHaveAttribute("role", "list");
+    expect(screen.getAllByText("2026. 7. 14. 확인").length).toBeGreaterThan(0);
+    expect(screen.getByText("확인 시각 없음")).toBeInTheDocument();
+    expect(screen.queryByText("기록 없음 확인")).not.toBeInTheDocument();
     expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
     expect(screen.getByText(/상위 최대 30개/)).toBeInTheDocument();
     expect(screen.queryByText(/증가|감소|실시간|예측/)).not.toBeInTheDocument();
@@ -103,10 +127,49 @@ describe("MarketOverview", () => {
     expect(
       screen.getAllByText("공고 데이터를 불러오지 못했습니다.").length,
     ).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", {
+        level: 3,
+        name: "공고 데이터를 불러오지 못했습니다.",
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Kubernetes")).toBeInTheDocument();
     expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent(
       "확인 불가",
     );
+  });
+
+  it("shows one safe recovery state when both market requests fail", () => {
+    render(
+      <MarketOverview
+        snapshot={buildMarketOverviewSnapshot({
+          careerType: "experienced",
+          postings: {
+            status: "error",
+            message: "공고 데이터를 불러오지 못했습니다.",
+          },
+          skillStats: {
+            status: "error",
+            message: "기술 수요 데이터를 불러오지 못했습니다.",
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "시장 데이터를 불러오지 못했습니다.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
+      "href",
+      "/market?career_type=experienced",
+    );
+    expect(
+      screen.queryByText("기술 수요 데이터를 불러오지 못했습니다."),
+    ).not.toBeInTheDocument();
   });
 
   it("labels every category returned by the current skill API", () => {
@@ -165,6 +228,11 @@ describe("MarketOverview", () => {
         screen.getByRole("link", { name: "Selenium 스킬맵" }).parentElement!,
       ).getByText("QA"),
     ).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("link", { name: "FreeRTOS 스킬맵" }).closest("li")!,
+      ).getByText("미분류 0건"),
+    ).toBeInTheDocument();
   });
 
   it("distinguishes empty market results from errors", () => {
@@ -179,10 +247,16 @@ describe("MarketOverview", () => {
     );
 
     expect(
-      screen.getByText("이 조건에서 확인된 기술 수요가 없습니다."),
+      screen.getByRole("heading", {
+        level: 3,
+        name: "이 조건에서 확인된 기술 수요가 없습니다.",
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("이 조건에서 확인된 공개 공고가 없습니다."),
+      screen.getByRole("heading", {
+        level: 3,
+        name: "이 조건에서 확인된 공개 공고가 없습니다.",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "전체 시장 보기" })).toHaveAttribute(
       "href",
