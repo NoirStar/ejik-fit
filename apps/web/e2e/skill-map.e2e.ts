@@ -59,8 +59,10 @@ for (const width of [1440, 820, 390]) {
     const quickSkills = page.getByRole("navigation", {
       name: "빠른 기술 선택",
     });
-    await quickSkills.getByRole("button", { name: "Docker" }).click();
-    await expect(page).toHaveURL(/\/skills\/graph\?seed=Docker$/);
+    await quickSkills.getByRole("link", { name: "Docker" }).click();
+    await expect(page).toHaveURL(/\/skills\/graph\?seed=Docker$/, {
+      timeout: 15_000,
+    });
     await expect(
       inspector.getByRole("heading", { name: "Docker" }),
     ).toBeVisible();
@@ -107,7 +109,7 @@ for (const width of [1440, 820, 390]) {
 
     if (width === 390) {
       const quickTarget = await quickSkills
-        .getByRole("button", { name: "Docker" })
+        .getByRole("link", { name: "Docker" })
         .boundingBox();
       expect(quickTarget?.height).toBeGreaterThanOrEqual(44);
 

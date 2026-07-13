@@ -206,10 +206,12 @@
   display: none;
 }
 
-.quickSkills button,
+.quickSkills a,
 .ownedSkills button {
+  display: inline-flex;
   min-height: 2rem;
   flex: 0 0 auto;
+  align-items: center;
   padding: 0 0.75rem;
   border: 1px solid var(--color-line);
   border-radius: 999px;
@@ -218,6 +220,7 @@
   font: inherit;
   font-size: 0.75rem;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
   transition:
     border-color 160ms var(--ease-standard),
@@ -226,14 +229,14 @@
     transform 160ms var(--ease-standard);
 }
 
-.quickSkills button:hover,
-.quickSkills button[data-active="true"] {
+.quickSkills a:hover,
+.quickSkills a[data-active="true"] {
   border-color: var(--color-accent);
   background: var(--color-brand-subtle);
   color: var(--color-accent-strong);
 }
 
-.quickSkills button:active,
+.quickSkills a:active,
 .ownedSkills button:active {
   transform: translateY(1px);
 }
@@ -993,7 +996,7 @@
     padding-top: 0.6rem;
   }
 
-  .quickSkills button {
+  .quickSkills a {
     min-height: var(--touch-target);
   }
 

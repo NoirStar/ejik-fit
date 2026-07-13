@@ -123,7 +123,7 @@ describe("SkillGraphExperience", () => {
     vi.unstubAllGlobals();
   });
 
-  it("requests a newly seeded graph when a quick skill is selected", () => {
+  it("links quick skills to a newly seeded graph", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -131,9 +131,10 @@ describe("SkillGraphExperience", () => {
     const quickSkills = screen.getByRole("navigation", {
       name: "빠른 기술 선택",
     });
-    fireEvent.click(within(quickSkills).getByRole("button", { name: "ROS2" }));
-
-    expect(navigation.push).toHaveBeenCalledWith("/skills/graph?seed=ROS2");
+    expect(within(quickSkills).getByRole("link", { name: "ROS2" })).toHaveAttribute(
+      "href",
+      "/skills/graph?seed=ROS2",
+    );
   });
 
   it("persists owned skills and renders API-backed next-skill evidence", async () => {

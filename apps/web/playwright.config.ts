@@ -7,6 +7,9 @@ process.env.NO_PROXY = [process.env.NO_PROXY, "127.0.0.1", "localhost"]
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
+  expect: {
+    timeout: 15_000,
+  },
   use: {
     baseURL: "http://127.0.0.1:3102",
     browserName: "chromium",

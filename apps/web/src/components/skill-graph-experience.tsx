@@ -495,15 +495,17 @@ export function SkillGraphExperience({
           <span>빠른 선택</span>
           <div>
             {quickSkills.map((skill) => (
-              <button
-                aria-pressed={selectedId === skill}
+              <Link
+                aria-current={selectedId === skill ? "page" : undefined}
                 data-active={selectedId === skill ? "true" : undefined}
+                href={buildSkillGraphHref({
+                  skill,
+                  owned_skills: ownedSkills,
+                })}
                 key={skill}
-                onClick={() => selectSkill(skill)}
-                type="button"
               >
                 {skill}
-              </button>
+              </Link>
             ))}
           </div>
         </nav>
