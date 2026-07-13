@@ -13,13 +13,18 @@ import {
   UserCircle,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
-import { ownedSkillsToDashboardHref } from "@/lib/owned-skills";
+import {
+  normalizeOwnedSkills,
+  ownedSkillsToDashboardHref,
+  readOwnedSkills,
+  writeOwnedSkills,
+} from "@/lib/owned-skills";
 
 import styles from "./app-shell.module.css";
 
@@ -43,6 +48,38 @@ function isEditingTarget(target: EventTarget | null) {
   );
 }
 
+function sameSkills(left: string[], right: string[]) {
+  return left.length === right.length && left.every((skill, index) => skill === right[index]);
+}
+
+function StoredSkillsSync() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const serializedSearch = searchParams.toString();
+
+  useEffect(() => {
+    if (pathname !== "/") return;
+    const querySkills = normalizeOwnedSkills(
+      searchParams.getAll("owned_skills").flatMap((value) => value.split(",")),
+    );
+    const storedSkills = readOwnedSkills();
+
+    if (querySkills.length > 0) {
+      if (!sameSkills(querySkills, storedSkills)) writeOwnedSkills(querySkills);
+      return;
+    }
+    if (storedSkills.length === 0) return;
+
+    router.replace(ownedSkillsToDashboardHref(storedSkills, serializedSearch), {
+      scroll: false,
+    });
+    router.refresh();
+  }, [pathname, router, searchParams, serializedSearch]);
+
+  return null;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -51,6 +88,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const stackButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationAnchorRef = useRef<HTMLDivElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
+  const userAnchorRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
   const closeUtilityMenus = useCallback(() => {
@@ -61,6 +102,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (notificationOpen) notificationButtonRef.current?.focus();
+        if (userMenuOpen) userButtonRef.current?.focus();
         closeUtilityMenus();
         return;
       }
@@ -79,11 +122,33 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeUtilityMenus]);
+  }, [closeUtilityMenus, notificationOpen, userMenuOpen]);
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (notificationOpen && !notificationAnchorRef.current?.contains(target)) {
+        setNotificationOpen(false);
+      }
+      if (userMenuOpen && !userAnchorRef.current?.contains(target)) {
+        setUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [notificationOpen, userMenuOpen]);
+
+  useEffect(() => {
+    closeUtilityMenus();
+  }, [closeUtilityMenus, pathname]);
 
   function handleSkillsChange(skills: string[]) {
     if (pathname === "/") {
-      router.replace(ownedSkillsToDashboardHref(skills), { scroll: false });
+      const currentSearch = typeof window === "undefined" ? "" : window.location.search;
+      router.replace(ownedSkillsToDashboardHref(skills, currentSearch), { scroll: false });
     }
     router.refresh();
   }
@@ -95,6 +160,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className={styles.shell}>
+      <Suspense fallback={null}>
+        <StoredSkillsSync />
+      </Suspense>
       <header className={styles.header}>
         <div className={styles.utilityRow}>
           <Link aria-label="이직핏 홈" className={styles.brand} href="/">
@@ -114,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </form>
 
           <div className={styles.utilities}>
-            <Link className={styles.writeButton} href="/?compose=1">
+            <Link aria-label="글쓰기" className={styles.writeButton} href="/?compose=1">
               <NotePencil aria-hidden="true" size={19} weight="bold" />
               <span>글쓰기</span>
             </Link>
@@ -130,24 +198,29 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className={styles.utilityLabel}>내 스택</span>
             </button>
 
-            <div className={styles.menuAnchor}>
+            <div className={styles.menuAnchor} ref={notificationAnchorRef}>
               <button
+                aria-controls="notification-disclosure"
                 aria-expanded={notificationOpen}
-                aria-haspopup="menu"
                 aria-label="알림 열기"
                 className={styles.iconButton}
                 onClick={() => {
                   setUserMenuOpen(false);
                   setNotificationOpen((open) => !open);
                 }}
+                ref={notificationButtonRef}
                 type="button"
               >
                 <Bell aria-hidden="true" size={21} />
               </button>
               {notificationOpen && (
-                <div aria-label="알림" className={styles.menu} role="menu">
+                <div
+                  aria-label="알림"
+                  className={styles.menu}
+                  id="notification-disclosure"
+                >
                   <div className={styles.menuHeader}>알림</div>
-                  <div className={styles.emptyMenuItem} role="menuitem" tabIndex={-1}>
+                  <div className={styles.emptyMenuItem}>
                     <strong>새 알림이 없습니다.</strong>
                     <span>저장한 기술과 관련된 소식이 생기면 알려드릴게요.</span>
                   </div>
@@ -155,16 +228,17 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             </div>
 
-            <div className={styles.menuAnchor}>
+            <div className={styles.menuAnchor} ref={userAnchorRef}>
               <button
+                aria-controls="user-disclosure"
                 aria-expanded={userMenuOpen}
-                aria-haspopup="menu"
                 aria-label="사용자 메뉴 열기"
                 className={styles.userButton}
                 onClick={() => {
                   setNotificationOpen(false);
                   setUserMenuOpen((open) => !open);
                 }}
+                ref={userButtonRef}
                 type="button"
               >
                 <span className={styles.avatar}>
@@ -174,15 +248,15 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <CaretDown aria-hidden="true" className={styles.userCaret} size={14} />
               </button>
               {userMenuOpen && (
-                <div aria-label="사용자 메뉴" className={styles.menu} role="menu">
+                <div aria-label="사용자 메뉴" className={styles.menu} id="user-disclosure">
                   <div className={styles.menuHeader}>
                     <strong>로그인 없이 둘러보는 중</strong>
                     <span>내 스택은 이 브라우저에만 저장됩니다.</span>
                   </div>
-                  <Link href="/career" onClick={closeUtilityMenus} role="menuitem">
+                  <Link href="/career" onClick={closeUtilityMenus}>
                     내 커리어
                   </Link>
-                  <Link href="/data-policy" onClick={closeUtilityMenus} role="menuitem">
+                  <Link href="/data-policy" onClick={closeUtilityMenus}>
                     데이터 정책
                   </Link>
                 </div>
@@ -214,7 +288,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <div className={styles.content}>
+      <div
+        className={styles.content}
+        data-immersive={pathname.startsWith("/skills/graph") ? "true" : undefined}
+      >
         {children}
         <footer className={styles.footer}>
           <p>공식 채용페이지의 공개 정보만 수집합니다.</p>

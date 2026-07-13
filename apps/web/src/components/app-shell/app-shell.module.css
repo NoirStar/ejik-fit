@@ -15,7 +15,7 @@
 .utilityRow {
   display: grid;
   width: min(100%, var(--content-max));
-  min-height: 4rem;
+  min-height: calc(4rem - 1px);
   grid-template-columns: minmax(8.5rem, 1fr) minmax(18rem, 32rem) minmax(18rem, 1fr);
   align-items: center;
   gap: clamp(1rem, 2.5vw, 2.5rem);
@@ -268,7 +268,7 @@
 .navInner {
   display: flex;
   width: min(100%, 42rem);
-  height: 3rem;
+  height: calc(3rem - 1px);
   align-items: stretch;
   justify-content: space-between;
   margin: 0 auto;
@@ -320,6 +320,22 @@
 
 .content > :first-child {
   flex: 1;
+}
+
+.content[data-immersive="true"] .footer {
+  display: none;
+}
+
+@media (min-width: 1081px) {
+  .content[data-immersive="true"] {
+    height: calc(100dvh - var(--header-height-desktop));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .content[data-immersive="true"] > :first-child {
+    flex: none;
+  }
 }
 
 .footer {
@@ -377,16 +393,64 @@
   }
 
   .utilityRow {
+    position: relative;
     display: flex;
-    min-height: 4rem;
+    min-height: calc(4rem - 1px);
     justify-content: space-between;
     gap: 0.75rem;
     padding: 0 0.75rem;
   }
 
-  .searchForm,
   .desktopNav {
     display: none;
+  }
+
+  .searchForm {
+    width: var(--touch-target);
+    flex: 0 0 var(--touch-target);
+    background: transparent;
+  }
+
+  .searchForm .searchIcon {
+    margin: auto;
+    pointer-events: none;
+  }
+
+  .searchForm input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .searchForm kbd {
+    display: none;
+  }
+
+  .searchForm:focus-within {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    left: 0.75rem;
+    z-index: 4;
+    width: auto;
+    background: var(--color-surface);
+    transform: translateY(-50%);
+  }
+
+  .searchForm:focus-within .searchIcon {
+    margin-right: 0;
+    margin-left: 0.875rem;
+  }
+
+  .searchForm:focus-within input {
+    position: static;
+    width: auto;
+    padding: 0 0.75rem;
+    opacity: 1;
+    cursor: text;
   }
 
   .utilities {
@@ -460,8 +524,8 @@
   .stackButton,
   .iconButton,
   .userButton {
-    width: 2.625rem;
-    min-height: 2.625rem;
+    width: var(--touch-target);
+    min-height: var(--touch-target);
     padding: 0;
   }
 

@@ -7,6 +7,7 @@ export type CompanyIdentity = {
 
 type VerifiedLogo = {
   aliases: string[];
+  hosts: string[];
   src: string;
   displayName: string;
 };
@@ -14,6 +15,7 @@ type VerifiedLogo = {
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
+    hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",
     displayName: "네이버",
   },
@@ -39,13 +41,26 @@ function initialsFor(value: string) {
   return trimmed.slice(0, 2).toUpperCase();
 }
 
+function hasTrustedSource(sourceUrl: string | undefined, hosts: string[]) {
+  if (!sourceUrl) return false;
+
+  try {
+    const hostname = new URL(sourceUrl).hostname.toLocaleLowerCase("en-US");
+    return hosts.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+  } catch {
+    return false;
+  }
+}
+
 export function companyIdentity(
   companyName: string,
-  _sourceUrl?: string,
+  sourceUrl?: string,
 ): CompanyIdentity {
   const normalized = normalize(companyName);
-  const verified = VERIFIED_LOGOS.find((logo) =>
-    logo.aliases.some((alias) => normalize(alias) === normalized),
+  const verified = VERIFIED_LOGOS.find(
+    (logo) =>
+      logo.aliases.some((alias) => normalize(alias) === normalized) &&
+      hasTrustedSource(sourceUrl, logo.hosts),
   );
   const initials = initialsFor(companyName);
 

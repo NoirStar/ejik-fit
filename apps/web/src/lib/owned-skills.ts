@@ -28,8 +28,12 @@ export function ownedSkillsFromSearchParams(
 }
 
 
-export function ownedSkillsToDashboardHref(skills: string[]) {
-  const params = new URLSearchParams();
+export function ownedSkillsToDashboardHref(
+  skills: string[],
+  currentSearch = "",
+) {
+  const params = new URLSearchParams(currentSearch);
+  params.delete("owned_skills");
   normalizeOwnedSkills(skills).forEach((skill) => {
     params.append("owned_skills", skill);
   });

@@ -1,16 +1,18 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./app-shell";
 
 const navigation = vi.hoisted(() => ({
   pathname: "/",
+  search: "",
   replace: vi.fn(),
   refresh: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
+  useSearchParams: () => new URLSearchParams(navigation.search),
   useRouter: () => ({
     replace: navigation.replace,
     refresh: navigation.refresh,
@@ -22,8 +24,10 @@ describe("AppShell", () => {
 
   beforeEach(() => {
     navigation.pathname = "/";
+    navigation.search = "";
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
+    localStorage.clear();
   });
 
   it("exposes desktop and mobile access to five product destinations", () => {
@@ -39,6 +43,10 @@ describe("AppShell", () => {
     expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute("href", "/jobs");
     expect(screen.getAllByRole("link", { name: "내 커리어" })[0]).toHaveAttribute("href", "/career");
     expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute("href", "/?compose=1");
+    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
+      "aria-label",
+      "글쓰기",
+    );
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute("name", "q");
     expect(screen.queryByText("김민준")).not.toBeInTheDocument();
   });
@@ -61,22 +69,37 @@ describe("AppShell", () => {
     );
   });
 
-  it("opens utility menus and closes them with Escape", () => {
+  it("marks the desktop skill graph as an immersive route", () => {
+    navigation.pathname = "/skills/graph";
+
+    const { container } = render(
+      <AppShell>
+        <main className="dashboard-app-page">그래프</main>
+      </AppShell>,
+    );
+
+    expect(container.querySelector('[data-immersive="true"]')).toBeInTheDocument();
+  });
+
+  it("dismisses utility disclosures and restores opener focus", () => {
     render(
       <AppShell>
         <main>내용</main>
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "알림 열기" }));
-    expect(screen.getByRole("menu", { name: "알림" })).toBeInTheDocument();
+    const notificationButton = screen.getByRole("button", { name: "알림 열기" });
+    fireEvent.click(notificationButton);
+    expect(screen.getByLabelText("알림")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("menu", { name: "알림" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림")).not.toBeInTheDocument();
+    expect(notificationButton).toHaveFocus();
 
-    fireEvent.click(screen.getByRole("button", { name: "사용자 메뉴 열기" }));
-    expect(screen.getByRole("menu", { name: "사용자 메뉴" })).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("menu", { name: "사용자 메뉴" })).not.toBeInTheDocument();
+    const userButton = screen.getByRole("button", { name: "사용자 메뉴 열기" });
+    fireEvent.click(userButton);
+    expect(screen.getByLabelText("사용자 메뉴")).toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByText("내용"));
+    expect(screen.queryByLabelText("사용자 메뉴")).not.toBeInTheDocument();
   });
 
   it("focuses global search when slash is pressed outside an editor", () => {
@@ -90,5 +113,23 @@ describe("AppShell", () => {
     fireEvent.keyDown(document, { key: "/" });
 
     expect(search).toHaveFocus();
+  });
+
+  it("hydrates browser-stored skills into a direct home visit", async () => {
+    localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["Kubernetes"]));
+
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    await waitFor(() => {
+      expect(navigation.replace).toHaveBeenCalledWith(
+        "/?owned_skills=Kubernetes#my-stack",
+        { scroll: false },
+      );
+    });
+    expect(navigation.refresh).toHaveBeenCalled();
   });
 });

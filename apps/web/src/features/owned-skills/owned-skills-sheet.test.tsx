@@ -3,10 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 
-const navigation = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }));
+const navigation = vi.hoisted(() => ({
+  search: "",
+  replace: vi.fn(),
+  refresh: vi.fn(),
+}));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(navigation.search),
   useRouter: () => ({
     replace: navigation.replace,
     refresh: navigation.refresh,
@@ -20,6 +25,7 @@ describe("OwnedSkillsSheet", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    navigation.search = "";
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
   });
@@ -67,5 +73,24 @@ describe("OwnedSkillsSheet", () => {
 
     expect(screen.queryByRole("dialog", { name: "내 스택" })).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
+  });
+
+  it("keeps Tab focus inside the modal sheet", () => {
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    const close = screen.getByRole("button", { name: "내 스택 닫기" });
+    const add = screen.getByRole("button", { name: "기술 추가" });
+
+    add.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(close).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(add).toHaveFocus();
   });
 });

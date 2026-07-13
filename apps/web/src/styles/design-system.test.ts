@@ -23,4 +23,21 @@ describe("design system foundation", () => {
     expect(typography).toContain("/fonts/PretendardVariable.woff2");
     expect(typography).toContain("font-display: swap");
   });
+
+  it("lets the home layout use the full application canvas", () => {
+    const home = read("src/features/home-feed/home-feed.module.css");
+    const pageRule = home.match(/\.page\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(pageRule).toContain("width: 100%;");
+    expect(pageRule).toContain("max-width: none;");
+    expect(pageRule).toContain("margin: 0;");
+  });
+
+  it("keeps an expandable global search on mobile", () => {
+    const shell = read("src/components/app-shell/app-shell.module.css");
+
+    expect(shell).not.toContain(".searchForm,\n  .desktopNav {\n    display: none;");
+    expect(shell).toContain(".searchForm:focus-within {\n    position: absolute;");
+    expect(shell).not.toContain("width: 2.625rem;");
+  });
 });

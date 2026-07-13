@@ -17,10 +17,11 @@ import {
   X,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import type { FormEvent } from "react";
+import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CompanyMark } from "./company-mark";
+import { trapTabKey } from "@/lib/focus-trap";
 import { itemsForTab } from "./feed-order";
 import { MOCK_COMMUNITY_POSTS, MOCK_SOCIAL_ITEMS } from "./mock-community";
 import styles from "./home-feed.module.css";
@@ -368,6 +369,7 @@ export function HomeFeed({
   const [announcement, setAnnouncement] = useState("");
   const composerButtonRef = useRef<HTMLButtonElement>(null);
   const composerTitleRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLElement>(null);
 
   const closeComposer = useCallback(() => {
     setComposerOpen(false);
@@ -380,6 +382,7 @@ export function HomeFeed({
     composerTitleRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
+      trapTabKey(event, composerRef.current);
       if (event.key === "Escape") {
         event.preventDefault();
         closeComposer();
@@ -406,6 +409,23 @@ export function HomeFeed({
     setDraftErrors({});
     setAnnouncement("");
     setComposerOpen(true);
+  }
+
+  function handleTabKeyDown(
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % TABS.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = TABS.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = TABS[nextIndex];
+    setActiveTab(nextTab.id);
+    document.getElementById(`feed-tab-${nextTab.id}`)?.focus();
   }
 
   function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -542,12 +562,15 @@ export function HomeFeed({
                     ))}
                   </ul>
                 )}
+                <button onClick={() => window.location.reload()} type="button">
+                  데이터 다시 불러오기
+                </button>
               </div>
             </section>
           )}
 
           <div aria-label="피드 정렬" className={styles.tabs} role="tablist">
-            {TABS.map((tab) => (
+            {TABS.map((tab, index) => (
               <button
                 aria-controls="home-feed-panel"
                 aria-selected={activeTab === tab.id}
@@ -555,6 +578,7 @@ export function HomeFeed({
                 id={`feed-tab-${tab.id}`}
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, index)}
                 role="tab"
                 tabIndex={activeTab === tab.id ? 0 : -1}
                 type="button"
@@ -676,6 +700,7 @@ export function HomeFeed({
             aria-modal="true"
             className={styles.composer}
             onMouseDown={(event) => event.stopPropagation()}
+            ref={composerRef}
             role="dialog"
           >
             <header className={styles.composerHeader}>

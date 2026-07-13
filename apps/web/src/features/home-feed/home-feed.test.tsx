@@ -163,6 +163,37 @@ describe("HomeFeed", () => {
     expect(screen.getByText("작성한 글을 피드 맨 위에 추가했습니다.")).toBeInTheDocument();
   });
 
+  it("supports arrow-key tab selection", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    const recommended = screen.getByRole("tab", { name: "추천" });
+    const following = screen.getByRole("tab", { name: "팔로잉" });
+    const popular = screen.getByRole("tab", { name: "인기" });
+
+    recommended.focus();
+    fireEvent.keyDown(recommended, { key: "ArrowRight" });
+    expect(following).toHaveAttribute("aria-selected", "true");
+    expect(following).toHaveFocus();
+
+    fireEvent.keyDown(following, { key: "End" });
+    expect(popular).toHaveAttribute("aria-selected", "true");
+    expect(popular).toHaveFocus();
+  });
+
+  it("keeps Tab focus inside the composer dialog", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
+    const close = screen.getByRole("button", { name: "글쓰기 닫기" });
+    const submit = screen.getByRole("button", { name: "피드에 올리기" });
+
+    submit.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(close).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(submit).toHaveFocus();
+  });
+
   it("keeps social content visible with an explicit partial-data notice", () => {
     const snapshot = buildSnapshot();
 
@@ -178,6 +209,9 @@ describe("HomeFeed", () => {
 
     expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
     expect(screen.getByText("graph offline")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "데이터 다시 불러오기" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
     ).toBeInTheDocument();

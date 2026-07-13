@@ -108,13 +108,21 @@ describe("Home", () => {
   });
 
   it("keeps successful data visible when a resource fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.mocked(getSkillGraph).mockRejectedValue(new Error("graph offline"));
 
     render(await Home());
 
     expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
-    expect(screen.getByText("graph offline")).toBeInTheDocument();
+    expect(screen.getByText("스킬 연결 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(screen.queryByText("graph offline")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "데이터 다시 불러오기" })).toBeInTheDocument();
+    expect(log).toHaveBeenCalledWith(
+      "[home-feed] resource request failed",
+      expect.any(Error),
+    );
+    log.mockRestore();
   });
 
   it("opens the composer from the shell write query", async () => {

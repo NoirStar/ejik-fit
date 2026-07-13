@@ -1,4 +1,4 @@
-import { formatCareer } from "@/lib/labels";
+import { formatCareer, formatEmployment } from "@/lib/labels";
 import type {
   PostingListResponse,
   SkillGraphEvidence,
@@ -48,15 +48,6 @@ function formatVerifiedDate(value: string) {
     day: "numeric",
     timeZone: "Asia/Seoul",
   }).format(date);
-}
-
-function formatEmployment(value: string | null) {
-  const labels: Record<string, string> = {
-    FULL_TIME: "정규직",
-    CONTRACT: "계약직",
-    INTERN: "인턴",
-  };
-  return value ? labels[value.toLocaleUpperCase("en-US")] ?? value : "고용 형태 미기재";
 }
 
 function safeHostname(value: string) {

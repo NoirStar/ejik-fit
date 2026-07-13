@@ -3,6 +3,7 @@ const CAREER_LABELS: Record<string, string> = {
   newcomer: "신입",
   experienced: "경력",
   mixed: "신입·경력",
+  not_matter: "경력 무관",
 };
 
 const EMPLOYMENT_LABELS: Record<string, string> = {
@@ -12,9 +13,13 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
   CONTRACT_WORKER: "계약직",
   INTERN: "인턴",
   INTERN_WORKER: "인턴",
+  MILITARY_SERVICE_EXCEPTION: "병역특례",
   PART_TIME: "파트타임",
   PART_TIME_WORKER: "파트타임",
   FREELANCER: "프리랜서",
+  정규: "정규직",
+  계약: "계약직",
+  인턴: "인턴",
 };
 
 

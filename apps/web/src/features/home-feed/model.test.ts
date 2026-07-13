@@ -65,6 +65,31 @@ function ready<T>(data: T): ResourceState<T> {
 }
 
 describe("buildHomeFeedSnapshot", () => {
+  it("normalizes source-specific career and employment codes", () => {
+    const sourceSpecificPostings: PostingListResponse = {
+      total: 1,
+      items: [
+        {
+          ...postings.items[0],
+          career_type: "not_matter",
+          employment_type: "FULL_TIME_WORKER",
+        },
+      ],
+    };
+
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(sourceSpecificPostings),
+      skillStats: ready(skillStats),
+      graph: ready(graph),
+      ownedSkills: [],
+    });
+
+    expect(snapshot.recommendedJobs[0]).toMatchObject({
+      careerLabel: "경력 무관",
+      employmentLabel: "정규직",
+    });
+  });
+
   it("mixes mock social content with API-backed jobs and skill demand", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),

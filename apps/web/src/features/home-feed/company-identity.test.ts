@@ -28,6 +28,14 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("requires a trusted official source host for a verified logo", () => {
+    expect(companyIdentity("NAVER", "https://untrusted.example/jobs/1")).toEqual({
+      kind: "initials",
+      alt: "NAVER",
+      initials: "NA",
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity(

@@ -26,14 +26,21 @@ export default async function Home({ searchParams }: HomeProps = {}) {
   const seed = ownedSkills[0];
 
   const [postings, skillStats, graph] = await Promise.all([
-    settledResource(getPostings({ limit: 40 })),
-    settledResource(getSkillStats({ limit: 8 })),
+    settledResource(
+      getPostings({ limit: 40 }),
+      "공고 데이터를 불러오지 못했습니다.",
+    ),
+    settledResource(
+      getSkillStats({ limit: 8 }),
+      "기술 수요 데이터를 불러오지 못했습니다.",
+    ),
     settledResource(
       getSkillGraph({
         ...(seed ? { seed } : {}),
         owned_skills: ownedSkills,
         limit: 30,
       }),
+      "스킬 연결 데이터를 불러오지 못했습니다.",
     ),
   ]);
 

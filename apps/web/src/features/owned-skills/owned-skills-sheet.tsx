@@ -10,6 +10,7 @@ import {
   readOwnedSkills,
   removeOwnedSkill,
 } from "@/lib/owned-skills";
+import { trapTabKey } from "@/lib/focus-trap";
 
 import styles from "./owned-skills-sheet.module.css";
 
@@ -30,6 +31,7 @@ export function OwnedSkillsSheet({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +45,7 @@ export function OwnedSkillsSheet({
     if (!open) return;
 
     function handleKeyDown(event: KeyboardEvent) {
+      trapTabKey(event, sheetRef.current);
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
@@ -99,6 +102,7 @@ export function OwnedSkillsSheet({
         aria-modal="true"
         className={styles.sheet}
         onMouseDown={(event) => event.stopPropagation()}
+        ref={sheetRef}
         role="dialog"
       >
         <header className={styles.header}>
