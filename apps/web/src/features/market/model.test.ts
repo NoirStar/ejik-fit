@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 import {
+  MARKET_CAREER_FILTERS,
   buildMarketFilterHref,
   buildMarketJobsHref,
   buildMarketOverviewSnapshot,
@@ -62,6 +63,9 @@ describe("market overview model", () => {
     expect(normalizeMarketCareerType(["experienced", "mixed"])).toBe("experienced");
     expect(normalizeMarketCareerType("unknown")).toBe("");
     expect(normalizeMarketCareerType(undefined)).toBe("");
+    expect(
+      MARKET_CAREER_FILTERS.find((filter) => filter.value === "mixed")?.label,
+    ).toBe("신입·경력");
   });
 
   it("builds shareable market and related-job URLs", () => {

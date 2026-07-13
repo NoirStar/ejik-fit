@@ -8,7 +8,7 @@ export const MARKET_CAREER_FILTERS = [
   { value: "", label: "전체" },
   { value: "new_comer", label: "신입" },
   { value: "experienced", label: "경력" },
-  { value: "mixed", label: "경력 무관" },
+  { value: "mixed", label: "신입·경력" },
 ] as const satisfies ReadonlyArray<{
   value: MarketCareerType;
   label: string;

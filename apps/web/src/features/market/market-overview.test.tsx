@@ -60,7 +60,7 @@ describe("MarketOverview", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByText("공개 공고").closest("div")).toHaveTextContent(
+    expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent(
       "2건",
     );
     expect(screen.getByText("확인 기술").closest("div")).toHaveTextContent(
@@ -81,6 +81,7 @@ describe("MarketOverview", () => {
       "href",
       "/jobs/job-1",
     );
+    expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
     expect(screen.queryByText(/증가|감소|실시간|예측/)).not.toBeInTheDocument();
   });
 
@@ -102,7 +103,7 @@ describe("MarketOverview", () => {
       screen.getAllByText("공고 데이터를 불러오지 못했습니다.").length,
     ).toBeGreaterThan(0);
     expect(screen.getByText("Kubernetes")).toBeInTheDocument();
-    expect(screen.getByText("공개 공고").closest("div")).toHaveTextContent(
+    expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent(
       "확인 불가",
     );
   });

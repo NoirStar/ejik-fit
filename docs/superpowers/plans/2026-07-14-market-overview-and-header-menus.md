@@ -260,7 +260,7 @@ export const MARKET_CAREER_FILTERS = [
   { value: "", label: "전체" },
   { value: "new_comer", label: "신입" },
   { value: "experienced", label: "경력" },
-  { value: "mixed", label: "경력 무관" },
+  { value: "mixed", label: "신입·경력" },
 ] as const satisfies ReadonlyArray<{ value: MarketCareerType; label: string }>;
 
 const SUPPORTED = new Set<MarketCareerType>(["", "new_comer", "experienced", "mixed"]);
@@ -372,7 +372,8 @@ The component test must render a ready snapshot and assert:
 
 ```ts
 expect(screen.getByRole("heading", { name: "채용 시장", level: 1 })).toBeInTheDocument();
-expect(screen.getByText("공개 공고").closest("div")).toHaveTextContent("2건");
+expect(screen.getByText("확인 공고").closest("div")).toHaveTextContent("2건");
+expect(screen.getByText(/최대 100개/)).toBeInTheDocument();
 expect(screen.getByRole("link", { name: "Kubernetes 스킬맵" })).toHaveAttribute(
   "href",
   "/skill-map?skill=Kubernetes",

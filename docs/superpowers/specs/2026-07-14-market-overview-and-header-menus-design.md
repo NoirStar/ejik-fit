@@ -21,7 +21,8 @@
 - 알림 메뉴와 사용자 메뉴는 같은 `.menu` 스타일을 사용하므로 한 규칙으로 함께 교정할 수 있다.
 - 820px 이하에서는 데스크톱 탐색 행이 사라지고, 520px 이하에서는 메뉴가 이미 고정 위치로 전환된다.
 - `/market`은 현재 `RouteShell` 기반 준비 중 화면이다.
-- 기존 API는 `/api/postings`와 `/api/skills/stats`를 통해 공개 공고 수, 기술별 공고 수, 필수·우대·미분류 건수를 제공한다.
+- 기존 API는 `/api/postings`와 `/api/skills/stats`를 통해 요청 범위의 공고 목록, 기술별 공고 수, 필수·우대·미분류 건수를 제공한다.
+- 공고 응답의 `total`은 전체 데이터베이스 건수가 아니라 요청 제한 안에서 반환한 항목 수다.
 - 기존 API에는 기간별 스냅샷이나 이전 기간 비교 데이터가 없다.
 
 ## 검토한 접근
@@ -76,15 +77,16 @@
 - 전체: `career_type` 없음
 - 신입: `career_type=new_comer`
 - 경력: `career_type=experienced`
-- 경력 무관: `career_type=mixed`
+- 신입·경력: `career_type=mixed`
 - 필터는 링크로 구현해 서버 렌더링과 URL 공유가 가능해야 한다.
 - 알 수 없는 값은 전체로 정규화한다.
 
 ### 현재 스냅샷
 
-- 공개 공고: `PostingListResponse.total`
+- 확인 공고: `PostingListResponse.total`, 현재 요청 제한인 최대 100개 안에서 반환된 수
 - 확인 기술: `SkillStatsResponse.items.length`
 - 최근 확인: 불러온 공고 중 가장 최신 `last_verified_at`
+- 공고 수를 전체 공개 공고 수처럼 표현하지 않고 최대 100개 기준임을 데이터 안내에 명시한다.
 - 공고 수와 기술 수를 서로 더하거나 중복 없는 전체 기술 수처럼 과장하지 않는다.
 
 ### 기술 수요 순위
