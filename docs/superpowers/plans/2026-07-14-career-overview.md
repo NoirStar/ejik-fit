@@ -58,4 +58,3 @@
 5. 독립 코드 리뷰에서 Critical/Important를 수정한다.
 6. main에 fast-forward 병합하고 원격 푸시한다.
 7. GitHub CI와 Vercel 배포 성공 후 운영 `/career`를 재검증한다.
-

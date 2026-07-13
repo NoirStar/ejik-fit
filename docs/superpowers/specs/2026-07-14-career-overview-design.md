@@ -128,4 +128,3 @@
 - 최소 44px 상호작용 영역
 - 콘솔 오류 없음
 - 전체 테스트, TypeScript, Playwright, Vercel production build 통과
-
