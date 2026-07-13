@@ -1,0 +1,61 @@
+import { expect, test } from "@playwright/test";
+
+for (const width of [1440, 820, 390]) {
+  test(`keeps verified jobs usable without overflow at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 900, width });
+    await page.goto("/jobs");
+
+    await expect(page.getByText("현재 결과 2건")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Python Backend Engineer" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+    ).toBe(false);
+
+    for (const target of [
+      page.getByRole("button", { name: "검색" }),
+      page.getByRole("link", { name: "Python 스킬맵" }),
+      page.getByRole("link", { name: "Python Backend Engineer" }),
+    ]) {
+      const box = await target.boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+}
+
+test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 844, width: 390 });
+  await page.addInitScript(() => {
+    localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["Go"]));
+  });
+  await page.goto("/jobs?q=Go&career_type=experienced");
+
+  await expect(page.getByLabel("공고 검색")).toHaveValue("Go");
+  await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
+  await page.getByRole("button", { name: "내 기술 겹침 1" }).click();
+  await expect(
+    page.getByRole("link", { name: "Go Platform Engineer" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Go Platform Engineer 저장" }).click();
+  await page.getByRole("button", { name: "저장한 공고 1" }).click();
+  await expect(
+    page.getByRole("link", { name: "Go Platform Engineer" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => localStorage.getItem("ejik-fit:saved-job-ids")),
+  ).toBe('["job-go"]');
+
+  await page.getByRole("link", { name: "필터 초기화" }).click();
+  await expect(page).toHaveURL(/\/jobs$/);
+  await expect(page.getByLabel("공고 검색")).toHaveValue("");
+  await expect(page.getByLabel("경력 조건")).toHaveValue("");
+});
