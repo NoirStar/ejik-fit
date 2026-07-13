@@ -68,6 +68,8 @@ Do not remove `apps/web/src/components/dashboard/**` until `rg` proves that surv
 
 ### Task 1: Generate and lock the implementation reference
 
+> 실행 기록 (2026-07-13): built-in 이미지 생성이 두 차례 타임아웃됐고 CLI fallback에 필요한 `OPENAI_API_KEY`가 설정되지 않았다. 사용자가 추가 생성 이미지를 생략하고 `docs/handoff/image.png`를 직접 구현 기준으로 사용하는 것을 명시적으로 승인했다. 따라서 이 Task의 생성 파일과 설계 문서 추가 항목은 만들지 않으며, 원본 이미지를 original detail로 검토한 결과를 이후 시각 검증 기준으로 사용한다.
+
 **Files:**
 - Create: `docs/handoff/2026-07-13-community-feed-home-reference.png`
 - Modify: `docs/superpowers/specs/2026-07-13-community-feed-home-design.md`
