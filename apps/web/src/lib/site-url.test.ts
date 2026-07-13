@@ -19,10 +19,20 @@ describe("siteUrl", () => {
     expect(siteUrl()).toBe("https://ejikfit.example");
   });
 
-  it("does not use localhost when the production URL is missing", () => {
+  it("uses Vercel's production domain when the explicit URL is missing", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
     vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "ejik-fit-web.vercel.app");
 
-    expect(() => siteUrl()).toThrow(/NEXT_PUBLIC_SITE_URL/);
+    expect(siteUrl()).toBe("https://ejik-fit-web.vercel.app");
+  });
+
+  it("falls back to the deployment domain for older Vercel projects", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
+    vi.stubEnv("VERCEL_URL", "ejik-fit-preview.vercel.app");
+
+    expect(siteUrl()).toBe("https://ejik-fit-preview.vercel.app");
   });
 });
