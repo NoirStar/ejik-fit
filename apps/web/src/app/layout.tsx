@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
+import "@/styles/tokens.css";
+import "@/styles/reset.css";
+import "@/styles/typography.css";
+import "@/styles/motion.css";
 import "./globals.css";
-import { SiteHeader } from "@/components/site-header";
 
 
 const geist = Geist({
@@ -34,18 +37,7 @@ export default function RootLayout({
         <a className="skip-link" href="#main-content">
           본문으로 건너뛰기
         </a>
-        <SiteHeader />
         <div id="main-content">{children}</div>
-        <footer className="site-footer">
-          <p>공식 채용페이지의 공개 정보만 수집합니다.</p>
-          <a
-            href="https://github.com/NoirStar/ejik-fit"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GitHub
-          </a>
-        </footer>
       </body>
     </html>
   );
