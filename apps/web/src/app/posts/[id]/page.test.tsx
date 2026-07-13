@@ -18,12 +18,32 @@ describe("PostPage", () => {
     });
 
     expect(metadata.title).toBe(
-      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
+      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? (커뮤니티 글 예시)",
     );
+    expect(metadata.description).toContain("화면 검증용 mock 커뮤니티 글");
+    expect(metadata.description).toContain("실제 사용자가 작성한 경험이 아닙니다");
     expect(metadata.description).toContain("성장 속도가 느린 것 같습니다");
     expect(metadata.alternates?.canonical).toBe(
       "/posts/career-move-3y-backend",
     );
+    expect(metadata.robots).toMatchObject({ follow: true, index: false });
+    expect(metadata.openGraph?.title).toBe(metadata.title);
+    expect(metadata.openGraph?.description).toBe(metadata.description);
+  });
+
+  it("labels interview metadata as synthetic rather than a real review", async () => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ id: "platform-backend-first-round" }),
+    });
+
+    expect(metadata.title).toBe(
+      "플랫폼 기업 백엔드 1차 기술 면접 후기 (면접 후기 예시)",
+    );
+    expect(metadata.description).toContain("화면 검증용 mock 면접 후기");
+    expect(metadata.description).toContain(
+      "특정 기업의 실제 면접 기록이 아닙니다",
+    );
+    expect(metadata.robots).toMatchObject({ follow: true, index: false });
   });
 
   it("renders a transparent mock community reading experience", async () => {

@@ -28,13 +28,32 @@ export async function generateMetadata({
 }: PostPageProps): Promise<Metadata> {
   const { id } = await params;
   const { post } = postOrNotFound(id);
-  const description =
+  const sourceDescription =
     post.type === "community_post" ? post.body : post.summary;
+  const exampleLabel =
+    post.type === "community_post" ? "커뮤니티 글 예시" : "면접 후기 예시";
+  const disclaimer =
+    post.type === "community_post"
+      ? "화면 검증용 mock 커뮤니티 글이며 실제 사용자가 작성한 경험이 아닙니다."
+      : "화면 검증용 mock 면접 후기이며 특정 기업의 실제 면접 기록이 아닙니다.";
+  const title = `${post.title} (${exampleLabel})`;
+  const description = `${disclaimer} ${sourceDescription}`;
 
   return {
-    title: post.title,
+    title,
     description,
     alternates: { canonical: `/posts/${encodeURIComponent(id)}` },
+    robots: { follow: true, index: false },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 
