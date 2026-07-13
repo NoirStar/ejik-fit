@@ -29,7 +29,8 @@ const job = {
   source_url: "https://careers.toss.im/job-1",
   last_verified_at: "2026-07-12T15:00:00.000Z",
   description_html: "<p>서버 개발</p>",
-  description_text: "안정적인 서버를 개발합니다.",
+  description_text:
+    "제품 소개입니다. ### 주요 업무 * 안정적인 서버를 개발합니다. * 장애 원인을 분석합니다.",
   opens_at: "2026-07-01T00:00:00.000Z",
   closes_at: "2026-07-31T14:59:59.000Z",
   skills: ["Go"],
@@ -81,6 +82,26 @@ describe("JobDetail", () => {
       "href",
       "/corrections",
     );
+    expect(screen.getByTitle("토스")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "채용 조건" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "요구 기술 근거" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go 스킬맵" })).toHaveAttribute(
+      "href",
+      "/skill-map?skill=Go",
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "공고 원문" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "주요 업무" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "지원 준비" }),
+    ).toBeInTheDocument();
 
     const jsonLdNode = container.querySelector('script[type="application/ld+json"]');
     const jsonLd = JSON.parse(jsonLdNode?.textContent ?? "{}");
@@ -95,10 +116,35 @@ describe("JobDetail", () => {
     expect(JSON.stringify(jsonLd.jobLocation)).toContain("서울");
 
     const trust = screen.getByRole("region", { name: "공고 신뢰 정보" });
-    const description = screen.getByRole("region", { name: "공고 내용" });
+    const description = screen.getByRole("region", { name: "공고 원문" });
     expect(
       trust.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("states when the API provides no body or confirmed skill evidence", async () => {
+    vi.mocked(getPosting).mockResolvedValue({
+      ...job,
+      description_html: "<script>alert('never render')</script>",
+      description_text: "",
+      skills: [],
+      skill_details: [],
+    });
+
+    render(await JobDetail({ params: Promise.resolve({ id: "job-1" }) }));
+
+    expect(
+      screen.getByText("확정 임계값을 통과한 기술 요구사항이 없습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "API가 제공한 공고 본문 텍스트가 없습니다. 공식 원문을 확인해 주세요.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("never render")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: /공식/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("rejects a non-http source URL before rendering application links", async () => {

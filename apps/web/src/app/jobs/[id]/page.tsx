@@ -1,36 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SkillEvidence } from "@/components/skill-evidence";
-import { SourceMeta } from "@/components/source-meta";
+import { JobDetailView } from "@/features/jobs/job-detail-view";
 import { ApiError, getPosting } from "@/lib/api";
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer } from "@/lib/labels";
 import { normalizePostingDetail } from "@/lib/posting-contract";
 import type { PostingDetail } from "@/lib/types";
-
-import styles from "./job-detail.module.css";
 
 export const dynamic = "force-dynamic";
 
 type JobDetailProps = {
   params: Promise<{ id: string }>;
 };
-
-function formatDate(value: string | null): string {
-  if (!value) return "미정";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "미정";
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "long",
-    timeZone: "Asia/Seoul",
-  }).format(date);
-}
-
-function formatPeriod(opensAt: string | null, closesAt: string | null): string {
-  if (!opensAt && !closesAt) return "상시 또는 미정";
-  return `${formatDate(opensAt)} - ${formatDate(closesAt)}`;
-}
 
 async function postingOrNotFound(id: string) {
   try {
@@ -87,66 +68,9 @@ export default async function JobDetail({ params }: JobDetailProps) {
   const jsonLd = JSON.stringify(jobPostingJsonLd(job)).replace(/</g, "\\u003c");
 
   return (
-    <main className={styles.main}>
+    <>
       <script dangerouslySetInnerHTML={{ __html: jsonLd }} type="application/ld+json" />
-
-      <Link className={styles.backLink} href="/jobs">
-        공고 탐색으로 돌아가기
-      </Link>
-
-      <article className={styles.article}>
-        <header className={styles.header}>
-          <p>{job.company_name}</p>
-          <h1>{job.title}</h1>
-        </header>
-
-        <dl className={styles.facts}>
-          <div>
-            <dt>경력</dt>
-            <dd>{formatCareer(job.career_type)}</dd>
-          </div>
-          <div>
-            <dt>고용 형태</dt>
-            <dd>{formatEmployment(job.employment_type)}</dd>
-          </div>
-          <div>
-            <dt>근무지</dt>
-            <dd>{job.location ?? "미기재"}</dd>
-          </div>
-          <div>
-            <dt>접수 기간</dt>
-            <dd>{formatPeriod(job.opens_at, job.closes_at)}</dd>
-          </div>
-        </dl>
-
-        <section aria-label="공고 신뢰 정보" className={styles.trust}>
-          <div>
-            <h2>출처와 분석 기준</h2>
-            <p>공식 원문과 마지막 검증 시각을 기준으로 내용을 확인해 주세요.</p>
-          </div>
-          <SourceMeta sourceUrl={job.source_url} lastVerifiedAt={job.last_verified_at} />
-          <nav aria-label="공고 정보 안내">
-            <Link href="/methodology">분석 방법</Link>
-            <Link href="/corrections">정보 정정 요청</Link>
-          </nav>
-        </section>
-
-        <SkillEvidence skills={job.skill_details ?? []} />
-
-        <section aria-labelledby="description" className={styles.description}>
-          <h2 id="description">공고 내용</h2>
-          <div>{job.description_text}</div>
-        </section>
-
-        <a
-          className={styles.applyLink}
-          href={job.source_url}
-          rel="noreferrer"
-          target="_blank"
-        >
-          기업 채용페이지에서 지원하기
-        </a>
-      </article>
-    </main>
+      <JobDetailView job={job} />
+    </>
   );
 }
