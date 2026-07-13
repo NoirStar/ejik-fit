@@ -522,6 +522,12 @@
   }
 }
 
+@media (min-width: 821px) {
+  .menu {
+    top: calc(100% + 4.125rem);
+  }
+}
+
 @media (max-width: 520px) {
   .writeButton,
   .stackButton,

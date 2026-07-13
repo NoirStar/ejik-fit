@@ -59,3 +59,28 @@ for (const width of viewports) {
     expect(hasHorizontalOverflow).toBe(false);
   });
 }
+
+test("keeps utility menus below the desktop navigation", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1536 });
+  await page.goto("/privacy");
+
+  const navigation = page.getByRole("navigation", { name: "주요 탐색" });
+  const navigationBox = await navigation.boundingBox();
+  expect(navigationBox).not.toBeNull();
+
+  for (const control of [
+    { button: "알림 열기", menu: "알림" },
+    { button: "사용자 메뉴 열기", menu: "사용자 메뉴" },
+  ]) {
+    await page.getByRole("button", { name: control.button }).click();
+    const menu = page.getByLabel(control.menu, { exact: true });
+    await expect(menu).toBeVisible();
+    const menuBox = await menu.boundingBox();
+    expect(menuBox).not.toBeNull();
+    expect(menuBox!.y).toBeGreaterThanOrEqual(
+      navigationBox!.y + navigationBox!.height + 8,
+    );
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+  }
+});
