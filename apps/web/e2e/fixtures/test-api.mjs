@@ -7,6 +7,7 @@ const postings = {
       id: "job-python",
       title: "Python Backend Engineer",
       company_name: "NAVER",
+      company_slug: "naver",
       career_type: "experienced",
       employment_type: "FULL_TIME_WORKER",
       career_min: 3,
@@ -25,6 +26,7 @@ const postings = {
       id: "job-go",
       title: "Go Platform Engineer",
       company_name: "S2W",
+      company_slug: "s2w",
       career_type: "new_comer",
       employment_type: "FULL_TIME_WORKER",
       career_min: null,
@@ -320,6 +322,14 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
   };
 }
 
+function postingsForRequest(requestUrl) {
+  const companySlug = requestUrl.searchParams.get("company");
+  const items = companySlug
+    ? postings.items.filter((posting) => posting.company_slug === companySlug)
+    : postings.items;
+  return { items, total: items.length };
+}
+
 const server = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
   const pathname = requestUrl.pathname;
@@ -327,7 +337,7 @@ const server = createServer((request, response) => {
   const body = detailId
     ? postingDetails[detailId] ?? null
     : pathname === "/api/postings"
-      ? postings
+      ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
         ? skillStats
         : pathname === "/api/graph/skills"
