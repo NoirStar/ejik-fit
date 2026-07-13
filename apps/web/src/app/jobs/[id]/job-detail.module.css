@@ -425,7 +425,13 @@
     padding: 1.5rem 1rem calc(var(--mobile-nav-height) + 2rem);
   }
 
+  .article {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .hero {
+    grid-row: 1;
     grid-template-columns: auto minmax(0, 1fr);
   }
 
@@ -443,6 +449,25 @@
     grid-template-columns: 1fr;
   }
 
+  .workspace {
+    display: contents;
+  }
+
+  .sidebar {
+    grid-row: 2;
+    margin-top: 2.5rem;
+  }
+
+  .factsSection {
+    grid-row: 3;
+    margin-top: 2.5rem;
+  }
+
+  .content {
+    grid-row: 4;
+    margin-top: 3rem;
+  }
+
   .facts > div,
   .facts > div:first-child,
   .facts > div:nth-child(-n + 2) {
@@ -454,10 +479,6 @@
 
   .facts > div:last-child {
     border-bottom: 0;
-  }
-
-  .workspace {
-    margin-top: 2.5rem;
   }
 
   .descriptionBody p,
