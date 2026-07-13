@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified jobs usable without overflow at ${width}px`, async ({
     page,
   }) => {
@@ -25,6 +25,14 @@ for (const width of [1440, 820, 390]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+
+    if (width <= 680) {
+      const factColumns = await page
+        .locator("dl")
+        .first()
+        .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+      expect(factColumns.split(" ")).toHaveLength(1);
     }
   });
 }
