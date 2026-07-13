@@ -19,6 +19,42 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logos/naver.svg",
     displayName: "네이버",
   },
+  {
+    aliases: ["슈퍼센트", "supercent"],
+    hosts: ["supercent.career.greetinghr.com"],
+    src: "/company-logos/supercent.png",
+    displayName: "슈퍼센트",
+  },
+  {
+    aliases: ["sionic ai", "사이오닉 ai", "사이오닉 에이아이"],
+    hosts: ["sionicai.career.greetinghr.com"],
+    src: "/company-logos/sionic-ai.png",
+    displayName: "Sionic AI",
+  },
+  {
+    aliases: ["s2w", "에스투더블유"],
+    hosts: ["s2w.career.greetinghr.com"],
+    src: "/company-logos/s2w.png",
+    displayName: "S2W",
+  },
+  {
+    aliases: ["afi 뒤끝", "뒤끝"],
+    hosts: ["thebackend.career.greetinghr.com"],
+    src: "/company-logos/afi-backend.jpg",
+    displayName: "AFI 뒤끝",
+  },
+  {
+    aliases: ["넥스트증권", "next securities"],
+    hosts: ["nextsecurities.career.greetinghr.com"],
+    src: "/company-logos/next-securities.png",
+    displayName: "넥스트증권",
+  },
+  {
+    aliases: ["오누이", "onuii"],
+    hosts: ["onuii.career.greetinghr.com"],
+    src: "/company-logos/onuii.png",
+    displayName: "오누이",
+  },
 ];
 
 function normalize(value: string) {

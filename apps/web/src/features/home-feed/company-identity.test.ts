@@ -36,6 +36,45 @@ describe("companyIdentity", () => {
     });
   });
 
+  it.each([
+    [
+      "슈퍼센트",
+      "https://supercent.career.greetinghr.com/ko/o/213168",
+      "/company-logos/supercent.png",
+    ],
+    [
+      "Sionic AI",
+      "https://sionicai.career.greetinghr.com/ko/o/205209",
+      "/company-logos/sionic-ai.png",
+    ],
+    [
+      "S2W",
+      "https://s2w.career.greetinghr.com/ko/o/199550",
+      "/company-logos/s2w.png",
+    ],
+    [
+      "AFI 뒤끝",
+      "https://thebackend.career.greetinghr.com/ko/o/141428",
+      "/company-logos/afi-backend.jpg",
+    ],
+    [
+      "넥스트증권",
+      "https://nextsecurities.career.greetinghr.com/ko/o/172330",
+      "/company-logos/next-securities.png",
+    ],
+    [
+      "오누이",
+      "https://onuii.career.greetinghr.com/ko/o/190063",
+      "/company-logos/onuii.png",
+    ],
+  ])("returns the verified career-page logo for %s", (name, source, asset) => {
+    expect(companyIdentity(name, source)).toMatchObject({
+      kind: "logo",
+      src: asset,
+      alt: `${name} 로고`,
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity(
