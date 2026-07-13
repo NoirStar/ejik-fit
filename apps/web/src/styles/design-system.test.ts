@@ -40,4 +40,20 @@ describe("design system foundation", () => {
     expect(shell).toContain(".searchForm:focus-within {\n    position: absolute;");
     expect(shell).not.toContain("width: 2.625rem;");
   });
+
+  it("keeps the header brand legible on narrow mobile screens", () => {
+    const shell = read("src/components/app-shell/app-shell.module.css");
+    const globals = read("src/app/globals.css");
+    const brandRule = shell.match(/\.brand\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(brandRule).toContain("flex: 0 0 auto;");
+    expect(globals).toContain(
+      ".brand-lockup__copy strong,\n.brand-lockup__copy small",
+    );
+    expect(globals).toContain("white-space: nowrap;");
+    expect(globals).toContain("@media (max-width: 380px)");
+    expect(globals).toContain(".brand-lockup--sm .brand-lockup__copy small");
+    expect(globals).toContain("@media (max-width: 340px)");
+    expect(globals).toContain(".brand-lockup--sm .brand-lockup__copy {");
+  });
 });

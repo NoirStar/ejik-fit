@@ -2482,6 +2482,11 @@ body:has(.dashboard-app-page) {
   letter-spacing: 0.12em;
 }
 
+.brand-lockup__copy strong,
+.brand-lockup__copy small {
+  white-space: nowrap;
+}
+
 .brand-lockup--sm {
   gap: 0.5rem;
 }
@@ -2504,6 +2509,18 @@ body:has(.dashboard-app-page) {
   width: 3.25rem;
   height: 3.25rem;
   border-radius: 1rem;
+}
+
+@media (max-width: 380px) {
+  .brand-lockup--sm .brand-lockup__copy small {
+    display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .brand-lockup--sm .brand-lockup__copy {
+    display: none;
+  }
 }
 
 .brand:has(.brand-lockup) {

@@ -27,6 +27,7 @@
   display: inline-flex;
   width: fit-content;
   min-height: var(--touch-target);
+  flex: 0 0 auto;
   align-items: center;
   text-decoration: none;
 }
