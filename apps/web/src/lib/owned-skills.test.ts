@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   addOwnedSkill,
+  clearOwnedSkills,
   ownedSkillsFromSearchParams,
   readOwnedSkills,
   removeOwnedSkill,
+  subscribeOwnedSkills,
   writeOwnedSkills,
 } from "./owned-skills";
 
@@ -25,6 +27,10 @@ function storage() {
 
 
 describe("owned skill storage", () => {
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
   it("dedupes, trims and sorts skills", () => {
     const fake = storage();
     const saved = writeOwnedSkills([" Python ", "C++", "Python", ""], fake);
@@ -62,5 +68,56 @@ describe("owned skill storage", () => {
         owned_skills: "Java, Spring,AWS",
       }),
     ).toEqual(["AWS", "Java", "Spring"]);
+  });
+
+  it("notifies same-tab subscribers after writing and clearing browser storage", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeOwnedSkills(listener);
+
+    writeOwnedSkills([" Python ", "React", "Python"]);
+    clearOwnedSkills();
+
+    expect(listener).toHaveBeenNthCalledWith(1, ["Python", "React"]);
+    expect(listener).toHaveBeenNthCalledWith(2, []);
+
+    unsubscribe();
+    writeOwnedSkills(["TypeScript"]);
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("notifies subscribers when another tab changes owned skills", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeOwnedSkills(listener);
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify([" Spring ", "Java", "Spring"]),
+    );
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "ejik-fit:owned-skills",
+        newValue: window.localStorage.getItem("ejik-fit:owned-skills"),
+        storageArea: window.localStorage,
+      }),
+    );
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith(["Java", "Spring"]);
+    unsubscribe();
+  });
+
+  it("ignores unrelated storage changes", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeOwnedSkills(listener);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "another-key",
+        newValue: "value",
+      }),
+    );
+
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
   });
 });
