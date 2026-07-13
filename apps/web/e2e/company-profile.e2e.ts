@@ -81,3 +81,16 @@ test("moves from a company profile to the verified job detail", async ({ page })
     page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
   ).toHaveAttribute("href", "/companies/naver");
 });
+
+test("opens a company profile from an API-backed home job", async ({ page }) => {
+  await page.goto("/");
+  await page
+    .getByRole("link", { name: "NAVER 기업 채용 현황" })
+    .click();
+
+  await expect(page).toHaveURL(/\/companies\/naver$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "NAVER" }),
+  ).toBeVisible();
+  await expect(page.getByText("현재 공개 공고 1건")).toBeVisible();
+});
