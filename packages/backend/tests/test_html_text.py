@@ -27,3 +27,10 @@ def test_keeps_explicit_source_markers_without_doubling_them() -> None:
 
 def test_uses_stored_plain_text_when_html_has_no_visible_content() -> None:
     assert structured_plain_text("<style>body { color: red }</style>", "원문") == "원문"
+
+
+def test_keeps_official_fallback_suffix_that_is_absent_from_html() -> None:
+    assert structured_plain_text(
+        "<p>서버 개발</p>",
+        "서버 개발 RustUnique",
+    ) == "서버 개발\nRustUnique"

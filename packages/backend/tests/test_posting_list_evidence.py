@@ -99,7 +99,9 @@ def test_database_detail_restores_plain_text_structure_from_source_html() -> Non
             "<h2>주요 업무</h2><ul><li>Python API 개발</li>"
             "<li>Docker 운영</li></ul>"
         )
-        posting.description_text = "주요 업무 Python API 개발 Docker 운영"
+        posting.description_text = (
+            "주요 업무 Python API 개발 Docker 운영 RustUnique"
+        )
         posting_id = str(posting.id)
         session.commit()
 
@@ -107,7 +109,7 @@ def test_database_detail_restores_plain_text_structure_from_source_html() -> Non
 
     assert item is not None
     assert item["description_text"] == (
-        "## 주요 업무\n• Python API 개발\n• Docker 운영"
+        "## 주요 업무\n• Python API 개발\n• Docker 운영\nRustUnique"
     )
 
 

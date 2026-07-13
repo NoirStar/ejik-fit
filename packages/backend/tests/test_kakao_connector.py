@@ -44,6 +44,10 @@ def test_parse_kakao_openings_maps_public_job_list_json() -> None:
     assert opening.location == "경기 성남"
     assert opening.employment_type == "정규직"
     assert opening.career_type is None
-    assert "Java와 Spring 기반 API 개발" in opening.description_text
-    assert "Java Spring Kubernetes" in opening.description_text
+    assert opening.description_text == (
+        "카카오 플랫폼 서버 개발\n"
+        "Java와 Spring 기반 API 개발\n"
+        "Kubernetes 운영 경험\n"
+        "Java Spring Kubernetes"
+    )
     assert openings[1].status == "closed"

@@ -40,6 +40,7 @@ _BLOCK_TAGS = (
 _HIDDEN_TAGS = ("script", "style", "noscript", "template")
 _EXPLICIT_HEADING = re.compile(r"^#{2,4}\s+")
 _EXPLICIT_LIST_ITEM = re.compile(r"^[*•◦-]\s+")
+_SOURCE_MARKER = re.compile(r"(?:^|\s)(?:#{2,4}|[*•◦-])(?=\s)")
 
 
 def _normalized_lines(text: str) -> str:
@@ -49,6 +50,11 @@ def _normalized_lines(text: str) -> str:
         if normalized:
             lines.append(normalized)
     return "\n".join(lines)
+
+
+def _visible_comparison_text(text: str) -> str:
+    without_markers = _SOURCE_MARKER.sub(" ", _normalized_lines(text))
+    return re.sub(r"\s+", " ", without_markers).strip()
 
 
 def structured_plain_text(html: str, fallback: str = "") -> str:
@@ -79,4 +85,16 @@ def structured_plain_text(html: str, fallback: str = "") -> str:
         block.insert_after("\n")
 
     structured = _normalized_lines(soup.get_text("", strip=False))
-    return structured or _normalized_lines(fallback)
+    normalized_fallback = _normalized_lines(fallback)
+    if not structured:
+        return normalized_fallback
+
+    structured_visible = _visible_comparison_text(structured)
+    fallback_visible = _visible_comparison_text(normalized_fallback)
+    if structured_visible and fallback_visible.startswith(
+        f"{structured_visible} "
+    ):
+        suffix = fallback_visible[len(structured_visible) :].strip()
+        if suffix:
+            return f"{structured}\n{suffix}"
+    return structured
