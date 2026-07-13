@@ -16,12 +16,14 @@ import styles from "./owned-skills-sheet.module.css";
 type OwnedSkillsSheetProps = {
   open: boolean;
   onClose(): void;
+  onSkillsChange?(skills: string[]): void;
   openerRef: RefObject<HTMLButtonElement | null>;
 };
 
 export function OwnedSkillsSheet({
   open,
   onClose,
+  onSkillsChange,
   openerRef,
 }: OwnedSkillsSheetProps) {
   const [skills, setSkills] = useState<string[]>([]);
@@ -71,17 +73,23 @@ export function OwnedSkillsSheet({
       return;
     }
 
-    setSkills(addOwnedSkill(normalized));
+    const nextSkills = addOwnedSkill(normalized);
+    setSkills(nextSkills);
+    onSkillsChange?.(nextSkills);
     setDraft("");
     setError("");
   }
 
   function removeSkill(skill: string) {
-    setSkills(removeOwnedSkill(skill));
+    const nextSkills = removeOwnedSkill(skill);
+    setSkills(nextSkills);
+    onSkillsChange?.(nextSkills);
   }
 
   function clearSkills() {
-    setSkills(clearOwnedSkills());
+    const nextSkills = clearOwnedSkills();
+    setSkills(nextSkills);
+    onSkillsChange?.(nextSkills);
   }
 
   return (

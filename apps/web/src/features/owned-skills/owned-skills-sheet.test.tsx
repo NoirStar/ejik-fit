@@ -3,8 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell/app-shell";
 
+const navigation = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useRouter: () => ({
+    replace: navigation.replace,
+    refresh: navigation.refresh,
+  }),
 }));
 
 describe("OwnedSkillsSheet", () => {
@@ -14,6 +20,8 @@ describe("OwnedSkillsSheet", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    navigation.replace.mockReset();
+    navigation.refresh.mockReset();
   });
 
   it("starts empty on first visit and persists an added skill", () => {
@@ -39,6 +47,11 @@ describe("OwnedSkillsSheet", () => {
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
       "Spring",
     ]);
+    expect(navigation.replace).toHaveBeenCalledWith(
+      "/?owned_skills=Spring#my-stack",
+      { scroll: false },
+    );
+    expect(navigation.refresh).toHaveBeenCalled();
   });
 
   it("closes with Escape and returns focus to the opener", () => {
