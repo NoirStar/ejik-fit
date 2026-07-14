@@ -124,52 +124,6 @@ const postingDetails = {
   },
 };
 
-const skillStats = {
-  total: 5,
-  items: [
-    {
-      skill: "Docker",
-      category: "infra",
-      count: 2,
-      required_count: 1,
-      preferred_count: 1,
-      unspecified_count: 0,
-    },
-    {
-      skill: "Python",
-      category: "language",
-      count: 1,
-      required_count: 1,
-      preferred_count: 0,
-      unspecified_count: 0,
-    },
-    {
-      skill: "Go",
-      category: "language",
-      count: 1,
-      required_count: 1,
-      preferred_count: 0,
-      unspecified_count: 0,
-    },
-    {
-      skill: "Kubernetes",
-      category: "infra",
-      count: 1,
-      required_count: 0,
-      preferred_count: 1,
-      unspecified_count: 0,
-    },
-    {
-      skill: "Linux",
-      category: "infra",
-      count: 1,
-      required_count: 0,
-      preferred_count: 0,
-      unspecified_count: 1,
-    },
-  ],
-};
-
 const fitAnalysis = {
   coverage: {
     matching_posting_count: 0,
@@ -369,10 +323,19 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
 function postingsForRequest(requestUrl) {
   const companySlug = requestUrl.searchParams.get("company");
   const careerType = requestUrl.searchParams.get("career_type");
+  const category = requestUrl.searchParams.get("category");
   const query = requestUrl.searchParams.get("q")?.trim().toLocaleLowerCase("ko-KR");
   const items = postings.items.filter((posting) => {
     if (companySlug && posting.company_slug !== companySlug) return false;
     if (careerType && posting.career_type !== careerType) return false;
+    if (
+      category &&
+      !postingDetails[posting.id]?.skill_details.some(
+        (skill) => skill.category === category,
+      )
+    ) {
+      return false;
+    }
     if (!query) return true;
     const searchable = [
       posting.title,
@@ -389,6 +352,40 @@ function postingsForRequest(requestUrl) {
   return { items, total: items.length };
 }
 
+function skillStatsForRequest(requestUrl) {
+  const matchingPostings = postingsForRequest(requestUrl).items;
+  const aggregated = new Map();
+
+  for (const posting of matchingPostings) {
+    const seen = new Set();
+    for (const skill of postingDetails[posting.id]?.skill_details ?? []) {
+      if (seen.has(skill.skill)) continue;
+      seen.add(skill.skill);
+
+      const current = aggregated.get(skill.skill) ?? {
+        skill: skill.skill,
+        category: skill.category,
+        count: 0,
+        required_count: 0,
+        preferred_count: 0,
+        unspecified_count: 0,
+      };
+      current.count += 1;
+      current[`${skill.requirement_type}_count`] += 1;
+      aggregated.set(skill.skill, current);
+    }
+  }
+
+  const limit = Number.parseInt(requestUrl.searchParams.get("limit") ?? "30", 10);
+  const items = [...aggregated.values()]
+    .sort(
+      (left, right) =>
+        right.count - left.count || left.skill.localeCompare(right.skill),
+    )
+    .slice(0, Number.isFinite(limit) ? limit : 30);
+  return { total: items.length, items };
+}
+
 const server = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
   const pathname = requestUrl.pathname;
@@ -398,7 +395,7 @@ const server = createServer((request, response) => {
     : pathname === "/api/postings"
       ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
-        ? skillStats
+        ? skillStatsForRequest(requestUrl)
         : pathname === "/api/fit/analyze" && request.method === "POST"
           ? fitAnalysis
         : pathname === "/api/graph/skills"

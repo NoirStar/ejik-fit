@@ -273,22 +273,30 @@ export function MarketOverview({
                 </Link>
               </div>
             ) : (
-              <ul className={styles.jobList} role="list">
-                {snapshot.jobs.map((job) => (
-                  <li key={job.id}>
-                    <Link className={styles.job} href={job.href}>
-                      <span className={styles.company}>{job.companyName}</span>
-                      <strong>{job.title}</strong>
-                      <span className={styles.jobMeta}>
-                        <span>{job.careerLabel}</span>
-                        <span>{job.employmentLabel}</span>
-                        <span>{job.location}</span>
-                      </span>
-                      <VerifiedTime value={job.verifiedAt} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className={styles.jobList} role="list">
+                  {snapshot.jobs.map((job) => (
+                    <li key={job.id}>
+                      <Link className={styles.job} href={job.href}>
+                        <span className={styles.company}>{job.companyName}</span>
+                        <strong>{job.title}</strong>
+                        <span className={styles.jobMeta}>
+                          <span>{job.careerLabel}</span>
+                          <span>{job.employmentLabel}</span>
+                          <span>{job.location}</span>
+                        </span>
+                        <VerifiedTime value={job.verifiedAt} />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  className={`${styles.textLink} ${styles.browseLink}`}
+                  href={snapshot.jobsBrowseHref}
+                >
+                  조건에 맞는 전체 공고
+                </Link>
+              </>
             )}
           </aside>
         </div>

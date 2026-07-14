@@ -419,6 +419,10 @@
   width: fit-content;
 }
 
+.browseLink {
+  margin-top: 0.75rem;
+}
+
 .filter:focus-visible,
 .skillLink:focus-visible,
 .jobsLink:focus-visible,
