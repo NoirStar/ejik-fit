@@ -67,6 +67,12 @@ export function MarketOverview({
   const description = snapshot.category
     ? `${snapshot.categoryLabel} 기술이 확인된 공개 공고 안에서 함께 요구되는 기술 수요를 살펴보세요.`
     : "현재 공개 중인 공고에서 확인한 기술 수요를 기술 분야와 경력 조건별로 살펴보세요.";
+  const selectedCareerLabel = MARKET_CAREER_FILTERS.find(
+    (filter) => filter.value === snapshot.careerType,
+  )?.label;
+  const careerScopeLabel = snapshot.careerType
+    ? `${selectedCareerLabel ?? snapshot.careerType} 조건`
+    : "전체 경력";
 
   return (
     <main className={styles.page}>
@@ -75,50 +81,9 @@ export function MarketOverview({
         <h1 className={styles.title}>채용 시장</h1>
         <p className={styles.description}>{description}</p>
         <span className={styles.badge}>
-          {snapshot.categoryLabel} · 현재 수집 데이터
+          현재 범위 · {snapshot.categoryLabel} · {careerScopeLabel}
         </span>
       </header>
-
-      <div className={styles.filterGroups}>
-        <section className={styles.filterGroup}>
-          <h2>기술 분야</h2>
-          <nav aria-label="기술 분야" className={styles.filters}>
-            {MARKET_CATEGORIES.map((filter) => (
-              <Link
-                aria-current={
-                  snapshot.category === filter.value ? "page" : undefined
-                }
-                className={styles.filter}
-                href={buildMarketFilterHref(
-                  snapshot.careerType,
-                  filter.value,
-                )}
-                key={filter.value || "all"}
-              >
-                {filter.label}
-              </Link>
-            ))}
-          </nav>
-        </section>
-
-        <section className={styles.filterGroup}>
-          <h2>경력 조건</h2>
-          <nav aria-label="경력 조건" className={styles.filters}>
-            {MARKET_CAREER_FILTERS.map((filter) => (
-              <Link
-                aria-current={
-                  snapshot.careerType === filter.value ? "page" : undefined
-                }
-                className={styles.filter}
-                href={buildMarketFilterHref(filter.value, snapshot.category)}
-                key={filter.value || "all"}
-              >
-                {filter.label}
-              </Link>
-            ))}
-          </nav>
-        </section>
-      </div>
 
       <section aria-labelledby="market-snapshot-title">
         <h2 className={styles.srOnly} id="market-snapshot-title">
@@ -138,6 +103,53 @@ export function MarketOverview({
             <dd>{latestVerifiedLabel}</dd>
           </div>
         </dl>
+      </section>
+
+      <section
+        aria-labelledby="market-filters-title"
+        className={styles.filterGroups}
+      >
+        <h2 className={styles.srOnly} id="market-filters-title">
+          시장 범위 필터
+        </h2>
+        <div className={styles.filterGroup}>
+          <h3>기술 분야</h3>
+          <nav aria-label="기술 분야" className={styles.filters}>
+            {MARKET_CATEGORIES.map((filter) => (
+              <Link
+                aria-current={
+                  snapshot.category === filter.value ? "page" : undefined
+                }
+                className={styles.filter}
+                href={buildMarketFilterHref(
+                  snapshot.careerType,
+                  filter.value,
+                )}
+                key={filter.value || "all"}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        <div className={styles.filterGroup}>
+          <h3>경력 조건</h3>
+          <nav aria-label="경력 조건" className={styles.filters}>
+            {MARKET_CAREER_FILTERS.map((filter) => (
+              <Link
+                aria-current={
+                  snapshot.careerType === filter.value ? "page" : undefined
+                }
+                className={styles.filter}
+                href={buildMarketFilterHref(filter.value, snapshot.category)}
+                key={filter.value || "all"}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </section>
 
       {marketUnavailable ? (
