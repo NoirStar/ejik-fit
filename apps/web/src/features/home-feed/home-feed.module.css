@@ -218,6 +218,132 @@
   background: var(--color-surface-muted);
 }
 
+.followingPosts {
+  display: grid;
+  gap: 0;
+  margin: 0.625rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.followingPosts li + li {
+  border-top: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent);
+}
+
+.followingPosts a {
+  display: grid;
+  min-height: var(--touch-target);
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.25rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+}
+
+.followingPosts a:hover {
+  background: var(--color-surface-muted);
+}
+
+.followingAvatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 820;
+}
+
+.followingAvatar[data-tone="blue"] {
+  background: #e9f2ff;
+  color: #2769b5;
+}
+
+.followingAvatar[data-tone="green"] {
+  background: #eaf7f0;
+  color: #19764f;
+}
+
+.followingAvatar[data-tone="orange"] {
+  background: #fff2e5;
+  color: #a85a14;
+}
+
+.followingCopy,
+.followingMeta {
+  display: flex;
+  min-width: 0;
+}
+
+.followingCopy {
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.followingMeta {
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.followingMeta strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.72rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.followingMeta small {
+  flex: 0 0 auto;
+  color: var(--color-faint);
+  font-size: 0.64rem;
+}
+
+.followingTitle {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 640;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.followingEmpty,
+.followingEmptyState p {
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.followingEmptyState > svg {
+  margin-top: 0.875rem;
+  color: var(--color-faint);
+}
+
+.followingAction {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
 .feedColumn {
   min-width: 0;
 }
@@ -1256,6 +1382,8 @@
 .composer button:focus-visible,
 .shortcutList a:focus-visible,
 .recentTopics a:focus-visible,
+.followingPosts a:focus-visible,
+.followingAction:focus-visible,
 .textLink:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
   outline-offset: 2px;
@@ -1284,6 +1412,10 @@
   }
 
   .trustCard {
+    grid-column: 1 / -1;
+  }
+
+  .followingRailCard {
     grid-column: 1 / -1;
   }
 }

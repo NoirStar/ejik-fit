@@ -49,6 +49,7 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { itemsForTab } from "./feed-order";
+import { FollowingPostList } from "./following-post-list";
 import { localCommunityPostToFeedItem } from "./model";
 import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import { RecentTopicList } from "./recent-topic-list";
@@ -567,6 +568,11 @@ export function HomeFeed({
     document.getElementById("feed-tab-recommended")?.focus();
   }
 
+  function showFollowingPosts() {
+    setActiveTab("following");
+    document.getElementById("feed-tab-following")?.focus();
+  }
+
   function deleteLocalPost(post: CommunityPostFeedItem) {
     const result = deleteLocalCommunityPost(post.id);
     setLocalPosts(result.posts);
@@ -883,6 +889,13 @@ export function HomeFeed({
               수집 기준 확인 <ArrowRight aria-hidden="true" size={14} />
             </Link>
           </section>
+
+          <FollowingPostList
+            followedAuthorIds={socialInteractions.followedAuthorIds}
+            hydrated={socialHydrated}
+            onShowFollowing={showFollowingPosts}
+            onShowRecommended={showRecommendedAuthors}
+          />
         </aside>
       </div>
 

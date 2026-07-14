@@ -71,10 +71,10 @@ describe("FollowingPostList", () => {
     );
     expect(links[0]).toHaveAttribute("href", "/posts/career-move-3y-backend");
     expect(links[1]).toHaveAccessibleName(
-      "빌드하는밤의 글: 플랫폼 기업 백엔드 1차 기술 면접 후기",
+      "코드산책의 글: Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     );
     expect(region).not.toHaveTextContent(
-      "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+      "플랫폼 기업 백엔드 1차 기술 면접 후기",
     );
 
     fireEvent.click(
