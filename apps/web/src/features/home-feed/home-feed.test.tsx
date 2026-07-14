@@ -204,6 +204,13 @@ describe("HomeFeed", () => {
 
   it("builds the following tab from browser-owned author choices", async () => {
     const firstRender = render(<HomeFeed snapshot={buildSnapshot()} />);
+    const followingRail = screen.getByRole("region", {
+      name: "팔로우 중인 예시 글",
+    });
+
+    expect(followingRail).toHaveTextContent(
+      "아직 팔로우한 예시 작성자가 없습니다.",
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
 
@@ -227,6 +234,19 @@ describe("HomeFeed", () => {
     expect(localStorage.getItem("ejik-fit:social-interactions")).toContain(
       "server-garden",
     );
+    expect(
+      within(followingRail).getByRole("link", {
+        name: "서버정원의 글: 3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
+      }),
+    ).toHaveAttribute("href", "/posts/career-move-3y-backend");
+    fireEvent.click(
+      within(followingRail).getByRole("button", { name: "팔로잉 탭 보기" }),
+    );
+    expect(screen.getByRole("tab", { name: "팔로잉" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("tab", { name: "팔로잉" })).toHaveFocus();
 
     firstRender.unmount();
     render(<HomeFeed snapshot={buildSnapshot()} />);
