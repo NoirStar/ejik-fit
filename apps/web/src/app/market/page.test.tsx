@@ -10,6 +10,10 @@ vi.mock("@/lib/api", () => ({
   getSkillStats: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+}));
+
 describe("MarketPage", () => {
   afterEach(() => cleanup());
 
