@@ -359,4 +359,3 @@ git commit -m "fix: polish responsive jobs presentation"
 - [ ] **Step 4: main 통합과 배포 확인**
 
 원격 `main`을 fetch하고 충돌이 없으면 fast-forward 병합한 뒤 병합 결과에서 테스트를 다시 실행한다. `git push origin main` 후 원격 SHA, Vercel 상태와 실제 프로덕션 워드마크/공고 화면을 확인한다.
-

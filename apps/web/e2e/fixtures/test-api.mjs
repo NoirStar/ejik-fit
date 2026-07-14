@@ -124,6 +124,13 @@ const postingDetails = {
   },
 };
 
+postingDetails["job-korean"] = {
+  ...postingDetails["job-python"],
+  id: "job-korean",
+  title: "플랫폼 데이터 서비스 개발자 채용",
+  source_url: "https://recruit.navercorp.com/job-korean",
+};
+
 const fitAnalysis = {
   coverage: {
     matching_posting_count: 17,

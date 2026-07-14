@@ -135,3 +135,42 @@ for (const width of [1440, 820, 600, 390]) {
     }
   });
 }
+
+test("keeps a long Korean job title grouped by words on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 844, width: 320 });
+  await page.goto("/jobs/job-korean");
+
+  const title = page.getByRole("heading", {
+    level: 1,
+    name: "플랫폼 데이터 서비스 개발자 채용",
+  });
+  await expect(title).toBeVisible();
+  expect(
+    await title.evaluate((element) => getComputedStyle(element).wordBreak),
+  ).toBe("keep-all");
+
+  const charactersPerLine = await title.evaluate((element) => {
+    const node = element.firstChild;
+    if (!(node instanceof Text)) return [];
+    const lines = new Map<number, number>();
+    Array.from(node.data).forEach((character, index) => {
+      if (/\s/.test(character)) return;
+      const range = document.createRange();
+      range.setStart(node, index);
+      range.setEnd(node, index + 1);
+      const top = Math.round(range.getBoundingClientRect().top);
+      lines.set(top, (lines.get(top) ?? 0) + 1);
+    });
+    return [...lines.values()];
+  });
+
+  expect(charactersPerLine.length).toBeGreaterThan(1);
+  expect(charactersPerLine.every((count) => count >= 2)).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
+});
