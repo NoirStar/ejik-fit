@@ -127,6 +127,70 @@ describe("SearchPage", () => {
     consoleError.mockRestore();
   });
 
+  it("rejects an unsafe posting response before rendering external links", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    vi.mocked(getPostings).mockResolvedValue({
+      ...postings,
+      items: [
+        {
+          ...postings.items[0],
+          source_url: "javascript:alert('unsafe')",
+        },
+      ],
+    });
+    vi.mocked(getSkillStats).mockResolvedValue(skillStats);
+
+    render(
+      await SearchPage({
+        searchParams: Promise.resolve({ q: "Python" }),
+      }),
+    );
+
+    expect(
+      screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "공식 원문" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
+  it("rejects malformed skill counts without hiding valid posting results", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    vi.mocked(getPostings).mockResolvedValue(postings);
+    vi.mocked(getSkillStats).mockResolvedValue({
+      total: 1,
+      items: [
+        {
+          skill: "Python",
+          category: "language",
+          count: -1,
+          required_count: -2,
+        },
+      ],
+    });
+
+    render(
+      await SearchPage({
+        searchParams: Promise.resolve({ q: "Python" }),
+      }),
+    );
+
+    expect(
+      screen.getByText("기술 통계 표본을 불러오지 못했습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Python Backend Engineer" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Python 스킬맵 보기" }),
+    ).not.toBeInTheDocument();
+    consoleError.mockRestore();
+  });
+
   it("creates query-aware noindex metadata with a stable canonical route", async () => {
     await expect(
       generateMetadata({

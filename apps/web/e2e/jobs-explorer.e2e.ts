@@ -44,10 +44,10 @@ test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
   await page.addInitScript(() => {
     localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["Go"]));
   });
-  await page.goto("/jobs?q=Go&career_type=experienced");
+  await page.goto("/jobs?q=Go&career_type=new_comer");
 
   await expect(page.getByLabel("공고 검색")).toHaveValue("Go");
-  await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
+  await expect(page.getByLabel("경력 조건")).toHaveValue("new_comer");
   await page.getByRole("button", { name: "내 기술 겹침 1" }).click();
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
@@ -66,4 +66,16 @@ test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
   await expect(page).toHaveURL(/\/jobs$/);
   await expect(page.getByLabel("공고 검색")).toHaveValue("");
   await expect(page.getByLabel("경력 조건")).toHaveValue("");
+});
+
+test("combines query and career filters like the production API", async ({
+  page,
+}) => {
+  await page.goto("/jobs?q=Go&career_type=experienced");
+
+  await expect(page.getByText("현재 결과 0건")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Go Platform Engineer" }),
+  ).not.toBeVisible();
+  await expect(page.getByText("조건에 맞는 공식 공고가 없습니다.")).toBeVisible();
 });

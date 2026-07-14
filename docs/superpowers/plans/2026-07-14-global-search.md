@@ -63,4 +63,3 @@
 4. 전체 Vitest, Playwright, TypeScript, lint, production build를 실행한다.
 5. 독립 코드 리뷰에서 Critical/Important를 수정한다.
 6. main에 fast-forward 병합·푸시하고 GitHub CI와 Vercel 운영 배포를 재검증한다.
-

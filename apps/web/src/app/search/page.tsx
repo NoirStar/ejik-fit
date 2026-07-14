@@ -9,6 +9,7 @@ import {
 } from "@/features/search/model";
 import { SearchResults } from "@/features/search/search-results";
 import { getPostings, getSkillStats } from "@/lib/api";
+import { normalizePostingList } from "@/lib/posting-contract";
 import type { SkillStatsResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -20,16 +21,26 @@ type SearchPageProps = {
 };
 
 function ensureSkillStatsResponse(value: SkillStatsResponse) {
+  const validCount = (count: unknown) =>
+    typeof count === "number" && Number.isInteger(count) && count >= 0;
+  const validOptionalCount = (count: unknown) =>
+    count === undefined || validCount(count);
+
   if (
     !value ||
     !Array.isArray(value.items) ||
-    typeof value.total !== "number" ||
+    !validCount(value.total) ||
     value.items.some(
       (item) =>
         !item ||
         typeof item.skill !== "string" ||
+        item.skill.trim().length === 0 ||
         typeof item.category !== "string" ||
-        typeof item.count !== "number",
+        item.category.trim().length === 0 ||
+        !validCount(item.count) ||
+        !validOptionalCount(item.required_count) ||
+        !validOptionalCount(item.preferred_count) ||
+        !validOptionalCount(item.unspecified_count),
     )
   ) {
     throw new TypeError("Invalid skill stats response");
@@ -80,7 +91,7 @@ export default async function SearchPage({
 
   const [postings, skillStats] = await Promise.all([
     settledResource(
-      getPostings({ q: query, limit: 100 }),
+      getPostings({ q: query, limit: 100 }).then(normalizePostingList),
       "공고 검색 결과를 불러오지 못했습니다.",
     ),
     settledResource(

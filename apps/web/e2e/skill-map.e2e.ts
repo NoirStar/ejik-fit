@@ -9,8 +9,13 @@ test("keeps fixture graph scope aligned with the production API contract", async
   const unknownResponse = await request.get(
     "http://127.0.0.1:8011/api/graph/skills?seed=UnknownSkill&limit=30",
   );
+  const fitResponse = await request.post(
+    "http://127.0.0.1:8011/api/fit/analyze",
+    { data: { owned_skills: ["Rust"] } },
+  );
   const unseeded = await unseededResponse.json();
   const unknown = await unknownResponse.json();
+  const fit = await fitResponse.json();
 
   expect(unseeded.seed).toBeNull();
   expect(unseeded.evidence).toHaveLength(2);
@@ -18,6 +23,15 @@ test("keeps fixture graph scope aligned with the production API contract", async
   expect(unknown.seed).toBe("UnknownSkill");
   expect(unknown.edges).toEqual([]);
   expect(unknown.evidence).toEqual([]);
+  expect(fitResponse.status()).toBe(200);
+  expect(fit).toEqual({
+    coverage: {
+      matching_posting_count: 0,
+      strong_fit_posting_count: 0,
+    },
+    domain_branches: [],
+    recommended_next_skills: [],
+  });
 });
 
 for (const width of [1440, 820, 390]) {

@@ -189,6 +189,23 @@ describe("global search model", () => {
     });
   });
 
+  it("preserves missing requirement breakdowns as unknown instead of zero", () => {
+    const snapshot = buildSearchSnapshot({
+      query: "Go",
+      scope: "skills",
+      postings,
+      skillStats,
+      communityItems: [],
+    });
+
+    expect(snapshot.skills[0]).toMatchObject({
+      name: "Go",
+      requiredCount: null,
+      preferredCount: null,
+      unspecifiedCount: null,
+    });
+  });
+
   it("searches mock community copy while keeping its example source explicit", () => {
     const snapshot = buildSearchSnapshot({
       query: "Kubernetes",

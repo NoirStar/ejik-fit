@@ -7,6 +7,13 @@ for (const width of [1440, 820, 390]) {
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
 
+    const homeTag = page.getByRole("link", {
+      name: "백엔드 커뮤니티 검색",
+    }).first();
+    const homeTagBox = await homeTag.boundingBox();
+    expect(homeTagBox?.width).toBeGreaterThanOrEqual(44);
+    expect(homeTagBox?.height).toBeGreaterThanOrEqual(44);
+
     const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
     await globalSearch.fill("Python");
     await globalSearch.press("Enter");
@@ -36,11 +43,18 @@ for (const width of [1440, 820, 390]) {
       ),
     ).toBe(false);
 
-    for (const target of [
+    const touchTargets = [
       page.getByRole("button", { name: "검색" }),
       page.getByRole("link", { name: /기업.*1/ }),
       page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
-    ]) {
+      page.getByRole("link", { name: "Python 스킬맵", exact: true }),
+      page.getByRole("link", { name: "NAVER", exact: true }),
+    ];
+    if (width > 600) {
+      touchTargets.push(page.getByRole("link", { name: "범위만 보기" }).first());
+    }
+
+    for (const target of touchTargets) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
@@ -67,6 +81,12 @@ test("moves between actual result scopes and explicitly marked mock community", 
   await expect(
     page.getByText(/실제 사용자가 작성한 글이 아닙니다/),
   ).toBeVisible();
+  const communityTag = page.getByRole("link", {
+    name: "Kubernetes 커뮤니티 검색",
+  });
+  const communityTagBox = await communityTag.boundingBox();
+  expect(communityTagBox?.width).toBeGreaterThanOrEqual(44);
+  expect(communityTagBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByRole("link", { name: /기술.*1/ }).click();
   await expect(page).toHaveURL("/search?q=Kubernetes&scope=skills");

@@ -207,6 +207,15 @@ function JobResult({ job }: { job: JobSearchResult }) {
 }
 
 function SkillResult({ skill }: { skill: SkillSearchResult }) {
+  const requirementCounts = [
+    ["필수", skill.requiredCount],
+    ["우대", skill.preferredCount],
+    ["미분류", skill.unspecifiedCount],
+  ] as const;
+  const hasRequirementBreakdown = requirementCounts.some(
+    ([, count]) => count !== null,
+  );
+
   return (
     <article className={styles.skillResult}>
       <div className={styles.skillIcon}>
@@ -220,8 +229,11 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
       <div className={styles.skillEvidence}>
         <strong>{skill.postingCount}건 공고</strong>
         <span>
-          필수 {skill.requiredCount} · 우대 {skill.preferredCount} · 미분류{" "}
-          {skill.unspecifiedCount}
+          {hasRequirementBreakdown
+            ? requirementCounts
+                .map(([label, count]) => `${label} ${count ?? "미제공"}`)
+                .join(" · ")
+            : "필수·우대 분류 미제공"}
         </span>
       </div>
       <div className={styles.skillActions}>

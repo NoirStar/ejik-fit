@@ -155,6 +155,27 @@ describe("SearchResults", () => {
     expect(screen.getByText(/실제 사용자가 작성한 글이 아닙니다/)).toBeInTheDocument();
   });
 
+  it("labels a missing skill requirement breakdown instead of inventing zeroes", () => {
+    render(
+      <SearchResults
+        snapshot={snapshot({
+          scope: "skills",
+          skills: [
+            {
+              ...snapshot().skills[0],
+              requiredCount: null,
+              preferredCount: null,
+              unspecifiedCount: null,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByText("필수·우대 분류 미제공")).toBeInTheDocument();
+    expect(screen.queryByText(/필수 0/)).not.toBeInTheDocument();
+  });
+
   it("shows only the selected result scope", () => {
     render(<SearchResults snapshot={snapshot({ scope: "skills" })} />);
 

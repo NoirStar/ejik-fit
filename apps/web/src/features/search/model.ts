@@ -58,9 +58,9 @@ export type SkillSearchResult = {
   name: string;
   category: string;
   postingCount: number;
-  requiredCount: number;
-  preferredCount: number;
-  unspecifiedCount: number;
+  requiredCount: number | null;
+  preferredCount: number | null;
+  unspecifiedCount: number | null;
   skillHref: string;
   jobsHref: string;
 };
@@ -253,9 +253,9 @@ function buildSkills(skillStats: SkillStatsResponse, query: string) {
         name: skill.skill,
         category: skill.category,
         postingCount: skill.count,
-        requiredCount: skill.required_count ?? 0,
-        preferredCount: skill.preferred_count ?? 0,
-        unspecifiedCount: skill.unspecified_count ?? 0,
+        requiredCount: skill.required_count ?? null,
+        preferredCount: skill.preferred_count ?? null,
+        unspecifiedCount: skill.unspecified_count ?? null,
         skillHref: `/skill-map?skill=${encodeURIComponent(skill.skill)}`,
         jobsHref: `/jobs?q=${encodeURIComponent(skill.skill)}`,
       }),

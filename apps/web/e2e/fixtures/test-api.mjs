@@ -127,12 +127,56 @@ const postingDetails = {
 const skillStats = {
   total: 5,
   items: [
-    { skill: "Docker", category: "infra", count: 2 },
-    { skill: "Python", category: "language", count: 1 },
-    { skill: "Go", category: "language", count: 1 },
-    { skill: "Kubernetes", category: "infra", count: 1 },
-    { skill: "Linux", category: "infra", count: 1 },
+    {
+      skill: "Docker",
+      category: "infra",
+      count: 2,
+      required_count: 1,
+      preferred_count: 1,
+      unspecified_count: 0,
+    },
+    {
+      skill: "Python",
+      category: "language",
+      count: 1,
+      required_count: 1,
+      preferred_count: 0,
+      unspecified_count: 0,
+    },
+    {
+      skill: "Go",
+      category: "language",
+      count: 1,
+      required_count: 1,
+      preferred_count: 0,
+      unspecified_count: 0,
+    },
+    {
+      skill: "Kubernetes",
+      category: "infra",
+      count: 1,
+      required_count: 0,
+      preferred_count: 1,
+      unspecified_count: 0,
+    },
+    {
+      skill: "Linux",
+      category: "infra",
+      count: 1,
+      required_count: 0,
+      preferred_count: 0,
+      unspecified_count: 1,
+    },
   ],
+};
+
+const fitAnalysis = {
+  coverage: {
+    matching_posting_count: 0,
+    strong_fit_posting_count: 0,
+  },
+  domain_branches: [],
+  recommended_next_skills: [],
 };
 
 const skillGraph = {
@@ -324,9 +368,11 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
 
 function postingsForRequest(requestUrl) {
   const companySlug = requestUrl.searchParams.get("company");
+  const careerType = requestUrl.searchParams.get("career_type");
   const query = requestUrl.searchParams.get("q")?.trim().toLocaleLowerCase("ko-KR");
   const items = postings.items.filter((posting) => {
     if (companySlug && posting.company_slug !== companySlug) return false;
+    if (careerType && posting.career_type !== careerType) return false;
     if (!query) return true;
     const searchable = [
       posting.title,
@@ -353,6 +399,8 @@ const server = createServer((request, response) => {
       ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
         ? skillStats
+        : pathname === "/api/fit/analyze" && request.method === "POST"
+          ? fitAnalysis
         : pathname === "/api/graph/skills"
           ? skillGraphForSeed(
               requestUrl.searchParams.get("seed"),
