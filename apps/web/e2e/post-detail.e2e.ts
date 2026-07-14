@@ -137,3 +137,86 @@ test("wraps a maximum-length browser comment on mobile", async ({ page }) => {
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
 });
+
+test("persists a browser-owned post through detail, reload, and deletion", async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+  await page.setViewportSize({ height: 900, width: 390 });
+  await page.goto("/?compose=1");
+
+  const title = "브라우저에 남기는 커리어 질문";
+  await page.getByLabel("제목").fill(title);
+  await page
+    .getByLabel("내용")
+    .fill("실제 공고 요구 기술을 비교한 뒤 무엇부터 준비할지 궁금합니다.");
+  await page.getByLabel("태그 (선택)").fill("이직 준비, 백엔드");
+  await page.getByRole("button", { name: "피드에 올리기" }).click();
+
+  const homeCard = page.getByRole("article", { name: title });
+  await expect(homeCard).toBeVisible();
+  const storedPost = await page.evaluate(() => {
+    const posts = JSON.parse(
+      localStorage.getItem("ejik-fit:local-community-posts") ?? "[]",
+    );
+    return posts[0] as { id: string; title: string } | undefined;
+  });
+  expect(storedPost?.title).toBe(title);
+  expect(storedPost?.id).toMatch(/^local-/);
+
+  await homeCard.getByRole("link", { exact: true, name: title }).click();
+  await expect(page).toHaveURL(new RegExp(`/posts/${storedPost?.id}$`));
+  await expect(
+    page.getByRole("heading", { exact: true, level: 1, name: title }),
+  ).toBeVisible();
+  await expect(page.getByText("로컬 글", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "댓글" })).toBeVisible();
+  await expect(page.getByText(/mock 데이터/)).toHaveCount(0);
+
+  await page.getByRole("button", { name: `${title} 공감` }).click();
+  await page.getByLabel("댓글 내용").fill("브라우저에 저장되는 댓글");
+  await page.getByRole("button", { name: "댓글 등록" }).click();
+  await expect(page.getByText("브라우저에 저장되는 댓글")).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { exact: true, level: 1, name: title }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: `${title} 공감 취소` }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("브라우저에 저장되는 댓글")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
+
+  const deleteButton = page.getByRole("button", { name: `${title} 삭제` });
+  const deleteBox = await deleteButton.boundingBox();
+  expect(deleteBox?.height).toBeGreaterThanOrEqual(44);
+  await deleteButton.click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        posts: localStorage.getItem("ejik-fit:local-community-posts"),
+        social: localStorage.getItem("ejik-fit:social-interactions"),
+      })),
+    )
+    .toEqual({
+      posts: "[]",
+      social:
+        '{"reactedPostIds":[],"savedPostIds":[],"followedAuthorIds":[],"commentsByPostId":{}}',
+    });
+
+  await page.getByRole("link", { name: "홈 피드로 돌아가기" }).click();
+  await expect(page.getByRole("article", { name: title })).toHaveCount(0);
+  expect(browserErrors).toEqual([]);
+});
