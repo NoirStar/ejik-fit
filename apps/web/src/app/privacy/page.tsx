@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
-      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술·저장 공고·지원 단계·커뮤니티 상호작용은 사용 중인 브라우저에만 저장됩니다."
+      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술·비교 조건·저장 공고·지원 단계·커뮤니티 상호작용은 사용 중인 브라우저에만 저장됩니다."
       title="개인정보와 브라우저 저장"
     >
       <section>
@@ -54,6 +54,16 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>커리어 비교 조건</h2>
+        <p>
+          선택한 경력 조건과 희망 기술 분야는{" "}
+          <code>ejik-fit:career-preferences</code> 키에 저장됩니다. 비교할 때 실제
+          공고 분석 요청에 포함되지만 계정 정보로 저장하거나 다른 기기에
+          동기화하지 않습니다.
+        </p>
+      </section>
+
+      <section>
         <h2>URL query</h2>
         <p>
           공고 검색 조건과 일부 기술 선택은 URL query에 포함될 수 있습니다. URL을
@@ -64,8 +74,8 @@ export default function PrivacyPage() {
       <section>
         <h2>저장 데이터 삭제</h2>
         <p>
-          아래 버튼은 내 스택, 저장한 공고 ID, 지원 단계, 커뮤니티 상호작용,
-          현재 URL query를 이 브라우저에서 지웁니다.
+          아래 버튼은 내 스택, 커리어 비교 조건, 저장한 공고 ID, 지원 단계,
+          커뮤니티 상호작용, 현재 URL query를 이 브라우저에서 지웁니다.
         </p>
         <ClearLocalData />
       </section>

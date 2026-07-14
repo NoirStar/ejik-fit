@@ -38,6 +38,10 @@ describe("public trust pages", () => {
       "ejik-fit:social-interactions",
       '{"savedPostIds":["post-1"],"followedAuthorIds":["server-garden"]}',
     );
+    localStorage.setItem(
+      "ejik-fit:career-preferences",
+      '{"careerCondition":"experienced","targetDomain":"cloud"}',
+    );
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
 
@@ -48,6 +52,7 @@ describe("public trust pages", () => {
       screen.getByText(/ejik-fit:job-application-stages/),
     ).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:social-interactions/)).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:career-preferences/)).toBeInTheDocument();
     expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
 
@@ -58,6 +63,7 @@ describe("public trust pages", () => {
       localStorage.getItem("ejik-fit:job-application-stages"),
     ).toBeNull();
     expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
+    expect(localStorage.getItem("ejik-fit:career-preferences")).toBeNull();
     expect(window.location.search).toBe("");
   });
 
