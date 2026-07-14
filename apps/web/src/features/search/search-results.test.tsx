@@ -1,5 +1,13 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 
 import type { SearchSnapshot } from "./model";
 import { SearchResults } from "./search-results";
@@ -72,7 +80,36 @@ function snapshot(
   };
 }
 
-afterEach(() => cleanup());
+function saveLocalSearchPost({
+  body = "Python 공고를 비교한 뒤 남긴 질문입니다.",
+  id = "local-python-search",
+  tags = ["Python", "이직 준비"],
+  title = "Python 공고를 보고 남긴 내 질문",
+}: {
+  body?: string;
+  id?: string;
+  tags?: string[];
+  title?: string;
+} = {}) {
+  window.localStorage.setItem(
+    "ejik-fit:local-community-posts",
+    JSON.stringify([
+      {
+        id,
+        title,
+        body,
+        tags,
+        createdAt: "2026-07-14T03:00:00.000Z",
+      },
+    ]),
+  );
+}
+
+beforeEach(() => window.localStorage.clear());
+afterEach(() => {
+  cleanup();
+  window.localStorage.clear();
+});
 
 describe("SearchResults", () => {
   it("renders a useful no-query state without invented result numbers", () => {
@@ -152,7 +189,81 @@ describe("SearchResults", () => {
     expect(
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
-    expect(screen.getByText(/실제 사용자가 작성한 글이 아닙니다/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
+    ).toHaveTextContent("예시 콘텐츠는 실제 사용자가 작성한 글이 아니며");
+  });
+
+  it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
+    saveLocalSearchPost();
+    render(<SearchResults snapshot={snapshot()} />);
+
+    const localResult = await screen.findByRole("article", {
+      name: "Python 공고를 보고 남긴 내 질문",
+    });
+    expect(within(localResult).getByText("내 로컬 글")).toBeInTheDocument();
+    expect(
+      within(localResult).getByRole("link", {
+        name: "Python 공고를 보고 남긴 내 질문",
+      }),
+    ).toHaveAttribute("href", "/posts/local-python-search");
+    expect(localResult).toHaveTextContent("나");
+    expect(localResult).toHaveTextContent("이 브라우저에서 작성");
+    expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Python Backend Engineer" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", {
+        name: "Python에서 Go로 옮긴 경험이 궁금해요",
+      }),
+    ).toHaveTextContent("예시 콘텐츠");
+    expect(
+      screen.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
+    ).toBeInTheDocument();
+
+    deleteLocalCommunityPost("local-python-search");
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("article", {
+          name: "Python 공고를 보고 남긴 내 질문",
+        }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
+  });
+
+  it("replaces the completed empty state when only a local post matches", async () => {
+    saveLocalSearchPost({
+      body: "현재 브라우저에서만 찾을 수 있습니다.",
+      id: "local-browser-search",
+      tags: ["로컬 검색"],
+      title: "로컬 검색으로 다시 찾는 내 질문",
+    });
+    render(
+      <SearchResults
+        snapshot={
+          snapshot({
+            query: "로컬 검색",
+            companies: [],
+            jobs: [],
+            skills: [],
+            community: [],
+            counts: { companies: 0, jobs: 0, skills: 0, community: 0 },
+            hasAnyResults: false,
+          })
+        }
+      />,
+    );
+
+    expect(
+      await screen.findByRole("link", {
+        name: "로컬 검색으로 다시 찾는 내 질문",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
   });
 
   it("labels a missing skill requirement breakdown instead of inventing zeroes", () => {

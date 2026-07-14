@@ -461,9 +461,14 @@
   color: var(--color-info);
 }
 
-.exampleBadge {
+.exampleBadge[data-source="mock"] {
   background: var(--color-surface-muted);
   color: var(--color-muted);
+}
+
+.exampleBadge[data-source="local"] {
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
 }
 
 .jobIdentity {

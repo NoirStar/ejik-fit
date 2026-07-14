@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowRight,
   ArrowSquareOut,
@@ -9,15 +11,22 @@ import {
   ShieldCheck,
   Stack,
   WarningCircle,
-} from "@phosphor-icons/react/dist/ssr";
+} from "@phosphor-icons/react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { formatCareer, formatEmployment } from "@/lib/labels";
+import {
+  readLocalCommunityPosts,
+  subscribeLocalCommunityPosts,
+  type LocalCommunityPost,
+} from "@/lib/local-community-posts";
 
 import {
   SEARCH_SCOPES,
   buildSearchScopeHref,
+  mergeLocalCommunitySearchResults,
   type CommunitySearchResult,
   type CompanySearchResult,
   type JobSearchResult,
@@ -253,9 +262,11 @@ function CommunityResult({
   item: CommunitySearchResult;
 }) {
   return (
-    <article className={styles.communityResult}>
+    <article aria-label={item.title} className={styles.communityResult}>
       <div className={styles.resultTopline}>
-        <span className={styles.exampleBadge}>예시 콘텐츠</span>
+        <span className={styles.exampleBadge} data-source={item.source}>
+          {item.source === "local" ? "내 로컬 글" : "예시 콘텐츠"}
+        </span>
         <span>{item.createdLabel}</span>
       </div>
       <p className={styles.communityAuthor}>
@@ -282,7 +293,23 @@ function CommunityResult({
   );
 }
 
-export function SearchResults({ snapshot }: { snapshot: SearchSnapshot }) {
+export function SearchResults({
+  snapshot: serverSnapshot,
+}: {
+  snapshot: SearchSnapshot;
+}) {
+  const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeLocalCommunityPosts(setLocalPosts);
+    setLocalPosts(readLocalCommunityPosts());
+    return unsubscribe;
+  }, []);
+
+  const snapshot = useMemo(
+    () => mergeLocalCommunitySearchResults(serverSnapshot, localPosts),
+    [localPosts, serverSnapshot],
+  );
   const { query, scope } = snapshot;
 
   return (
@@ -291,7 +318,7 @@ export function SearchResults({ snapshot }: { snapshot: SearchSnapshot }) {
         <p className={styles.eyebrow}>통합 탐색</p>
         <h1>{query ? `“${query}” 검색 결과` : "무엇을 찾고 있나요?"}</h1>
         <p className={styles.description}>
-          공식 채용 데이터와 커뮤니티 예시를 출처별로 나눠 확인하세요.
+          공식 채용 데이터와 내 로컬 글·커뮤니티 예시를 출처별로 나눠 확인하세요.
         </p>
         <form action="/search" className={styles.searchForm} method="get" role="search">
           <MagnifyingGlass aria-hidden="true" size={20} />
@@ -314,7 +341,10 @@ export function SearchResults({ snapshot }: { snapshot: SearchSnapshot }) {
           <MagnifyingGlass aria-hidden="true" size={28} />
           <div>
             <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
-            <p>기업·공고·기술은 실제 공개 채용 데이터에서, 주제는 예시 커뮤니티에서 찾습니다.</p>
+            <p>
+              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 이 브라우저의
+              내 글과 화면용 예시에서 찾습니다.
+            </p>
           </div>
           <div className={styles.startLinks}>
             <Link href="/jobs">전체 공고 보기</Link>
@@ -464,17 +494,18 @@ export function SearchResults({ snapshot }: { snapshot: SearchSnapshot }) {
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="화면 흐름을 확인하기 위해 만든 커뮤니티 예시 결과입니다."
+                      description="현재 브라우저의 내 글과 화면 흐름용 예시 결과입니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
-                      아래 내용은 실제 사용자가 작성한 글이 아닙니다. 공고·기술 수치와
-                      혼합해 사실처럼 표시하지 않습니다.
+                      내 로컬 글은 현재 브라우저에서만 검색됩니다. 예시 콘텐츠는 실제
+                      사용자가 작성한 글이 아니며, 공고·기술 수치와 혼합해 사실처럼
+                      표시하지 않습니다.
                     </p>
                     {snapshot.community.length === 0 ? (
-                      <SectionState>일치하는 커뮤니티 예시가 없습니다.</SectionState>
+                      <SectionState>일치하는 커뮤니티 글이 없습니다.</SectionState>
                     ) : (
                       <div className={styles.communityList}>
                         {snapshot.community
