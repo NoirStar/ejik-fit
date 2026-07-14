@@ -53,8 +53,26 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
     owned_skills: ["Python"],
     domains: ["cloud"],
   });
+  const careerSelect = page.getByLabel("경력 조건");
+  await careerSelect.selectOption("experienced");
+  await expect.poll(() => fitRequests.at(-1)).toMatchObject({
+    owned_skills: ["Python"],
+    career_type: "experienced",
+    domains: ["cloud"],
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        JSON.parse(
+          localStorage.getItem("ejik-fit:career-preferences") ?? "null",
+        ),
+      ),
+    )
+    .toEqual({ careerCondition: "experienced", targetDomain: "cloud" });
   const domainBox = await domainSelect.boundingBox();
   expect(domainBox?.height).toBeGreaterThanOrEqual(44);
+  const careerBox = await careerSelect.boundingBox();
+  expect(careerBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByRole("button", { name: "내 스택 열기" }).click();
   const dialog = page.getByRole("dialog", { name: "내 스택" });
@@ -66,11 +84,28 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   await expect(
     page.getByRole("list", { name: "저장한 기술 목록" }),
   ).toContainText("React");
+  await expect.poll(() => fitRequests.at(-1)).toMatchObject({
+    owned_skills: ["Python", "React"],
+    career_type: "experienced",
+    domains: ["cloud"],
+  });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > window.innerWidth,
     ),
   ).toBe(false);
+
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "공고 비교 결과" }),
+  ).toBeVisible();
+  await expect(careerSelect).toHaveValue("experienced");
+  await expect(domainSelect).toHaveValue("cloud");
+  await expect.poll(() => fitRequests.at(-1)).toMatchObject({
+    owned_skills: ["Python", "React"],
+    career_type: "experienced",
+    domains: ["cloud"],
+  });
 
   await page.setViewportSize({ height: 1024, width: 768 });
   await expect(page.getByLabel("경력 조건")).toBeVisible();

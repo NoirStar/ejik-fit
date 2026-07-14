@@ -13,6 +13,13 @@ import type { FormEvent } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 
 import {
+  EMPTY_CAREER_PREFERENCES,
+  readCareerPreferences,
+  subscribeCareerPreferences,
+  writeCareerPreferences,
+  type CareerPreferences,
+} from "@/lib/career-preferences";
+import {
   addOwnedSkill,
   clearOwnedSkills,
   readOwnedSkills,
@@ -26,6 +33,7 @@ import {
   buildCareerSnapshot,
   CAREER_CONDITIONS,
   careerScopeLabel,
+  formatDomainLabel,
   type CareerCondition,
   type CareerDomainSuggestion,
   type CareerSnapshot,
@@ -288,14 +296,17 @@ export function CareerOverview({
   const conditionId = useId();
   const targetDomainId = useId();
   const [hydrated, setHydrated] = useState(false);
+  const [preferencesHydrated, setPreferencesHydrated] = useState(false);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [inputError, setInputError] = useState("");
-  const [careerCondition, setCareerCondition] = useState<CareerCondition>("");
-  const [targetDomain, setTargetDomain] = useState("");
+  const [careerPreferences, setCareerPreferences] =
+    useState<CareerPreferences>(EMPTY_CAREER_PREFERENCES);
+  const [preferenceStatus, setPreferenceStatus] = useState("");
   const [comparison, setComparison] = useState<ComparisonState>({ status: "idle" });
   const [retrySequence, setRetrySequence] = useState(0);
 
+  const { careerCondition, targetDomain } = careerPreferences;
   const ownedSkillsSignature = ownedSkills.join("\u0000");
   const availableSuggestions = useMemo(() => {
     const owned = new Set(
@@ -308,6 +319,15 @@ export function CareerOverview({
       )
       .slice(0, 8);
   }, [ownedSkills, suggestions]);
+  const targetDomainIsAvailable =
+    Boolean(targetDomain) &&
+    domainSuggestions.some((domain) => domain.value === targetDomain);
+  const activeTargetDomain =
+    targetDomain &&
+    !domainSuggestionsUnavailable &&
+    targetDomainIsAvailable
+      ? targetDomain
+      : "";
 
   useEffect(() => {
     setOwnedSkills(readOwnedSkills());
@@ -316,17 +336,49 @@ export function CareerOverview({
   }, []);
 
   useEffect(() => {
-    if (
-      targetDomain &&
-      (domainSuggestionsUnavailable ||
-        !domainSuggestions.some((domain) => domain.value === targetDomain))
-    ) {
-      setTargetDomain("");
-    }
-  }, [domainSuggestions, domainSuggestionsUnavailable, targetDomain]);
+    setCareerPreferences(readCareerPreferences());
+    setPreferencesHydrated(true);
+    return subscribeCareerPreferences((nextPreferences) => {
+      setCareerPreferences(nextPreferences);
+      setPreferenceStatus("");
+    });
+  }, []);
 
   useEffect(() => {
-    if (!hydrated || ownedSkills.length === 0) {
+    if (
+      !preferencesHydrated ||
+      domainSuggestionsUnavailable ||
+      !targetDomain ||
+      targetDomainIsAvailable
+    ) {
+      return;
+    }
+
+    const nextPreferences = writeCareerPreferences({
+      careerCondition,
+      targetDomain: "",
+    });
+    setCareerPreferences((current) =>
+      current.careerCondition === nextPreferences.careerCondition &&
+      current.targetDomain === nextPreferences.targetDomain
+        ? current
+        : nextPreferences,
+    );
+    setPreferenceStatus(
+      nextPreferences.targetDomain
+        ? "현재 목록에 없는 희망 기술 분야를 정리하지 못했습니다."
+        : "",
+    );
+  }, [
+    careerCondition,
+    domainSuggestionsUnavailable,
+    preferencesHydrated,
+    targetDomain,
+    targetDomainIsAvailable,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated || !preferencesHydrated || ownedSkills.length === 0) {
       setComparison({ status: "idle" });
       return;
     }
@@ -343,7 +395,7 @@ export function CareerOverview({
             buildCareerAnalyzePayload(
               ownedSkills,
               careerCondition,
-              targetDomain,
+              activeTargetDomain,
             ),
           ),
           signal: controller.signal,
@@ -360,7 +412,7 @@ export function CareerOverview({
           snapshot: buildCareerSnapshot(
             payload,
             careerCondition,
-            targetDomain,
+            activeTargetDomain,
           ),
         });
       } catch (error) {
@@ -377,11 +429,12 @@ export function CareerOverview({
     void requestComparison();
     return () => controller.abort();
   }, [
+    activeTargetDomain,
     careerCondition,
     hydrated,
     ownedSkillsSignature,
+    preferencesHydrated,
     retrySequence,
-    targetDomain,
   ]);
 
   function saveSkill(skill: string) {
@@ -428,11 +481,23 @@ export function CareerOverview({
     setInputError("");
   }
 
+  function persistCareerPreferences(
+    nextPreferences: CareerPreferences,
+    failureMessage: string,
+  ) {
+    const storedPreferences = writeCareerPreferences(nextPreferences);
+    setCareerPreferences(storedPreferences);
+    const stored =
+      storedPreferences.careerCondition === nextPreferences.careerCondition &&
+      storedPreferences.targetDomain === nextPreferences.targetDomain;
+    setPreferenceStatus(stored ? "" : failureMessage);
+  }
+
   const selectedScopeLabel = careerScopeLabel(
     careerCondition,
-    targetDomain,
+    activeTargetDomain,
   );
-  const announcement = !hydrated
+  const announcement = !hydrated || !preferencesHydrated
     ? "저장한 기술을 확인하고 있습니다."
     : comparison.status === "loading"
       ? `${selectedScopeLabel} 조건의 공개 공고를 비교하고 있습니다.`
@@ -579,10 +644,20 @@ export function CareerOverview({
             <div>
               <p>비교 범위</p>
               <h2 id="career-condition-title">비교 조건</h2>
-              <span>선택한 조건은 현재 공고 비교 요청에만 적용되며 서버에 저장되지 않습니다.</span>
+              <span>
+                비교 조건은 이 브라우저에 저장되며 현재 공고 비교 요청에만
+                사용됩니다. 서버 계정에는 저장되지 않습니다.
+              </span>
+              {preferenceStatus && (
+                <span className={styles.conditionStatus} role="status">
+                  {preferenceStatus}
+                </span>
+              )}
               {domainSuggestionsUnavailable && (
                 <span className={styles.conditionStatus} role="status">
-                  분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다.
+                  {targetDomain
+                    ? `저장한 희망 분야는 유지하고 현재 요청은 전체 기술 분야로 비교합니다. (${formatDomainLabel(targetDomain)})`
+                    : "분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다."}
                 </span>
               )}
             </div>
@@ -590,9 +665,16 @@ export function CareerOverview({
               <label className={styles.selectLabel} htmlFor={conditionId}>
                 <span>경력 조건</span>
                 <select
+                  disabled={!preferencesHydrated}
                   id={conditionId}
                   onChange={(event) =>
-                    setCareerCondition(event.target.value as CareerCondition)
+                    persistCareerPreferences(
+                      {
+                        careerCondition: event.target.value as CareerCondition,
+                        targetDomain,
+                      },
+                      "경력 조건을 저장하지 못했습니다.",
+                    )
                   }
                   value={careerCondition}
                 >
@@ -606,11 +688,25 @@ export function CareerOverview({
               <label className={styles.selectLabel} htmlFor={targetDomainId}>
                 <span>희망 기술 분야</span>
                 <select
+                  disabled={!preferencesHydrated}
                   id={targetDomainId}
-                  onChange={(event) => setTargetDomain(event.target.value)}
+                  onChange={(event) =>
+                    persistCareerPreferences(
+                      {
+                        careerCondition,
+                        targetDomain: event.target.value,
+                      },
+                      "희망 기술 분야를 저장하지 못했습니다.",
+                    )
+                  }
                   value={targetDomain}
                 >
                   <option value="">전체 기술 분야</option>
+                  {targetDomain && !targetDomainIsAvailable && (
+                    <option disabled value={targetDomain}>
+                      {formatDomainLabel(targetDomain)} · 저장됨, 현재 확인 불가
+                    </option>
+                  )}
                   {domainSuggestions.map((domain) => (
                     <option key={domain.value} value={domain.value}>
                       {domain.label} · 연결 기술 {formatCount(domain.skillCount, "개")}
@@ -621,7 +717,7 @@ export function CareerOverview({
             </div>
           </section>
 
-          {!hydrated ? (
+          {!hydrated || !preferencesHydrated ? (
             <section className={styles.messagePanel} role="status">
               <span className={styles.loadingMark} aria-hidden="true" />
               <div>

@@ -10,6 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { writeOwnedSkills } from "@/lib/owned-skills";
+import { writeCareerPreferences } from "@/lib/career-preferences";
 import type { FitAnalyzeResponse } from "@/lib/types";
 
 import { CareerOverview } from "./career-overview";
@@ -237,6 +238,80 @@ describe("CareerOverview", () => {
       owned_skills: ["Python"],
       career_type: "experienced",
     });
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:career-preferences")!,
+      ),
+    ).toEqual({ careerCondition: "experienced", targetDomain: "" });
+  });
+
+  it("hydrates stored preferences before the first comparison request", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    window.localStorage.setItem(
+      "ejik-fit:career-preferences",
+      JSON.stringify({
+        careerCondition: "experienced",
+        targetDomain: "robotics",
+      }),
+    );
+
+    render(
+      <CareerOverview
+        domainSuggestions={[
+          { value: "robotics", label: "로보틱스", skillCount: 4 },
+        ]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText("경력 조건")).toHaveValue("experienced");
+    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      owned_skills: ["Python"],
+      career_type: "experienced",
+      domains: ["robotics"],
+    });
+    expect(screen.getByText(/비교 조건은 이 브라우저에 저장/)).toBeInTheDocument();
+  });
+
+  it("reacts to career preference changes elsewhere in the same tab", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    render(
+      <CareerOverview
+        domainSuggestions={[
+          { value: "robotics", label: "로보틱스", skillCount: 4 },
+        ]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+
+    act(() => {
+      writeCareerPreferences({
+        careerCondition: "new_comer",
+        targetDomain: "robotics",
+      });
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText("경력 조건")).toHaveValue("new_comer");
+    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      owned_skills: ["Python"],
+      career_type: "new_comer",
+      domains: ["robotics"],
+    });
   });
 
   it("sends an API-backed target domain and repeats the scope in results", async () => {
@@ -265,6 +340,11 @@ describe("CareerOverview", () => {
       owned_skills: ["Python"],
       domains: ["robotics"],
     });
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:career-preferences")!,
+      ),
+    ).toEqual({ careerCondition: "", targetDomain: "robotics" });
     expect(await screen.findByText("로보틱스 조건")).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: "로보틱스 · 연결 기술 4개" }),
@@ -274,7 +354,7 @@ describe("CareerOverview", () => {
     ).toBeInTheDocument();
   });
 
-  it("clears a selected domain when refreshed graph choices no longer contain it", async () => {
+  it("preserves a stored domain during a temporary graph failure and falls back safely", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
       JSON.stringify(["Python"]),
@@ -306,13 +386,86 @@ describe("CareerOverview", () => {
     );
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("");
+    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({
       owned_skills: ["Python"],
     });
     expect(
-      screen.getByText("분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다."),
+      screen.getByText(/저장한 희망 분야는 유지하고 현재 요청은 전체 기술 분야/),
     ).toBeInTheDocument();
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:career-preferences")!,
+      ),
+    ).toEqual({ careerCondition: "", targetDomain: "robotics" });
+  });
+
+  it("clears a stored domain when a successful graph refresh no longer contains it", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    window.localStorage.setItem(
+      "ejik-fit:career-preferences",
+      JSON.stringify({ careerCondition: "", targetDomain: "robotics" }),
+    );
+    render(
+      <CareerOverview
+        domainSuggestions={[]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      owned_skills: ["Python"],
+    });
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:career-preferences")!,
+      ),
+    ).toEqual({ careerCondition: "", targetDomain: "" });
+  });
+
+  it("does not claim a blocked preference write succeeded", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    render(
+      <CareerOverview
+        domainSuggestions={[
+          { value: "robotics", label: "로보틱스", skillCount: 4 },
+        ]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const originalSetItem = Storage.prototype.setItem;
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(function (this: Storage, key, value) {
+        if (key === "ejik-fit:career-preferences") {
+          throw new DOMException("blocked", "QuotaExceededError");
+        }
+        return originalSetItem.call(this, key, value);
+      });
+
+    fireEvent.change(screen.getByLabelText("경력 조건"), {
+      target: { value: "experienced" },
+    });
+
+    expect(screen.getByLabelText("경력 조건")).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "경력 조건을 저장하지 못했습니다.",
+    );
+    expect(fetchMock).toHaveBeenCalledOnce();
+    setItem.mockRestore();
   });
 
   it("does not replace a newer result when an aborted response finishes late", async () => {
