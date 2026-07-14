@@ -79,9 +79,9 @@ describe("career overview model", () => {
     expect(
       buildCareerDomainSuggestions({
         nodes: [
-          { domains: ["backend", "cloud", "backend"] },
-          { domains: ["backend", "robotics"] },
-          { domains: ["cloud", ""] },
+          { id: "python", domains: ["backend", "cloud", "backend"] },
+          { id: "kubernetes", domains: ["backend", "robotics"] },
+          { id: "docker", domains: ["cloud", ""] },
         ],
       }),
     ).toEqual([
@@ -92,6 +92,22 @@ describe("career overview model", () => {
     expect(() => buildCareerDomainSuggestions({ nodes: null })).toThrow(
       "invalid domain suggestion response",
     );
+  });
+
+  it("rejects missing and duplicate graph node ids before counting domains", () => {
+    expect(() =>
+      buildCareerDomainSuggestions({
+        nodes: [{ domains: ["backend"] }],
+      }),
+    ).toThrow("invalid domain suggestion node");
+    expect(() =>
+      buildCareerDomainSuggestions({
+        nodes: [
+          { id: "python", domains: ["backend"] },
+          { id: " python ", domains: ["cloud"] },
+        ],
+      }),
+    ).toThrow("duplicate domain suggestion node");
   });
 
   it("maps fit counts and evidence without inventing a percentage", () => {

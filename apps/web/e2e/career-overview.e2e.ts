@@ -71,4 +71,13 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
       () => document.documentElement.scrollWidth > window.innerWidth,
     ),
   ).toBe(false);
+
+  await page.setViewportSize({ height: 1024, width: 768 });
+  await expect(page.getByLabel("경력 조건")).toBeVisible();
+  await expect(domainSelect).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
 });

@@ -316,6 +316,16 @@ export function CareerOverview({
   }, []);
 
   useEffect(() => {
+    if (
+      targetDomain &&
+      (domainSuggestionsUnavailable ||
+        !domainSuggestions.some((domain) => domain.value === targetDomain))
+    ) {
+      setTargetDomain("");
+    }
+  }, [domainSuggestions, domainSuggestionsUnavailable, targetDomain]);
+
+  useEffect(() => {
     if (!hydrated || ownedSkills.length === 0) {
       setComparison({ status: "idle" });
       return;

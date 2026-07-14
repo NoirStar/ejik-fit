@@ -66,11 +66,22 @@ export function buildCareerDomainSuggestions(
   }
 
   const counts = new Map<string, number>();
+  const seenNodeIds = new Set<string>();
   for (const node of nodes) {
     if (!node || typeof node !== "object") {
       throw new Error("invalid domain suggestion node");
     }
-    const domains = (node as { domains?: unknown }).domains;
+    const candidate = node as { id?: unknown; domains?: unknown };
+    if (typeof candidate.id !== "string" || !candidate.id.trim()) {
+      throw new Error("invalid domain suggestion node");
+    }
+    const nodeId = candidate.id.trim().toLocaleLowerCase("en-US");
+    if (seenNodeIds.has(nodeId)) {
+      throw new Error("duplicate domain suggestion node");
+    }
+    seenNodeIds.add(nodeId);
+
+    const domains = candidate.domains;
     if (
       !Array.isArray(domains) ||
       !domains.every((domain) => typeof domain === "string")

@@ -274,6 +274,47 @@ describe("CareerOverview", () => {
     ).toBeInTheDocument();
   });
 
+  it("clears a selected domain when refreshed graph choices no longer contain it", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    const { rerender } = render(
+      <CareerOverview
+        domainSuggestions={[
+          { value: "robotics", label: "로보틱스", skillCount: 4 },
+        ]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+
+    await screen.findByRole("heading", { level: 2, name: "공고 비교 결과" });
+    fireEvent.change(screen.getByLabelText("희망 기술 분야"), {
+      target: { value: "robotics" },
+    });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    rerender(
+      <CareerOverview
+        domainSuggestions={[]}
+        domainSuggestionsUnavailable
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("");
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({
+      owned_skills: ["Python"],
+    });
+    expect(
+      screen.getByText("분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다."),
+    ).toBeInTheDocument();
+  });
+
   it("does not replace a newer result when an aborted response finishes late", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
