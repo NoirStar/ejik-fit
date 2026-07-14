@@ -74,12 +74,8 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   const careerBox = await careerSelect.boundingBox();
   expect(careerBox?.height).toBeGreaterThanOrEqual(44);
 
-  await page.getByRole("button", { name: "내 스택 열기" }).click();
-  const dialog = page.getByRole("dialog", { name: "내 스택" });
-  await expect(dialog.getByText("Python", { exact: true })).toBeVisible();
-  await dialog.getByLabel("추가할 기술").fill("React");
-  await dialog.getByRole("button", { name: "기술 추가" }).click();
-  await dialog.getByRole("button", { name: "내 스택 닫기" }).click();
+  await page.getByLabel("추가할 기술").fill("React");
+  await page.getByRole("button", { name: "기술 추가" }).click();
 
   await expect(
     page.getByRole("list", { name: "저장한 기술 목록" }),

@@ -18,11 +18,18 @@ for (const width of [1440, 390]) {
       "내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.",
     );
 
-    await page.getByRole("button", { name: "내 스택 열기" }).click();
-    const stack = page.getByRole("dialog", { name: "내 스택" });
-    await stack.getByLabel("추가할 기술").fill("Java");
-    await stack.getByRole("button", { name: "기술 추가" }).click();
-    await stack.getByRole("button", { name: "내 스택 닫기" }).click();
+    if (width > 820) {
+      await page.getByRole("button", { name: "내 스택 열기" }).click();
+      const stack = page.getByRole("dialog", { name: "내 스택" });
+      await stack.getByLabel("추가할 기술").fill("Java");
+      await stack.getByRole("button", { name: "기술 추가" }).click();
+      await stack.getByRole("button", { name: "내 스택 닫기" }).click();
+    } else {
+      await insight.getByRole("link", { name: "기술 추가하기" }).click();
+      await page.getByLabel("추가할 기술").fill("Java");
+      await page.getByRole("button", { name: "기술 추가" }).click();
+      await page.goto("/");
+    }
 
     await expect(page).toHaveURL(/owned_skills=Java/);
     insight = page.getByRole("region", { name: "내 커리어 인사이트" });

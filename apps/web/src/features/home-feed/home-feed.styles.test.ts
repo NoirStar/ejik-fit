@@ -39,4 +39,9 @@ describe("home feed density", () => {
       /\.tabs button\[data-active="true"\]\s*\{[^}]*background: transparent;[^}]*color: var\(--color-accent-strong\);/,
     );
   });
+
+  it("keeps tag links compact-looking without shrinking their touch target", () => {
+    expect(rule("tags a")).toContain("min-height: var(--touch-target);");
+    expect(css).toMatch(/\.tags a::before\s*\{[^}]*inset: 0\.5rem 0;/);
+  });
 });
