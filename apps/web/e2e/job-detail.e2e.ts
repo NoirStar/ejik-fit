@@ -75,13 +75,15 @@ for (const width of [1440, 820, 600, 390]) {
 
     if (width === 390) {
       const actions = page.getByRole("region", { name: "지원 준비" });
+      const primaryActions = page.getByRole("group", { name: "지원 및 저장" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
       const trust = page.getByRole("region", { name: "공고 신뢰 정보" });
       const navigation = page.getByRole("navigation", {
         name: "모바일 주요 탐색",
       });
+      await expect(actions).toBeVisible();
       await expect(navigation).toBeVisible();
-      const actionsBox = await actions.boundingBox();
+      const actionsBox = await primaryActions.boundingBox();
       const factsBox = await facts.boundingBox();
       const trustBox = await trust.boundingBox();
       expect(actionsBox).not.toBeNull();
@@ -89,7 +91,9 @@ for (const width of [1440, 820, 600, 390]) {
       expect(trustBox).not.toBeNull();
       expect(factsBox!.y).toBeLessThan(trustBox!.y);
       expect(
-        await actions.evaluate((element) => getComputedStyle(element).position),
+        await primaryActions.evaluate(
+          (element) => getComputedStyle(element).position,
+        ),
       ).toBe("fixed");
       const navigationBox = await navigation.boundingBox();
       expect(navigationBox).not.toBeNull();

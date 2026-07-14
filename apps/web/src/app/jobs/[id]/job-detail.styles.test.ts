@@ -20,7 +20,7 @@ describe("job detail service density", () => {
 
   it("reserves mobile space for the fixed action bar above navigation", () => {
     expect(actionCss).toMatch(
-      /@media \(max-width: 680px\)[\s\S]*?\.panel\s*\{[\s\S]*?position: fixed/,
+      /@media \(max-width: 680px\)[\s\S]*?\.primaryActions\s*\{[\s\S]*?position: fixed/,
     );
     expect(actionCss).toContain("bottom: var(--mobile-nav-height)");
   });
