@@ -1,0 +1,21 @@
+.icon {
+  display: inline-grid;
+  width: var(--technology-icon-size, 1.5rem);
+  height: var(--technology-icon-size, 1.5rem);
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 12%, var(--color-line));
+  border-radius: 0.4375rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+
+.icon svg {
+  width: 72%;
+  height: 72%;
+}
+
+.icon[data-icon-kind="neutral"] svg {
+  width: 68%;
+  height: 68%;
+}
