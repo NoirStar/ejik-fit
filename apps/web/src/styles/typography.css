@@ -7,7 +7,7 @@
 }
 
 :root {
-  --font-korean: "Pretendard Variable", var(--font-geist), system-ui, sans-serif;
+  --font-korean: "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 body,
@@ -19,6 +19,6 @@ textarea {
 }
 
 [data-numeric] {
-  font-family: var(--font-geist), var(--font-korean);
+  font-family: var(--font-korean);
   font-variant-numeric: tabular-nums;
 }

@@ -7,21 +7,58 @@ function read(relativePath: string) {
 }
 
 describe("design system foundation", () => {
-  it("defines the shared semantic tokens and local Korean font", () => {
+  it("defines the approved light service tokens and local Korean font", () => {
     const tokens = read("src/styles/tokens.css");
     const typography = read("src/styles/typography.css");
+    const globals = read("src/app/globals.css");
 
-    expect(tokens).toContain("--color-bg: #f6f7f9");
-    expect(tokens).toContain("--color-surface: #ffffff");
-    expect(tokens).toContain("--color-text: #16181d");
-    expect(tokens).toContain("--color-muted: #667085");
-    expect(tokens).toContain("--color-line: #e5e7eb");
-    expect(tokens).toContain("--color-accent: #7657f6");
-    expect(tokens).toContain("--header-height-desktop: 7rem");
+    for (const token of [
+      "--color-bg: #f7f7fa",
+      "--color-surface: #ffffff",
+      "--color-text: #17171c",
+      "--color-muted: #62626d",
+      "--color-faint: #8b8b96",
+      "--color-line: #e7e7ec",
+      "--color-accent: #6d4be8",
+      "--header-height-desktop: 4rem",
+      "--header-height-mobile: 3.5rem",
+      "--content-max: 80rem",
+      "--type-page-title: 2rem",
+      "--type-detail-title: 2.125rem",
+      "--type-item-title: 1.0625rem",
+      "--type-body: 0.9375rem",
+      "--type-meta: 0.8125rem",
+      "--layer-header: 30",
+      "--layer-popover: 40",
+    ]) {
+      expect(tokens).toContain(token);
+    }
+
     expect(tokens).toContain("--touch-target: 2.75rem");
     expect(tokens).not.toContain("@media (prefers-color-scheme: dark)");
     expect(typography).toContain("/fonts/PretendardVariable.woff2");
     expect(typography).toContain("font-display: swap");
+    expect(typography).toContain(
+      '--font-korean: "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
+    );
+    expect(globals).not.toContain("@media (prefers-color-scheme: dark)");
+  });
+
+  it("keeps Pretendard as the computed body family instead of Geist", () => {
+    const globals = read("src/app/globals.css");
+    const bodyRule = globals.match(/body\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(bodyRule).toContain("font-family: var(--font-korean);");
+    expect(bodyRule).toContain("font-size: var(--type-body);");
+    expect(bodyRule).not.toContain("var(--font-geist)");
+  });
+
+  it("keeps one authoritative global root and body rule", () => {
+    const globals = read("src/app/globals.css");
+
+    expect(globals).not.toContain("color-scheme: light dark");
+    expect(globals.match(/^:root\s*\{/gm)).toHaveLength(1);
+    expect(globals.match(/^body\s*\{/gm)).toHaveLength(1);
   });
 
   it("lets the home layout use the full application canvas", () => {
