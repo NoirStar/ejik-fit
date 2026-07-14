@@ -324,9 +324,22 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
 
 function postingsForRequest(requestUrl) {
   const companySlug = requestUrl.searchParams.get("company");
-  const items = companySlug
-    ? postings.items.filter((posting) => posting.company_slug === companySlug)
-    : postings.items;
+  const query = requestUrl.searchParams.get("q")?.trim().toLocaleLowerCase("ko-KR");
+  const items = postings.items.filter((posting) => {
+    if (companySlug && posting.company_slug !== companySlug) return false;
+    if (!query) return true;
+    const searchable = [
+      posting.title,
+      posting.company_name,
+      posting.location,
+      ...(posting.required_skills ?? []),
+      ...(posting.preferred_skills ?? []),
+      ...(posting.unspecified_skills ?? []),
+    ]
+      .join(" ")
+      .toLocaleLowerCase("ko-KR");
+    return searchable.includes(query);
+  });
   return { items, total: items.length };
 }
 

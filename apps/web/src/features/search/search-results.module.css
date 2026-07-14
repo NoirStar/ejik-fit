@@ -338,6 +338,11 @@
   border-top: 1px solid var(--color-line);
 }
 
+.companyResult:only-child,
+.jobResult:only-child {
+  grid-column: 1 / -1;
+}
+
 .companyCopy {
   min-width: 0;
 }
