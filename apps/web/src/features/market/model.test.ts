@@ -5,11 +5,15 @@ import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 import {
   MARKET_CAREER_FILTERS,
   MARKET_CATEGORIES,
+  buildSkillCombinations,
   buildMarketFilterHref,
   buildMarketJobsHref,
   buildMarketOverviewSnapshot,
+  formatPostingCoverage,
+  jobsForSkill,
   normalizeMarketCareerType,
   normalizeMarketCategory,
+  sortMarketSkills,
 } from "./model";
 
 const postings: PostingListResponse = {
@@ -27,6 +31,9 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://example.com/jobs/new",
       last_verified_at: "2026-07-14T03:00:00Z",
+      required_skills: ["Kubernetes"],
+      preferred_skills: ["Docker"],
+      unspecified_skills: [],
     },
     {
       id: "job-old",
@@ -40,12 +47,15 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://example.org/jobs/old",
       last_verified_at: "invalid-date",
+      required_skills: ["Go"],
+      preferred_skills: [],
+      unspecified_skills: [],
     },
   ],
 };
 
 const skillStats: SkillStatsResponse = {
-  total: 2,
+  total: 69,
   items: [
     {
       skill: "Kubernetes",
@@ -102,9 +112,11 @@ describe("market overview model", () => {
     });
 
     expect(snapshot.postingTotal).toBe(2);
-    expect(snapshot.skillTotal).toBe(2);
+    expect(snapshot.postingCountLabel).toBe("2건 확인");
+    expect(snapshot.skillTotal).toBe(69);
     expect(snapshot.latestVerifiedAt).toBe("2026-07-14T03:00:00Z");
     expect(snapshot.skills[0]).toMatchObject({
+      id: "infra:kubernetes",
       name: "Kubernetes",
       postingCount: 12,
       requiredCount: 5,
@@ -131,6 +143,8 @@ describe("market overview model", () => {
         careerLabel: "경력",
         employmentLabel: "정규직",
         location: "서울",
+        skills: ["Docker", "Kubernetes"],
+        sourceUrl: "https://example.com/jobs/new",
       }),
       expect.objectContaining({
         id: "job-old",
@@ -138,6 +152,64 @@ describe("market overview model", () => {
         employmentLabel: "고용 형태 미기재",
         location: "근무지 미기재",
       }),
+    ]);
+  });
+
+  it("treats the 100 item posting response as a lower bound", () => {
+    expect(formatPostingCoverage(100)).toBe("100건 이상 확인");
+    expect(formatPostingCoverage(147)).toBe("100건 이상 확인");
+    expect(formatPostingCoverage(99)).toBe("99건 확인");
+    expect(formatPostingCoverage(null)).toBe("확인 불가");
+  });
+
+  it("sorts demand rows without mutating the API order", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: skillStats },
+    });
+    const original = snapshot.skills.map((skill) => skill.name);
+
+    expect(sortMarketSkills(snapshot.skills, "required").map((skill) => skill.name)).toEqual([
+      "Kubernetes",
+      "Go",
+    ]);
+    expect(sortMarketSkills(snapshot.skills, "name").map((skill) => skill.name)).toEqual([
+      "Go",
+      "Kubernetes",
+    ]);
+    expect(snapshot.skills.map((skill) => skill.name)).toEqual(original);
+  });
+
+  it("filters recent jobs by the selected technology", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: skillStats },
+    });
+
+    expect(jobsForSkill(snapshot.jobs, "Docker")).toEqual([
+      expect.objectContaining({ id: "job-new" }),
+    ]);
+    expect(jobsForSkill(snapshot.jobs, "Go")).toEqual([
+      expect.objectContaining({ id: "job-old" }),
+    ]);
+    expect(jobsForSkill(snapshot.jobs, "Python")).toEqual([]);
+  });
+
+  it("counts co-occurrence without calling it additional eligible jobs", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: skillStats },
+    });
+
+    expect(buildSkillCombinations(snapshot.jobs, 3)).toEqual([
+      {
+        id: "Docker::Kubernetes",
+        skills: ["Docker", "Kubernetes"],
+        postingCount: 1,
+      },
     ]);
   });
 
