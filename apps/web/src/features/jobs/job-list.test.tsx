@@ -62,13 +62,14 @@ describe("JobList", () => {
   it("renders URL filters and verified requirement evidence", async () => {
     render(
       <JobList
-        filters={{ query: "backend", careerType: "experienced" }}
+        filters={{ query: "backend", careerType: "experienced", category: "infra" }}
         postings={postings}
       />,
     );
 
     expect(screen.getByLabelText("공고 검색")).toHaveValue("backend");
     expect(screen.getByLabelText("경력 조건")).toHaveValue("experienced");
+    expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
     expect(screen.getByText("현재 결과 2건")).toBeInTheDocument();
     expect(screen.getByText("기업 2곳")).toBeInTheDocument();
     expect(screen.getByTitle("네이버 로고")).toBeInTheDocument();
@@ -109,7 +110,7 @@ describe("JobList", () => {
   it("keeps a plain company label for an older response without a slug", () => {
     render(
       <JobList
-        filters={{ query: "", careerType: "" }}
+        filters={{ query: "", careerType: "", category: "" }}
         postings={{
           items: [{ ...postings.items[0], company_slug: undefined }],
           total: 1,
@@ -129,7 +130,7 @@ describe("JobList", () => {
       JSON.stringify(["Python"]),
     );
     render(
-      <JobList filters={{ query: "", careerType: "" }} postings={postings} />,
+      <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
 
     fireEvent.click(
@@ -160,7 +161,7 @@ describe("JobList", () => {
   it("keeps uncontrolled filter controls synchronized with URL props", () => {
     const { rerender } = render(
       <JobList
-        filters={{ query: "backend", careerType: "experienced" }}
+        filters={{ query: "backend", careerType: "experienced", category: "infra" }}
         postings={postings}
       />,
     );
@@ -169,17 +170,18 @@ describe("JobList", () => {
     });
 
     rerender(
-      <JobList filters={{ query: "", careerType: "" }} postings={postings} />,
+      <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
 
     expect(screen.getByLabelText("공고 검색")).toHaveValue("");
     expect(screen.getByLabelText("경력 조건")).toHaveValue("");
+    expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 
   it("distinguishes empty, missing-stack, and API error states", async () => {
     const { rerender } = render(
       <JobList
-        filters={{ query: "rust", careerType: "" }}
+        filters={{ query: "rust", careerType: "", category: "" }}
         postings={{ items: [], total: 0 }}
       />,
     );
@@ -188,7 +190,7 @@ describe("JobList", () => {
     expect(screen.queryByText("공고 데이터를 불러오지 못했습니다.")).not.toBeInTheDocument();
 
     rerender(
-      <JobList filters={{ query: "", careerType: "" }} postings={postings} />,
+      <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "내 기술 겹침 0" }),
@@ -202,7 +204,7 @@ describe("JobList", () => {
     rerender(
       <JobList
         error
-        filters={{ query: "rust", careerType: "" }}
+        filters={{ query: "rust", careerType: "", category: "" }}
         postings={null}
       />,
     );

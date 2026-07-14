@@ -4,10 +4,12 @@ import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 import {
   MARKET_CAREER_FILTERS,
+  MARKET_CATEGORIES,
   buildMarketFilterHref,
   buildMarketJobsHref,
   buildMarketOverviewSnapshot,
   normalizeMarketCareerType,
+  normalizeMarketCategory,
 } from "./model";
 
 const postings: PostingListResponse = {
@@ -68,13 +70,25 @@ describe("market overview model", () => {
     ).toBe("신입·경력");
   });
 
+  it("normalizes market categories from the actual skill catalog", () => {
+    expect(normalizeMarketCategory("infra")).toBe("infra");
+    expect(normalizeMarketCategory(["backend", "ai"])).toBe("backend");
+    expect(normalizeMarketCategory("unsupported")).toBe("");
+    expect(
+      MARKET_CATEGORIES.find((filter) => filter.value === "embedded")?.label,
+    ).toBe("임베디드");
+  });
+
   it("builds shareable market and related-job URLs", () => {
+    expect(buildMarketFilterHref("experienced", "infra")).toBe(
+      "/market?category=infra&career_type=experienced",
+    );
     expect(buildMarketFilterHref("experienced")).toBe(
       "/market?career_type=experienced",
     );
     expect(buildMarketFilterHref("")).toBe("/market");
-    expect(buildMarketJobsHref("C++", "experienced")).toBe(
-      "/jobs?q=C%2B%2B&career_type=experienced",
+    expect(buildMarketJobsHref("C++", "experienced", "infra")).toBe(
+      "/jobs?q=C%2B%2B&category=infra&career_type=experienced",
     );
     expect(buildMarketJobsHref("Go", "")).toBe("/jobs?q=Go");
   });
@@ -82,6 +96,7 @@ describe("market overview model", () => {
   it("builds an honest snapshot from ready API resources", () => {
     const snapshot = buildMarketOverviewSnapshot({
       careerType: "experienced",
+      category: "infra",
       postings: { status: "ready", data: postings },
       skillStats: { status: "ready", data: skillStats },
     });
@@ -96,8 +111,13 @@ describe("market overview model", () => {
       preferredCount: 4,
       unspecifiedCount: 3,
       relativeDemand: 100,
-      jobsHref: "/jobs?q=Kubernetes&career_type=experienced",
+      jobsHref:
+        "/jobs?q=Kubernetes&category=infra&career_type=experienced",
     });
+    expect(snapshot.categoryLabel).toBe("인프라");
+    expect(snapshot.jobsBrowseHref).toBe(
+      "/jobs?category=infra&career_type=experienced",
+    );
     expect(snapshot.skills[1]).toMatchObject({
       name: "Go",
       requiredCount: 0,
@@ -124,6 +144,7 @@ describe("market overview model", () => {
   it("keeps ready skill data when postings fail", () => {
     const snapshot = buildMarketOverviewSnapshot({
       careerType: "",
+      category: "",
       postings: {
         status: "error",
         message: "공고 데이터를 불러오지 못했습니다.",
@@ -141,6 +162,7 @@ describe("market overview model", () => {
   it("keeps ready postings when skill statistics fail", () => {
     const snapshot = buildMarketOverviewSnapshot({
       careerType: "mixed",
+      category: "ai",
       postings: { status: "ready", data: postings },
       skillStats: {
         status: "error",

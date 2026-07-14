@@ -16,4 +16,15 @@ describe("market overview styles", () => {
     expect(skillLinkRule).toContain("min-height: var(--touch-target);");
     expect(skillLinkRule).toContain("align-items: center;");
   });
+
+  it("keeps short category filters at the shared touch target size", () => {
+    const css = readFileSync(
+      resolve(process.cwd(), "src/features/market/market-overview.module.css"),
+      "utf8",
+    );
+    const filterRule = css.match(/\.filter\s*\{([^}]*)\}/)?.[1] ?? "";
+
+    expect(filterRule).toContain("min-width: var(--touch-target);");
+    expect(filterRule).toContain("min-height: var(--touch-target);");
+  });
 });

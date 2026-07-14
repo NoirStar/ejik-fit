@@ -1,5 +1,11 @@
 import type { ResourceState } from "@/features/home-feed/resource-state";
 import { formatCareer, formatEmployment } from "@/lib/labels";
+import {
+  SKILL_CATEGORIES,
+  normalizeSkillCategory,
+  skillCategoryLabel,
+  type SkillCategory,
+} from "@/lib/skill-categories";
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 export type MarketCareerType = "" | "new_comer" | "experienced" | "mixed";
@@ -13,6 +19,9 @@ export const MARKET_CAREER_FILTERS = [
   value: MarketCareerType;
   label: string;
 }>;
+
+export const MARKET_CATEGORIES = SKILL_CATEGORIES;
+export const normalizeMarketCategory = normalizeSkillCategory;
 
 const SUPPORTED_CAREER_TYPES = new Set<MarketCareerType>([
   "",
@@ -30,19 +39,49 @@ export function normalizeMarketCareerType(
     : "";
 }
 
-export function buildMarketFilterHref(careerType: MarketCareerType) {
-  return careerType ? `/market?career_type=${careerType}` : "/market";
+export function buildMarketFilterHref(
+  careerType: MarketCareerType,
+  category: SkillCategory = "",
+) {
+  const params = new URLSearchParams();
+  if (category) {
+    params.set("category", category);
+  }
+  if (careerType) {
+    params.set("career_type", careerType);
+  }
+  const query = params.toString();
+  return `/market${query ? `?${query}` : ""}`;
 }
 
 export function buildMarketJobsHref(
   skill: string,
   careerType: MarketCareerType,
+  category: SkillCategory = "",
 ) {
   const params = new URLSearchParams({ q: skill });
+  if (category) {
+    params.set("category", category);
+  }
   if (careerType) {
     params.set("career_type", careerType);
   }
   return `/jobs?${params.toString()}`;
+}
+
+export function buildMarketBrowseJobsHref(
+  careerType: MarketCareerType,
+  category: SkillCategory,
+) {
+  const params = new URLSearchParams();
+  if (category) {
+    params.set("category", category);
+  }
+  if (careerType) {
+    params.set("career_type", careerType);
+  }
+  const query = params.toString();
+  return `/jobs${query ? `?${query}` : ""}`;
 }
 
 function latestValidDate(values: string[]) {
@@ -55,9 +94,11 @@ function latestValidDate(values: string[]) {
 
 export function buildMarketOverviewSnapshot(input: {
   careerType: MarketCareerType;
+  category?: SkillCategory;
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
 }) {
+  const category = input.category ?? "";
   const postings = input.postings.status === "ready" ? input.postings.data : null;
   const skillStats =
     input.skillStats.status === "ready" ? input.skillStats.data : null;
@@ -69,6 +110,12 @@ export function buildMarketOverviewSnapshot(input: {
 
   return {
     careerType: input.careerType,
+    category,
+    categoryLabel: skillCategoryLabel(category),
+    jobsBrowseHref: buildMarketBrowseJobsHref(
+      input.careerType,
+      category,
+    ),
     postingTotal: postings?.total ?? null,
     skillTotal: skillStats?.items.length ?? null,
     latestVerifiedAt: latestValidDate(
@@ -87,7 +134,11 @@ export function buildMarketOverviewSnapshot(input: {
       unspecifiedCount: item.unspecified_count ?? 0,
       relativeDemand: Math.round((item.count / maxDemand) * 100),
       skillHref: `/skill-map?skill=${encodeURIComponent(item.skill)}`,
-      jobsHref: buildMarketJobsHref(item.skill, input.careerType),
+      jobsHref: buildMarketJobsHref(
+        item.skill,
+        input.careerType,
+        category,
+      ),
     })),
     jobs: (postings?.items ?? []).slice(0, 5).map((item) => ({
       id: item.id,

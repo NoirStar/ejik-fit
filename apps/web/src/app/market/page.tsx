@@ -4,6 +4,7 @@ import { MarketOverview } from "@/features/market/market-overview";
 import {
   buildMarketOverviewSnapshot,
   normalizeMarketCareerType,
+  normalizeMarketCategory,
 } from "@/features/market/model";
 import { settledResource } from "@/features/home-feed/resource-state";
 import { getPostings, getSkillStats } from "@/lib/api";
@@ -26,15 +27,17 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
   const careerType = normalizeMarketCareerType(
     resolvedSearchParams.career_type,
   );
+  const category = normalizeMarketCategory(resolvedSearchParams.category);
   const careerFilter = careerType ? { career_type: careerType } : {};
+  const categoryFilter = category ? { category } : {};
 
   const [postings, skillStats] = await Promise.all([
     settledResource(
-      getPostings({ ...careerFilter, limit: 100 }),
+      getPostings({ ...careerFilter, ...categoryFilter, limit: 100 }),
       "공고 데이터를 불러오지 못했습니다.",
     ),
     settledResource(
-      getSkillStats({ ...careerFilter, limit: 30 }),
+      getSkillStats({ ...careerFilter, ...categoryFilter, limit: 30 }),
       "기술 수요 데이터를 불러오지 못했습니다.",
     ),
   ]);
@@ -43,6 +46,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
     <MarketOverview
       snapshot={buildMarketOverviewSnapshot({
         careerType,
+        category,
         postings,
         skillStats,
       })}

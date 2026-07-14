@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { JobList } from "@/features/jobs/job-list";
 import { getPostings } from "@/lib/api";
 import { normalizePostingList } from "@/lib/posting-contract";
+import { normalizeSkillCategory } from "@/lib/skill-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -30,18 +31,20 @@ export default async function JobsPage({
   const careerType = SUPPORTED_CAREER_TYPES.has(requestedCareerType)
     ? requestedCareerType
     : "";
+  const category = normalizeSkillCategory(params.category);
 
   try {
     const postings = normalizePostingList(
       await getPostings({
         ...(query ? { q: query } : {}),
         ...(careerType ? { career_type: careerType } : {}),
+        ...(category ? { category } : {}),
         limit: 100,
       }),
     );
     return (
       <JobList
-        filters={{ query, careerType }}
+        filters={{ query, careerType, category }}
         postings={postings}
       />
     );
@@ -50,7 +53,7 @@ export default async function JobsPage({
     return (
       <JobList
         error
-        filters={{ query, careerType }}
+        filters={{ query, careerType, category }}
         postings={null}
       />
     );

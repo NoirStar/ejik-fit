@@ -49,6 +49,7 @@ async function request<T>(
 export async function getPostings(filters: {
   q?: string;
   career_type?: string;
+  category?: string;
   company?: string;
   limit?: number;
 } = {}): Promise<PostingListResponse> {
@@ -58,6 +59,9 @@ export async function getPostings(filters: {
   }
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.category) {
+    params.set("category", filters.category);
   }
   if (filters.company) {
     params.set("company", filters.company);
@@ -86,11 +90,15 @@ export async function getPosting(
 
 export function getSkillStats(filters: {
   career_type?: string;
+  category?: string;
   limit?: number;
 } = {}): Promise<SkillStatsResponse> {
   const params = new URLSearchParams();
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.category) {
+    params.set("category", filters.category);
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));

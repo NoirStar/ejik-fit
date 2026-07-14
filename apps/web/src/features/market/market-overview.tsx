@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import {
+  MARKET_CATEGORIES,
   MARKET_CAREER_FILTERS,
   buildMarketFilterHref,
   type MarketOverviewSnapshot,
@@ -63,30 +64,61 @@ export function MarketOverview({
   const marketUnavailable = Boolean(
     snapshot.postingError && snapshot.skillError,
   );
+  const description = snapshot.category
+    ? `${snapshot.categoryLabel} 기술이 확인된 공개 공고 안에서 함께 요구되는 기술 수요를 살펴보세요.`
+    : "현재 공개 중인 공고에서 확인한 기술 수요를 기술 분야와 경력 조건별로 살펴보세요.";
 
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
         <p className={styles.eyebrow}>공식 채용 데이터</p>
         <h1 className={styles.title}>채용 시장</h1>
-        <p className={styles.description}>
-          현재 공개 중인 공고에서 확인한 기술 수요를 경력 조건별로 살펴보세요.
-        </p>
-        <span className={styles.badge}>현재 수집 데이터</span>
+        <p className={styles.description}>{description}</p>
+        <span className={styles.badge}>
+          {snapshot.categoryLabel} · 현재 수집 데이터
+        </span>
       </header>
 
-      <nav aria-label="경력 조건" className={styles.filters}>
-        {MARKET_CAREER_FILTERS.map((filter) => (
-          <Link
-            aria-current={snapshot.careerType === filter.value ? "page" : undefined}
-            className={styles.filter}
-            href={buildMarketFilterHref(filter.value)}
-            key={filter.value || "all"}
-          >
-            {filter.label}
-          </Link>
-        ))}
-      </nav>
+      <div className={styles.filterGroups}>
+        <section className={styles.filterGroup}>
+          <h2>기술 분야</h2>
+          <nav aria-label="기술 분야" className={styles.filters}>
+            {MARKET_CATEGORIES.map((filter) => (
+              <Link
+                aria-current={
+                  snapshot.category === filter.value ? "page" : undefined
+                }
+                className={styles.filter}
+                href={buildMarketFilterHref(
+                  snapshot.careerType,
+                  filter.value,
+                )}
+                key={filter.value || "all"}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </nav>
+        </section>
+
+        <section className={styles.filterGroup}>
+          <h2>경력 조건</h2>
+          <nav aria-label="경력 조건" className={styles.filters}>
+            {MARKET_CAREER_FILTERS.map((filter) => (
+              <Link
+                aria-current={
+                  snapshot.careerType === filter.value ? "page" : undefined
+                }
+                className={styles.filter}
+                href={buildMarketFilterHref(filter.value, snapshot.category)}
+                key={filter.value || "all"}
+              >
+                {filter.label}
+              </Link>
+            ))}
+          </nav>
+        </section>
+      </div>
 
       <section aria-labelledby="market-snapshot-title">
         <h2 className={styles.srOnly} id="market-snapshot-title">
@@ -121,11 +153,14 @@ export function MarketOverview({
           <div className={styles.methodLinks}>
             <Link
               className={styles.textLink}
-              href={buildMarketFilterHref(snapshot.careerType)}
+              href={buildMarketFilterHref(
+                snapshot.careerType,
+                snapshot.category,
+              )}
             >
               다시 시도
             </Link>
-            <Link className={styles.textLink} href="/jobs">
+            <Link className={styles.textLink} href={snapshot.jobsBrowseHref}>
               전체 공고 보기
             </Link>
           </div>
@@ -144,7 +179,10 @@ export function MarketOverview({
                 <p>공고 목록은 확인 가능한 범위에서 계속 제공합니다.</p>
                 <Link
                   className={styles.textLink}
-                  href={buildMarketFilterHref(snapshot.careerType)}
+                  href={buildMarketFilterHref(
+                    snapshot.careerType,
+                    snapshot.category,
+                  )}
                 >
                   다시 시도
                 </Link>
@@ -218,7 +256,10 @@ export function MarketOverview({
                 <p>기술 수요는 확인 가능한 범위에서 계속 제공합니다.</p>
                 <Link
                   className={styles.textLink}
-                  href={buildMarketFilterHref(snapshot.careerType)}
+                  href={buildMarketFilterHref(
+                    snapshot.careerType,
+                    snapshot.category,
+                  )}
                 >
                   다시 시도
                 </Link>
@@ -227,7 +268,7 @@ export function MarketOverview({
               <div className={styles.state}>
                 <h3>이 조건에서 확인된 공개 공고가 없습니다.</h3>
                 <p>전체 공고에서 다른 경력 조건을 살펴보세요.</p>
-                <Link className={styles.textLink} href="/jobs">
+                <Link className={styles.textLink} href={snapshot.jobsBrowseHref}>
                   전체 공고 보기
                 </Link>
               </div>
@@ -256,9 +297,12 @@ export function MarketOverview({
       <section aria-labelledby="market-method-title" className={styles.method}>
         <h2 id="market-method-title">데이터를 읽는 기준</h2>
         <p>
+          {snapshot.category
+            ? `${snapshot.categoryLabel} 분야의 확정 기술이 하나 이상 있는 공개 공고를 먼저 고른 뒤, 그 공고에서 함께 확인된 모든 기술을 집계합니다. `
+            : "현재 공개 중인 전체 공고에서 확인된 기술을 집계합니다. "}
           공고는 현재 조건에서 API가 반환한 최대 100개를, 기술 순위는 공고 수
           상위 최대 30개를 기준으로 표시합니다. 필수와 우대는 공고에 명시된
-          문구를 기준으로 구분합니다. 현재 비교 기간 데이터가 없어 변화율은
+          문구를 기준으로 구분하며, 현재 비교 기간 데이터가 없어 변화율은
           표시하지 않습니다.
         </p>
         <div className={styles.methodLinks}>

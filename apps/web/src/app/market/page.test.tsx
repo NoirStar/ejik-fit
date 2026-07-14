@@ -20,36 +20,49 @@ describe("MarketPage", () => {
     vi.mocked(getSkillStats).mockResolvedValue({ total: 0, items: [] });
   });
 
-  it("loads both market resources with the selected career filter", async () => {
+  it("loads both market resources with selected career and category filters", async () => {
     render(
       await MarketPage({
-        searchParams: Promise.resolve({ career_type: "experienced" }),
+        searchParams: Promise.resolve({
+          career_type: "experienced",
+          category: "infra",
+        }),
       }),
     );
 
     expect(getPostings).toHaveBeenCalledWith({
       career_type: "experienced",
+      category: "infra",
       limit: 100,
     });
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
+      category: "infra",
       limit: 30,
     });
     expect(
       screen.getByRole("heading", { name: "채용 시장", level: 1 }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "인프라" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByText(/인프라 기술이 확인된 공개 공고/)).toBeInTheDocument();
   });
 
   it("normalizes an unsupported career filter to the whole market", async () => {
     render(
       await MarketPage({
-        searchParams: Promise.resolve({ career_type: "unsupported" }),
+        searchParams: Promise.resolve({
+          career_type: "unsupported",
+          category: "unsupported",
+        }),
       }),
     );
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 30 });
-    expect(screen.getByRole("link", { name: "전체" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "전체 기술 분야" })).toHaveAttribute(
       "aria-current",
       "page",
     );

@@ -22,6 +22,7 @@ import {
   toggleSavedJob,
 } from "@/lib/saved-jobs";
 import { formatEmployment } from "@/lib/labels";
+import { SKILL_CATEGORIES } from "@/lib/skill-categories";
 import type { PostingListResponse, PostingSummary } from "@/lib/types";
 
 import {
@@ -38,6 +39,7 @@ import styles from "./job-list.module.css";
 export type JobListFilters = {
   query: string;
   careerType: string;
+  category: string;
 };
 
 type JobListProps = {
@@ -241,7 +243,9 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const items = useMemo(() => postings?.items ?? [], [postings]);
-  const filtering = Boolean(filters.query || filters.careerType);
+  const filtering = Boolean(
+    filters.query || filters.category || filters.careerType,
+  );
   const summary = useMemo(() => buildJobsSummary(items), [items]);
   const matchingCount = useMemo(
     () => filterJobPostings(items, "matched", ownedSkills, savedIds).length,
@@ -274,6 +278,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
 
   const retryParams = new URLSearchParams();
   if (filters.query) retryParams.set("q", filters.query);
+  if (filters.category) retryParams.set("category", filters.category);
   if (filters.careerType) retryParams.set("career_type", filters.careerType);
   const retryQuery = retryParams.toString();
   const retryHref = `/jobs${retryQuery ? `?${retryQuery}` : ""}`;
@@ -355,6 +360,20 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
                   type="search"
                 />
               </div>
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="skill-category">기술 분야</label>
+              <select
+                defaultValue={filters.category}
+                id="skill-category"
+                name="category"
+              >
+                {SKILL_CATEGORIES.map((category) => (
+                  <option key={category.value || "all"} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className={styles.field}>
               <label htmlFor="career-type">경력 조건</label>

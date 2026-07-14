@@ -50,6 +50,7 @@ describe("JobsPage", () => {
         searchParams: Promise.resolve({
           q: " Python ",
           career_type: "experienced",
+          category: "infra",
         }),
       }),
     );
@@ -57,10 +58,12 @@ describe("JobsPage", () => {
     expect(getPostings).toHaveBeenCalledWith({
       q: "Python",
       career_type: "experienced",
+      category: "infra",
       limit: 100,
     });
     expect(screen.getByRole("link", { name: "Python Engineer" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵" })).toBeInTheDocument();
+    expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
   });
 
   it("keeps filters usable without leaking request errors", async () => {
@@ -73,7 +76,7 @@ describe("JobsPage", () => {
 
     render(
       await JobsPage({
-        searchParams: Promise.resolve({ q: "Rust" }),
+        searchParams: Promise.resolve({ q: "Rust", category: "security" }),
       }),
     );
 
@@ -83,10 +86,23 @@ describe("JobsPage", () => {
     expect(screen.queryByText("현재 결과 0건")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
       "href",
-      "/jobs?q=Rust",
+      "/jobs?q=Rust&category=security",
     );
     expect(screen.queryByText(/internal-api|503/)).not.toBeInTheDocument();
     consoleError.mockRestore();
+  });
+
+  it("drops an unsupported category instead of requesting an empty market", async () => {
+    vi.mocked(getPostings).mockResolvedValue(response);
+
+    render(
+      await JobsPage({
+        searchParams: Promise.resolve({ category: "unsupported" }),
+      }),
+    );
+
+    expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
+    expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 
   it("rejects a malformed successful API response", async () => {
