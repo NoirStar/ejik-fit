@@ -37,7 +37,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
       "공고 데이터를 불러오지 못했습니다.",
     ),
     settledResource(
-      getSkillStats({ ...careerFilter, ...categoryFilter, limit: 30 }),
+      getSkillStats({ ...careerFilter, ...categoryFilter, limit: 100 }),
       "기술 수요 데이터를 불러오지 못했습니다.",
     ),
   ]);

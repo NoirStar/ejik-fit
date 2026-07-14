@@ -51,6 +51,10 @@ type BrandIcon = {
   key: string;
 };
 
+const LOCAL_LOGOS: Record<string, { key: string; src: string }> = {
+  aws: { key: "aws", src: "/technology-logos/aws.svg" },
+};
+
 const BRAND_ICONS: Record<string, BrandIcon> = {
   android: { icon: siAndroid, key: "android" },
   c: { icon: siC, key: "c" },
@@ -121,7 +125,22 @@ export function TechnologyIcon({
   size?: number;
 }) {
   const normalized = normalizeTechnologyName(name);
+  const localLogo = LOCAL_LOGOS[normalized];
   const brand = BRAND_ICONS[normalized];
+
+  if (localLogo) {
+    return (
+      <span
+        aria-hidden="true"
+        className={styles.icon}
+        data-icon-kind="brand"
+        data-technology-icon={localLogo.key}
+        style={{ "--technology-icon-size": `${size}px` } as CSSProperties}
+      >
+        <img alt="" src={localLogo.src} />
+      </span>
+    );
+  }
 
   if (brand) {
     return (

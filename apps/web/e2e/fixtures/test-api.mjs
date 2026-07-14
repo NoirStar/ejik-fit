@@ -44,6 +44,106 @@ const postings = {
   ],
 };
 
+function marketSkill(
+  skill,
+  category,
+  count,
+  requiredCount,
+  preferredCount,
+) {
+  return {
+    skill,
+    category,
+    count,
+    required_count: requiredCount,
+    preferred_count: preferredCount,
+    unspecified_count: Math.max(0, count - requiredCount - preferredCount),
+  };
+}
+
+const marketSkillStats = [
+  marketSkill("Python", "language", 63, 27, 8),
+  marketSkill("LLM", "ai", 59, 33, 11),
+  marketSkill("Kubernetes", "infra", 39, 9, 12),
+  marketSkill("RAG", "ai", 33, 27, 2),
+  marketSkill("Docker", "infra", 27, 7, 5),
+  marketSkill("Java", "language", 25, 11, 6),
+  marketSkill("SQL", "data", 24, 12, 5),
+  marketSkill("AWS", "infra", 21, 6, 7),
+  ...[
+    ["TypeScript", "language"],
+    ["React", "frontend"],
+    ["Spring Boot", "backend"],
+    ["Go", "language"],
+    ["Linux", "infra"],
+    ["Kafka", "data"],
+    ["PostgreSQL", "data"],
+    ["Redis", "data"],
+    ["Node.js", "backend"],
+    ["MySQL", "data"],
+    ["C++", "language"],
+    ["Git", "infra"],
+    ["Terraform", "infra"],
+    ["JavaScript", "language"],
+    ["FastAPI", "backend"],
+    ["PyTorch", "ai"],
+    ["GCP", "infra"],
+    ["MongoDB", "data"],
+    ["Jenkins", "infra"],
+    ["Next.js", "frontend"],
+    ["Kotlin", "language"],
+    ["C", "language"],
+    ["GitHub Actions", "infra"],
+    ["Helm", "infra"],
+    ["Prometheus", "infra"],
+    ["Grafana", "infra"],
+    ["Elasticsearch", "data"],
+    ["RabbitMQ", "backend"],
+    ["OpenSearch", "data"],
+    ["Nginx", "infra"],
+    ["Django", "backend"],
+    ["Flask", "backend"],
+    ["JPA", "backend"],
+    ["Hibernate", "backend"],
+    ["S3", "infra"],
+    ["EC2", "infra"],
+    ["Airflow", "data"],
+    ["Spark", "data"],
+    ["Pandas", "data"],
+    ["NumPy", "data"],
+    ["scikit-learn", "ai"],
+    ["TensorFlow", "ai"],
+    ["MLflow", "ai"],
+    ["CUDA", "ai"],
+    ["Unity", "game"],
+    ["Unreal Engine", "game"],
+    ["Swift", "language"],
+    ["Android", "mobile"],
+    ["iOS", "mobile"],
+    ["React Native", "mobile"],
+    ["Flutter", "mobile"],
+    ["C#", "language"],
+    ["Rust", "language"],
+    ["PHP", "language"],
+    ["Ruby", "language"],
+    ["Jira", "design"],
+    ["Figma", "design"],
+    ["Selenium", "qa"],
+    ["Playwright", "qa"],
+    ["Cypress", "qa"],
+    ["Mockito", "qa"],
+  ].map(([skill, category], index) => {
+    const count = Math.max(3, 20 - Math.floor(index / 3));
+    const requiredCount = Math.max(1, Math.floor(count * 0.44));
+    const preferredCount = Math.max(1, Math.floor(count * 0.24));
+    return marketSkill(skill, category, count, requiredCount, preferredCount);
+  }),
+];
+
+if (marketSkillStats.length !== 69) {
+  throw new Error(`market fixture must contain 69 skills, got ${marketSkillStats.length}`);
+}
+
 const postingDetails = {
   "job-python": {
     ...postings.items[0],
@@ -368,37 +468,18 @@ function postingsForRequest(requestUrl) {
 }
 
 function skillStatsForRequest(requestUrl) {
-  const matchingPostings = postingsForRequest(requestUrl).items;
-  const aggregated = new Map();
-
-  for (const posting of matchingPostings) {
-    const seen = new Set();
-    for (const skill of postingDetails[posting.id]?.skill_details ?? []) {
-      if (seen.has(skill.skill)) continue;
-      seen.add(skill.skill);
-
-      const current = aggregated.get(skill.skill) ?? {
-        skill: skill.skill,
-        category: skill.category,
-        count: 0,
-        required_count: 0,
-        preferred_count: 0,
-        unspecified_count: 0,
-      };
-      current.count += 1;
-      current[`${skill.requirement_type}_count`] += 1;
-      aggregated.set(skill.skill, current);
-    }
-  }
-
+  const category = requestUrl.searchParams.get("category");
   const limit = Number.parseInt(requestUrl.searchParams.get("limit") ?? "30", 10);
-  const items = [...aggregated.values()]
+  const matchingSkills = marketSkillStats.filter(
+    (skill) => !category || skill.category === category,
+  );
+  const items = matchingSkills
     .sort(
       (left, right) =>
         right.count - left.count || left.skill.localeCompare(right.skill),
     )
     .slice(0, Number.isFinite(limit) ? limit : 30);
-  return { total: items.length, items };
+  return { total: matchingSkills.length, items };
 }
 
 const server = createServer((request, response) => {

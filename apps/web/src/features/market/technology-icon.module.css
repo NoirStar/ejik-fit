@@ -10,9 +10,11 @@
   color: var(--color-muted);
 }
 
-.icon svg {
+.icon svg,
+.icon img {
   width: 72%;
   height: 72%;
+  object-fit: contain;
 }
 
 .icon[data-icon-kind="neutral"] svg {

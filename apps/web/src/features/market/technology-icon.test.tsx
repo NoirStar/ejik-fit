@@ -22,6 +22,19 @@ describe("TechnologyIcon", () => {
     expect(icon?.querySelector("path")).not.toBeNull();
   });
 
+  it("uses the bundled Devicon AWS mark instead of a generic cloud", () => {
+    const { container } = render(
+      <TechnologyIcon category="infra" name="AWS" />,
+    );
+
+    const icon = container.querySelector('[data-technology-icon="aws"]');
+    expect(icon).toHaveAttribute("data-icon-kind", "brand");
+    expect(icon?.querySelector("img")).toHaveAttribute(
+      "src",
+      "/technology-logos/aws.svg",
+    );
+  });
+
   it.each([
     ["LLM", "ai", "cpu"],
     ["RAG", "ai", "network"],

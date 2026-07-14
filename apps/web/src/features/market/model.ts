@@ -15,6 +15,7 @@ export type MarketSkill = {
   id: string;
   name: string;
   category: string;
+  categoryLabel: string;
   postingCount: number;
   requiredCount: number;
   preferredCount: number;
@@ -192,8 +193,10 @@ export function jobsForSkill(
 export function buildSkillCombinations(
   jobs: readonly MarketJob[],
   limit = 3,
+  selectedSkill = "",
 ): MarketSkillCombination[] {
   const counts = new Map<string, MarketSkillCombination>();
+  const selected = selectedSkill.trim().toLocaleLowerCase("en-US");
 
   jobs.forEach((job) => {
     const skills = normalizedJobSkills([job.skills]);
@@ -212,6 +215,13 @@ export function buildSkillCombinations(
   });
 
   return [...counts.values()]
+    .filter(
+      (combination) =>
+        !selected ||
+        combination.skills.some(
+          (skill) => skill.toLocaleLowerCase("en-US") === selected,
+        ),
+    )
     .sort(
       (left, right) =>
         right.postingCount - left.postingCount ||
@@ -258,6 +268,7 @@ export function buildMarketOverviewSnapshot(input: {
       id: skillIdentity(item.category, item.skill),
       name: item.skill,
       category: item.category,
+      categoryLabel: skillCategoryLabel(normalizeSkillCategory(item.category)),
       postingCount: item.count,
       requiredCount: item.required_count ?? 0,
       preferredCount: item.preferred_count ?? 0,

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPostings, getSkillStats } from "@/lib/api";
@@ -38,7 +38,7 @@ describe("MarketPage", () => {
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
       category: "infra",
-      limit: 30,
+      limit: 100,
     });
     expect(
       screen.getByRole("heading", { name: "채용 시장", level: 1 }),
@@ -47,7 +47,9 @@ describe("MarketPage", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByText(/인프라 기술이 확인된 공개 공고/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/이직핏이 확인한 기업 공식 채용 공고 범위/),
+    ).toBeInTheDocument();
   });
 
   it("normalizes an unsupported career filter to the whole market", async () => {
@@ -61,10 +63,12 @@ describe("MarketPage", () => {
     );
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
-    expect(getSkillStats).toHaveBeenCalledWith({ limit: 30 });
-    expect(screen.getByRole("link", { name: "전체 기술 분야" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
+    expect(
+      within(screen.getByRole("navigation", { name: "기술 분야" })).getByRole(
+        "link",
+        { name: "전체" },
+      ),
+    ).toHaveAttribute("aria-current", "page");
   });
 });

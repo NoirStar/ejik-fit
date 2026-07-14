@@ -1,55 +1,72 @@
+"use client";
+
+import { Info, WarningCircle } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
+import { MarketFilters } from "./market-filters";
+import { MarketFitInsight } from "./market-fit-insight";
 import {
-  MARKET_CATEGORIES,
-  MARKET_CAREER_FILTERS,
   buildMarketFilterHref,
+  buildSkillCombinations,
+  jobsForSkill,
   type MarketOverviewSnapshot,
+  type MarketSort,
 } from "./model";
+import { RecentJobList } from "./recent-job-list";
+import { SkillCombinationRecommendations } from "./skill-combination-recommendations";
 import styles from "./market-overview.module.css";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  language: "언어",
-  frontend: "프론트엔드",
-  backend: "백엔드",
-  infra: "인프라",
-  data: "데이터",
-  ai: "AI",
-  security: "보안",
-  game: "게임",
-  robotics: "로보틱스",
-  mobile: "모바일",
-  design: "디자인",
-  embedded: "임베디드",
-  qa: "QA",
-  tool: "도구",
-};
-
-function formatCount(value: number | null, unit: string) {
-  return value === null ? "확인 불가" : `${value.toLocaleString("ko-KR")}${unit}`;
-}
+import { TechnologyDemandTable } from "./technology-demand-table";
+import { TechnologyTrendPanel } from "./technology-trend-panel";
+import { useMarketFit } from "./use-market-fit";
 
 function formatVerifiedDate(value: string | null) {
-  if (!value || Number.isNaN(Date.parse(value))) {
-    return null;
-  }
+  if (!value || Number.isNaN(Date.parse(value))) return "확인 시각 없음";
   return new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
     timeZone: "Asia/Seoul",
   }).format(new Date(value));
 }
 
-function VerifiedTime({ value }: { value: string }) {
-  const verifiedDate = formatVerifiedDate(value);
-
-  if (!verifiedDate) {
-    return <span className={styles.verified}>확인 시각 없음</span>;
-  }
+function Summary({ snapshot }: { snapshot: MarketOverviewSnapshot }) {
+  const items = [
+    {
+      label: "확인된 공고",
+      value: snapshot.postingCountLabel,
+      detail: "현재 API가 반환한 범위 기준",
+    },
+    {
+      label: "확인된 기술",
+      value:
+        snapshot.skillTotal === null
+          ? "확인 불가"
+          : `${snapshot.skillTotal.toLocaleString("ko-KR")}종`,
+      detail: "공식 공고에서 확인된 기술",
+    },
+    {
+      label: "마지막 업데이트",
+      value: formatVerifiedDate(snapshot.latestVerifiedAt),
+      detail: "공고 원문 재확인 시각",
+    },
+    {
+      label: "데이터 출처",
+      value: "기업 공식 채용 홈페이지",
+      detail: "직접 수집 및 분석",
+    },
+  ];
 
   return (
-    <time className={styles.verified} dateTime={value}>
-      {verifiedDate} 확인
-    </time>
+    <section aria-label="채용 시장 데이터 요약" className={styles.summaryPanel}>
+      <dl>
+        {items.map((item) => (
+          <div key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+            <span>{item.detail}</span>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -58,113 +75,67 @@ export function MarketOverview({
 }: {
   snapshot: MarketOverviewSnapshot;
 }) {
-  const latestVerifiedLabel = snapshot.postingError
-    ? "확인 불가"
-    : (formatVerifiedDate(snapshot.latestVerifiedAt) ?? "확인 시각 없음");
+  const [sort, setSort] = useState<MarketSort>("demand");
+  const [selectedSkill, setSelectedSkill] = useState(
+    snapshot.skills[0]?.name ?? "",
+  );
+  const effectiveSkill = snapshot.skills.some(
+    (skill) => skill.name === selectedSkill,
+  )
+    ? selectedSkill
+    : (snapshot.skills[0]?.name ?? "");
+  const selected = snapshot.skills.find(
+    (skill) => skill.name === effectiveSkill,
+  );
+  const recentJobs = useMemo(
+    () => jobsForSkill(snapshot.jobs, effectiveSkill),
+    [effectiveSkill, snapshot.jobs],
+  );
+  const combinations = useMemo(
+    () => buildSkillCombinations(snapshot.jobs, 3, effectiveSkill),
+    [effectiveSkill, snapshot.jobs],
+  );
+  const fit = useMarketFit(snapshot.careerType);
   const marketUnavailable = Boolean(
     snapshot.postingError && snapshot.skillError,
   );
-  const description = snapshot.category
-    ? `${snapshot.categoryLabel} 기술이 확인된 공개 공고 안에서 함께 요구되는 기술 수요를 살펴보세요.`
-    : "현재 공개 중인 공고에서 확인한 기술 수요를 기술 분야와 경력 조건별로 살펴보세요.";
-  const selectedCareerLabel = MARKET_CAREER_FILTERS.find(
-    (filter) => filter.value === snapshot.careerType,
-  )?.label;
-  const careerScopeLabel = snapshot.careerType
-    ? `${selectedCareerLabel ?? snapshot.careerType} 조건`
-    : "전체 경력";
 
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>공식 채용 데이터</p>
-        <h1 className={styles.title}>채용 시장</h1>
-        <p className={styles.description}>{description}</p>
-        <span className={styles.badge}>
-          현재 범위 · {snapshot.categoryLabel} · {careerScopeLabel}
-        </span>
+        <h1>채용 시장</h1>
+        <p>기업 공식 채용 공고를 분석해 현재 기술 수요와 요구 조건을 확인합니다.</p>
       </header>
 
-      <section aria-labelledby="market-snapshot-title">
-        <h2 className={styles.srOnly} id="market-snapshot-title">
-          현재 시장 스냅샷
-        </h2>
-        <dl className={styles.metrics}>
-          <div className={styles.metric}>
-            <dt>확인 공고</dt>
-            <dd>{formatCount(snapshot.postingTotal, "건")}</dd>
-          </div>
-          <div className={styles.metric}>
-            <dt>확인 기술</dt>
-            <dd>{formatCount(snapshot.skillTotal, "개")}</dd>
-          </div>
-          <div className={styles.metric}>
-            <dt>최근 확인</dt>
-            <dd>{latestVerifiedLabel}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section
-        aria-labelledby="market-filters-title"
-        className={styles.filterGroups}
-      >
-        <h2 className={styles.srOnly} id="market-filters-title">
-          시장 범위 필터
-        </h2>
-        <div className={styles.filterGroup}>
-          <h3>기술 분야</h3>
-          <nav aria-label="기술 분야" className={styles.filters}>
-            {MARKET_CATEGORIES.map((filter) => (
-              <Link
-                aria-current={
-                  snapshot.category === filter.value ? "page" : undefined
-                }
-                className={styles.filter}
-                href={buildMarketFilterHref(
-                  snapshot.careerType,
-                  filter.value,
-                )}
-                key={filter.value || "all"}
-              >
-                {filter.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className={styles.filterGroup}>
-          <h3>경력 조건</h3>
-          <nav aria-label="경력 조건" className={styles.filters}>
-            {MARKET_CAREER_FILTERS.map((filter) => (
-              <Link
-                aria-current={
-                  snapshot.careerType === filter.value ? "page" : undefined
-                }
-                className={styles.filter}
-                href={buildMarketFilterHref(filter.value, snapshot.category)}
-                key={filter.value || "all"}
-              >
-                {filter.label}
-              </Link>
-            ))}
-          </nav>
+      <section aria-label="데이터 범위 안내" className={styles.dataNotice}>
+        <Info aria-hidden="true" size={18} weight="duotone" />
+        <div>
+          <strong>이 데이터는 이직핏이 확인한 기업 공식 채용 공고 범위입니다.</strong>
+          <p>
+            국내 전체 채용시장을 의미하지 않습니다. 기업 공식 채용 페이지에서 수집한
+            공고를 분석한 결과입니다.
+          </p>
         </div>
       </section>
+
+      <Summary snapshot={snapshot} />
+
+      <MarketFilters
+        careerType={snapshot.careerType}
+        category={snapshot.category}
+        onSortChange={setSort}
+        sort={sort}
+      />
 
       {marketUnavailable ? (
-        <section
-          aria-labelledby="market-unavailable-title"
-          className={styles.completeFailure}
-          role="alert"
-        >
-          <h2 id="market-unavailable-title">
-            시장 데이터를 불러오지 못했습니다.
-          </h2>
-          <p>잠시 후 다시 시도하거나 전체 공고를 확인해 주세요.</p>
-          <div className={styles.methodLinks}>
+        <section className={styles.completeFailure} role="alert">
+          <WarningCircle aria-hidden="true" size={22} weight="duotone" />
+          <div>
+            <h2>시장 데이터를 불러오지 못했습니다.</h2>
+            <p>잠시 후 다시 시도하거나 전체 공고를 확인해 주세요.</p>
+          </div>
+          <div className={styles.failureActions}>
             <Link
-              className={styles.textLink}
               href={buildMarketFilterHref(
                 snapshot.careerType,
                 snapshot.category,
@@ -172,166 +143,66 @@ export function MarketOverview({
             >
               다시 시도
             </Link>
-            <Link className={styles.textLink} href={snapshot.jobsBrowseHref}>
-              전체 공고 보기
-            </Link>
+            <Link href={snapshot.jobsBrowseHref}>전체 공고 보기</Link>
           </div>
         </section>
       ) : (
-        <div className={styles.contentGrid}>
-          <section aria-labelledby="skill-demand-title" className={styles.panel}>
-            <header className={styles.sectionHeader}>
-              <h2 id="skill-demand-title">기술 수요 순위</h2>
-              <p>한 개 이상의 공개 공고에서 확인된 기술을 공고 수 기준으로 정렬했습니다.</p>
-            </header>
-
+        <div className={styles.dashboardGrid}>
+          <div className={styles.mainColumn}>
             {snapshot.skillError ? (
-              <div className={styles.state} role="alert">
-                <h3>{snapshot.skillError}</h3>
-                <p>공고 목록은 확인 가능한 범위에서 계속 제공합니다.</p>
-                <Link
-                  className={styles.textLink}
-                  href={buildMarketFilterHref(
-                    snapshot.careerType,
-                    snapshot.category,
-                  )}
-                >
-                  다시 시도
-                </Link>
-              </div>
+              <section className={styles.largeState} role="alert">
+                <WarningCircle aria-hidden="true" size={22} weight="duotone" />
+                <div>
+                  <h3>{snapshot.skillError}</h3>
+                  <p>최근 공식 공고는 확인 가능한 범위에서 계속 제공합니다.</p>
+                </div>
+              </section>
             ) : snapshot.skills.length === 0 ? (
-              <div className={styles.state}>
-                <h3>이 조건에서 확인된 기술 수요가 없습니다.</h3>
-                <p>전체 조건에서 현재 수집된 기술을 확인해 보세요.</p>
-                <Link className={styles.textLink} href="/market">
-                  전체 시장 보기
-                </Link>
-              </div>
+              <section className={styles.largeState}>
+                <div>
+                  <h3>선택한 조건에 해당하는 기술 데이터가 없습니다.</h3>
+                  <p>전체 조건으로 돌아가 현재 수집된 기술 수요를 확인해 보세요.</p>
+                </div>
+                <Link href="/market">필터 초기화</Link>
+              </section>
             ) : (
-              <ol className={styles.skillList} role="list">
-                {snapshot.skills.map((skill, index) => (
-                  <li className={styles.skillItem} key={skill.name}>
-                    <div className={styles.skillIdentity}>
-                      <span className={styles.rank} aria-hidden="true">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <Link
-                          aria-label={`${skill.name} 스킬맵`}
-                          className={styles.skillLink}
-                          href={skill.skillHref}
-                        >
-                          {skill.name}
-                        </Link>
-                        <span className={styles.category}>
-                          {CATEGORY_LABELS[skill.category] ?? skill.category}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className={styles.demand}>
-                      <strong>{skill.postingCount.toLocaleString("ko-KR")}건</strong>
-                      <span className={styles.bar} aria-hidden="true">
-                        <span style={{ width: `${skill.relativeDemand}%` }} />
-                      </span>
-                      <span className={styles.counts}>
-                        <span>필수 {skill.requiredCount.toLocaleString("ko-KR")}건</span>
-                        <span>우대 {skill.preferredCount.toLocaleString("ko-KR")}건</span>
-                        <span>
-                          미분류 {skill.unspecifiedCount.toLocaleString("ko-KR")}건
-                        </span>
-                      </span>
-                    </div>
-
-                    <Link
-                      aria-label={`${skill.name} 관련 공고`}
-                      className={styles.jobsLink}
-                      href={skill.jobsHref}
-                    >
-                      관련 공고
-                    </Link>
-                  </li>
-                ))}
-              </ol>
+              <TechnologyDemandTable
+                onSelect={setSelectedSkill}
+                selectedSkill={effectiveSkill}
+                skills={snapshot.skills}
+                sort={sort}
+              />
             )}
-          </section>
 
-          <aside aria-labelledby="recent-jobs-title" className={styles.panel}>
-            <header className={styles.sectionHeader}>
-              <h2 id="recent-jobs-title">최근 확인 공고</h2>
-              <p>공식 원문에서 현재 공개 상태를 다시 확인한 공고입니다.</p>
-            </header>
+            <SkillCombinationRecommendations combinations={combinations} />
+            <MarketFitInsight fit={fit} />
+          </div>
 
-            {snapshot.postingError ? (
-              <div className={styles.state} role="alert">
-                <h3>{snapshot.postingError}</h3>
-                <p>기술 수요는 확인 가능한 범위에서 계속 제공합니다.</p>
-                <Link
-                  className={styles.textLink}
-                  href={buildMarketFilterHref(
-                    snapshot.careerType,
-                    snapshot.category,
-                  )}
-                >
-                  다시 시도
-                </Link>
-              </div>
-            ) : snapshot.jobs.length === 0 ? (
-              <div className={styles.state}>
-                <h3>이 조건에서 확인된 공개 공고가 없습니다.</h3>
-                <p>전체 공고에서 다른 경력 조건을 살펴보세요.</p>
-                <Link className={styles.textLink} href={snapshot.jobsBrowseHref}>
-                  전체 공고 보기
-                </Link>
-              </div>
-            ) : (
-              <>
-                <ul className={styles.jobList} role="list">
-                  {snapshot.jobs.map((job) => (
-                    <li key={job.id}>
-                      <Link className={styles.job} href={job.href}>
-                        <span className={styles.company}>{job.companyName}</span>
-                        <strong>{job.title}</strong>
-                        <span className={styles.jobMeta}>
-                          <span>{job.careerLabel}</span>
-                          <span>{job.employmentLabel}</span>
-                          <span>{job.location}</span>
-                        </span>
-                        <VerifiedTime value={job.verifiedAt} />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  className={`${styles.textLink} ${styles.browseLink}`}
-                  href={snapshot.jobsBrowseHref}
-                >
-                  조건에 맞는 전체 공고
-                </Link>
-              </>
-            )}
+          <aside className={styles.sideColumn}>
+            <TechnologyTrendPanel
+              category={selected?.category ?? "tool"}
+              selectedSkill={effectiveSkill}
+            />
+            <RecentJobList
+              browseHref={selected?.jobsHref ?? snapshot.jobsBrowseHref}
+              error={snapshot.postingError}
+              jobs={recentJobs}
+              selectedSkill={effectiveSkill}
+            />
           </aside>
         </div>
       )}
 
-      <section aria-labelledby="market-method-title" className={styles.method}>
-        <h2 id="market-method-title">데이터를 읽는 기준</h2>
+      <section aria-label="데이터를 읽는 기준" className={styles.methodNote}>
+        <strong>데이터를 읽는 기준</strong>
         <p>
-          {snapshot.category
-            ? `${snapshot.categoryLabel} 분야의 확정 기술이 하나 이상 있는 공개 공고를 먼저 고른 뒤, 그 공고에서 함께 확인된 모든 기술을 집계합니다. `
-            : "현재 공개 중인 전체 공고에서 확인된 기술을 집계합니다. "}
-          공고는 현재 조건에서 API가 반환한 최대 100개를, 기술 순위는 공고 수
-          상위 최대 30개를 기준으로 표시합니다. 필수와 우대는 공고에 명시된
-          문구를 기준으로 구분하며, 현재 비교 기간 데이터가 없어 변화율은
-          표시하지 않습니다.
+          기술별 숫자는 이직핏이 확인한 현재 공식 공고 수입니다. 요구 조건 막대는 각
+          기술 안의 필수·우대·미분류 구성이며, 상대 수요 막대는 현재 필터의 1위 기술을
+          기준으로만 비교합니다.
         </p>
-        <div className={styles.methodLinks}>
-          <Link className={styles.textLink} href="/methodology">
-            분석 방법
-          </Link>
-          <Link className={styles.textLink} href="/data-policy">
-            데이터 정책
-          </Link>
+        <div>
+          <Link href="/methodology">분석 방법</Link>
+          <Link href="/data-policy">데이터 정책</Link>
         </div>
       </section>
     </main>

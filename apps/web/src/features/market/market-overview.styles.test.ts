@@ -8,44 +8,65 @@ const css = readFileSync(
   "utf8",
 );
 
+function rule(selector: string) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+}
+
 describe("market overview styles", () => {
-  it("uses the shared service title scale", () => {
-    const titleRule = css.match(/\.title\s*\{([^}]*)\}/)?.[1] ?? "";
-
-    expect(titleRule).toContain("font-size: var(--type-page-title);");
-  });
-
-  it("keeps metrics compact and filters to one row on mobile", () => {
-    expect(css).toMatch(
-      /@media \(max-width: 839px\)[\s\S]*?\.metrics\s*\{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
+  it("uses a compact service scale and a bounded 1280px canvas", () => {
+    expect(rule(".page")).toContain("width: min(100%, 80rem);");
+    expect(rule(".intro h1")).toContain(
+      "font-size: clamp(1.75rem, 2.4vw, 2rem);",
     );
     expect(css).toMatch(
-      /@media \(max-width: 839px\)[\s\S]*?\.filters\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/,
+      /\.sectionHeader h2,[\s\S]*?\.combinationHeader h2\s*\{[^}]*font-size: 1rem;/,
     );
   });
 
-  it("keeps every skill-map link at the shared touch target size", () => {
-    const skillLinkRule = css.match(/\.skillLink\s*\{([^}]*)\}/)?.[1] ?? "";
-
-    expect(skillLinkRule).toContain("display: inline-flex;");
-    expect(skillLinkRule).toContain("min-width: var(--touch-target);");
-    expect(skillLinkRule).toContain("min-height: var(--touch-target);");
-    expect(skillLinkRule).toContain("align-items: center;");
+  it("keeps the desktop hierarchy at an 800px-ish main and 352px side panel", () => {
+    expect(rule(".dashboardGrid")).toContain(
+      "grid-template-columns: minmax(0, 1fr) 22rem;",
+    );
+    expect(rule(".dashboardGrid")).toContain("gap: 1.25rem;");
   });
 
-  it("keeps short category filters at the shared touch target size", () => {
-    const filterRule = css.match(/\.filter\s*\{([^}]*)\}/)?.[1] ?? "";
-
-    expect(filterRule).toContain("min-width: var(--touch-target);");
-    expect(filterRule).toContain("min-height: var(--touch-target);");
+  it("uses restrained semantic colors for required, preferred and uncategorized demand", () => {
+    expect(rule('.stackedSegment[data-segment="required"]')).toContain(
+      "background: #6d4aff;",
+    );
+    expect(rule('.stackedSegment[data-segment="preferred"]')).toContain(
+      "background: #2f9e63;",
+    );
+    expect(rule('.stackedSegment[data-segment="unspecified"]')).toContain(
+      "background: #d9dce4;",
+    );
   });
 
-  it("keeps market text actions at a square touch target", () => {
-    const textActionRule =
-      css.match(/\.filter,\s*\.textLink,\s*\.jobsLink\s*\{([^}]*)\}/)?.[1] ??
-      "";
+  it("avoids decorative gradients and heavy card shadows", () => {
+    expect(css).not.toContain("linear-gradient");
+    expect(css).not.toContain("radial-gradient");
+    expect(css).not.toContain("box-shadow");
+  });
 
-    expect(textActionRule).toContain("min-width: var(--touch-target);");
-    expect(textActionRule).toContain("min-height: var(--touch-target);");
+  it("moves the side rail below 1200px and turns filters into a mobile rail", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 74\.9375rem\)[\s\S]*?\.dashboardGrid\s*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 52\.4375rem\)[\s\S]*?\.filters\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/,
+    );
+  });
+
+  it("keeps compact filters keyboard and touch accessible", () => {
+    expect(rule(".filter")).toContain("min-width: var(--touch-target);");
+    expect(rule(".filter")).toContain("min-height: var(--touch-target);");
+    expect(css).toContain(".filter:focus-visible");
+  });
+
+  it("removes list and bar motion when reduced motion is requested", () => {
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.skillRow,[\s\S]*?\.stackedSegment,[\s\S]*?animation: none;[\s\S]*?transition: none;/,
+    );
   });
 });

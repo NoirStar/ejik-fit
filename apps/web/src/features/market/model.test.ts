@@ -211,6 +211,14 @@ describe("market overview model", () => {
         postingCount: 1,
       },
     ]);
+    expect(buildSkillCombinations(snapshot.jobs, 3, "Kubernetes")).toEqual([
+      {
+        id: "Docker::Kubernetes",
+        skills: ["Docker", "Kubernetes"],
+        postingCount: 1,
+      },
+    ]);
+    expect(buildSkillCombinations(snapshot.jobs, 3, "Go")).toEqual([]);
   });
 
   it("keeps ready skill data when postings fail", () => {
