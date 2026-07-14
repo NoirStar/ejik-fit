@@ -27,6 +27,7 @@ class PostingReader(Protocol):
         q: str | None = None,
         company: str | None = None,
         career_type: str | None = None,
+        category: str | None = None,
         limit: int = 20,
     ) -> list[dict]: ...
 
@@ -137,9 +138,10 @@ class DatabasePostingReader:
         q: str | None = None,
         company: str | None = None,
         career_type: str | None = None,
+        category: str | None = None,
         limit: int = 20,
     ) -> list[dict]:
-        if q and self.search_index is not None:
+        if q and self.search_index is not None and not category:
             try:
                 return self.search_index.search(
                     q,
@@ -158,6 +160,7 @@ class DatabasePostingReader:
                 q=q,
                 company=company,
                 career_type=career_type,
+                category=category,
                 limit=limit,
             )
 
@@ -168,6 +171,7 @@ class DatabasePostingReader:
         q: str | None,
         company: str | None,
         career_type: str | None,
+        category: str | None,
         limit: int,
     ) -> list[dict]:
         statement = (
@@ -190,6 +194,15 @@ class DatabasePostingReader:
         if career_type:
             statement = statement.where(
                 JobPosting.career_type == career_type
+            )
+        if category:
+            statement = statement.where(
+                JobPosting.skills.any(
+                    and_(
+                        PostingSkill.category == category,
+                        PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                    )
+                )
             )
 
         return [
@@ -224,12 +237,14 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
         q: str | None = Query(default=None, max_length=200),
         company: str | None = Query(default=None, max_length=120),
         career_type: str | None = Query(default=None, max_length=100),
+        category: str | None = Query(default=None, max_length=64),
         limit: int = Query(default=20, ge=1, le=100),
     ) -> dict:
         items = reader.list(
             q=q,
             company=company,
             career_type=career_type,
+            category=category,
             limit=limit,
         )
         return {"items": items, "total": len(items)}

@@ -6,13 +6,26 @@ from ejikfit.api.app import create_app
 
 
 class FakePostingReader:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
     def list(
         self,
         q: str | None = None,
         company: str | None = None,
         career_type: str | None = None,
+        category: str | None = None,
         limit: int = 20,
     ) -> list[dict]:
+        self.calls.append(
+            {
+                "q": q,
+                "company": company,
+                "career_type": career_type,
+                "category": category,
+                "limit": limit,
+            }
+        )
         return [
             {
                 "id": "00000000-0000-0000-0000-000000000001",
@@ -69,9 +82,10 @@ class FakePostingReader:
 
 
 def test_list_postings_exposes_source_and_verification_time() -> None:
-    app = create_app(posting_reader=FakePostingReader())
+    reader = FakePostingReader()
+    app = create_app(posting_reader=reader)
     response = TestClient(app).get(
-        "/api/postings?career_type=new_comer"
+        "/api/postings?career_type=new_comer&category=backend"
     )
 
     assert response.status_code == 200
@@ -84,6 +98,15 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     assert item["required_skills"] == ["Python"]
     assert item["preferred_skills"] == ["Docker"]
     assert item["unspecified_skills"] == ["Linux"]
+    assert reader.calls == [
+        {
+            "q": None,
+            "company": None,
+            "career_type": "new_comer",
+            "category": "backend",
+            "limit": 20,
+        }
+    ]
 
 
 def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:

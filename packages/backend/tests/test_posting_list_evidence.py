@@ -152,3 +152,42 @@ def test_database_search_matches_only_confirmed_canonical_skills() -> None:
 
     assert len(reader.list(q="Kubernetes", limit=10)) == 1
     assert reader.list(q="Go", limit=10) == []
+
+
+def test_database_list_filters_by_confirmed_skill_category() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    with factory() as session:
+        _posting_with_skills(session)
+
+    reader = DatabasePostingReader(session_factory=factory)
+
+    assert len(reader.list(category="infra", limit=10)) == 1
+    assert len(reader.list(category="language", limit=10)) == 1
+    assert reader.list(category="ai", limit=10) == []
+
+
+def test_category_search_uses_database_until_the_index_has_category_fields() -> None:
+    class EmptySearchIndex:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def search(self, *args, **kwargs) -> list[dict]:
+            self.calls += 1
+            return []
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    with factory() as session:
+        _posting_with_skills(session)
+
+    index = EmptySearchIndex()
+    reader = DatabasePostingReader(
+        session_factory=factory,
+        search_index=index,  # type: ignore[arg-type]
+    )
+
+    assert len(reader.list(q="플랫폼", category="infra", limit=10)) == 1
+    assert index.calls == 0
