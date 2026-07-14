@@ -4,7 +4,8 @@ for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified jobs usable without overflow at ${width}px`, async ({
     page,
   }) => {
-    await page.setViewportSize({ height: 900, width });
+    const viewportHeight = width === 390 ? 844 : 900;
+    await page.setViewportSize({ height: viewportHeight, width });
     await page.goto("/jobs");
 
     await expect(page.getByText("현재 결과 2건")).toBeVisible();
@@ -16,6 +17,21 @@ for (const width of [1440, 820, 600, 390]) {
         () => document.documentElement.scrollWidth > window.innerWidth,
       ),
     ).toBe(false);
+
+    const pageTitleSize = await page
+      .getByRole("heading", { level: 1, name: "공고 탐색" })
+      .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+    expect(pageTitleSize).toBeLessThanOrEqual(width <= 760 ? 28 : 32);
+
+    const requiredVisibleTitles = width === 1440 ? 2 : width === 390 ? 1 : 0;
+    const titles = page.locator("article h3");
+    for (let index = 0; index < requiredVisibleTitles; index += 1) {
+      const box = await titles.nth(index).boundingBox();
+      expect(box).not.toBeNull();
+      expect((box?.y ?? viewportHeight + 1) + (box?.height ?? 0)).toBeLessThanOrEqual(
+        viewportHeight,
+      );
+    }
 
     for (const target of [
       page.getByRole("button", { name: "검색" }),
@@ -32,7 +48,7 @@ for (const width of [1440, 820, 600, 390]) {
         .locator("dl")
         .first()
         .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
-      expect(factColumns.split(" ")).toHaveLength(1);
+      expect(factColumns.split(" ")).toHaveLength(2);
     }
   });
 }
