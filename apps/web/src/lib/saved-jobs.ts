@@ -1,12 +1,22 @@
 const KEY = "ejik-fit:saved-job-ids";
 const CHANGE_EVENT = "ejik-fit:saved-job-ids-change";
 
+export const MAX_SAVED_JOB_IDS = 24;
+
 type SavedJobsListener = (ids: string[]) => void;
 
 export function normalizeSavedJobIds(ids: string[]) {
-  return Array.from(new Set(ids.map((id) => id.trim()).filter(Boolean))).sort(
-    (left, right) => left.localeCompare(right),
-  );
+  const recentIds = new Map<string, true>();
+  for (const rawId of ids) {
+    const id = rawId.trim();
+    if (!id) continue;
+    recentIds.delete(id);
+    recentIds.set(id, true);
+  }
+
+  return Array.from(recentIds.keys())
+    .slice(-MAX_SAVED_JOB_IDS)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function defaultStorage(): Storage | null {

@@ -282,6 +282,7 @@
 .jobCard h3 a,
 .communityCard h3 a {
   display: inline-flex;
+  min-width: var(--touch-target);
   min-height: var(--touch-target);
   align-items: center;
 }
@@ -294,6 +295,7 @@
 
 .jobIdentity p a {
   display: inline-flex;
+  min-width: var(--touch-target);
   min-height: var(--touch-target);
   align-items: center;
 }

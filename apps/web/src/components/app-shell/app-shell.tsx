@@ -125,6 +125,7 @@ function HeaderSearchForm({
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [interactive, setInteractive] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -139,6 +140,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const closeUtilityMenus = useCallback(() => {
     setNotificationOpen(false);
     setUserMenuOpen(false);
+  }, []);
+
+  useEffect(() => {
+    setInteractive(true);
   }, []);
 
   useEffect(() => {
@@ -228,6 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button
               aria-label="내 스택 열기"
               className={styles.stackButton}
+              disabled={!interactive}
               onClick={openSkillsSheet}
               ref={stackButtonRef}
               type="button"
@@ -242,6 +248,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-expanded={notificationOpen}
                 aria-label="알림 열기"
                 className={styles.iconButton}
+                disabled={!interactive}
                 onClick={() => {
                   setUserMenuOpen(false);
                   setNotificationOpen((open) => !open);
@@ -272,6 +279,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 aria-expanded={userMenuOpen}
                 aria-label="사용자 메뉴 열기"
                 className={styles.userButton}
+                disabled={!interactive}
                 onClick={() => {
                   setNotificationOpen(false);
                   setUserMenuOpen((open) => !open);

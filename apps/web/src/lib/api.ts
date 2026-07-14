@@ -72,9 +72,14 @@ export async function getPostings(filters: {
 }
 
 
-export async function getPosting(id: string): Promise<PostingDetail> {
+export async function getPosting(
+  id: string,
+  signal?: AbortSignal,
+): Promise<PostingDetail> {
   return normalizePostingDetail(
-    await request<unknown>(`/api/postings/${encodeURIComponent(id)}`),
+    await request<unknown>(`/api/postings/${encodeURIComponent(id)}`, {
+      signal,
+    }),
   );
 }
 

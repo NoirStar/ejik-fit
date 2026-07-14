@@ -334,7 +334,7 @@ export function SavedLibrary() {
             저장한 항목을 확인하고 있습니다.
           </div>
         ) : totalCount === 0 ? (
-          <section className={styles.emptyState}>
+          <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
             <h2>아직 저장한 항목이 없습니다.</h2>
             <p>관심 있는 공식 공고와 커뮤니티 예시를 저장하면 여기서 다시 볼 수 있습니다.</p>
@@ -382,7 +382,7 @@ export function SavedLibrary() {
                 ) : (
                   <>
                     {jobState.data.unavailableIds.length > 0 && (
-                      <div className={styles.dataNotice}>
+                      <div className={styles.dataNotice} role="status">
                         <div>
                           <strong>
                             현재 API에서 확인되지 않는 저장 공고 {jobState.data.unavailableIds.length}개
@@ -395,7 +395,11 @@ export function SavedLibrary() {
                       </div>
                     )}
                     {jobState.data.failedIds.length > 0 && (
-                      <div className={styles.dataNotice} data-warning="true">
+                      <div
+                        className={styles.dataNotice}
+                        data-warning="true"
+                        role="alert"
+                      >
                         <div>
                           <strong>
                             저장 공고 {jobState.data.failedIds.length}개를 다시 확인하지 못했습니다.
@@ -419,7 +423,7 @@ export function SavedLibrary() {
                         ))}
                       </div>
                     ) : (
-                      <div className={styles.compactState}>
+                      <div className={styles.compactState} role="status">
                         <Briefcase aria-hidden="true" size={22} />
                         <div>
                           <strong>현재 표시할 공식 공고가 없습니다.</strong>
@@ -455,7 +459,7 @@ export function SavedLibrary() {
                 </div>
 
                 {savedCommunity.unavailableIds.length > 0 && (
-                  <div className={styles.dataNotice}>
+                  <div className={styles.dataNotice} role="status">
                     <div>
                       <strong>
                         현재 예시 목록에 없는 저장 글 {savedCommunity.unavailableIds.length}개
@@ -512,7 +516,7 @@ export function SavedLibrary() {
                     ))}
                   </div>
                 ) : (
-                  <div className={styles.compactState}>
+                  <div className={styles.compactState} role="status">
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
                       <strong>현재 표시할 커뮤니티 예시가 없습니다.</strong>

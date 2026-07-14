@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  MAX_SAVED_JOB_IDS,
   clearSavedJobs,
   normalizeSavedJobIds,
   readSavedJobIds,
@@ -31,6 +32,30 @@ describe("saved job storage", () => {
       "job-a",
       "job-b",
     ]);
+  });
+
+  it("keeps only the 24 most recently supplied posting ids", () => {
+    const ids = Array.from(
+      { length: MAX_SAVED_JOB_IDS + 1 },
+      (_, index) => `job-${String(index).padStart(2, "0")}`,
+    );
+
+    expect(normalizeSavedJobIds(ids)).toEqual(ids.slice(1));
+  });
+
+  it("keeps a newly toggled posting when the saved library is full", () => {
+    const fake = storage();
+    const existing = Array.from(
+      { length: MAX_SAVED_JOB_IDS },
+      (_, index) => `job-${String(index).padStart(2, "0")}`,
+    );
+    writeSavedJobIds(existing, fake);
+
+    const next = toggleSavedJob("job-new", fake);
+
+    expect(next).toHaveLength(MAX_SAVED_JOB_IDS);
+    expect(next).toContain("job-new");
+    expect(next).not.toContain("job-00");
   });
 
   it("persists toggles and removes a saved posting on the second toggle", () => {

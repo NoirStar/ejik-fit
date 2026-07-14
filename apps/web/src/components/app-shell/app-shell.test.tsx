@@ -132,6 +132,7 @@ describe("AppShell", () => {
     expect(notificationButton).toHaveFocus();
 
     const userButton = screen.getByRole("button", { name: "사용자 메뉴 열기" });
+    expect(userButton).toBeEnabled();
     fireEvent.click(userButton);
     expect(screen.getByLabelText("사용자 메뉴")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(

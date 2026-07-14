@@ -10,9 +10,10 @@ import {
 } from "@/features/jobs/model";
 import { formatEmployment } from "@/lib/labels";
 import { validatedHttpUrl } from "@/lib/safe-url";
+import { MAX_SAVED_JOB_IDS } from "@/lib/saved-jobs";
 import type { PostingDetail } from "@/lib/types";
 
-export const MAX_SAVED_JOB_LOOKUPS = 24;
+export const MAX_SAVED_JOB_LOOKUPS = MAX_SAVED_JOB_IDS;
 
 type CommunityItem = CommunityPostFeedItem | InterviewReviewFeedItem;
 

@@ -169,7 +169,26 @@ describe("SavedLibrary", () => {
     expect(
       screen.getByRole("link", { name: "커뮤니티 예시 보기" }),
     ).toHaveAttribute("href", "/");
+    expect(
+      screen.getByText("아직 저장한 항목이 없습니다.").closest('[role="status"]'),
+    ).not.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("bounds legacy browser storage before requesting actual job details", async () => {
+    const ids = Array.from({ length: 25 }, (_, index) => `job-${index}`);
+    saveBrowserItems(ids, []);
+    fetchMock.mockResolvedValue(
+      jsonResponse({ items: [], unavailable_ids: [], failed_ids: [] }),
+    );
+    render(<SavedLibrary />);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const requestInit = fetchMock.mock.calls[0]?.[1];
+    const requestBody = JSON.parse(String(requestInit?.body));
+    expect(requestBody.job_ids).toHaveLength(24);
+    expect(requestBody.job_ids).toContain("job-24");
+    expect(requestBody.job_ids).not.toContain("job-0");
   });
 
   it("keeps successful and mock items visible while explaining partial failures", async () => {
@@ -193,8 +212,18 @@ describe("SavedLibrary", () => {
       screen.getByText("현재 API에서 확인되지 않는 저장 공고 1개"),
     ).toBeInTheDocument();
     expect(
+      screen
+        .getByText("현재 API에서 확인되지 않는 저장 공고 1개")
+        .closest('[role="status"]'),
+    ).not.toBeNull();
+    expect(
       screen.getByText("저장 공고 1개를 다시 확인하지 못했습니다."),
     ).toBeInTheDocument();
+    expect(
+      screen
+        .getByText("저장 공고 1개를 다시 확인하지 못했습니다.")
+        .closest('[role="alert"]'),
+    ).not.toBeNull();
     expect(screen.getByRole("button", { name: "공고 다시 확인" })).toBeInTheDocument();
     expect(
       screen.getByRole("article", {
