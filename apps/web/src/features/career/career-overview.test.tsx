@@ -265,7 +265,7 @@ describe("CareerOverview", () => {
       owned_skills: ["Python"],
       domains: ["robotics"],
     });
-    expect(screen.getByText("로보틱스 조건")).toBeInTheDocument();
+    expect(await screen.findByText("로보틱스 조건")).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: "로보틱스 · 연결 기술 4개" }),
     ).toBeInTheDocument();
