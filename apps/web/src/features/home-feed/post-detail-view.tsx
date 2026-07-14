@@ -14,6 +14,7 @@ import styles from "@/app/posts/[id]/post-detail.module.css";
 import type { MockPostDetail } from "./mock-post-details";
 import { AuthorFollowButton } from "./author-follow-button";
 import { PostDetailActions } from "./post-detail-actions";
+import { RecentTopicTracker } from "./recent-topic-tracker";
 import type {
   CommunityPostFeedItem,
   InterviewReviewFeedItem,
@@ -71,6 +72,12 @@ export function PostDetailView({
 
   return (
     <main className={styles.main}>
+      <RecentTopicTracker
+        postId={post.id}
+        source={post.source}
+        title={post.title}
+        topicLabel={post.tags[0] ?? post.category}
+      />
       <Link className={styles.backLink} href="/">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
         홈 피드로 돌아가기

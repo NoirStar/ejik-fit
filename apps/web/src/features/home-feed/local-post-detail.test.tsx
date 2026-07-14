@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
+import { readRecentCommunityTopics } from "@/lib/recent-community-topics";
 import {
   addLocalPostComment,
   togglePostReaction,
@@ -55,6 +56,16 @@ describe("LocalPostDetail", () => {
     expect(screen.getByRole("heading", { level: 2, name: "댓글" })).toBeInTheDocument();
     expect(screen.queryByText(/mock 데이터/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /팔로우/ })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(readRecentCommunityTopics()).toEqual([
+        expect.objectContaining({
+          postId,
+          title: "브라우저에 저장한 이직 질문",
+          topicLabel: "이직 준비",
+          source: "local",
+        }),
+      ]),
+    );
   });
 
   it("shows an honest local empty state when the post is unavailable", async () => {
@@ -95,6 +106,7 @@ describe("LocalPostDetail", () => {
     ).toBeInTheDocument();
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBe("[]");
     expect(localStorage.getItem("ejik-fit:social-interactions")).toBe("{\"reactedPostIds\":[],\"savedPostIds\":[],\"followedAuthorIds\":[],\"commentsByPostId\":{}}");
+    expect(readRecentCommunityTopics()).toEqual([]);
   });
 
   it("does not claim deletion when browser storage rejects the write", async () => {

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
+import { readRecentCommunityTopics } from "@/lib/recent-community-topics";
 
 import PostPage, { generateMetadata } from "./page";
 
@@ -89,6 +90,16 @@ describe("PostPage", () => {
       screen.getByRole("navigation", { name: "관련 글" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /읽기/ })).toHaveLength(2);
+    await waitFor(() =>
+      expect(readRecentCommunityTopics()).toEqual([
+        expect.objectContaining({
+          postId: "career-move-3y-backend",
+          title: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
+          topicLabel: "백엔드",
+          source: "mock",
+        }),
+      ]),
+    );
   });
 
   it("persists the mock author's browser-local follow choice", async () => {
@@ -146,6 +157,16 @@ describe("PostPage", () => {
       await screen.findByRole("heading", { level: 1, name: "로컬 상세 라우트" }),
     ).toBeInTheDocument();
     expect(screen.getByText("로컬 글", { exact: true })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(readRecentCommunityTopics()).toEqual([
+        expect.objectContaining({
+          postId: "local-page-route",
+          title: "로컬 상세 라우트",
+          topicLabel: "업무 이야기",
+          source: "local",
+        }),
+      ]),
+    );
   });
 
   it("routes an unknown post to not found", async () => {

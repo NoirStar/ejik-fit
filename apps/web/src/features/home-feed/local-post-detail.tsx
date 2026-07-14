@@ -11,9 +11,11 @@ import {
   subscribeLocalCommunityPosts,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
+import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { localCommunityPostToFeedItem } from "./model";
 import { PostDetailActions } from "./post-detail-actions";
+import { RecentTopicTracker } from "./recent-topic-tracker";
 
 type LocalPostDetailState =
   | { status: "checking" }
@@ -86,11 +88,18 @@ export function LocalPostDetail({ postId }: { postId: string }) {
       );
       return;
     }
+    removeRecentCommunityTopic(postId);
     setState({ status: "removed" });
   }
 
   return (
     <main className={styles.main}>
+      <RecentTopicTracker
+        postId={item.id}
+        source={item.source}
+        title={item.title}
+        topicLabel={item.tags[0] ?? item.category}
+      />
       <Link className={styles.backLink} href="/">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
         홈 피드로 돌아가기
