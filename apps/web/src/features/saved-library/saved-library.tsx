@@ -16,6 +16,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
+import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
 import {
   APPLICATION_STAGES,
   applicationStageLabel,
@@ -26,6 +27,11 @@ import {
   type JobApplicationStageValue,
   type JobApplicationStages,
 } from "@/lib/job-application-stages";
+import {
+  readLocalCommunityPosts,
+  subscribeLocalCommunityPosts,
+  type LocalCommunityPost,
+} from "@/lib/local-community-posts";
 import {
   readSavedJobIds,
   subscribeSavedJobs,
@@ -59,7 +65,7 @@ const SCOPES = [
   { value: "all", label: "전체" },
   { value: "jobs", label: "공식 공고" },
   { value: "applications", label: "지원 관리" },
-  { value: "community", label: "커뮤니티 예시" },
+  { value: "community", label: "커뮤니티" },
 ] as const satisfies ReadonlyArray<{ value: SavedScope; label: string }>;
 
 function SavedJobCard({
@@ -190,6 +196,7 @@ export function SavedLibrary() {
     useState<JobApplicationStages>({});
   const [socialInteractions, setSocialInteractions] =
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
+  const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [jobState, setJobState] = useState<JobRequestState>({ status: "idle" });
   const [activeScope, setActiveScope] = useState<SavedScope>("all");
   const [retryVersion, setRetryVersion] = useState(0);
@@ -200,6 +207,7 @@ export function SavedLibrary() {
     setSavedJobIds(readSavedJobIds());
     setApplicationStages(readJobApplicationStages());
     setSocialInteractions(readSocialInteractions());
+    setLocalPosts(readLocalCommunityPosts());
     setHydrated(true);
     const unsubscribeJobs = subscribeSavedJobs(setSavedJobIds);
     const unsubscribeApplications = subscribeJobApplicationStages(
@@ -208,10 +216,12 @@ export function SavedLibrary() {
     const unsubscribeSocial = subscribeSocialInteractions(
       setSocialInteractions,
     );
+    const unsubscribeLocalPosts = subscribeLocalCommunityPosts(setLocalPosts);
     return () => {
       unsubscribeJobs();
       unsubscribeApplications();
       unsubscribeSocial();
+      unsubscribeLocalPosts();
     };
   }, []);
 
@@ -259,9 +269,12 @@ export function SavedLibrary() {
     () =>
       selectSavedCommunityItems(
         socialInteractions.savedPostIds,
-        MOCK_SOCIAL_ITEMS,
+        [
+          ...MOCK_SOCIAL_ITEMS,
+          ...localPosts.map((post) => localCommunityPostToFeedItem(post)),
+        ],
       ),
-    [socialInteractions.savedPostIds],
+    [localPosts, socialInteractions.savedPostIds],
   );
   const visibleSavedJobs = useMemo(() => {
     if (jobState.status !== "ready") return [];
@@ -317,7 +330,13 @@ export function SavedLibrary() {
   }
 
   function removeCommunity(id: string, title: string) {
-    setSocialInteractions(togglePostSave(id));
+    const wasSaved = socialInteractions.savedPostIds.includes(id);
+    const next = togglePostSave(id);
+    setSocialInteractions(next);
+    if (next.savedPostIds.includes(id) === wasSaved) {
+      setAnnouncement(`${title}의 저장 상태를 변경하지 못했습니다.`);
+      return;
+    }
     setAnnouncement(`${title}을 저장 보관함에서 제거했습니다.`);
   }
 
@@ -338,7 +357,15 @@ export function SavedLibrary() {
       next = togglePostSave(id);
     }
     setSocialInteractions(next);
-    setAnnouncement("현재 예시 목록에 없는 저장 글을 정리했습니다.");
+    if (
+      savedCommunity.unavailableIds.some((id) =>
+        next.savedPostIds.includes(id),
+      )
+    ) {
+      setAnnouncement("확인 불가 저장 글 일부를 정리하지 못했습니다.");
+      return;
+    }
+    setAnnouncement("현재 브라우저에서 확인되지 않는 저장 글을 정리했습니다.");
   }
 
   function handleTabKeyDown(
@@ -365,7 +392,7 @@ export function SavedLibrary() {
           <p className={styles.eyebrow}>브라우저 저장함</p>
           <h1>저장 보관함</h1>
           <p className={styles.description}>
-            저장 여부와 지원 단계는 이 브라우저에만 남고, 공고 내용은 열 때마다 현재 공식 API에서 다시 확인합니다.
+            저장 여부와 지원 단계, 직접 작성한 글은 이 브라우저에만 남고, 공고 내용은 열 때마다 현재 공식 API에서 다시 확인합니다.
           </p>
         </div>
         <div className={styles.introActions}>
@@ -428,14 +455,14 @@ export function SavedLibrary() {
           <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
             <h2>아직 저장한 항목이 없습니다.</h2>
-            <p>관심 있는 공식 공고와 커뮤니티 예시를 저장하면 여기서 다시 볼 수 있습니다.</p>
+            <p>관심 있는 공식 공고와 커뮤니티 글을 저장하면 여기서 다시 볼 수 있습니다.</p>
             <div>
               <Link href="/jobs">
                 공식 공고 둘러보기
                 <ArrowRight aria-hidden="true" size={15} weight="bold" />
               </Link>
               <Link href="/">
-                커뮤니티 예시 보기
+                커뮤니티 보기
                 <ArrowRight aria-hidden="true" size={15} weight="bold" />
               </Link>
             </div>
@@ -559,21 +586,21 @@ export function SavedLibrary() {
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>명시적 mock 데이터</p>
-                    <h2 id="saved-community-title">커뮤니티 예시</h2>
+                    <p>브라우저 글 + 명시적 mock 데이터</p>
+                    <h2 id="saved-community-title">커뮤니티</h2>
                   </div>
                   <span>{communityCount}개 저장</span>
                 </header>
                 <div className={styles.mockNotice}>
                   <WarningCircle aria-hidden="true" size={18} weight="fill" />
-                  <p>실제 사용자가 작성한 글이 아닙니다. 화면 흐름 확인용 예시 콘텐츠입니다.</p>
+                  <p>내 로컬 글은 이 브라우저에서만 복원합니다. 예시 콘텐츠는 실제 사용자가 작성한 글이 아닙니다.</p>
                 </div>
 
                 {savedCommunity.unavailableIds.length > 0 && (
                   <div className={styles.dataNotice} role="status">
                     <div>
                       <strong>
-                        현재 예시 목록에 없는 저장 글 {savedCommunity.unavailableIds.length}개
+                        현재 브라우저 글 또는 예시 목록에서 찾지 못한 저장 글 {savedCommunity.unavailableIds.length}개
                       </strong>
                       <p>내용을 만들지 않고 저장 ID만 유지했습니다.</p>
                     </div>
@@ -589,7 +616,9 @@ export function SavedLibrary() {
                       <article aria-label={item.title} className={styles.communityCard} key={item.id}>
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
-                          <small>예시 콘텐츠</small>
+                          <small data-source={item.source}>
+                            {item.source === "local" ? "내 로컬 글" : "예시 콘텐츠"}
+                          </small>
                         </div>
                         <h3>
                           <Link href={item.href}>{item.title}</Link>
@@ -630,8 +659,8 @@ export function SavedLibrary() {
                   <div className={styles.compactState} role="status">
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
-                      <strong>현재 표시할 커뮤니티 예시가 없습니다.</strong>
-                      <p>홈의 예시 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
+                      <strong>현재 표시할 커뮤니티 글이 없습니다.</strong>
+                      <p>홈에서 내 글이나 예시 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>

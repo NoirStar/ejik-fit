@@ -537,6 +537,16 @@
   font-size: 0.62rem;
 }
 
+.communityTopline small[data-source="local"] {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  color: var(--color-accent-strong);
+}
+
+.communityTopline small[data-source="mock"] {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  color: var(--color-warning-strong);
+}
+
 .communitySummary {
   display: -webkit-box;
   margin-top: 0.55rem !important;

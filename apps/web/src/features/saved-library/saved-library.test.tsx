@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 import type { PostingDetail } from "@/lib/types";
 
 import { buildSavedJobItem } from "./model";
@@ -65,6 +66,21 @@ function saveBrowserItems(
   window.localStorage.setItem(
     "ejik-fit:job-application-stages",
     JSON.stringify(stages),
+  );
+}
+
+function saveLocalPost() {
+  window.localStorage.setItem(
+    "ejik-fit:local-community-posts",
+    JSON.stringify([
+      {
+        id: "local-browser-question",
+        title: "브라우저에 저장한 내 질문",
+        body: "공식 공고를 비교한 뒤 남긴 질문입니다.",
+        tags: ["백엔드", "이직 준비"],
+        createdAt: "2026-07-14T03:00:00.000Z",
+      },
+    ]),
   );
 }
 
@@ -131,6 +147,68 @@ describe("SavedLibrary", () => {
       }),
     ).toHaveValue("");
     expect(screen.getByRole("tab", { name: "지원 관리 0" })).toBeInTheDocument();
+  });
+
+  it("restores saved browser-owned posts and removes them when the source post is deleted", async () => {
+    saveBrowserItems([], ["local-browser-question", "kubernetes-experience"]);
+    saveLocalPost();
+    render(<SavedLibrary />);
+
+    const localPost = await screen.findByRole("article", {
+      name: "브라우저에 저장한 내 질문",
+    });
+    expect(within(localPost).getByText("내 로컬 글")).toBeInTheDocument();
+    expect(
+      within(localPost).getByRole("link", { name: "브라우저에 저장한 내 질문" }),
+    ).toHaveAttribute("href", "/posts/local-browser-question");
+    expect(within(localPost).getByText(/나 · 이 브라우저에서 작성/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", {
+        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+      }),
+    ).toHaveTextContent("예시 콘텐츠");
+    expect(screen.getByRole("tab", { name: "커뮤니티 2" })).toBeInTheDocument();
+
+    deleteLocalCommunityPost("local-browser-question");
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("article", { name: "브라우저에 저장한 내 질문" }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
+    expect(screen.queryByText(/찾지 못한 저장 글/)).not.toBeInTheDocument();
+  });
+
+  it("does not announce success when a community save removal is blocked", async () => {
+    saveBrowserItems([], ["local-browser-question"]);
+    saveLocalPost();
+    render(<SavedLibrary />);
+    const localPost = await screen.findByRole("article", {
+      name: "브라우저에 저장한 내 질문",
+    });
+    const originalSetItem = Storage.prototype.setItem;
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(function (this: Storage, key, value) {
+        if (key === "ejik-fit:social-interactions") {
+          throw new DOMException("blocked", "QuotaExceededError");
+        }
+        return originalSetItem.call(this, key, value);
+      });
+
+    fireEvent.click(
+      within(localPost).getByRole("button", {
+        name: "브라우저에 저장한 내 질문 저장 해제",
+      }),
+    );
+
+    expect(localPost).toBeInTheDocument();
+    expect(
+      screen.getByText("브라우저에 저장한 내 질문의 저장 상태를 변경하지 못했습니다."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/저장 보관함에서 제거했습니다/)).not.toBeInTheDocument();
+    setItem.mockRestore();
   });
 
   it("persists a user-selected stage and filters the application scope", async () => {
@@ -257,7 +335,7 @@ describe("SavedLibrary", () => {
       screen.getByRole("link", { name: "공식 공고 둘러보기" }),
     ).toHaveAttribute("href", "/jobs");
     expect(
-      screen.getByRole("link", { name: "커뮤니티 예시 보기" }),
+      screen.getByRole("link", { name: "커뮤니티 보기" }),
     ).toHaveAttribute("href", "/");
     expect(
       screen.getByText("아직 저장한 항목이 없습니다.").closest('[role="status"]'),
@@ -369,8 +447,8 @@ describe("SavedLibrary", () => {
     render(<SavedLibrary />);
     await screen.findByRole("article", { name: "Python Backend Engineer" });
 
-    fireEvent.click(screen.getByRole("tab", { name: "커뮤니티 예시 1" }));
-    expect(screen.getByRole("tab", { name: "커뮤니티 예시 1" })).toHaveAttribute(
+    fireEvent.click(screen.getByRole("tab", { name: "커뮤니티 1" }));
+    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
