@@ -75,29 +75,31 @@ export function JobDetailActions({
         </h2>
       </header>
 
-      <a
-        className={styles.apply}
-        href={sourceUrl}
-        rel="noreferrer"
-        target="_blank"
-      >
-        공식 채용페이지에서 {acceptsApplications ? "지원" : "확인"}
-        <ArrowSquareOut aria-hidden="true" size={18} weight="bold" />
-      </a>
-      <button
-        aria-label={`${jobTitle} ${saved ? "저장 해제" : "저장"}`}
-        aria-pressed={saved}
-        className={styles.save}
-        onClick={() => setSavedIds(toggleSavedJob(jobId))}
-        type="button"
-      >
-        <BookmarkSimple
-          aria-hidden="true"
-          size={19}
-          weight={saved ? "fill" : "regular"}
-        />
-        {saved ? "저장됨" : "공고 저장"}
-      </button>
+      <div aria-label="지원 및 저장" className={styles.primaryActions} role="group">
+        <a
+          className={styles.apply}
+          href={sourceUrl}
+          rel="noreferrer"
+          target="_blank"
+        >
+          공식 채용페이지에서 {acceptsApplications ? "지원" : "확인"}
+          <ArrowSquareOut aria-hidden="true" size={18} weight="bold" />
+        </a>
+        <button
+          aria-label={`${jobTitle} ${saved ? "저장 해제" : "저장"}`}
+          aria-pressed={saved}
+          className={styles.save}
+          onClick={() => setSavedIds(toggleSavedJob(jobId))}
+          type="button"
+        >
+          <BookmarkSimple
+            aria-hidden="true"
+            size={19}
+            weight={saved ? "fill" : "regular"}
+          />
+          {saved ? "저장됨" : "공고 저장"}
+        </button>
+      </div>
 
       <div aria-live="polite" className={styles.overlap}>
         <StackSimple aria-hidden="true" size={19} weight="bold" />

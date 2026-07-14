@@ -1,9 +1,9 @@
 .panel {
   position: sticky;
-  top: calc(var(--header-height-desktop) + 1.5rem);
+  top: calc(var(--header-height-desktop) + 1rem);
   display: grid;
   gap: 0.75rem;
-  padding: 1.25rem;
+  padding: 1rem;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
@@ -12,14 +12,20 @@
 .header p {
   color: var(--color-accent-strong);
   font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .header h2 {
   margin-top: 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
   letter-spacing: -0.035em;
+}
+
+.primaryActions {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .apply,
@@ -34,7 +40,7 @@
   padding: 0.625rem 0.875rem;
   border-radius: var(--radius-control);
   font-size: 0.8125rem;
-  font-weight: 750;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -99,7 +105,7 @@
   min-height: var(--touch-target);
   align-items: center;
   color: var(--color-accent-strong);
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .overlap ul {
@@ -131,5 +137,46 @@
 @media (max-width: 900px) {
   .panel {
     position: static;
+  }
+}
+
+@media (max-width: 680px) {
+  .panel {
+    padding: 1rem;
+  }
+
+  .header {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .primaryActions {
+    position: fixed;
+    right: 0;
+    bottom: var(--mobile-nav-height);
+    left: 0;
+    z-index: calc(var(--layer-mobile-nav) - 1);
+    grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.42fr);
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-top: 1px solid var(--color-line);
+    background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  }
+
+  .apply,
+  .save {
+    min-height: var(--touch-target);
+    padding: 0.5rem 0.625rem;
+  }
+
+  .overlap {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
   }
 }

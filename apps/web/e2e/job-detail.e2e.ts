@@ -77,6 +77,7 @@ for (const width of [1440, 820, 600, 390]) {
       const actions = page.getByRole("region", { name: "지원 준비" });
       const primaryActions = page.getByRole("group", { name: "지원 및 저장" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
+      const skills = page.getByRole("heading", { name: "요구 기술 근거" });
       const trust = page.getByRole("region", { name: "공고 신뢰 정보" });
       const navigation = page.getByRole("navigation", {
         name: "모바일 주요 탐색",
@@ -85,11 +86,14 @@ for (const width of [1440, 820, 600, 390]) {
       await expect(navigation).toBeVisible();
       const actionsBox = await primaryActions.boundingBox();
       const factsBox = await facts.boundingBox();
+      const skillsBox = await skills.boundingBox();
       const trustBox = await trust.boundingBox();
       expect(actionsBox).not.toBeNull();
       expect(factsBox).not.toBeNull();
+      expect(skillsBox).not.toBeNull();
       expect(trustBox).not.toBeNull();
       expect(factsBox!.y).toBeLessThan(trustBox!.y);
+      expect(skillsBox!.y).toBeLessThan(trustBox!.y);
       expect(
         await primaryActions.evaluate(
           (element) => getComputedStyle(element).position,
