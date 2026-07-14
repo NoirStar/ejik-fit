@@ -142,6 +142,39 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
         </section>
 
         <div className={styles.workspace}>
+          <section
+            aria-labelledby="job-skills-title"
+            className={styles.skills}
+          >
+            <header className={styles.sectionHeader}>
+              <p>공식 원문에서 확정된 표현</p>
+              <h2 id="job-skills-title">요구 기술 근거</h2>
+            </header>
+            {skillDetails.length > 0 ? (
+              <div className={styles.skillGroups}>
+                <SkillGroup
+                  label="필수 기술"
+                  skills={groups.required}
+                  tone="required"
+                />
+                <SkillGroup
+                  label="우대 기술"
+                  skills={groups.preferred}
+                  tone="preferred"
+                />
+                <SkillGroup
+                  label="공고 언급"
+                  skills={groups.unspecified}
+                  tone="mentioned"
+                />
+              </div>
+            ) : (
+              <p className={styles.emptyEvidence}>
+                확정 임계값을 통과한 기술 요구사항이 없습니다.
+              </p>
+            )}
+          </section>
+
           <aside className={styles.sidebar}>
             <JobDetailActions
               jobId={job.id}
@@ -169,60 +202,25 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             </section>
           </aside>
 
-          <div className={styles.content}>
-            <section
-              aria-labelledby="job-skills-title"
-              className={styles.skills}
+          <section
+            aria-labelledby="job-description-title"
+            className={styles.description}
+          >
+            <header className={styles.sectionHeader}>
+              <p>API가 제공한 원문 텍스트</p>
+              <h2 id="job-description-title">공고 원문</h2>
+            </header>
+            <PostingDescription text={job.description_text} />
+            <a
+              className={styles.continueLink}
+              href={job.source_url}
+              rel="noreferrer"
+              target="_blank"
             >
-              <header className={styles.sectionHeader}>
-                <p>공식 원문에서 확정된 표현</p>
-                <h2 id="job-skills-title">요구 기술 근거</h2>
-              </header>
-              {skillDetails.length > 0 ? (
-                <div className={styles.skillGroups}>
-                  <SkillGroup
-                    label="필수 기술"
-                    skills={groups.required}
-                    tone="required"
-                  />
-                  <SkillGroup
-                    label="우대 기술"
-                    skills={groups.preferred}
-                    tone="preferred"
-                  />
-                  <SkillGroup
-                    label="공고 언급"
-                    skills={groups.unspecified}
-                    tone="mentioned"
-                  />
-                </div>
-              ) : (
-                <p className={styles.emptyEvidence}>
-                  확정 임계값을 통과한 기술 요구사항이 없습니다.
-                </p>
-              )}
-            </section>
-
-            <section
-              aria-labelledby="job-description-title"
-              className={styles.description}
-            >
-              <header className={styles.sectionHeader}>
-                <p>API가 제공한 원문 텍스트</p>
-                <h2 id="job-description-title">공고 원문</h2>
-              </header>
-              <PostingDescription text={job.description_text} />
-              <a
-                className={styles.continueLink}
-                href={job.source_url}
-                rel="noreferrer"
-                target="_blank"
-              >
-                공식 원문에서 계속 읽기
-                <ArrowSquareOut aria-hidden="true" size={17} weight="bold" />
-              </a>
-            </section>
-          </div>
+              공식 원문에서 계속 읽기
+              <ArrowSquareOut aria-hidden="true" size={17} weight="bold" />
+            </a>
+          </section>
         </div>
       </article>
     </main>
