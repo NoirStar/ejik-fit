@@ -15,8 +15,18 @@ export function BrandMark({
       aria-hidden="true"
       className={`brand-lockup brand-lockup--${size} ${className}`.trim()}
     >
-      {showWordmark && <span className="brand-lockup__ink">이직</span>}
-      <span className="brand-lockup__accent">핏</span>
+      <img
+        alt=""
+        className="brand-lockup__asset"
+        draggable="false"
+        height={30}
+        src={
+          showWordmark
+            ? "/brand/ejik-fit-wordmark.svg"
+            : "/brand/ejik-fit-glyph.svg"
+        }
+        width={showWordmark ? 75 : 26}
+      />
     </span>
   );
 }

@@ -66,8 +66,9 @@ describe("AppShell", () => {
     const row = header?.firstElementChild;
     expect(row).not.toBeNull();
     expect(row?.querySelector('nav[aria-label="주요 탐색"]')).toBeInTheDocument();
-    expect(screen.getByText("이직")).toBeInTheDocument();
-    expect(screen.getByText("핏")).toBeInTheDocument();
+    expect(
+      row?.querySelector('img[src="/brand/ejik-fit-wordmark.svg"]'),
+    ).toBeInTheDocument();
     expect(screen.queryByText("EJIK FIT")).not.toBeInTheDocument();
   });
 

@@ -44,4 +44,10 @@ describe("home feed density", () => {
     expect(rule("tags a")).toContain("min-height: var(--touch-target);");
     expect(css).toMatch(/\.tags a::before\s*\{[^}]*inset: 0\.5rem 0;/);
   });
+
+  it("keeps feed actions at the shared touch target", () => {
+    expect(css).toMatch(
+      /\.cardActions button,\s*\.cardActions a,\s*\.jobActions button,\s*\.jobActions a\s*\{[^}]*min-height: var\(--touch-target\);/,
+    );
+  });
 });

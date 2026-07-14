@@ -17,7 +17,7 @@ describe("design system foundation", () => {
       "--color-surface: #ffffff",
       "--color-text: #17171c",
       "--color-muted: #62626d",
-      "--color-faint: #8b8b96",
+      "--color-faint: #71717b",
       "--color-line: #e7e7ec",
       "--color-accent: #6d4be8",
       "--header-height-desktop: 4rem",
@@ -58,7 +58,7 @@ describe("design system foundation", () => {
 
     expect(globals).not.toContain("color-scheme: light dark");
     expect(globals.match(/^:root\s*\{/gm)).toHaveLength(1);
-    expect(globals.match(/^body\s*\{/gm)).toHaveLength(1);
+    expect(globals.match(/^\s*body\s*\{/gm)).toHaveLength(1);
   });
 
   it("lets the home layout use the full application canvas", () => {
@@ -81,8 +81,9 @@ describe("design system foundation", () => {
   it("keeps the Korean wordmark visible without the retired symbol", () => {
     const globals = read("src/app/globals.css");
 
-    expect(globals).toContain(".brand-lockup__ink");
-    expect(globals).toContain(".brand-lockup__accent");
+    expect(globals).toContain(".brand-lockup__asset");
+    expect(globals).not.toContain(".brand-lockup__ink");
+    expect(globals).not.toContain(".brand-lockup__accent");
     expect(globals).not.toContain(".brand-lockup__mark");
     expect(globals).not.toContain(".brand-lockup__copy");
     expect(globals).not.toContain("@media (max-width: 340px)");

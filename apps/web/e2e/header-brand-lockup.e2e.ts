@@ -8,12 +8,14 @@ for (const width of viewports) {
     await page.goto("/privacy");
 
     const brand = page.getByRole("link", { name: "이직핏 홈" });
-    const ink = brand.locator(".brand-lockup__ink");
-    const accent = brand.locator(".brand-lockup__accent");
+    const asset = brand.locator(".brand-lockup__asset");
 
     await expect(brand).toBeVisible();
-    await expect(ink).toBeVisible();
-    await expect(accent).toBeVisible();
+    await expect(asset).toBeVisible();
+    await expect(asset).toHaveAttribute(
+      "src",
+      "/brand/ejik-fit-wordmark.svg",
+    );
     await expect(brand.locator(".brand-lockup__mark")).toHaveCount(0);
     await expect(page.getByText("EJIK FIT")).toHaveCount(0);
 
@@ -84,3 +86,53 @@ test("keeps utility menus below the single desktop header", async ({ page }) => 
     await expect(menu).toBeHidden();
   }
 });
+
+for (const width of [981, 980, 940, 840, 821] as const) {
+  test(`keeps header regions separate at the tablet boundary ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 900, width });
+    await page.goto("/privacy");
+
+    const desktopNavigation = page.getByRole("navigation", {
+      exact: true,
+      name: "주요 탐색",
+    });
+    const mobileNavigation = page.getByRole("navigation", {
+      exact: true,
+      name: "모바일 주요 탐색",
+    });
+
+    if (width <= 980) {
+      await expect(desktopNavigation).toBeHidden();
+      await expect(mobileNavigation).toBeVisible();
+    } else {
+      await expect(desktopNavigation).toBeVisible();
+      await expect(mobileNavigation).toBeHidden();
+
+      const searchBox = await page
+        .getByRole("searchbox", { name: "통합 검색" })
+        .locator("..")
+        .boundingBox();
+      const navigationBox = await desktopNavigation.boundingBox();
+      const firstUtilityBox = await page
+        .getByRole("link", { name: "글쓰기" })
+        .boundingBox();
+      expect(searchBox).not.toBeNull();
+      expect(navigationBox).not.toBeNull();
+      expect(firstUtilityBox).not.toBeNull();
+      expect(searchBox!.x + searchBox!.width).toBeLessThanOrEqual(
+        navigationBox!.x,
+      );
+      expect(navigationBox!.x + navigationBox!.width).toBeLessThanOrEqual(
+        firstUtilityBox!.x,
+      );
+    }
+
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+    ).toBe(false);
+  });
+}
