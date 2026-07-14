@@ -26,6 +26,7 @@ import type { SocialMetrics } from "./types";
 import styles from "./post-detail-actions.module.css";
 
 type PostDetailActionsProps = {
+  contentKind?: "mock" | "local";
   postId: string;
   postTitle: string;
   metrics: SocialMetrics;
@@ -60,11 +61,13 @@ function LocalComment({ comment }: { comment: LocalPostComment }) {
 }
 
 export function PostDetailActions({
+  contentKind = "mock",
   postId,
   postTitle,
   metrics,
   sampleComments,
 }: PostDetailActionsProps) {
+  const isLocalPost = contentKind === "local";
   const [interactions, setInteractions] = useState<SocialInteractions>(
     EMPTY_SOCIAL_INTERACTIONS,
   );
@@ -141,16 +144,21 @@ export function PostDetailActions({
         </button>
       </div>
       <p className={styles.metricNote}>
-        예시 반응 수에 이 브라우저에서 누른 반응만 더해 표시합니다.
+        {isLocalPost
+          ? "반응과 댓글은 이 브라우저에만 저장됩니다."
+          : "예시 반응 수에 이 브라우저에서 누른 반응만 더해 표시합니다."}
       </p>
 
       <section aria-labelledby="post-comments-title" className={styles.discussion}>
         <header className={styles.discussionHeader}>
           <div>
-            <h2 id="post-comments-title">대표 예시 댓글</h2>
+            <h2 id="post-comments-title">
+              {isLocalPost ? "댓글" : "대표 예시 댓글"}
+            </h2>
             <p>
-              표시된 예시 댓글은 화면 구성을 위해 만든 mock 데이터이며 실제
-              사용자가 작성한 댓글이 아닙니다.
+              {isLocalPost
+                ? "작성한 댓글도 서버로 전송되지 않고 이 브라우저에서만 유지됩니다."
+                : "표시된 예시 댓글은 화면 구성을 위해 만든 mock 데이터이며 실제 사용자가 작성한 댓글이 아닙니다."}
             </p>
           </div>
           <strong>{sampleComments.length + localComments.length}개 표시</strong>

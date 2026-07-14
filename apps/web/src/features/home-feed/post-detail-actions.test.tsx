@@ -170,4 +170,25 @@ describe("PostDetailActions", () => {
       screen.getByText(/실제 사용자가 작성한 댓글이 아닙니다/),
     ).toBeInTheDocument();
   });
+
+  it("labels browser-owned post discussion without mock metrics", () => {
+    render(
+      <PostDetailActions
+        contentKind="local"
+        metrics={{ reactions: 0, comments: 0, saves: 0 }}
+        postId="local-first-post"
+        postTitle="내가 작성한 글"
+        sampleComments={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "댓글" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("반응과 댓글은 이 브라우저에만 저장됩니다."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("대표 예시 댓글")).not.toBeInTheDocument();
+    expect(screen.queryByText(/mock 데이터/)).not.toBeInTheDocument();
+  });
 });

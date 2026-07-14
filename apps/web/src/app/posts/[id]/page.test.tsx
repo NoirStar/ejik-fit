@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createLocalCommunityPost } from "@/lib/local-community-posts";
+
 import PostPage, { generateMetadata } from "./page";
 
 vi.mock("next/navigation", () => ({
@@ -47,6 +49,17 @@ describe("PostPage", () => {
       "특정 기업의 실제 면접 기록이 아닙니다",
     );
     expect(metadata.robots).toMatchObject({ follow: true, index: false });
+  });
+
+  it("keeps browser-owned post metadata generic and out of search indexes", async () => {
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ id: "local-first-post" }),
+    });
+
+    expect(metadata.title).toBe("이 브라우저에 저장한 커뮤니티 글");
+    expect(metadata.description).toContain("현재 브라우저에만 저장");
+    expect(metadata.alternates?.canonical).toBe("/posts/local-first-post");
+    expect(metadata.robots).toMatchObject({ follow: false, index: false });
   });
 
   it("renders a transparent mock community reading experience", async () => {
@@ -112,6 +125,27 @@ describe("PostPage", () => {
       screen.getByRole("region", { name: "면접 후기 정보" }),
     ).toHaveTextContent("1차 기술 면접");
     expect(screen.getByText(/특정 기업의 실제 면접 기록이 아닙니다/)).toBeInTheDocument();
+  });
+
+  it("routes a local id to the browser-owned detail view", async () => {
+    createLocalCommunityPost(
+      { title: "로컬 상세 라우트", body: "현재 브라우저 본문", tags: [] },
+      {
+        id: "local-page-route",
+        createdAt: "2026-07-14T00:00:00.000Z",
+      },
+    );
+
+    render(
+      await PostPage({
+        params: Promise.resolve({ id: "local-page-route" }),
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "로컬 상세 라우트" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("로컬 글", { exact: true })).toBeInTheDocument();
   });
 
   it("routes an unknown post to not found", async () => {
