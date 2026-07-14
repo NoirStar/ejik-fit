@@ -396,7 +396,8 @@
 .identity .companyLink {
   display: inline-flex;
   width: fit-content;
-  min-height: 1.5rem;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
   align-items: center;
   color: var(--color-muted);
   text-decoration: none;
