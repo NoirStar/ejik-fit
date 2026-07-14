@@ -124,6 +124,12 @@ test("updates jobs, co-occurrence and rank order without a document reload", asy
       .getByRole("navigation", { name: "기술 분야" })
       .getByRole("link", { exact: true, name: "인프라" }),
   ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("region", { name: "시장 범위 필터" }),
+  ).not.toHaveAttribute("aria-busy", "true");
+  expect(
+    await page.evaluate(() => performance.getEntriesByType("navigation").length),
+  ).toBe(navigationEntries);
 });
 
 test("shows fit evidence only after real owned-skill analysis returns", async ({
@@ -146,6 +152,11 @@ test("carries selected market evidence into the jobs explorer", async ({
   page,
 }) => {
   await page.goto("/market?category=infra&career_type=experienced");
+  const demand = page.getByRole("region", { name: "기술 수요 순위" });
+  await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
+  await expect(
+    demand.getByRole("button", { name: "Python 기술 선택" }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "Docker 관련 공고 보기" }).click();
 
   await expect(page).toHaveURL(
@@ -155,4 +166,19 @@ test("carries selected market evidence into the jobs explorer", async ({
   await expect(page.getByLabel("기술 분야")).toHaveValue("infra");
   await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
   await expect(page.getByText("현재 결과 1건")).toBeVisible();
+});
+
+test("applies career filters to the fixture with production API semantics", async ({
+  page,
+}) => {
+  await page.goto("/market?career_type=new_comer");
+
+  const demand = page.getByRole("region", { name: "기술 수요 순위" });
+  await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
+  await expect(
+    demand.getByRole("button", { name: "Go 기술 선택" }),
+  ).toBeVisible();
+  await expect(
+    demand.getByRole("button", { name: "Python 기술 선택" }),
+  ).toHaveCount(0);
 });

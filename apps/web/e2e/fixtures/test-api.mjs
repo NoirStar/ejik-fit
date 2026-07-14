@@ -468,18 +468,55 @@ function postingsForRequest(requestUrl) {
 }
 
 function skillStatsForRequest(requestUrl) {
+  const careerType = requestUrl.searchParams.get("career_type");
   const category = requestUrl.searchParams.get("category");
   const limit = Number.parseInt(requestUrl.searchParams.get("limit") ?? "30", 10);
-  const matchingSkills = marketSkillStats.filter(
-    (skill) => !category || skill.category === category,
-  );
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 30;
+  let matchingSkills = marketSkillStats;
+
+  if (careerType || category) {
+    const grouped = new Map();
+    for (const posting of postingsForRequest(requestUrl).items) {
+      for (const detail of postingDetails[posting.id]?.skill_details ?? []) {
+        if ((detail.confidence ?? 0) < 0.8) continue;
+        const key = `${detail.category}:${detail.skill}`;
+        const entry = grouped.get(key) ?? {
+          skill: detail.skill,
+          category: detail.category,
+          postingIds: new Set(),
+          requiredPostingIds: new Set(),
+          preferredPostingIds: new Set(),
+          unspecifiedPostingIds: new Set(),
+        };
+        entry.postingIds.add(posting.id);
+        if (detail.requirement_type === "required") {
+          entry.requiredPostingIds.add(posting.id);
+        } else if (detail.requirement_type === "preferred") {
+          entry.preferredPostingIds.add(posting.id);
+        } else {
+          entry.unspecifiedPostingIds.add(posting.id);
+        }
+        grouped.set(key, entry);
+      }
+    }
+    matchingSkills = [...grouped.values()].map((entry) => ({
+      skill: entry.skill,
+      category: entry.category,
+      count: entry.postingIds.size,
+      required_count: entry.requiredPostingIds.size,
+      preferred_count: entry.preferredPostingIds.size,
+      unspecified_count: entry.unspecifiedPostingIds.size,
+    }));
+  }
+
   const items = matchingSkills
+    .slice()
     .sort(
       (left, right) =>
         right.count - left.count || left.skill.localeCompare(right.skill),
     )
-    .slice(0, Number.isFinite(limit) ? limit : 30);
-  return { total: matchingSkills.length, items };
+    .slice(0, safeLimit);
+  return { total: items.length, items };
 }
 
 const server = createServer((request, response) => {

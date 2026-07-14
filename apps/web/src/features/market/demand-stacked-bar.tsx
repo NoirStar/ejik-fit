@@ -5,7 +5,13 @@ function segmentWidth(count: number, total: number) {
   return total > 0 ? `${(count / total) * 100}%` : "0%";
 }
 
-export function DemandStackedBar({ skill }: { skill: MarketSkill }) {
+export function DemandStackedBar({
+  descriptionId,
+  skill,
+}: {
+  descriptionId: string;
+  skill: MarketSkill;
+}) {
   const total =
     skill.requiredCount + skill.preferredCount + skill.unspecifiedCount;
   const segments = [
@@ -16,8 +22,10 @@ export function DemandStackedBar({ skill }: { skill: MarketSkill }) {
 
   return (
     <div className={styles.requirementComposition}>
-      <span className={styles.srOnly}>
-        {segments.map((segment) => `${segment.label} ${segment.count}건`).join(", ")}
+      <span className={styles.srOnly} id={descriptionId}>
+        {skill.categoryLabel ?? skill.category}, 공고 {skill.postingCount}건,{" "}
+        {segments.map((segment) => `${segment.label} ${segment.count}건`).join(", ")},
+        1위 대비 상대 수요 {Math.round(skill.relativeDemand)}%
       </span>
       <span aria-hidden="true" className={styles.stackedBar}>
         {segments.map((segment) => (

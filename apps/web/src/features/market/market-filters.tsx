@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition, type MouseEvent } from "react";
 
 import {
   MARKET_CAREER_FILTERS,
@@ -28,8 +32,53 @@ export function MarketFilters({
   onSortChange: (sort: MarketSort) => void;
   sort: MarketSort;
 }) {
+  const router = useRouter();
+  const [isTransitionPending, startTransition] = useTransition();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const currentHref = buildMarketFilterHref(careerType, category);
+  const isPending = isTransitionPending || pendingHref !== null;
+
+  useEffect(() => {
+    if (pendingHref === currentHref) {
+      setPendingHref(null);
+    }
+  }, [currentHref, pendingHref]);
+
+  function navigateFilter(
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    const opensElsewhere =
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.currentTarget.target === "_blank";
+
+    if (event.defaultPrevented || opensElsewhere || href === currentHref) {
+      return;
+    }
+
+    event.preventDefault();
+    setPendingHref(href);
+    startTransition(() => {
+      router.replace(href, { scroll: false });
+    });
+  }
+
   return (
-    <section aria-label="시장 범위 필터" className={styles.filterPanel}>
+    <section
+      aria-busy={isPending || undefined}
+      aria-label="시장 범위 필터"
+      className={styles.filterPanel}
+      data-pending={isPending}
+    >
+      {isPending ? (
+        <span className={styles.srOnly} role="status">
+          필터 결과를 업데이트하는 중입니다.
+        </span>
+      ) : null}
       <div className={styles.filterRow}>
         <strong>기술 분야</strong>
         <nav aria-label="기술 분야" className={styles.filters}>
@@ -39,6 +88,12 @@ export function MarketFilters({
               className={styles.filter}
               href={buildMarketFilterHref(careerType, filter.value)}
               key={filter.value || "all"}
+              onClick={(event) =>
+                navigateFilter(
+                  event,
+                  buildMarketFilterHref(careerType, filter.value),
+                )
+              }
               scroll={false}
             >
               {filter.value ? filter.label : "전체"}
@@ -55,6 +110,12 @@ export function MarketFilters({
               className={styles.filter}
               href={buildMarketFilterHref(filter.value, category)}
               key={filter.value || "all"}
+              onClick={(event) =>
+                navigateFilter(
+                  event,
+                  buildMarketFilterHref(filter.value, category),
+                )
+              }
               scroll={false}
             >
               {filter.label}

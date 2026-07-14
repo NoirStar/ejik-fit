@@ -61,6 +61,12 @@ describe("market overview styles", () => {
   it("keeps compact filters keyboard and touch accessible", () => {
     expect(rule(".filter")).toContain("min-width: var(--touch-target);");
     expect(rule(".filter")).toContain("min-height: var(--touch-target);");
+    expect(css).toMatch(
+      /\.sideHeader > a\s*\{[^}]*min-width: var\(--touch-target\);/,
+    );
+    expect(css).toMatch(
+      /\.sideHeader > a\s*\{[^}]*min-height: var\(--touch-target\);/,
+    );
     expect(css).toContain(".filter:focus-visible");
   });
 

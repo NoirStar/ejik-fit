@@ -64,45 +64,50 @@ export function TechnologyDemandTable({
         <span />
       </div>
       <ol className={styles.skillList} ref={listRef}>
-        {visibleSkills.map((skill, index) => (
-          <li
-            className={styles.skillRow}
-            data-selected={selectedSkill === skill.name}
-            data-skill-row={skill.id}
-            key={skill.id}
-          >
-            <button
-              aria-label={`${skill.name} 기술 선택`}
-              aria-pressed={selectedSkill === skill.name}
-              className={styles.skillSelect}
-              onClick={() => onSelect(skill.name)}
-              type="button"
+        {visibleSkills.map((skill, index) => {
+          const descriptionId = `skill-demand-${skill.id.replace(/[^a-z0-9_-]/gi, "-")}`;
+
+          return (
+            <li
+              className={styles.skillRow}
+              data-selected={selectedSkill === skill.name}
+              data-skill-row={skill.id}
+              key={skill.id}
             >
-              <span className={styles.skillIdentity}>
-                <span className={styles.rank}>{index + 1}</span>
-                <TechnologyIcon category={skill.category} name={skill.name} />
-                <span className={styles.skillNameGroup}>
-                  <strong>{skill.name}</strong>
-                  <small>{skill.categoryLabel ?? skill.category}</small>
+              <button
+                aria-describedby={descriptionId}
+                aria-label={`${skill.name} 기술 선택`}
+                aria-pressed={selectedSkill === skill.name}
+                className={styles.skillSelect}
+                onClick={() => onSelect(skill.name)}
+                type="button"
+              >
+                <span className={styles.skillIdentity}>
+                  <span className={styles.rank}>{index + 1}</span>
+                  <TechnologyIcon category={skill.category} name={skill.name} />
+                  <span className={styles.skillNameGroup}>
+                    <strong>{skill.name}</strong>
+                    <small>{skill.categoryLabel ?? skill.category}</small>
+                  </span>
                 </span>
-              </span>
-              <strong className={styles.postingCount}>
-                {skill.postingCount.toLocaleString("ko-KR")}건
-              </strong>
-              <DemandStackedBar skill={skill} />
-              <span className={styles.relativeDemand} aria-hidden="true">
-                <span style={{ width: `${skill.relativeDemand}%` }} />
-              </span>
-            </button>
-            <Link
-              aria-label={`${skill.name} 관련 공고 보기`}
-              className={styles.rowAction}
-              href={skill.jobsHref}
-            >
-              <ArrowRight aria-hidden="true" size={16} />
-            </Link>
-          </li>
-        ))}
+                <strong className={styles.postingCount}>
+                  {skill.postingCount.toLocaleString("ko-KR")}건
+                </strong>
+                <DemandStackedBar descriptionId={descriptionId} skill={skill} />
+                <span className={styles.relativeDemand} aria-hidden="true">
+                  <span style={{ width: `${skill.relativeDemand}%` }} />
+                </span>
+              </button>
+              <Link
+                aria-label={`${skill.name} 관련 공고 보기`}
+                className={styles.rowAction}
+                href={skill.jobsHref}
+              >
+                <ArrowRight aria-hidden="true" size={16} />
+              </Link>
+            </li>
+          );
+        })}
       </ol>
       {skills.length > DEFAULT_VISIBLE_ROWS ? (
         <Link className={styles.showMore} href="/skill-map">

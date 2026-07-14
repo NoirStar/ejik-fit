@@ -197,6 +197,10 @@
   color: var(--color-text);
 }
 
+.filterPanel[data-pending="true"] .filter {
+  cursor: progress;
+}
+
 .filter:active,
 .rowAction:active,
 .showMore:active,
@@ -600,9 +604,11 @@
 
 .sideHeader > a {
   display: inline-flex;
+  min-width: var(--touch-target);
   min-height: var(--touch-target);
   flex: 0 0 auto;
   align-items: center;
+  justify-content: center;
   color: var(--color-accent-strong);
   font-weight: 700;
   text-decoration: none;

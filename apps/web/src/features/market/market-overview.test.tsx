@@ -1,10 +1,16 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 import { MarketOverview } from "./market-overview";
 import { buildMarketOverviewSnapshot } from "./model";
+
+const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: replaceMock }),
+}));
 
 const postings: PostingListResponse = {
   total: 100,
@@ -119,7 +125,10 @@ function renderReadyMarket() {
 }
 
 describe("MarketOverview", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    replaceMock.mockReset();
+  });
 
   it("states the official-posting scope and capped totals honestly", () => {
     renderReadyMarket();
@@ -151,6 +160,11 @@ describe("MarketOverview", () => {
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAttribute("aria-pressed", "true");
+    expect(
+      within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
+    ).toHaveAccessibleDescription(
+      "인프라, 공고 12건, 필수 5건, 우대 4건, 미분류 3건, 1위 대비 상대 수요 100%",
+    );
     expect(
       within(demand).getByRole("button", { name: "Docker 기술 선택" }),
     ).toHaveAttribute("aria-pressed", "false");
@@ -186,6 +200,31 @@ describe("MarketOverview", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /컨테이너 인프라 개발자/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /플랫폼 엔지니어/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps current evidence visible while a filter route is pending", () => {
+    renderReadyMarket();
+
+    fireEvent.click(
+      within(screen.getByRole("navigation", { name: "기술 분야" })).getByRole(
+        "link",
+        { name: "인프라" },
+      ),
+    );
+
+    expect(replaceMock).toHaveBeenCalledWith(
+      "/market?category=infra&career_type=experienced",
+      { scroll: false },
+    );
+    expect(
+      screen.getByRole("region", { name: "시장 범위 필터" }),
+    ).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "필터 결과를 업데이트하는 중입니다.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Kubernetes 기술 선택" }),
+    ).toBeInTheDocument();
   });
 
   it("shows a collecting state instead of fabricated trend lines", () => {
@@ -237,6 +276,13 @@ describe("MarketOverview", () => {
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
       "공고 데이터를 불러오지 못했습니다.",
+    );
+    const combinations = screen.getByRole("region", { name: "함께 등장한 기술" });
+    expect(combinations).toHaveTextContent(
+      "공고 데이터를 불러오지 못해 함께 등장한 기술을 확인할 수 없습니다.",
+    );
+    expect(combinations).not.toHaveTextContent(
+      "반복해서 함께 등장한 기술 조합이 없습니다.",
     );
   });
 

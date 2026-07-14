@@ -174,7 +174,10 @@ export function MarketOverview({
               />
             )}
 
-            <SkillCombinationRecommendations combinations={combinations} />
+            <SkillCombinationRecommendations
+              combinations={combinations}
+              unavailable={Boolean(snapshot.postingError)}
+            />
             <MarketFitInsight fit={fit} />
           </div>
 

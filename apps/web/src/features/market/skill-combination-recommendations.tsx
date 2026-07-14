@@ -13,8 +13,10 @@ function combinationHref(skills: [string, string]) {
 
 export function SkillCombinationRecommendations({
   combinations,
+  unavailable = false,
 }: {
   combinations: readonly MarketSkillCombination[];
+  unavailable?: boolean;
 }) {
   return (
     <section
@@ -25,11 +27,19 @@ export function SkillCombinationRecommendations({
       <header className={styles.combinationHeader}>
         <div>
           <h2 id="skill-combinations-title">함께 등장한 기술</h2>
-          <p>현재 불러온 공고에서 같은 공고에 함께 나온 횟수입니다.</p>
+          <p>
+            {unavailable
+              ? "공고 데이터 연결 상태를 확인하고 있습니다."
+              : "현재 불러온 공고에서 같은 공고에 함께 나온 횟수입니다."}
+          </p>
         </div>
         <Link href="/skill-map">스킬맵에서 탐색</Link>
       </header>
-      {combinations.length === 0 ? (
+      {unavailable ? (
+        <p className={styles.combinationEmpty}>
+          공고 데이터를 불러오지 못해 함께 등장한 기술을 확인할 수 없습니다.
+        </p>
+      ) : combinations.length === 0 ? (
         <p className={styles.combinationEmpty}>
           현재 조건에서는 반복해서 함께 등장한 기술 조합이 없습니다.
         </p>
