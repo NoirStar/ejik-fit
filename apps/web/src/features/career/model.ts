@@ -1,7 +1,8 @@
+import type { CareerCondition } from "@/lib/career-preferences";
 import { normalizeOwnedSkills } from "@/lib/owned-skills";
 import type { FitAnalyzeRequest, FitAnalyzeResponse } from "@/lib/types";
 
-export type CareerCondition = "" | "new_comer" | "experienced" | "mixed";
+export type { CareerCondition } from "@/lib/career-preferences";
 
 export const CAREER_CONDITIONS = [
   { value: "", label: "전체" },
