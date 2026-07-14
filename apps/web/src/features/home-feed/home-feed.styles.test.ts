@@ -23,20 +23,20 @@ describe("home feed density", () => {
   });
 
   it("groups rails and feed items into quiet divided surfaces", () => {
-    expect(css).toMatch(/\.leftRail,\s*\.rightRail\s*\{[^}]*overflow: hidden;/s);
+    expect(css).toMatch(/\.leftRail,\s*\.rightRail\s*\{[^}]*overflow: hidden;/);
     expect(rule("feedList")).toContain("gap: 0;");
     expect(rule("feedList")).toContain("overflow: hidden;");
     expect(css).toMatch(
-      /\.socialCard,\s*\.jobCard,\s*\.marketCard\s*\{[^}]*border: 0;[^}]*border-bottom:/s,
+      /\.socialCard,\s*\.jobCard,\s*\.marketCard\s*\{[^}]*border: 0;[^}]*border-bottom:/,
     );
   });
 
   it("keeps editorial item type and tabs restrained", () => {
     expect(css).toMatch(
-      /\.cardCopy h2,\s*\.jobIdentity h2,\s*\.marketBody h2\s*\{[^}]*font-size: var\(--type-item-title\);/s,
+      /\.cardCopy h2,\s*\.jobIdentity h2,\s*\.marketBody h2\s*\{[^}]*font-size: var\(--type-item-title\);/,
     );
     expect(css).toMatch(
-      /\.tabs button\[data-active="true"\]\s*\{[^}]*background: transparent;[^}]*color: var\(--color-accent-strong\);/s,
+      /\.tabs button\[data-active="true"\]\s*\{[^}]*background: transparent;[^}]*color: var\(--color-accent-strong\);/,
     );
   });
 });
