@@ -39,9 +39,9 @@ export default function PrivacyPage() {
       <section>
         <h2>커뮤니티 상호작용</h2>
         <p>
-          예시 글의 공감·저장과 사용자가 직접 작성한 로컬 댓글은{" "}
-          <code>ejik-fit:social-interactions</code> 키에 저장됩니다. 현재 계정이나
-          서버로 전송하지 않습니다.
+          예시 글의 공감·저장, 작성자 팔로우와 사용자가 직접 작성한 로컬 댓글은
+          {" "}<code>ejik-fit:social-interactions</code> 키에 저장됩니다. 팔로우한
+          작성자도 화면 검증용 mock이며, 현재 계정이나 서버로 전송하지 않습니다.
         </p>
       </section>
 

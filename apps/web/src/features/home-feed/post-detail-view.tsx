@@ -12,6 +12,7 @@ import Link from "next/link";
 import styles from "@/app/posts/[id]/post-detail.module.css";
 
 import type { MockPostDetail } from "./mock-post-details";
+import { AuthorFollowButton } from "./author-follow-button";
 import { PostDetailActions } from "./post-detail-actions";
 import type {
   CommunityPostFeedItem,
@@ -92,7 +93,13 @@ export function PostDetailView({
                 <strong>{post.authorName}</strong>
                 <span>{post.authorHeadline}</span>
               </div>
-              <time dateTime={post.createdAt}>{post.createdLabel}</time>
+              <div className={styles.authorMeta}>
+                <time dateTime={post.createdAt}>{post.createdLabel}</time>
+                <AuthorFollowButton
+                  authorId={post.authorId}
+                  authorName={post.authorName}
+                />
+              </div>
             </div>
           </header>
 

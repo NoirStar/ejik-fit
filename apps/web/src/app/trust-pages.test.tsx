@@ -36,7 +36,7 @@ describe("public trust pages", () => {
     );
     localStorage.setItem(
       "ejik-fit:social-interactions",
-      '{"savedPostIds":["post-1"]}',
+      '{"savedPostIds":["post-1"],"followedAuthorIds":["server-garden"]}',
     );
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
@@ -48,6 +48,7 @@ describe("public trust pages", () => {
       screen.getByText(/ejik-fit:job-application-stages/),
     ).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:social-interactions/)).toBeInTheDocument();
+    expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "이 브라우저의 저장 데이터 삭제" }));

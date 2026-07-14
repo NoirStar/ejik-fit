@@ -128,9 +128,38 @@ describe("HomeFeed", () => {
     );
   });
 
-  it("keeps only followed community content on the following tab", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
+  it("builds the following tab from browser-owned author choices", async () => {
+    const firstRender = render(<HomeFeed snapshot={buildSnapshot()} />);
 
+    fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
+
+    expect(
+      screen.getByText("팔로우한 작성자가 없습니다."),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "추천 탭에서 작성자 찾기" }),
+    );
+
+    const communityPost = screen.getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
+    const follow = within(communityPost).getByRole("button", {
+      name: "서버정원 팔로우",
+    });
+    await waitFor(() => expect(follow).toBeEnabled());
+    fireEvent.click(follow);
+    expect(follow).toHaveAttribute("aria-pressed", "true");
+    expect(localStorage.getItem("ejik-fit:social-interactions")).toContain(
+      "server-garden",
+    );
+
+    firstRender.unmount();
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "서버정원 팔로우 해제" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
     fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
 
     expect(screen.queryByRole("article", { name: /Backend Engineer/ })).not.toBeInTheDocument();
@@ -142,6 +171,16 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
     ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "서버정원 팔로우 해제" }),
+    );
+    expect(
+      screen.getByText("팔로우한 작성자가 없습니다."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "서버정원 팔로우를 해제했습니다.",
+    );
   });
 
   it("toggles local reactions and saves without changing server facts", () => {

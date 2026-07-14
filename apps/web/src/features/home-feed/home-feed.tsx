@@ -13,6 +13,8 @@ import {
   NotePencil,
   ShieldCheck,
   Stack,
+  UserCheck,
+  UserPlus,
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
@@ -26,6 +28,7 @@ import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
   subscribeSocialInteractions,
+  toggleAuthorFollow,
   togglePostReaction,
   togglePostSave,
   type SocialInteractions,
@@ -123,14 +126,20 @@ function formatVerificationDate(value: string | null) {
 
 function SocialCard({
   item,
+  followDisabled,
+  followed,
   localCommentCount,
+  onFollow,
   onReact,
   onSave,
   reacted,
   saved,
 }: {
   item: SocialItem;
+  followDisabled: boolean;
+  followed: boolean;
   localCommentCount: number;
+  onFollow(): void;
   onReact(): void;
   onSave(): void;
   reacted: boolean;
@@ -149,9 +158,29 @@ function SocialCard({
           <strong>{item.authorName}</strong>
           <span>{item.authorHeadline}</span>
         </div>
-        <div className={styles.postContext}>
-          <strong>{item.category}</strong>
-          <span>{item.createdLabel}</span>
+        <div className={styles.authorActions}>
+          <div className={styles.postContext}>
+            <strong>{item.category}</strong>
+            <span>{item.createdLabel}</span>
+          </div>
+          {item.source !== "local" && (
+            <button
+              aria-label={`${item.authorName} ${followed ? "팔로우 해제" : "팔로우"}`}
+              aria-pressed={followed}
+              className={styles.followButton}
+              data-active={followed ? "true" : undefined}
+              disabled={followDisabled}
+              onClick={onFollow}
+              type="button"
+            >
+              {followed ? (
+                <UserCheck aria-hidden="true" size={15} weight="fill" />
+              ) : (
+                <UserPlus aria-hidden="true" size={15} weight="bold" />
+              )}
+              {followed ? "팔로잉" : "팔로우"}
+            </button>
+          )}
         </div>
       </header>
 
@@ -368,7 +397,10 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
 
 function FeedCard({
   item,
+  followDisabled,
+  followed,
   localCommentCount,
+  onFollow,
   onReact,
   onSave,
   ownedSkills,
@@ -376,7 +408,10 @@ function FeedCard({
   saved,
 }: {
   item: FeedItem;
+  followDisabled: boolean;
+  followed: boolean;
   localCommentCount: number;
+  onFollow(): void;
   onReact(): void;
   onSave(): void;
   ownedSkills: string[];
@@ -387,7 +422,10 @@ function FeedCard({
     return (
       <SocialCard
         item={item}
+        followDisabled={followDisabled}
+        followed={followed}
         localCommentCount={localCommentCount}
+        onFollow={onFollow}
         onReact={onReact}
         onSave={onSave}
         reacted={reacted}
@@ -412,6 +450,7 @@ export function HomeFeed({
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const [socialInteractions, setSocialInteractions] =
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
+  const [socialHydrated, setSocialHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<CommunityPostFeedItem[]>([]);
   const [composerOpen, setComposerOpen] = useState(composeInitiallyOpen);
@@ -429,6 +468,7 @@ export function HomeFeed({
 
   useEffect(() => {
     setSocialInteractions(readSocialInteractions());
+    setSocialHydrated(true);
     return subscribeSocialInteractions(setSocialInteractions);
   }, []);
 
@@ -455,9 +495,35 @@ export function HomeFeed({
   }, [closeComposer, composerOpen]);
 
   const visibleItems = useMemo(
-    () => itemsForTab([...localPosts, ...snapshot.feedItems], activeTab),
-    [activeTab, localPosts, snapshot.feedItems],
+    () =>
+      itemsForTab(
+        [...localPosts, ...snapshot.feedItems],
+        activeTab,
+        socialInteractions.followedAuthorIds,
+      ),
+    [
+      activeTab,
+      localPosts,
+      snapshot.feedItems,
+      socialInteractions.followedAuthorIds,
+    ],
   );
+
+  function handleAuthorFollow(item: SocialItem) {
+    const wasFollowed = socialInteractions.followedAuthorIds.includes(
+      item.authorId,
+    );
+    const next = toggleAuthorFollow(item.authorId);
+    const isFollowed = next.followedAuthorIds.includes(item.authorId);
+    setSocialInteractions(next);
+    if (isFollowed === wasFollowed) {
+      setAnnouncement(`${item.authorName} 팔로우 상태를 저장하지 못했습니다.`);
+      return;
+    }
+    setAnnouncement(
+      `${item.authorName} ${isFollowed ? "팔로우를 시작했습니다." : "팔로우를 해제했습니다."}`,
+    );
+  }
 
   function openComposer() {
     setDraftErrors({});
@@ -667,6 +733,13 @@ export function HomeFeed({
                 const recommendedJob = item.type === "recommended_job";
                 return (
                   <FeedCard
+                    followDisabled={!socialHydrated}
+                    followed={
+                      isSocialItem(item) &&
+                      socialInteractions.followedAuthorIds.includes(
+                        item.authorId,
+                      )
+                    }
                     item={item}
                     key={item.id}
                     localCommentCount={
@@ -675,6 +748,9 @@ export function HomeFeed({
                     onReact={() =>
                       setSocialInteractions(togglePostReaction(item.id))
                     }
+                    onFollow={() => {
+                      if (isSocialItem(item)) handleAuthorFollow(item);
+                    }}
                     onSave={() => {
                       if (recommendedJob) {
                         setSavedJobIds(toggleSavedJob(item.postingId));
@@ -694,8 +770,24 @@ export function HomeFeed({
               })
             ) : (
               <div className={styles.emptyFeed}>
-                <strong>이 탭에 표시할 글이 없습니다.</strong>
-                <p>다른 탭을 선택하거나 첫 글을 작성해 보세요.</p>
+                <strong>
+                  {activeTab === "following"
+                    ? "팔로우한 작성자가 없습니다."
+                    : "이 탭에 표시할 글이 없습니다."}
+                </strong>
+                <p>
+                  {activeTab === "following"
+                    ? "추천 글에서 관심 있는 예시 작성자를 직접 팔로우해 보세요."
+                    : "다른 탭을 선택하거나 첫 글을 작성해 보세요."}
+                </p>
+                {activeTab === "following" && (
+                  <button
+                    onClick={() => setActiveTab("recommended")}
+                    type="button"
+                  >
+                    추천 탭에서 작성자 찾기
+                  </button>
+                )}
               </div>
             )}
           </div>

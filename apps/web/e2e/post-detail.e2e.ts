@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const postTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 820, 390]) {
   test(`keeps community detail and home interactions synchronized at ${width}px`, async ({
     page,
   }) => {
@@ -41,12 +41,14 @@ for (const width of [1440, 390]) {
     const reaction = page.getByRole("button", { name: `${postTitle} 공감` });
     const comments = page.getByRole("link", { name: "댓글 47" });
     const save = page.getByRole("button", { name: `${postTitle} 저장` });
-    for (const target of [reaction, comments, save]) {
+    const follow = page.getByRole("button", { name: "서버정원 팔로우" });
+    for (const target of [reaction, comments, save, follow]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
 
+    await follow.click();
     await reaction.click();
     await save.click();
     await page.getByRole("textbox", { name: "댓글 내용" }).fill("브라우저 회귀 댓글");
@@ -61,6 +63,9 @@ for (const width of [1440, 390]) {
     await expect(page.getByText("댓글 48", { exact: true })).toBeVisible();
 
     await page.reload();
+    await expect(
+      page.getByRole("button", { name: "서버정원 팔로우 해제" }),
+    ).toHaveAttribute("aria-pressed", "true");
     await expect(
       page.getByRole("button", { name: `${postTitle} 공감 취소` }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -80,6 +85,16 @@ for (const width of [1440, 390]) {
     await expect(
       homeCard.getByRole("link", { name: `${postTitle} 댓글 48개` }),
     ).toBeVisible();
+    await expect(
+      homeCard.getByRole("button", { name: "서버정원 팔로우 해제" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("tab", { name: "팔로잉" }).click();
+    await expect(homeCard).toBeVisible();
+    await expect(
+      page.getByRole("article", {
+        name: "Kubernetes을 요구하는 공식 공고를 확인했어요",
+      }),
+    ).not.toBeVisible();
 
     if (width === 390) {
       await homeCard

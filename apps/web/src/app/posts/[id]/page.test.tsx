@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import PostPage, { generateMetadata } from "./page";
@@ -10,7 +10,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("PostPage", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+  });
 
   it("builds post-specific metadata and a canonical URL", async () => {
     const metadata = await generateMetadata({
@@ -73,6 +76,23 @@ describe("PostPage", () => {
       screen.getByRole("navigation", { name: "관련 글" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /읽기/ })).toHaveLength(2);
+  });
+
+  it("persists the mock author's browser-local follow choice", async () => {
+    render(
+      await PostPage({
+        params: Promise.resolve({ id: "career-move-3y-backend" }),
+      }),
+    );
+
+    const follow = screen.getByRole("button", { name: "서버정원 팔로우" });
+    await waitFor(() => expect(follow).toBeEnabled());
+    fireEvent.click(follow);
+
+    expect(follow).toHaveAttribute("aria-pressed", "true");
+    expect(
+      JSON.parse(localStorage.getItem("ejik-fit:social-interactions")!),
+    ).toMatchObject({ followedAuthorIds: ["server-garden"] });
   });
 
   it("shows interview context only for a mock interview review", async () => {

@@ -136,6 +136,12 @@
   white-space: nowrap;
 }
 
+.authorMeta {
+  display: grid;
+  justify-items: end;
+  gap: 0.375rem;
+}
+
 .interviewContext {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -370,7 +376,14 @@
   }
 
   .author time {
+    grid-column: auto;
+  }
+
+  .authorMeta {
     grid-column: 2;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: start;
   }
 
   .interviewContext {
