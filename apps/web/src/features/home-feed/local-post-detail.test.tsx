@@ -133,4 +133,36 @@ describe("LocalPostDetail", () => {
       expect(localStorage.getItem("ejik-fit:local-community-posts")).toContain(postId),
     );
   });
+
+  it("keeps the post when its local interactions cannot be cleared", async () => {
+    createPost();
+    togglePostReaction(postId);
+    const originalSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+      this: Storage,
+      key,
+      value,
+    ) {
+      if (key === "ejik-fit:social-interactions") {
+        throw new DOMException("blocked", "SecurityError");
+      }
+      return originalSetItem.call(this, key, value);
+    });
+    render(<LocalPostDetail postId={postId} />);
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "브라우저에 저장한 이직 질문",
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "브라우저에 저장한 이직 질문 삭제" }),
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다.",
+    );
+    expect(localStorage.getItem("ejik-fit:local-community-posts")).toContain(
+      postId,
+    );
+  });
 });

@@ -4,11 +4,17 @@ import {
   MAX_LOCAL_COMMUNITY_POSTS,
   clearLocalCommunityPosts,
   createLocalCommunityPost,
+  deleteLocalCommunityPost,
   normalizeLocalCommunityPosts,
   readLocalCommunityPosts,
   removeLocalCommunityPost,
   subscribeLocalCommunityPosts,
 } from "./local-community-posts";
+import {
+  addLocalPostComment,
+  readSocialInteractions,
+  togglePostReaction,
+} from "./social-interactions";
 
 function storage() {
   const values = new Map<string, string>();
@@ -179,6 +185,59 @@ describe("local community post storage", () => {
       ],
       removed: false,
     });
+  });
+
+  it("deletes a post only after its local interactions are cleared", () => {
+    const fake = storage();
+    createLocalCommunityPost(
+      { title: "함께 삭제", body: "본문", tags: [] },
+      {
+        id: "local-delete-all",
+        createdAt: "2026-07-14T00:00:00.000Z",
+        storage: fake,
+      },
+    );
+    togglePostReaction("local-delete-all", fake);
+    addLocalPostComment("local-delete-all", "댓글", {
+      id: "local-comment",
+      createdAt: "2026-07-14T01:00:00.000Z",
+      storage: fake,
+    });
+
+    expect(deleteLocalCommunityPost("local-delete-all", fake)).toEqual({
+      posts: [],
+      status: "removed",
+    });
+    expect(readSocialInteractions(fake).reactedPostIds).toEqual([]);
+    expect(readSocialInteractions(fake).commentsByPostId).toEqual({});
+  });
+
+  it("keeps the post when its local interactions cannot be cleared", () => {
+    const fake = storage();
+    createLocalCommunityPost(
+      { title: "삭제 중단", body: "본문", tags: [] },
+      {
+        id: "local-delete-blocked",
+        createdAt: "2026-07-14T00:00:00.000Z",
+        storage: fake,
+      },
+    );
+    togglePostReaction("local-delete-blocked", fake);
+    const blocked = {
+      ...fake,
+      setItem: (key: string, value: string) => {
+        if (key === "ejik-fit:social-interactions") {
+          throw new DOMException("blocked", "SecurityError");
+        }
+        fake.setItem(key, value);
+      },
+    } satisfies Storage;
+
+    expect(deleteLocalCommunityPost("local-delete-blocked", blocked)).toEqual({
+      posts: readLocalCommunityPosts(fake),
+      status: "interactions_failed",
+    });
+    expect(readLocalCommunityPosts(fake)[0]?.id).toBe("local-delete-blocked");
   });
 
   it("notifies same-tab and matching cross-tab subscribers", () => {

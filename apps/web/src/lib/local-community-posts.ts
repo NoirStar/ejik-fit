@@ -1,3 +1,8 @@
+import {
+  readSocialInteractions,
+  removePostSocialInteractions,
+} from "./social-interactions";
+
 const KEY = "ejik-fit:local-community-posts";
 const CHANGE_EVENT = "ejik-fit:local-community-posts-change";
 
@@ -192,6 +197,41 @@ export function removeLocalCommunityPost(
     storage,
   );
   return { posts, removed: !posts.some((post) => post.id === postId) };
+}
+
+function hasPostInteractions(postId: string, storage: Storage | null) {
+  const interactions = readSocialInteractions(storage);
+  return (
+    interactions.reactedPostIds.includes(postId) ||
+    interactions.savedPostIds.includes(postId) ||
+    Boolean(interactions.commentsByPostId[postId]?.length)
+  );
+}
+
+export function deleteLocalCommunityPost(
+  postId: string,
+  storage = defaultStorage(),
+): {
+  posts: LocalCommunityPost[];
+  status: "removed" | "not_found" | "interactions_failed" | "post_failed";
+} {
+  const posts = readLocalCommunityPosts(storage);
+  if (!posts.some((post) => post.id === postId)) {
+    return { posts, status: "not_found" };
+  }
+
+  if (hasPostInteractions(postId, storage)) {
+    removePostSocialInteractions(postId, storage);
+    if (hasPostInteractions(postId, storage)) {
+      return { posts, status: "interactions_failed" };
+    }
+  }
+
+  const result = removeLocalCommunityPost(postId, storage);
+  return {
+    posts: result.posts,
+    status: result.removed ? "removed" : "post_failed",
+  };
 }
 
 export function clearLocalCommunityPosts(

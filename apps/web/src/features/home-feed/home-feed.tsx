@@ -27,15 +27,14 @@ import { CompanyMark } from "./company-mark";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
   createLocalCommunityPost,
+  deleteLocalCommunityPost,
   readLocalCommunityPosts,
-  removeLocalCommunityPost,
   subscribeLocalCommunityPosts,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
-  removePostSocialInteractions,
   subscribeSocialInteractions,
   toggleAuthorFollow,
   togglePostReaction,
@@ -567,13 +566,16 @@ export function HomeFeed({
   }
 
   function deleteLocalPost(post: CommunityPostFeedItem) {
-    const result = removeLocalCommunityPost(post.id);
+    const result = deleteLocalCommunityPost(post.id);
     setLocalPosts(result.posts);
-    if (!result.removed) {
-      setAnnouncement("작성한 글을 삭제하지 못했습니다.");
+    if (result.status !== "removed") {
+      setAnnouncement(
+        result.status === "interactions_failed"
+          ? "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다."
+          : "작성한 글을 삭제하지 못했습니다.",
+      );
       return;
     }
-    setSocialInteractions(removePostSocialInteractions(post.id));
     setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
   }
 

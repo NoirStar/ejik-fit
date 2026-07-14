@@ -6,12 +6,11 @@ import { useEffect, useState } from "react";
 
 import styles from "@/app/posts/[id]/post-detail.module.css";
 import {
+  deleteLocalCommunityPost,
   readLocalCommunityPosts,
-  removeLocalCommunityPost,
   subscribeLocalCommunityPosts,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
-import { removePostSocialInteractions } from "@/lib/social-interactions";
 
 import { localCommunityPostToFeedItem } from "./model";
 import { PostDetailActions } from "./post-detail-actions";
@@ -78,12 +77,15 @@ export function LocalPostDetail({ postId }: { postId: string }) {
 
   function deletePost() {
     setError("");
-    const result = removeLocalCommunityPost(postId);
-    if (!result.removed) {
-      setError("글을 브라우저에서 삭제하지 못했습니다.");
+    const result = deleteLocalCommunityPost(postId);
+    if (result.status !== "removed") {
+      setError(
+        result.status === "interactions_failed"
+          ? "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다."
+          : "글을 브라우저에서 삭제하지 못했습니다.",
+      );
       return;
     }
-    removePostSocialInteractions(postId);
     setState({ status: "removed" });
   }
 
