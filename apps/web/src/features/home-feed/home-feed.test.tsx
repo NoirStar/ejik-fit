@@ -105,6 +105,10 @@ function buildSnapshot() {
     skillStats: ready(skillStats),
     graph: ready(graph),
     fit: ready(fit),
+    careerPreferences: {
+      careerCondition: "experienced",
+      targetDomain: "backend",
+    },
     ownedSkills: ["Java", "Kafka"],
   });
 }
@@ -163,6 +167,14 @@ describe("HomeFeed", () => {
     expect(within(insight).getByRole("link", { name: "Kubernetes 근거 보기" }))
       .toHaveAttribute("href", "/skill-map?skill=Kubernetes");
     expect(within(insight).getByText("필수 6 · 우대 2")).toBeInTheDocument();
+    const marketContext = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(within(marketContext).getByText("경력 · 백엔드"))
+      .toBeInTheDocument();
+    expect(within(marketContext).getByText("내 기술 2개"))
+      .toBeInTheDocument();
+    expect(marketContext).toHaveTextContent(
+      "경력 조건은 홈 공고·기술 수요에, 희망 분야는 내 기술 비교에 적용됩니다.",
+    );
   });
 
   it("prompts for skills without fabricating personalized counts", () => {

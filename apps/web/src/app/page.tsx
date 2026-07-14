@@ -4,7 +4,7 @@ import { HomeFeed } from "@/features/home-feed/home-feed";
 import { buildHomeFeedSnapshot } from "@/features/home-feed/model";
 import { settledResource } from "@/features/home-feed/resource-state";
 import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
-import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
+import { homeContextFromSearchParams } from "@/lib/home-context";
 
 export const dynamic = "force-dynamic";
 
@@ -22,29 +22,40 @@ type HomeProps = {
 
 export default async function Home({ searchParams }: HomeProps = {}) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
+  const { careerPreferences, ownedSkills } = homeContextFromSearchParams(
+    resolvedSearchParams,
+  );
+  const { careerCondition, targetDomain } = careerPreferences;
   const seed = ownedSkills[0];
+  const careerFilter = careerCondition
+    ? { career_type: careerCondition }
+    : {};
 
   const fitRequest = ownedSkills.length > 0
     ? settledResource(
-        analyzeFit({ owned_skills: ownedSkills }),
+        analyzeFit({
+          owned_skills: ownedSkills,
+          ...careerFilter,
+          ...(targetDomain ? { domains: [targetDomain] } : {}),
+        }),
         "커리어 비교 데이터를 불러오지 못했습니다.",
       )
     : Promise.resolve(null);
 
   const [postings, skillStats, graph, fit] = await Promise.all([
     settledResource(
-      getPostings({ limit: 40 }),
+      getPostings({ ...careerFilter, limit: 40 }),
       "공고 데이터를 불러오지 못했습니다.",
     ),
     settledResource(
-      getSkillStats({ limit: 8 }),
+      getSkillStats({ ...careerFilter, limit: 8 }),
       "기술 수요 데이터를 불러오지 못했습니다.",
     ),
     settledResource(
       getSkillGraph({
         ...(seed ? { seed } : {}),
         owned_skills: ownedSkills,
+        ...careerFilter,
         limit: 30,
       }),
       "스킬 연결 데이터를 불러오지 못했습니다.",
@@ -60,6 +71,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
         skillStats,
         graph,
         fit,
+        careerPreferences,
         ownedSkills,
       })}
     />

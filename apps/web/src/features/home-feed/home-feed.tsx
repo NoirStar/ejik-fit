@@ -55,6 +55,7 @@ import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
 import type {
+  CareerContextSummary,
   CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
@@ -466,6 +467,37 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
   );
 }
 
+function HomeCareerContext({
+  context,
+  ownedSkillCount,
+}: {
+  context: CareerContextSummary;
+  ownedSkillCount: number;
+}) {
+  return (
+    <section aria-label="내 관심 시장" className={styles.contextBar}>
+      <div className={styles.contextIdentity}>
+        <span>내 관심 시장</span>
+        <h2>
+          {context.careerConditionLabel} · {context.targetDomainLabel}
+        </h2>
+      </div>
+      <span className={styles.contextSkillCount}>
+        내 기술 {ownedSkillCount.toLocaleString("ko-KR")}개
+      </span>
+      <Link className={styles.contextAction} href="/career">
+        {context.configured ? "조건 수정" : "조건 설정"}
+        <ArrowRight aria-hidden="true" size={14} weight="bold" />
+      </Link>
+      <p>
+        {context.configured
+          ? "경력 조건은 홈 공고·기술 수요에, 희망 분야는 내 기술 비교에 적용됩니다."
+          : "현재 전체 공개 공고 기준입니다. 조건을 저장하면 적용 범위를 홈에서 확인할 수 있습니다."}
+      </p>
+    </section>
+  );
+}
+
 function FeedCard({
   item,
   followDisabled,
@@ -762,6 +794,11 @@ export function HomeFeed({
               커뮤니티 글쓰기
             </button>
           </header>
+
+          <HomeCareerContext
+            context={snapshot.careerContext}
+            ownedSkillCount={snapshot.ownedSkills.length}
+          />
 
           {snapshot.dataStatus !== "ready" && (
             <section className={styles.dataNotice} role="status">

@@ -150,6 +150,10 @@ describe("buildHomeFeedSnapshot", () => {
       skillStats: ready(skillStats),
       graph: ready(graph),
       fit: ready(fit),
+      careerPreferences: {
+        careerCondition: "experienced",
+        targetDomain: "backend",
+      },
       ownedSkills: ["Java", "Kafka"],
     });
 
@@ -192,6 +196,13 @@ describe("buildHomeFeedSnapshot", () => {
         preferredCount: 2,
         supportingPostingCount: 8,
       },
+    });
+    expect(snapshot.careerContext).toEqual({
+      careerCondition: "experienced",
+      careerConditionLabel: "경력",
+      targetDomain: "backend",
+      targetDomainLabel: "백엔드",
+      configured: true,
     });
     expect(JSON.stringify(snapshot)).not.toContain("trendPercent");
     expect(JSON.stringify(snapshot)).not.toContain("matchScore");

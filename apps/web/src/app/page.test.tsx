@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
@@ -119,6 +119,44 @@ describe("Home", () => {
     expect(insight).toHaveTextContent("Kubernetes");
   });
 
+  it("applies the saved career scope to each supported actual-data API", async () => {
+    render(
+      await Home({
+        searchParams: Promise.resolve({
+          owned_skills: "Java",
+          career_type: "experienced",
+          target_domain: "backend",
+        }),
+      }),
+    );
+
+    expect(getPostings).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 40,
+    });
+    expect(getSkillStats).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 8,
+    });
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      seed: "Java",
+      owned_skills: ["Java"],
+      career_type: "experienced",
+      limit: 30,
+    });
+    expect(analyzeFit).toHaveBeenCalledWith({
+      owned_skills: ["Java"],
+      career_type: "experienced",
+      domains: ["backend"],
+    });
+
+    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(within(context).getByText("경력 · 백엔드")).toBeInTheDocument();
+    expect(within(context).getByText("내 기술 1개")).toBeInTheDocument();
+    expect(within(context).getByRole("link", { name: "조건 수정" }))
+      .toHaveAttribute("href", "/career");
+  });
+
   it("does not inject default skills for a first visit", async () => {
     render(await Home());
 
@@ -130,6 +168,10 @@ describe("Home", () => {
     expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
     expect(screen.getByText("내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요."))
       .toBeInTheDocument();
+    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(context).toHaveTextContent("전체 경력 · 전체 기술 분야");
+    expect(within(context).getByRole("link", { name: "조건 설정" }))
+      .toHaveAttribute("href", "/career");
     expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });
 

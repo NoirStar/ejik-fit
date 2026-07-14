@@ -20,8 +20,15 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
 import {
-  normalizeOwnedSkills,
-  ownedSkillsToDashboardHref,
+  readCareerPreferences,
+  writeCareerPreferences,
+} from "@/lib/career-preferences";
+import {
+  hasHomeCareerPreferenceParams,
+  homeContextFromUrlSearchParams,
+  homeContextToDashboardHref,
+} from "@/lib/home-context";
+import {
   readOwnedSkills,
   writeOwnedSkills,
 } from "@/lib/owned-skills";
@@ -54,7 +61,7 @@ function sameSkills(left: string[], right: string[]) {
   return left.length === right.length && left.every((skill, index) => skill === right[index]);
 }
 
-function StoredSkillsSync() {
+function StoredHomeContextSync() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,18 +69,40 @@ function StoredSkillsSync() {
 
   useEffect(() => {
     if (pathname !== "/") return;
-    const querySkills = normalizeOwnedSkills(
-      searchParams.getAll("owned_skills").flatMap((value) => value.split(",")),
-    );
+    const queryContext = homeContextFromUrlSearchParams(searchParams);
     const storedSkills = readOwnedSkills();
+    const storedPreferences = readCareerPreferences();
+    const hasSkillParams = searchParams.has("owned_skills");
+    const hasPreferenceParams = hasHomeCareerPreferenceParams(searchParams);
 
-    if (querySkills.length > 0) {
-      if (!sameSkills(querySkills, storedSkills)) writeOwnedSkills(querySkills);
-      return;
+    const ownedSkills = hasSkillParams
+      ? queryContext.ownedSkills
+      : storedSkills;
+    const careerPreferences = hasPreferenceParams
+      ? queryContext.careerPreferences
+      : storedPreferences;
+
+    if (hasSkillParams && !sameSkills(queryContext.ownedSkills, storedSkills)) {
+      writeOwnedSkills(queryContext.ownedSkills);
     }
-    if (storedSkills.length === 0) return;
+    if (
+      hasPreferenceParams &&
+      (queryContext.careerPreferences.careerCondition !==
+        storedPreferences.careerCondition ||
+        queryContext.careerPreferences.targetDomain !==
+          storedPreferences.targetDomain)
+    ) {
+      writeCareerPreferences(queryContext.careerPreferences);
+    }
 
-    router.replace(ownedSkillsToDashboardHref(storedSkills, serializedSearch), {
+    const nextHref = homeContextToDashboardHref(
+      { ownedSkills, careerPreferences },
+      serializedSearch,
+    );
+    const nextSearch = new URL(nextHref, "https://ejik.fit").searchParams.toString();
+    if (nextSearch === serializedSearch) return;
+
+    router.replace(nextHref, {
       scroll: false,
     });
     router.refresh();
@@ -195,7 +224,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   function handleSkillsChange(skills: string[]) {
     if (pathname === "/") {
       const currentSearch = typeof window === "undefined" ? "" : window.location.search;
-      router.replace(ownedSkillsToDashboardHref(skills, currentSearch), { scroll: false });
+      router.replace(
+        homeContextToDashboardHref(
+          {
+            ownedSkills: skills,
+            careerPreferences: readCareerPreferences(),
+          },
+          currentSearch,
+        ),
+        { scroll: false },
+      );
     }
     router.refresh();
   }
@@ -208,7 +246,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.shell}>
       <Suspense fallback={null}>
-        <StoredSkillsSync />
+        <StoredHomeContextSync />
       </Suspense>
       <header className={styles.header}>
         <div className={styles.utilityRow}>

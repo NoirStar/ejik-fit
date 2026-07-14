@@ -177,4 +177,50 @@ describe("AppShell", () => {
     });
     expect(navigation.refresh).toHaveBeenCalled();
   });
+
+  it("hydrates browser-stored career preferences into a direct home visit", async () => {
+    localStorage.setItem(
+      "ejik-fit:career-preferences",
+      JSON.stringify({
+        careerCondition: "experienced",
+        targetDomain: "backend",
+      }),
+    );
+
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    await waitFor(() => {
+      expect(navigation.replace).toHaveBeenCalledWith(
+        "/?career_type=experienced&target_domain=backend#my-stack",
+        { scroll: false },
+      );
+    });
+    expect(navigation.refresh).toHaveBeenCalled();
+  });
+
+  it("persists an explicit home career context from the URL", async () => {
+    navigation.search = "career_type=new_comer&target_domain=frontend";
+
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    await waitFor(() => {
+      expect(
+        JSON.parse(
+          localStorage.getItem("ejik-fit:career-preferences") ?? "null",
+        ),
+      ).toEqual({
+        careerCondition: "new_comer",
+        targetDomain: "frontend",
+      });
+    });
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
 });

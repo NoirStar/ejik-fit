@@ -104,6 +104,14 @@ export type CareerInsightSummary =
       } | null;
     };
 
+export type CareerContextSummary = {
+  careerCondition: "" | "new_comer" | "experienced" | "mixed";
+  careerConditionLabel: string;
+  targetDomain: string;
+  targetDomainLabel: string;
+  configured: boolean;
+};
+
 export type FeedItem =
   | CommunityPostFeedItem
   | InterviewReviewFeedItem
@@ -118,6 +126,7 @@ export type HomeFeedSnapshot = {
   marketInsights: MarketInsightFeedItem[];
   skillDemand: SkillDemandSummary[];
   careerInsight: CareerInsightSummary;
+  careerContext: CareerContextSummary;
   ownedSkills: string[];
   postingCount: number;
   sourceCount: number;

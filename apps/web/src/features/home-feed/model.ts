@@ -1,3 +1,12 @@
+import {
+  careerConditionLabel,
+  formatDomainLabel,
+} from "@/features/career/model";
+import {
+  EMPTY_CAREER_PREFERENCES,
+  normalizeCareerPreferences,
+  type CareerPreferences,
+} from "@/lib/career-preferences";
 import { formatCareer, formatEmployment } from "@/lib/labels";
 import type { LocalCommunityPost } from "@/lib/local-community-posts";
 import type {
@@ -16,6 +25,7 @@ import {
 import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
+  CareerContextSummary,
   CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
@@ -70,6 +80,7 @@ export type BuildHomeFeedSnapshotInput = {
   skillStats: ResourceState<SkillStatsResponse>;
   graph: ResourceState<SkillGraphResponse>;
   fit: ResourceState<FitAnalyzeResponse> | null;
+  careerPreferences?: CareerPreferences;
   ownedSkills: string[];
 };
 
@@ -219,6 +230,27 @@ function buildCareerInsight(
   };
 }
 
+function buildCareerContext(
+  value: CareerPreferences | undefined,
+): CareerContextSummary {
+  const preferences = normalizeCareerPreferences(
+    value ?? EMPTY_CAREER_PREFERENCES,
+  );
+  return {
+    careerCondition: preferences.careerCondition,
+    careerConditionLabel: preferences.careerCondition
+      ? careerConditionLabel(preferences.careerCondition)
+      : "전체 경력",
+    targetDomain: preferences.targetDomain,
+    targetDomainLabel: preferences.targetDomain
+      ? formatDomainLabel(preferences.targetDomain)
+      : "전체 기술 분야",
+    configured: Boolean(
+      preferences.careerCondition || preferences.targetDomain,
+    ),
+  };
+}
+
 function mergeFeed(
   jobs: RecommendedJobFeedItem[],
   insights: MarketInsightFeedItem[],
@@ -281,6 +313,7 @@ export function buildHomeFeedSnapshot(
     marketInsights,
     skillDemand,
     careerInsight: buildCareerInsight(input.fit, ownedSkills),
+    careerContext: buildCareerContext(input.careerPreferences),
     ownedSkills,
     postingCount: postings?.items.length ?? 0,
     sourceCount: new Set(
