@@ -55,6 +55,7 @@ import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
 import type {
+  CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
   FeedTab,
@@ -393,6 +394,75 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
         </Link>
       </div>
     </article>
+  );
+}
+
+function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
+  const titleId = "home-career-insight-title";
+
+  return (
+    <section
+      aria-labelledby={titleId}
+      className={`${styles.railCard} ${styles.careerInsightCard}`}
+    >
+      <div className={styles.railHeadingRow}>
+        <h2 id={titleId}>내 커리어 인사이트</h2>
+        <Link href="/career">자세히</Link>
+      </div>
+
+      {insight.status === "needs_skills" ? (
+        <div className={styles.careerInsightState}>
+          <p>내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.</p>
+          <Link className={styles.textLink} href="/career">
+            기술 추가하기 <ArrowRight aria-hidden="true" size={14} />
+          </Link>
+        </div>
+      ) : insight.status === "unavailable" ? (
+        <div className={styles.careerInsightState}>
+          <p>현재 커리어 비교를 불러오지 못했습니다.</p>
+          <Link className={styles.textLink} href="/career">
+            내 커리어에서 다시 보기
+            <ArrowRight aria-hidden="true" size={14} />
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className={styles.careerCoverage}>
+            <span>내 기술과 겹치는 공개 공고</span>
+            <strong>{insight.matchingPostingCount.toLocaleString("ko-KR")}건</strong>
+            <small>
+              필수 기술 절반 이상 {insight.strongFitPostingCount.toLocaleString("ko-KR")}건
+            </small>
+          </div>
+
+          {insight.nextSkill ? (
+            <Link
+              aria-label={`${insight.nextSkill.skillName} 근거 보기`}
+              className={styles.careerNextSkill}
+              href={`/skill-map?skill=${encodeURIComponent(insight.nextSkill.skillName)}`}
+            >
+              <span>다음 준비 기술</span>
+              <strong>{insight.nextSkill.skillName}</strong>
+              <small>
+                겹치는 공고 {insight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건의 부족 요구사항
+              </small>
+              <em>
+                필수 {insight.nextSkill.requiredCount.toLocaleString("ko-KR")} · 우대 {insight.nextSkill.preferredCount.toLocaleString("ko-KR")}
+              </em>
+              <ArrowRight aria-hidden="true" size={15} weight="bold" />
+            </Link>
+          ) : (
+            <p className={styles.careerNoRecommendation}>
+              겹치는 공고에서 반복된 추가 요구 기술이 확인되지 않았습니다.
+            </p>
+          )}
+
+          <p className={styles.careerInsightFootnote}>
+            현재 공개 상태의 공식 채용공고 요구사항만 비교합니다.
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -865,6 +935,8 @@ export function HomeFeed({
             )}
             <p className={styles.railFootnote}>공식 공고 표본의 기술 언급 건수입니다.</p>
           </section>
+
+          <CareerInsightCard insight={snapshot.careerInsight} />
 
           <section className={styles.trustCard}>
             <div className={styles.railIconTitle}>

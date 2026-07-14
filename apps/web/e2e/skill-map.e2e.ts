@@ -26,11 +26,19 @@ test("keeps fixture graph scope aligned with the production API contract", async
   expect(fitResponse.status()).toBe(200);
   expect(fit).toEqual({
     coverage: {
-      matching_posting_count: 0,
-      strong_fit_posting_count: 0,
+      matching_posting_count: 17,
+      strong_fit_posting_count: 6,
     },
     domain_branches: [],
-    recommended_next_skills: [],
+    recommended_next_skills: [
+      {
+        skill: "Kubernetes",
+        reason: "보유 스킬과 함께 등장한 공고에서 10회 부족 요구사항으로 확인됨",
+        required_count: 8,
+        preferred_count: 3,
+        supporting_posting_count: 10,
+      },
+    ],
   });
 });
 

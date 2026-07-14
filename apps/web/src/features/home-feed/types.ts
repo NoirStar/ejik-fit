@@ -89,6 +89,21 @@ export type SkillDemandSummary = {
   preferredCount: number;
 };
 
+export type CareerInsightSummary =
+  | { status: "needs_skills" }
+  | { status: "unavailable" }
+  | {
+      status: "ready";
+      matchingPostingCount: number;
+      strongFitPostingCount: number;
+      nextSkill: {
+        skillName: string;
+        requiredCount: number;
+        preferredCount: number;
+        supportingPostingCount: number;
+      } | null;
+    };
+
 export type FeedItem =
   | CommunityPostFeedItem
   | InterviewReviewFeedItem
@@ -102,6 +117,7 @@ export type HomeFeedSnapshot = {
   recommendedJobs: RecommendedJobFeedItem[];
   marketInsights: MarketInsightFeedItem[];
   skillDemand: SkillDemandSummary[];
+  careerInsight: CareerInsightSummary;
   ownedSkills: string[];
   postingCount: number;
   sourceCount: number;

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { HomeFeed } from "@/features/home-feed/home-feed";
 import { buildHomeFeedSnapshot } from "@/features/home-feed/model";
 import { settledResource } from "@/features/home-feed/resource-state";
-import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
+import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,14 @@ export default async function Home({ searchParams }: HomeProps = {}) {
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
   const seed = ownedSkills[0];
 
-  const [postings, skillStats, graph] = await Promise.all([
+  const fitRequest = ownedSkills.length > 0
+    ? settledResource(
+        analyzeFit({ owned_skills: ownedSkills }),
+        "커리어 비교 데이터를 불러오지 못했습니다.",
+      )
+    : Promise.resolve(null);
+
+  const [postings, skillStats, graph, fit] = await Promise.all([
     settledResource(
       getPostings({ limit: 40 }),
       "공고 데이터를 불러오지 못했습니다.",
@@ -42,6 +49,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       }),
       "스킬 연결 데이터를 불러오지 못했습니다.",
     ),
+    fitRequest,
   ]);
 
   return (
@@ -51,6 +59,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
         postings,
         skillStats,
         graph,
+        fit,
         ownedSkills,
       })}
     />

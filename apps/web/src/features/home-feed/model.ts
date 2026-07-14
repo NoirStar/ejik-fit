@@ -1,6 +1,7 @@
 import { formatCareer, formatEmployment } from "@/lib/labels";
 import type { LocalCommunityPost } from "@/lib/local-community-posts";
 import type {
+  FitAnalyzeResponse,
   PostingListResponse,
   SkillGraphEvidence,
   SkillGraphResponse,
@@ -15,6 +16,7 @@ import {
 import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
+  CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
   HomeFeedSnapshot,
@@ -67,6 +69,7 @@ export type BuildHomeFeedSnapshotInput = {
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
   graph: ResourceState<SkillGraphResponse>;
+  fit: ResourceState<FitAnalyzeResponse> | null;
   ownedSkills: string[];
 };
 
@@ -187,6 +190,35 @@ function buildMarketInsights(
   }));
 }
 
+function buildCareerInsight(
+  fit: ResourceState<FitAnalyzeResponse> | null,
+  ownedSkills: string[],
+): CareerInsightSummary {
+  if (ownedSkills.length === 0) return { status: "needs_skills" };
+  if (!fit || fit.status === "error") return { status: "unavailable" };
+
+  const recommendation = [...fit.data.recommended_next_skills].sort(
+    (left, right) =>
+      right.required_count - left.required_count ||
+      right.supporting_posting_count - left.supporting_posting_count ||
+      left.skill.localeCompare(right.skill, "ko-KR"),
+  )[0];
+
+  return {
+    status: "ready",
+    matchingPostingCount: fit.data.coverage.matching_posting_count,
+    strongFitPostingCount: fit.data.coverage.strong_fit_posting_count,
+    nextSkill: recommendation
+      ? {
+          skillName: recommendation.skill,
+          requiredCount: recommendation.required_count,
+          preferredCount: recommendation.preferred_count,
+          supportingPostingCount: recommendation.supporting_posting_count,
+        }
+      : null,
+  };
+}
+
 function mergeFeed(
   jobs: RecommendedJobFeedItem[],
   insights: MarketInsightFeedItem[],
@@ -224,16 +256,23 @@ export function buildHomeFeedSnapshot(
   const recommendedJobs = buildJobs(postings, graph, ownedSkills);
   const skillDemand = buildSkillDemand(skillStats);
   const marketInsights = buildMarketInsights(skillDemand);
-  const resourceErrors = [input.postings, input.skillStats, input.graph].flatMap(
+  const resources = [
+    input.postings,
+    input.skillStats,
+    input.graph,
+    ...(input.fit ? [input.fit] : []),
+  ];
+  const resourceErrors = resources.flatMap(
     (resource) => resource.status === "error" ? [resource.message] : [],
   );
   const hasVerifiedData = recommendedJobs.length > 0
     || skillDemand.length > 0
-    || (graph?.evidence.length ?? 0) > 0;
+    || (graph?.evidence.length ?? 0) > 0
+    || input.fit?.status === "ready";
 
   return {
     dataStatus: dataStatus(
-      [input.postings, input.skillStats, input.graph],
+      resources,
       hasVerifiedData,
     ),
     feedItems: mergeFeed(recommendedJobs, marketInsights),
@@ -241,6 +280,7 @@ export function buildHomeFeedSnapshot(
     recommendedJobs,
     marketInsights,
     skillDemand,
+    careerInsight: buildCareerInsight(input.fit, ownedSkills),
     ownedSkills,
     postingCount: postings?.items.length ?? 0,
     sourceCount: new Set(

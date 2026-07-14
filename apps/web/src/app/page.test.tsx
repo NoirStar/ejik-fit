@@ -1,17 +1,34 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
+import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 
 import Home from "./page";
 
 vi.mock("@/lib/api", () => ({
+  analyzeFit: vi.fn(),
   getPostings: vi.fn(),
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
 
 function mockHomeApi() {
+  vi.mocked(analyzeFit).mockResolvedValue({
+    coverage: {
+      matching_posting_count: 12,
+      strong_fit_posting_count: 4,
+    },
+    domain_branches: [],
+    recommended_next_skills: [
+      {
+        skill: "Kubernetes",
+        reason: "보유 스킬과 함께 등장한 공고에서 8회 부족 요구사항으로 확인됨",
+        required_count: 6,
+        preferred_count: 2,
+        supporting_posting_count: 8,
+      },
+    ],
+  });
   vi.mocked(getPostings).mockResolvedValue({
     total: 1,
     items: [
@@ -94,6 +111,12 @@ describe("Home", () => {
       owned_skills: ["Java", "Spring"],
       limit: 30,
     });
+    expect(analyzeFit).toHaveBeenCalledWith({
+      owned_skills: ["Java", "Spring"],
+    });
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(insight).toHaveTextContent("12건");
+    expect(insight).toHaveTextContent("Kubernetes");
   });
 
   it("does not inject default skills for a first visit", async () => {
@@ -103,7 +126,10 @@ describe("Home", () => {
       owned_skills: [],
       limit: 30,
     });
+    expect(analyzeFit).not.toHaveBeenCalled();
     expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
+    expect(screen.getByText("내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요."))
+      .toBeInTheDocument();
     expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });
 
@@ -122,6 +148,25 @@ describe("Home", () => {
       "[resource] request failed",
       expect.any(Error),
     );
+    log.mockRestore();
+  });
+
+  it("keeps the home usable when only personalized comparison fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(analyzeFit).mockRejectedValue(new Error("fit offline"));
+
+    render(
+      await Home({
+        searchParams: Promise.resolve({ owned_skills: "Java" }),
+      }),
+    );
+
+    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다"))
+      .toBeInTheDocument();
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(insight).toHaveTextContent("현재 커리어 비교를 불러오지 못했습니다.");
+    expect(insight).not.toHaveTextContent(/\d+건/);
+    expect(screen.getByText("토스")).toBeInTheDocument();
     log.mockRestore();
   });
 

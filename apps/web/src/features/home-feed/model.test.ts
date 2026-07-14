@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  FitAnalyzeResponse,
   PostingListResponse,
   SkillGraphResponse,
   SkillStatsResponse,
@@ -64,6 +65,23 @@ const graph: SkillGraphResponse = {
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
+const fit: FitAnalyzeResponse = {
+  coverage: {
+    matching_posting_count: 12,
+    strong_fit_posting_count: 4,
+  },
+  domain_branches: [],
+  recommended_next_skills: [
+    {
+      skill: "Kubernetes",
+      reason: "보유 스킬과 함께 등장한 공고에서 8회 부족 요구사항으로 확인됨",
+      required_count: 6,
+      preferred_count: 2,
+      supporting_posting_count: 8,
+    },
+  ],
+};
+
 function ready<T>(data: T): ResourceState<T> {
   return { status: "ready", data };
 }
@@ -116,6 +134,7 @@ describe("buildHomeFeedSnapshot", () => {
       postings: ready(sourceSpecificPostings),
       skillStats: ready(skillStats),
       graph: ready(graph),
+      fit: null,
       ownedSkills: [],
     });
 
@@ -130,6 +149,7 @@ describe("buildHomeFeedSnapshot", () => {
       postings: ready(postings),
       skillStats: ready(skillStats),
       graph: ready(graph),
+      fit: ready(fit),
       ownedSkills: ["Java", "Kafka"],
     });
 
@@ -162,6 +182,17 @@ describe("buildHomeFeedSnapshot", () => {
     ]);
     expect(snapshot.postingCount).toBe(1);
     expect(snapshot.sourceCount).toBe(1);
+    expect(snapshot.careerInsight).toEqual({
+      status: "ready",
+      matchingPostingCount: 12,
+      strongFitPostingCount: 4,
+      nextSkill: {
+        skillName: "Kubernetes",
+        requiredCount: 6,
+        preferredCount: 2,
+        supportingPostingCount: 8,
+      },
+    });
     expect(JSON.stringify(snapshot)).not.toContain("trendPercent");
     expect(JSON.stringify(snapshot)).not.toContain("matchScore");
   });
@@ -171,6 +202,7 @@ describe("buildHomeFeedSnapshot", () => {
       postings: ready(postings),
       skillStats: ready(skillStats),
       graph: { status: "error", message: "graph offline" },
+      fit: ready(fit),
       ownedSkills: ["Java"],
     });
 
@@ -186,6 +218,7 @@ describe("buildHomeFeedSnapshot", () => {
       postings: { status: "error", message: "postings offline" },
       skillStats: { status: "error", message: "stats offline" },
       graph: { status: "error", message: "graph offline" },
+      fit: null,
       ownedSkills: [],
     });
 
@@ -193,6 +226,52 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.recommendedJobs).toEqual([]);
     expect(snapshot.marketInsights).toEqual([]);
     expect(snapshot.skillDemand).toEqual([]);
+    expect(snapshot.careerInsight).toEqual({ status: "needs_skills" });
     expect(snapshot.feedItems.every((item) => item.source !== "api")).toBe(true);
+  });
+
+  it("marks only the personalized insight unavailable when fit analysis fails", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(postings),
+      skillStats: ready(skillStats),
+      graph: ready(graph),
+      fit: { status: "error", message: "fit offline" },
+      ownedSkills: ["Java"],
+    });
+
+    expect(snapshot.dataStatus).toBe("partial");
+    expect(snapshot.careerInsight).toEqual({ status: "unavailable" });
+    expect(snapshot.resourceErrors).toEqual(["fit offline"]);
+  });
+
+  it("treats a verified zero-match comparison as a completed analysis", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready({ items: [], total: 0 }),
+      skillStats: ready({ items: [], total: 0 }),
+      graph: ready({
+        seed: "Unknown Tool",
+        nodes: [],
+        edges: [],
+        evidence: [],
+        meta: { limit: 30, min_confidence: 0.8 },
+      }),
+      fit: ready({
+        coverage: {
+          matching_posting_count: 0,
+          strong_fit_posting_count: 0,
+        },
+        domain_branches: [],
+        recommended_next_skills: [],
+      }),
+      ownedSkills: ["Unknown Tool"],
+    });
+
+    expect(snapshot.dataStatus).toBe("ready");
+    expect(snapshot.careerInsight).toEqual({
+      status: "ready",
+      matchingPostingCount: 0,
+      strongFitPostingCount: 0,
+      nextSkill: null,
+    });
   });
 });

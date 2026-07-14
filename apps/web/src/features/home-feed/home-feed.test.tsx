@@ -15,6 +15,7 @@ import {
   recordRecentCommunityTopic,
 } from "@/lib/recent-community-topics";
 import type {
+  FitAnalyzeResponse,
   PostingListResponse,
   SkillGraphResponse,
   SkillStatsResponse,
@@ -77,6 +78,23 @@ const graph: SkillGraphResponse = {
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
+const fit: FitAnalyzeResponse = {
+  coverage: {
+    matching_posting_count: 12,
+    strong_fit_posting_count: 4,
+  },
+  domain_branches: [],
+  recommended_next_skills: [
+    {
+      skill: "Kubernetes",
+      reason: "보유 스킬과 함께 등장한 공고에서 8회 부족 요구사항으로 확인됨",
+      required_count: 6,
+      preferred_count: 2,
+      supporting_posting_count: 8,
+    },
+  ],
+};
+
 function ready<T>(data: T): ResourceState<T> {
   return { status: "ready", data };
 }
@@ -86,6 +104,7 @@ function buildSnapshot() {
     postings: ready(postings),
     skillStats: ready(skillStats),
     graph: ready(graph),
+    fit: ready(fit),
     ownedSkills: ["Java", "Kafka"],
   });
 }
@@ -137,6 +156,33 @@ describe("HomeFeed", () => {
       "href",
       "/career/questions",
     );
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(within(insight).getByText("내 기술과 겹치는 공개 공고")).toBeInTheDocument();
+    expect(within(insight).getByText("12건")).toBeInTheDocument();
+    expect(within(insight).getByText("필수 기술 절반 이상 4건")).toBeInTheDocument();
+    expect(within(insight).getByRole("link", { name: "Kubernetes 근거 보기" }))
+      .toHaveAttribute("href", "/skill-map?skill=Kubernetes");
+    expect(within(insight).getByText("필수 6 · 우대 2")).toBeInTheDocument();
+  });
+
+  it("prompts for skills without fabricating personalized counts", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(postings),
+      skillStats: ready(skillStats),
+      graph: ready(graph),
+      fit: null,
+      ownedSkills: [],
+    });
+
+    render(<HomeFeed snapshot={snapshot} />);
+
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(insight).toHaveTextContent(
+      "내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.",
+    );
+    expect(within(insight).getByRole("link", { name: "기술 추가하기" }))
+      .toHaveAttribute("href", "/career");
+    expect(within(insight).queryByText(/\d+건/)).not.toBeInTheDocument();
   });
 
   it("shows an honest empty state instead of invented recent topics", () => {
