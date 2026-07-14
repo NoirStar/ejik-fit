@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 820, 390]) {
   test(`keeps actual and mock saved evidence usable at ${width}px`, async ({
     page,
   }) => {
@@ -44,6 +44,10 @@ for (const width of [1440, 390]) {
       "https://recruit.navercorp.com/job-python",
     );
     await expect(job.locator("img")).toHaveCount(1);
+    const stageSelect = job.getByRole("combobox", {
+      name: "Python Backend Engineer 지원 단계",
+    });
+    await expect(stageSelect).toHaveValue("");
 
     const community = page.getByRole("article", {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -61,7 +65,9 @@ for (const width of [1440, 390]) {
     for (const target of [
       page.getByRole("tab", { name: "전체 2" }),
       page.getByRole("tab", { name: "공식 공고 1" }),
+      page.getByRole("tab", { name: "지원 관리 0" }),
       page.getByRole("tab", { name: "커뮤니티 예시 1" }),
+      stageSelect,
       job.getByRole("button", { name: "Python Backend Engineer 저장 해제" }),
       community.getByRole("button", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요? 저장 해제",
@@ -72,6 +78,20 @@ for (const width of [1440, 390]) {
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
+
+    await stageSelect.selectOption("interview");
+    await expect(stageSelect).toHaveValue("interview");
+    await expect(page.getByRole("tab", { name: "지원 관리 1" })).toBeVisible();
+    await page.getByRole("tab", { name: "지원 관리 1" }).click();
+    await expect(job).toBeVisible();
+    await expect(community).not.toBeVisible();
+    await page.reload();
+    await expect(job).toBeVisible();
+    await expect(
+      job.getByRole("combobox", {
+        name: "Python Backend Engineer 지원 단계",
+      }),
+    ).toHaveValue("interview");
 
     await page.getByRole("tab", { name: "커뮤니티 예시 1" }).click();
     await expect(job).not.toBeVisible();
@@ -92,6 +112,12 @@ for (const width of [1440, 390]) {
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).not.toBeVisible();
     await expect(page.getByRole("tab", { name: "공식 공고 0" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "지원 관리 0" })).toBeVisible();
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("ejik-fit:job-application-stages"),
+      ),
+    ).toBe("{}");
     expect(browserErrors).toEqual([]);
   });
 }

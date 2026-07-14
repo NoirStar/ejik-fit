@@ -17,6 +17,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
 import {
+  APPLICATION_STAGES,
+  applicationStageLabel,
+  readJobApplicationStages,
+  removeJobApplicationStage,
+  setJobApplicationStage,
+  subscribeJobApplicationStages,
+  writeJobApplicationStages,
+  type JobApplicationStageValue,
+  type JobApplicationStages,
+} from "@/lib/job-application-stages";
+import {
   readSavedJobIds,
   subscribeSavedJobs,
   toggleSavedJob,
@@ -37,7 +48,7 @@ import {
 } from "./model";
 import styles from "./saved-library.module.css";
 
-type SavedScope = "all" | "jobs" | "community";
+type SavedScope = "all" | "jobs" | "applications" | "community";
 
 type JobRequestState =
   | { status: "idle" }
@@ -48,14 +59,19 @@ type JobRequestState =
 const SCOPES = [
   { value: "all", label: "전체" },
   { value: "jobs", label: "공식 공고" },
+  { value: "applications", label: "지원 관리" },
   { value: "community", label: "커뮤니티 예시" },
 ] as const satisfies ReadonlyArray<{ value: SavedScope; label: string }>;
 
 function SavedJobCard({
   item,
+  applicationStage,
+  onApplicationStageChange,
   onRemove,
 }: {
   item: SavedJobItem;
+  applicationStage: JobApplicationStageValue;
+  onApplicationStageChange: (stage: JobApplicationStageValue) => void;
   onRemove: () => void;
 }) {
   const skills = [
@@ -116,6 +132,34 @@ function SavedJobCard({
         <p className={styles.noSkills}>현재 응답에서 확인된 기술이 없습니다.</p>
       )}
 
+      <div
+        className={styles.applicationControl}
+        data-active={applicationStage ? "true" : undefined}
+      >
+        <label>
+          <span>지원 단계</span>
+          <select
+            aria-label={`${item.title} 지원 단계`}
+            onChange={(event) =>
+              onApplicationStageChange(
+                event.target.value as JobApplicationStageValue,
+              )
+            }
+            value={applicationStage}
+          >
+            {APPLICATION_STAGES.map((stage) => (
+              <option key={stage.value || "unset"} value={stage.value}>
+                {stage.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <small>
+          이 브라우저에만 저장
+          {applicationStage ? " · 저장 해제 시 단계도 삭제" : ""}
+        </small>
+      </div>
+
       <footer className={styles.jobActions}>
         <Link href={item.detailHref}>
           공고 분석
@@ -137,6 +181,8 @@ function SavedJobCard({
 export function SavedLibrary() {
   const [hydrated, setHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [applicationStages, setApplicationStages] =
+    useState<JobApplicationStages>({});
   const [socialInteractions, setSocialInteractions] =
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
   const [jobState, setJobState] = useState<JobRequestState>({ status: "idle" });
@@ -147,14 +193,19 @@ export function SavedLibrary() {
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
+    setApplicationStages(readJobApplicationStages());
     setSocialInteractions(readSocialInteractions());
     setHydrated(true);
     const unsubscribeJobs = subscribeSavedJobs(setSavedJobIds);
+    const unsubscribeApplications = subscribeJobApplicationStages(
+      setApplicationStages,
+    );
     const unsubscribeSocial = subscribeSocialInteractions(
       setSocialInteractions,
     );
     return () => {
       unsubscribeJobs();
+      unsubscribeApplications();
       unsubscribeSocial();
     };
   }, []);
@@ -207,23 +258,50 @@ export function SavedLibrary() {
       ),
     [socialInteractions.savedPostIds],
   );
+  const visibleSavedJobs = useMemo(() => {
+    if (jobState.status !== "ready") return [];
+    if (activeScope !== "applications") return jobState.data.items;
+    return jobState.data.items.filter((item) => applicationStages[item.id]);
+  }, [activeScope, applicationStages, jobState]);
 
   const jobCount = savedJobIds.length;
+  const applicationCount = savedJobIds.filter(
+    (id) => applicationStages[id],
+  ).length;
   const communityCount = socialInteractions.savedPostIds.length;
   const totalCount = jobCount + communityCount;
-  const showJobs = activeScope === "all" || activeScope === "jobs";
+  const showJobs =
+    activeScope === "all" ||
+    activeScope === "jobs" ||
+    activeScope === "applications";
   const showCommunity =
     activeScope === "all" || activeScope === "community";
 
   function countForScope(scope: SavedScope) {
     if (scope === "jobs") return jobCount;
+    if (scope === "applications") return applicationCount;
     if (scope === "community") return communityCount;
     return totalCount;
   }
 
   function removeJob(item: SavedJobItem) {
     setSavedJobIds(toggleSavedJob(item.id));
-    setAnnouncement(`${item.title}을 저장 보관함에서 제거했습니다.`);
+    setApplicationStages(removeJobApplicationStage(item.id));
+    setAnnouncement(
+      `${item.title}을 저장 보관함에서 제거하고 지원 단계도 삭제했습니다.`,
+    );
+  }
+
+  function updateApplicationStage(
+    item: SavedJobItem,
+    stage: JobApplicationStageValue,
+  ) {
+    setApplicationStages(setJobApplicationStage(item.id, stage));
+    setAnnouncement(
+      stage
+        ? `${item.title}의 지원 단계를 ${applicationStageLabel(stage)}으로 저장했습니다.`
+        : `${item.title}의 지원 단계 기록을 삭제했습니다.`,
+    );
   }
 
   function removeCommunity(id: string, title: string) {
@@ -234,10 +312,13 @@ export function SavedLibrary() {
   function removeUnavailableJobs() {
     if (jobState.status !== "ready") return;
     let nextIds = savedJobIds;
+    const nextStages = { ...applicationStages };
     for (const id of jobState.data.unavailableIds) {
       nextIds = toggleSavedJob(id);
+      delete nextStages[id];
     }
     setSavedJobIds(nextIds);
+    setApplicationStages(writeJobApplicationStages(nextStages));
     setAnnouncement("현재 API에서 확인되지 않는 저장 공고를 정리했습니다.");
   }
 
@@ -274,7 +355,7 @@ export function SavedLibrary() {
           <p className={styles.eyebrow}>브라우저 저장함</p>
           <h1>저장 보관함</h1>
           <p className={styles.description}>
-            저장 여부는 이 브라우저에만 남고, 공고 내용은 열 때마다 현재 공식 API에서 다시 확인합니다.
+            저장 여부와 지원 단계는 이 브라우저에만 남고, 공고 내용은 열 때마다 현재 공식 API에서 다시 확인합니다.
           </p>
         </div>
         <div className={styles.introActions}>
@@ -318,7 +399,7 @@ export function SavedLibrary() {
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          현재 브라우저 저장 기준
+          현재 브라우저 저장·지원 기준
         </p>
       </section>
 
@@ -355,13 +436,25 @@ export function SavedLibrary() {
               <section aria-labelledby="saved-jobs-title" className={styles.collection}>
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>실제 공고 API</p>
-                    <h2 id="saved-jobs-title">공식 공고</h2>
+                    <p>
+                      {activeScope === "applications"
+                        ? "지원 단계를 기록한 실제 공고"
+                        : "실제 공고 API"}
+                    </p>
+                    <h2 id="saved-jobs-title">
+                      {activeScope === "applications" ? "지원 관리" : "공식 공고"}
+                    </h2>
                   </div>
-                  <span>{jobCount}개 저장</span>
+                  <span>
+                    {activeScope === "applications"
+                      ? `${applicationCount}개 기록`
+                      : `${jobCount}개 저장`}
+                  </span>
                 </header>
                 <p className={styles.collectionNote}>
-                  저장한 ID를 현재 공식 공고 상세 응답과 다시 대조합니다.
+                  {activeScope === "applications"
+                    ? "사용자가 선택한 단계만 로컬에 저장하며, 공고 정보는 현재 공식 API와 다시 대조합니다."
+                    : "저장한 ID를 현재 공식 공고 상세 응답과 다시 대조합니다."}
                 </p>
 
                 {jobState.status === "idle" || jobState.status === "loading" ? (
@@ -412,12 +505,16 @@ export function SavedLibrary() {
                       </div>
                     )}
 
-                    {jobState.data.items.length > 0 ? (
+                    {visibleSavedJobs.length > 0 ? (
                       <div className={styles.jobList}>
-                        {jobState.data.items.map((item) => (
+                        {visibleSavedJobs.map((item) => (
                           <SavedJobCard
+                            applicationStage={applicationStages[item.id] ?? ""}
                             item={item}
                             key={item.id}
+                            onApplicationStageChange={(stage) =>
+                              updateApplicationStage(item, stage)
+                            }
                             onRemove={() => removeJob(item)}
                           />
                         ))}
@@ -428,9 +525,13 @@ export function SavedLibrary() {
                         <div>
                           <strong>현재 표시할 공식 공고가 없습니다.</strong>
                           <p>
-                            {jobCount === 0
-                              ? "공고에서 저장 버튼을 누르면 이곳에 표시됩니다."
-                              : "현재 API에서 확인 가능한 저장 공고가 없습니다."}
+                            {activeScope === "applications"
+                              ? applicationCount === 0
+                                ? "지원 단계를 기록한 공고가 없습니다."
+                                : "지원 단계는 유지했지만 현재 API에서 확인 가능한 공고가 없습니다."
+                              : jobCount === 0
+                                ? "공고에서 저장 버튼을 누르면 이곳에 표시됩니다."
+                                : "현재 API에서 확인 가능한 저장 공고가 없습니다."}
                           </p>
                         </div>
                         <Link href="/jobs">공고 보기</Link>

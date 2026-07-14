@@ -366,6 +366,63 @@
   font-size: 0.72rem;
 }
 
+.applicationControl {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.applicationControl[data-active="true"] {
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-line));
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+}
+
+.applicationControl label {
+  display: grid;
+  min-width: min(100%, 13rem);
+  gap: 0.35rem;
+}
+
+.applicationControl label > span {
+  color: var(--color-text);
+  font-size: 0.7rem;
+  font-weight: 790;
+}
+
+.applicationControl select {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 2rem 0 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  outline: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.applicationControl select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.applicationControl small {
+  max-width: 16rem;
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  font-weight: 680;
+  line-height: 1.5;
+  text-align: right;
+}
+
 .jobActions,
 .communityActions {
   display: flex;
@@ -646,7 +703,7 @@
 
   .scopeTabs {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .scopeTabs button {
@@ -706,6 +763,21 @@
   .communityActions button {
     flex: 1 1 auto;
     margin-left: 0;
+  }
+
+  .applicationControl {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .applicationControl label {
+    width: 100%;
+  }
+
+  .applicationControl small {
+    max-width: none;
+    text-align: left;
   }
 }
 

@@ -49,7 +49,11 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function saveBrowserItems(jobIds = ["job-python"], postIds = ["kubernetes-experience"]) {
+function saveBrowserItems(
+  jobIds = ["job-python"],
+  postIds = ["kubernetes-experience"],
+  stages: Record<string, string> = {},
+) {
   window.localStorage.setItem(
     "ejik-fit:saved-job-ids",
     JSON.stringify(jobIds),
@@ -57,6 +61,10 @@ function saveBrowserItems(jobIds = ["job-python"], postIds = ["kubernetes-experi
   window.localStorage.setItem(
     "ejik-fit:social-interactions",
     JSON.stringify({ savedPostIds: postIds }),
+  );
+  window.localStorage.setItem(
+    "ejik-fit:job-application-stages",
+    JSON.stringify(stages),
   );
 }
 
@@ -117,10 +125,58 @@ describe("SavedLibrary", () => {
       "aria-selected",
       "true",
     );
+    expect(
+      within(job).getByRole("combobox", {
+        name: "Python Backend Engineer 지원 단계",
+      }),
+    ).toHaveValue("");
+    expect(screen.getByRole("tab", { name: "지원 관리 0" })).toBeInTheDocument();
+  });
+
+  it("persists a user-selected stage and filters the application scope", async () => {
+    saveBrowserItems();
+    render(<SavedLibrary />);
+    const job = await screen.findByRole("article", {
+      name: "Python Backend Engineer",
+    });
+    const stageSelect = within(job).getByRole("combobox", {
+      name: "Python Backend Engineer 지원 단계",
+    });
+
+    fireEvent.change(stageSelect, { target: { value: "interview" } });
+
+    expect(stageSelect).toHaveDisplayValue("면접 진행");
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:job-application-stages")!,
+      ),
+    ).toEqual({ "job-python": "interview" });
+    expect(screen.getByRole("tab", { name: "지원 관리 1" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "지원 관리 1" }));
+    expect(job).toBeInTheDocument();
+    expect(screen.getByText("지원 단계를 기록한 실제 공고")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("article", {
+        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+      }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.change(stageSelect, { target: { value: "" } });
+    expect(
+      await screen.findByText("지원 단계를 기록한 공고가 없습니다."),
+    ).toBeInTheDocument();
+    expect(window.localStorage.getItem("ejik-fit:job-application-stages")).toBe(
+      "{}",
+    );
   });
 
   it("removes saved jobs and community items through the shared browser stores", async () => {
-    saveBrowserItems();
+    saveBrowserItems(
+      ["job-python"],
+      ["kubernetes-experience"],
+      { "job-python": "applied" },
+    );
     render(<SavedLibrary />);
     await screen.findByRole("article", { name: "Python Backend Engineer" });
 
@@ -135,6 +191,9 @@ describe("SavedLibrary", () => {
       ).not.toBeInTheDocument();
     });
     expect(window.localStorage.getItem("ejik-fit:saved-job-ids")).toBe("[]");
+    expect(window.localStorage.getItem("ejik-fit:job-application-stages")).toBe(
+      "{}",
+    );
 
     fireEvent.click(
       screen.getByRole("button", {
@@ -196,6 +255,7 @@ describe("SavedLibrary", () => {
     saveBrowserItems(
       ["job-python", "gone-job", "retry-job"],
       ["kubernetes-experience"],
+      { "gone-job": "applied", "retry-job": "interview" },
     );
     fetchMock.mockResolvedValue(
       jsonResponse({
@@ -231,6 +291,16 @@ describe("SavedLibrary", () => {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "확인 불가 항목 정리" }));
+    expect(
+      JSON.parse(window.localStorage.getItem("ejik-fit:saved-job-ids")!),
+    ).toEqual(["job-python", "retry-job"]);
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:job-application-stages")!,
+      ),
+    ).toEqual({ "retry-job": "interview" });
   });
 
   it("preserves mock saves and offers retry when the actual job request fails", async () => {

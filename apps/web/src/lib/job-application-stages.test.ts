@@ -117,4 +117,23 @@ describe("job application stage storage", () => {
     setJobApplicationStage("job-b", "preparing");
     expect(listener).toHaveBeenCalledOnce();
   });
+
+  it("updates subscribers when another tab changes the storage key", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeJobApplicationStages(listener);
+    localStorage.setItem(
+      "ejik-fit:job-application-stages",
+      JSON.stringify({ "job-a": "offer" }),
+    );
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "ejik-fit:job-application-stages",
+        newValue: JSON.stringify({ "job-a": "offer" }),
+      }),
+    );
+
+    expect(listener).toHaveBeenCalledWith({ "job-a": "offer" });
+    unsubscribe();
+  });
 });
