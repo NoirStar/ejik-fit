@@ -45,6 +45,13 @@ for (const width of viewports) {
       () => document.documentElement.scrollWidth > window.innerWidth,
     );
     expect(hasHorizontalOverflow).toBe(false);
+
+    await page.getByRole("button", { name: "알림 열기" }).click();
+    const notification = page.getByLabel("알림", { exact: true });
+    const notificationBox = await notification.boundingBox();
+    expect(notificationBox).not.toBeNull();
+    expect(notificationBox!.x).toBeGreaterThanOrEqual(16);
+    expect(notificationBox!.width).toBeGreaterThanOrEqual(width - 32);
   });
 }
 

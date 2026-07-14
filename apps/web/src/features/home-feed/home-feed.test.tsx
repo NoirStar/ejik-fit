@@ -177,6 +177,24 @@ describe("HomeFeed", () => {
     );
   });
 
+  it("opens with a concise service heading instead of explanatory marketing copy", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    expect(
+      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "커뮤니티 글쓰기" }))
+      .toBeInTheDocument();
+    expect(
+      screen.queryByText("커뮤니티 예시 + 공식 채용 데이터"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "현업의 고민과 면접 경험 사이에 확인 가능한 공고 근거를 함께 놓았습니다.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
   it("prompts for skills without fabricating personalized counts", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),

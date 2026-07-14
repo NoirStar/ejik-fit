@@ -780,9 +780,7 @@ export function HomeFeed({
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
           <header className={styles.feedHeader}>
             <div>
-              <p className={styles.eyebrow}>커뮤니티 예시 + 공식 채용 데이터</p>
               <h1 id="home-feed-title">내 커리어와 가까운 이야기</h1>
-              <p>현업의 고민과 면접 경험 사이에 확인 가능한 공고 근거를 함께 놓았습니다.</p>
             </div>
             <button
               className={styles.composeButton}

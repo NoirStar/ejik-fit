@@ -531,7 +531,8 @@
   .menu {
     position: fixed;
     top: calc(var(--header-height-mobile) + 0.5rem);
-    right: 0.75rem;
+    right: 1rem;
+    width: calc(100vw - 2rem);
   }
 }
 
@@ -558,7 +559,8 @@
   .menu {
     position: fixed;
     top: calc(var(--header-height-mobile) + 0.5rem);
-    right: 0.75rem;
+    right: 1rem;
+    width: calc(100vw - 2rem);
   }
 
   .footer {
