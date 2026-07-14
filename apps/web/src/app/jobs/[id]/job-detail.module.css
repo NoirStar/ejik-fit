@@ -127,6 +127,7 @@
   font-weight: 600;
   line-height: 1.55;
   overflow-wrap: anywhere;
+  word-break: keep-all;
 }
 
 .workspace {

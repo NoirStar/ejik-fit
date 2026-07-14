@@ -18,6 +18,12 @@ describe("job detail service density", () => {
     expect(detailCss).toContain("word-break: keep-all");
   });
 
+  it("keeps Korean fact values grouped by words", () => {
+    expect(detailCss).toMatch(
+      /\.facts dd\s*\{[\s\S]*?word-break: keep-all/,
+    );
+  });
+
   it("reserves mobile space for the fixed action bar above navigation", () => {
     expect(actionCss).toMatch(
       /@media \(max-width: 839px\)[\s\S]*?\.primaryActions\s*\{[\s\S]*?position: fixed/,
