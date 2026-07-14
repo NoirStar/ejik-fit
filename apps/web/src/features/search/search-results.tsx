@@ -316,7 +316,16 @@ export function SearchResults({
     <main className={styles.page}>
       <header className={styles.intro}>
         <p className={styles.eyebrow}>통합 탐색</p>
-        <h1>{query ? `“${query}” 검색 결과` : "무엇을 찾고 있나요?"}</h1>
+        <h1>
+          {query ? (
+            <>
+              <span>“{query}”</span>{" "}
+              <span className={styles.resultTitleSuffix}>검색 결과</span>
+            </>
+          ) : (
+            "무엇을 찾고 있나요?"
+          )}
+        </h1>
         <p className={styles.description}>
           공식 채용 데이터와 내 로컬 글·커뮤니티 예시를 출처별로 나눠 확인하세요.
         </p>

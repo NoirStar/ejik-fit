@@ -52,6 +52,10 @@
   line-height: 1.05;
 }
 
+.resultTitleSuffix {
+  white-space: nowrap;
+}
+
 .description {
   color: var(--color-muted);
   font-size: 0.92rem;
