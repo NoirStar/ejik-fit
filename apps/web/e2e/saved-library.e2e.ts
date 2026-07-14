@@ -66,7 +66,7 @@ for (const width of [1440, 820, 390]) {
       page.getByRole("tab", { name: "전체 2" }),
       page.getByRole("tab", { name: "공식 공고 1" }),
       page.getByRole("tab", { name: "지원 관리 0" }),
-      page.getByRole("tab", { name: "커뮤니티 예시 1" }),
+      page.getByRole("tab", { name: "커뮤니티 1" }),
       stageSelect,
       job.getByRole("button", { name: "Python Backend Engineer 저장 해제" }),
       community.getByRole("button", {
@@ -93,7 +93,7 @@ for (const width of [1440, 820, 390]) {
       }),
     ).toHaveValue("interview");
 
-    await page.getByRole("tab", { name: "커뮤니티 예시 1" }).click();
+    await page.getByRole("tab", { name: "커뮤니티 1" }).click();
     await expect(job).not.toBeVisible();
     await expect(community).toBeVisible();
     await page.getByRole("tab", { name: "전체 2" }).click();
@@ -121,6 +121,88 @@ for (const width of [1440, 820, 390]) {
     expect(browserErrors).toEqual([]);
   });
 }
+
+test("keeps a saved browser-owned post connected to its detail on mobile", async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+
+  const title = "저장 보관함에서 다시 볼 내 질문";
+  await page.setViewportSize({ height: 900, width: 390 });
+  await page.goto("/?compose=1");
+  await page.getByLabel("제목").fill(title);
+  await page
+    .getByLabel("내용")
+    .fill("공식 공고에서 반복되는 기술을 확인한 뒤 남기는 질문입니다.");
+  await page.getByLabel("태그 (선택)").fill("백엔드, 이직 준비");
+  await page.getByRole("button", { name: "피드에 올리기" }).click();
+
+  const homeCard = page.getByRole("article", { name: title });
+  await homeCard.getByRole("button", { name: `${title} 저장` }).click();
+  await expect(
+    homeCard.getByRole("button", { name: `${title} 저장 해제` }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await page.goto("/career/saved");
+  const savedCard = page.getByRole("article", { name: title });
+  await expect(savedCard).toBeVisible();
+  await expect(savedCard.getByText("내 로컬 글")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "커뮤니티 1" })).toBeVisible();
+  const localPostId = await page.evaluate(() => {
+    const posts = JSON.parse(
+      localStorage.getItem("ejik-fit:local-community-posts") ?? "[]",
+    );
+    return posts[0]?.id as string | undefined;
+  });
+  expect(localPostId).toMatch(/^local-/);
+  await expect(
+    savedCard.getByRole("link", { exact: true, name: title }),
+  ).toHaveAttribute("href", `/posts/${localPostId}`);
+
+  for (const target of [
+    page.getByRole("tab", { name: "커뮤니티 1" }),
+    savedCard.getByRole("link", { exact: true, name: title }),
+    savedCard.getByRole("button", { name: `${title} 저장 해제` }),
+  ]) {
+    const box = await target.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
+
+  await page.reload();
+  await expect(savedCard).toBeVisible();
+  await savedCard.getByRole("link", { exact: true, name: title }).click();
+  await expect(page).toHaveURL(new RegExp(`/posts/${localPostId}$`));
+  await expect(
+    page.getByRole("heading", { exact: true, level: 1, name: title }),
+  ).toBeVisible();
+  await expect(page.getByText("로컬 글", { exact: true })).toBeVisible();
+
+  await page.goto("/career/saved");
+  await page
+    .getByRole("article", { name: title })
+    .getByRole("button", { name: `${title} 저장 해제` })
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "아직 저장한 항목이 없습니다." }),
+  ).toBeVisible();
+  await page.goto("/");
+  const restoredHomeCard = page.getByRole("article", { name: title });
+  await expect(restoredHomeCard).toBeVisible();
+  await expect(
+    restoredHomeCard.getByRole("button", { name: `${title} 저장` }),
+  ).toHaveAttribute("aria-pressed", "false");
+  expect(browserErrors).toEqual([]);
+});
 
 test("opens the saved library from the user utility menu", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1440 });
