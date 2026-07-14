@@ -135,6 +135,33 @@ describe("saved job data route", () => {
     expect(peakActive).toBe(4);
   });
 
+  it("bounds upstream concurrency across simultaneous route requests", async () => {
+    const releases: Array<() => void> = [];
+    let active = 0;
+    let peakActive = 0;
+    vi.mocked(getPosting).mockImplementation(async (id) => {
+      active += 1;
+      peakActive = Math.max(peakActive, active);
+      await new Promise<void>((resolve) => releases.push(resolve));
+      active -= 1;
+      return { ...posting, id, title: id };
+    });
+
+    const responsePromises = Array.from({ length: 12 }, (_, index) =>
+      POST(request({ job_ids: [`parallel-${index}`] })),
+    );
+    await vi.waitFor(() => expect(getPosting).toHaveBeenCalledTimes(8));
+    expect(peakActive).toBe(8);
+
+    releases.splice(0).forEach((release) => release());
+    await vi.waitFor(() => expect(getPosting).toHaveBeenCalledTimes(12));
+    releases.splice(0).forEach((release) => release());
+
+    const responses = await Promise.all(responsePromises);
+    expect(responses.every((response) => response.status === 200)).toBe(true);
+    expect(peakActive).toBe(8);
+  });
+
   it("propagates a caller abort to in-flight upstream requests", async () => {
     const caller = new AbortController();
     let upstreamSignal: AbortSignal | undefined;
@@ -186,12 +213,17 @@ describe("saved job data route", () => {
 
   it("rate-limits repeated lookup fan-out from the same forwarded client", async () => {
     const client = `review-${crypto.randomUUID()}`;
-    vi.mocked(getPosting).mockResolvedValue(posting);
+    const ids = Array.from({ length: 24 }, (_, index) => `job-${index}`);
+    vi.mocked(getPosting).mockImplementation(async (id) => ({
+      ...posting,
+      id,
+      title: id,
+    }));
 
     let response: Response | undefined;
-    for (let index = 0; index < 31; index += 1) {
+    for (let index = 0; index < 11; index += 1) {
       response = await POST(
-        request({ job_ids: ["job-python"] }, undefined, {
+        request({ job_ids: ids }, undefined, {
           "x-forwarded-for": client,
         }),
       );
@@ -202,7 +234,7 @@ describe("saved job data route", () => {
     expect(await response?.json()).toEqual({
       error: "저장 공고 확인 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
     });
-    expect(getPosting).toHaveBeenCalledTimes(30);
+    expect(getPosting).toHaveBeenCalledTimes(240);
   });
 
   it("supports an empty saved list without contacting the API", async () => {

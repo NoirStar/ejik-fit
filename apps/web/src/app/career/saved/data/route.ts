@@ -8,14 +8,23 @@ import { ApiError, getPosting } from "@/lib/api";
 
 const INVALID_REQUEST_MESSAGE = "유효한 저장 공고 ID가 필요합니다.";
 const LOOKUP_CONCURRENCY = 4;
+const GLOBAL_LOOKUP_CONCURRENCY = 8;
 const LOOKUP_TIMEOUT_MS = 8_000;
-const RATE_LIMIT_MAX_REQUESTS = 30;
+const RATE_LIMIT_MAX_LOOKUPS = 240;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_CLIENTS = 512;
 const rateLimitByClient = new Map<
   string,
-  { count: number; resetAt: number }
+  { lookups: number; resetAt: number }
 >();
+type LookupWaiter = {
+  signal: AbortSignal;
+  resolve: (release: () => void) => void;
+  reject: (reason: unknown) => void;
+  abort: () => void;
+};
+const lookupWaiters: LookupWaiter[] = [];
+let activeLookups = 0;
 
 function forwardedClient(request: Request) {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -23,7 +32,7 @@ function forwardedClient(request: Request) {
   return client ? client.slice(0, 128) : null;
 }
 
-function consumeLookupQuota(request: Request) {
+function consumeLookupQuota(request: Request, lookupCount: number) {
   const client = forwardedClient(request);
   if (!client) return { allowed: true, retryAfter: 0 };
 
@@ -39,18 +48,81 @@ function consumeLookupQuota(request: Request) {
         if (oldestClient) rateLimitByClient.delete(oldestClient);
       }
     }
-    entry = { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
+    entry = { lookups: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
     rateLimitByClient.set(client, entry);
   }
 
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+  if (entry.lookups + lookupCount > RATE_LIMIT_MAX_LOOKUPS) {
     return {
       allowed: false,
       retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1_000)),
     };
   }
-  entry.count += 1;
+  entry.lookups += lookupCount;
   return { allowed: true, retryAfter: 0 };
+}
+
+function abortError() {
+  return new DOMException("Saved job lookup aborted", "AbortError");
+}
+
+function releaseLookupSlot() {
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    activeLookups -= 1;
+    grantLookupSlots();
+  };
+}
+
+function grantLookupSlots() {
+  while (
+    activeLookups < GLOBAL_LOOKUP_CONCURRENCY &&
+    lookupWaiters.length > 0
+  ) {
+    const waiter = lookupWaiters.shift();
+    if (!waiter) return;
+    waiter.signal.removeEventListener("abort", waiter.abort);
+    if (waiter.signal.aborted) {
+      waiter.reject(abortError());
+      continue;
+    }
+    activeLookups += 1;
+    waiter.resolve(releaseLookupSlot());
+  }
+}
+
+function acquireLookupSlot(signal: AbortSignal): Promise<() => void> {
+  if (signal.aborted) return Promise.reject(abortError());
+  if (activeLookups < GLOBAL_LOOKUP_CONCURRENCY) {
+    activeLookups += 1;
+    return Promise.resolve(releaseLookupSlot());
+  }
+
+  return new Promise((resolve, reject) => {
+    const waiter: LookupWaiter = {
+      signal,
+      resolve,
+      reject,
+      abort: () => {
+        const index = lookupWaiters.indexOf(waiter);
+        if (index >= 0) lookupWaiters.splice(index, 1);
+        reject(abortError());
+      },
+    };
+    signal.addEventListener("abort", waiter.abort, { once: true });
+    lookupWaiters.push(waiter);
+  });
+}
+
+async function getPostingWithinGlobalLimit(id: string, signal: AbortSignal) {
+  const release = await acquireLookupSlot(signal);
+  try {
+    return await getPosting(id, signal);
+  } finally {
+    release();
+  }
 }
 
 async function settleWithConcurrency<T, R>(
@@ -114,7 +186,7 @@ export async function POST(request: Request) {
   }
 
   if (ids.length > 0) {
-    const quota = consumeLookupQuota(request);
+    const quota = consumeLookupQuota(request, ids.length);
     if (!quota.allowed) {
       return NextResponse.json(
         {
@@ -136,7 +208,7 @@ export async function POST(request: Request) {
   let results: Array<PromiseSettledResult<Awaited<ReturnType<typeof getPosting>>>>;
   try {
     results = await settleWithConcurrency(ids, LOOKUP_CONCURRENCY, (id) =>
-      getPosting(id, lookup.signal),
+      getPostingWithinGlobalLimit(id, lookup.signal),
     );
   } finally {
     lookup.dispose();

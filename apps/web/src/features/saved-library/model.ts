@@ -10,7 +10,10 @@ import {
 } from "@/features/jobs/model";
 import { formatEmployment } from "@/lib/labels";
 import { validatedHttpUrl } from "@/lib/safe-url";
-import { MAX_SAVED_JOB_IDS } from "@/lib/saved-jobs";
+import {
+  MAX_SAVED_JOB_IDS,
+  MAX_SAVED_JOB_ID_LENGTH,
+} from "@/lib/saved-jobs";
 import type { PostingDetail } from "@/lib/types";
 
 export const MAX_SAVED_JOB_LOOKUPS = MAX_SAVED_JOB_IDS;
@@ -104,7 +107,7 @@ export function normalizeSavedJobRequest(value: unknown): string[] {
       throw new TypeError("Invalid saved job ID");
     }
     const id = valueId.trim();
-    if (!id || id.length > 200) {
+    if (!id || id.length > MAX_SAVED_JOB_ID_LENGTH) {
       throw new TypeError("Invalid saved job ID");
     }
     if (!seen.has(id)) {
@@ -142,7 +145,11 @@ function idList(value: unknown, key: string) {
   const ids: string[] = [];
   const seen = new Set<string>();
   for (const item of value) {
-    if (typeof item !== "string" || !item.trim() || item.length > 200) {
+    if (
+      typeof item !== "string" ||
+      !item.trim() ||
+      item.length > MAX_SAVED_JOB_ID_LENGTH
+    ) {
       throw new TypeError(`Invalid saved job response: ${key}`);
     }
     if (!seen.has(item)) {

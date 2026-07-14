@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  MAX_SAVED_JOB_ID_LENGTH,
   MAX_SAVED_JOB_IDS,
   clearSavedJobs,
   normalizeSavedJobIds,
@@ -27,7 +28,7 @@ function storage() {
 describe("saved job storage", () => {
   afterEach(() => window.localStorage.clear());
 
-  it("trims, deduplicates and sorts posting ids", () => {
+  it("trims, deduplicates and preserves the most recent posting order", () => {
     expect(normalizeSavedJobIds([" job-b ", "job-a", "job-b", ""])).toEqual([
       "job-a",
       "job-b",
@@ -41,6 +42,19 @@ describe("saved job storage", () => {
     );
 
     expect(normalizeSavedJobIds(ids)).toEqual(ids.slice(1));
+  });
+
+  it("drops legacy posting ids that the data route cannot accept", () => {
+    const fake = storage();
+    fake.setItem(
+      "ejik-fit:saved-job-ids",
+      JSON.stringify(["job-valid", "x".repeat(MAX_SAVED_JOB_ID_LENGTH + 1)]),
+    );
+
+    expect(readSavedJobIds(fake)).toEqual(["job-valid"]);
+    expect(toggleSavedJob("x".repeat(MAX_SAVED_JOB_ID_LENGTH + 1), fake)).toEqual([
+      "job-valid",
+    ]);
   });
 
   it("keeps a newly toggled posting when the saved library is full", () => {
@@ -58,11 +72,27 @@ describe("saved job storage", () => {
     expect(next).not.toContain("job-00");
   });
 
+  it("retains recency across writes before evicting the oldest posting", () => {
+    const fake = storage();
+    const oldestFirst = Array.from(
+      { length: MAX_SAVED_JOB_IDS },
+      (_, index) => `job-${String(MAX_SAVED_JOB_IDS - index - 1).padStart(2, "0")}`,
+    );
+    for (const id of oldestFirst) toggleSavedJob(id, fake);
+
+    const next = toggleSavedJob("job-new", fake);
+
+    expect(next).toHaveLength(MAX_SAVED_JOB_IDS);
+    expect(next).not.toContain("job-23");
+    expect(next).toContain("job-00");
+    expect(next.at(-1)).toBe("job-new");
+  });
+
   it("persists toggles and removes a saved posting on the second toggle", () => {
     const fake = storage();
 
     expect(toggleSavedJob("job-b", fake)).toEqual(["job-b"]);
-    expect(toggleSavedJob("job-a", fake)).toEqual(["job-a", "job-b"]);
+    expect(toggleSavedJob("job-a", fake)).toEqual(["job-b", "job-a"]);
     expect(toggleSavedJob("job-b", fake)).toEqual(["job-a"]);
     expect(readSavedJobIds(fake)).toEqual(["job-a"]);
   });

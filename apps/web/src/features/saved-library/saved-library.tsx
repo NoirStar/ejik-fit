@@ -179,7 +179,7 @@ export function SavedLibrary() {
         const response = await fetch("/career/saved/data", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ job_ids: savedJobIds }),
+          body: JSON.stringify({ job_ids: [...savedJobIds].reverse() }),
           signal: controller.signal,
         });
         if (!response.ok) throw new Error("saved job request failed");

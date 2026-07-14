@@ -187,6 +187,7 @@ describe("SavedLibrary", () => {
     const requestInit = fetchMock.mock.calls[0]?.[1];
     const requestBody = JSON.parse(String(requestInit?.body));
     expect(requestBody.job_ids).toHaveLength(24);
+    expect(requestBody.job_ids[0]).toBe("job-24");
     expect(requestBody.job_ids).toContain("job-24");
     expect(requestBody.job_ids).not.toContain("job-0");
   });

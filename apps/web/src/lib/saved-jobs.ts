@@ -2,6 +2,7 @@ const KEY = "ejik-fit:saved-job-ids";
 const CHANGE_EVENT = "ejik-fit:saved-job-ids-change";
 
 export const MAX_SAVED_JOB_IDS = 24;
+export const MAX_SAVED_JOB_ID_LENGTH = 200;
 
 type SavedJobsListener = (ids: string[]) => void;
 
@@ -9,14 +10,12 @@ export function normalizeSavedJobIds(ids: string[]) {
   const recentIds = new Map<string, true>();
   for (const rawId of ids) {
     const id = rawId.trim();
-    if (!id) continue;
+    if (!id || id.length > MAX_SAVED_JOB_ID_LENGTH) continue;
     recentIds.delete(id);
     recentIds.set(id, true);
   }
 
-  return Array.from(recentIds.keys())
-    .slice(-MAX_SAVED_JOB_IDS)
-    .sort((left, right) => left.localeCompare(right));
+  return Array.from(recentIds.keys()).slice(-MAX_SAVED_JOB_IDS);
 }
 
 function defaultStorage(): Storage | null {
@@ -86,7 +85,9 @@ export function toggleSavedJob(
 ): string[] {
   const normalizedId = id.trim();
   const current = readSavedJobIds(storage);
-  if (!normalizedId) return current;
+  if (!normalizedId || normalizedId.length > MAX_SAVED_JOB_ID_LENGTH) {
+    return current;
+  }
   return writeSavedJobIds(
     current.includes(normalizedId)
       ? current.filter((savedId) => savedId !== normalizedId)

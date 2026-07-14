@@ -11,7 +11,7 @@
 
 - `app/career/saved/data/route.test.ts`에서 잘못된 body, 개수 제한, 중복 제거, 성공, 404, 일시 실패를 먼저 실패시킨다.
 - `POST /career/saved/data`를 구현한다.
-- 최대 24개 ID만 허용하고 `getPosting` 결과를 `Promise.allSettled`로 격리한다.
+- 최대 24개 ID만 허용하고 공고별 실패를 격리한다. 요청당 동시 조회 4개, 인스턴스 전체 8개, 8초 제한, 취소 전파, ID 수 기반 요청 제한을 함께 적용한다.
 - 공고 설명 본문을 제외한 표시 모델만 반환하고 `Cache-Control: no-store`를 지정한다.
 
 ## 3. 저장 보관함 UI 구현
