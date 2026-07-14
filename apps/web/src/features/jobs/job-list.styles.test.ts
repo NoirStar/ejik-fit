@@ -22,4 +22,10 @@ describe("job list service density", () => {
       /@media \(max-width: 680px\)[\s\S]*?\.facts\s*\{[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/,
     );
   });
+
+  it("keeps the company profile link at the shared touch target", () => {
+    expect(css).toMatch(
+      /\.identity \.companyLink\s*\{[^}]*min-width: var\(--touch-target\);[^}]*min-height: var\(--touch-target\);/,
+    );
+  });
 });

@@ -120,7 +120,11 @@ describe("JobDetail", () => {
     expect(JSON.stringify(jsonLd.jobLocation)).toContain("서울");
 
     const trust = screen.getByRole("region", { name: "공고 신뢰 정보" });
+    const skills = screen.getByRole("region", { name: "요구 기술 근거" });
     const description = screen.getByRole("region", { name: "공고 원문" });
+    expect(
+      skills.compareDocumentPosition(trust) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
       trust.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();

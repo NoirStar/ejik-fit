@@ -35,6 +35,7 @@ for (const width of [1440, 820, 600, 390]) {
 
     for (const target of [
       page.getByRole("button", { name: "검색" }),
+      page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
       page.getByRole("link", { name: "Python 스킬맵" }),
       page.getByRole("link", { name: "Python Backend Engineer" }),
     ]) {

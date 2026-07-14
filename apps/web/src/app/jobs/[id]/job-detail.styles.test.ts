@@ -20,8 +20,13 @@ describe("job detail service density", () => {
 
   it("reserves mobile space for the fixed action bar above navigation", () => {
     expect(actionCss).toMatch(
-      /@media \(max-width: 680px\)[\s\S]*?\.primaryActions\s*\{[\s\S]*?position: fixed/,
+      /@media \(max-width: 839px\)[\s\S]*?\.primaryActions\s*\{[\s\S]*?position: fixed/,
     );
-    expect(actionCss).toContain("bottom: var(--mobile-nav-height)");
+    expect(actionCss).toContain(
+      "bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom))",
+    );
+    expect(detailCss).toContain(
+      "calc(var(--mobile-nav-height) + 5.5rem + env(safe-area-inset-bottom))",
+    );
   });
 });

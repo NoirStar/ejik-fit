@@ -3,6 +3,12 @@ import { expect, test } from "@playwright/test";
 for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified job detail usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ height: width === 390 ? 844 : 900, width });
+    if (width === 390) {
+      const session = await page.context().newCDPSession(page);
+      await session.send("Emulation.setSafeAreaInsetsOverride", {
+        insets: { bottom: 34, left: 0, right: 0, top: 0 },
+      });
+    }
     await page.addInitScript(() => {
       localStorage.setItem(
         "ejik-fit:owned-skills",
@@ -73,7 +79,7 @@ for (const width of [1440, 820, 600, 390]) {
       }),
     ).toHaveAttribute("aria-pressed", "true");
 
-    if (width === 390) {
+    if (width <= 839) {
       const actions = page.getByRole("region", { name: "지원 준비" });
       const primaryActions = page.getByRole("group", { name: "지원 및 저장" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
@@ -92,7 +98,7 @@ for (const width of [1440, 820, 600, 390]) {
       expect(factsBox).not.toBeNull();
       expect(skillsBox).not.toBeNull();
       expect(trustBox).not.toBeNull();
-      expect(factsBox!.y).toBeLessThan(trustBox!.y);
+      expect(factsBox!.y).toBeLessThan(skillsBox!.y);
       expect(skillsBox!.y).toBeLessThan(trustBox!.y);
       expect(
         await primaryActions.evaluate(
@@ -110,6 +116,22 @@ for (const width of [1440, 820, 600, 390]) {
       expect(mainPaddingBottom).toBeGreaterThanOrEqual(
         navigationBox!.height + actionsBox!.height,
       );
+
+      const savedButton = page.getByRole("button", {
+        name: "Python Backend Engineer 저장 해제",
+      });
+      for (const target of [apply, savedButton]) {
+        expect(
+          await target.evaluate((element) => {
+            const box = element.getBoundingClientRect();
+            const hit = document.elementFromPoint(
+              box.left + box.width / 2,
+              box.top + box.height / 2,
+            );
+            return hit === element || element.contains(hit);
+          }),
+        ).toBe(true);
+      }
     }
   });
 }
