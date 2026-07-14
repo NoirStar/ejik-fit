@@ -6,6 +6,7 @@ import { clearCareerPreferences } from "@/lib/career-preferences";
 import { clearJobApplicationStages } from "@/lib/job-application-stages";
 import { clearLocalCommunityPosts } from "@/lib/local-community-posts";
 import { clearOwnedSkills } from "@/lib/owned-skills";
+import { clearRecentCommunityTopics } from "@/lib/recent-community-topics";
 import { clearSavedJobs } from "@/lib/saved-jobs";
 import { clearSocialInteractions } from "@/lib/social-interactions";
 
@@ -21,6 +22,7 @@ export function ClearLocalData() {
       clearOwnedSkills(storage);
       clearCareerPreferences(storage);
       clearLocalCommunityPosts(storage);
+      clearRecentCommunityTopics(storage);
       clearSavedJobs(storage);
       clearJobApplicationStages(storage);
       clearSocialInteractions(storage);
@@ -28,6 +30,7 @@ export function ClearLocalData() {
         storage.getItem("ejik-fit:owned-skills") === null &&
         storage.getItem("ejik-fit:career-preferences") === null &&
         storage.getItem("ejik-fit:local-community-posts") === null &&
+        storage.getItem("ejik-fit:recent-community-topics") === null &&
         storage.getItem("ejik-fit:saved-job-ids") === null &&
         storage.getItem("ejik-fit:job-application-stages") === null &&
         storage.getItem("ejik-fit:social-interactions") === null;

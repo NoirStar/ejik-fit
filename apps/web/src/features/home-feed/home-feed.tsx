@@ -46,10 +46,12 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
+import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { itemsForTab } from "./feed-order";
 import { localCommunityPostToFeedItem } from "./model";
-import { MOCK_COMMUNITY_POSTS, MOCK_SOCIAL_ITEMS } from "./mock-community";
+import { MOCK_SOCIAL_ITEMS } from "./mock-community";
+import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
 import type {
   CommunityPostFeedItem,
@@ -576,6 +578,7 @@ export function HomeFeed({
       );
       return;
     }
+    removeRecentCommunityTopic(post.id);
     setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
   }
 
@@ -659,16 +662,7 @@ export function HomeFeed({
             </nav>
           </section>
 
-          <section className={styles.railCard}>
-            <h2>최근 본 주제</h2>
-            <ul className={styles.recentTopics}>
-              {MOCK_COMMUNITY_POSTS.slice(0, 4).map((post) => (
-                <li key={post.id}>
-                  <Link href={post.href}># {post.tags[0]}</Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <RecentTopicList />
         </aside>
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>

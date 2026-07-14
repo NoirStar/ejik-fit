@@ -10,6 +10,10 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
+import {
+  readRecentCommunityTopics,
+  recordRecentCommunityTopic,
+} from "@/lib/recent-community-topics";
 import type {
   PostingListResponse,
   SkillGraphResponse,
@@ -129,6 +133,69 @@ describe("HomeFeed", () => {
       "href",
       "/career/saved",
     );
+  });
+
+  it("shows an honest empty state instead of invented recent topics", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    const recent = screen.getByRole("region", { name: "최근 본 주제" });
+    expect(recent).toHaveTextContent(
+      "커뮤니티 글을 열면 이 브라우저에 최근 주제가 표시됩니다.",
+    );
+    expect(
+      within(recent).queryByRole("link", { name: "# 백엔드" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("restores recent topics in newest-first order and reacts to same-tab views", async () => {
+    recordRecentCommunityTopic(
+      {
+        postId: "career-move-3y-backend",
+        title: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
+        topicLabel: "백엔드",
+        source: "mock",
+      },
+      { viewedAt: "2026-07-14T01:00:00.000Z" },
+    );
+    recordRecentCommunityTopic(
+      {
+        postId: "kubernetes-experience",
+        title: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+        topicLabel: "Kubernetes",
+        source: "mock",
+      },
+      { viewedAt: "2026-07-14T02:00:00.000Z" },
+    );
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    const recent = screen.getByRole("region", { name: "최근 본 주제" });
+    const restoredLinks = await within(recent).findAllByRole("link", {
+      name: /다시 보기/,
+    });
+    expect(restoredLinks.map((link) => link.getAttribute("href"))).toEqual([
+      "/posts/kubernetes-experience",
+      "/posts/career-move-3y-backend",
+    ]);
+    expect(restoredLinks[0]).toHaveAccessibleName(
+      "Kubernetes: Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요? 다시 보기",
+    );
+
+    act(() => {
+      recordRecentCommunityTopic(
+        {
+          postId: "salary-negotiation-range",
+          title: "연봉 협상 범위, 시장 데이터와 어떻게 맞춰보시나요?",
+          topicLabel: "연봉 협상",
+          source: "mock",
+        },
+        { viewedAt: "2026-07-14T03:00:00.000Z" },
+      );
+    });
+    expect(
+      await within(recent).findByRole("link", {
+        name: "연봉 협상: 연봉 협상 범위, 시장 데이터와 어떻게 맞춰보시나요? 다시 보기",
+      }),
+    ).toHaveAttribute("href", "/posts/salary-negotiation-range");
   });
 
   it("builds the following tab from browser-owned author choices", async () => {
@@ -304,6 +371,22 @@ describe("HomeFeed", () => {
     expect(
       screen.getByText("작성한 글을 이 브라우저에 저장했습니다."),
     ).toBeInTheDocument();
+    act(() => {
+      recordRecentCommunityTopic(
+        {
+          postId: stored[0].id,
+          title: "첫 이직 준비에서 배운 점",
+          topicLabel: "이직 준비",
+          source: "local",
+        },
+        { viewedAt: "2026-07-14T05:00:00.000Z" },
+      );
+    });
+    expect(
+      await screen.findByRole("link", {
+        name: "이직 준비: 첫 이직 준비에서 배운 점 다시 보기",
+      }),
+    ).toBeInTheDocument();
 
     unmount();
     render(<HomeFeed snapshot={buildSnapshot()} />);
@@ -319,6 +402,7 @@ describe("HomeFeed", () => {
       screen.queryByRole("article", { name: "첫 이직 준비에서 배운 점" }),
     ).not.toBeInTheDocument();
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBe("[]");
+    expect(readRecentCommunityTopics()).toEqual([]);
     expect(screen.getByRole("status")).toHaveTextContent(
       "작성한 글을 이 브라우저에서 삭제했습니다.",
     );

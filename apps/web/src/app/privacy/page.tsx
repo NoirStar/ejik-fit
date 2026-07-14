@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
-      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술·비교 조건·로컬 커뮤니티 글·저장 공고·지원 단계·커뮤니티 상호작용은 사용 중인 브라우저에만 저장됩니다."
+      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술·비교 조건·로컬 커뮤니티 글·최근 본 주제·저장 공고·지원 단계·커뮤니티 상호작용은 사용 중인 브라우저에만 저장됩니다."
       title="개인정보와 브라우저 저장"
     >
       <section>
@@ -56,6 +56,16 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>최근 본 커뮤니티 주제</h2>
+        <p>
+          커뮤니티 상세에서 확인한 글 ID, 제목, 대표 태그, 출처와 마지막 열람
+          시각은 <code>ejik-fit:recent-community-topics</code> 키에 저장됩니다.
+          본문·작성자·반응 수는 복사하지 않고 서버로 전송하지 않으며 다른
+          브라우저와 동기화하지 않습니다.
+        </p>
+      </section>
+
+      <section>
         <h2>내 스택 저장</h2>
         <p>
           선택한 기술은 브라우저 localStorage의 <code>ejik-fit:owned-skills</code> 키에
@@ -84,9 +94,9 @@ export default function PrivacyPage() {
       <section>
         <h2>저장 데이터 삭제</h2>
         <p>
-          아래 버튼은 내 스택, 커리어 비교 조건, 작성한 로컬 글, 저장한 공고
-          ID, 지원 단계, 커뮤니티 상호작용, 현재 URL query를 이 브라우저에서
-          지웁니다.
+          아래 버튼은 내 스택, 커리어 비교 조건, 작성한 로컬 글, 최근 본 주제,
+          저장한 공고 ID, 지원 단계, 커뮤니티 상호작용, 현재 URL query를 이
+          브라우저에서 지웁니다.
         </p>
         <ClearLocalData />
       </section>
