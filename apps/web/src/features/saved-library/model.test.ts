@@ -118,4 +118,3 @@ describe("saved library model", () => {
     expect(selected.unavailableIds).toEqual(["local-missing"]);
   });
 });
-
