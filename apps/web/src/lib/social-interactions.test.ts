@@ -7,6 +7,7 @@ import {
   normalizeSocialInteractions,
   readSocialInteractions,
   subscribeSocialInteractions,
+  toggleAuthorFollow,
   togglePostReaction,
   togglePostSave,
   writeSocialInteractions,
@@ -34,6 +35,7 @@ describe("social interaction storage", () => {
       normalizeSocialInteractions({
         reactedPostIds: [" post-b ", "post-a", "post-b", 3],
         savedPostIds: ["post-c", "", null],
+        followedAuthorIds: [" author-b ", "author-a", "author-b", 4],
         commentsByPostId: {
           " post-a ": [
             {
@@ -57,6 +59,7 @@ describe("social interaction storage", () => {
     ).toEqual({
       reactedPostIds: ["post-a", "post-b"],
       savedPostIds: ["post-c"],
+      followedAuthorIds: ["author-a", "author-b"],
       commentsByPostId: {
         "post-a": [
           {
@@ -67,6 +70,23 @@ describe("social interaction storage", () => {
         ],
       },
     });
+  });
+
+  it("migrates legacy state and bounds followed author ids", () => {
+    expect(
+      normalizeSocialInteractions({ savedPostIds: ["post-a"] }),
+    ).toEqual({
+      ...EMPTY_SOCIAL_INTERACTIONS,
+      savedPostIds: ["post-a"],
+    });
+
+    const followedAuthorIds = Array.from(
+      { length: 202 },
+      (_, index) => `author-${String(index).padStart(3, "0")}`,
+    );
+    expect(
+      normalizeSocialInteractions({ followedAuthorIds }).followedAuthorIds,
+    ).toEqual(followedAuthorIds.slice(0, 200));
   });
 
   it("merges normalized post aliases without duplicating comment ids", () => {
@@ -98,7 +118,7 @@ describe("social interaction storage", () => {
     ]);
   });
 
-  it("persists reaction and save toggles", () => {
+  it("persists reaction, save and author-follow toggles", () => {
     const fake = storage();
 
     expect(togglePostReaction("post-b", fake).reactedPostIds).toEqual([
@@ -106,6 +126,10 @@ describe("social interaction storage", () => {
     ]);
     expect(togglePostReaction("post-b", fake).reactedPostIds).toEqual([]);
     expect(togglePostSave("post-a", fake).savedPostIds).toEqual(["post-a"]);
+    expect(toggleAuthorFollow("author-a", fake).followedAuthorIds).toEqual([
+      "author-a",
+    ]);
+    expect(toggleAuthorFollow("author-a", fake).followedAuthorIds).toEqual([]);
     expect(readSocialInteractions(fake).savedPostIds).toEqual(["post-a"]);
   });
 
@@ -145,6 +169,9 @@ describe("social interaction storage", () => {
 
     expect(readSocialInteractions(blocked)).toEqual(EMPTY_SOCIAL_INTERACTIONS);
     expect(togglePostReaction("post-a", blocked)).toEqual(
+      EMPTY_SOCIAL_INTERACTIONS,
+    );
+    expect(toggleAuthorFollow("author-a", blocked)).toEqual(
       EMPTY_SOCIAL_INTERACTIONS,
     );
     expect(

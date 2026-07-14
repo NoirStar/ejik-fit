@@ -14,6 +14,7 @@ export type LocalPostComment = {
 export type SocialInteractions = {
   reactedPostIds: string[];
   savedPostIds: string[];
+  followedAuthorIds: string[];
   commentsByPostId: Record<string, LocalPostComment[]>;
 };
 
@@ -28,6 +29,7 @@ type AddLocalPostCommentOptions = {
 export const EMPTY_SOCIAL_INTERACTIONS: SocialInteractions = {
   reactedPostIds: [],
   savedPostIds: [],
+  followedAuthorIds: [],
   commentsByPostId: {},
 };
 
@@ -84,6 +86,7 @@ export function normalizeSocialInteractions(value: unknown): SocialInteractions 
     return {
       reactedPostIds: [],
       savedPostIds: [],
+      followedAuthorIds: [],
       commentsByPostId: {},
     };
   }
@@ -107,6 +110,7 @@ export function normalizeSocialInteractions(value: unknown): SocialInteractions 
   return {
     reactedPostIds: normalizedIds(value.reactedPostIds),
     savedPostIds: normalizedIds(value.savedPostIds),
+    followedAuthorIds: normalizedIds(value.followedAuthorIds),
     commentsByPostId,
   };
 }
@@ -171,7 +175,7 @@ export function writeSocialInteractions(
 }
 
 function togglePostId(
-  field: "reactedPostIds" | "savedPostIds",
+  field: "reactedPostIds" | "savedPostIds" | "followedAuthorIds",
   postId: string,
   storage: Storage | null,
 ) {
@@ -199,6 +203,13 @@ export function togglePostReaction(
 
 export function togglePostSave(postId: string, storage = defaultStorage()) {
   return togglePostId("savedPostIds", postId, storage);
+}
+
+export function toggleAuthorFollow(
+  authorId: string,
+  storage = defaultStorage(),
+) {
+  return togglePostId("followedAuthorIds", authorId, storage);
 }
 
 function localCommentId() {

@@ -17,11 +17,20 @@ function engagementScore(
   return item.metrics.reactions + item.metrics.comments * 2 + item.metrics.saves;
 }
 
-export function itemsForTab(items: FeedItem[], tab: FeedTab): FeedItem[] {
+export function itemsForTab(
+  items: FeedItem[],
+  tab: FeedTab,
+  followedAuthorIds: string[] = [],
+): FeedItem[] {
   if (tab === "recommended") return [...items];
 
   if (tab === "following") {
-    return items.filter((item) => isSocialItem(item) && item.isFollowing);
+    const followed = new Set(followedAuthorIds);
+    return items.filter(
+      (item) =>
+        isSocialItem(item) &&
+        (item.source === "local" || followed.has(item.authorId)),
+    );
   }
 
   if (tab === "latest") {

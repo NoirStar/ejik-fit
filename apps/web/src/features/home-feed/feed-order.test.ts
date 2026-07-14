@@ -8,10 +8,10 @@ const items: FeedItem[] = [
     id: "community-1",
     type: "community_post",
     category: "커리어 질문",
+    authorId: "server-garden",
     authorName: "서버정원",
     authorHeadline: "백엔드 개발자",
     authorTone: "violet",
-    isFollowing: true,
     createdAt: "2026-07-13T09:00:00.000Z",
     createdLabel: "2시간 전",
     title: "커뮤니티 질문",
@@ -42,10 +42,10 @@ const items: FeedItem[] = [
     id: "review-1",
     type: "interview_review",
     category: "면접 후기",
+    authorId: "night-builder",
     authorName: "빌드하는밤",
     authorHeadline: "서버 개발자",
     authorTone: "green",
-    isFollowing: false,
     createdAt: "2026-07-13T10:00:00.000Z",
     createdLabel: "1시간 전",
     companyType: "플랫폼 기업",
@@ -85,9 +85,10 @@ describe("itemsForTab", () => {
   });
 
   it("keeps only followed social content for following", () => {
-    expect(itemsForTab(items, "following").map(({ id }) => id)).toEqual([
-      "community-1",
-    ]);
+    expect(
+      itemsForTab(items, "following", ["server-garden"]).map(({ id }) => id),
+    ).toEqual(["community-1"]);
+    expect(itemsForTab(items, "following")).toEqual([]);
   });
 
   it("sorts dated social content before undated API cards for latest", () => {

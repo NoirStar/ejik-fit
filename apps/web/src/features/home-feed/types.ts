@@ -13,10 +13,10 @@ export type CommunityPostFeedItem = {
   id: string;
   type: "community_post";
   category: "이직 고민" | "커리어 질문" | "업무 이야기";
+  authorId: string;
   authorName: string;
   authorHeadline: string;
   authorTone: AuthorTone;
-  isFollowing: boolean;
   createdAt: string;
   createdLabel: string;
   title: string;
@@ -31,10 +31,10 @@ export type InterviewReviewFeedItem = {
   id: string;
   type: "interview_review";
   category: "면접 후기";
+  authorId: string;
   authorName: string;
   authorHeadline: string;
   authorTone: AuthorTone;
-  isFollowing: boolean;
   createdAt: string;
   createdLabel: string;
   companyType: string;
