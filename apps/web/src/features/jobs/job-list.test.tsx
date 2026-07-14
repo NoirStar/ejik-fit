@@ -187,6 +187,7 @@ describe("JobList", () => {
     );
 
     expect(screen.getByText("조건에 맞는 공식 공고가 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("검색 조건을 조정해 주세요.")).toBeInTheDocument();
     expect(screen.queryByText("공고 데이터를 불러오지 못했습니다.")).not.toBeInTheDocument();
 
     rerender(

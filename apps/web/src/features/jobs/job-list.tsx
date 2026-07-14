@@ -388,14 +388,16 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
                 <option value="mixed">신입·경력</option>
               </select>
             </div>
-            <button className={styles.searchButton} type="submit">
-              검색
-            </button>
-            {filtering && (
-              <Link className={styles.resetLink} href="/jobs">
-                필터 초기화
-              </Link>
-            )}
+            <div className={styles.filterActions}>
+              <button className={styles.searchButton} type="submit">
+                검색
+              </button>
+              {filtering && (
+                <Link className={styles.resetLink} href="/jobs">
+                  필터 초기화
+                </Link>
+              )}
+            </div>
           </form>
           <div className={styles.trustNote}>
             <ShieldCheck aria-hidden="true" size={19} weight="fill" />
@@ -462,7 +464,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
               <MagnifyingGlass aria-hidden="true" size={24} />
               <div>
                 <h3>조건에 맞는 공식 공고가 없습니다.</h3>
-                <p>검색어 또는 경력 조건을 조정해 주세요.</p>
+                <p>검색 조건을 조정해 주세요.</p>
               </div>
               <Link href="/jobs">전체 공고 보기</Link>
             </div>

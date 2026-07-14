@@ -79,3 +79,20 @@ test("combines query and career filters like the production API", async ({
   ).not.toBeVisible();
   await expect(page.getByText("조건에 맞는 공식 공고가 없습니다.")).toBeVisible();
 });
+
+test("keeps category filter actions together at tablet width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 900, width: 820 });
+  await page.goto("/jobs?category=infra");
+
+  await expect(page.getByLabel("기술 분야")).toHaveValue("infra");
+  const searchBox = await page.getByRole("button", { name: "검색" }).boundingBox();
+  const resetBox = await page.getByRole("link", { name: "필터 초기화" }).boundingBox();
+
+  expect(searchBox).not.toBeNull();
+  expect(resetBox).not.toBeNull();
+  expect(Math.abs((searchBox?.y ?? 0) - (resetBox?.y ?? 0))).toBeLessThan(2);
+  expect(searchBox?.height).toBeGreaterThanOrEqual(44);
+  expect(resetBox?.height).toBeGreaterThanOrEqual(44);
+});
