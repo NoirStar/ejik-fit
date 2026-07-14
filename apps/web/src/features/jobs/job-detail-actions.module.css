@@ -42,6 +42,7 @@
   font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
+  word-break: keep-all;
 }
 
 .apply {
