@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified job detail usable at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ height: 900, width });
+    await page.setViewportSize({ height: width === 390 ? 844 : 900, width });
     await page.addInitScript(() => {
       localStorage.setItem(
         "ejik-fit:owned-skills",
@@ -27,6 +27,18 @@ for (const width of [1440, 820, 600, 390]) {
     ).toBeVisible();
     await expect(page.getByText("Do not render this HTML")).toHaveCount(0);
 
+    const title = page.getByRole("heading", {
+      level: 1,
+      name: "Python Backend Engineer",
+    });
+    const titleSize = await title.evaluate((element) =>
+      parseFloat(getComputedStyle(element).fontSize),
+    );
+    expect(titleSize).toBeLessThanOrEqual(width <= 680 ? 28 : 34);
+    expect(
+      await title.evaluate((element) => getComputedStyle(element).wordBreak),
+    ).toBe("keep-all");
+
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
@@ -50,7 +62,7 @@ for (const width of [1440, 820, 600, 390]) {
         .getByRole("heading", { name: "채용 조건" })
         .locator("+ dl")
         .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
-      expect(factColumns.split(" ")).toHaveLength(1);
+      expect(factColumns.split(" ")).toHaveLength(2);
     }
 
     await save.click();
@@ -64,23 +76,32 @@ for (const width of [1440, 820, 600, 390]) {
     if (width === 390) {
       const actions = page.getByRole("region", { name: "지원 준비" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
+      const trust = page.getByRole("region", { name: "공고 신뢰 정보" });
       const navigation = page.getByRole("navigation", {
         name: "모바일 주요 탐색",
       });
       await expect(navigation).toBeVisible();
       const actionsBox = await actions.boundingBox();
       const factsBox = await facts.boundingBox();
+      const trustBox = await trust.boundingBox();
       expect(actionsBox).not.toBeNull();
       expect(factsBox).not.toBeNull();
-      expect(actionsBox!.y).toBeLessThan(factsBox!.y);
+      expect(trustBox).not.toBeNull();
+      expect(factsBox!.y).toBeLessThan(trustBox!.y);
       expect(
         await actions.evaluate((element) => getComputedStyle(element).position),
-      ).toBe("static");
+      ).toBe("fixed");
       const navigationBox = await navigation.boundingBox();
+      expect(navigationBox).not.toBeNull();
+      expect(actionsBox!.y + actionsBox!.height).toBeLessThanOrEqual(
+        navigationBox!.y + 1,
+      );
       const mainPaddingBottom = await page
         .locator("main")
         .evaluate((element) => parseFloat(getComputedStyle(element).paddingBottom));
-      expect(mainPaddingBottom).toBeGreaterThanOrEqual(navigationBox?.height ?? 0);
+      expect(mainPaddingBottom).toBeGreaterThanOrEqual(
+        navigationBox!.height + actionsBox!.height,
+      );
     }
   });
 }
