@@ -289,11 +289,13 @@ export function SavedLibrary() {
   const communityCount = socialInteractions.savedPostIds.length;
   const totalCount = jobCount + communityCount;
   const showJobs =
-    activeScope === "all" ||
     activeScope === "jobs" ||
-    activeScope === "applications";
+    activeScope === "applications" ||
+    (activeScope === "all" && jobCount > 0);
   const showCommunity =
-    activeScope === "all" || activeScope === "community";
+    activeScope === "community" ||
+    (activeScope === "all" && communityCount > 0);
+  const singleCollection = Number(showJobs) + Number(showCommunity) <= 1;
 
   function countForScope(scope: SavedScope) {
     if (scope === "jobs") return jobCount;
@@ -443,7 +445,7 @@ export function SavedLibrary() {
       <div
         aria-labelledby={`saved-scope-${activeScope}`}
         className={styles.panel}
-        data-single={activeScope === "all" ? undefined : "true"}
+        data-single={singleCollection ? "true" : undefined}
         id="saved-library-panel"
         role="tabpanel"
       >

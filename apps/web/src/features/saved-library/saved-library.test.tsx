@@ -168,6 +168,10 @@ describe("SavedLibrary", () => {
       }),
     ).toHaveTextContent("예시 콘텐츠");
     expect(screen.getByRole("tab", { name: "커뮤니티 2" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "공식 공고" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("tabpanel")).toHaveAttribute("data-single", "true");
 
     deleteLocalCommunityPost("local-browser-question");
 
