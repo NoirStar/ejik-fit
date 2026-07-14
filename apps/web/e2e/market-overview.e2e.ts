@@ -9,12 +9,16 @@ for (const width of [1440, 390]) {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
 
-    await page.setViewportSize({ height: 900, width });
+    await page.setViewportSize({ height: width === 390 ? 844 : 900, width });
     await page.goto("/market?category=infra&career_type=experienced");
 
-    await expect(
-      page.getByRole("heading", { level: 1, name: "채용 시장" }),
-    ).toBeVisible();
+    const title = page.getByRole("heading", { level: 1, name: "채용 시장" });
+    await expect(title).toBeVisible();
+    expect(
+      await title.evaluate((element) =>
+        parseFloat(getComputedStyle(element).fontSize),
+      ),
+    ).toBeLessThanOrEqual(34);
     await expect(page.getByRole("link", { exact: true, name: "인프라" })).toHaveAttribute(
       "aria-current",
       "page",
@@ -28,6 +32,7 @@ for (const width of [1440, 390]) {
       page.getByText("확인 공고", { exact: true }).locator(".."),
     ).toContainText("1건");
     await expect(page.getByRole("link", { name: "Python 스킬맵" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Python 스킬맵" })).toBeInViewport();
     await expect(page.getByRole("link", { name: "Kubernetes 스킬맵" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Go 스킬맵" })).not.toBeVisible();
     await expect(
@@ -43,6 +48,27 @@ for (const width of [1440, 390]) {
       ),
     ).toBe(false);
     expect(consoleErrors).toEqual([]);
+
+    if (width === 390) {
+      const categoryFilters = page.getByRole("navigation", {
+        name: "기술 분야",
+      });
+      const careerFilters = page.getByRole("navigation", {
+        name: "경력 조건",
+      });
+
+      await expect(categoryFilters).toHaveCSS("flex-wrap", "nowrap");
+      await expect(categoryFilters).toHaveCSS("overflow-x", "auto");
+      expect(
+        await categoryFilters.evaluate((element) => element.scrollHeight),
+      ).toBeLessThanOrEqual(46);
+      expect(
+        await careerFilters.evaluate((element) => element.scrollHeight),
+      ).toBeLessThanOrEqual(46);
+      await expect(
+        page.getByText("확인 기술", { exact: true }).locator(".."),
+      ).toBeInViewport();
+    }
 
     for (const target of [
       page.getByRole("link", { exact: true, name: "언어" }),
