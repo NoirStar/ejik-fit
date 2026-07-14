@@ -13,6 +13,7 @@ import {
   NotePencil,
   ShieldCheck,
   Stack,
+  Trash,
   UserCheck,
   UserPlus,
   WarningCircle,
@@ -25,8 +26,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CompanyMark } from "./company-mark";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
+  createLocalCommunityPost,
+  readLocalCommunityPosts,
+  removeLocalCommunityPost,
+  subscribeLocalCommunityPosts,
+  type LocalCommunityPost,
+} from "@/lib/local-community-posts";
+import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
+  removePostSocialInteractions,
   subscribeSocialInteractions,
   toggleAuthorFollow,
   togglePostReaction,
@@ -40,6 +49,7 @@ import {
 } from "@/lib/saved-jobs";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { itemsForTab } from "./feed-order";
+import { localCommunityPostToFeedItem } from "./model";
 import { MOCK_COMMUNITY_POSTS, MOCK_SOCIAL_ITEMS } from "./mock-community";
 import styles from "./home-feed.module.css";
 import type {
@@ -62,7 +72,7 @@ type LocalPostDraft = {
   body: string;
   tags: string;
 };
-type DraftErrors = Partial<Record<"title" | "body", string>>;
+type DraftErrors = Partial<Record<"title" | "body" | "storage", string>>;
 type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
 
 const TABS: Array<{ id: FeedTab; label: string }> = [
@@ -76,29 +86,6 @@ const EMPTY_DRAFT: LocalPostDraft = { title: "", body: "", tags: "" };
 
 function isSocialItem(item: FeedItem): item is SocialItem {
   return item.type === "community_post" || item.type === "interview_review";
-}
-
-function localPostId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `local-${crypto.randomUUID()}`;
-  }
-  return `local-${Date.now()}`;
-}
-
-function parseTags(value: string) {
-  const seen = new Set<string>();
-  const tags: string[] = [];
-
-  for (const rawTag of value.split(",")) {
-    const tag = rawTag.trim();
-    const key = tag.toLocaleLowerCase("ko-KR");
-    if (!tag || seen.has(key)) continue;
-    seen.add(key);
-    tags.push(tag);
-    if (tags.length === 4) break;
-  }
-
-  return tags;
 }
 
 function formatVerificationDate(value: string | null) {
@@ -129,6 +116,7 @@ function SocialCard({
   followDisabled,
   followed,
   localCommentCount,
+  onDelete,
   onFollow,
   onReact,
   onSave,
@@ -139,6 +127,7 @@ function SocialCard({
   followDisabled: boolean;
   followed: boolean;
   localCommentCount: number;
+  onDelete(): void;
   onFollow(): void;
   onReact(): void;
   onSave(): void;
@@ -163,7 +152,17 @@ function SocialCard({
             <strong>{item.category}</strong>
             <span>{item.createdLabel}</span>
           </div>
-          {item.source !== "local" && (
+          {item.source === "local" ? (
+            <button
+              aria-label={`${item.title} 삭제`}
+              className={styles.localDeleteButton}
+              onClick={onDelete}
+              type="button"
+            >
+              <Trash aria-hidden="true" size={15} />
+              삭제
+            </button>
+          ) : (
             <button
               aria-label={`${item.authorName} ${followed ? "팔로우 해제" : "팔로우"}`}
               aria-pressed={followed}
@@ -400,6 +399,7 @@ function FeedCard({
   followDisabled,
   followed,
   localCommentCount,
+  onDelete,
   onFollow,
   onReact,
   onSave,
@@ -411,6 +411,7 @@ function FeedCard({
   followDisabled: boolean;
   followed: boolean;
   localCommentCount: number;
+  onDelete(): void;
   onFollow(): void;
   onReact(): void;
   onSave(): void;
@@ -425,6 +426,7 @@ function FeedCard({
         followDisabled={followDisabled}
         followed={followed}
         localCommentCount={localCommentCount}
+        onDelete={onDelete}
         onFollow={onFollow}
         onReact={onReact}
         onSave={onSave}
@@ -452,7 +454,8 @@ export function HomeFeed({
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
   const [socialHydrated, setSocialHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
-  const [localPosts, setLocalPosts] = useState<CommunityPostFeedItem[]>([]);
+  const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
+  const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
   const [composerOpen, setComposerOpen] = useState(composeInitiallyOpen);
   const [draft, setDraft] = useState<LocalPostDraft>(EMPTY_DRAFT);
   const [draftErrors, setDraftErrors] = useState<DraftErrors>({});
@@ -470,6 +473,12 @@ export function HomeFeed({
     setSocialInteractions(readSocialInteractions());
     setSocialHydrated(true);
     return subscribeSocialInteractions(setSocialInteractions);
+  }, []);
+
+  useEffect(() => {
+    setLocalPosts(readLocalCommunityPosts());
+    setLocalPostsHydrated(true);
+    return subscribeLocalCommunityPosts(setLocalPosts);
   }, []);
 
   const closeComposer = useCallback(() => {
@@ -494,16 +503,20 @@ export function HomeFeed({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [closeComposer, composerOpen]);
 
+  const localFeedItems = useMemo(
+    () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
+    [localPosts],
+  );
   const visibleItems = useMemo(
     () =>
       itemsForTab(
-        [...localPosts, ...snapshot.feedItems],
+        [...localFeedItems, ...snapshot.feedItems],
         activeTab,
         socialInteractions.followedAuthorIds,
       ),
     [
       activeTab,
-      localPosts,
+      localFeedItems,
       snapshot.feedItems,
       socialInteractions.followedAuthorIds,
     ],
@@ -553,6 +566,17 @@ export function HomeFeed({
     document.getElementById("feed-tab-recommended")?.focus();
   }
 
+  function deleteLocalPost(post: CommunityPostFeedItem) {
+    const result = removeLocalCommunityPost(post.id);
+    setLocalPosts(result.posts);
+    if (!result.removed) {
+      setAnnouncement("작성한 글을 삭제하지 못했습니다.");
+      return;
+    }
+    setSocialInteractions(removePostSocialInteractions(post.id));
+    setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
+  }
+
   function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = draft.title.trim();
@@ -566,31 +590,22 @@ export function HomeFeed({
       return;
     }
 
-    const id = localPostId();
-    const post: CommunityPostFeedItem = {
-      id,
-      type: "community_post",
-      category: "업무 이야기",
-      authorId: "local-browser-user",
-      authorName: "나",
-      authorHeadline: "이 브라우저에서 작성",
-      authorTone: "violet",
-      createdAt: new Date().toISOString(),
-      createdLabel: "방금 전",
+    const result = createLocalCommunityPost({
       title,
       body,
-      tags: parseTags(draft.tags),
-      href: `#${id}`,
-      metrics: { reactions: 0, comments: 0, saves: 0 },
-      source: "local",
-    };
+      tags: draft.tags.split(","),
+    });
+    setLocalPosts(result.posts);
+    if (!result.post) {
+      setDraftErrors({ storage: "글을 브라우저에 저장하지 못했습니다." });
+      return;
+    }
 
-    setLocalPosts((current) => [post, ...current]);
     setActiveTab("recommended");
     setDraft(EMPTY_DRAFT);
     setDraftErrors({});
     setComposerOpen(false);
-    setAnnouncement("작성한 글을 피드 맨 위에 추가했습니다.");
+    setAnnouncement("작성한 글을 이 브라우저에 저장했습니다.");
     composerButtonRef.current?.focus();
   }
 
@@ -750,6 +765,11 @@ export function HomeFeed({
                     localCommentCount={
                       socialInteractions.commentsByPostId[item.id]?.length ?? 0
                     }
+                    onDelete={() => {
+                      if (item.type === "community_post" && item.source === "local") {
+                        deleteLocalPost(item);
+                      }
+                    }}
                     onReact={() =>
                       setSocialInteractions(togglePostReaction(item.id))
                     }
@@ -937,14 +957,25 @@ export function HomeFeed({
 
               <div className={styles.composerNote}>
                 <ShieldCheck aria-hidden="true" size={18} />
-                <p>데모 글은 서버에 게시되지 않으며 새로고침하면 사라집니다.</p>
+                <p>
+                  이 글은 서버에 게시되지 않고 이 브라우저에만 저장됩니다.
+                  개인정보 화면에서 한 번에 지울 수 있습니다.
+                </p>
               </div>
+
+              {draftErrors.storage && (
+                <p id="community-post-storage-error" role="alert">
+                  {draftErrors.storage}
+                </p>
+              )}
 
               <div className={styles.composerActions}>
                 <button onClick={closeComposer} type="button">
                   취소
                 </button>
-                <button type="submit">피드에 올리기</button>
+                <button disabled={!localPostsHydrated} type="submit">
+                  피드에 올리기
+                </button>
               </div>
             </form>
           </section>

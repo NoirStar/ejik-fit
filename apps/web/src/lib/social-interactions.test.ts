@@ -6,6 +6,7 @@ import {
   clearSocialInteractions,
   normalizeSocialInteractions,
   readSocialInteractions,
+  removePostSocialInteractions,
   subscribeSocialInteractions,
   toggleAuthorFollow,
   togglePostReaction,
@@ -131,6 +132,23 @@ describe("social interaction storage", () => {
     ]);
     expect(toggleAuthorFollow("author-a", fake).followedAuthorIds).toEqual([]);
     expect(readSocialInteractions(fake).savedPostIds).toEqual(["post-a"]);
+  });
+
+  it("removes every local interaction owned by a deleted post", () => {
+    const fake = storage();
+    togglePostReaction("local-post", fake);
+    togglePostSave("local-post", fake);
+    togglePostReaction("another-post", fake);
+    addLocalPostComment("local-post", "삭제할 댓글", {
+      createdAt: "2026-07-14T00:00:00.000Z",
+      id: "local-comment",
+      storage: fake,
+    });
+
+    expect(removePostSocialInteractions("local-post", fake)).toEqual({
+      ...EMPTY_SOCIAL_INTERACTIONS,
+      reactedPostIds: ["another-post"],
+    });
   });
 
   it("adds a trimmed local comment and rejects invalid input", () => {

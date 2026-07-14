@@ -478,6 +478,28 @@
   opacity: 0.55;
 }
 
+.localDeleteButton {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: 0.5625rem;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.71875rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.localDeleteButton:hover {
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+  color: var(--color-danger);
+}
+
 .reviewMeta {
   display: flex;
   flex-wrap: wrap;
@@ -1062,6 +1084,11 @@
   color: #ffffff;
 }
 
+.composerActions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -1198,6 +1225,7 @@
 
 .tabs button:focus-visible,
 .composeButton:focus-visible,
+.localDeleteButton:focus-visible,
 .cardActions button:focus-visible,
 .cardActions a:focus-visible,
 .jobActions button:focus-visible,

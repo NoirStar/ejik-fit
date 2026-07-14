@@ -6,7 +6,10 @@ import type {
   SkillStatsResponse,
 } from "@/lib/types";
 
-import { buildHomeFeedSnapshot } from "./model";
+import {
+  buildHomeFeedSnapshot,
+  localCommunityPostToFeedItem,
+} from "./model";
 import type { ResourceState } from "./resource-state";
 
 const postings: PostingListResponse = {
@@ -66,6 +69,37 @@ function ready<T>(data: T): ResourceState<T> {
 }
 
 describe("buildHomeFeedSnapshot", () => {
+  it("maps a browser-owned post without inventing engagement", () => {
+    expect(
+      localCommunityPostToFeedItem(
+        {
+          id: "local-first-post",
+          title: "첫 이직 질문",
+          body: "준비 순서가 궁금합니다.",
+          tags: ["Java", "백엔드"],
+          createdAt: "2026-07-14T01:00:00.000Z",
+        },
+        new Date("2026-07-14T01:12:00.000Z"),
+      ),
+    ).toEqual({
+      id: "local-first-post",
+      type: "community_post",
+      category: "업무 이야기",
+      authorId: "local-browser-user",
+      authorName: "나",
+      authorHeadline: "이 브라우저에서 작성",
+      authorTone: "violet",
+      createdAt: "2026-07-14T01:00:00.000Z",
+      createdLabel: "12분 전",
+      title: "첫 이직 질문",
+      body: "준비 순서가 궁금합니다.",
+      tags: ["Java", "백엔드"],
+      href: "/posts/local-first-post",
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      source: "local",
+    });
+  });
+
   it("normalizes source-specific career and employment codes", () => {
     const sourceSpecificPostings: PostingListResponse = {
       total: 1,

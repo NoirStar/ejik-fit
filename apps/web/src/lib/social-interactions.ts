@@ -212,6 +212,28 @@ export function toggleAuthorFollow(
   return togglePostId("followedAuthorIds", authorId, storage);
 }
 
+export function removePostSocialInteractions(
+  postId: string,
+  storage = defaultStorage(),
+) {
+  const id = normalizedId(postId);
+  const current = readSocialInteractions(storage);
+  if (!id) return current;
+  const commentsByPostId = { ...current.commentsByPostId };
+  delete commentsByPostId[id];
+  return writeSocialInteractions(
+    {
+      ...current,
+      reactedPostIds: current.reactedPostIds.filter(
+        (reactedId) => reactedId !== id,
+      ),
+      savedPostIds: current.savedPostIds.filter((savedId) => savedId !== id),
+      commentsByPostId,
+    },
+    storage,
+  );
+}
+
 function localCommentId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `local-${crypto.randomUUID()}`;

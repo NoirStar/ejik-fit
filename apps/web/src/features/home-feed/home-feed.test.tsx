@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -6,8 +7,9 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createLocalCommunityPost } from "@/lib/local-community-posts";
 import type {
   PostingListResponse,
   SkillGraphResponse,
@@ -88,6 +90,7 @@ describe("HomeFeed", () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it("renders mixed social and verified market content", () => {
@@ -257,8 +260,8 @@ describe("HomeFeed", () => {
     );
   });
 
-  it("validates the composer and adds a browser-only post first", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
+  it("validates, persists, restores, and deletes a browser-only post", async () => {
+    const { unmount } = render(<HomeFeed snapshot={buildSnapshot()} />);
 
     fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
@@ -282,7 +285,88 @@ describe("HomeFeed", () => {
     expect(
       within(firstArticle).getByRole("heading", { name: "첫 이직 준비에서 배운 점" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("작성한 글을 피드 맨 위에 추가했습니다.")).toBeInTheDocument();
+    const stored = JSON.parse(
+      localStorage.getItem("ejik-fit:local-community-posts")!,
+    );
+    expect(stored).toEqual([
+      expect.objectContaining({
+        id: expect.stringMatching(/^local-/),
+        title: "첫 이직 준비에서 배운 점",
+        body: "공고의 요구 기술을 먼저 비교하니 준비할 순서가 훨씬 선명해졌습니다.",
+        tags: ["이직 준비", "Java", "백엔드"],
+      }),
+    ]);
+    expect(
+      within(firstArticle).getByRole("link", {
+        name: "첫 이직 준비에서 배운 점",
+      }),
+    ).toHaveAttribute("href", `/posts/${stored[0].id}`);
+    expect(
+      screen.getByText("작성한 글을 이 브라우저에 저장했습니다."),
+    ).toBeInTheDocument();
+
+    unmount();
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    const restoredArticle = await screen.findByRole("article", {
+      name: "첫 이직 준비에서 배운 점",
+    });
+    fireEvent.click(
+      within(restoredArticle).getByRole("button", {
+        name: "첫 이직 준비에서 배운 점 삭제",
+      }),
+    );
+    expect(
+      screen.queryByRole("article", { name: "첫 이직 준비에서 배운 점" }),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem("ejik-fit:local-community-posts")).toBe("[]");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "작성한 글을 이 브라우저에서 삭제했습니다.",
+    );
+  });
+
+  it("reacts to local post changes elsewhere in the same tab", async () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    act(() => {
+      createLocalCommunityPost(
+        { title: "다른 화면에서 쓴 글", body: "동기화 본문", tags: ["동기화"] },
+        {
+          id: "local-same-tab",
+          createdAt: "2026-07-14T04:00:00.000Z",
+        },
+      );
+    });
+
+    expect(
+      await screen.findByRole("article", { name: "다른 화면에서 쓴 글" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the composer open when browser post storage is blocked", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "저장되지 않을 글" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "작성 중인 내용은 유지되어야 합니다." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "커뮤니티 글쓰기" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "글을 브라우저에 저장하지 못했습니다.",
+    );
+    expect(screen.getByLabelText("제목")).toHaveValue("저장되지 않을 글");
+    expect(
+      screen.queryByRole("article", { name: "저장되지 않을 글" }),
+    ).not.toBeInTheDocument();
   });
 
   it("supports arrow-key tab selection", () => {

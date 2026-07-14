@@ -1,4 +1,5 @@
 import { formatCareer, formatEmployment } from "@/lib/labels";
+import type { LocalCommunityPost } from "@/lib/local-community-posts";
 import type {
   PostingListResponse,
   SkillGraphEvidence,
@@ -14,12 +15,53 @@ import {
 import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
+  CommunityPostFeedItem,
   FeedItem,
   HomeFeedSnapshot,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
   SkillDemandSummary,
 } from "./types";
+
+function formatLocalPostCreatedLabel(createdAt: string, now: Date) {
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return "이 브라우저에서 작성";
+  const elapsed = Math.max(0, now.getTime() - created.getTime());
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) return "방금 전";
+  if (minutes < 60) return `${minutes}분 전`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간 전`;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Seoul",
+  }).format(created);
+}
+
+export function localCommunityPostToFeedItem(
+  post: LocalCommunityPost,
+  now = new Date(),
+): CommunityPostFeedItem {
+  return {
+    id: post.id,
+    type: "community_post",
+    category: "업무 이야기",
+    authorId: "local-browser-user",
+    authorName: "나",
+    authorHeadline: "이 브라우저에서 작성",
+    authorTone: "violet",
+    createdAt: post.createdAt,
+    createdLabel: formatLocalPostCreatedLabel(post.createdAt, now),
+    title: post.title,
+    body: post.body,
+    tags: post.tags,
+    href: `/posts/${encodeURIComponent(post.id)}`,
+    metrics: { reactions: 0, comments: 0, saves: 0 },
+    source: "local",
+  };
+}
 
 export type BuildHomeFeedSnapshotInput = {
   postings: ResourceState<PostingListResponse>;
