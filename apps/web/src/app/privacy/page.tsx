@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
-      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술과 저장한 공고는 사용 중인 브라우저에 저장됩니다."
+      intro="현재 이직핏은 계정을 만들지 않으며, 사용자가 선택한 기술·저장 공고·지원 단계·커뮤니티 상호작용은 사용 중인 브라우저에만 저장됩니다."
       title="개인정보와 브라우저 저장"
     >
       <section>
@@ -24,6 +24,24 @@ export default function PrivacyPage() {
         <p>
           저장 버튼을 누른 공고 ID는 <code>ejik-fit:saved-job-ids</code> 키에
           저장됩니다. 공고 내용이나 기업 정보는 브라우저 저장소에 복사하지 않습니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>지원 단계</h2>
+        <p>
+          사용자가 직접 선택한 공고별 지원 단계는{" "}
+          <code>ejik-fit:job-application-stages</code> 키에 저장됩니다. 실제 지원
+          여부를 기업 시스템에서 확인하거나 자동으로 추정하지 않습니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>커뮤니티 상호작용</h2>
+        <p>
+          예시 글의 공감·저장과 사용자가 직접 작성한 로컬 댓글은{" "}
+          <code>ejik-fit:social-interactions</code> 키에 저장됩니다. 현재 계정이나
+          서버로 전송하지 않습니다.
         </p>
       </section>
 
@@ -46,8 +64,8 @@ export default function PrivacyPage() {
       <section>
         <h2>저장 데이터 삭제</h2>
         <p>
-          아래 버튼은 내 스택, 저장한 공고 ID, 현재 URL query를 이 브라우저에서
-          지웁니다.
+          아래 버튼은 내 스택, 저장한 공고 ID, 지원 단계, 커뮤니티 상호작용,
+          현재 URL query를 이 브라우저에서 지웁니다.
         </p>
         <ClearLocalData />
       </section>

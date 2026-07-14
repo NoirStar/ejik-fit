@@ -171,6 +171,35 @@ describe("SavedLibrary", () => {
     );
   });
 
+  it("reports a blocked stage write without announcing a false success", async () => {
+    saveBrowserItems();
+    render(<SavedLibrary />);
+    const job = await screen.findByRole("article", {
+      name: "Python Backend Engineer",
+    });
+    const stageSelect = within(job).getByRole("combobox", {
+      name: "Python Backend Engineer 지원 단계",
+    });
+    const originalSetItem = Storage.prototype.setItem;
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(function (this: Storage, key, value) {
+        if (key === "ejik-fit:job-application-stages") {
+          throw new DOMException("blocked", "QuotaExceededError");
+        }
+        return originalSetItem.call(this, key, value);
+      });
+
+    fireEvent.change(stageSelect, { target: { value: "applied" } });
+
+    expect(stageSelect).toHaveValue("");
+    expect(
+      screen.getByText("Python Backend Engineer의 지원 단계를 저장하지 못했습니다."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/지원 단계를 지원 완료로 저장했습니다/)).not.toBeInTheDocument();
+    setItem.mockRestore();
+  });
+
   it("removes saved jobs and community items through the shared browser stores", async () => {
     saveBrowserItems(
       ["job-python"],
@@ -180,11 +209,13 @@ describe("SavedLibrary", () => {
     render(<SavedLibrary />);
     await screen.findByRole("article", { name: "Python Backend Engineer" });
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Python Backend Engineer 저장 해제",
-      }),
+    const removeJobButton = screen.getByRole("button", {
+      name: "Python Backend Engineer 저장 해제",
+    });
+    expect(removeJobButton).toHaveAccessibleDescription(
+      /저장 해제 시 단계도 삭제/,
     );
+    fireEvent.click(removeJobButton);
     await waitFor(() => {
       expect(
         screen.queryByRole("article", { name: "Python Backend Engineer" }),
@@ -292,6 +323,14 @@ describe("SavedLibrary", () => {
       }),
     ).toBeInTheDocument();
 
+    window.localStorage.setItem(
+      "ejik-fit:job-application-stages",
+      JSON.stringify({
+        "gone-job": "applied",
+        "retry-job": "offer",
+        "concurrent-job": "preparing",
+      }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "확인 불가 항목 정리" }));
     expect(
       JSON.parse(window.localStorage.getItem("ejik-fit:saved-job-ids")!),
@@ -300,7 +339,7 @@ describe("SavedLibrary", () => {
       JSON.parse(
         window.localStorage.getItem("ejik-fit:job-application-stages")!,
       ),
-    ).toEqual({ "retry-job": "interview" });
+    ).toEqual({ "retry-job": "offer", "concurrent-job": "preparing" });
   });
 
   it("preserves mock saves and offers retry when the actual job request fails", async () => {

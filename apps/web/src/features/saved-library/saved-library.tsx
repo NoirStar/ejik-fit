@@ -12,7 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import type { KeyboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
@@ -23,7 +23,6 @@ import {
   removeJobApplicationStage,
   setJobApplicationStage,
   subscribeJobApplicationStages,
-  writeJobApplicationStages,
   type JobApplicationStageValue,
   type JobApplicationStages,
 } from "@/lib/job-application-stages";
@@ -74,6 +73,7 @@ function SavedJobCard({
   onApplicationStageChange: (stage: JobApplicationStageValue) => void;
   onRemove: () => void;
 }) {
+  const removalNoteId = useId();
   const skills = [
     ...item.requiredSkills.map((name) => ({ name, label: "필수", kind: "required" })),
     ...item.preferredSkills.map((name) => ({ name, label: "우대", kind: "preferred" })),
@@ -154,7 +154,7 @@ function SavedJobCard({
             ))}
           </select>
         </label>
-        <small>
+        <small id={removalNoteId}>
           이 브라우저에만 저장
           {applicationStage ? " · 저장 해제 시 단계도 삭제" : ""}
         </small>
@@ -169,7 +169,12 @@ function SavedJobCard({
           공식 원문
           <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
         </a>
-        <button aria-label={`${item.title} 저장 해제`} onClick={onRemove} type="button">
+        <button
+          aria-describedby={applicationStage ? removalNoteId : undefined}
+          aria-label={`${item.title} 저장 해제`}
+          onClick={onRemove}
+          type="button"
+        >
           <Trash aria-hidden="true" size={16} />
           저장 해제
         </button>
@@ -296,7 +301,14 @@ export function SavedLibrary() {
     item: SavedJobItem,
     stage: JobApplicationStageValue,
   ) {
-    setApplicationStages(setJobApplicationStage(item.id, stage));
+    const nextStages = setJobApplicationStage(item.id, stage);
+    setApplicationStages(nextStages);
+    if ((nextStages[item.id] ?? "") !== stage) {
+      setAnnouncement(
+        `${item.title}의 지원 단계를 저장하지 못했습니다.`,
+      );
+      return;
+    }
     setAnnouncement(
       stage
         ? `${item.title}의 지원 단계를 ${applicationStageLabel(stage)}으로 저장했습니다.`
@@ -312,13 +324,11 @@ export function SavedLibrary() {
   function removeUnavailableJobs() {
     if (jobState.status !== "ready") return;
     let nextIds = savedJobIds;
-    const nextStages = { ...applicationStages };
     for (const id of jobState.data.unavailableIds) {
       nextIds = toggleSavedJob(id);
-      delete nextStages[id];
     }
     setSavedJobIds(nextIds);
-    setApplicationStages(writeJobApplicationStages(nextStages));
+    setApplicationStages(readJobApplicationStages());
     setAnnouncement("현재 API에서 확인되지 않는 저장 공고를 정리했습니다.");
   }
 

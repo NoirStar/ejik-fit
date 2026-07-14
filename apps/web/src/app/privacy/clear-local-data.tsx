@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
+import { clearJobApplicationStages } from "@/lib/job-application-stages";
 import { clearOwnedSkills } from "@/lib/owned-skills";
 import { clearSavedJobs } from "@/lib/saved-jobs";
+import { clearSocialInteractions } from "@/lib/social-interactions";
 
 import styles from "../trust-pages.module.css";
 
@@ -16,9 +18,13 @@ export function ClearLocalData() {
       const storage = window.localStorage;
       clearOwnedSkills(storage);
       clearSavedJobs(storage);
+      clearJobApplicationStages(storage);
+      clearSocialInteractions(storage);
       storageCleared =
         storage.getItem("ejik-fit:owned-skills") === null &&
-        storage.getItem("ejik-fit:saved-job-ids") === null;
+        storage.getItem("ejik-fit:saved-job-ids") === null &&
+        storage.getItem("ejik-fit:job-application-stages") === null &&
+        storage.getItem("ejik-fit:social-interactions") === null;
     } catch {
       storageCleared = false;
     }

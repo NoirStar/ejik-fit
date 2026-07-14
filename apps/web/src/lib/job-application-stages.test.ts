@@ -4,6 +4,7 @@ import {
   APPLICATION_STAGES,
   MAX_JOB_APPLICATION_STAGES,
   applicationStageLabel,
+  clearJobApplicationStages,
   normalizeJobApplicationStages,
   readJobApplicationStages,
   removeJobApplicationStage,
@@ -134,6 +135,17 @@ describe("job application stage storage", () => {
     );
 
     expect(listener).toHaveBeenCalledWith({ "job-a": "offer" });
+    unsubscribe();
+  });
+
+  it("clears the storage key and notifies same-tab subscribers", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeJobApplicationStages(listener);
+    setJobApplicationStage("job-a", "applied");
+
+    expect(clearJobApplicationStages()).toEqual({});
+    expect(localStorage.getItem("ejik-fit:job-application-stages")).toBeNull();
+    expect(listener).toHaveBeenLastCalledWith({});
     unsubscribe();
   });
 });

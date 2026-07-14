@@ -1,8 +1,13 @@
+import { removeJobApplicationStage } from "./job-application-stages";
+import {
+  MAX_SAVED_JOB_ID_LENGTH,
+  MAX_SAVED_JOB_IDS,
+} from "./saved-job-contract";
+
 const KEY = "ejik-fit:saved-job-ids";
 const CHANGE_EVENT = "ejik-fit:saved-job-ids-change";
 
-export const MAX_SAVED_JOB_IDS = 24;
-export const MAX_SAVED_JOB_ID_LENGTH = 200;
+export { MAX_SAVED_JOB_ID_LENGTH, MAX_SAVED_JOB_IDS };
 
 type SavedJobsListener = (ids: string[]) => void;
 
@@ -88,12 +93,18 @@ export function toggleSavedJob(
   if (!normalizedId || normalizedId.length > MAX_SAVED_JOB_ID_LENGTH) {
     return current;
   }
-  return writeSavedJobIds(
-    current.includes(normalizedId)
+  const wasSaved = current.includes(normalizedId);
+  const next = writeSavedJobIds(
+    wasSaved
       ? current.filter((savedId) => savedId !== normalizedId)
       : [...current, normalizedId],
     storage,
   );
+  const toggleSucceeded = wasSaved
+    ? !next.includes(normalizedId)
+    : next.includes(normalizedId);
+  if (toggleSucceeded) removeJobApplicationStage(normalizedId, storage);
+  return next;
 }
 
 export function subscribeSavedJobs(listener: SavedJobsListener) {

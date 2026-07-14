@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
   addLocalPostComment,
+  clearSocialInteractions,
   normalizeSocialInteractions,
   readSocialInteractions,
   subscribeSocialInteractions,
@@ -195,6 +196,17 @@ describe("social interaction storage", () => {
       ...EMPTY_SOCIAL_INTERACTIONS,
       savedPostIds: ["post-a"],
     });
+    unsubscribe();
+  });
+
+  it("clears the storage key and notifies same-tab subscribers", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeSocialInteractions(listener);
+    togglePostSave("post-a");
+
+    expect(clearSocialInteractions()).toEqual(EMPTY_SOCIAL_INTERACTIONS);
+    expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
+    expect(listener).toHaveBeenLastCalledWith(EMPTY_SOCIAL_INTERACTIONS);
     unsubscribe();
   });
 });

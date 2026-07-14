@@ -30,17 +30,33 @@ describe("public trust pages", () => {
   it("explains browser storage and provides a clear-data action", () => {
     localStorage.setItem("ejik-fit:owned-skills", '["Java"]');
     localStorage.setItem("ejik-fit:saved-job-ids", '["job-1"]');
+    localStorage.setItem(
+      "ejik-fit:job-application-stages",
+      '{"job-1":"interview"}',
+    );
+    localStorage.setItem(
+      "ejik-fit:social-interactions",
+      '{"savedPostIds":["post-1"]}',
+    );
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "개인정보와 브라우저 저장" })).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:owned-skills/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:saved-job-ids/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/ejik-fit:job-application-stages/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:social-interactions/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "이 브라우저의 저장 데이터 삭제" }));
     expect(localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
     expect(localStorage.getItem("ejik-fit:saved-job-ids")).toBeNull();
+    expect(
+      localStorage.getItem("ejik-fit:job-application-stages"),
+    ).toBeNull();
+    expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
     expect(window.location.search).toBe("");
   });
 

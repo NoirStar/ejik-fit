@@ -142,6 +142,19 @@ function notifySocialInteractions(storage: Storage | null) {
   }
 }
 
+export function clearSocialInteractions(
+  storage = defaultStorage(),
+): SocialInteractions {
+  if (!storage) return normalizeSocialInteractions(null);
+  try {
+    storage.removeItem(KEY);
+  } catch {
+    return readSocialInteractions(storage);
+  }
+  notifySocialInteractions(storage);
+  return normalizeSocialInteractions(null);
+}
+
 export function writeSocialInteractions(
   value: SocialInteractions,
   storage = defaultStorage(),

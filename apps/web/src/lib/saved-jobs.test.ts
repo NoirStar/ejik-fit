@@ -97,6 +97,25 @@ describe("saved job storage", () => {
     expect(readSavedJobIds(fake)).toEqual(["job-a"]);
   });
 
+  it("clears application stages whenever a posting save is toggled", () => {
+    const fake = storage();
+    fake.setItem("ejik-fit:saved-job-ids", JSON.stringify(["job-a"]));
+    fake.setItem(
+      "ejik-fit:job-application-stages",
+      JSON.stringify({ "job-a": "interview" }),
+    );
+
+    expect(toggleSavedJob("job-a", fake)).toEqual([]);
+    expect(fake.getItem("ejik-fit:job-application-stages")).toBe("{}");
+
+    fake.setItem(
+      "ejik-fit:job-application-stages",
+      JSON.stringify({ "job-a": "offer" }),
+    );
+    expect(toggleSavedJob("job-a", fake)).toEqual(["job-a"]);
+    expect(fake.getItem("ejik-fit:job-application-stages")).toBe("{}");
+  });
+
   it("ignores malformed data and storage access failures", () => {
     const malformed = storage();
     malformed.setItem("ejik-fit:saved-job-ids", "{broken");

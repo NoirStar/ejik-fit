@@ -1,7 +1,7 @@
 import {
   MAX_SAVED_JOB_ID_LENGTH,
   MAX_SAVED_JOB_IDS,
-} from "./saved-jobs";
+} from "./saved-job-contract";
 
 const KEY = "ejik-fit:job-application-stages";
 const CHANGE_EVENT = "ejik-fit:job-application-stages-change";
@@ -98,6 +98,19 @@ function notifyJobApplicationStagesChange(storage: Storage | null) {
   ) {
     window.dispatchEvent(new Event(CHANGE_EVENT));
   }
+}
+
+export function clearJobApplicationStages(
+  storage = defaultStorage(),
+): JobApplicationStages {
+  if (!storage) return {};
+  try {
+    storage.removeItem(KEY);
+  } catch {
+    return readJobApplicationStages(storage);
+  }
+  notifyJobApplicationStagesChange(storage);
+  return {};
 }
 
 export function writeJobApplicationStages(
