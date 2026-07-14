@@ -140,7 +140,7 @@
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 839px) {
   .panel {
     padding: 1rem;
   }
@@ -158,7 +158,7 @@
   .primaryActions {
     position: fixed;
     right: 0;
-    bottom: var(--mobile-nav-height);
+    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     left: 0;
     z-index: calc(var(--layer-mobile-nav) - 1);
     grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.42fr);
