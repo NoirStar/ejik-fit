@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
+import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
 import type { PostingDetail } from "@/lib/types";
 
 import {
@@ -100,17 +101,39 @@ describe("saved library model", () => {
     ).toThrow(TypeError);
   });
 
-  it("selects only saved mock community items and reports missing local IDs", () => {
+  it("separates saved local and mock community items from missing IDs", () => {
+    const localPost = localCommunityPostToFeedItem(
+      {
+        id: "local-browser-question",
+        title: "브라우저에 저장한 내 질문",
+        body: "공식 공고를 비교한 뒤 남긴 질문입니다.",
+        tags: ["백엔드", "이직 준비"],
+        createdAt: "2026-07-14T03:00:00.000Z",
+      },
+      new Date("2026-07-14T03:05:00.000Z"),
+    );
     const selected = selectSavedCommunityItems(
-      ["kubernetes-experience", "local-missing", "career-move-3y-backend"],
-      MOCK_SOCIAL_ITEMS,
+      [
+        "local-browser-question",
+        "kubernetes-experience",
+        "local-missing",
+        "career-move-3y-backend",
+      ],
+      [...MOCK_SOCIAL_ITEMS, localPost],
     );
 
     expect(selected.items.map((item) => item.id)).toEqual([
+      "local-browser-question",
       "kubernetes-experience",
       "career-move-3y-backend",
     ]);
     expect(selected.items[0]).toMatchObject({
+      source: "local",
+      title: "브라우저에 저장한 내 질문",
+      authorName: "나",
+      createdLabel: "5분 전",
+    });
+    expect(selected.items[1]).toMatchObject({
       source: "mock",
       title: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       summary: expect.stringContaining("개인 클러스터"),

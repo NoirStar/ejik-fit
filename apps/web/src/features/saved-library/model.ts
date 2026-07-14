@@ -49,7 +49,7 @@ export type SavedCommunityItem = {
   createdLabel: string;
   tags: string[];
   href: string;
-  source: "mock";
+  source: "mock" | "local";
 };
 
 export type SavedJobData = {
@@ -239,7 +239,7 @@ function toSavedCommunityItem(item: CommunityItem): SavedCommunityItem {
     createdLabel: item.createdLabel,
     tags: item.tags,
     href: item.href,
-    source: "mock",
+    source: item.source,
   };
 }
 
@@ -257,7 +257,7 @@ export function selectSavedCommunityItems(
     if (!id || seen.has(id)) continue;
     seen.add(id);
     const item = byId.get(id);
-    if (!item || item.source !== "mock") {
+    if (!item) {
       unavailableIds.push(id);
       continue;
     }
