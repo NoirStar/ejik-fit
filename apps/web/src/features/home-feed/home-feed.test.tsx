@@ -114,6 +114,14 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("link", { name: "토스 기업 채용 현황" }),
     ).toHaveAttribute("href", "/companies/toss");
+    const communityPost = screen.getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
+    expect(
+      within(communityPost).getByRole("link", {
+        name: "백엔드 커뮤니티 검색",
+      }),
+    ).toHaveAttribute("href", "/search?q=%EB%B0%B1%EC%97%94%EB%93%9C&scope=community");
   });
 
   it("keeps only followed community content on the following tab", () => {

@@ -35,6 +35,7 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
+import { buildSearchScopeHref } from "@/features/search/model";
 import { itemsForTab } from "./feed-order";
 import { MOCK_COMMUNITY_POSTS, MOCK_SOCIAL_ITEMS } from "./mock-community";
 import styles from "./home-feed.module.css";
@@ -171,7 +172,14 @@ function SocialCard({
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
         {item.tags.map((tag) => (
-          <li key={tag}>{tag}</li>
+          <li key={tag}>
+            <Link
+              aria-label={`${tag} 커뮤니티 검색`}
+              href={buildSearchScopeHref(tag, "community")}
+            >
+              {tag}
+            </Link>
+          </li>
         ))}
       </ul>
 

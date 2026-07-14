@@ -14,7 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -80,6 +80,46 @@ function StoredSkillsSync() {
   }, [pathname, router, searchParams, serializedSearch]);
 
   return null;
+}
+
+function HeaderSearchFormView({
+  currentQuery,
+  inputRef,
+}: {
+  currentQuery: string;
+  inputRef: RefObject<HTMLInputElement | null>;
+}) {
+  return (
+    <form action="/search" className={styles.searchForm} role="search">
+      <MagnifyingGlass aria-hidden="true" className={styles.searchIcon} size={19} />
+      <input
+        aria-label="통합 검색"
+        defaultValue={currentQuery}
+        key={currentQuery || "global-search-empty"}
+        maxLength={200}
+        name="q"
+        placeholder="회사, 직무, 기술, 주제를 검색해보세요"
+        ref={inputRef}
+        type="search"
+      />
+      <kbd aria-hidden="true">/</kbd>
+    </form>
+  );
+}
+
+function HeaderSearchForm({
+  inputRef,
+}: {
+  inputRef: RefObject<HTMLInputElement | null>;
+}) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentQuery =
+    pathname === "/search" ? searchParams.get("q") ?? "" : "";
+
+  return (
+    <HeaderSearchFormView currentQuery={currentQuery} inputRef={inputRef} />
+  );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -171,17 +211,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BrandMark size="sm" />
           </Link>
 
-          <form action="/jobs" className={styles.searchForm} role="search">
-            <MagnifyingGlass aria-hidden="true" className={styles.searchIcon} size={19} />
-            <input
-              aria-label="통합 검색"
-              name="q"
-              placeholder="회사, 직무, 기술, 주제를 검색해보세요"
-              ref={searchInputRef}
-              type="search"
-            />
-            <kbd aria-hidden="true">/</kbd>
-          </form>
+          <Suspense
+            fallback={
+              <HeaderSearchFormView currentQuery="" inputRef={searchInputRef} />
+            }
+          >
+            <HeaderSearchForm inputRef={searchInputRef} />
+          </Suspense>
 
           <div className={styles.utilities}>
             <Link aria-label="글쓰기" className={styles.writeButton} href="/?compose=1">

@@ -48,7 +48,26 @@ describe("AppShell", () => {
       "글쓰기",
     );
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute("name", "q");
+    expect(screen.getByRole("searchbox", { name: "통합 검색" }).closest("form")).toHaveAttribute(
+      "action",
+      "/search",
+    );
     expect(screen.queryByText("김민준")).not.toBeInTheDocument();
+  });
+
+  it("keeps the current query visible on the global search route", () => {
+    navigation.pathname = "/search";
+    navigation.search = "q=Python&scope=skills";
+
+    render(
+      <AppShell>
+        <main>검색 결과</main>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveValue(
+      "Python",
+    );
   });
 
   it("derives the current destination from the pathname", () => {
