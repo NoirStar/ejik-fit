@@ -10,6 +10,7 @@ import type {
 import {
   buildSearchScopeHref,
   buildSearchSnapshot,
+  mergeLocalCommunitySearchResults,
   normalizeSearchQuery,
   normalizeSearchScope,
 } from "./model";
@@ -224,6 +225,85 @@ describe("global search model", () => {
     expect(buildSearchScopeHref("연봉 협상", "community")).toBe(
       "/search?q=%EC%97%B0%EB%B4%89+%ED%98%91%EC%83%81&scope=community",
     );
+  });
+
+  it("merges matching browser-owned posts ahead of mock results without mutating API evidence", () => {
+    const serverSnapshot = buildSearchSnapshot({
+      query: "Kubernetes",
+      scope: "all",
+      postings,
+      skillStats,
+      communityItems: MOCK_SOCIAL_ITEMS,
+    });
+    const merged = mergeLocalCommunitySearchResults(
+      serverSnapshot,
+      [
+        {
+          id: "local-kubernetes-question",
+          title: "Kubernetes 공고를 보고 남긴 내 질문",
+          body: "실제 공고 요구를 비교한 뒤 준비 순서가 궁금합니다.",
+          tags: ["인프라", "이직 준비"],
+          createdAt: "2026-07-14T03:00:00.000Z",
+        },
+        {
+          id: "local-unrelated-question",
+          title: "연봉 협상 질문",
+          body: "제안 범위를 어떻게 비교할지 궁금합니다.",
+          tags: ["연봉"],
+          createdAt: "2026-07-14T02:00:00.000Z",
+        },
+      ],
+      new Date("2026-07-14T03:05:00.000Z"),
+    );
+
+    expect(merged.community.map((item) => item.id)).toEqual([
+      "local-kubernetes-question",
+      "kubernetes-experience",
+    ]);
+    expect(merged.community[0]).toMatchObject({
+      source: "local",
+      authorName: "나",
+      createdLabel: "5분 전",
+      href: "/posts/local-kubernetes-question",
+    });
+    expect(merged.counts.community).toBe(2);
+    expect(merged.jobs).toBe(serverSnapshot.jobs);
+    expect(merged.skills).toBe(serverSnapshot.skills);
+    expect(serverSnapshot.community).toHaveLength(1);
+    expect(serverSnapshot.counts.community).toBe(1);
+  });
+
+  it("keeps actual API failures explicit while exposing a matching local result", () => {
+    const serverSnapshot = buildSearchSnapshot({
+      query: "브라우저 전용",
+      scope: "all",
+      postings: { status: "error", message: "공고 검색 실패" },
+      skillStats: { status: "error", message: "기술 검색 실패" },
+      communityItems: MOCK_SOCIAL_ITEMS,
+    });
+    const merged = mergeLocalCommunitySearchResults(serverSnapshot, [
+      {
+        id: "local-browser-only",
+        title: "내 질문",
+        body: "브라우저 전용 검색 결과입니다.",
+        tags: [],
+        createdAt: "2026-07-14T03:00:00.000Z",
+      },
+    ]);
+
+    expect(merged.dataStatus).toBe("error");
+    expect(merged.errors).toEqual(["공고 검색 실패", "기술 검색 실패"]);
+    expect(merged.counts).toMatchObject({
+      companies: null,
+      jobs: null,
+      skills: null,
+      community: 1,
+    });
+    expect(merged.hasAnyResults).toBe(true);
+    expect(merged.community[0]).toMatchObject({
+      id: "local-browser-only",
+      source: "local",
+    });
   });
 
   it("distinguishes idle, ready, partial, and unavailable actual-data states", () => {

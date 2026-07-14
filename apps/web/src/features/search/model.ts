@@ -3,6 +3,8 @@ import type {
   InterviewReviewFeedItem,
 } from "@/features/home-feed/types";
 import type { ResourceState } from "@/features/home-feed/resource-state";
+import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
+import type { LocalCommunityPost } from "@/lib/local-community-posts";
 import type {
   PostingListResponse,
   PostingSummary,
@@ -310,6 +312,38 @@ function buildCommunity(items: CommunityItem[], query: string) {
         source: item.source,
       }),
     );
+}
+
+export function mergeLocalCommunitySearchResults(
+  snapshot: SearchSnapshot,
+  localPosts: LocalCommunityPost[],
+  now = new Date(),
+): SearchSnapshot {
+  if (!snapshot.query || localPosts.length === 0) return snapshot;
+
+  const localResults = buildCommunity(
+    localPosts.map((post) => localCommunityPostToFeedItem(post, now)),
+    snapshot.query,
+  );
+  if (localResults.length === 0) return snapshot;
+
+  const localIds = new Set(localResults.map((item) => item.id));
+  const community = [
+    ...localResults,
+    ...snapshot.community.filter((item) => !localIds.has(item.id)),
+  ];
+
+  return {
+    ...snapshot,
+    community,
+    counts: { ...snapshot.counts, community: community.length },
+    hasAnyResults:
+      snapshot.companies.length +
+        snapshot.jobs.length +
+        snapshot.skills.length +
+        community.length >
+      0,
+  };
 }
 
 export function buildSearchSnapshot(input: {
