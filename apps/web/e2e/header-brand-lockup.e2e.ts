@@ -8,22 +8,14 @@ for (const width of viewports) {
     await page.goto("/privacy");
 
     const brand = page.getByRole("link", { name: "이직핏 홈" });
-    const brandCopy = brand.locator(".brand-lockup__copy");
-    const koreanName = brandCopy.locator("strong");
-    const englishName = brandCopy.locator("small");
+    const ink = brand.locator(".brand-lockup__ink");
+    const accent = brand.locator(".brand-lockup__accent");
 
     await expect(brand).toBeVisible();
-    await expect(brand.locator(".brand-lockup__mark")).toBeVisible();
-
-    if (width > 380) {
-      await expect(koreanName).toBeVisible();
-      await expect(englishName).toBeVisible();
-    } else if (width > 340) {
-      await expect(koreanName).toBeVisible();
-      await expect(englishName).toBeHidden();
-    } else {
-      await expect(brandCopy).toBeHidden();
-    }
+    await expect(ink).toBeVisible();
+    await expect(accent).toBeVisible();
+    await expect(brand.locator(".brand-lockup__mark")).toHaveCount(0);
+    await expect(page.getByText("EJIK FIT")).toHaveCount(0);
 
     const targets = [
       { name: "brand", target: brand },
@@ -32,10 +24,6 @@ for (const width of viewports) {
         target: page.getByRole("searchbox", { name: "통합 검색" }).locator(".."),
       },
       { name: "write", target: page.getByRole("link", { name: "글쓰기" }) },
-      {
-        name: "stack",
-        target: page.getByRole("button", { name: "내 스택 열기" }),
-      },
       {
         name: "notifications",
         target: page.getByRole("button", { name: "알림 열기" }),
@@ -60,13 +48,20 @@ for (const width of viewports) {
   });
 }
 
-test("keeps utility menus below the desktop navigation", async ({ page }) => {
+test("keeps utility menus below the single desktop header", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 1536 });
   await page.goto("/privacy");
 
+  const header = page.locator("header").first();
+  const headerBox = await header.boundingBox();
+  expect(headerBox).not.toBeNull();
+  expect(headerBox!.height).toBeLessThanOrEqual(64);
+
   const navigation = page.getByRole("navigation", { name: "주요 탐색" });
-  const navigationBox = await navigation.boundingBox();
-  expect(navigationBox).not.toBeNull();
+  const navigationLinkYs = await navigation.getByRole("link").evaluateAll((links) =>
+    links.map((link) => Math.round(link.getBoundingClientRect().y)),
+  );
+  expect(new Set(navigationLinkYs).size).toBe(1);
 
   for (const control of [
     { button: "알림 열기", menu: "알림" },
@@ -77,9 +72,7 @@ test("keeps utility menus below the desktop navigation", async ({ page }) => {
     await expect(menu).toBeVisible();
     const menuBox = await menu.boundingBox();
     expect(menuBox).not.toBeNull();
-    expect(menuBox!.y).toBeGreaterThanOrEqual(
-      navigationBox!.y + navigationBox!.height + 8,
-    );
+    expect(menuBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height + 8);
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
   }

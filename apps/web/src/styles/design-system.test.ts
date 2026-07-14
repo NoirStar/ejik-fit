@@ -78,19 +78,13 @@ describe("design system foundation", () => {
     expect(shell).not.toContain("width: 2.625rem;");
   });
 
-  it("keeps the header brand legible on narrow mobile screens", () => {
-    const shell = read("src/components/app-shell/app-shell.module.css");
+  it("keeps the Korean wordmark visible without the retired symbol", () => {
     const globals = read("src/app/globals.css");
-    const brandRule = shell.match(/\.brand\s*\{([^}]*)\}/)?.[1] ?? "";
 
-    expect(brandRule).toContain("flex: 0 0 auto;");
-    expect(globals).toContain(
-      ".brand-lockup__copy strong,\n.brand-lockup__copy small",
-    );
-    expect(globals).toContain("white-space: nowrap;");
-    expect(globals).toContain("@media (max-width: 380px)");
-    expect(globals).toContain(".brand-lockup--sm .brand-lockup__copy small");
-    expect(globals).toContain("@media (max-width: 340px)");
-    expect(globals).toContain(".brand-lockup--sm .brand-lockup__copy {");
+    expect(globals).toContain(".brand-lockup__ink");
+    expect(globals).toContain(".brand-lockup__accent");
+    expect(globals).not.toContain(".brand-lockup__mark");
+    expect(globals).not.toContain(".brand-lockup__copy");
+    expect(globals).not.toContain("@media (max-width: 340px)");
   });
 });

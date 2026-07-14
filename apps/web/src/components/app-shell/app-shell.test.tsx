@@ -55,6 +55,22 @@ describe("AppShell", () => {
     expect(screen.queryByText("김민준")).not.toBeInTheDocument();
   });
 
+  it("places the desktop navigation inside the single header row", () => {
+    const { container } = render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    const header = container.querySelector("header");
+    const row = header?.firstElementChild;
+    expect(row).not.toBeNull();
+    expect(row?.querySelector('nav[aria-label="주요 탐색"]')).toBeInTheDocument();
+    expect(screen.getByText("이직")).toBeInTheDocument();
+    expect(screen.getByText("핏")).toBeInTheDocument();
+    expect(screen.queryByText("EJIK FIT")).not.toBeInTheDocument();
+  });
+
   it("keeps the current query visible on the global search route", () => {
     navigation.pathname = "/search";
     navigation.search = "q=Python&scope=skills";

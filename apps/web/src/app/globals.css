@@ -1260,85 +1260,40 @@ main[aria-busy="true"] {
   }
 }
 
-/* Ejikfit brand and graph preview layer */
+/* Ejikfit Korean wordmark */
 .brand-lockup {
   display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.75rem;
-  color: inherit;
+  align-items: baseline;
+  color: var(--color-text);
+  font-size: 1.625rem;
+  font-weight: 820;
+  letter-spacing: -0.105em;
   line-height: 1;
-}
-
-.brand-lockup__mark {
-  display: block;
-  flex: 0 0 auto;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.875rem;
-  box-shadow: 0 0.75rem 1.5rem rgb(23 105 255 / 0.22);
-}
-
-.brand-lockup__copy {
-  min-width: 0;
-  display: grid;
-  gap: 0.125rem;
-}
-
-.brand-lockup__copy strong {
-  color: currentColor;
-  font-size: 0.9375rem;
-  font-weight: 850;
-  line-height: 1.08;
-  letter-spacing: 0;
-}
-
-.brand-lockup__copy small {
-  color: var(--muted);
-  font-size: 0.6875rem;
-  font-weight: 740;
-  letter-spacing: 0.12em;
-}
-
-.brand-lockup__copy strong,
-.brand-lockup__copy small {
   white-space: nowrap;
 }
 
+.brand-lockup__ink,
+.brand-lockup__accent {
+  display: inline-block;
+  transform-origin: center bottom;
+}
+
+.brand-lockup__ink {
+  transform: rotate(-0.8deg);
+}
+
+.brand-lockup__accent {
+  color: var(--color-accent);
+  font-weight: 880;
+  transform: translateY(0.04em) rotate(1.2deg);
+}
+
 .brand-lockup--sm {
-  gap: 0.5rem;
+  font-size: 1.5rem;
 }
 
-.brand-lockup--sm .brand-lockup__mark {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.75rem;
-}
-
-.brand-lockup--sm .brand-lockup__copy strong {
-  font-size: 0.8125rem;
-}
-
-.brand-lockup--sm .brand-lockup__copy small {
-  font-size: 0.5625rem;
-}
-
-.brand-lockup--lg .brand-lockup__mark {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 1rem;
-}
-
-@media (max-width: 380px) {
-  .brand-lockup--sm .brand-lockup__copy small {
-    display: none;
-  }
-}
-
-@media (max-width: 340px) {
-  .brand-lockup--sm .brand-lockup__copy {
-    display: none;
-  }
+.brand-lockup--lg {
+  font-size: 2rem;
 }
 
 .brand:has(.brand-lockup) {

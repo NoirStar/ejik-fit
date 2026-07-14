@@ -262,6 +262,28 @@ export function AppShell({ children }: { children: ReactNode }) {
             <HeaderSearchForm inputRef={searchInputRef} />
           </Suspense>
 
+          <nav aria-label="주요 탐색" className={styles.desktopNav}>
+            <div className={styles.navInner}>
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    aria-current={active ? "page" : undefined}
+                    className={styles.navItem}
+                    data-active={active ? "true" : undefined}
+                    href={item.href}
+                    key={item.href}
+                    onClick={closeUtilityMenus}
+                  >
+                    <Icon aria-hidden="true" size={18} weight={active ? "fill" : "regular"} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
           <div className={styles.utilities}>
             <Link aria-label="글쓰기" className={styles.writeButton} href="/?compose=1">
               <NotePencil aria-hidden="true" size={19} weight="bold" />
@@ -354,28 +376,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
-
-        <nav aria-label="주요 탐색" className={styles.desktopNav}>
-          <div className={styles.navInner}>
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(pathname, item.href);
-              return (
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={styles.navItem}
-                  data-active={active ? "true" : undefined}
-                  href={item.href}
-                  key={item.href}
-                  onClick={closeUtilityMenus}
-                >
-                  <Icon aria-hidden="true" size={18} weight={active ? "fill" : "regular"} />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
       </header>
 
       <div
