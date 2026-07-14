@@ -118,6 +118,99 @@ for (const width of [1440, 820, 390]) {
   });
 }
 
+test("builds recent topics only from details viewed in this browser", async ({
+  page,
+}) => {
+  const browserErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+
+  const kubernetesTitle =
+    "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?";
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.goto("/");
+
+  let recent = page.getByRole("region", { name: "최근 본 주제" });
+  await expect(recent).toContainText(
+    "커뮤니티 글을 열면 이 브라우저에 최근 주제가 표시됩니다.",
+  );
+  await expect(recent.getByRole("link")).toHaveCount(0);
+
+  await page
+    .getByRole("tabpanel")
+    .getByRole("link", { exact: true, name: postTitle })
+    .click();
+  await expect(
+    page.getByRole("heading", { exact: true, level: 1, name: postTitle }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        localStorage.getItem("ejik-fit:recent-community-topics"),
+      ),
+    )
+    .toContain("career-move-3y-backend");
+  await page.getByRole("link", { name: "홈 피드로 돌아가기" }).click();
+
+  recent = page.getByRole("region", { name: "최근 본 주제" });
+  await expect(
+    recent.getByRole("link", {
+      name: `백엔드: ${postTitle} 다시 보기`,
+    }),
+  ).toHaveAttribute("href", "/posts/career-move-3y-backend");
+
+  await page
+    .getByRole("tabpanel")
+    .getByRole("link", { exact: true, name: kubernetesTitle })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      exact: true,
+      level: 1,
+      name: kubernetesTitle,
+    }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "홈 피드로 돌아가기" }).click();
+
+  recent = page.getByRole("region", { name: "최근 본 주제" });
+  let recentLinks = recent.getByRole("link", { name: /다시 보기/ });
+  await expect(recentLinks).toHaveCount(2);
+  await expect(recentLinks.nth(0)).toHaveAttribute(
+    "href",
+    "/posts/kubernetes-experience",
+  );
+  await expect(recentLinks.nth(1)).toHaveAttribute(
+    "href",
+    "/posts/career-move-3y-backend",
+  );
+
+  await page.reload();
+  recent = page.getByRole("region", { name: "최근 본 주제" });
+  recentLinks = recent.getByRole("link", { name: /다시 보기/ });
+  await expect(recentLinks).toHaveCount(2);
+  const recentLinkBox = await recentLinks.nth(0).boundingBox();
+  expect(recentLinkBox?.width).toBeGreaterThanOrEqual(44);
+  expect(recentLinkBox?.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
+
+  await recentLinks.nth(0).click();
+  await expect(page).toHaveURL(/\/posts\/kubernetes-experience$/);
+  await expect(
+    page.getByRole("heading", {
+      exact: true,
+      level: 1,
+      name: kubernetesTitle,
+    }),
+  ).toBeVisible();
+  expect(browserErrors).toEqual([]);
+});
+
 test("wraps a maximum-length browser comment on mobile", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 390 });
   await page.goto("/posts/career-move-3y-backend");
