@@ -55,18 +55,35 @@
   line-height: 1.7;
 }
 
-.privacyBadge {
+.introMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.privacyBadge,
+.savedLibraryLink {
   display: inline-flex;
   width: fit-content;
-  min-height: 2rem;
+  min-height: var(--touch-target);
   align-items: center;
   gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
-  background: var(--color-brand-subtle);
-  color: var(--color-accent-strong);
   font-size: 0.75rem;
   font-weight: 800;
+}
+
+.privacyBadge {
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.savedLibraryLink {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
 }
 
 .workspace {

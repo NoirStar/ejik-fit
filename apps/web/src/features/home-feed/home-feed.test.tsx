@@ -122,6 +122,10 @@ describe("HomeFeed", () => {
         name: "백엔드 커뮤니티 검색",
       }),
     ).toHaveAttribute("href", "/search?q=%EB%B0%B1%EC%97%94%EB%93%9C&scope=community");
+    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+      "href",
+      "/career/saved",
+    );
   });
 
   it("keeps only followed community content on the following tab", () => {

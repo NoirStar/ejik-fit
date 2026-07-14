@@ -2,6 +2,7 @@
 
 import {
   ArrowRight,
+  BookmarkSimple,
   Database,
   Plus,
   ShieldCheck,
@@ -414,10 +415,16 @@ export function CareerOverview({
         <p className={styles.description}>
           직접 저장한 기술과 현재 공개 공고의 확정된 요구사항을 비교해 다음 탐색 근거를 확인하세요.
         </p>
-        <span className={styles.privacyBadge}>
-          <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-          이 브라우저에만 저장
-        </span>
+        <div className={styles.introMeta}>
+          <span className={styles.privacyBadge}>
+            <ShieldCheck aria-hidden="true" size={16} weight="fill" />
+            이 브라우저에만 저장
+          </span>
+          <Link className={styles.savedLibraryLink} href="/career/saved">
+            <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
+            저장 보관함
+          </Link>
+        </div>
       </header>
 
       <div aria-live="polite" className={styles.srOnly}>

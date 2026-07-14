@@ -80,6 +80,10 @@ describe("CareerOverview", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "내 커리어" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+      "href",
+      "/career/saved",
+    );
     expect(
       await screen.findByRole("heading", {
         level: 2,

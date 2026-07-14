@@ -556,6 +556,10 @@ export function HomeFeed({
                 <Briefcase aria-hidden="true" size={18} />
                 공식 공고 찾기
               </Link>
+              <Link href="/career/saved">
+                <BookmarkSimple aria-hidden="true" size={18} />
+                저장 보관함
+              </Link>
               <Link href="/skill-map">
                 <ChartLineUp aria-hidden="true" size={18} />
                 스킬 연결 보기

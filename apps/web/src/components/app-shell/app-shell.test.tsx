@@ -134,6 +134,10 @@ describe("AppShell", () => {
     const userButton = screen.getByRole("button", { name: "사용자 메뉴 열기" });
     fireEvent.click(userButton);
     expect(screen.getByLabelText("사용자 메뉴")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+      "href",
+      "/career/saved",
+    );
     fireEvent.pointerDown(screen.getByText("내용"));
     expect(screen.queryByLabelText("사용자 메뉴")).not.toBeInTheDocument();
   });
