@@ -139,6 +139,7 @@ describe("HomeFeed", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "추천 탭에서 작성자 찾기" }),
     );
+    expect(screen.getByRole("tab", { name: "추천" })).toHaveFocus();
 
     const communityPost = screen.getByRole("article", {
       name: /3년차 백엔드 개발자/,

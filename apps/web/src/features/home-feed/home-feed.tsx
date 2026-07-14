@@ -548,6 +548,11 @@ export function HomeFeed({
     document.getElementById(`feed-tab-${nextTab.id}`)?.focus();
   }
 
+  function showRecommendedAuthors() {
+    setActiveTab("recommended");
+    document.getElementById("feed-tab-recommended")?.focus();
+  }
+
   function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = draft.title.trim();
@@ -782,7 +787,7 @@ export function HomeFeed({
                 </p>
                 {activeTab === "following" && (
                   <button
-                    onClick={() => setActiveTab("recommended")}
+                    onClick={showRecommendedAuthors}
                     type="button"
                   >
                     추천 탭에서 작성자 찾기
