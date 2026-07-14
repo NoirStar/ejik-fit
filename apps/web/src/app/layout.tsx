@@ -42,8 +42,8 @@ export const metadata: Metadata = {
       "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
   },
   icons: {
-    icon: "/icon.svg",
-    apple: "/apple-icon.svg",
+    icon: "/brand/ejik-fit-mascot.png",
+    apple: "/brand/ejik-fit-mascot-apple.png",
   },
 };
 

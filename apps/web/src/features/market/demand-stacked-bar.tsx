@@ -36,7 +36,14 @@ export function DemandStackedBar({
             style={{ width: segmentWidth(segment.count, total) }}
             title={`${segment.label} ${segment.count}건`}
           >
-            {segment.count > 0 ? `${segment.label} ${segment.count}` : null}
+            {segment.count > 0 ? (
+              <>
+                <span className={styles.segmentLabelFull}>
+                  {segment.label} {segment.count}
+                </span>
+                <span className={styles.segmentLabelShort}>{segment.count}</span>
+              </>
+            ) : null}
           </span>
         ))}
       </span>
