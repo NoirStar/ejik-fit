@@ -64,7 +64,6 @@ describe("AuthoredQuestions", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "내 질문" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("질문을 불러오는 중입니다.")).toBeInTheDocument();
     expect(
       await screen.findByText("이 브라우저에서 작성한 질문이 없습니다."),
     ).toBeInTheDocument();

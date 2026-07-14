@@ -651,6 +651,10 @@ export function HomeFeed({
                 <BookmarkSimple aria-hidden="true" size={18} />
                 저장 보관함
               </Link>
+              <Link href="/career/questions">
+                <ChatCircle aria-hidden="true" size={18} />
+                내 질문
+              </Link>
               <Link href="/skill-map">
                 <ChartLineUp aria-hidden="true" size={18} />
                 스킬 연결 보기

@@ -305,6 +305,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link href="/career/saved" onClick={closeUtilityMenus}>
                     저장 보관함
                   </Link>
+                  <Link href="/career/questions" onClick={closeUtilityMenus}>
+                    내 질문
+                  </Link>
                   <Link href="/data-policy" onClick={closeUtilityMenus}>
                     데이터 정책
                   </Link>

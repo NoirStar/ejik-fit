@@ -139,6 +139,10 @@ describe("AppShell", () => {
       "href",
       "/career/saved",
     );
+    expect(screen.getByRole("link", { name: "내 질문" })).toHaveAttribute(
+      "href",
+      "/career/questions",
+    );
     fireEvent.pointerDown(screen.getByText("내용"));
     expect(screen.queryByLabelText("사용자 메뉴")).not.toBeInTheDocument();
   });

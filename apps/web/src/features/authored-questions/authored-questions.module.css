@@ -1,0 +1,454 @@
+.page {
+  width: min(100%, 68rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 3vw, 2.5rem) 6rem;
+}
+
+.intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.intro > div:first-child {
+  display: grid;
+  max-width: 44rem;
+  gap: 0.75rem;
+}
+
+.intro p,
+.intro h1,
+.collectionHeader p,
+.collectionHeader h2,
+.cardCopy h2,
+.cardCopy p,
+.deleteConfirm p,
+.success,
+.error,
+.loading p,
+.emptyState h2,
+.emptyState p,
+.storageNote {
+  margin: 0;
+}
+
+.eyebrow,
+.collectionHeader p {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 820;
+}
+
+.intro h1 {
+  color: var(--color-text);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 860;
+  line-height: 1.02;
+  letter-spacing: -0.06em;
+}
+
+.description {
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.introActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.introActions span,
+.introActions a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-control);
+  font-size: 0.78rem;
+  font-weight: 780;
+}
+
+.introActions span {
+  padding: 0 0.8rem;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.introActions a {
+  padding: 0 0.95rem;
+  background: var(--color-text);
+  color: var(--color-surface);
+  text-decoration: none;
+}
+
+.collection {
+  overflow: hidden;
+  margin-top: 2rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.collectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.3rem;
+}
+
+.collectionHeader > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.collectionHeader h2 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 830;
+  letter-spacing: -0.025em;
+}
+
+.collectionHeader > svg {
+  color: var(--color-accent-strong);
+}
+
+.success,
+.error {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1.3rem;
+  border-top: 1px solid var(--color-line);
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.success {
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
+  color: var(--color-success);
+}
+
+.error {
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.questionList {
+  border-top: 1px solid var(--color-line);
+}
+
+.questionCard {
+  min-width: 0;
+  padding: 1.35rem 1.3rem;
+}
+
+.questionCard + .questionCard {
+  border-top: 1px solid var(--color-line);
+}
+
+.cardTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cardTopline > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+}
+
+.cardTopline span {
+  color: var(--color-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.cardTopline time {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 680;
+}
+
+.deleteButton {
+  display: inline-flex;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+.deleteButton:hover,
+.deleteButton[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.cardCopy {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.cardCopy h2 {
+  font-size: 1.08rem;
+  font-weight: 830;
+  line-height: 1.42;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.cardCopy h2 a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.cardCopy p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tags a {
+  display: inline-flex;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.6rem;
+  border-radius: 0.4rem;
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 740;
+  text-decoration: none;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  margin-top: 0.8rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.facts span,
+.facts a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.facts span[data-active="true"] {
+  color: var(--color-accent-strong);
+}
+
+.facts a {
+  margin-left: auto;
+  color: var(--color-text);
+  font-weight: 790;
+  text-decoration: none;
+}
+
+.deleteConfirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 22%, var(--color-line));
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-danger) 5%, var(--color-surface));
+}
+
+.deleteConfirm p {
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  font-weight: 680;
+}
+
+.deleteConfirm > div {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+}
+
+.deleteConfirm button {
+  min-height: var(--touch-target);
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.deleteConfirm button:last-child {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.loading,
+.emptyState {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: clamp(3rem, 8vw, 5rem) 1.5rem;
+  border-top: 1px solid var(--color-line);
+  text-align: center;
+}
+
+.loading p,
+.emptyState p {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.emptyState > div {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.emptyState h2 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 820;
+}
+
+.emptyState a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-accent-strong);
+  font-size: 0.8rem;
+  font-weight: 790;
+  text-decoration: none;
+}
+
+.storageNote {
+  padding: 0.8rem 1.3rem;
+  border-top: 1px solid var(--color-line);
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.cardCopy h2 a:hover,
+.facts a:hover,
+.tags a:hover,
+.emptyState a:hover {
+  color: var(--color-accent-strong);
+}
+
+.introActions a:hover {
+  background: var(--color-accent-strong);
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .intro {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .intro h1 {
+    font-size: clamp(2.35rem, 14vw, 3.15rem);
+  }
+
+  .introActions {
+    justify-content: space-between;
+  }
+
+  .introActions a {
+    flex: 1;
+  }
+
+  .collection {
+    margin-top: 1.25rem;
+  }
+
+  .questionCard {
+    padding: 1.15rem 1rem;
+  }
+
+  .facts a {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .deleteConfirm {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .deleteConfirm > div,
+  .deleteConfirm button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .deleteButton,
+  .introActions a,
+  .facts a,
+  .tags a {
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+  }
+}

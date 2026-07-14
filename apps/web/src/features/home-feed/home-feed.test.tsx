@@ -133,6 +133,10 @@ describe("HomeFeed", () => {
       "href",
       "/career/saved",
     );
+    expect(screen.getByRole("link", { name: "내 질문" })).toHaveAttribute(
+      "href",
+      "/career/questions",
+    );
   });
 
   it("shows an honest empty state instead of invented recent topics", () => {
