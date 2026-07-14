@@ -4,6 +4,7 @@ import type { FitAnalyzeResponse } from "@/lib/types";
 
 import {
   buildCareerAnalyzePayload,
+  buildCareerDomainSuggestions,
   buildCareerJobsHref,
   buildCareerSnapshot,
   CAREER_CONDITIONS,
@@ -66,15 +67,35 @@ describe("career overview model", () => {
       owned_skills: ["Java", "Python"],
     });
     expect(
-      buildCareerAnalyzePayload(["Python"], "experienced"),
+      buildCareerAnalyzePayload(["Python"], "experienced", "robotics"),
     ).toEqual({
       owned_skills: ["Python"],
       career_type: "experienced",
+      domains: ["robotics"],
     });
   });
 
+  it("builds honest domain choices from graph node metadata", () => {
+    expect(
+      buildCareerDomainSuggestions({
+        nodes: [
+          { domains: ["backend", "cloud", "backend"] },
+          { domains: ["backend", "robotics"] },
+          { domains: ["cloud", ""] },
+        ],
+      }),
+    ).toEqual([
+      { value: "backend", label: "백엔드", skillCount: 2 },
+      { value: "cloud", label: "클라우드", skillCount: 2 },
+      { value: "robotics", label: "로보틱스", skillCount: 1 },
+    ]);
+    expect(() => buildCareerDomainSuggestions({ nodes: null })).toThrow(
+      "invalid domain suggestion response",
+    );
+  });
+
   it("maps fit counts and evidence without inventing a percentage", () => {
-    const snapshot = buildCareerSnapshot(fit, "experienced");
+    const snapshot = buildCareerSnapshot(fit, "experienced", "robotics");
 
     expect(snapshot.metrics).toEqual({
       matchingPostingCount: 17,
@@ -82,6 +103,7 @@ describe("career overview model", () => {
       recommendationCount: 2,
     });
     expect(snapshot).not.toHaveProperty("fitPercent");
+    expect(snapshot.scopeLabel).toBe("로보틱스 · 경력");
     expect(snapshot.recommendations[0]).toMatchObject({
       name: "Spring Boot & Cloud",
       requiredCount: 8,

@@ -48,15 +48,80 @@ export function formatDomainLabel(domain: string) {
   return DOMAIN_LABELS[domain] ?? domain;
 }
 
+export type CareerDomainSuggestion = {
+  value: string;
+  label: string;
+  skillCount: number;
+};
+
+export function buildCareerDomainSuggestions(
+  value: unknown,
+): CareerDomainSuggestion[] {
+  if (!value || typeof value !== "object") {
+    throw new Error("invalid domain suggestion response");
+  }
+  const nodes = (value as { nodes?: unknown }).nodes;
+  if (!Array.isArray(nodes)) {
+    throw new Error("invalid domain suggestion response");
+  }
+
+  const counts = new Map<string, number>();
+  for (const node of nodes) {
+    if (!node || typeof node !== "object") {
+      throw new Error("invalid domain suggestion node");
+    }
+    const domains = (node as { domains?: unknown }).domains;
+    if (
+      !Array.isArray(domains) ||
+      !domains.every((domain) => typeof domain === "string")
+    ) {
+      throw new Error("invalid domain suggestion node");
+    }
+    const nodeDomains = new Set(
+      domains.map((domain) => domain.trim()).filter(Boolean),
+    );
+    for (const domain of nodeDomains) {
+      counts.set(domain, (counts.get(domain) ?? 0) + 1);
+    }
+  }
+
+  return [...counts.entries()]
+    .map(([domain, skillCount]) => ({
+      value: domain,
+      label: formatDomainLabel(domain),
+      skillCount,
+    }))
+    .sort(
+      (left, right) =>
+        right.skillCount - left.skillCount ||
+        left.label.localeCompare(right.label, "ko-KR"),
+    );
+}
+
+export function careerScopeLabel(
+  careerCondition: CareerCondition,
+  targetDomain: string,
+) {
+  const parts = [
+    targetDomain ? formatDomainLabel(targetDomain) : "",
+    careerCondition ? careerConditionLabel(careerCondition) : "",
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "전체";
+}
+
 export function buildCareerAnalyzePayload(
   ownedSkills: string[],
   careerCondition: CareerCondition,
+  targetDomain = "",
 ): FitAnalyzeRequest {
   const payload: FitAnalyzeRequest = {
     owned_skills: normalizeOwnedSkills(ownedSkills),
   };
   if (careerCondition) {
     payload.career_type = careerCondition;
+  }
+  if (targetDomain.trim()) {
+    payload.domains = [targetDomain.trim()];
   }
   return payload;
 }
@@ -75,10 +140,16 @@ export function buildCareerJobsHref(
 export function buildCareerSnapshot(
   fit: FitAnalyzeResponse,
   careerCondition: CareerCondition,
+  targetDomain = "",
 ) {
   return {
     careerCondition,
     careerConditionLabel: careerConditionLabel(careerCondition),
+    targetDomain,
+    targetDomainLabel: targetDomain
+      ? formatDomainLabel(targetDomain)
+      : "전체 기술 분야",
+    scopeLabel: careerScopeLabel(careerCondition, targetDomain),
     metrics: {
       matchingPostingCount: fit.coverage.matching_posting_count,
       strongFitPostingCount: fit.coverage.strong_fit_posting_count,

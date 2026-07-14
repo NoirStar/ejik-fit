@@ -433,6 +433,17 @@
   line-height: 1.5;
 }
 
+.conditionPanel > .conditionControls {
+  gap: 0.75rem;
+}
+
+.conditionPanel > div > .conditionStatus {
+  margin-top: 0.25rem;
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .selectLabel {
   display: grid;
   gap: 0.375rem;

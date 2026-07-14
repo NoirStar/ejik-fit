@@ -239,6 +239,41 @@ describe("CareerOverview", () => {
     });
   });
 
+  it("sends an API-backed target domain and repeats the scope in results", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    render(
+      <CareerOverview
+        domainSuggestions={[
+          { value: "robotics", label: "로보틱스", skillCount: 4 },
+        ]}
+        domainSuggestionsUnavailable={false}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+
+    await screen.findByRole("heading", { level: 2, name: "공고 비교 결과" });
+    fireEvent.change(screen.getByLabelText("희망 기술 분야"), {
+      target: { value: "robotics" },
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      owned_skills: ["Python"],
+      domains: ["robotics"],
+    });
+    expect(screen.getByText("로보틱스 조건")).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "로보틱스 · 연결 기술 4개" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/스킬 그래프가 제공하는 분야 메타데이터/),
+    ).toBeInTheDocument();
+  });
+
   it("does not replace a newer result when an aborted response finishes late", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",

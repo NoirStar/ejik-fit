@@ -28,8 +28,10 @@ const fitResponse = {
 test("keeps career evidence and the shared stack synchronized on mobile", async ({
   page,
 }) => {
+  const fitRequests: Array<Record<string, unknown>> = [];
   await page.setViewportSize({ height: 844, width: 390 });
   await page.route("**/skills/graph/fit", async (route) => {
+    fitRequests.push(route.request().postDataJSON() as Record<string, unknown>);
     await route.fulfill({ json: fitResponse });
   });
   await page.goto("/career");
@@ -40,6 +42,19 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
     page.getByRole("heading", { name: "공고 비교 결과" }),
   ).toBeVisible();
   await expect(page.getByText("17건", { exact: true })).toBeVisible();
+
+  const domainSelect = page.getByLabel("희망 기술 분야");
+  await expect(
+    domainSelect.getByRole("option", { name: "클라우드 · 연결 기술 1개" }),
+  ).toBeAttached();
+  await domainSelect.selectOption("cloud");
+  await expect(page.getByText("클라우드 조건", { exact: true })).toBeVisible();
+  await expect.poll(() => fitRequests.at(-1)).toMatchObject({
+    owned_skills: ["Python"],
+    domains: ["cloud"],
+  });
+  const domainBox = await domainSelect.boundingBox();
+  expect(domainBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByRole("button", { name: "내 스택 열기" }).click();
   const dialog = page.getByRole("dialog", { name: "내 스택" });

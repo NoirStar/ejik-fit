@@ -25,8 +25,9 @@ import {
   buildCareerAnalyzePayload,
   buildCareerSnapshot,
   CAREER_CONDITIONS,
-  careerConditionLabel,
+  careerScopeLabel,
   type CareerCondition,
+  type CareerDomainSuggestion,
   type CareerSnapshot,
 } from "./model";
 import styles from "./career-overview.module.css";
@@ -39,6 +40,8 @@ export type CareerSkillSuggestion = {
 type CareerOverviewProps = {
   suggestions: CareerSkillSuggestion[];
   suggestionsUnavailable: boolean;
+  domainSuggestions?: CareerDomainSuggestion[];
+  domainSuggestionsUnavailable?: boolean;
 };
 
 type ComparisonState =
@@ -117,7 +120,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
     <section aria-labelledby="career-result-title" className={styles.resultPanel}>
       <header className={styles.resultHeader}>
         <div>
-          <p>{snapshot.careerConditionLabel} 조건</p>
+          <p>{snapshot.scopeLabel} 조건</p>
           <h2 id="career-result-title">공고 비교 결과</h2>
         </div>
         <span>현재 공개 공고 기준</span>
@@ -277,15 +280,19 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
 export function CareerOverview({
   suggestions,
   suggestionsUnavailable,
+  domainSuggestions = [],
+  domainSuggestionsUnavailable = false,
 }: CareerOverviewProps) {
   const inputId = useId();
   const inputErrorId = useId();
   const conditionId = useId();
+  const targetDomainId = useId();
   const [hydrated, setHydrated] = useState(false);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
   const [inputError, setInputError] = useState("");
   const [careerCondition, setCareerCondition] = useState<CareerCondition>("");
+  const [targetDomain, setTargetDomain] = useState("");
   const [comparison, setComparison] = useState<ComparisonState>({ status: "idle" });
   const [retrySequence, setRetrySequence] = useState(0);
 
@@ -323,7 +330,11 @@ export function CareerOverview({
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(
-            buildCareerAnalyzePayload(ownedSkills, careerCondition),
+            buildCareerAnalyzePayload(
+              ownedSkills,
+              careerCondition,
+              targetDomain,
+            ),
           ),
           signal: controller.signal,
         });
@@ -336,7 +347,11 @@ export function CareerOverview({
         }
         setComparison({
           status: "ready",
-          snapshot: buildCareerSnapshot(payload, careerCondition),
+          snapshot: buildCareerSnapshot(
+            payload,
+            careerCondition,
+            targetDomain,
+          ),
         });
       } catch (error) {
         if (
@@ -351,7 +366,13 @@ export function CareerOverview({
 
     void requestComparison();
     return () => controller.abort();
-  }, [careerCondition, hydrated, ownedSkillsSignature, retrySequence]);
+  }, [
+    careerCondition,
+    hydrated,
+    ownedSkillsSignature,
+    retrySequence,
+    targetDomain,
+  ]);
 
   function saveSkill(skill: string) {
     const trimmed = skill.trim();
@@ -397,10 +418,14 @@ export function CareerOverview({
     setInputError("");
   }
 
+  const selectedScopeLabel = careerScopeLabel(
+    careerCondition,
+    targetDomain,
+  );
   const announcement = !hydrated
     ? "저장한 기술을 확인하고 있습니다."
     : comparison.status === "loading"
-      ? `${careerConditionLabel(careerCondition)} 조건의 공개 공고를 비교하고 있습니다.`
+      ? `${selectedScopeLabel} 조건의 공개 공고를 비교하고 있습니다.`
       : comparison.status === "error"
         ? "공고 비교를 불러오지 못했습니다."
         : comparison.status === "ready"
@@ -543,25 +568,47 @@ export function CareerOverview({
           <section aria-labelledby="career-condition-title" className={styles.conditionPanel}>
             <div>
               <p>비교 범위</p>
-              <h2 id="career-condition-title">경력 조건</h2>
-              <span>선택한 조건은 현재 공고 비교 요청에만 적용됩니다.</span>
+              <h2 id="career-condition-title">비교 조건</h2>
+              <span>선택한 조건은 현재 공고 비교 요청에만 적용되며 서버에 저장되지 않습니다.</span>
+              {domainSuggestionsUnavailable && (
+                <span className={styles.conditionStatus} role="status">
+                  분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다.
+                </span>
+              )}
             </div>
-            <label className={styles.selectLabel} htmlFor={conditionId}>
-              <span>경력 조건</span>
-              <select
-                id={conditionId}
-                onChange={(event) =>
-                  setCareerCondition(event.target.value as CareerCondition)
-                }
-                value={careerCondition}
-              >
-                {CAREER_CONDITIONS.map((condition) => (
-                  <option key={condition.value || "all"} value={condition.value}>
-                    {condition.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className={styles.conditionControls}>
+              <label className={styles.selectLabel} htmlFor={conditionId}>
+                <span>경력 조건</span>
+                <select
+                  id={conditionId}
+                  onChange={(event) =>
+                    setCareerCondition(event.target.value as CareerCondition)
+                  }
+                  value={careerCondition}
+                >
+                  {CAREER_CONDITIONS.map((condition) => (
+                    <option key={condition.value || "all"} value={condition.value}>
+                      {condition.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.selectLabel} htmlFor={targetDomainId}>
+                <span>희망 기술 분야</span>
+                <select
+                  id={targetDomainId}
+                  onChange={(event) => setTargetDomain(event.target.value)}
+                  value={targetDomain}
+                >
+                  <option value="">전체 기술 분야</option>
+                  {domainSuggestions.map((domain) => (
+                    <option key={domain.value} value={domain.value}>
+                      {domain.label} · 연결 기술 {formatCount(domain.skillCount, "개")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </section>
 
           {!hydrated ? (
@@ -589,7 +636,7 @@ export function CareerOverview({
               <span className={styles.loadingMark} aria-hidden="true" />
               <div>
                 <h2>공고 요구사항을 비교하고 있습니다.</h2>
-                <p>{careerConditionLabel(careerCondition)} 조건의 현재 공개 공고를 확인합니다.</p>
+                <p>{selectedScopeLabel} 조건의 현재 공개 공고를 확인합니다.</p>
               </div>
             </section>
           ) : comparison.status === "error" ? (
@@ -616,6 +663,8 @@ export function CareerOverview({
               <h2 id="career-method-title">숫자를 읽는 방법</h2>
             </div>
             <p>
+              희망 기술 분야는 현재 스킬 그래프가 제공하는 분야 메타데이터로 비교
+              범위를 좁힙니다. {" "}
               공식 채용페이지에서 현재 공개 상태로 확인된 공고와 확정 기술 추출만 비교합니다.
               이 결과는 합격 여부, 장기 전망 또는 학습 순서를 예측하지 않습니다.
             </p>
