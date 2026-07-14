@@ -152,4 +152,3 @@ git diff --check
 - `main`에 fast-forward 병합하고 원격 푸시한다.
 - 웹과 API Vercel 상태가 성공인지 확인한다.
 - 운영 `/market`을 1440×900과 390×844에서 다시 캡처해 실제 API 수치와 레이아웃을 확인한다.
-

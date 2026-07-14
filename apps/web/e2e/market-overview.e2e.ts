@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 820, 390]) {
   test(`keeps market category evidence and controls usable at ${width}px`, async ({
     page,
   }) => {
@@ -31,8 +31,8 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByText("확인 공고", { exact: true }).locator(".."),
     ).toContainText("1건");
+    await expect(page.getByRole("link", { name: "Docker 스킬맵" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Python 스킬맵" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Python 스킬맵" })).toBeInViewport();
     await expect(page.getByRole("link", { name: "Kubernetes 스킬맵" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Go 스킬맵" })).not.toBeVisible();
     await expect(
@@ -49,7 +49,13 @@ for (const width of [1440, 390]) {
     ).toBe(false);
     expect(consoleErrors).toEqual([]);
 
-    if (width === 390) {
+    if (width <= 839) {
+      expect(
+        await title.evaluate((element) =>
+          parseFloat(getComputedStyle(element).fontSize),
+        ),
+      ).toBeLessThanOrEqual(28);
+
       const categoryFilters = page.getByRole("navigation", {
         name: "기술 분야",
       });
@@ -68,12 +74,31 @@ for (const width of [1440, 390]) {
       await expect(
         page.getByText("확인 기술", { exact: true }).locator(".."),
       ).toBeInViewport();
+
+      const firstSkillRow = await page
+        .getByRole("link", { name: "Docker 스킬맵" })
+        .evaluate((element) => {
+          const row = element.closest("li")?.getBoundingClientRect();
+          return row ? { bottom: row.bottom, top: row.top } : null;
+        });
+      const navigationBox = await page
+        .getByRole("navigation", { name: "모바일 주요 탐색" })
+        .boundingBox();
+
+      expect(firstSkillRow).not.toBeNull();
+      expect(navigationBox).not.toBeNull();
+      expect(firstSkillRow!.top).toBeGreaterThanOrEqual(0);
+      expect(firstSkillRow!.bottom).toBeLessThanOrEqual(navigationBox!.y);
     }
 
     for (const target of [
       page.getByRole("link", { exact: true, name: "언어" }),
       page.getByRole("link", { exact: true, name: "경력" }),
       page.getByRole("link", { name: "Python 스킬맵" }),
+      page.getByRole("link", { name: "Python 관련 공고" }),
+      page
+        .getByLabel("데이터를 읽는 기준")
+        .getByRole("link", { name: "분석 방법" }),
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);

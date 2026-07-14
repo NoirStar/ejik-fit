@@ -17,10 +17,10 @@ describe("market overview styles", () => {
 
   it("keeps metrics compact and filters to one row on mobile", () => {
     expect(css).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.metrics\s*\{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
+      /@media \(max-width: 839px\)[\s\S]*?\.metrics\s*\{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/,
     );
     expect(css).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.filters\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/,
+      /@media \(max-width: 839px\)[\s\S]*?\.filters\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/,
     );
   });
 
@@ -38,5 +38,14 @@ describe("market overview styles", () => {
 
     expect(filterRule).toContain("min-width: var(--touch-target);");
     expect(filterRule).toContain("min-height: var(--touch-target);");
+  });
+
+  it("keeps market text actions at a square touch target", () => {
+    const textActionRule =
+      css.match(/\.filter,\s*\.textLink,\s*\.jobsLink\s*\{([^}]*)\}/)?.[1] ??
+      "";
+
+    expect(textActionRule).toContain("min-width: var(--touch-target);");
+    expect(textActionRule).toContain("min-height: var(--touch-target);");
   });
 });
