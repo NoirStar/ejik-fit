@@ -1,0 +1,822 @@
+.page {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) 7rem;
+}
+
+.intro {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.eyebrow,
+.intro h1,
+.description,
+.startState h2,
+.startState p,
+.scopePanel > p,
+.boundaryNote p,
+.sectionHeader h2,
+.sectionHeader p,
+.companyCopy p,
+.companyCopy h3,
+.jobIdentity p,
+.jobIdentity h3,
+.skillCopy h3,
+.skillCopy p,
+.communityAuthor,
+.communityResult h3,
+.communitySummary,
+.dataNotice h2,
+.noResults h2,
+.noResults p,
+.mockDisclosure,
+.sectionState {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 820;
+  letter-spacing: 0.035em;
+}
+
+.intro h1 {
+  max-width: 18ch;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: clamp(2.15rem, 5vw, 4rem);
+  font-weight: 860;
+  letter-spacing: -0.055em;
+  line-height: 1.05;
+}
+
+.description {
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.searchForm {
+  display: grid;
+  width: min(100%, 47rem);
+  min-height: 3.5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1.25rem;
+  padding-left: 1rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  transition:
+    border-color 160ms var(--ease-standard),
+    box-shadow 160ms var(--ease-standard);
+}
+
+.searchForm:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 13%, transparent);
+}
+
+.searchForm input {
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.searchForm input::placeholder {
+  color: var(--color-faint);
+}
+
+.searchForm button {
+  min-width: 5rem;
+  min-height: 2.75rem;
+  align-self: stretch;
+  margin: 0.35rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--color-text);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.searchForm button:hover {
+  background: var(--color-accent-strong);
+}
+
+.startState {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: clamp(2.5rem, 6vw, 5rem);
+  padding: 1.5rem 0;
+  border-block: 1px solid var(--color-line);
+  color: var(--color-muted);
+}
+
+.startState h2 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 820;
+}
+
+.startState p {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.startLinks,
+.resultActions,
+.skillActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.startLinks a,
+.resultActions a,
+.skillActions a,
+.sectionMeta a,
+.dataNotice a,
+.noResults a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: var(--color-accent-strong);
+  font-size: 0.78rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.startLinks a {
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 13.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.25rem, 3vw, 2.25rem);
+  margin-top: clamp(2.5rem, 6vw, 4rem);
+}
+
+.scopePanel {
+  position: sticky;
+  top: calc(var(--header-height-desktop) + 1.25rem);
+  min-width: 0;
+}
+
+.scopePanel > p {
+  padding: 0 0.75rem 0.6rem;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 780;
+}
+
+.scopePanel nav {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.scopePanel nav a {
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-control);
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.scopePanel nav a:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.scopePanel nav a[data-active="true"] {
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+  font-weight: 820;
+}
+
+.scopePanel nav small {
+  color: inherit;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.boundaryNote {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding: 0.85rem 0.75rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-success);
+}
+
+.boundaryNote p {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.resultsColumn {
+  display: grid;
+  min-width: 0;
+  gap: 1.25rem;
+}
+
+.resultSection {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.anchorTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.sectionHeader h2 {
+  color: var(--color-text);
+  font-size: 1.08rem;
+  font-weight: 830;
+  letter-spacing: -0.025em;
+}
+
+.sectionHeader p {
+  margin-top: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.sectionMeta {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+}
+
+.sectionMeta > span {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.sectionMeta a {
+  min-height: 1.75rem;
+  font-size: 0.7rem;
+}
+
+.companyGrid,
+.jobGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.companyResult,
+.jobResult,
+.communityResult {
+  min-width: 0;
+  padding: 1.2rem;
+}
+
+.companyResult {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.85rem;
+}
+
+.companyResult:nth-child(even),
+.jobResult:nth-child(even) {
+  border-left: 1px solid var(--color-line);
+}
+
+.companyResult:nth-child(n + 3),
+.jobResult:nth-child(n + 3) {
+  border-top: 1px solid var(--color-line);
+}
+
+.companyCopy {
+  min-width: 0;
+}
+
+.companyCopy p {
+  color: var(--color-accent-strong);
+  font-size: 0.67rem;
+  font-weight: 780;
+}
+
+.companyCopy h3,
+.jobIdentity h3,
+.communityResult h3 {
+  margin-top: 0.2rem;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 0.98rem;
+  font-weight: 820;
+  line-height: 1.4;
+}
+
+.companyCopy h3 a,
+.jobIdentity h3 a,
+.communityResult h3 a,
+.jobIdentity p a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.companyCopy h3 a,
+.jobIdentity h3 a,
+.communityResult h3 a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+}
+
+.companyCopy > span {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.inlineSkills {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inlineSkills a,
+.communityTags a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  padding: 0 0.55rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.45rem;
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 720;
+  text-decoration: none;
+}
+
+.jobResult {
+  display: grid;
+  align-content: start;
+  gap: 0.85rem;
+}
+
+.resultTopline {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--color-faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.officialBadge,
+.sampleBadge,
+.exampleBadge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 1.65rem;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.45rem;
+  border-radius: 0.4rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.officialBadge {
+  background: #eaf8f1;
+  color: var(--color-success);
+}
+
+.sampleBadge {
+  background: #eef2ff;
+  color: var(--color-info);
+}
+
+.exampleBadge {
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+}
+
+.jobIdentity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.jobIdentity > div {
+  min-width: 0;
+}
+
+.jobIdentity p {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.73rem;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobFacts,
+.evidenceSkills,
+.communityTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jobFacts li {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.jobFacts li + li::before {
+  margin-right: 0.35rem;
+  color: var(--color-line);
+  content: "·";
+}
+
+.evidenceSkills li {
+  padding: 0.28rem 0.45rem;
+  border-radius: 0.35rem;
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.66rem;
+  font-weight: 720;
+}
+
+.evidenceSkills li[data-kind="required"] {
+  background: #eaf8f1;
+  color: var(--color-success);
+}
+
+.evidenceSkills li[data-kind="preferred"] {
+  background: #fff6e7;
+  color: var(--color-warning);
+}
+
+.resultActions {
+  margin-top: auto;
+  padding-top: 0.2rem;
+}
+
+.resultActions a:first-child,
+.skillActions a:first-child {
+  color: var(--color-text);
+}
+
+.skillList,
+.communityList {
+  display: grid;
+}
+
+.skillResult {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(9rem, 1fr) minmax(12rem, auto) auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.2rem;
+}
+
+.skillResult + .skillResult,
+.communityResult + .communityResult {
+  border-top: 1px solid var(--color-line);
+}
+
+.skillIcon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.skillCopy {
+  min-width: 0;
+}
+
+.skillCopy h3 {
+  margin-top: 0.2rem;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 0.93rem;
+  font-weight: 820;
+}
+
+.skillCopy p,
+.skillEvidence span {
+  color: var(--color-muted);
+  font-size: 0.69rem;
+}
+
+.skillEvidence {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skillEvidence strong {
+  color: var(--color-text);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.skillActions {
+  justify-content: flex-end;
+}
+
+.communityResult {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.communityAuthor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+}
+
+.communityAuthor strong {
+  color: var(--color-text);
+}
+
+.communitySummary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mockDisclosure {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.sectionState {
+  padding: 2rem 1.25rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.dataNotice,
+.noResults {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.dataNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  color: var(--color-warning);
+}
+
+.dataNotice h2 {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 820;
+}
+
+.dataNotice ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.noResults {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: clamp(2.5rem, 7vw, 5rem) 1.25rem;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.noResults h2 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 820;
+}
+
+.noResults p {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.companyCopy a:hover,
+.jobIdentity a:hover,
+.communityResult h3 a:hover,
+.inlineSkills a:hover,
+.communityTags a:hover,
+.resultActions a:hover,
+.skillActions a:hover,
+.sectionMeta a:hover,
+.startLinks a:hover,
+.dataNotice a:hover,
+.noResults a:hover {
+  color: var(--color-accent-strong);
+}
+
+.searchForm button:focus-visible,
+.scopePanel a:focus-visible,
+.resultSection a:focus-visible,
+.startState a:focus-visible,
+.dataNotice a:focus-visible,
+.noResults a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 64rem) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .scopePanel {
+    position: static;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .scopePanel > p,
+  .boundaryNote {
+    display: none;
+  }
+
+  .scopePanel nav {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    gap: 0.35rem;
+  }
+
+  .scopePanel nav a {
+    min-width: 5.5rem;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+  }
+}
+
+@media (max-width: 48rem) {
+  .page {
+    padding-top: 1.5rem;
+  }
+
+  .intro h1 {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  .startState {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .startLinks {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+
+  .companyGrid,
+  .jobGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .companyResult:nth-child(even),
+  .jobResult:nth-child(even) {
+    border-left: 0;
+  }
+
+  .companyResult:nth-child(n + 2),
+  .jobResult:nth-child(n + 2) {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .skillResult {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .skillEvidence,
+  .skillActions {
+    grid-column: 2;
+  }
+
+  .skillActions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 35rem) {
+  .page {
+    padding-inline: 1rem;
+  }
+
+  .searchForm {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.25rem 0.25rem 0.25rem 0.8rem;
+  }
+
+  .searchForm button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: var(--touch-target);
+    margin: 0;
+  }
+
+  .sectionHeader {
+    align-items: flex-start;
+  }
+
+  .sectionHeader p {
+    max-width: 30ch;
+  }
+
+  .sectionMeta a {
+    display: none;
+  }
+
+  .resultActions,
+  .skillActions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchForm {
+    transition: none;
+  }
+}
