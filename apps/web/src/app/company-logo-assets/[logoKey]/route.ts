@@ -5,6 +5,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
+  "cj-olivenetworks":
+    "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
@@ -22,10 +24,18 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
+  "kakao-mobility":
+    "https://opening-attachments.greetinghr.com/2025-02-06/0e82fcb5-f39c-4d8f-8aee-f20e3efaa187/111.png",
+  "kakao-pay":
+    "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
+  "lg-electronics":
+    "https://globalcareers.lge.com/gcr-content/og_image_lge_careers.png",
+  "line-plus":
+    "https://vos.line-scdn.net/landpress-content-v2-3ub8nanc40829phmlme9ov4o/1708056773171.png",
   makinarocks:
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
   musinsa:

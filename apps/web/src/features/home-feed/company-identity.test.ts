@@ -140,6 +140,31 @@ describe("companyIdentity", () => {
       "https://furiosa.ai/careers/software-engineer-runtime",
       "furiosa-ai",
     ],
+    [
+      "LG전자",
+      "https://globalcareers.lge.com/job/1",
+      "lg-electronics",
+    ],
+    [
+      "LINE Plus",
+      "https://careers.linecorp.com/jobs/1",
+      "line-plus",
+    ],
+    [
+      "CJ올리브네트웍스",
+      "https://recruit.cj.net/recruit/job/1",
+      "cj-olivenetworks",
+    ],
+    [
+      "카카오페이",
+      "https://kakaopay.career.greetinghr.com/ko/o/1",
+      "kakao-pay",
+    ],
+    [
+      "카카오모빌리티",
+      "https://kakaomobility.career.greetinghr.com/ko/o/1",
+      "kakao-mobility",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

@@ -239,6 +239,36 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logos/ably.svg",
     displayName: "에이블리코퍼레이션",
   },
+  {
+    aliases: ["LG전자", "lg electronics", "lge"],
+    hosts: ["globalcareers.lge.com"],
+    src: "/company-logo-assets/lg-electronics",
+    displayName: "LG전자",
+  },
+  {
+    aliases: ["LINE Plus", "라인플러스", "line plus"],
+    hosts: ["careers.linecorp.com", "linepluscorp.com"],
+    src: "/company-logo-assets/line-plus",
+    displayName: "LINE Plus",
+  },
+  {
+    aliases: ["CJ올리브네트웍스", "cj olive networks", "cj olivenetworks"],
+    hosts: ["recruit.cj.net", "cjolivenetworks.co.kr"],
+    src: "/company-logo-assets/cj-olivenetworks",
+    displayName: "CJ올리브네트웍스",
+  },
+  {
+    aliases: ["카카오페이", "kakao pay", "kakaopay"],
+    hosts: ["kakaopay.career.greetinghr.com"],
+    src: "/company-logo-assets/kakao-pay",
+    displayName: "카카오페이",
+  },
+  {
+    aliases: ["카카오모빌리티", "kakao mobility", "kakaomobility"],
+    hosts: ["kakaomobility.career.greetinghr.com"],
+    src: "/company-logo-assets/kakao-mobility",
+    displayName: "카카오모빌리티",
+  },
 ];
 
 function normalize(value: string) {
