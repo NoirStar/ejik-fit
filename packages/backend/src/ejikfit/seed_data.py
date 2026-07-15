@@ -534,6 +534,34 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="NVIDIA Korea",
+        slug="nvidia-korea",
+        base_url=(
+            "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+            "NVIDIAExternalCareerSite/jobs"
+        ),
+        source_type=SourceType.WORKDAY,
+        homepage_url="https://www.nvidia.com/en-us/about-nvidia/careers/",
+        sector="semiconductor_ai",
+        connector_family="workday_public_api_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=21,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official NVIDIA Workday Korea search and job details; all pages "
+            "are merged and only technical roles based in Korea are ingested."
+        ),
+        request_method="POST",
+        request_body={
+            "appliedFacets": {},
+            "limit": 20,
+            "offset": 0,
+            "searchText": "Korea",
+        },
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

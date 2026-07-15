@@ -457,6 +457,98 @@ class PaginatedAmazonFetcher:
         )
 
 
+class PaginatedWorkdayFetcher:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append({"url": url, "method": method, "json_body": json_body})
+        body = json_body if isinstance(json_body, dict) else {}
+        offset = body.get("offset", 0)
+        indexes = range(0, 2) if offset == 0 else range(2, 3)
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(
+                {
+                    "total": 3 if offset == 0 else 0,
+                    "jobPostings": [
+                        {
+                            "title": f"Software Engineer {index}",
+                            "externalPath": f"/job/Korea-Seoul/role-{index}_JR{index}",
+                            "locationsText": (
+                                "2 Locations" if index == 0 else "Korea, Seoul"
+                            ),
+                            "bulletFields": [f"JR{index}"],
+                        }
+                        for index in indexes
+                    ],
+                }
+            ),
+            status_code=200,
+            headers={},
+        )
+
+
+class WorkdayDetailFetcher:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append({"url": url, "method": method, "json_body": json_body})
+        if method == "POST":
+            payload = {
+                "total": 1,
+                "jobPostings": [
+                    {
+                        "title": "Developer Technology Engineer - AI",
+                        "externalPath": "/job/Korea-Seoul/ai-engineer_JR2021112",
+                        "locationsText": "Korea, Seoul",
+                        "bulletFields": ["JR2021112"],
+                    }
+                ],
+            }
+        else:
+            payload = {
+                "jobPostingInfo": {
+                    "jobReqId": "JR2021112",
+                    "title": "Developer Technology Engineer - AI",
+                    "externalUrl": (
+                        "https://nvidia.wd5.myworkdayjobs.com/"
+                        "NVIDIAExternalCareerSite/job/Korea-Seoul/"
+                        "ai-engineer_JR2021112"
+                    ),
+                    "location": "Korea, Seoul",
+                    "timeType": "Full time",
+                    "jobDescription": (
+                        "<p>Build CUDA and Python systems for deep learning.</p>"
+                    ),
+                    "startDate": "2026-07-10",
+                }
+            }
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(payload),
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -697,6 +789,45 @@ def test_fetch_listing_page_collects_every_amazon_korea_page() -> None:
         page.url,
         openings_count=len(openings),
     )
+
+
+def test_fetch_listing_page_collects_every_workday_page() -> None:
+    listing_url = (
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+        "NVIDIAExternalCareerSite/jobs"
+    )
+    source = CareerSource(
+        company=Company(name="NVIDIA Korea", slug="nvidia-korea"),
+        base_url=listing_url,
+        source_type=SourceType.WORKDAY,
+        connector_family="workday_public_api_korea_tech",
+        request_method="POST",
+        request_body={
+            "appliedFacets": {},
+            "limit": 2,
+            "offset": 0,
+            "searchText": "Korea",
+        },
+    )
+    fetcher = PaginatedWorkdayFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert [call["json_body"] for call in fetcher.calls] == [
+        source.request_body,
+        {**source.request_body, "offset": 2},
+    ]
+    assert payload["total"] == 3
+    assert len(payload["jobPostings"]) == 3
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+        source.connector_family,
+    )
+    assert [opening.external_id for opening in openings] == ["JR0", "JR1", "JR2"]
+    assert len(crawler._apply_source_opening_filters(source, openings)) == 3
 
 
 def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:
@@ -1560,6 +1691,65 @@ def test_crawl_source_routes_workday_into_ingestion() -> None:
         assert postings[0].url == "https://acme.wd1.myworkdayjobs.com/en-US/acme/job/JR-300"
         assert source.last_error_code is None
         assert source.last_success_at is not None
+
+
+def test_crawl_source_fetches_workday_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = (
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+        "NVIDIAExternalCareerSite/jobs"
+    )
+
+    with Session(engine) as session:
+        company = Company(name="NVIDIA Korea", slug="nvidia-korea")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.WORKDAY,
+            connector_family="workday_public_api_korea_tech",
+            request_method="POST",
+            request_body={
+                "appliedFacets": {},
+                "limit": 20,
+                "offset": 0,
+                "searchText": "Korea",
+            },
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = WorkdayDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "JR2021112"
+        assert posting.description_text == (
+            "Build CUDA and Python systems for deep learning."
+        )
+        assert fetcher.calls[1] == {
+            "url": (
+                "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+                "NVIDIAExternalCareerSite/job/Korea-Seoul/"
+                "ai-engineer_JR2021112"
+            ),
+            "method": "GET",
+            "json_body": None,
+        }
 
 
 def test_crawl_source_routes_successfactors_into_ingestion() -> None:

@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 102
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 103
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 102
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 103
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -352,6 +352,22 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert amazon.source_type == SourceType.ENTERPRISE_JSON
     assert amazon.connector_family == "amazon_jobs_korea_tech"
     assert amazon.status == SourceStatus.ALLOWED
+
+    nvidia = catalog_by_slug["nvidia-korea"]
+    assert nvidia.base_url == (
+        "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+        "NVIDIAExternalCareerSite/jobs"
+    )
+    assert nvidia.source_type == SourceType.WORKDAY
+    assert nvidia.connector_family == "workday_public_api_korea_tech"
+    assert nvidia.request_method == "POST"
+    assert nvidia.request_body == {
+        "appliedFacets": {},
+        "limit": 20,
+        "offset": 0,
+        "searchText": "Korea",
+    }
+    assert nvidia.status == SourceStatus.ALLOWED
 
     for slug, source_type, connector_family in (
         (

@@ -71,3 +71,35 @@ def test_parse_workday_openings_maps_job_posting_info_payload() -> None:
     assert opening.title == "Data Engineer"
     assert opening.description_text == "Build data pipelines with Python."
     assert opening.opens_at is not None
+
+
+def test_parse_workday_openings_maps_cxs_listing_to_public_job_url() -> None:
+    payload = {
+        "total": 1,
+        "jobPostings": [
+            {
+                "title": "Developer Technology Engineer - AI",
+                "externalPath": (
+                    "/job/Korea-Seoul/"
+                    "Developer-Technology-Engineer---AI_JR2021112"
+                ),
+                "locationsText": "Korea, Seoul",
+                "bulletFields": ["JR2021112"],
+            }
+        ],
+    }
+
+    openings = parse_workday_openings(
+        json.dumps(payload),
+        (
+            "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/"
+            "NVIDIAExternalCareerSite/jobs"
+        ),
+    )
+
+    assert len(openings) == 1
+    assert openings[0].external_id == "JR2021112"
+    assert openings[0].url == (
+        "https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/"
+        "job/Korea-Seoul/Developer-Technology-Engineer---AI_JR2021112"
+    )

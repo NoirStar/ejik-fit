@@ -433,6 +433,11 @@ describe("companyIdentity", () => {
       "amazon-web-services-korea",
     ],
     [
+      "NVIDIA Korea",
+      "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs",
+      "nvidia-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

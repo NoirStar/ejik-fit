@@ -503,6 +503,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Amazon Web Services Korea",
   },
   {
+    aliases: ["NVIDIA Korea", "NVIDIA", "엔비디아 코리아", "엔비디아"],
+    hosts: ["nvidia.wd5.myworkdayjobs.com", "nvidia.com"],
+    src: "/company-logo-assets/nvidia-korea",
+    displayName: "NVIDIA Korea",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",

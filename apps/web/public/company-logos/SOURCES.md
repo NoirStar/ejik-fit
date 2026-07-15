@@ -26,6 +26,7 @@ back to company initials when the official asset is unavailable.
 | `airwallex` | Airwallex | <https://careers.airwallex.com/> | <https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png> | 2026-07-15 |
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `amazon-web-services-korea` | Amazon Web Services Korea | <https://www.amazon.jobs/content/en/locations/asia-pacific/south-korea> | <https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico> | 2026-07-15 |
+| `nvidia-korea` | NVIDIA Korea | <https://www.nvidia.com/en-us/about-nvidia/careers/> | <https://www.nvidia.com/favicon.ico> | 2026-07-15 |
 | `reflection-ai` | Reflection AI | <https://reflection.ai/> | <https://reflection.ai/apple-touch-icon.png> | 2026-07-15 |
 | `cheiron` | Cheiron | <https://www.cheiron.bio/> | <https://www.cheiron.bio/apple-touch-icon.png> | 2026-07-15 |
 | `cohere` | Cohere | <https://cohere.com/careers> | <https://cohere.com/apple-touch-icon.png> | 2026-07-15 |

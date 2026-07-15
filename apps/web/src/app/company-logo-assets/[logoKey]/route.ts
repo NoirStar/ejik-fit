@@ -107,6 +107,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
+  "nvidia-korea": "https://www.nvidia.com/favicon.ico",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
   overdare: "https://static.overdare.com/meta/favicon.png",

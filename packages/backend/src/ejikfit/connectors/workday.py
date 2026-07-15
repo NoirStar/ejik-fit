@@ -65,8 +65,28 @@ def _external_id(item: dict[str, Any], url: str) -> str | None:
         value = _text(item.get(key))
         if value:
             return value
+    bullet_fields = item.get("bulletFields")
+    if isinstance(bullet_fields, list):
+        for field in bullet_fields:
+            value = _text(field)
+            if value:
+                return value
     path_tail = urlparse(url).path.rstrip("/").rsplit("/", maxsplit=1)[-1]
     return path_tail or None
+
+
+def _cxs_context(listing_url: str) -> tuple[str, str] | None:
+    parsed = urlparse(listing_url)
+    parts = parsed.path.strip("/").split("/")
+    if (
+        len(parts) != 5
+        or parts[:2] != ["wday", "cxs"]
+        or parts[-1] != "jobs"
+    ):
+        return None
+    public_site = parts[3]
+    api_prefix = "/" + "/".join(parts[:-1])
+    return public_site, api_prefix
 
 
 def _url(item: dict[str, Any], listing_url: str) -> str | None:
@@ -78,7 +98,30 @@ def _url(item: dict[str, Any], listing_url: str) -> str | None:
     )
     if raw_url is None:
         return None
+    context = _cxs_context(listing_url)
+    if context is not None and raw_url.startswith("/job/"):
+        public_site, _api_prefix = context
+        parsed = urlparse(listing_url)
+        return f"{parsed.scheme}://{parsed.netloc}/{public_site}{raw_url}"
     return urljoin(listing_url, raw_url)
+
+
+def workday_detail_api_url(listing_url: str, public_job_url: str) -> str:
+    context = _cxs_context(listing_url)
+    if context is None:
+        raise ValueError("Workday listing is not a public CXS jobs endpoint")
+    _public_site, api_prefix = context
+    listing = urlparse(listing_url)
+    public = urlparse(public_job_url)
+    if public.netloc != listing.netloc:
+        raise ValueError("Workday public job host does not match its listing")
+    job_path_index = public.path.find("/job/")
+    if job_path_index < 0:
+        raise ValueError("Workday public job URL has no job path")
+    return (
+        f"{listing.scheme}://{listing.netloc}{api_prefix}"
+        f"{public.path[job_path_index:]}"
+    )
 
 
 def _location(item: dict[str, Any]) -> str | None:

@@ -70,7 +70,10 @@ from ejikfit.connectors.technical_roles import (
     is_technical_role,
 )
 from ejikfit.connectors.types import ParsedOpening
-from ejikfit.connectors.workday import parse_workday_openings
+from ejikfit.connectors.workday import (
+    parse_workday_openings,
+    workday_detail_api_url,
+)
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
 from ejikfit.listing_validation import (
@@ -101,6 +104,15 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "amazon_jobs_korea_tech":
         return openings
+    if source.connector_family == "workday_public_api_korea_tech":
+        return [
+            opening
+            for opening in openings
+            if is_korea_technical_role(
+                opening.title,
+                f"{opening.location or ''} {opening.url}",
+            )
+        ]
     if source.connector_family in {
         "ashby_public_api_korea_tech",
         "lever_greenhouse_korea_tech",
@@ -470,6 +482,12 @@ async def _fetch_listing_page(
 ) -> FetchedPage:
     if source.connector_family == "amazon_jobs_korea_tech":
         return await _fetch_all_amazon_jobs_pages(source.base_url, fetcher)
+    if (
+        source.source_type == SourceType.WORKDAY
+        and (source.request_method or "GET").upper() == "POST"
+        and source.request_body is not None
+    ):
+        return await _fetch_all_workday_pages(source, fetcher)
     if source.connector_family == "workable_public_api_tech":
         bootstrap = await fetcher.fetch(source.base_url)
         account = workable_account_slug(bootstrap.text, source.base_url)
@@ -699,6 +717,93 @@ async def _fetch_all_amazon_jobs_pages(
     if len(combined_jobs) != hits:
         raise ValueError("Amazon Jobs listing response is incomplete")
     payload["jobs"] = combined_jobs
+    return FetchedPage(
+        url=first.url,
+        text=json.dumps(payload, ensure_ascii=False),
+        status_code=first.status_code,
+        headers=first.headers,
+    )
+
+
+def _workday_job_key(job: dict[str, Any]) -> str | None:
+    external_path = job.get("externalPath")
+    if isinstance(external_path, str) and external_path:
+        return external_path
+    bullet_fields = job.get("bulletFields")
+    if isinstance(bullet_fields, list):
+        for value in bullet_fields:
+            if isinstance(value, str) and value:
+                return value
+    return None
+
+
+async def _fetch_all_workday_pages(
+    source: CareerSource,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    request_body = dict(source.request_body or {})
+    first = await fetcher.fetch(
+        source.base_url,
+        method="POST",
+        json_body=request_body,
+    )
+    payload = json.loads(first.text)
+    jobs = payload.get("jobPostings") if isinstance(payload, dict) else None
+    total = payload.get("total") if isinstance(payload, dict) else None
+    if not isinstance(jobs, list) or not isinstance(total, int):
+        return first
+    if total <= len(jobs):
+        return first
+    if not jobs:
+        raise ValueError("Workday reports results but returned an empty page")
+
+    combined_jobs = list(jobs)
+    seen_keys: set[str] = set()
+    for job in jobs:
+        if not isinstance(job, dict) or (key := _workday_job_key(job)) is None:
+            raise ValueError("Workday page contains an invalid job object")
+        if key in seen_keys:
+            raise ValueError("Workday listing repeated a job")
+        seen_keys.add(key)
+
+    offset = len(jobs)
+    for _ in range(49):
+        page_body = {**request_body, "offset": offset}
+        page = await fetcher.fetch(
+            source.base_url,
+            method="POST",
+            json_body=page_body,
+        )
+        page_payload = json.loads(page.text)
+        page_jobs = (
+            page_payload.get("jobPostings")
+            if isinstance(page_payload, dict)
+            else None
+        )
+        page_total = (
+            page_payload.get("total") if isinstance(page_payload, dict) else None
+        )
+        if not isinstance(page_jobs, list) or page_total not in {0, total}:
+            raise ValueError("Workday listing changed while paging")
+        if not page_jobs:
+            raise ValueError("Workday listing ended before all jobs were fetched")
+
+        for job in page_jobs:
+            if not isinstance(job, dict) or (key := _workday_job_key(job)) is None:
+                raise ValueError("Workday page contains an invalid job object")
+            if key in seen_keys:
+                raise ValueError("Workday listing repeated a job")
+            seen_keys.add(key)
+            combined_jobs.append(job)
+        offset += len(page_jobs)
+        if len(combined_jobs) >= total:
+            break
+    else:
+        raise ValueError("Workday listing exceeded the page limit")
+
+    if len(combined_jobs) != total:
+        raise ValueError("Workday listing response is incomplete")
+    payload["jobPostings"] = combined_jobs
     return FetchedPage(
         url=first.url,
         text=json.dumps(payload, ensure_ascii=False),
@@ -1277,14 +1382,33 @@ async def crawl_source(
 
     discovered = len(openings)
     ingestion_error: Exception | None = None
-    for opening in openings:
+    for index, opening in enumerate(openings):
         seen_external_ids.add(opening.external_id)
         try:
+            opening_payload = listing.text
+            if source.connector_family == "workday_public_api_korea_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail_url = workday_detail_api_url(listing.url, opening.url)
+                detail = await fetcher.fetch(detail_url)
+                detail_openings = parse_workday_openings(detail.text, detail.url)
+                detail_opening = next(
+                    (
+                        candidate
+                        for candidate in detail_openings
+                        if candidate.external_id == opening.external_id
+                    ),
+                    None,
+                )
+                if detail_opening is None:
+                    raise ValueError("Workday detail does not match its listing job")
+                opening = detail_opening
+                opening_payload = detail.text
             ingest_opening(
                 session,
                 source,
                 opening,
-                listing.text,
+                opening_payload,
                 store,
                 now,
                 posting_index,
