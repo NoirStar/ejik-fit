@@ -44,13 +44,16 @@ from ejikfit.connectors.public_json_detail import (
     NCSOFT_LISTING_API,
     NCSOFT_LISTING_FORM,
     ROUNDHR_LISTING_API,
+    WORKABLE_LISTING_API_TEMPLATE,
     PublicJsonDetailRef,
     discover_public_json_detail_refs,
     filter_public_detail_refs,
     ncsoft_session_headers,
     parse_public_json_detail,
+    parse_workable_listing_page,
     public_detail_listing_is_self_validated,
     roundhr_site_code,
+    workable_account_slug,
 )
 from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
@@ -462,6 +465,60 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "workable_public_api_tech":
+        bootstrap = await fetcher.fetch(source.base_url)
+        account = workable_account_slug(bootstrap.text, source.base_url)
+        listing_url = WORKABLE_LISTING_API_TEMPLATE.format(account=account)
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Referer": source.base_url,
+        }
+        rows: list[dict[str, Any]] = []
+        expected_total: int | None = None
+        next_page: str | None = None
+        seen_tokens: set[str] = set()
+        latest_page: FetchedPage | None = None
+        for page_number in range(1, 51):
+            body = {} if page_number == 1 else {"token": next_page}
+            latest_page = await fetcher.fetch(
+                listing_url,
+                method="POST",
+                json_body=body,
+                headers=headers,
+            )
+            page_rows, total, next_page = parse_workable_listing_page(
+                latest_page.text
+            )
+            if expected_total is None:
+                expected_total = total
+            elif total != expected_total:
+                raise ValueError("Workable listing total changed while paging")
+            rows.extend(page_rows)
+
+            if next_page is None:
+                break
+            if next_page in seen_tokens:
+                raise ValueError("Workable listing repeated a page token")
+            seen_tokens.add(next_page)
+        else:
+            raise ValueError("Workable listing exceeded the page limit")
+
+        if latest_page is None or expected_total != len(rows):
+            raise ValueError("Workable listing response is incomplete")
+        return FetchedPage(
+            url=listing_url,
+            text=json.dumps(
+                {
+                    "total": expected_total,
+                    "nextPage": None,
+                    "results": rows,
+                },
+                ensure_ascii=False,
+            ),
+            status_code=latest_page.status_code,
+            headers=latest_page.headers,
+        )
     if source.connector_family == "roundhr_public_api_tech":
         bootstrap = await fetcher.fetch(source.base_url)
         organization_code = roundhr_site_code(bootstrap.text)

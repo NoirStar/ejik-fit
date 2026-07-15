@@ -1941,6 +1941,91 @@ def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
         assert source.last_success_at is not None
 
 
+class WorkableListingFetcher:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append(
+            {"url": url, "method": method, "json_body": json_body}
+        )
+        if url == "https://apply.workable.com/lunit/":
+            text = '<meta name="subdomain" content="lunit">'
+        elif json_body == {}:
+            text = json.dumps(
+                {
+                    "total": 3,
+                    "nextPage": "page-2-token",
+                    "results": [
+                        {"id": 1, "shortcode": "AAA111", "title": "A"},
+                        {"id": 2, "shortcode": "BBB222", "title": "B"},
+                    ],
+                }
+            )
+        elif json_body == {"token": "page-2-token"}:
+            text = json.dumps(
+                {
+                    "total": 3,
+                    "nextPage": None,
+                    "results": [
+                        {"id": 3, "shortcode": "CCC333", "title": "C"}
+                    ],
+                }
+            )
+        else:
+            raise AssertionError(f"unexpected Workable request: {url}")
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_workable_listing_fetch_paginates_to_a_complete_envelope() -> None:
+    fetcher = WorkableListingFetcher()
+    source = CareerSource(
+        company=Company(name="루닛", slug="lunit"),
+        base_url="https://apply.workable.com/lunit/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="workable_public_api_tech",
+        status=SourceStatus.ALLOWED,
+        policy_status=PolicyStatus.ALLOWED,
+    )
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert payload["total"] == 3
+    assert payload["nextPage"] is None
+    assert [row["id"] for row in payload["results"]] == [1, 2, 3]
+    assert fetcher.calls == [
+        {
+            "url": "https://apply.workable.com/lunit/",
+            "method": "GET",
+            "json_body": None,
+        },
+        {
+            "url": "https://apply.workable.com/api/v3/accounts/lunit/jobs",
+            "method": "POST",
+            "json_body": {},
+        },
+        {
+            "url": "https://apply.workable.com/api/v3/accounts/lunit/jobs",
+            "method": "POST",
+            "json_body": {"token": "page-2-token"},
+        },
+    ]
+
+
 def test_sitemap_detail_crawl_ingests_only_technical_jsonld_roles() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

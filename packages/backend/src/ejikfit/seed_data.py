@@ -174,6 +174,24 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="루닛",
+        slug="lunit",
+        base_url="https://apply.workable.com/lunit/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.lunit.io",
+        sector="medical_ai",
+        connector_family="workable_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=10,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public Lunit Workable listing and detail APIs; only "
+            "published technical roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

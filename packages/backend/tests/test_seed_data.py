@@ -165,7 +165,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 84
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 85
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -285,7 +285,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 84
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 85
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -321,6 +321,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert buzzvil.source_type == SourceType.GREETING
     assert buzzvil.connector_family == "greeting_tech"
     assert buzzvil.status == SourceStatus.ALLOWED
+
+    lunit = catalog_by_slug["lunit"]
+    assert lunit.base_url == "https://apply.workable.com/lunit/"
+    assert lunit.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert lunit.connector_family == "workable_public_api_tech"
+    assert lunit.status == SourceStatus.ALLOWED
 
     ridi = catalog_by_slug["ridi"]
     assert ridi.base_url == "https://ridi.recruit.roundhr.com/"

@@ -74,6 +74,12 @@ NCSOFT_TECH_JOB_TYPES = {
 }
 BANKSALAD_TECH_DEPARTMENTS = {"테크", "데이터"}
 ROUNDHR_LISTING_API = "https://api-prod.roundhr.com/api/site/jobs"
+WORKABLE_LISTING_API_TEMPLATE = (
+    "https://apply.workable.com/api/v3/accounts/{account}/jobs"
+)
+WORKABLE_DETAIL_API_TEMPLATE = (
+    "https://apply.workable.com/api/v2/accounts/{account}/jobs/{shortcode}"
+)
 
 
 @dataclass(frozen=True)
@@ -83,6 +89,8 @@ class PublicJsonDetailRef:
     public_url: str
     title: str
     category: str | None = None
+    location: str | None = None
+    country_code: str | None = None
 
 
 def _text(value: Any) -> str | None:
@@ -150,6 +158,54 @@ def roundhr_site_code(raw_html: str) -> str:
     if code is None or re.fullmatch(r"[A-Za-z0-9_-]{6,64}", code) is None:
         raise ValueError("RoundHR organization code is invalid")
     return code
+
+
+def workable_account_slug(raw_html: str, listing_url: str) -> str:
+    parsed_url = urlsplit(listing_url)
+    path_segments = [
+        segment for segment in parsed_url.path.split("/") if segment
+    ]
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname != "apply.workable.com"
+        or len(path_segments) != 1
+    ):
+        raise ValueError("Workable listing must use an official account page")
+
+    soup = BeautifulSoup(raw_html, "lxml")
+    subdomain_node = soup.select_one('meta[name="subdomain"]')
+    account = (
+        _text(str(subdomain_node.get("content") or ""))
+        if subdomain_node is not None
+        else None
+    )
+    if (
+        account is None
+        or re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", account) is None
+        or account != path_segments[0]
+    ):
+        raise ValueError("Workable account identity is missing or inconsistent")
+    return account
+
+
+def parse_workable_listing_page(
+    raw_json: str,
+) -> tuple[list[dict[str, Any]], int, str | None]:
+    payload = _decode_object(raw_json)
+    rows = payload.get("results")
+    total = _positive_int(payload.get("total"))
+    raw_next_page = payload.get("nextPage")
+    next_page = _text(raw_next_page)
+    if (
+        not isinstance(rows, list)
+        or total is None
+        or len(rows) > total
+        or (raw_next_page is not None and next_page is None)
+        or (next_page is not None and len(next_page) > 2048)
+        or any(not isinstance(row, dict) for row in rows)
+    ):
+        raise ValueError("Workable listing page is invalid")
+    return rows, total, next_page
 
 
 def _response_header(headers: Mapping[str, str], name: str) -> str | None:
@@ -693,6 +749,121 @@ def _roundhr_refs(
     return refs
 
 
+def _workable_location_label(location: Any) -> str | None:
+    if not isinstance(location, dict) or location.get("hidden") is True:
+        return None
+    parts = [
+        value
+        for value in (
+            _text(location.get("city")),
+            _text(location.get("region")),
+            _text(location.get("country")),
+        )
+        if value is not None
+    ]
+    return ", ".join(dict.fromkeys(parts)) or None
+
+
+def _workable_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    rows = payload.get("results")
+    total = _positive_int(payload.get("total"))
+    if (
+        not isinstance(rows, list)
+        or total != len(rows)
+        or payload.get("nextPage") is not None
+    ):
+        raise ValueError("Workable listing is not a complete jobs envelope")
+
+    parsed_url = urlsplit(listing_url)
+    path_segments = [
+        segment for segment in parsed_url.path.split("/") if segment
+    ]
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname != "apply.workable.com"
+        or len(path_segments) != 1
+        or (
+            re.fullmatch(
+                r"[a-z0-9][a-z0-9-]{1,62}",
+                path_segments[0],
+            )
+            is None
+        )
+    ):
+        raise ValueError("Workable listing must use an official account page")
+    account = path_segments[0]
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Workable listing contains an invalid job row")
+        if (
+            row.get("state") != "published"
+            or row.get("isInternal") is True
+            or row.get("approvalStatus") not in {None, "approved"}
+        ):
+            continue
+
+        raw_id = row.get("id")
+        external_id = (
+            None
+            if raw_id is None or isinstance(raw_id, bool)
+            else str(raw_id)
+        )
+        shortcode = _text(row.get("shortcode"))
+        title = _text(row.get("title"))
+        if (
+            external_id is None
+            or shortcode is None
+            or re.fullmatch(r"[A-Za-z0-9_-]{6,64}", shortcode) is None
+            or title is None
+        ):
+            raise ValueError("Workable open job identity is missing")
+        if external_id in seen:
+            raise ValueError("Workable listing contains a duplicate job")
+        seen.add(external_id)
+
+        raw_departments = row.get("department")
+        departments = (
+            raw_departments if isinstance(raw_departments, list) else []
+        )
+        category = " | ".join(
+            dict.fromkeys(
+                department.strip()
+                for department in departments
+                if isinstance(department, str) and department.strip()
+            )
+        ) or None
+        location = row.get("location")
+        country_code = (
+            _text(location.get("countryCode"))
+            if isinstance(location, dict)
+            else None
+        )
+        detail_url = WORKABLE_DETAIL_API_TEMPLATE.format(
+            account=account,
+            shortcode=shortcode,
+        )
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=(
+                    f"https://apply.workable.com/{account}/j/{shortcode}/"
+                ),
+                title=title,
+                category=category,
+                location=_workable_location_label(location),
+                country_code=country_code,
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -717,6 +888,8 @@ def discover_public_json_detail_refs(
         return _banksalad_refs(payload)
     if connector_family == "roundhr_public_api_tech":
         return _roundhr_refs(payload, listing_url)
+    if connector_family == "workable_public_api_tech":
+        return _workable_refs(payload, listing_url)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -749,6 +922,14 @@ def filter_public_detail_refs(
         ]
     if connector_family == "banksalad_greeting_api_tech":
         return refs
+    if connector_family == "workable_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.country_code == "KR"
+            and "인재풀" not in ref.title
+            and is_technical_role(ref.title, ref.category)
+        ]
     if not connector_family.endswith("_tech"):
         return refs
     return [
@@ -768,6 +949,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "com2us_jobflex_tech",
         "banksalad_greeting_api_tech",
         "roundhr_public_api_tech",
+        "workable_public_api_tech",
     }
 
 
@@ -1394,6 +1576,131 @@ def _roundhr_opening(
     )
 
 
+def _workable_career_range(text: str) -> tuple[int | None, int | None]:
+    range_patterns = (
+        r"(\d+)\s*[~\-–]\s*(\d+)\s*년",
+        r"(\d+)\s*[~\-–]\s*(\d+)\s*years?",
+    )
+    for pattern in range_patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match is not None:
+            return int(match.group(1)), int(match.group(2))
+
+    minimum_patterns = (
+        r"(\d+)\s*년\s*이상",
+        r"(?:at\s+least|minimum(?:\s+of)?)\s*(\d+)\+?\s*years?",
+        r"(\d+)\+\s*years?",
+    )
+    for pattern in minimum_patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match is not None:
+            return int(match.group(1)), None
+    return None, None
+
+
+def _workable_location(payload: dict[str, Any]) -> str | None:
+    raw_locations = payload.get("locations")
+    locations = raw_locations if isinstance(raw_locations, list) else []
+    if not locations:
+        locations = [payload.get("location")]
+    labels = [
+        label
+        for location in locations
+        if (label := _workable_location_label(location)) is not None
+    ]
+    if payload.get("remote") is True or payload.get("workplace") == "remote":
+        labels.append("원격 근무")
+    return " / ".join(dict.fromkeys(labels)) or None
+
+
+def _workable_opening(
+    payload: dict[str, Any],
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    raw_id = payload.get("id")
+    external_id = (
+        None
+        if raw_id is None or isinstance(raw_id, bool)
+        else str(raw_id)
+    )
+    shortcode = _text(payload.get("shortcode"))
+    title = _text(payload.get("title"))
+    if (
+        external_id != ref.external_id
+        or title != ref.title
+        or shortcode is None
+        or not ref.detail_url.endswith(f"/{shortcode}")
+    ):
+        raise ValueError("Workable detail identity does not match its listing")
+
+    content_fields = (
+        (None, "description"),
+        ("자격 요건", "requirements"),
+        ("복지 및 혜택", "benefits"),
+    )
+    description_parts: list[str] = []
+    for heading, field in content_fields:
+        content = _text(payload.get(field))
+        if content is None:
+            continue
+        if heading is not None:
+            description_parts.append(f"<h3>{heading}</h3>")
+        description_parts.append(content)
+    if not description_parts:
+        raise ValueError("Workable public job detail content is missing")
+    description_html = "".join(description_parts)
+    description_text = structured_plain_text(description_html)
+    requirements_text = structured_plain_text(
+        _text(payload.get("requirements")) or ""
+    )
+    career_min, career_max = _workable_career_range(requirements_text)
+
+    lower_title = title.lower()
+    career_type = _career_type_from_title(title)
+    if career_type is None and "intern" in lower_title:
+        career_type = "new_comer"
+    if career_type is None and (
+        career_min is not None
+        or any(
+            marker in lower_title
+            for marker in ("senior", "lead", "director", "head of")
+        )
+    ):
+        career_type = "experienced"
+
+    raw_employment_type = _text(payload.get("type"))
+    employment_type = {
+        "full": "regular",
+        "part": "part_time",
+        "contract": "contract",
+        "temporary": "temporary",
+        "other": "other",
+    }.get(raw_employment_type or "", raw_employment_type)
+    if "intern" in lower_title:
+        employment_type = "intern"
+
+    is_open = (
+        payload.get("state") == "published"
+        and payload.get("isInternal") is not True
+        and payload.get("approvalStatus") in {None, "approved"}
+    )
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=career_min,
+        career_max=career_max,
+        location=_workable_location(payload),
+        opens_at=_parse_datetime(payload.get("published")),
+        closes_at=None,
+    )
+
+
 def parse_public_json_detail(
     raw_json: str,
     ref: PublicJsonDetailRef,
@@ -1415,6 +1722,8 @@ def parse_public_json_detail(
     if connector_family == "roundhr_public_api_tech":
         return _roundhr_opening(raw_json, ref)
     payload = _decode_object(raw_json)
+    if connector_family == "workable_public_api_tech":
+        return _workable_opening(payload, ref)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)
     if connector_family == "kakaobank_public_api_tech":

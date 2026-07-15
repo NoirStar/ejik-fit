@@ -54,6 +54,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://globalcareers.lge.com/gcr-content/og_image_lge_careers.png",
   "line-plus":
     "https://vos.line-scdn.net/landpress-content-v2-3ub8nanc40829phmlme9ov4o/1708056773171.png",
+  lunit:
+    "https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png",
   makinarocks:
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
   musinsa:

@@ -6,6 +6,7 @@ from ejikfit.connectors.public_json_detail import (
     ncsoft_session_headers,
     parse_public_json_detail,
     roundhr_site_code,
+    workable_account_slug,
 )
 
 
@@ -892,3 +893,141 @@ def test_dunamu_server_html_discovers_current_links_and_parses_detail() -> None:
     assert opening.career_type == "experienced"
     assert opening.location == "서울시 서초구 강남대로 369"
     assert "TypeScript와 React 기반 서비스 개발" in opening.description_text
+
+
+def test_workable_public_api_discovers_domestic_technical_jobs_and_parses_detail() -> None:
+    bootstrap = """
+    <html><head>
+      <meta name="subdomain" content="lunit">
+    </head></html>
+    """
+    assert workable_account_slug(
+        bootstrap,
+        "https://apply.workable.com/lunit/",
+    ) == "lunit"
+
+    def job(
+        job_id: int,
+        shortcode: str,
+        title: str,
+        department: str,
+        country_code: str,
+        *,
+        internal: bool = False,
+    ) -> dict[str, object]:
+        return {
+            "id": job_id,
+            "shortcode": shortcode,
+            "title": title,
+            "state": "published",
+            "isInternal": internal,
+            "approvalStatus": "approved",
+            "department": [department],
+            "location": {
+                "country": "South Korea" if country_code == "KR" else "Japan",
+                "countryCode": country_code,
+                "city": "Seoul" if country_code == "KR" else "Tokyo",
+                "region": "Seoul" if country_code == "KR" else "Tokyo",
+            },
+        }
+
+    listing = json.dumps(
+        {
+            "total": 4,
+            "nextPage": None,
+            "results": [
+                job(
+                    5913639,
+                    "50EAF11E27",
+                    "(Seoul) Senior Data Platform Engineer",
+                    "Engineering",
+                    "KR",
+                ),
+                job(
+                    5913640,
+                    "50EAF11E28",
+                    "(Seoul) People Operations Manager",
+                    "People",
+                    "KR",
+                ),
+                job(
+                    5913641,
+                    "50EAF11E29",
+                    "(Global) Backend Engineer",
+                    "Engineering",
+                    "JP",
+                ),
+                job(
+                    5913642,
+                    "50EAF11E30",
+                    "(Seoul) Internal Platform Engineer",
+                    "Engineering",
+                    "KR",
+                    internal=True,
+                ),
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://apply.workable.com/lunit/",
+        "workable_public_api_tech",
+    )
+    refs = filter_public_detail_refs(all_refs, "workable_public_api_tech")
+
+    assert [ref.external_id for ref in all_refs] == [
+        "5913639",
+        "5913640",
+        "5913641",
+    ]
+    assert [ref.external_id for ref in refs] == ["5913639"]
+    assert refs[0].detail_url == (
+        "https://apply.workable.com/api/v2/accounts/lunit/jobs/50EAF11E27"
+    )
+    assert refs[0].public_url == (
+        "https://apply.workable.com/lunit/j/50EAF11E27/"
+    )
+    assert refs[0].category == "Engineering"
+    assert refs[0].location == "Seoul, South Korea"
+
+    detail = json.dumps(
+        {
+            "id": 5913639,
+            "shortcode": "50EAF11E27",
+            "title": "(Seoul) Senior Data Platform Engineer",
+            "state": "published",
+            "isInternal": False,
+            "approvalStatus": "approved",
+            "published": "2026-06-26T00:00:00.000Z",
+            "type": "full",
+            "workplace": "on_site",
+            "department": ["Engineering"],
+            "location": {
+                "country": "South Korea",
+                "countryCode": "KR",
+                "city": "Seoul",
+                "region": "Seoul",
+            },
+            "description": "<p>Python과 Kubernetes 기반 플랫폼을 개발합니다.</p>",
+            "requirements": "<p>데이터 플랫폼 개발 5년 이상의 실무 경험</p>",
+            "benefits": "<p>교육비와 컨퍼런스 참가비를 지원합니다.</p>",
+        },
+        ensure_ascii=False,
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "workable_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 5
+    assert opening.location == "Seoul, South Korea"
+    assert opening.opens_at is not None
+    assert "자격 요건" in opening.description_text
+    assert "Kubernetes 기반 플랫폼" in opening.description_text
+    assert "컨퍼런스 참가비" in opening.description_text
