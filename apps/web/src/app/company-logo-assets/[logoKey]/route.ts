@@ -27,8 +27,12 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   exem: "https://www.ex-em.com/apple-icon.png",
   finda:
     "https://profiles.greetinghr.com/group/07b16511-6dcd-4732-bb25-d0df0164ddd5",
+  fieldguide:
+    "https://www.fieldguide.io/hubfs/601010ba543c954d3c14cb44_favicon-32x32.png",
   "furiosa-ai":
     "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
+  "gauss-labs":
+    "https://cdn.prod.website-files.com/6858a6f343e28528569197fe/686f212ea17026a1afde7187_icon_1.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
   hutom:
     "https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png",
@@ -74,6 +78,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/user/organization/28244/temp/1761270163295/%EB%AF%B8%EB%8B%88%EB%A1%9C%EA%B3%A0.png",
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
+  palantir: "https://www.palantir.com/favicon.ico",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
   ridi:

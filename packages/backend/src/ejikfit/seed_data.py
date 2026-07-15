@@ -212,6 +212,66 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Fieldguide",
+        slug="fieldguide",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/fieldguide"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.fieldguide.io",
+        sector="audit_saas_ai",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public Fieldguide Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Gauss Labs",
+        slug="gauss-labs",
+        base_url=(
+            "https://api.lever.co/v0/postings/gausslabs?mode=json"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.gausslabs.ai",
+        sector="industrial_ai",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        non_tech_noise=2,
+        notes=(
+            "Official public Gauss Labs Lever feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Palantir Technologies",
+        slug="palantir",
+        base_url=(
+            "https://api.lever.co/v0/postings/palantir?mode=json"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.palantir.com",
+        sector="data_ai_platform",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=3,
+        non_tech_noise=6,
+        notes=(
+            "Official public Palantir Lever feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

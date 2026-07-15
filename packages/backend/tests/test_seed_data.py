@@ -165,7 +165,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 86
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 89
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -285,7 +285,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 86
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 89
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -335,6 +335,28 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert twelve_labs.source_type == SourceType.LEVER_GREENHOUSE
     assert twelve_labs.connector_family == "ashby_public_api_korea_tech"
     assert twelve_labs.status == SourceStatus.ALLOWED
+
+    for slug, source_type, connector_family in (
+        (
+            "fieldguide",
+            SourceType.LEVER_GREENHOUSE,
+            "ashby_public_api_korea_tech",
+        ),
+        (
+            "gauss-labs",
+            SourceType.LEVER_GREENHOUSE,
+            "lever_greenhouse_korea_tech",
+        ),
+        (
+            "palantir",
+            SourceType.LEVER_GREENHOUSE,
+            "lever_greenhouse_korea_tech",
+        ),
+    ):
+        source = catalog_by_slug[slug]
+        assert source.source_type == source_type
+        assert source.connector_family == connector_family
+        assert source.status == SourceStatus.ALLOWED
 
     ridi = catalog_by_slug["ridi"]
     assert ridi.base_url == "https://ridi.recruit.roundhr.com/"
