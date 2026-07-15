@@ -23,7 +23,7 @@ describe("design system foundation", () => {
       "--header-height-desktop: 4rem",
       "--header-height-mobile: 3.5rem",
       "--content-max: 80rem",
-      "--type-page-title: 2rem",
+      "--type-page-title: 1.75rem",
       "--type-detail-title: 2.125rem",
       "--type-item-title: 1.0625rem",
       "--type-body: 0.9375rem",
@@ -94,6 +94,8 @@ describe("design system foundation", () => {
       "src/features/saved-library/saved-library.module.css",
       "src/features/authored-questions/authored-questions.module.css",
       "src/features/search/search-results.module.css",
+      "src/features/career/career-overview.module.css",
+      "src/features/market/market-overview.module.css",
       "src/components/skill-graph-experience.module.css",
       "src/app/trust-pages.module.css",
     ]) {
