@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from fastapi import APIRouter, Query
-from sqlalchemy import case, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from ejikfit.db import SessionLocal
@@ -15,7 +15,10 @@ from .schemas import SkillStatsResponse
 
 class SkillStatsReader(Protocol):
     def stats(
-        self, career_type: str | None = None, limit: int = 30
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+        limit: int = 30,
     ) -> list[dict]: ...
 
 
@@ -24,7 +27,10 @@ class DatabaseSkillStatsReader:
         self.session_factory = session_factory
 
     def stats(
-        self, career_type: str | None = None, limit: int = 30
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+        limit: int = 30,
     ) -> list[dict]:
         count_expr = func.count(func.distinct(PostingSkill.posting_id))
         required_count = func.count(
@@ -77,6 +83,15 @@ class DatabaseSkillStatsReader:
                 statement = statement.where(
                     JobPosting.career_type == career_type
                 )
+            if category:
+                statement = statement.where(
+                    JobPosting.skills.any(
+                        and_(
+                            PostingSkill.category == category,
+                            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                        )
+                    )
+                )
             statement = (
                 statement.group_by(PostingSkill.skill, PostingSkill.category)
                 .order_by(count_expr.desc(), PostingSkill.skill)
@@ -108,9 +123,14 @@ def create_skills_router(reader: SkillStatsReader) -> APIRouter:
     @router.get("/stats", response_model=SkillStatsResponse)
     def skill_stats(
         career_type: str | None = Query(default=None, max_length=100),
+        category: str | None = Query(default=None, max_length=64),
         limit: int = Query(default=30, ge=1, le=100),
     ) -> dict:
-        items = reader.stats(career_type=career_type, limit=limit)
+        items = reader.stats(
+            career_type=career_type,
+            category=category,
+            limit=limit,
+        )
         return {"items": items, "total": len(items)}
 
     return router

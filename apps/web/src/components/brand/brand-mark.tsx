@@ -1,6 +1,3 @@
-import Image from "next/image";
-
-
 type BrandMarkProps = {
   size?: "sm" | "md" | "lg";
   showWordmark?: boolean;
@@ -14,22 +11,22 @@ export function BrandMark({
   className = "",
 }: BrandMarkProps) {
   return (
-    <span className={`brand-lockup brand-lockup--${size} ${className}`.trim()}>
-      <Image
+    <span
+      aria-hidden="true"
+      className={`brand-lockup brand-lockup--${size} ${className}`.trim()}
+    >
+      <img
         alt=""
-        aria-hidden="true"
-        className="brand-lockup__mark"
-        height={44}
-        priority
-        src="/brand/ejikfit-mark.svg"
-        width={44}
+        className="brand-lockup__asset"
+        draggable="false"
+        height={30}
+        src={
+          showWordmark
+            ? "/brand/ejik-fit-wordmark.svg"
+            : "/brand/ejik-fit-glyph.svg"
+        }
+        width={showWordmark ? 75 : 26}
       />
-      {showWordmark && (
-        <span className="brand-lockup__copy">
-          <strong>이직핏</strong>
-          <small>EJIK FIT</small>
-        </span>
-      )}
     </span>
   );
 }

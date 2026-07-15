@@ -3,9 +3,8 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from bs4 import BeautifulSoup
-
 from ejikfit.connectors.types import ParsedOpening
+from ejikfit.html_text import structured_plain_text
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -109,9 +108,7 @@ def parse_kakao_openings(raw_json: str, listing_url: str) -> list[ParsedOpening]
             continue
 
         description_html = "\n".join(_html_fields(item))
-        description_parts = [
-            BeautifulSoup(description_html, "lxml").get_text(" ", strip=True)
-        ]
+        description_parts = [structured_plain_text(description_html)]
         skill_text = " ".join(_skills(item.get("skillSetList")))
         if skill_text:
             description_parts.append(skill_text)
@@ -123,7 +120,7 @@ def parse_kakao_openings(raw_json: str, listing_url: str) -> list[ParsedOpening]
                 title=title,
                 status=_status(item),
                 description_html=description_html,
-                description_text=" ".join(
+                description_text="\n".join(
                     part for part in description_parts if part
                 ),
                 employment_type=_text(item.get("employeeTypeName")),

@@ -184,10 +184,10 @@ function drawNode(
   if (shouldLabel) {
     const fontSize = isSelected || isHovered ? 7.2 : node.seed ? 6.8 : 6.2;
     const text = node.label;
-    const textX = (node.x ?? 0) + radius + 3.5;
-    const textY = (node.y ?? 0) + fontSize * 0.34;
+    const textX = node.x ?? 0;
+    const textY = (node.y ?? 0) + radius + fontSize * 1.1;
     ctx.font = `700 ${fontSize}px var(--font-geist), Arial, sans-serif`;
-    ctx.textAlign = "left";
+    ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 2.8;
     ctx.strokeStyle = "rgba(7, 9, 14, 0.88)";

@@ -5,13 +5,15 @@ import uuid
 from typing import Protocol
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from ejikfit.db import SessionLocal
-from ejikfit.models import Company, JobPosting, PostingStatus
+from ejikfit.html_text import structured_plain_text
+from ejikfit.models import Company, JobPosting, PostingSkill, PostingStatus
 from ejikfit.search import MeiliPostingIndex
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
+from ejikfit.skills import confirmed_skill_groups
 
 from .schemas import PostingDetail, PostingListResponse
 
@@ -25,15 +27,18 @@ class PostingReader(Protocol):
         q: str | None = None,
         company: str | None = None,
         career_type: str | None = None,
+        category: str | None = None,
         limit: int = 20,
     ) -> list[dict]: ...
 
 
 def _summary(posting: JobPosting) -> dict:
+    skill_groups = confirmed_skill_groups(posting.skills)
     return {
         "id": posting.id,
         "title": posting.title,
         "company_name": posting.company.name,
+        "company_slug": posting.company.slug,
         "career_type": posting.career_type,
         "employment_type": posting.employment_type,
         "career_min": posting.career_min,
@@ -42,6 +47,11 @@ def _summary(posting: JobPosting) -> dict:
         "status": posting.status.value,
         "source_url": posting.url,
         "last_verified_at": posting.last_verified_at,
+        "opens_at": posting.opens_at,
+        "closes_at": posting.closes_at,
+        "required_skills": list(skill_groups.required),
+        "preferred_skills": list(skill_groups.preferred),
+        "unspecified_skills": list(skill_groups.unspecified),
     }
 
 
@@ -65,7 +75,10 @@ def _detail(posting: JobPosting) -> dict:
     return {
         **_summary(posting),
         "description_html": posting.description_html,
-        "description_text": posting.description_text,
+        "description_text": structured_plain_text(
+            posting.description_html,
+            posting.description_text,
+        ),
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,
         "skills": sorted(skill.skill for skill in confirmed),
@@ -84,12 +97,19 @@ def _detail(posting: JobPosting) -> dict:
 
 
 def _posting_search_clause(q: str, use_pgroonga: bool):
+    confirmed_skill = JobPosting.skills.any(
+        and_(
+            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+            PostingSkill.skill.ilike(f"%{q}%"),
+        )
+    )
     if use_pgroonga:
         return or_(
             JobPosting.title.bool_op("&@~")(q),
             JobPosting.description_text.bool_op("&@~")(q),
             JobPosting.location.bool_op("&@~")(q),
             Company.name.ilike(f"%{q}%"),
+            confirmed_skill,
         )
 
     pattern = f"%{q}%"
@@ -98,6 +118,7 @@ def _posting_search_clause(q: str, use_pgroonga: bool):
         JobPosting.description_text.ilike(pattern),
         JobPosting.location.ilike(pattern),
         Company.name.ilike(pattern),
+        confirmed_skill,
     )
 
 
@@ -117,9 +138,10 @@ class DatabasePostingReader:
         q: str | None = None,
         company: str | None = None,
         career_type: str | None = None,
+        category: str | None = None,
         limit: int = 20,
     ) -> list[dict]:
-        if q and self.search_index is not None:
+        if q and self.search_index is not None and not category:
             try:
                 return self.search_index.search(
                     q,
@@ -138,6 +160,7 @@ class DatabasePostingReader:
                 q=q,
                 company=company,
                 career_type=career_type,
+                category=category,
                 limit=limit,
             )
 
@@ -148,12 +171,16 @@ class DatabasePostingReader:
         q: str | None,
         company: str | None,
         career_type: str | None,
+        category: str | None,
         limit: int,
     ) -> list[dict]:
         statement = (
             select(JobPosting)
             .join(JobPosting.company)
-            .options(contains_eager(JobPosting.company))
+            .options(
+                contains_eager(JobPosting.company),
+                selectinload(JobPosting.skills),
+            )
             .where(JobPosting.status == PostingStatus.OPEN)
             .order_by(JobPosting.last_verified_at.desc())
             .limit(limit)
@@ -167,6 +194,15 @@ class DatabasePostingReader:
         if career_type:
             statement = statement.where(
                 JobPosting.career_type == career_type
+            )
+        if category:
+            statement = statement.where(
+                JobPosting.skills.any(
+                    and_(
+                        PostingSkill.category == category,
+                        PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                    )
+                )
             )
 
         return [
@@ -201,12 +237,14 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
         q: str | None = Query(default=None, max_length=200),
         company: str | None = Query(default=None, max_length=120),
         career_type: str | None = Query(default=None, max_length=100),
+        category: str | None = Query(default=None, max_length=64),
         limit: int = Query(default=20, ge=1, le=100),
     ) -> dict:
         items = reader.list(
             q=q,
             company=company,
             career_type=career_type,
+            category=category,
             limit=limit,
         )
         return {"items": items, "total": len(items)}

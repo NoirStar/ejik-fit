@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -470,6 +471,44 @@ SKILLS: tuple[SkillDef, ...] = (
 SKILL_CATEGORY: dict[str, str] = {
     skill.canonical: skill.category for skill in SKILLS
 }
+
+
+def _skill_input_key(value: str) -> str:
+    return " ".join(value.split()).casefold()
+
+
+SKILL_INPUT_CANONICAL: dict[str, str] = {}
+for _skill in SKILLS:
+    for _name in (_skill.canonical, *(_alias.value for _alias in _skill.aliases)):
+        _key = _skill_input_key(_name)
+        _existing = SKILL_INPUT_CANONICAL.get(_key)
+        if _existing is not None and _existing != _skill.canonical:
+            raise RuntimeError(
+                f"ambiguous explicit skill input {_name!r}: "
+                f"{_existing!r} and {_skill.canonical!r}"
+            )
+        SKILL_INPUT_CANONICAL[_key] = _skill.canonical
+
+
+def canonicalize_skill_input(value: str) -> str:
+    normalized = " ".join(value.split())
+    if not normalized:
+        return ""
+    return SKILL_INPUT_CANONICAL.get(_skill_input_key(normalized), normalized)
+
+
+def canonicalize_skill_inputs(values: Iterable[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        canonical = canonicalize_skill_input(value)
+        key = _skill_input_key(canonical)
+        if not canonical or key in seen:
+            continue
+        seen.add(key)
+        result.append(canonical)
+    return result
+
 
 SKILL_METADATA: dict[str, SkillMetadata] = {
     "Python": SkillMetadata("language", ("backend", "data", "ai", "mlops")),

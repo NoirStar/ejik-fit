@@ -200,4 +200,46 @@ describe("buildSkillGraphView", () => {
       count: 1,
     });
   });
+
+  it("keeps matching skills and their nearby relationships visible during search", () => {
+    const connectedMatch = buildSkillGraphView(graph, {
+      query: "ROS2",
+      showEvidence: false,
+      showIsolated: false,
+      mode: "local",
+      selectedId: "C++",
+      localDepth: 1,
+    });
+    const isolatedMatch = buildSkillGraphView(graph, {
+      query: "Kubernetes",
+      showEvidence: false,
+      showIsolated: false,
+      mode: "local",
+      selectedId: "C++",
+      localDepth: 1,
+    });
+
+    expect(connectedMatch.nodes.map((node) => node.id).sort()).toEqual([
+      "C++",
+      "CAN",
+      "ROS2",
+    ]);
+    expect(connectedMatch.links.map((link) => link.id).sort()).toEqual([
+      "C++:ROS2",
+      "ROS2:CAN",
+    ]);
+    expect(isolatedMatch.nodes.map((node) => node.id)).toEqual(["Kubernetes"]);
+  });
+
+  it("does not expand a local view when no search query is active", () => {
+    const view = buildSkillGraphView(graph, {
+      showEvidence: false,
+      showIsolated: false,
+      mode: "local",
+      selectedId: "C++",
+      localDepth: 1,
+    });
+
+    expect(view.nodes.map((node) => node.id).sort()).toEqual(["C++", "ROS2"]);
+  });
 });

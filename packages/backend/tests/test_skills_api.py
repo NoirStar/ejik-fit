@@ -22,8 +22,19 @@ class FakeSkillStatsReader:
     def __init__(self) -> None:
         self.calls: list[dict] = []
 
-    def stats(self, career_type: str | None = None, limit: int = 30) -> list[dict]:
-        self.calls.append({"career_type": career_type, "limit": limit})
+    def stats(
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+        limit: int = 30,
+    ) -> list[dict]:
+        self.calls.append(
+            {
+                "career_type": career_type,
+                "category": category,
+                "limit": limit,
+            }
+        )
         return [
             {
                 "skill": "Python",
@@ -40,7 +51,9 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
     reader = FakeSkillStatsReader()
     client = TestClient(create_app(skill_stats_reader=reader))
 
-    response = client.get("/api/skills/stats?career_type=new_comer&limit=5")
+    response = client.get(
+        "/api/skills/stats?career_type=new_comer&category=infra&limit=5"
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -53,7 +66,9 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
         "unspecified_count": 2,
     }
     assert body["total"] == 1
-    assert reader.calls == [{"career_type": "new_comer", "limit": 5}]
+    assert reader.calls == [
+        {"career_type": "new_comer", "category": "infra", "limit": 5}
+    ]
 
 
 def _add_posting(
@@ -170,3 +185,25 @@ def test_database_reader_counts_and_filters() -> None:
         "preferred_count": 0,
         "unspecified_count": 1,
     } in newcomer
+
+    # Category selects postings containing confirmed infra evidence, then
+    # aggregates every confirmed skill from those postings.
+    infra_market = reader.stats(category="infra")
+    assert {
+        "skill": "Python",
+        "category": "language",
+        "count": 1,
+        "required_count": 1,
+        "preferred_count": 0,
+        "unspecified_count": 0,
+    } in infra_market
+    assert {
+        "skill": "AWS",
+        "category": "infra",
+        "count": 1,
+        "required_count": 0,
+        "preferred_count": 0,
+        "unspecified_count": 1,
+    } in infra_market
+    assert not any(item["count"] == 2 for item in infra_market)
+    assert reader.stats(category="ai") == []

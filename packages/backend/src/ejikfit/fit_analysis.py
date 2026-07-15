@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ejikfit.models import JobPosting, PostingStatus
-from ejikfit.skill_catalog import skill_domains
+from ejikfit.skill_catalog import canonicalize_skill_inputs, skill_domains
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
 
@@ -77,7 +77,7 @@ def analyze_fit(
     career_type: str | None = None,
     domains: Sequence[str] = (),
 ) -> FitAnalysis:
-    owned = set(owned_skills)
+    owned = set(canonicalize_skill_inputs(owned_skills))
     requested_domains = set(domains)
     statement = (
         select(JobPosting)

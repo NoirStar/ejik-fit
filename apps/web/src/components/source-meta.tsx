@@ -6,11 +6,15 @@ type SourceMetaProps = {
 
 
 function formatVerifiedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "확인 시각 미상";
+  }
   return new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Asia/Seoul",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 

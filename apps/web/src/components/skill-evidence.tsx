@@ -14,7 +14,7 @@ export function SkillEvidence({ skills }: { skills: SkillDetail[] }) {
   }
 
   return (
-    <section className="skill-evidence" aria-label="기술 스킬">
+    <section className="skill-evidence" aria-label="요구 기술 근거">
       {GROUPS.map((group) => {
         const items = skills.filter(
           (skill) => skill.requirement_type === group.type,

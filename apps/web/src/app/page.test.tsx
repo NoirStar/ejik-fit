@@ -1,33 +1,34 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 
 import Home from "./page";
 
-import { DailyDashboardHome } from "@/components/dashboard/daily-dashboard-home";
-import type { DailyDashboardModel } from "@/components/dashboard/types";
-import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
-
-
-const navigationMocks = vi.hoisted(() => ({
-  replace: vi.fn(),
-}));
-
-
 vi.mock("@/lib/api", () => ({
+  analyzeFit: vi.fn(),
   getPostings: vi.fn(),
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
 
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({
-    replace: navigationMocks.replace,
-  }),
-}));
-
-
-function mockDashboardApi() {
+function mockHomeApi() {
+  vi.mocked(analyzeFit).mockResolvedValue({
+    coverage: {
+      matching_posting_count: 12,
+      strong_fit_posting_count: 4,
+    },
+    domain_branches: [],
+    recommended_next_skills: [
+      {
+        skill: "Kubernetes",
+        reason: "보유 스킬과 함께 등장한 공고에서 8회 부족 요구사항으로 확인됨",
+        required_count: 6,
+        preferred_count: 2,
+        supporting_posting_count: 8,
+      },
+    ],
+  });
   vi.mocked(getPostings).mockResolvedValue({
     total: 1,
     items: [
@@ -41,8 +42,8 @@ function mockDashboardApi() {
         career_max: 7,
         location: "서울",
         status: "open",
-        source_url: "https://example.com/job-1",
-        last_verified_at: "2026-07-07T00:00:00.000Z",
+        source_url: "https://careers.toss.im/job-1",
+        last_verified_at: "2026-07-12T15:00:00.000Z",
       },
     ],
   });
@@ -68,217 +69,158 @@ function mockDashboardApi() {
         posting_id: "job-1",
         title: "Backend Engineer",
         company_name: "토스",
-        skills: ["Java", "Spring", "AWS", "Kafka"],
+        skills: ["Java", "Spring", "Kafka"],
         required: ["Java", "Spring"],
         preferred: ["Kafka"],
-        unspecified: ["AWS"],
+        unspecified: [],
       },
     ],
-    meta: {
-      limit: 30,
-      min_confidence: 0.8,
-    },
+    meta: { limit: 30, min_confidence: 0.8 },
   });
 }
-
-
-function dashboardModel(ownedSkills: string[]): DailyDashboardModel {
-  return {
-    mode: "personalized",
-    ownedSkills,
-    jobs: [
-      {
-        id: "job-remember",
-        title: "Backend Engineer",
-        companyName: "리멤버",
-        location: "서울 강남",
-        careerLabel: "경력",
-        statusLabel: "진행 중",
-        freshnessLabel: "2시간 전",
-        sourceUrl: "https://example.com/remember",
-        fitScore: 88,
-        matchedSkills: ["Java", "Spring"],
-        missingSkills: [],
-        recommendationReasons: [],
-        isSupplemental: false,
-      },
-      {
-        id: "job-oliveyoung",
-        title: "Frontend Engineer",
-        companyName: "올리브영",
-        location: "경기 성남",
-        careerLabel: "신입",
-        statusLabel: "진행 중",
-        freshnessLabel: "7월 1일",
-        sourceUrl: "https://example.com/oliveyoung",
-        fitScore: 76,
-        matchedSkills: ["React", "TypeScript"],
-        missingSkills: [],
-        recommendationReasons: [],
-        isSupplemental: false,
-      },
-    ],
-    summary: {
-      matchedJobCount: 18,
-      highFitJobCount: 7,
-      gapSkillCount: 2,
-      actionItemCount: 5,
-    },
-    trendingSkills: [],
-    cooccurringSkills: [],
-    updatedLabel: "방금 전",
-  };
-}
-
 
 describe("Home", () => {
-  afterEach(() => {
-    cleanup();
-  });
+  afterEach(() => cleanup());
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
-    window.history.replaceState({}, "", "/");
+    mockHomeApi();
   });
 
-  it("renders the weekly stack intelligence dashboard with the Ejikfit brand", async () => {
-    mockDashboardApi();
-
-    render(await Home());
-
-    expect(screen.getByLabelText("이직핏 대시보드 홈")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "내 기술스택 기준 이번 주 요약" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
-    expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("검색어")).toHaveAttribute(
-      "placeholder",
-      "기술, 직무, 기업을 검색하세요",
+  it("renders mock community beside API-backed jobs and skill counts", async () => {
+    render(
+      await Home({
+        searchParams: Promise.resolve({ owned_skills: ["Java", "Spring"] }),
+      }),
     );
-    expect(screen.getByRole("combobox", { name: "지역" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "경력" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "기간" })).toBeInTheDocument();
-    expect(screen.getByText("신규 매칭 공고")).toBeInTheDocument();
-    expect(screen.getByText("80% 이상 Fit")).toBeInTheDocument();
-    expect(screen.getByText("마감 임박")).toBeInTheDocument();
-    expect(screen.queryByLabelText("이번 주 핵심 지표")).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "상승 기술" })).not.toBeInTheDocument();
-    const weeklySummary = screen.getByRole("region", {
-      name: "내 기술스택 기준 이번 주 요약",
+
+    expect(
+      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("토스")).toBeInTheDocument();
+    expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
+    expect(screen.getByText("필수 8건")).toBeInTheDocument();
+    expect(screen.queryByText(/지난주 대비|합격 가능성|\d+\.\d+점/)).not.toBeInTheDocument();
+    expect(getPostings).toHaveBeenCalledWith({ limit: 40 });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      seed: "Java",
+      owned_skills: ["Java", "Spring"],
+      limit: 30,
     });
-    expect(
-      within(weeklySummary).queryByLabelText("내 스택에 추가할 기술"),
-    ).not.toBeInTheDocument();
-    expect(
-      within(weeklySummary).queryByLabelText("분석 기준 기술스택"),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("5개 기술")).toBeInTheDocument();
-    expect(screen.getAllByText("Spring 중심").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole("button", { name: "스택 관리" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "내 기술스택 기준 시장 변화" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "이번 주 신규 공고" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "급상승 관련 기술 TOP 5" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "변경 / 마감 임박 공고" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("내 기술 적합도")).not.toBeInTheDocument();
-    expect(screen.queryByText("다음 액션")).not.toBeInTheDocument();
+    expect(analyzeFit).toHaveBeenCalledWith({
+      owned_skills: ["Java", "Spring"],
+    });
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(insight).toHaveTextContent("12건");
+    expect(insight).toHaveTextContent("Kubernetes");
   });
 
-  it("uses owned skills from URL params for the home graph request", async () => {
-    mockDashboardApi();
-
+  it("applies the saved career scope to each supported actual-data API", async () => {
     render(
       await Home({
         searchParams: Promise.resolve({
-          owned_skills: ["React", "Go"],
+          owned_skills: "Java",
+          career_type: "experienced",
+          target_domain: "backend",
         }),
       }),
     );
 
+    expect(getPostings).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 40,
+    });
+    expect(getSkillStats).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 8,
+    });
     expect(getSkillGraph).toHaveBeenCalledWith({
-      seed: "Go",
-      owned_skills: ["Go", "React"],
+      seed: "Java",
+      owned_skills: ["Java"],
+      career_type: "experienced",
       limit: 30,
     });
-    const stackManager = screen.getByRole("region", { name: "내 스택 관리" });
-    expect(within(stackManager).getByText("Go 중심")).toBeInTheDocument();
-    expect(within(stackManager).getByText("Go")).toBeInTheDocument();
-    expect(within(stackManager).getByText("React")).toBeInTheDocument();
-    const weeklySummary = screen.getByRole("region", {
-      name: "내 기술스택 기준 이번 주 요약",
+    expect(analyzeFit).toHaveBeenCalledWith({
+      owned_skills: ["Java"],
+      career_type: "experienced",
+      domains: ["backend"],
     });
-    expect(within(weeklySummary).queryByRole("button", { name: "Go 제거" })).not.toBeInTheDocument();
-    expect(within(weeklySummary).queryByRole("button", { name: "React 제거" })).not.toBeInTheDocument();
+
+    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(within(context).getByText("경력 · 백엔드")).toBeInTheDocument();
+    expect(within(context).getByText("내 기술 1개")).toBeInTheDocument();
+    expect(within(context).getByRole("link", { name: "조건 수정" }))
+      .toHaveAttribute("href", "/career");
   });
 
-  it("persists edited owned skills and syncs the dashboard URL", () => {
-    render(<DailyDashboardHome model={dashboardModel(["Java", "Spring"])} dataFailed={false} />);
+  it("does not inject default skills for a first visit", async () => {
+    render(await Home());
 
-    fireEvent.click(screen.getByRole("button", { name: "스택 관리" }));
-
-    expect(screen.getByRole("region", { name: "내 스택 편집 패널" })).toBeInTheDocument();
-    expect(screen.getByText("분석 기준 기술을 조정합니다.")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("내 스택에 추가할 기술"), {
-      target: { value: "Go" },
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      owned_skills: [],
+      limit: 30,
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
-
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
-      "Go",
-      "Java",
-      "Spring",
-    ]);
-    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
-      "/?owned_skills=Go&owned_skills=Java&owned_skills=Spring#my-stack",
-      { scroll: false },
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Spring 제거" }));
-
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
-      "Go",
-      "Java",
-    ]);
-    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
-      "/?owned_skills=Go&owned_skills=Java#my-stack",
-      { scroll: false },
-    );
+    expect(analyzeFit).not.toHaveBeenCalled();
+    expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
+    expect(screen.getByText("내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요."))
+      .toBeInTheDocument();
+    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(context).toHaveTextContent("전체 경력 · 전체 기술 분야");
+    expect(within(context).getByRole("link", { name: "조건 설정" }))
+      .toHaveAttribute("href", "/career");
+    expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });
 
-  it("filters visible jobs by search text and dashboard selects", () => {
-    render(<DailyDashboardHome model={dashboardModel(["Java", "Spring"])} dataFailed={false} />);
+  it("keeps successful data visible when a resource fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(getSkillGraph).mockRejectedValue(new Error("graph offline"));
 
-    fireEvent.change(screen.getByLabelText("검색어"), {
-      target: { value: "리멤버" },
-    });
+    render(await Home());
 
-    expect(screen.getByText("리멤버")).toBeInTheDocument();
-    expect(screen.queryByText("올리브영")).not.toBeInTheDocument();
-    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
-      "/?q=%EB%A6%AC%EB%A9%A4%EB%B2%84#weekly-jobs",
-      { scroll: false },
+    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
+    expect(screen.getByText("토스")).toBeInTheDocument();
+    expect(screen.getByText("스킬 연결 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(screen.queryByText("graph offline")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "데이터 다시 불러오기" })).toBeInTheDocument();
+    expect(log).toHaveBeenCalledWith(
+      "[resource] request failed",
+      expect.any(Error),
+    );
+    log.mockRestore();
+  });
+
+  it("keeps the home usable when only personalized comparison fails", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.mocked(analyzeFit).mockRejectedValue(new Error("fit offline"));
+
+    render(
+      await Home({
+        searchParams: Promise.resolve({ owned_skills: "Java" }),
+      }),
     );
 
-    fireEvent.change(screen.getByLabelText("검색어"), {
-      target: { value: "" },
-    });
-    fireEvent.change(screen.getByLabelText("지역"), {
-      target: { value: "gyeonggi" },
-    });
+    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다"))
+      .toBeInTheDocument();
+    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    expect(insight).toHaveTextContent("현재 커리어 비교를 불러오지 못했습니다.");
+    expect(insight).not.toHaveTextContent(/\d+건/);
+    expect(screen.getByText("토스")).toBeInTheDocument();
+    log.mockRestore();
+  });
 
-    expect(screen.queryByText("리멤버")).not.toBeInTheDocument();
-    expect(screen.getByText("올리브영")).toBeInTheDocument();
-    expect(navigationMocks.replace).toHaveBeenLastCalledWith(
-      "/?region=gyeonggi#weekly-jobs",
-      { scroll: false },
+  it("opens the composer from the shell write query", async () => {
+    render(
+      await Home({
+        searchParams: Promise.resolve({ compose: "1" }),
+      }),
     );
+
+    expect(
+      screen.getByRole("dialog", { name: "커뮤니티 글쓰기" }),
+    ).toBeInTheDocument();
   });
 });

@@ -22,4 +22,4 @@ def test_parses_schema_org_job_posting() -> None:
     assert jobs[0].location == "서울"
     assert jobs[0].career_type == "new_comer"
     assert jobs[0].employment_type == "FULL_TIME"
-    assert "Python" in jobs[0].description_text
+    assert jobs[0].description_text == "## 자격 요건\nPython 기초"

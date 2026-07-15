@@ -3,6 +3,8 @@ from ejikfit.skill_catalog import (
     SKILLS,
     SKILL_METADATA,
     aliases_requiring_context,
+    canonicalize_skill_input,
+    canonicalize_skill_inputs,
     skill_category,
 )
 
@@ -96,3 +98,13 @@ def test_graph_metadata_preserves_existing_category_contract() -> None:
     assert skill_category("C++") == "language"
     assert skill_category("Unity") == "game"
     assert skill_category("ROS") == "robotics"
+
+
+def test_explicit_skill_inputs_are_canonicalized_and_deduplicated() -> None:
+    assert canonicalize_skill_input(" python ") == "Python"
+    assert canonicalize_skill_input("K8S") == "Kubernetes"
+    assert canonicalize_skill_input("feature   store") == "Feature Store"
+    assert canonicalize_skill_input("Custom Tool") == "Custom Tool"
+    assert canonicalize_skill_inputs(
+        ["python", "PYTHON", " k8s ", "Custom Tool", "custom tool"]
+    ) == ["Python", "Kubernetes", "Custom Tool"]

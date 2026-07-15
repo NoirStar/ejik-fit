@@ -6,6 +6,7 @@ from typing import Any, Iterator
 from bs4 import BeautifulSoup
 
 from ejikfit.connectors.types import ParsedOpening
+from ejikfit.html_text import structured_plain_text
 
 
 def _walk_json(value: Any) -> Iterator[dict[str, Any]]:
@@ -107,10 +108,7 @@ def _parse_job(node: dict[str, Any], page_url: str) -> ParsedOpening | None:
 
     description = node.get("description")
     description_html = description if isinstance(description, str) else ""
-    description_text = BeautifulSoup(
-        description_html,
-        "lxml",
-    ).get_text(" ", strip=True)
+    description_text = structured_plain_text(description_html)
 
     return ParsedOpening(
         external_id=_identifier(node.get("identifier"), canonical_url),

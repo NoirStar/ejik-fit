@@ -2,18 +2,12 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Briefcase,
-  CalendarDots,
-  GearSix,
-  Graph,
-  MagnifyingGlass,
-  SquaresFour,
-} from "@phosphor-icons/react";
-import type { Icon } from "@phosphor-icons/react";
+import { ArrowClockwise, MagnifyingGlass } from "@phosphor-icons/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { BrandMark } from "@/components/brand/brand-mark";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
+import { buildSkillGraphHref } from "@/lib/product-routes";
 import { domainColor, summarizeGraph } from "@/lib/skill-graph";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
 import type { SkillGraphViewMode } from "@/lib/skill-graph-view";
@@ -29,6 +23,7 @@ import type {
   SkillGraphDisplaySettings,
   SkillGraphForceSettings,
 } from "./skill-graph-force-canvas";
+import styles from "./skill-graph-experience.module.css";
 
 
 type PositionedNode = SkillGraphNode & {
@@ -40,6 +35,8 @@ type PositionedNode = SkillGraphNode & {
 type SkillGraphExperienceProps = {
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
+  loadFailed?: boolean;
+  retryHref?: string;
 };
 
 
@@ -75,15 +72,6 @@ const PREVIEW_NODES = [
 ];
 
 
-const TOOL_ITEMS: Array<{ label: string; icon: Icon }> = [
-  { label: "대시보드", icon: SquaresFour },
-  { label: "그래프", icon: Graph },
-  { label: "공고", icon: Briefcase },
-  { label: "캘린더", icon: CalendarDots },
-  { label: "설정", icon: GearSix },
-];
-
-
 const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
   animate: true,
   arrows: false,
@@ -99,15 +87,6 @@ const DEFAULT_FORCES: SkillGraphForceSettings = {
   linkDistance: 82,
   repel: 240,
 };
-
-
-const CALENDAR_DAYS = Array.from({ length: 21 }, (_, index) => {
-  const intensity = index % 7 === 2 ? "high" : index % 5 === 0 ? "mid" : "low";
-  return {
-    day: index + 8,
-    intensity,
-  };
-});
 
 
 function positionNodes(nodes: SkillGraphNode[]): PositionedNode[] {
@@ -182,37 +161,25 @@ function chooseInitialSelection(
 }
 
 
-function fitPercent(fit: FitAnalyzeResponse | null) {
-  if (!fit || fit.coverage.matching_posting_count === 0) {
-    return null;
-  }
-  return Math.min(
-    99,
-    Math.round(
-      (fit.coverage.strong_fit_posting_count /
-        fit.coverage.matching_posting_count) *
-        100,
-    ),
-  );
-}
-
-
 function skillEvidenceFor(
   evidence: SkillGraphEvidence[],
   selectedId: string | null,
 ) {
   if (!selectedId) {
-    return evidence.slice(0, 6);
+    return [];
   }
   const direct = evidence.filter((item) => item.skills.includes(selectedId));
-  return (direct.length > 0 ? direct : evidence).slice(0, 6);
+  return direct.slice(0, 6);
 }
 
 
 export function SkillGraphExperience({
   initialGraph,
   initialOwnedSkills,
+  loadFailed = false,
+  retryHref = "/skills/graph",
 }: SkillGraphExperienceProps) {
+  const router = useRouter();
   const initialSelection = useMemo(
     () => chooseInitialSelection(initialGraph, initialOwnedSkills),
     [initialGraph, initialOwnedSkills],
@@ -230,6 +197,8 @@ export function SkillGraphExperience({
   const [reheatKey, setReheatKey] = useState(0);
   const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
   const [fitState, setFitState] = useState<"idle" | "loading" | "error">("idle");
+  const [announcement, setAnnouncement] = useState("");
+  const [controlsOpen, setControlsOpen] = useState(true);
 
   const graphNodeMap = useMemo(
     () => new Map(initialGraph.nodes.map((node) => [node.id, node])),
@@ -295,15 +264,10 @@ export function SkillGraphExperience({
       .filter(
         (edge) =>
           focusIds.has(edge.source) ||
-          focusIds.has(edge.target) ||
-          ownedSkills.includes(edge.source) ||
-          ownedSkills.includes(edge.target),
+          focusIds.has(edge.target),
       )
       .map((edge) => {
-        const otherId =
-          focusIds.has(edge.source) || ownedSkills.includes(edge.source)
-            ? edge.target
-            : edge.source;
+        const otherId = focusIds.has(edge.source) ? edge.target : edge.source;
         return {
           edge,
           node: graphNodeMap.get(otherId),
@@ -320,12 +284,15 @@ export function SkillGraphExperience({
       .slice(0, 6);
   }, [graphNodeMap, initialGraph.edges, ownedSkills, selectedId]);
   const quickSkills = useMemo(() => {
-    const suggested = [...ownedSkills, ...initialGraph.nodes.map((node) => node.id)];
+    const graphIds = new Set(initialGraph.nodes.map((node) => node.id));
+    const suggested = [
+      ...ownedSkills.filter((skill) => graphIds.has(skill)),
+      ...initialGraph.nodes.map((node) => node.id),
+    ];
     return Array.from(new Set(suggested)).slice(0, 8);
   }, [initialGraph.nodes, ownedSkills]);
-  const mainFitPercent = fitPercent(fit);
-  const topNextSkill = fit?.recommended_next_skills[0] ?? null;
-  const topBranch = fit?.domain_branches[0] ?? null;
+  const topNextSkill =
+    fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
   const isFilteredEmpty = initialGraph.nodes.length > 0 && viewData.nodes.length === 0;
   const showFallbackGraph = nodes.length > 0 && !forceReady;
   const isLargeGraph = viewData.nodes.length > 1500;
@@ -354,10 +321,18 @@ export function SkillGraphExperience({
   }, []);
 
   useEffect(() => {
-    if (initialSelection && !selectedId) {
-      setSelectedId(initialSelection);
-    }
-  }, [initialSelection, selectedId]);
+    const compactLayout = window.matchMedia("(max-width: 900px)");
+    const syncDisclosure = () => setControlsOpen(!compactLayout.matches);
+    syncDisclosure();
+    compactLayout.addEventListener("change", syncDisclosure);
+    return () => compactLayout.removeEventListener("change", syncDisclosure);
+  }, []);
+
+  useEffect(() => {
+    setSelectedId(initialSelection);
+    setGraphMode("local");
+    setForceReady(false);
+  }, [initialGraph.seed, initialSelection]);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,6 +344,7 @@ export function SkillGraphExperience({
         return;
       }
 
+      setFit(null);
       setFitState("loading");
       try {
         const response = await fetch("/skills/graph/fit", {
@@ -388,6 +364,7 @@ export function SkillGraphExperience({
         }
       } catch {
         if (!cancelled) {
+          setFit(null);
           setFitState("error");
         }
       }
@@ -400,10 +377,23 @@ export function SkillGraphExperience({
     };
   }, [ownedSkills]);
 
-  const selectSkill = useCallback((nodeId: string) => {
-    setSelectedId(nodeId);
-    setGraphMode("local");
-  }, []);
+  const selectSkill = useCallback(
+    (nodeId: string) => {
+      if (nodeId === initialGraph.seed) {
+        setSelectedId(nodeId);
+        setGraphMode("local");
+        return;
+      }
+      setAnnouncement(`${nodeId} 중심의 공고 관계를 불러옵니다.`);
+      router.push(
+        buildSkillGraphHref({
+          skill: nodeId,
+          owned_skills: ownedSkills,
+        }),
+      );
+    },
+    [initialGraph.seed, ownedSkills, router],
+  );
 
   function addSkill(nextSkill = input.trim()) {
     const next = nextSkill.trim();
@@ -411,13 +401,13 @@ export function SkillGraphExperience({
       return;
     }
     setOwnedSkills((current) => writeOwnedSkills([...current, next]));
-    setSelectedId(next);
-    setGraphMode("local");
     setInput("");
+    setAnnouncement(`${next} 기술을 현재 목록에 추가했습니다.`);
   }
 
   function removeSkill(skill: string) {
     setOwnedSkills((current) => writeOwnedSkills(current.filter((item) => item !== skill)));
+    setAnnouncement(`${skill} 기술을 현재 목록에서 제거했습니다.`);
   }
 
   function toggleDomain(domain: string) {
@@ -439,443 +429,536 @@ export function SkillGraphExperience({
   }
 
   return (
-    <section className="ti-app-shell" aria-label="이직핏 기술 맵">
-      <aside className="ti-rail" aria-label="주요 메뉴">
-        <a className="ti-rail__brand" href="/skills/graph" aria-label="이직핏 기술 맵 홈">
-          <BrandMark size="sm" showWordmark={false} />
-        </a>
-        <nav className="ti-rail__nav">
-          {TOOL_ITEMS.map((item, index) => {
-            const IconComponent = item.icon;
-            return (
-              <button
-                className={index === 0 ? "is-active" : ""}
-                key={item.label}
-                type="button"
-              >
-                <IconComponent size={20} weight={index === 0 ? "fill" : "regular"} aria-hidden />
-                <b>{item.label}</b>
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      <aside className="ti-workbench" aria-label="필터와 보유 스킬">
-        <header className="ti-workbench__brand">
-          <strong>이직핏</strong>
-          <span>{summarizeGraph(initialGraph)}</span>
-        </header>
-
-        <form
-          className="ti-skill-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            addSkill();
-          }}
-        >
-          <label htmlFor="owned-skill">스킬 추가</label>
-          <div>
-            <input
-              id="owned-skill"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="ROS2, Kubernetes"
-            />
-            <button type="submit">추가</button>
-          </div>
-        </form>
-
-        <section className="ti-panel">
-          <header>
-            <h2>내 스택</h2>
-            <span>{ownedSkills.length}개</span>
-          </header>
-          <div className="ti-chip-cloud" aria-label="저장된 보유 스킬">
-            {ownedSkills.map((skill) => (
-              <button
-                key={skill}
-                type="button"
-                aria-label={`${skill} 제거`}
-                onClick={() => removeSkill(skill)}
-              >
-                {skill}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="ti-panel ti-panel--filters">
-          <header>
-            <h2>그래프 필터</h2>
-            <button type="button" onClick={resetGraphView}>초기화</button>
-          </header>
-          <div className="ti-segment" aria-label="그래프 범위">
-            <button
-              className={graphMode === "local" ? "is-active" : ""}
-              type="button"
-              onClick={() => setGraphMode("local")}
-            >
-              주변
-            </button>
-            <button
-              className={graphMode === "global" ? "is-active" : ""}
-              type="button"
-              onClick={() => setGraphMode("global")}
-            >
-              전체
-            </button>
-          </div>
-          <label className="ti-range" htmlFor="graph-local-depth">
-            <span>깊이</span>
-            <b>{localDepth}</b>
-            <input
-              id="graph-local-depth"
-              aria-label="주변 깊이"
-              type="range"
-              min="1"
-              max="3"
-              step="1"
-              value={localDepth}
-              disabled={graphMode !== "local"}
-              onChange={(event) => setLocalDepth(Number(event.target.value))}
-            />
-          </label>
-          <label className="ti-check">
-            <input
-              checked={showEvidence}
-              type="checkbox"
-              onChange={(event) => setShowEvidence(event.target.checked)}
-            />
-            공고 노드
-          </label>
-          <label className="ti-check">
-            <input
-              checked={showIsolated}
-              type="checkbox"
-              onChange={(event) => setShowIsolated(event.target.checked)}
-            />
-            고립 스킬
-          </label>
-        </section>
-
-        <section className="ti-panel ti-panel--domains">
-          <header>
-            <h2>분야</h2>
-            <span>{enabledDomains.length}/{Math.max(1, allDomains.length)}</span>
-          </header>
-          <div className="ti-domain-list">
-            {allDomains.slice(0, 9).map((group) => {
-              const enabled = !disabledDomains.includes(group.domain);
-              return (
-                <button
-                  className={enabled ? "is-active" : ""}
-                  key={group.domain}
-                  type="button"
-                  aria-pressed={enabled}
-                  onClick={() => toggleDomain(group.domain)}
-                >
-                  <i style={{ backgroundColor: group.color }} />
-                  <span>{displayDomain(group.domain)}</span>
-                  <b>{group.count}</b>
-                </button>
-              );
-            })}
-            {allDomains.length === 0 && <p>분야 데이터 대기 중</p>}
-          </div>
-        </section>
-
-        <section className="ti-panel ti-panel--advanced">
-          <header>
-            <h2>그래프 표시</h2>
-            <span>{isLargeGraph ? "대용량 안정" : "동적 배치"}</span>
-          </header>
-          <div className="ti-advanced-grid">
-            <p>
-              노드 수에 따라 움직임과 밀도를 자동으로 조정합니다. 배치가 엉키면 새로 계산할 수 있습니다.
-            </p>
-            <button type="button" onClick={() => setReheatKey((current) => current + 1)}>
-              다시 배치
-            </button>
-          </div>
-        </section>
-      </aside>
-
-      <main className="ti-stage" aria-label="그래프 작업 영역">
-        <header className="ti-topbar">
-          <div>
+    <main className={styles.page}>
+      <section aria-label="이직핏 기술 맵" className={styles.experience}>
+        <header className={styles.intro}>
+          <div className={styles.introCopy}>
+            <p className={styles.eyebrow}>공식 채용 공고 관계 데이터</p>
             <h1>이직핏 기술 맵</h1>
-            <p>내 기술이 맞는 시장을 찾다</p>
-            <span>{graphMode === "local" ? "선택 주변" : "전체 시장"} 보기</span>
+            <p className={styles.description}>
+              한 공고에서 함께 확인된 기술을 탐색하고, 선택한 기술의 실제 채용
+              근거를 확인하세요.
+            </p>
+            <div className={styles.trustLine}>
+              <span>
+                {loadFailed ? "그래프 범위 확인 불가" : summarizeGraph(initialGraph)}
+              </span>
+              <Link href="/methodology">분석 방법</Link>
+              <Link href="/data-policy">데이터 범위</Link>
+            </div>
           </div>
-          <label className="ti-command-search" htmlFor="dashboard-command-search">
-            <span aria-hidden="true">
-              <MagnifyingGlass size={16} />
-            </span>
-            <input
-              id="dashboard-command-search"
-              value={filterQuery}
-              onChange={(event) => setFilterQuery(event.target.value)}
-              placeholder="기술, 직무, 기업"
-            />
-          </label>
-          <div className="ti-topbar__metrics" aria-label="요약 지표">
-            <span>{viewData.stats.skillCount} 스킬</span>
-            <span>{viewData.stats.linkCount} 연결</span>
-            <span>{viewData.stats.evidenceCount} 공고</span>
+
+          <div className={styles.searchArea}>
+            <label className={styles.search} htmlFor="skill-graph-search">
+              <MagnifyingGlass aria-hidden="true" size={19} />
+              <input
+                aria-label="그래프 검색"
+                id="skill-graph-search"
+                onChange={(event) => setFilterQuery(event.target.value)}
+                placeholder="기술 이름으로 그래프 좁히기"
+                type="search"
+                value={filterQuery}
+              />
+            </label>
+            <dl
+              aria-label="현재 그래프 규모"
+              className={styles.graphMetrics}
+              role="group"
+            >
+              <div>
+                <dt>스킬</dt>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.skillCount}</dd>
+              </div>
+              <div>
+                <dt>연결</dt>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.linkCount}</dd>
+              </div>
+              <div>
+                <dt>근거 공고</dt>
+                <dd>{loadFailed ? "확인 불가" : viewData.stats.evidenceCount}</dd>
+              </div>
+            </dl>
           </div>
         </header>
 
-        <div className="ti-graph-frame">
-          <SkillGraphForceCanvas
-            data={viewData}
-            display={display}
-            forces={forces}
-            selectedId={selectedId}
-            onNodeSelect={selectSkill}
-            onReadyChange={setForceReady}
-            reheatKey={reheatKey}
-          />
-          <div className="ti-graph-toolbar" aria-label="그래프 빠른 선택">
+        {loadFailed && (
+          <section className={styles.errorState} role="alert">
+            <div>
+              <strong>스킬 관계 데이터를 불러오지 못했습니다.</strong>
+              <p>잠시 후 다시 시도해 주세요. 임의 데이터로 채우지 않았습니다.</p>
+            </div>
+            <Link href={retryHref}>다시 시도</Link>
+          </section>
+        )}
+
+        <nav aria-label="빠른 기술 선택" className={styles.quickSkills}>
+          <span>빠른 선택</span>
+          <div>
             {quickSkills.map((skill) => (
-              <button
+              <Link
+                aria-current={selectedId === skill ? "page" : undefined}
+                data-active={selectedId === skill ? "true" : undefined}
+                href={buildSkillGraphHref({
+                  skill,
+                  owned_skills: ownedSkills,
+                })}
                 key={skill}
-                type="button"
-                className={selectedId === skill ? "is-active" : ""}
-                onClick={() => selectSkill(skill)}
               >
                 {skill}
-              </button>
+              </Link>
             ))}
           </div>
-          <div className="ti-graph-status" aria-hidden="true">
-            <span>{viewData.stats.skillCount}개 스킬</span>
-            <span>{viewData.stats.evidenceCount}개 공고</span>
-            <span>드래그 / 확대 / 선택</span>
-          </div>
-          {viewData.nodes.length === 0 && (
-            <div className="graph-empty-state ti-empty-state">
-              <div className="graph-empty-state__constellation" aria-hidden="true">
-                <svg viewBox="0 0 100 100">
-                  {PREVIEW_LINKS.map((link) => (
-                    <line
-                      key={link.id}
-                      x1={link.source.x}
-                      y1={link.source.y}
-                      x2={link.target.x}
-                      y2={link.target.y}
+        </nav>
+
+        <div className={styles.workspace}>
+          <aside aria-label="보유 기술과 그래프 필터" className={styles.controls}>
+            <details
+              className={styles.controlsDisclosure}
+              onToggle={(event) => setControlsOpen(event.currentTarget.open)}
+              open={controlsOpen}
+            >
+              <summary>
+                <span>내 스택과 필터</span>
+                <small>
+                  {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "현재 범위"}
+                </small>
+              </summary>
+
+              <div className={styles.controlsContent}>
+                <section className={styles.controlSection}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <p>보유 기술</p>
+                      <h2>내 스택</h2>
+                    </div>
+                    <span>{ownedSkills.length}개</span>
+                  </header>
+
+                  <form
+                    className={styles.skillForm}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      addSkill();
+                    }}
+                  >
+                    <label htmlFor="owned-skill">스킬 추가</label>
+                    <div>
+                      <input
+                        id="owned-skill"
+                        onChange={(event) => setInput(event.target.value)}
+                        placeholder="예: ROS2"
+                        value={input}
+                      />
+                      <button type="submit">추가</button>
+                    </div>
+                  </form>
+
+                  {ownedSkills.length > 0 ? (
+                    <div aria-label="저장된 보유 스킬" className={styles.ownedSkills}>
+                      {ownedSkills.map((skill) => (
+                        <button
+                          aria-label={`${skill} 제거`}
+                          key={skill}
+                          onClick={() => removeSkill(skill)}
+                          type="button"
+                        >
+                          {skill}
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={styles.emptyCopy}>
+                      보유 기술을 추가하면 공고 근거를 바탕으로 다음 준비 기술을
+                      비교합니다.
+                    </p>
+                  )}
+                </section>
+
+                <section className={styles.controlSection}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <p>관계 범위</p>
+                      <h2>그래프 필터</h2>
+                    </div>
+                    <button className={styles.resetButton} onClick={resetGraphView} type="button">
+                      초기화
+                    </button>
+                  </header>
+
+                  <div aria-label="그래프 범위" className={styles.segmented}>
+                    <button
+                      aria-pressed={graphMode === "local"}
+                      data-active={graphMode === "local" ? "true" : undefined}
+                      onClick={() => setGraphMode("local")}
+                      type="button"
+                    >
+                      선택 주변
+                    </button>
+                    <button
+                      aria-pressed={graphMode === "global"}
+                      data-active={graphMode === "global" ? "true" : undefined}
+                      onClick={() => setGraphMode("global")}
+                      type="button"
+                    >
+                      현재 범위
+                    </button>
+                  </div>
+
+                  <label className={styles.range} htmlFor="graph-local-depth">
+                    <span>
+                      주변 깊이 <b>{localDepth}</b>
+                    </span>
+                    <input
+                      aria-label="주변 깊이"
+                      disabled={graphMode !== "local"}
+                      id="graph-local-depth"
+                      max="3"
+                      min="1"
+                      onChange={(event) => setLocalDepth(Number(event.target.value))}
+                      step="1"
+                      type="range"
+                      value={localDepth}
                     />
-                  ))}
-                </svg>
-                {PREVIEW_DOTS.map((dot) => (
-                  <i
-                    key={dot.id}
-                    style={
-                      {
-                        "--dot-x": `${dot.x}%`,
-                        "--dot-y": `${dot.y}%`,
-                        "--dot-size": `${dot.size}px`,
-                        "--dot-color": dot.color,
-                      } as CSSProperties
-                    }
-                  />
-                ))}
+                  </label>
+
+                  <div className={styles.checks}>
+                    <label>
+                      <input
+                        checked={showEvidence}
+                        onChange={(event) => setShowEvidence(event.target.checked)}
+                        type="checkbox"
+                      />
+                      공고 근거 노드
+                    </label>
+                    <label>
+                      <input
+                        checked={showIsolated}
+                        onChange={(event) => setShowIsolated(event.target.checked)}
+                        type="checkbox"
+                      />
+                      연결 없는 기술
+                    </label>
+                  </div>
+                </section>
+
+                <section className={styles.controlSection}>
+                  <header className={styles.sectionHeader}>
+                    <div>
+                      <p>직무 분야</p>
+                      <h2>분야 필터</h2>
+                    </div>
+                    <span>
+                      {enabledDomains.length}/{allDomains.length}
+                    </span>
+                  </header>
+                  <div className={styles.domainFilters}>
+                    {allDomains.slice(0, 9).map((group) => {
+                      const enabled = !disabledDomains.includes(group.domain);
+                      return (
+                        <button
+                          aria-pressed={enabled}
+                          data-active={enabled ? "true" : undefined}
+                          key={group.domain}
+                          onClick={() => toggleDomain(group.domain)}
+                          type="button"
+                        >
+                          <i style={{ backgroundColor: group.color }} />
+                          <span>{displayDomain(group.domain)}</span>
+                          <b>{group.count}</b>
+                        </button>
+                      );
+                    })}
+                    {allDomains.length === 0 && (
+                      <p className={styles.emptyCopy}>확인 가능한 분야 데이터가 없습니다.</p>
+                    )}
+                  </div>
+                </section>
+
+                <section className={styles.layoutControl}>
+                  <div>
+                    <strong>그래프 배치</strong>
+                    <span>{isLargeGraph ? "대용량 안정 모드" : "관계에 따라 자동 배치"}</span>
+                  </div>
+                  <button
+                    onClick={() => setReheatKey((current) => current + 1)}
+                    type="button"
+                  >
+                    <ArrowClockwise aria-hidden="true" size={17} />
+                    다시 배치
+                  </button>
+                </section>
               </div>
-              <strong>
-                {isFilteredEmpty
-                  ? "필터와 일치하는 노드가 없습니다"
-                  : "그래프 데이터 대기 중"}
-              </strong>
-              <p>
-                {isFilteredEmpty
-                  ? "검색어와 분야 필터를 줄이면 관계가 다시 표시됩니다."
-                  : "API가 연결되면 공고 근거가 있는 스킬 관계가 표시됩니다."}
-              </p>
+            </details>
+          </aside>
+
+          <section aria-label="기술 관계 그래프" className={styles.graphColumn}>
+            <div className={styles.graphFrame} data-testid="skill-graph-frame">
+              <SkillGraphForceCanvas
+                data={viewData}
+                display={display}
+                forces={forces}
+                onNodeSelect={selectSkill}
+                onReadyChange={setForceReady}
+                reheatKey={reheatKey}
+                selectedId={selectedId}
+              />
+
+              <div className={styles.graphStatus}>
+                <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
+                <span>드래그 · 확대 · 선택</span>
+              </div>
+
+              {viewData.nodes.length === 0 && (
+                <div className={`graph-empty-state ${styles.emptyState}`}>
+                  <div className="graph-empty-state__constellation" aria-hidden="true">
+                    <svg viewBox="0 0 100 100">
+                      {PREVIEW_LINKS.map((link) => (
+                        <line
+                          key={link.id}
+                          x1={link.source.x}
+                          x2={link.target.x}
+                          y1={link.source.y}
+                          y2={link.target.y}
+                        />
+                      ))}
+                    </svg>
+                    {PREVIEW_DOTS.map((dot) => (
+                      <i
+                        key={dot.id}
+                        style={
+                          {
+                            "--dot-color": dot.color,
+                            "--dot-size": `${dot.size}px`,
+                            "--dot-x": `${dot.x}%`,
+                            "--dot-y": `${dot.y}%`,
+                          } as CSSProperties
+                        }
+                      />
+                    ))}
+                  </div>
+                  <strong>
+                    {isFilteredEmpty
+                      ? "필터와 일치하는 기술이 없습니다."
+                      : "그래프 데이터가 아직 없습니다."}
+                  </strong>
+                  <p>
+                    {isFilteredEmpty
+                      ? "검색어 또는 분야 필터를 줄여 다시 확인해 주세요."
+                      : "공식 공고에서 관계가 확인되면 이곳에 표시됩니다."}
+                  </p>
+                  {isFilteredEmpty && (
+                    <button onClick={resetGraphView} type="button">
+                      필터 초기화
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {showFallbackGraph && (
+                <>
+                  <svg className="graph-edges" aria-hidden="true" viewBox="0 0 100 100">
+                    {viewData.links
+                      .filter((link) => link.kind === "skill")
+                      .map((edge) => {
+                        const source = nodeMap.get(edge.source);
+                        const target = nodeMap.get(edge.target);
+                        if (!source || !target) return null;
+                        return (
+                          <line
+                            key={edge.id}
+                            stroke={domainColor(target.domains[0])}
+                            strokeOpacity={Math.min(0.72, 0.24 + edge.score)}
+                            strokeWidth={Math.max(0.2, Math.min(1.4, edge.score))}
+                            x1={source.x}
+                            x2={target.x}
+                            y1={source.y}
+                            y2={target.y}
+                          />
+                        );
+                      })}
+                  </svg>
+                  {nodes.map((node) => (
+                    <button
+                      className={`graph-node ${node.seed ? "graph-node--seed" : ""} ${
+                        selectedId === node.id ? "is-selected" : ""
+                      }`}
+                      key={node.id}
+                      onClick={() => selectSkill(node.id)}
+                      style={
+                        {
+                          "--node-color": domainColor(node.domains[0]),
+                          left: `${node.x}%`,
+                          top: `${node.y}%`,
+                        } as CSSProperties
+                      }
+                      type="button"
+                    >
+                      <span>{node.label}</span>
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
-          )}
-          {showFallbackGraph && (
-            <>
-              <svg className="graph-edges" aria-hidden="true" viewBox="0 0 100 100">
-                {viewData.links.filter((link) => link.kind === "skill").map((edge) => {
-                  const source = nodeMap.get(edge.source);
-                  const target = nodeMap.get(edge.target);
-                  if (!source || !target) {
-                    return null;
-                  }
-                  return (
-                    <line
-                      key={edge.id}
-                      x1={source.x}
-                      y1={source.y}
-                      x2={target.x}
-                      y2={target.y}
-                      stroke={domainColor(target.domains[0])}
-                      strokeOpacity={Math.min(0.72, 0.24 + edge.score)}
-                      strokeWidth={Math.max(0.2, Math.min(1.4, edge.score))}
-                    />
-                  );
-                })}
-              </svg>
-              {nodes.map((node) => (
-                <button
-                  className={`graph-node ${node.seed ? "graph-node--seed" : ""} ${
-                    selectedId === node.id ? "is-selected" : ""
-                  }`}
-                  key={node.id}
-                  style={
-                    {
-                      left: `${node.x}%`,
-                      top: `${node.y}%`,
-                      "--node-color": domainColor(node.domains[0]),
-                    } as CSSProperties
-                  }
-                  type="button"
-                  onClick={() => selectSkill(node.id)}
-                >
-                  <span>{node.label}</span>
-                </button>
-              ))}
-            </>
-          )}
+
+            <section aria-label="공고 기반 다음 신호" className={styles.signals}>
+              <article>
+                <header className={styles.sectionHeader}>
+                  <div>
+                    <p>보유 기술 비교</p>
+                    <h2>다음 준비</h2>
+                  </div>
+                  <span>{fitState === "loading" ? "분석 중" : "공고 근거"}</span>
+                </header>
+                <div className={styles.nextSkills}>
+                  {fitState === "loading" && <p role="status">공고 요구 기술을 비교하고 있습니다.</p>}
+                  {fitState === "error" && (
+                    <p role="alert">보유 기술 비교를 불러오지 못했습니다.</p>
+                  )}
+                  {fitState === "idle" &&
+                    (fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
+                      <Link
+                        href={`/skill-map?skill=${encodeURIComponent(skill.skill)}`}
+                        key={skill.skill}
+                      >
+                        <strong>{skill.skill}</strong>
+                        <span>{skill.supporting_posting_count}개 공고 근거</span>
+                      </Link>
+                    ))}
+                  {fitState === "idle" && !fit && ownedSkills.length === 0 && (
+                    <p>내 스택에 기술을 추가하면 다음 준비 근거를 확인할 수 있습니다.</p>
+                  )}
+                  {fitState === "idle" && fit?.recommended_next_skills.length === 0 && (
+                    <p>현재 공개 공고에서 추가 추천 근거를 찾지 못했습니다.</p>
+                  )}
+                </div>
+              </article>
+
+              <article>
+                <header className={styles.sectionHeader}>
+                  <div>
+                    <p>현재 그래프 구성</p>
+                    <h2>분야 분포</h2>
+                  </div>
+                  <span>{allDomains.length}개 분야</span>
+                </header>
+                <div className={styles.domainSignals}>
+                  {allDomains.slice(0, 6).map((domain) => (
+                    <span key={domain.domain}>
+                      <i style={{ backgroundColor: domain.color }} />
+                      {displayDomain(domain.domain)}
+                      <b>{domain.count}</b>
+                    </span>
+                  ))}
+                  {allDomains.length === 0 && <p>확인 가능한 분야 데이터가 없습니다.</p>}
+                </div>
+              </article>
+            </section>
+          </section>
+
+          <aside aria-label="선택 기술 분석" className={styles.inspector}>
+            <section className={styles.selectedSkill}>
+              <p className={styles.eyebrow}>선택 기술</p>
+              <h2>{selected?.label ?? "기술을 선택하세요"}</h2>
+              <p>
+                {selected
+                  ? `${selected.domains.map(displayDomain).join(", ")} 분야의 공개 공고에서 확인한 수치입니다.`
+                  : "그래프 노드를 선택하면 실제 공고 근거와 가까운 기술을 확인할 수 있습니다."}
+              </p>
+              <dl className={styles.evidenceMetrics}>
+                <div>
+                  <dt>언급 공고</dt>
+                  <dd>{selected ? `${selected.demand_count}건` : "—"}</dd>
+                </div>
+                <div>
+                  <dt>필수</dt>
+                  <dd>{selected ? `${selected.required_count}건` : "—"}</dd>
+                </div>
+                <div>
+                  <dt>우대</dt>
+                  <dd>{selected ? `${selected.preferred_count}건` : "—"}</dd>
+                </div>
+                <div>
+                  <dt>미분류</dt>
+                  <dd>{selected ? `${selected.unspecified_count}건` : "—"}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className={styles.inspectorSection}>
+              <header className={styles.sectionHeader}>
+                <div>
+                  <p>공고 동시 등장</p>
+                  <h2>가까운 기술</h2>
+                </div>
+                <span>{strongestConnections.length}개</span>
+              </header>
+              <ul className={styles.connectionList}>
+                {strongestConnections.length > 0 ? (
+                  strongestConnections.map(({ edge, node }) => (
+                    <li key={edge.id}>
+                      <button onClick={() => selectSkill(node.id)} type="button">
+                        <span>{node.label}</span>
+                        <b>함께 {edge.cooccurrence_count}건</b>
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <li className={styles.emptyCopy}>확인 가능한 직접 관계가 없습니다.</li>
+                )}
+              </ul>
+            </section>
+
+            <section className={styles.inspectorSection}>
+              <header className={styles.sectionHeader}>
+                <div>
+                  <p>공식 원문 기반</p>
+                  <h2>관련 공고</h2>
+                </div>
+                <span>{relatedEvidence.length}건</span>
+              </header>
+              <ul className={styles.jobEvidence}>
+                {relatedEvidence.length > 0 ? (
+                  relatedEvidence.map((item) => (
+                    <li key={item.posting_id}>
+                      <Link href={`/jobs/${encodeURIComponent(item.posting_id)}`}>
+                        <span>{item.company_name}</span>
+                        <strong>{item.title}</strong>
+                        <small>공고 분석 보기</small>
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li className={styles.emptyCopy}>확인 가능한 관련 공고가 없습니다.</li>
+                )}
+              </ul>
+            </section>
+
+            <section className={styles.recommendation}>
+              <p className={styles.eyebrow}>다음 경로</p>
+              <strong>
+                {fitState === "loading"
+                  ? "보유 기술 비교 중"
+                  : fitState === "error"
+                    ? "보유 기술 비교 불가"
+                    : topNextSkill?.skill ?? "보유 기술 비교 대기"}
+              </strong>
+              <span>
+                {fitState === "loading"
+                  ? "변경된 내 스택을 공개 공고 요구와 다시 비교하고 있습니다."
+                  : fitState === "error"
+                    ? "현재 비교 데이터를 불러오지 못했습니다. 잠시 후 다시 변경해 주세요."
+                    : topNextSkill?.reason ??
+                      "내 스택을 추가하면 공개 공고 요구와 비교해 다음 기술 근거를 보여드립니다."}
+              </span>
+            </section>
+          </aside>
         </div>
 
-        <section className="ti-bottom-rail" aria-label="시장 신호와 채용 캘린더">
-          <article>
-            <header>
-              <h2>다음 준비</h2>
-              <span>{fitState === "loading" ? "계산 중" : "적합도"}</span>
-            </header>
-            <div className="ti-next-skill-row">
-              {(fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
-                <button key={skill.skill} type="button" onClick={() => selectSkill(skill.skill)}>
-                  <b>{skill.skill}</b>
-                  <span>{skill.supporting_posting_count}개 공고</span>
-                </button>
-              ))}
-              {!fit && <p>보유 스킬을 기준으로 준비 우선순위를 계산합니다.</p>}
-            </div>
-          </article>
-          <article>
-            <header>
-              <h2>채용 캘린더</h2>
-              <span>마감 신호</span>
-            </header>
-            <div className="ti-calendar-strip" aria-label="채용 일정 미리보기">
-              {CALENDAR_DAYS.map((day) => (
-                <i className={`is-${day.intensity}`} key={day.day}>
-                  {day.day}
-                </i>
-              ))}
-            </div>
-          </article>
-          <article>
-            <header>
-              <h2>분야 신호</h2>
-              <span>{topBranch ? displayDomain(topBranch.domain) : "시장"}</span>
-            </header>
-            <div className="ti-domain-sparks">
-              {(fit?.domain_branches ?? []).slice(0, 4).map((branch) => (
-                <span key={branch.domain}>
-                  <i style={{ backgroundColor: domainColor(branch.domain) }} />
-                  {displayDomain(branch.domain)}
-                  <b>{branch.supporting_posting_count}</b>
-                </span>
-              ))}
-              {!fit &&
-                allDomains.slice(0, 4).map((domain) => (
-                  <span key={domain.domain}>
-                    <i style={{ backgroundColor: domain.color }} />
-                    {displayDomain(domain.domain)}
-                    <b>{domain.count}</b>
-                  </span>
-                ))}
-            </div>
-          </article>
-        </section>
-      </main>
-
-      <aside className="ti-inspector" aria-label="선택 항목 분석">
-        <section className="ti-inspector__hero">
-          <span>선택 스킬</span>
-          <h2>{selected?.label ?? "스킬 선택"}</h2>
-          <p>
-            {selected
-              ? `${selected.domains.map(displayDomain).join(", ")} 분야에서 ${selected.demand_count}개 공고가 언급했습니다.`
-              : "그래프에서 노드를 선택하면 공고 근거와 가까운 기술이 갱신됩니다."}
-          </p>
-          <dl>
-            <div>
-              <dt>필수</dt>
-              <dd>{selected?.required_count ?? 0}</dd>
-            </div>
-            <div>
-              <dt>우대</dt>
-              <dd>{selected?.preferred_count ?? 0}</dd>
-            </div>
-            <div>
-              <dt>Fit</dt>
-              <dd>
-                {fitState === "loading"
-                  ? "계산"
-                  : mainFitPercent !== null
-                    ? `${mainFitPercent}%`
-                    : "대기"}
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="ti-inspector__section">
-          <header>
-            <h2>가까운 기술</h2>
-            <span>{strongestConnections.length}</span>
-          </header>
-          <ul className="ti-link-list">
-            {strongestConnections.length > 0 ? (
-              strongestConnections.slice(0, 6).map(({ edge, node }) => (
-                <li key={edge.id}>
-                  <button type="button" onClick={() => selectSkill(node.id)}>
-                    <span>{node.label}</span>
-                    <b>{Math.round(edge.score * 100)}%</b>
-                  </button>
-                </li>
-              ))
-            ) : (
-              <li>연결 데이터 대기 중</li>
-            )}
-          </ul>
-        </section>
-
-        <section className="ti-inspector__section">
-          <header>
-            <h2>관련 공고</h2>
-            <span>{relatedEvidence.length}</span>
-          </header>
-          <ul className="ti-job-evidence">
-            {relatedEvidence.length > 0 ? (
-              relatedEvidence.map((item) => (
-                <li key={item.posting_id}>
-                  <span>{item.company_name}</span>
-                  <strong>{item.title}</strong>
-                </li>
-              ))
-            ) : (
-              <li>공고 근거 대기 중</li>
-            )}
-          </ul>
-        </section>
-
-        <section className="ti-inspector__section">
-          <header>
-            <h2>추천 경로</h2>
-            <span>{topNextSkill?.skill ?? "대기"}</span>
-          </header>
-          <p className="ti-route-note">
-            {topNextSkill?.reason ??
-              "보유 스킬과 공고 요구를 비교해 다음 준비 기술을 제안합니다."}
-          </p>
-        </section>
-      </aside>
-    </section>
+        <p aria-live="polite" className={styles.srOnly}>
+          {announcement}
+        </p>
+      </section>
+    </main>
   );
 }

@@ -10,7 +10,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ejikfit.models import JobPosting, PostingStatus
-from ejikfit.skill_catalog import skill_category, skill_domains, skill_kind
+from ejikfit.skill_catalog import (
+    canonicalize_skill_input,
+    canonicalize_skill_inputs,
+    skill_category,
+    skill_domains,
+    skill_kind,
+)
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
 
@@ -151,6 +157,8 @@ def build_skill_graph(
     limit: int = 30,
 ) -> SkillGraph:
     bounded_limit = max(5, min(limit, 60))
+    seed = canonicalize_skill_input(seed) if seed else None
+    canonical_owned_skills = canonicalize_skill_inputs(owned_skills)
     statement = (
         select(JobPosting)
         .options(joinedload(JobPosting.company), selectinload(JobPosting.skills))
@@ -160,7 +168,7 @@ def build_skill_graph(
         statement = statement.where(JobPosting.career_type == career_type)
 
     postings = session.scalars(statement).unique().all()
-    owned = set(owned_skills)
+    owned = set(canonical_owned_skills)
     skill_counts: Counter[str] = Counter()
     required_counts: Counter[str] = Counter()
     preferred_counts: Counter[str] = Counter()
@@ -237,7 +245,7 @@ def build_skill_graph(
     selected_skills: list[str] = []
     if seed and skill_counts[seed] > 0:
         selected_skills.append(seed)
-    for skill in owned_skills:
+    for skill in canonical_owned_skills:
         if skill_counts[skill] > 0 and skill not in selected_skills:
             selected_skills.append(skill)
     for edge in scored_edges:

@@ -189,39 +189,60 @@ export function buildSkillGraphView(
   const showIsolated = options.showIsolated ?? true;
   const localDepth = options.localDepth ?? 1;
 
-  const skillCandidates = graph.nodes.filter((node) => {
+  const domainCandidates = graph.nodes.filter((node) => {
     const domain = primaryDomain(node);
-    const domainAllowed = enabledSet ? enabledSet.has(domain) : true;
-    return domainAllowed && matchesQuery(node, query);
+    return enabledSet ? enabledSet.has(domain) : true;
   });
-  const candidateIds = new Set(skillCandidates.map((node) => node.id));
-  const candidateSkillLinks = graph.edges.filter(
-    (edge) => candidateIds.has(edge.source) && candidateIds.has(edge.target),
+  const domainCandidateIds = new Set(domainCandidates.map((node) => node.id));
+  const domainSkillLinks = graph.edges.filter(
+    (edge) =>
+      domainCandidateIds.has(edge.source) && domainCandidateIds.has(edge.target),
+  );
+  const queryMatchIds = new Set(
+    domainCandidates
+      .filter((node) => matchesQuery(node, query))
+      .map((node) => node.id),
   );
 
-  let visibleSkillIds =
-    mode === "local" && options.selectedId
-      ? collectLocalIds(
-          options.selectedId,
-          localDepth,
-          candidateIds,
-          candidateSkillLinks,
-        )
-      : new Set(candidateIds);
+  let visibleSkillIds: Set<string>;
+  if (query) {
+    visibleSkillIds = new Set<string>();
+    queryMatchIds.forEach((matchId) => {
+      collectLocalIds(
+        matchId,
+        mode === "local" ? Math.max(1, localDepth) : 1,
+        domainCandidateIds,
+        domainSkillLinks,
+      ).forEach((id) => visibleSkillIds.add(id));
+    });
+  } else {
+    visibleSkillIds =
+      mode === "local" && options.selectedId
+        ? collectLocalIds(
+            options.selectedId,
+            localDepth,
+            domainCandidateIds,
+            domainSkillLinks,
+          )
+        : new Set(domainCandidateIds);
+  }
 
   if (!showIsolated) {
     const connectedIds = new Set<string>();
-    candidateSkillLinks.forEach((edge) => {
+    domainSkillLinks.forEach((edge) => {
       if (!visibleSkillIds.has(edge.source) || !visibleSkillIds.has(edge.target)) {
         return;
       }
       connectedIds.add(edge.source);
       connectedIds.add(edge.target);
     });
+    if (query) {
+      queryMatchIds.forEach((id) => connectedIds.add(id));
+    }
     visibleSkillIds = connectedIds;
   }
 
-  const skillNodes = skillCandidates
+  const skillNodes = domainCandidates
     .filter((node) => visibleSkillIds.has(node.id))
     .map<SkillGraphViewNode>((node) => {
       const domain = primaryDomain(node);
@@ -241,7 +262,7 @@ export function buildSkillGraphView(
       };
     });
 
-  const skillLinks = candidateSkillLinks
+  const skillLinks = domainSkillLinks
     .filter((edge) => visibleSkillIds.has(edge.source) && visibleSkillIds.has(edge.target))
     .map<SkillGraphViewLink>((edge) => ({
       id: edge.id,

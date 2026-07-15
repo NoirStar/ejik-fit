@@ -5,13 +5,17 @@ from typing import Protocol
 import meilisearch
 
 from ejikfit.models import JobPosting
+from ejikfit.skills import confirmed_skill_groups
 
 
 logger = logging.getLogger(__name__)
 INDEX_NAME = "job_postings"
 
 
-def posting_document(posting: JobPosting) -> dict[str, str | int | None]:
+def posting_document(
+    posting: JobPosting,
+) -> dict[str, str | int | list[str] | None]:
+    skill_groups = confirmed_skill_groups(posting.skills)
     return {
         "id": str(posting.id),
         "title": posting.title,
@@ -26,6 +30,11 @@ def posting_document(posting: JobPosting) -> dict[str, str | int | None]:
         "status": posting.status.value,
         "source_url": posting.url,
         "last_verified_at": posting.last_verified_at.isoformat(),
+        "opens_at": posting.opens_at.isoformat() if posting.opens_at else None,
+        "closes_at": posting.closes_at.isoformat() if posting.closes_at else None,
+        "required_skills": list(skill_groups.required),
+        "preferred_skills": list(skill_groups.preferred),
+        "unspecified_skills": list(skill_groups.unspecified),
     }
 
 
@@ -48,7 +57,14 @@ class MeiliPostingIndex:
         if self._configured:
             return
         self.index.update_searchable_attributes(
-            ["title", "description_text", "company_name"]
+            [
+                "title",
+                "description_text",
+                "company_name",
+                "required_skills",
+                "preferred_skills",
+                "unspecified_skills",
+            ]
         )
         self.index.update_filterable_attributes(
             [

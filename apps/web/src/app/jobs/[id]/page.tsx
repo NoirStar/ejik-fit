@@ -1,108 +1,76 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { SkillEvidence } from "@/components/skill-evidence";
-import { SourceMeta } from "@/components/source-meta";
+import { JobDetailView } from "@/features/jobs/job-detail-view";
 import { ApiError, getPosting } from "@/lib/api";
-import { formatCareer, formatEmployment } from "@/lib/labels";
-
+import { formatCareer } from "@/lib/labels";
+import { normalizePostingDetail } from "@/lib/posting-contract";
+import type { PostingDetail } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
 
 type JobDetailProps = {
   params: Promise<{ id: string }>;
 };
 
-
-function formatDate(value: string | null): string {
-  if (!value) {
-    return "미정";
+async function postingOrNotFound(id: string) {
+  try {
+    return normalizePostingDetail(await getPosting(id));
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
   }
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "long",
-    timeZone: "Asia/Seoul",
-  }).format(new Date(value));
 }
 
+export async function generateMetadata({ params }: JobDetailProps): Promise<Metadata> {
+  const { id } = await params;
+  const job = await postingOrNotFound(id);
+  const location = job.location ?? "근무지 미기재";
+  const career = formatCareer(job.career_type);
 
-function formatPeriod(
-  opensAt: string | null,
-  closesAt: string | null,
-): string {
-  if (!opensAt && !closesAt) {
-    return "상시 또는 미정";
-  }
-  return `${formatDate(opensAt)} - ${formatDate(closesAt)}`;
+  return {
+    title: `${job.title} - ${job.company_name}`,
+    description: `${job.company_name} ${job.title}. ${location}, ${career} 공식 채용공고입니다.`,
+    alternates: { canonical: `/jobs/${encodeURIComponent(id)}` },
+  };
 }
 
+function jobPostingJsonLd(job: PostingDetail) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: job.title,
+    url: job.source_url,
+    hiringOrganization: {
+      "@type": "Organization",
+      name: job.company_name,
+    },
+    ...(job.location
+      ? {
+          jobLocation: {
+            "@type": "Place",
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: job.location,
+            },
+          },
+        }
+      : {}),
+    ...(job.employment_type ? { employmentType: job.employment_type } : {}),
+    ...(job.opens_at ? { datePosted: job.opens_at } : {}),
+    ...(job.closes_at ? { validThrough: job.closes_at } : {}),
+  };
+}
 
 export default async function JobDetail({ params }: JobDetailProps) {
   const { id } = await params;
-  let job;
-
-  try {
-    job = await getPosting(id);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      notFound();
-    }
-    throw error;
-  }
+  const job = await postingOrNotFound(id);
+  const jsonLd = JSON.stringify(jobPostingJsonLd(job)).replace(/</g, "\\u003c");
 
   return (
-    <main className="detail-page">
-      <Link href="/" className="back-link">
-        ← 공고 목록
-      </Link>
-
-      <article className="job-detail">
-        <header className="job-detail__header">
-          <p>{job.company_name}</p>
-          <h1>{job.title}</h1>
-          <SourceMeta
-            sourceUrl={job.source_url}
-            lastVerifiedAt={job.last_verified_at}
-            showSourceLink={false}
-          />
-        </header>
-
-        <dl className="job-detail__facts">
-          <div>
-            <dt>경력</dt>
-            <dd>{formatCareer(job.career_type)}</dd>
-          </div>
-          <div>
-            <dt>고용 형태</dt>
-            <dd>{formatEmployment(job.employment_type)}</dd>
-          </div>
-          <div>
-            <dt>근무지</dt>
-            <dd>{job.location ?? "미정"}</dd>
-          </div>
-          <div>
-            <dt>접수 기간</dt>
-            <dd>{formatPeriod(job.opens_at, job.closes_at)}</dd>
-          </div>
-        </dl>
-
-        <SkillEvidence skills={job.skill_details ?? []} />
-
-        <section className="job-description" aria-labelledby="description">
-          <h2 id="description">공고 내용</h2>
-          <div>{job.description_text}</div>
-        </section>
-
-        <a
-          className="official-link"
-          href={job.source_url}
-          target="_blank"
-          rel="noreferrer"
-        >
-          기업 채용페이지에서 지원하기
-          <span aria-hidden="true"> ↗</span>
-        </a>
-      </article>
-    </main>
+    <>
+      <script dangerouslySetInnerHTML={{ __html: jsonLd }} type="application/ld+json" />
+      <JobDetailView job={job} />
+    </>
   );
 }

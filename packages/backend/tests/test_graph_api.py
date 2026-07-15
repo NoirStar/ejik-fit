@@ -37,6 +37,23 @@ class FakeSkillGraphReader:
         }
 
 
+class RecordingSkillGraphReader(FakeSkillGraphReader):
+    def __init__(self) -> None:
+        self.seed: str | None = None
+        self.owned_skills: list[str] = []
+
+    def graph(
+        self,
+        seed: str | None = None,
+        owned_skills: list[str] | None = None,
+        career_type: str | None = None,
+        limit: int = 30,
+    ) -> dict:
+        self.seed = seed
+        self.owned_skills = owned_skills or []
+        return super().graph(seed, owned_skills, career_type, limit)
+
+
 def test_skill_graph_endpoint_returns_graph_contract() -> None:
     app = create_app(skill_graph_reader=FakeSkillGraphReader())
     response = TestClient(app).get(
@@ -56,3 +73,16 @@ def test_skill_graph_endpoint_validates_limit_bounds() -> None:
     response = TestClient(app).get("/api/graph/skills?limit=1000")
 
     assert response.status_code == 422
+
+
+def test_skill_graph_endpoint_canonicalizes_explicit_skill_inputs() -> None:
+    reader = RecordingSkillGraphReader()
+    app = create_app(skill_graph_reader=reader)
+
+    response = TestClient(app).get(
+        "/api/graph/skills?seed=python&owned_skills=PYTHON&owned_skills=k8s"
+    )
+
+    assert response.status_code == 200
+    assert reader.seed == "Python"
+    assert reader.owned_skills == ["Python", "Kubernetes"]

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 
 from ejikfit.db import SessionLocal
 from ejikfit.fit_analysis import FitAnalysis, analyze_fit
+from ejikfit.skill_catalog import canonicalize_skill_inputs
 
 from .schemas import FitAnalyzeRequest, FitAnalyzeResponse
 
@@ -73,7 +74,7 @@ def create_fit_router(reader: FitAnalysisReader) -> APIRouter:
 
     @router.post("/analyze", response_model=FitAnalyzeResponse)
     def analyze(request: FitAnalyzeRequest) -> dict:
-        owned = [skill.strip() for skill in request.owned_skills if skill.strip()]
+        owned = canonicalize_skill_inputs(request.owned_skills)
         if not owned:
             raise HTTPException(status_code=422, detail="owned_skills must not be empty")
         return reader.analyze(

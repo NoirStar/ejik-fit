@@ -6,6 +6,10 @@ import type {
   SkillGraphResponse,
   SkillStatsResponse,
 } from "./types";
+import {
+  normalizePostingDetail,
+  normalizePostingList,
+} from "./posting-contract";
 
 
 const API_BASE_URL =
@@ -45,7 +49,10 @@ async function request<T>(
 export async function getPostings(filters: {
   q?: string;
   career_type?: string;
-}): Promise<PostingListResponse> {
+  category?: string;
+  company?: string;
+  limit?: number;
+} = {}): Promise<PostingListResponse> {
   const params = new URLSearchParams();
   if (filters.q) {
     params.set("q", filters.q);
@@ -53,25 +60,45 @@ export async function getPostings(filters: {
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
   }
+  if (filters.category) {
+    params.set("category", filters.category);
+  }
+  if (filters.company) {
+    params.set("company", filters.company);
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
+  }
   const query = params.size > 0 ? `?${params.toString()}` : "";
-  return request<PostingListResponse>(`/api/postings${query}`);
+  return normalizePostingList(
+    await request<unknown>(`/api/postings${query}`),
+  );
 }
 
 
-export function getPosting(id: string): Promise<PostingDetail> {
-  return request<PostingDetail>(
-    `/api/postings/${encodeURIComponent(id)}`,
+export async function getPosting(
+  id: string,
+  signal?: AbortSignal,
+): Promise<PostingDetail> {
+  return normalizePostingDetail(
+    await request<unknown>(`/api/postings/${encodeURIComponent(id)}`, {
+      signal,
+    }),
   );
 }
 
 
 export function getSkillStats(filters: {
   career_type?: string;
+  category?: string;
   limit?: number;
 } = {}): Promise<SkillStatsResponse> {
   const params = new URLSearchParams();
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.category) {
+    params.set("category", filters.category);
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));
@@ -107,6 +134,7 @@ export function getSkillGraph(filters: {
 
 export function analyzeFit(
   payload: FitAnalyzeRequest,
+  signal?: AbortSignal,
 ): Promise<FitAnalyzeResponse> {
   return request<FitAnalyzeResponse>("/api/fit/analyze", {
     method: "POST",
@@ -114,5 +142,6 @@ export function analyzeFit(
       "content-type": "application/json",
     },
     body: JSON.stringify(payload),
+    signal,
   });
 }

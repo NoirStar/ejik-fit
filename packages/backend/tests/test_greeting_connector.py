@@ -34,7 +34,7 @@ def test_parses_greeting_opening_with_mixed_career() -> None:
     assert opening.career_max == 3
     assert opening.employment_type == "FULL_TIME_WORKER"
     assert opening.location == "서울특별시"
-    assert "Python" in opening.description_text
+    assert opening.description_text == "## 자격 요건\nPython과 API 개발 경험"
 
 
 def test_normalizes_greeting_newcomer_for_api_filter() -> None:
