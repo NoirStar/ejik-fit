@@ -453,6 +453,16 @@ describe("companyIdentity", () => {
       "celonis-korea",
     ],
     [
+      "OpenAI Korea",
+      "https://api.ashbyhq.com/posting-api/job-board/openai",
+      "openai-korea",
+    ],
+    [
+      "백패커",
+      "https://idus.career.greetinghr.com/ko/o/227262",
+      "backpackr",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

@@ -109,6 +109,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nvidia-korea": "https://www.nvidia.com/favicon.ico",
+  "openai-korea":
+    "https://cdn.oaistatic.com/assets/favicon-180x180-od45eci6.webp",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
   overdare: "https://static.overdare.com/meta/favicon.png",
@@ -125,6 +127,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
+  backpackr:
+    "https://profiles.greetinghr.com/group/a0b6b9f8-ba05-4b3f-bab2-e05520d17971",
   "riot-games-korea":
     "https://www.riotgames.com/assets/img/meta/87021767499a895b42bbe1e6a9edaf27/apple-touch-icon-precomposed-180x180.png",
   "samsung-sds":

@@ -625,6 +625,41 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="OpenAI Korea",
+        slug="openai-korea",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/openai",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://openai.com/careers/",
+        sector="ai_saas",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public OpenAI Ashby feed; only listed technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="백패커",
+        slug="backpackr",
+        base_url="https://idus.career.greetinghr.com/ko",
+        homepage_url="https://www.backpackr.com",
+        sector="content_platform",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=8,
+        connector_reuse_score=3,
+        non_tech_noise=4,
+        notes=(
+            "Official public Backpackr careers page for idus and Tumblbug; "
+            "only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

@@ -527,6 +527,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Celonis Korea",
   },
   {
+    aliases: ["OpenAI Korea", "OpenAI", "오픈AI", "오픈에이아이"],
+    hosts: ["openai.com", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/openai-korea",
+    displayName: "OpenAI Korea",
+  },
+  {
+    aliases: ["백패커", "Backpackr", "아이디어스", "idus", "텀블벅", "Tumblbug"],
+    hosts: ["backpackr.com", "idus.career.greetinghr.com"],
+    src: "/company-logo-assets/backpackr",
+    displayName: "백패커",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",
