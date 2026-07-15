@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session
 from ejikfit.models import (
     CareerSource,
     Company,
+    JobPosting,
     PolicyStatus,
+    RawSnapshot,
     SourceStatus,
     SourceType,
 )
@@ -724,6 +726,13 @@ INITIAL_GREETING_SOURCES = tuple(
 )
 
 
+SOURCE_URL_MIGRATIONS = {
+    "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100": (
+        "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20",
+    ),
+}
+
+
 def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
     source.source_type = item.source_type
     source.request_method = item.request_method
@@ -746,6 +755,45 @@ def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
     source.notes = item.notes
 
 
+def _migrate_source_url(
+    session: Session,
+    item: SeedSource,
+) -> CareerSource | None:
+    legacy_urls = SOURCE_URL_MIGRATIONS.get(item.base_url, ())
+    if not legacy_urls:
+        return None
+
+    legacy_source = session.scalar(
+        select(CareerSource).where(CareerSource.base_url.in_(legacy_urls))
+    )
+    if legacy_source is None:
+        return None
+
+    current_source = session.scalar(
+        select(CareerSource).where(CareerSource.base_url == item.base_url)
+    )
+    if current_source is not None and current_source.id != legacy_source.id:
+        has_postings = session.scalar(
+            select(JobPosting.id)
+            .where(JobPosting.source_id == current_source.id)
+            .limit(1)
+        )
+        has_snapshots = session.scalar(
+            select(RawSnapshot.id)
+            .where(RawSnapshot.source_id == current_source.id)
+            .limit(1)
+        )
+        if has_postings is not None or has_snapshots is not None:
+            raise ValueError(
+                "cannot replace a duplicate career source that already has data"
+            )
+        session.delete(current_source)
+        session.flush()
+
+    legacy_source.base_url = item.base_url
+    return legacy_source
+
+
 def seed_sources(session: Session) -> int:
     created = 0
 
@@ -762,9 +810,11 @@ def seed_sources(session: Session) -> int:
         elif item.homepage_url and company.homepage_url is None:
             company.homepage_url = item.homepage_url
 
-        source = session.scalar(
-            select(CareerSource).where(CareerSource.base_url == item.base_url)
-        )
+        source = _migrate_source_url(session, item)
+        if source is None:
+            source = session.scalar(
+                select(CareerSource).where(CareerSource.base_url == item.base_url)
+            )
         if source is None:
             source = CareerSource(
                 company_id=company.id,

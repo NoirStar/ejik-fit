@@ -6,6 +6,7 @@ from ejikfit.models import (
     Base,
     CareerSource,
     Company,
+    JobPosting,
     PolicyStatus,
     SourceStatus,
     SourceType,
@@ -400,6 +401,56 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "page": 0,
             "size": 100,
         }
+
+
+def test_seeding_migrates_lg_source_url_without_losing_existing_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="LG전자", slug="lg-electronics")
+        legacy_source = CareerSource(
+            company=company,
+            base_url=(
+                "https://globalcareers.lge.com/api/job/v1/jobs/"
+                "?page=1&size=20"
+            ),
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        duplicate_source = CareerSource(
+            company=company,
+            base_url=(
+                "https://globalcareers.lge.com/api/job/v1/jobs/"
+                "?page=1&size=100"
+            ),
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=legacy_source,
+            external_id="existing-lge-job",
+            url="https://globalcareers.lge.com/jobs/existing-lge-job",
+            title="Existing LG Engineer",
+        )
+        session.add_all([legacy_source, duplicate_source, posting])
+        session.commit()
+        legacy_source_id = legacy_source.id
+
+        seed_data.seed_sources(session)
+
+        lg_sources = session.scalars(
+            select(CareerSource)
+            .join(Company)
+            .where(Company.slug == "lg-electronics")
+        ).all()
+        assert len(lg_sources) == 1
+        assert lg_sources[0].id == legacy_source_id
+        assert lg_sources[0].base_url.endswith("?page=1&size=100")
+        assert posting.source_id == legacy_source_id
 
 
 def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
