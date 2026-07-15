@@ -175,7 +175,7 @@
 .filter {
   display: inline-flex;
   min-width: var(--touch-target);
-  min-height: var(--touch-target);
+  min-height: calc(var(--touch-target) + 1px);
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -582,7 +582,7 @@
 .rowAction {
   display: grid;
   width: var(--touch-target);
-  min-height: var(--touch-target);
+  min-height: calc(var(--touch-target) + 1px);
   place-items: center;
   align-self: center;
   color: var(--color-faint);
@@ -1035,7 +1035,7 @@
 .methodNote a {
   display: inline-flex;
   min-width: var(--touch-target);
-  min-height: var(--touch-target);
+  min-height: calc(var(--touch-target) + 1px);
   align-items: flex-start;
   color: var(--color-accent-strong);
   font-size: 0.6875rem;
