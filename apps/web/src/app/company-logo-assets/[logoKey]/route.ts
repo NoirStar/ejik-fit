@@ -9,6 +9,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
   dunamu: "https://careers.dunamu.com/favicon.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
+  gccompany:
+    "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
   kurly:
@@ -21,6 +23,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
   moloco:
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
+  myrealtrip:
+    "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
   portone:
@@ -29,9 +33,13 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
+  scatterlab:
+    "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",
+  wadiz:
+    "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
   wrtn:
     "https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png",
 };

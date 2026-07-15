@@ -520,6 +520,92 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="마이리얼트립",
+        slug="myrealtrip",
+        base_url="https://myrealtrip.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.myrealtrip.com",
+        sector="travel_platform",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official MyRealTrip Greeting careers listing and detail pages; "
+            "limited to explicit engineering, data, infrastructure, and "
+            "security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="와디즈",
+        slug="wadiz",
+        base_url="https://job.wadiz.kr/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.wadiz.kr",
+        sector="commerce_platform",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Wadiz Greeting careers listing and detail pages; "
+            "limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="여기어때컴퍼니",
+        slug="gccompany",
+        base_url="https://gccompany.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://gccompany.co.kr",
+        sector="travel_platform",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official GC Company Greeting careers listing and detail pages; "
+            "limited to explicit engineering, data, infrastructure, and "
+            "security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="스캐터랩",
+        slug="scatterlab",
+        base_url="https://www.scatterlab.co.kr/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.scatterlab.co.kr",
+        sector="consumer_ai",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Scatter Lab Greeting-powered careers listing and "
+            "detail pages; limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

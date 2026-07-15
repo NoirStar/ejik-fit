@@ -103,6 +103,22 @@ describe("companyIdentity", () => {
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
       "bucketplace",
     ],
+    [
+      "마이리얼트립",
+      "https://myrealtrip.career.greetinghr.com/ko/o/191470",
+      "myrealtrip",
+    ],
+    ["와디즈", "https://job.wadiz.kr/ko/o/203979", "wadiz"],
+    [
+      "여기어때컴퍼니",
+      "https://gccompany.career.greetinghr.com/ko/o/177169",
+      "gccompany",
+    ],
+    [
+      "스캐터랩",
+      "https://www.scatterlab.co.kr/ko/o/123249",
+      "scatterlab",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

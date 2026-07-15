@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { companyIdentity } from "./company-identity";
 import styles from "./company-mark.module.css";
@@ -18,8 +18,20 @@ export function CompanyMark({
 }: CompanyMarkProps) {
   const identity = companyIdentity(companyName, sourceUrl);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   const showLogo =
     identity.kind === "logo" && Boolean(identity.src) && failedSrc !== identity.src;
+
+  useEffect(() => {
+    const image = imageRef.current;
+    if (
+      showLogo &&
+      image?.complete &&
+      image.naturalWidth === 0
+    ) {
+      setFailedSrc(identity.src ?? null);
+    }
+  }, [identity.src, showLogo]);
 
   return (
     <span
@@ -35,6 +47,7 @@ export function CompanyMark({
           alt=""
           className={styles.logo}
           onError={() => setFailedSrc(identity.src ?? null)}
+          ref={imageRef}
           src={identity.src}
         />
       ) : (

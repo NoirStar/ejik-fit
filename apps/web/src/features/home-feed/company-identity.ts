@@ -179,6 +179,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/hyperconnect",
     displayName: "하이퍼커넥트",
   },
+  {
+    aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
+    hosts: ["myrealtrip.career.greetinghr.com"],
+    src: "/company-logo-assets/myrealtrip",
+    displayName: "마이리얼트립",
+  },
+  {
+    aliases: ["와디즈", "wadiz"],
+    hosts: ["job.wadiz.kr"],
+    src: "/company-logo-assets/wadiz",
+    displayName: "와디즈",
+  },
+  {
+    aliases: ["여기어때컴퍼니", "여기어때", "gc company", "gccompany"],
+    hosts: ["gccompany.career.greetinghr.com"],
+    src: "/company-logo-assets/gccompany",
+    displayName: "여기어때컴퍼니",
+  },
+  {
+    aliases: ["스캐터랩", "scatter lab", "scatterlab"],
+    hosts: ["scatterlab.co.kr"],
+    src: "/company-logo-assets/scatterlab",
+    displayName: "스캐터랩",
+  },
 ];
 
 function normalize(value: string) {
