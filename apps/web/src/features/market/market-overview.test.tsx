@@ -232,7 +232,12 @@ describe("MarketOverview", () => {
 
     const trend = screen.getByRole("region", { name: "기술 수요 추세" });
     expect(within(trend).getByText("추세 수집 중")).toBeInTheDocument();
-    expect(within(trend).getByText(/최근 12주의 변화/)).toBeInTheDocument();
+    expect(
+      within(trend).getByText("주간 데이터를 수집하고 있어요."),
+    ).toBeInTheDocument();
+    expect(
+      within(trend).getByText(/실제 공식 공고 스냅샷만 사용/),
+    ).toBeInTheDocument();
     expect(within(trend).queryByText(/UI 시안용/)).not.toBeInTheDocument();
     expect(within(trend).queryByText(/증가|감소|예측/)).not.toBeInTheDocument();
     expect(trend.querySelector("path[data-trend-line]")).toBeNull();

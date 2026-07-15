@@ -183,7 +183,10 @@ export function MarketOverview({
 
           <aside className={styles.sideColumn}>
             <TechnologyTrendPanel
-              category={selected?.category ?? "tool"}
+              availableSkills={snapshot.skills.slice(0, 15).map((skill) => ({
+                category: skill.category,
+                name: skill.name,
+              }))}
               selectedSkill={effectiveSkill}
             />
             <RecentJobList

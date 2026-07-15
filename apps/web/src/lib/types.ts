@@ -55,6 +55,28 @@ export type SkillStatsResponse = {
   total: number;
 };
 
+export type SkillTrendPoint = {
+  week_start: string;
+  count: number;
+  required_count: number;
+  preferred_count: number;
+  unspecified_count: number;
+};
+
+export type SkillTrendSeries = {
+  skill: string;
+  category: string;
+  points: SkillTrendPoint[];
+};
+
+export type SkillTrendResponse = {
+  status: "collecting" | "ready";
+  collected_weeks: number;
+  minimum_weeks: number;
+  latest_snapshot_at: string | null;
+  series: SkillTrendSeries[];
+};
+
 export type SourceDirectoryItem = {
   company_name: string;
   company_slug: string;

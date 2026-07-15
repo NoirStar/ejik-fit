@@ -5,6 +5,7 @@ import type {
   PostingListResponse,
   SkillGraphResponse,
   SkillStatsResponse,
+  SkillTrendResponse,
   SourceDirectoryResponse,
 } from "./types";
 import {
@@ -106,6 +107,18 @@ export function getSkillStats(filters: {
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<SkillStatsResponse>(`/api/skills/stats${query}`);
+}
+
+
+export function getSkillTrends(
+  skills: string[],
+  weeks = 12,
+): Promise<SkillTrendResponse> {
+  const params = new URLSearchParams({ weeks: String(weeks) });
+  for (const skill of skills.slice(0, 3)) {
+    params.append("skills", skill);
+  }
+  return request<SkillTrendResponse>(`/api/skills/trends?${params.toString()}`);
 }
 
 

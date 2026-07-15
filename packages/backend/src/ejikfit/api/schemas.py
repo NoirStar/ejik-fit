@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -60,6 +60,28 @@ class SkillStat(BaseModel):
 class SkillStatsResponse(BaseModel):
     items: list[SkillStat]
     total: int
+
+
+class SkillTrendPoint(BaseModel):
+    week_start: date
+    count: int
+    required_count: int
+    preferred_count: int
+    unspecified_count: int
+
+
+class SkillTrendSeries(BaseModel):
+    skill: str
+    category: str
+    points: list[SkillTrendPoint]
+
+
+class SkillTrendResponse(BaseModel):
+    status: Literal["collecting", "ready"]
+    collected_weeks: int
+    minimum_weeks: int
+    latest_snapshot_at: datetime | None = None
+    series: list[SkillTrendSeries]
 
 
 class SourceDirectoryItem(BaseModel):

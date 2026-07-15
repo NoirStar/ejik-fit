@@ -17,6 +17,7 @@ from ejikfit.api.postings import (
 )
 from ejikfit.api.skills import (
     DatabaseSkillStatsReader,
+    SkillTrendReader,
     SkillStatsReader,
     create_skills_router,
 )
@@ -27,6 +28,7 @@ from ejikfit.api.sources import (
 )
 from ejikfit.config import Settings, get_settings
 from ejikfit.search import MeiliPostingIndex
+from ejikfit.skill_trends import DatabaseSkillTrendReader
 
 
 def create_default_posting_reader(settings: Settings) -> DatabasePostingReader:
@@ -45,6 +47,7 @@ def create_default_posting_reader(settings: Settings) -> DatabasePostingReader:
 def create_app(
     posting_reader: PostingReader | None = None,
     skill_stats_reader: SkillStatsReader | None = None,
+    skill_trend_reader: SkillTrendReader | None = None,
     skill_graph_reader: SkillGraphReader | None = None,
     fit_analysis_reader: FitAnalysisReader | None = None,
     source_directory_reader: SourceDirectoryReader | None = None,
@@ -62,7 +65,11 @@ def create_app(
 
     if skill_stats_reader is None:
         skill_stats_reader = DatabaseSkillStatsReader()
-    application.include_router(create_skills_router(skill_stats_reader))
+    if skill_trend_reader is None:
+        skill_trend_reader = DatabaseSkillTrendReader()
+    application.include_router(
+        create_skills_router(skill_stats_reader, skill_trend_reader)
+    )
 
     if skill_graph_reader is None:
         skill_graph_reader = DatabaseSkillGraphReader()

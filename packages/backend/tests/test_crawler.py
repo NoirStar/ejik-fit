@@ -237,12 +237,28 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
         }
 
     monkeypatch.setattr(crawler, "run_source_by_id", fake_run)
+    captured: list[tuple[list[dict], int]] = []
+    monkeypatch.setattr(
+        crawler,
+        "_capture_run_market_snapshot",
+        lambda results, total: (
+            captured.append((results, total))
+            or {
+                "observed_on": "2026-07-15",
+                "open_postings": 2,
+                "verified_sources": 1,
+                "total_sources": total,
+                "skill_count": 1,
+            }
+        ),
+    )
 
     report = crawler.run_all_sources()
 
     assert report["sources"] == 2
     assert report["failed"] == 1
     assert report["ingested"] == 2
+    assert captured and captured[0][1] == 2
     assert [item["source_id"] for item in report["results"]] == [
         "first",
         "second",
@@ -273,6 +289,17 @@ def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
             "closed": 0,
         },
     )
+    monkeypatch.setattr(
+        crawler,
+        "_capture_run_market_snapshot",
+        lambda results, total: {
+            "observed_on": "2026-07-15",
+            "open_postings": 1,
+            "verified_sources": 1,
+            "total_sources": total,
+            "skill_count": 1,
+        },
+    )
 
     report = crawler.run_all_sources()
     output = capsys.readouterr().out
@@ -283,6 +310,7 @@ def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
         "discovered=1 ingested=1 failed=0 closed=0"
     ) in output
     assert isinstance(report["results"][0]["elapsed_seconds"], float)
+    assert "market snapshot captured: date=2026-07-15" in output
 
 
 class StaticFetcher:

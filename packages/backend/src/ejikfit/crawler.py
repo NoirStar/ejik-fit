@@ -66,6 +66,7 @@ from ejikfit.models import (
     SourceType,
 )
 from ejikfit.search import MeiliPostingIndex, PostingIndex
+from ejikfit.skill_trends import capture_skill_demand_snapshot
 from ejikfit.storage import S3SnapshotStore, SnapshotStore
 
 
@@ -1146,6 +1147,27 @@ def _allowed_source_ids() -> list[str]:
     return [target.source_id for target in _allowed_sources()]
 
 
+def _capture_run_market_snapshot(
+    results: list[dict[str, Any]],
+    total_sources: int,
+) -> dict[str, Any]:
+    verified_sources = sum(item["failed"] == 0 for item in results)
+    with SessionLocal() as session:
+        snapshot = capture_skill_demand_snapshot(
+            session,
+            verified_sources=verified_sources,
+            total_sources=total_sources,
+        )
+        session.commit()
+        return {
+            "observed_on": snapshot.observed_on.isoformat(),
+            "open_postings": snapshot.open_postings,
+            "verified_sources": snapshot.verified_sources,
+            "total_sources": snapshot.total_sources,
+            "skill_count": snapshot.skill_count,
+        }
+
+
 def run_all_sources() -> dict[str, Any]:
     results: list[dict[str, Any]] = []
     targets = _allowed_sources()
@@ -1187,12 +1209,24 @@ def run_all_sources() -> dict[str, Any]:
             }
         )
 
+    market_snapshot = _capture_run_market_snapshot(results, total_sources)
+    print(
+        "market snapshot captured: "
+        f"date={market_snapshot['observed_on']} "
+        f"open_postings={market_snapshot['open_postings']} "
+        f"skills={market_snapshot['skill_count']} "
+        f"verified_sources={market_snapshot['verified_sources']}/"
+        f"{market_snapshot['total_sources']}",
+        flush=True,
+    )
+
     return {
         "sources": len(results),
         "discovered": sum(item["discovered"] for item in results),
         "ingested": sum(item["ingested"] for item in results),
         "failed": sum(item["failed"] for item in results),
         "closed": sum(item["closed"] for item in results),
+        "market_snapshot": market_snapshot,
         "results": results,
     }
 

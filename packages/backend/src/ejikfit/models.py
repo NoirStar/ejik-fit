@@ -1,10 +1,11 @@
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from sqlalchemy import (
     JSON,
+    Date,
     DateTime,
     Enum,
     Float,
@@ -241,6 +242,41 @@ class PostingSkill(Base):
     match_reason: Mapped[str] = mapped_column(
         String(100), default="legacy_backfill"
     )
+
+
+class MarketSnapshot(Base):
+    __tablename__ = "market_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    observed_on: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    open_postings: Mapped[int] = mapped_column(Integer)
+    verified_sources: Mapped[int] = mapped_column(Integer)
+    total_sources: Mapped[int] = mapped_column(Integer)
+    skill_count: Mapped[int] = mapped_column(Integer)
+
+
+class SkillDemandSnapshot(Base):
+    __tablename__ = "skill_demand_snapshots"
+    __table_args__ = (
+        UniqueConstraint(
+            "market_snapshot_id",
+            "skill",
+            name="uq_skill_demand_snapshot_skill",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    market_snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("market_snapshots.id", ondelete="CASCADE"),
+        index=True,
+    )
+    skill: Mapped[str] = mapped_column(String(100), index=True)
+    category: Mapped[str] = mapped_column(String(50))
+    posting_count: Mapped[int] = mapped_column(Integer)
+    required_count: Mapped[int] = mapped_column(Integer)
+    preferred_count: Mapped[int] = mapped_column(Integer)
+    unspecified_count: Mapped[int] = mapped_column(Integer)
 
 
 class JobRevision(Base):

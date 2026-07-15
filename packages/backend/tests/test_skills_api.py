@@ -47,6 +47,33 @@ class FakeSkillStatsReader:
         ]
 
 
+class FakeSkillTrendReader:
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def trends(
+        self,
+        skills: list[str],
+        *,
+        weeks: int = 12,
+        minimum_weeks: int = 4,
+    ) -> dict:
+        self.calls.append(
+            {
+                "skills": skills,
+                "weeks": weeks,
+                "minimum_weeks": minimum_weeks,
+            }
+        )
+        return {
+            "status": "collecting",
+            "collected_weeks": 2,
+            "minimum_weeks": minimum_weeks,
+            "latest_snapshot_at": "2026-07-15T00:00:00Z",
+            "series": [],
+        }
+
+
 def test_skill_stats_endpoint_returns_ranked_items() -> None:
     reader = FakeSkillStatsReader()
     client = TestClient(create_app(skill_stats_reader=reader))
@@ -69,6 +96,36 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
     assert reader.calls == [
         {"career_type": "new_comer", "category": "infra", "limit": 5}
     ]
+
+
+def test_skill_trends_endpoint_exposes_collection_progress_without_fake_data() -> None:
+    reader = FakeSkillTrendReader()
+    client = TestClient(create_app(skill_trend_reader=reader))
+
+    response = client.get(
+        "/api/skills/trends?skills=Python&skills=Kubernetes&weeks=12"
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "collecting",
+        "collected_weeks": 2,
+        "minimum_weeks": 4,
+        "latest_snapshot_at": "2026-07-15T00:00:00Z",
+        "series": [],
+    }
+    assert reader.calls == [
+        {
+            "skills": ["Python", "Kubernetes"],
+            "weeks": 12,
+            "minimum_weeks": 4,
+        }
+    ]
+
+    too_many = client.get(
+        "/api/skills/trends?skills=Python&skills=Go&skills=Java&skills=Rust"
+    )
+    assert too_many.status_code == 422
 
 
 def _add_posting(

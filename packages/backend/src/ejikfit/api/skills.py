@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,10 @@ from ejikfit.db import SessionLocal
 from ejikfit.models import JobPosting, PostingSkill, PostingStatus
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
-from .schemas import SkillStatsResponse
+from .schemas import SkillStatsResponse, SkillTrendResponse
+
+
+MINIMUM_TREND_WEEKS = 4
 
 
 class SkillStatsReader(Protocol):
@@ -20,6 +23,16 @@ class SkillStatsReader(Protocol):
         category: str | None = None,
         limit: int = 30,
     ) -> list[dict]: ...
+
+
+class SkillTrendReader(Protocol):
+    def trends(
+        self,
+        skills: list[str],
+        *,
+        weeks: int = 12,
+        minimum_weeks: int = MINIMUM_TREND_WEEKS,
+    ) -> dict: ...
 
 
 class DatabaseSkillStatsReader:
@@ -117,7 +130,10 @@ class DatabaseSkillStatsReader:
             ]
 
 
-def create_skills_router(reader: SkillStatsReader) -> APIRouter:
+def create_skills_router(
+    reader: SkillStatsReader,
+    trend_reader: SkillTrendReader,
+) -> APIRouter:
     router = APIRouter(prefix="/api/skills", tags=["skills"])
 
     @router.get("/stats", response_model=SkillStatsResponse)
@@ -132,5 +148,26 @@ def create_skills_router(reader: SkillStatsReader) -> APIRouter:
             limit=limit,
         )
         return {"items": items, "total": len(items)}
+
+    @router.get("/trends", response_model=SkillTrendResponse)
+    def skill_trends(
+        skills: list[str] = Query(default=[]),
+        weeks: int = Query(default=12, ge=4, le=12),
+    ) -> dict:
+        normalized = list(
+            dict.fromkeys(skill.strip() for skill in skills if skill.strip())
+        )
+        if len(normalized) > 3:
+            raise HTTPException(
+                status_code=422,
+                detail="기술은 최대 3개까지 비교할 수 있습니다.",
+            )
+        if any(len(skill) > 100 for skill in normalized):
+            raise HTTPException(status_code=422, detail="기술명이 너무 깁니다.")
+        return trend_reader.trends(
+            normalized,
+            weeks=weeks,
+            minimum_weeks=MINIMUM_TREND_WEEKS,
+        )
 
     return router
