@@ -119,6 +119,11 @@ describe("companyIdentity", () => {
       "https://www.scatterlab.co.kr/ko/o/123249",
       "scatterlab",
     ],
+    [
+      "채널코퍼레이션",
+      "https://channel.io/kr/careers/56661820-4c76-4ded-b1cd-7bad478d192d",
+      "channel-corporation",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

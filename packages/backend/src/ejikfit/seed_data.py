@@ -606,6 +606,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="채널코퍼레이션",
+        slug="channel-corporation",
+        base_url="https://channel.io/kr/careers",
+        source_type=SourceType.STATIC_NEXT_DATA,
+        homepage_url="https://channel.io",
+        sector="b2b_saas_ai",
+        connector_family="channel_next_data_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Channel Corporation careers page with complete "
+            "server-rendered job data; limited to Korea-based technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

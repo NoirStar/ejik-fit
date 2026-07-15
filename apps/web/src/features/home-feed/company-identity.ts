@@ -203,6 +203,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/scatterlab",
     displayName: "스캐터랩",
   },
+  {
+    aliases: ["채널코퍼레이션", "채널톡", "channel corporation", "channel talk"],
+    hosts: ["channel.io"],
+    src: "/company-logo-assets/channel-corporation",
+    displayName: "채널코퍼레이션",
+  },
 ];
 
 function normalize(value: string) {

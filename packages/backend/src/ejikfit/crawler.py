@@ -20,6 +20,7 @@ from tenacity import (
 
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.browser_public import parse_browser_public_render_openings
+from ejikfit.connectors.channel import parse_channel_openings
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import (
     discover_corporate_greeting_openings,
@@ -78,6 +79,12 @@ def _apply_source_opening_filters(
     openings: list[ParsedOpening],
 ) -> list[ParsedOpening]:
     if source.connector_family == "lever_greenhouse_korea_tech":
+        return [
+            opening
+            for opening in openings
+            if is_korea_technical_role(opening.title, opening.location)
+        ]
+    if source.connector_family == "channel_next_data_tech":
         return [
             opening
             for opening in openings
@@ -363,6 +370,7 @@ def _parse_listing_openings(
     source_type: SourceType,
     text: str,
     url: str,
+    connector_family: str | None = None,
 ):
     if source_type == SourceType.JSON_LD:
         return parse_jsonld_openings(text, url)
@@ -375,6 +383,8 @@ def _parse_listing_openings(
     if source_type == SourceType.HTML_LISTING_DETAIL:
         return parse_html_listing_openings(text, url)
     if source_type == SourceType.STATIC_NEXT_DATA:
+        if connector_family == "channel_next_data_tech":
+            return parse_channel_openings(text, url)
         return parse_static_next_data_openings(text, url)
     if source_type == SourceType.ENTERPRISE_JSON:
         return parse_enterprise_json_openings(text, url)
@@ -617,6 +627,7 @@ async def preview_source(
             source.source_type,
             listing.text,
             listing.url,
+            source.connector_family,
         )
         complete = validate_listing_response(
             source.source_type,
@@ -981,6 +992,7 @@ async def crawl_source(
             source.source_type,
             listing.text,
             listing.url,
+            source.connector_family,
         )
         complete_listing = validate_listing_response(
             source.source_type,

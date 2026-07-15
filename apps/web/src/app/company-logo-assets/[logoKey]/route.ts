@@ -4,6 +4,7 @@ const MAX_LOGO_BYTES = 2_000_000;
 const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
+  "channel-corporation": "https://channel.io/logo.webp",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",

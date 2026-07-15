@@ -162,7 +162,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 68
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 69
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -251,7 +251,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 68
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 69
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -365,6 +365,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
         assert source.source_type == SourceType.GREETING
         assert source.connector_family == "greeting_tech"
         assert source.status == SourceStatus.ALLOWED
+
+    channel = catalog_by_slug["channel-corporation"]
+    assert channel.base_url == "https://channel.io/kr/careers"
+    assert channel.source_type == SourceType.STATIC_NEXT_DATA
+    assert channel.connector_family == "channel_next_data_tech"
+    assert channel.status == SourceStatus.ALLOWED
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:
