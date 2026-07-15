@@ -521,6 +521,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Qualcomm Korea",
   },
   {
+    aliases: ["AMD Korea", "AMD", "에이엠디 코리아", "에이엠디"],
+    hosts: ["careers.amd.com", "amd.com"],
+    src: "/company-logo-assets/amd-korea",
+    displayName: "AMD Korea",
+  },
+  {
     aliases: ["NVIDIA Korea", "NVIDIA", "엔비디아 코리아", "엔비디아"],
     hosts: ["nvidia.wd5.myworkdayjobs.com", "nvidia.com"],
     src: "/company-logo-assets/nvidia-korea",

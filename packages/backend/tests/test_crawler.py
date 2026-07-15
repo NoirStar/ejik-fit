@@ -1888,6 +1888,83 @@ def test_crawl_source_routes_enterprise_json_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_crawl_source_routes_jibe_korea_engineering_jobs() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="AMD Korea", slug="amd-korea"),
+            base_url=(
+                "https://careers.amd.com/api/jobs?"
+                "location=Korea%2C%20South&limit=100"
+            ),
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="jibe_api_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "totalCount": 2,
+                            "jobs": [
+                                {
+                                    "data": {
+                                        "req_id": "87669",
+                                        "title": "Software Development Engineer",
+                                        "description": "Build GPU software in C++.",
+                                        "full_location": "Seoul, Korea, South",
+                                        "country_code": "KR",
+                                        "categories": [{"name": "Engineering"}],
+                                        "searchable": True,
+                                        "applyable": True,
+                                        "meta_data": {
+                                            "canonical_url": (
+                                                "https://careers.amd.com/jobs/"
+                                                "87669?lang=en-us"
+                                            )
+                                        },
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "req_id": "79860",
+                                        "title": "AI Business Development Manager",
+                                        "country_code": "KR",
+                                        "categories": [
+                                            {"name": "Sales / Marketing"}
+                                        ],
+                                        "searchable": True,
+                                        "applyable": True,
+                                    }
+                                },
+                            ],
+                        }
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "87669"
+        assert posting.description_text == "Build GPU software in C++."
+        assert source.last_error_code is None
+
+
 def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

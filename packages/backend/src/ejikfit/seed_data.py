@@ -729,6 +729,28 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="AMD Korea",
+        slug="amd-korea",
+        base_url=(
+            "https://careers.amd.com/api/jobs?"
+            "location=Korea%2C%20South&limit=100"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://careers.amd.com/careers-home/",
+        sector="semiconductor_ai",
+        connector_family="jibe_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official AMD Careers Jibe API scoped to Korea; the complete "
+            "response includes full job descriptions and only AMD's official "
+            "Engineering category is ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

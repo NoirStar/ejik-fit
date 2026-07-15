@@ -5,6 +5,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "42dot": "https://www.42dot.ai/favicon.ico",
   airwallex:
     "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
+  "amd-korea":
+    "https://cms.jibecdn.com/prod/amd/assets/FAVICON-en-us-1666203559098.ico",
   "applied-intuition":
     "https://www.appliedintuition.com/icon1.png?icon1.488d774c.png",
   "amazon-web-services-korea":

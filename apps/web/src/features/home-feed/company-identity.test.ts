@@ -478,6 +478,11 @@ describe("companyIdentity", () => {
       "qualcomm-korea",
     ],
     [
+      "AMD Korea",
+      "https://careers.amd.com/careers-home/jobs/87669?lang=en-us",
+      "amd-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

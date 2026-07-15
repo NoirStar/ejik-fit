@@ -35,6 +35,7 @@ from ejikfit.connectors.greeting import (
 )
 from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
+from ejikfit.connectors.jibe import parse_jibe_korea_technical_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
 from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
@@ -116,6 +117,8 @@ def _apply_source_opening_filters(
     if not source.targets_technical_roles:
         return openings
     if source.connector_family == "amazon_jobs_korea_tech":
+        return openings
+    if source.connector_family == "jibe_api_korea_tech":
         return openings
     if source.connector_family == "workday_public_api_korea_tech":
         return [
@@ -463,6 +466,8 @@ def _parse_listing_openings(
     if source_type == SourceType.ENTERPRISE_JSON:
         if connector_family == "apple_jobs_korea_tech":
             return parse_apple_listing_openings(text, url)
+        if connector_family == "jibe_api_korea_tech":
+            return parse_jibe_korea_technical_openings(text, url)
         if connector_family in {
             "microsoft_pcsx_korea_tech",
             "qualcomm_pcsx_korea_tech",
