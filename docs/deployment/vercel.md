@@ -118,6 +118,10 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=Supabase publishable key
 `API_BASE_URL`은 Next.js 서버 전용 값이며 끝에 `/`를 붙이지 않습니다.
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`는 브라우저 인증용 공개 키입니다. 서버
 전용 secret key나 service-role key는 Vercel Web에 넣지 않습니다.
+현재 운영 Supabase URL과 publishable key는 Vercel 공개 환경변수 누락 시에도
+로그인이 중단되지 않도록 웹 코드에 저권한 기본값으로 포함되어 있습니다. 두
+환경변수를 모두 설정하면 해당 값이 우선하며, 둘 중 하나만 설정된 불완전한 구성은
+다른 프로젝트의 값이 섞이지 않도록 인증을 비활성화합니다.
 
 Supabase Authentication의 Site URL은 Web 운영 주소로 설정하고 Redirect URLs에
 `https://웹프로젝트주소/auth/callback`을 등록합니다. 로컬 개발에서는 사용하는

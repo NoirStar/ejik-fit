@@ -185,8 +185,9 @@ Web/API는 `main` 브랜치에서 자동 배포된다.
   | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 브라우저 인증용 publishable key |
 
   `API_BASE_URL` 미설정 시 `apps/web/src/lib/api.ts`가 `http://localhost:8000`으로
-  폴백해 공고 요청이 실패합니다. Supabase 공개 설정이 없으면 공개 페이지는 계속
-  열리지만 이메일 로그인은 설정 오류를 표시합니다.
+  폴백해 공고 요청이 실패합니다. 운영 Supabase 공개 설정은 코드의 저권한 기본값도
+  사용하므로 두 환경변수가 모두 없을 때 로그인은 계속 동작합니다. 다만 둘 중 하나만
+  설정되면 프로젝트 구성이 섞이지 않도록 이메일 로그인을 비활성화합니다.
 - `API_BASE_URL`은 **Next.js 서버 전용**(브라우저 노출 안 됨). 그래서 Web/API가 다른 호스트여도 CORS 문제 없음.
 - Supabase secret/service-role key는 Vercel Web과 저장소에 넣지 않습니다.
 
