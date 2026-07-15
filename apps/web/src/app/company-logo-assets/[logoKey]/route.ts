@@ -9,6 +9,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
   com2us:
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
+  coupang: "https://www.coupang.jobs/favicon.ico",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
@@ -17,11 +18,14 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/52e7484b-ffef-47e8-bd66-774309ad01d5",
   enerzai:
     "https://profiles.greetinghr.com/group/af5e4e1b-d4a3-4bbb-bab2-9c963848f958",
+  exem: "https://www.ex-em.com/apple-icon.png",
   finda:
     "https://profiles.greetinghr.com/group/07b16511-6dcd-4732-bb25-d0df0164ddd5",
   "furiosa-ai":
     "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
+  "hyundai-motor":
+    "https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png",
   gccompany:
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
   korbit:
@@ -30,6 +34,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://opening-attachments.greetinghr.com/2025-02-06/0e82fcb5-f39c-4d8f-8aee-f20e3efaa187/111.png",
   "kakao-pay":
     "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
+  "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
+  kia: "https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
@@ -56,7 +62,12 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
+  "samsung-sds":
+    "https://image.samsungsds.com/resource/kr/images/app_ico.gif",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
+  "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
+  smilegate:
+    "https://careers.smilegate.com/assets/web/img/common/favicon.ico",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
@@ -102,6 +113,7 @@ function rasterContentType(body: ArrayBuffer) {
   ) {
     return "image/avif";
   }
+  if (bytesMatch(bytes, 0, [0, 0, 1, 0])) return "image/x-icon";
   return null;
 }
 
@@ -120,7 +132,8 @@ export async function GET(_request: Request, context: LogoRouteContext) {
   try {
     const upstream = await fetch(upstreamUrl, {
       headers: {
-        Accept: "image/avif,image/webp,image/png,image/jpeg,image/gif",
+        Accept:
+          "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon",
         "User-Agent": "ejik-fit-company-logo/1.0",
       },
       next: { revalidate: CACHE_SECONDS },

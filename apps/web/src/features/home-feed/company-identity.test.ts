@@ -180,6 +180,38 @@ describe("companyIdentity", () => {
       "https://com2us.recruiter.co.kr/career/jobs/108380",
       "com2us",
     ],
+    [
+      "스마일게이트",
+      "https://careers.smilegate.com/apply/announce/view?seq=1",
+      "smilegate",
+    ],
+    [
+      "쿠팡",
+      "https://job-boards.greenhouse.io/coupang/jobs/1",
+      "coupang",
+    ],
+    [
+      "현대자동차",
+      "https://talent.hyundai.com/apply/1",
+      "hyundai-motor",
+    ],
+    ["기아", "https://career.kia.com/apply/applyView.kc?id=1", "kia"],
+    [
+      "SK텔레콤",
+      "https://www.skcareers.com/Recruit/Detail/1",
+      "sk-telecom",
+    ],
+    [
+      "삼성SDS",
+      "https://www.samsungcareers.com/hr/?no=1",
+      "samsung-sds",
+    ],
+    ["EXEM", "https://ex-em.career.greetinghr.com/ko/o/1", "exem"],
+    [
+      "카카오게임즈",
+      "https://recruit.kakaogames.com/ko/o/1",
+      "kakao-games",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

@@ -187,6 +187,58 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "컴투스",
   },
   {
+    aliases: ["스마일게이트", "smilegate"],
+    hosts: ["careers.smilegate.com"],
+    src: "/company-logo-assets/smilegate",
+    displayName: "스마일게이트",
+  },
+  {
+    aliases: ["쿠팡", "coupang"],
+    hosts: [
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+      "coupang.jobs",
+    ],
+    src: "/company-logo-assets/coupang",
+    displayName: "쿠팡",
+  },
+  {
+    aliases: ["현대자동차", "hyundai motor", "hyundai"],
+    hosts: ["talent.hyundai.com", "career.hyundai.com"],
+    src: "/company-logo-assets/hyundai-motor",
+    displayName: "현대자동차",
+  },
+  {
+    aliases: ["기아", "kia"],
+    hosts: ["career.kia.com"],
+    src: "/company-logo-assets/kia",
+    displayName: "기아",
+  },
+  {
+    aliases: ["SK텔레콤", "sk telecom", "skt"],
+    hosts: ["skcareers.com"],
+    src: "/company-logo-assets/sk-telecom",
+    displayName: "SK텔레콤",
+  },
+  {
+    aliases: ["삼성SDS", "samsung sds"],
+    hosts: ["samsungcareers.com"],
+    src: "/company-logo-assets/samsung-sds",
+    displayName: "삼성SDS",
+  },
+  {
+    aliases: ["EXEM", "엑셈"],
+    hosts: ["ex-em.career.greetinghr.com"],
+    src: "/company-logo-assets/exem",
+    displayName: "EXEM",
+  },
+  {
+    aliases: ["카카오게임즈", "kakao games", "kakaogames"],
+    hosts: ["recruit.kakaogames.com"],
+    src: "/company-logo-assets/kakao-games",
+    displayName: "카카오게임즈",
+  },
+  {
     aliases: ["컬리", "kurly", "마켓컬리"],
     hosts: ["kurly.career.greetinghr.com"],
     src: "/company-logo-assets/kurly",

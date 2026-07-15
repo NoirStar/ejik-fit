@@ -39,6 +39,14 @@ back to company initials when the official asset is unavailable.
 | `sendbird` | Sendbird | <https://sendbird.com/careers> | <https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png> | 2026-07-15 |
 | `socar` | 쏘카 | <https://www.socarcorp.kr/careers/jobs> | <https://www.socarcorp.kr/images/favicons/favicon_180x180.png> | 2026-07-15 |
 | `bucketplace` | 오늘의집 | <https://www.bucketplace.com/careers/> | <https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406> | 2026-07-15 |
+| `smilegate` | 스마일게이트 | <https://careers.smilegate.com/> | <https://careers.smilegate.com/assets/web/img/common/favicon.ico> | 2026-07-15 |
+| `coupang` | 쿠팡 | <https://www.coupang.jobs/kr/> | <https://www.coupang.jobs/favicon.ico> | 2026-07-15 |
+| `hyundai-motor` | 현대자동차 | <https://talent.hyundai.com/> | <https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png> | 2026-07-15 |
+| `kia` | 기아 | <https://career.kia.com/> | <https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico> | 2026-07-15 |
+| `sk-telecom` | SK텔레콤 | <https://www.skcareers.com/> | <https://www.sktelecom.com/favicon1.ico> | 2026-07-15 |
+| `samsung-sds` | 삼성SDS | <https://www.samsungcareers.com/> | <https://image.samsungsds.com/resource/kr/images/app_ico.gif> | 2026-07-15 |
+| `exem` | EXEM | <https://ex-em.career.greetinghr.com/ko> | <https://www.ex-em.com/apple-icon.png> | 2026-07-15 |
+| `kakao-games` | 카카오게임즈 | <https://recruit.kakaogames.com/ko> | <https://www.kakaogamescorp.com/favicon.ico> | 2026-07-15 |
 
 ## Assets intentionally not stored
 

@@ -35,4 +35,22 @@ describe("company logo asset proxy", () => {
     expect(response.headers.get("Cache-Control")).toContain("s-maxage=604800");
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+
+  it("accepts a whitelisted Windows icon by its file signature", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array([0, 0, 1, 0, 1, 0, 32, 32]), {
+        headers: { "Content-Type": "application/octet-stream" },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/smilegate"),
+      { params: Promise.resolve({ logoKey: "smilegate" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/x-icon");
+  });
 });
