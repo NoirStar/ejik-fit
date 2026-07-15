@@ -45,6 +45,11 @@ from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
     parse_sitemap_detail_opening,
 )
+from ejikfit.connectors.shiftup import (
+    SHIFTUP_LISTING_API,
+    SHIFTUP_LISTING_FORM,
+    parse_shiftup_openings,
+)
 from ejikfit.connectors.successfactors import parse_successfactors_openings
 from ejikfit.connectors.technical_roles import (
     is_korea_technical_role,
@@ -381,6 +386,8 @@ def _parse_listing_openings(
     }:
         return _parse_list_json_openings(source_type, text, url)
     if source_type == SourceType.HTML_LISTING_DETAIL:
+        if connector_family == "shiftup_public_api_tech":
+            return parse_shiftup_openings(text)
         return parse_html_listing_openings(text, url)
     if source_type == SourceType.STATIC_NEXT_DATA:
         if connector_family == "channel_next_data_tech":
@@ -397,6 +404,10 @@ def _parse_listing_openings(
     if source_type == SourceType.BROWSER_PUBLIC_RENDER:
         return parse_browser_public_render_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
+
+
+def _listing_is_self_validated(connector_family: str | None) -> bool:
+    return connector_family == "shiftup_public_api_tech"
 
 
 def _unsupported_connector_status(source_type: SourceType) -> SourceStatus:
@@ -433,6 +444,12 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "shiftup_public_api_tech":
+        return await fetcher.fetch(
+            SHIFTUP_LISTING_API,
+            method="POST",
+            form_body=source.request_body or SHIFTUP_LISTING_FORM,
+        )
     if source.source_type != SourceType.BROWSER_PUBLIC_RENDER:
         request_method = (source.request_method or "GET").upper()
         if request_method != "GET":
@@ -629,12 +646,16 @@ async def preview_source(
             listing.url,
             source.connector_family,
         )
-        complete = validate_listing_response(
-            source.source_type,
-            listing.text,
-            listing.url,
-            len(openings),
-            source.request_body,
+        complete = (
+            True
+            if _listing_is_self_validated(source.connector_family)
+            else validate_listing_response(
+                source.source_type,
+                listing.text,
+                listing.url,
+                len(openings),
+                source.request_body,
+            )
         )
         openings = _apply_source_opening_filters(source, openings)
     except (KeyError, TypeError, ListingValidationError, ValueError) as error:
@@ -1001,12 +1022,16 @@ async def crawl_source(
             listing.url,
             source.connector_family,
         )
-        complete_listing = validate_listing_response(
-            source.source_type,
-            listing.text,
-            listing.url,
-            len(openings),
-            source.request_body,
+        complete_listing = (
+            True
+            if _listing_is_self_validated(source.connector_family)
+            else validate_listing_response(
+                source.source_type,
+                listing.text,
+                listing.url,
+                len(openings),
+                source.request_body,
+            )
         )
         openings = _apply_source_opening_filters(source, openings)
     except Exception as error:

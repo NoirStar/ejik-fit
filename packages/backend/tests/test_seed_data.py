@@ -181,6 +181,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "pearl-abyss",
         "smilegate",
         "kakao-games",
+        "shiftup",
     }
     assert all(
         catalog_by_slug[slug].status
@@ -238,6 +239,18 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+
+    shiftup = catalog_by_slug["shiftup"]
+    assert shiftup.source_type == SourceType.HTML_LISTING_DETAIL
+    assert shiftup.connector_family == "shiftup_public_api_tech"
+    assert shiftup.request_method == "POST"
+    assert shiftup.request_body == {
+        "workType": "get_recruit_list",
+        "code": "recruit",
+        "cat_idx": "0",
+        "searchkey": "",
+    }
+    assert shiftup.status == SourceStatus.ALLOWED
 
 
 def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> None:

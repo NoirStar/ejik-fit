@@ -1337,19 +1337,26 @@ INITIAL_SOURCE_CATALOG = (
         source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://shiftup.co.kr",
         sector="game_content",
-        connector_family="html_listing_detail",
+        connector_family="shiftup_public_api_tech",
         policy_status=PolicyStatus.ALLOWED,
-        brand_tier_weight=3,
-        tech_job_priority=4,
-        expected_job_volume=3,
-        connector_reuse_score=1,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=5,
+        connector_reuse_score=2,
         policy_risk=0,
-        non_tech_noise=3,
+        non_tech_noise=0,
+        request_method="POST",
+        request_body={
+            "workType": "get_recruit_list",
+            "code": "recruit",
+            "cat_idx": "0",
+            "searchkey": "",
+        },
         notes=(
-            "Official Shift Up recruit page; current HTML shape needs a "
-            "site-specific parser before enabling crawl."
+            "Official Shift Up recruit page and its public listing endpoint; "
+            "limited to open Programmer and QA roles with full descriptions."
         ),
-        status=SourceStatus.NEEDS_CONNECTOR,
+        status=SourceStatus.ALLOWED,
     ),
 )
 

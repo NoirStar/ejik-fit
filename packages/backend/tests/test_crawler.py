@@ -1499,6 +1499,141 @@ def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_crawl_source_fetches_shiftup_public_form_and_ingests_technical_jobs() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    form = {
+        "workType": "get_recruit_list",
+        "code": "recruit",
+        "cat_idx": "0",
+        "searchkey": "",
+    }
+    fetcher = RecordingFetcher(
+        json.dumps(
+            {
+                "result": "000",
+                "list": [
+                    {
+                        "subject": "서버 프로그래머 (보충역)",
+                        "content": "<p>Go와 Kubernetes 기반 게임 서버 개발</p>",
+                        "addinfo4": "무관",
+                        "addinfo5": "정규직",
+                        "addinfo6": "https://career.shiftup.co.kr/o/69850/apply",
+                        "addinfo7": "Programmer",
+                        "status": "1",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    with Session(engine) as session:
+        company = Company(name="시프트업", slug="shiftup")
+        source = CareerSource(
+            company=company,
+            base_url="https://shiftup.co.kr/recruit/recruit.php",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="shiftup_public_api_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            request_method="POST",
+            request_body=form,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert fetcher.calls == [
+            {
+                "url": "https://shiftup.co.kr/comm/lib/client_lib.php",
+                "method": "POST",
+                "json_body": None,
+                "form_body": form,
+            }
+        ]
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert posting is not None
+        assert posting.external_id == "69850"
+        assert posting.title == "서버 프로그래머 (보충역)"
+        assert posting.url == "https://career.shiftup.co.kr/o/69850"
+        assert source.last_error_code is None
+        assert source.last_success_at is not None
+
+
+def test_shiftup_complete_non_technical_listing_can_reconcile_missing_jobs() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    fetcher = RecordingFetcher(
+        json.dumps(
+            {
+                "result": "000",
+                "list": [
+                    {
+                        "subject": "마케팅 매니저",
+                        "content": "<p>글로벌 마케팅</p>",
+                        "addinfo6": "https://career.shiftup.co.kr/o/226149/apply",
+                        "addinfo7": "사업",
+                        "status": "1",
+                    }
+                ],
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    with Session(engine) as session:
+        company = Company(name="시프트업", slug="shiftup-empty-tech")
+        source = CareerSource(
+            company=company,
+            base_url="https://shiftup.co.kr/recruit/recruit.php",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="shiftup_public_api_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="old-programmer",
+            url="https://career.shiftup.co.kr/o/old-programmer",
+            title="이전 서버 프로그래머",
+            missing_runs=2,
+        )
+        session.add(posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        assert result.discovered == 0
+        assert result.failed == 0
+        assert result.closed == 1
+        assert posting.missing_runs == 3
+        assert posting.status == PostingStatus.CLOSED
+
+
 def test_preview_source_parses_listing_without_persisting_or_mutating() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
