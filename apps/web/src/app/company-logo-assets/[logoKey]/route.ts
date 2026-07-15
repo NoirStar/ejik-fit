@@ -7,6 +7,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "channel-corporation": "https://channel.io/logo.webp",
   "cj-olivenetworks":
     "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
+  com2us:
+    "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",

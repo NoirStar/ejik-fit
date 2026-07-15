@@ -175,6 +175,11 @@ describe("companyIdentity", () => {
       "https://careers.ncsoft.com/apply/view/101003?companyId=NCH",
       "ncsoft",
     ],
+    [
+      "컴투스",
+      "https://com2us.recruiter.co.kr/career/jobs/108380",
+      "com2us",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

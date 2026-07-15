@@ -181,6 +181,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "pearl-abyss",
         "smilegate",
         "kakao-games",
+        "com2us",
         "netmarble",
         "ncsoft",
         "shiftup",
@@ -246,6 +247,11 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     assert ncsoft.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert ncsoft.connector_family == "ncsoft_session_html_tech"
     assert ncsoft.status == SourceStatus.ALLOWED
+
+    com2us = catalog_by_slug["com2us"]
+    assert com2us.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert com2us.connector_family == "com2us_jobflex_tech"
+    assert com2us.status == SourceStatus.ALLOWED
 
     netmarble = catalog_by_slug["netmarble"]
     assert netmarble.source_type == SourceType.PUBLIC_JSON_DETAIL

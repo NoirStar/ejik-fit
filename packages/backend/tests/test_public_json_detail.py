@@ -298,6 +298,93 @@ def test_ncsoft_session_api_discovers_and_parses_technical_jobs() -> None:
     assert "C++, Windows" in opening.description_text
 
 
+def test_com2us_jobflex_api_parses_verified_technical_jobs() -> None:
+    listing = json.dumps(
+        {
+            "pagination": {
+                "page": 1,
+                "size": 100,
+                "totalCount": 3,
+                "totalPages": 1,
+            },
+            "list": [
+                {
+                    "positionSn": 108380,
+                    "title": "서머너즈워 차기 RPG 서버 프로그래머 (3년 이상)",
+                    "submissionStatus": "IN_SUBMISSION",
+                    "openStatus": "OPEN",
+                    "classificationCode": "게임프로그래밍",
+                },
+                {
+                    "positionSn": 121183,
+                    "title": "웹 디자이너 (계약직/2년 이상)",
+                    "submissionStatus": "IN_SUBMISSION",
+                    "openStatus": "OPEN",
+                    "classificationCode": "웹개발·디자인",
+                },
+                {
+                    "positionSn": 87549,
+                    "title": "[생성형 AI 아티스트] 게임 아트 R&D",
+                    "submissionStatus": "IN_SUBMISSION",
+                    "openStatus": "OPEN",
+                    "classificationCode": "AI",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://com2us.recruiter.co.kr/career/career",
+        "com2us_jobflex_tech",
+    )
+    refs = filter_public_detail_refs(all_refs, "com2us_jobflex_tech")
+
+    assert [ref.external_id for ref in refs] == ["108380"]
+    assert refs[0].detail_url == (
+        "https://api-recruiter.recruiter.co.kr/position/v2/jobflex/108380"
+    )
+    assert refs[0].public_url == (
+        "https://com2us.recruiter.co.kr/career/jobs/108380"
+    )
+
+    detail = json.dumps(
+        {
+            "title": "서머너즈워 차기 RPG 서버 프로그래머 (3년 이상)",
+            "jobDescription": (
+                '<img src="https://com2us.recruiter.co.kr/upload/job.png">'
+            ),
+            "careerType": "CAREER",
+            "progressStatus": "IN_PROGRESS",
+            "startDateTime": "2026-07-01T00:00:00",
+            "endDateTime": None,
+            "classificationCode": "게임프로그래밍",
+            "submissionStatus": "IN_SUBMISSION",
+            "writeButtonStatus": "OPEN",
+            "tagList": [
+                {"tagSn": 6514, "tagName": "게임프로그래밍"},
+                {"tagSn": 4522, "tagName": "IT 서비스"},
+            ],
+        },
+        ensure_ascii=False,
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "com2us_jobflex_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 3
+    assert opening.career_max is None
+    assert opening.opens_at is not None
+    assert "직무 분류: 게임프로그래밍" in opening.description_text
+    assert "공식 태그: 게임프로그래밍, IT 서비스" in opening.description_text
+    assert "<img" in opening.description_html
+
+
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:
     listing = json.dumps(
         {

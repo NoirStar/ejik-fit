@@ -15,6 +15,38 @@ from ejikfit.html_text import structured_plain_text
 
 
 KST = ZoneInfo("Asia/Seoul")
+COM2US_LISTING_API = (
+    "https://api-recruiter.recruiter.co.kr/position/v1/jobflex"
+)
+COM2US_LISTING_BODY: dict[str, object] = {
+    "pageableRq": {"page": 1, "size": 100, "sort": ["JOBFLEX_SORT"]},
+    "filter": {
+        "keyword": "",
+        "tagSnList": [],
+        "jobGroupSnList": [],
+        "careerTypeList": [],
+        "regionSnList": [],
+        "submissionStatusList": [],
+        "openStatusList": [],
+        "resumeLanguageTypeList": [],
+    },
+}
+COM2US_REQUEST_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Origin": "https://com2us.recruiter.co.kr",
+    "Referer": "https://com2us.recruiter.co.kr/",
+    "prefix": "com2us.recruiter.co.kr",
+}
+COM2US_TECH_CLASSIFICATIONS = {
+    "AI",
+    "DB",
+    "QA",
+    "게임프로그래밍",
+    "데이터분석",
+    "보안",
+    "웹개발·디자인",
+    "인프라",
+}
 NETMARBLE_LISTING_API = (
     "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
 )
@@ -441,6 +473,60 @@ def _ncsoft_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _com2us_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
+    pagination = payload.get("pagination")
+    rows = payload.get("list")
+    if not isinstance(pagination, dict) or not isinstance(rows, list):
+        raise ValueError("Com2uS Jobflex listing is missing its jobs page")
+    total = _positive_int(pagination.get("totalCount"))
+    page = _positive_int(pagination.get("page"))
+    page_size = _positive_int(pagination.get("size"))
+    total_pages = _positive_int(pagination.get("totalPages"))
+    if (
+        total != len(rows)
+        or page != 1
+        or page_size is None
+        or page_size < len(rows)
+        or total_pages != 1
+    ):
+        raise ValueError("Com2uS Jobflex listing response is incomplete")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Com2uS Jobflex listing contains an invalid job row")
+        if (
+            row.get("submissionStatus") != "IN_SUBMISSION"
+            or row.get("openStatus") != "OPEN"
+        ):
+            continue
+        raw_id = row.get("positionSn")
+        title = _text(row.get("title"))
+        if raw_id is None or isinstance(raw_id, bool) or title is None:
+            raise ValueError("Com2uS open job identity is missing")
+        external_id = str(raw_id)
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=(
+                    "https://api-recruiter.recruiter.co.kr/position/v2/"
+                    f"jobflex/{external_id}"
+                ),
+                public_url=(
+                    "https://com2us.recruiter.co.kr/career/jobs/"
+                    f"{external_id}"
+                ),
+                title=title,
+                category=_text(row.get("classificationCode")),
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -459,6 +545,8 @@ def discover_public_json_detail_refs(
         return _netmarble_refs(payload)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_refs(payload)
+    if connector_family == "com2us_jobflex_tech":
+        return _com2us_refs(payload)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -477,6 +565,18 @@ def filter_public_detail_refs(
             and "어시스턴트" not in ref.title
             and "인재풀" not in ref.title
         ]
+    if connector_family == "com2us_jobflex_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.category in COM2US_TECH_CLASSIFICATIONS
+            and not (
+                ref.category == "웹개발·디자인"
+                and ("디자이너" in ref.title or "디자인" in ref.title)
+            )
+            and not (ref.category == "AI" and "아티스트" in ref.title)
+            and not (ref.category == "인프라" and "기획" in ref.title)
+        ]
     if not connector_family.endswith("_tech"):
         return refs
     return [
@@ -493,6 +593,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "dunamu_server_html_tech",
         "netmarble_public_api_tech",
         "ncsoft_session_html_tech",
+        "com2us_jobflex_tech",
     }
 
 
@@ -725,6 +826,74 @@ def _ncsoft_opening(raw_html: str, ref: PublicJsonDetailRef) -> ParsedOpening:
     )
 
 
+def _career_range_from_title(title: str) -> tuple[int | None, int | None]:
+    range_match = re.search(
+        r"(\d+)\s*~\s*(\d+)\s*년(?:차)?",
+        title,
+    )
+    if range_match is not None:
+        return int(range_match.group(1)), int(range_match.group(2))
+    minimum_match = re.search(r"(\d+)\s*년\s*이상", title)
+    if minimum_match is not None:
+        return int(minimum_match.group(1)), None
+    return None, None
+
+
+def _com2us_opening(
+    payload: dict[str, Any],
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    title = _text(payload.get("title"))
+    if title != ref.title:
+        raise ValueError("Com2uS Jobflex detail identity does not match its listing")
+    description_html = _text(payload.get("jobDescription")) or ""
+    if not description_html:
+        raise ValueError("Com2uS Jobflex job detail content is missing")
+
+    classification = _text(payload.get("classificationCode"))
+    raw_tags = payload.get("tagList")
+    tags: list[str] = []
+    if isinstance(raw_tags, list):
+        for tag in raw_tags:
+            name = _text(tag.get("tagName")) if isinstance(tag, dict) else None
+            if name and name not in tags:
+                tags.append(name)
+    body_text = structured_plain_text(description_html)
+    description_parts = [body_text] if body_text else []
+    if classification:
+        description_parts.append(f"직무 분류: {classification}")
+    if tags:
+        description_parts.append(f"공식 태그: {', '.join(tags)}")
+    description_text = "\n".join(description_parts)
+    career_min, career_max = _career_range_from_title(title)
+    career_type = {
+        "CAREER": "experienced",
+        "NEW": "new_comer",
+        "NEW_CAREER": "mixed",
+        "FIELD_DIFFERENCE": "mixed",
+    }.get(_text(payload.get("careerType")) or "")
+    is_open = (
+        payload.get("progressStatus") == "IN_PROGRESS"
+        and payload.get("submissionStatus") == "IN_SUBMISSION"
+        and payload.get("writeButtonStatus") == "OPEN"
+    )
+    return ParsedOpening(
+        external_id=ref.external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type="contract" if "계약직" in title else "regular",
+        career_type=career_type,
+        career_min=career_min,
+        career_max=career_max,
+        location=None,
+        opens_at=_parse_datetime(payload.get("startDateTime")),
+        closes_at=_parse_datetime(payload.get("endDateTime")),
+    )
+
+
 def _labeled_value(text: str, label: str) -> str | None:
     pattern = re.compile(rf"^{re.escape(label)}\s*:\s*(.+)$")
     for line in text.splitlines():
@@ -885,4 +1054,6 @@ def parse_public_json_detail(
         return _kakaobank_opening(payload, ref)
     if connector_family == "netmarble_public_api_tech":
         return _netmarble_opening(payload, ref)
+    if connector_family == "com2us_jobflex_tech":
+        return _com2us_opening(payload, ref)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")

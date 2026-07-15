@@ -1292,22 +1292,22 @@ INITIAL_SOURCE_CATALOG = (
         name="컴투스",
         slug="com2us",
         base_url="https://com2us.recruiter.co.kr/career/career",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.com2us.com",
         sector="game_content",
-        connector_family="browser_public_render",
+        connector_family="com2us_jobflex_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
-        tech_job_priority=4,
-        expected_job_volume=2,
-        connector_reuse_score=1,
+        tech_job_priority=5,
+        expected_job_volume=4,
+        connector_reuse_score=2,
         policy_risk=0,
-        non_tech_noise=2,
+        non_tech_noise=0,
         notes=(
-            "Official Com2uS recruiter.co.kr careers page; posting cards "
-            "need browser rendering or a Next/API connector."
+            "Official Com2uS Jobflex list and detail APIs; limited to "
+            "programming, data, AI, DB, security, infrastructure, and QA."
         ),
-        status=SourceStatus.NEEDS_BROWSER,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="데브시스터즈",

@@ -181,6 +181,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     surface: "dark",
   },
   {
+    aliases: ["컴투스", "com2us"],
+    hosts: ["com2us.recruiter.co.kr"],
+    src: "/company-logo-assets/com2us",
+    displayName: "컴투스",
+  },
+  {
     aliases: ["컬리", "kurly", "마켓컬리"],
     hosts: ["kurly.career.greetinghr.com"],
     src: "/company-logo-assets/kurly",

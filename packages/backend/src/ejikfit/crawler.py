@@ -36,6 +36,9 @@ from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
+    COM2US_LISTING_API,
+    COM2US_LISTING_BODY,
+    COM2US_REQUEST_HEADERS,
     NETMARBLE_LISTING_API,
     NCSOFT_DETAIL_API,
     NCSOFT_LISTING_API,
@@ -454,6 +457,13 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "com2us_jobflex_tech":
+        return await fetcher.fetch(
+            COM2US_LISTING_API,
+            method="POST",
+            json_body=COM2US_LISTING_BODY,
+            headers=COM2US_REQUEST_HEADERS,
+        )
     if source.connector_family == "ncsoft_session_html_tech":
         bootstrap = await fetcher.fetch(source.base_url)
         session_headers = ncsoft_session_headers(
@@ -509,6 +519,11 @@ async def _fetch_public_json_detail(
     listing: FetchedPage,
     fetcher: HttpFetcher,
 ) -> FetchedPage:
+    if connector_family == "com2us_jobflex_tech":
+        return await fetcher.fetch(
+            ref.detail_url,
+            headers=COM2US_REQUEST_HEADERS,
+        )
     if connector_family != "ncsoft_session_html_tech":
         return await fetcher.fetch(ref.detail_url)
 
