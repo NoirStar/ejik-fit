@@ -257,7 +257,7 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="LG전자",
         slug="lg-electronics",
-        base_url="https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20",
+        base_url="https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100",
         source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.lge.co.kr",
         sector="enterprise_it",

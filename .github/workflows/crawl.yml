@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
+    inputs:
+      company_slug:
+        description: "Run one company source only (leave blank for all)"
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -38,4 +43,11 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
-      - run: ejikfit crawl-all
+      - name: Crawl one source
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.company_slug != '' }}
+        env:
+          COMPANY_SLUG: ${{ inputs.company_slug }}
+        run: ejikfit crawl-source --company-slug "$COMPANY_SLUG"
+      - name: Crawl all production sources
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.company_slug == '' }}
+        run: ejikfit crawl-all

@@ -327,6 +327,52 @@ class RecordingFetcher:
         )
 
 
+class PaginatedLgeFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        page = 2 if "page=2" in url else 1
+        jobs = (
+            [
+                {"id": "lge-1", "title": "Platform Engineer"},
+                {"id": "lge-2", "title": "Data Engineer"},
+            ]
+            if page == 1
+            else [{"id": "lge-3", "title": "Cloud Engineer"}]
+        )
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(
+                {
+                    "successOrNot": "Y",
+                    "statusCode": "SUCCESS",
+                    "data": {
+                        "total": 3,
+                        "size": len(jobs),
+                        "pageSize": 2,
+                        "pageNum": page,
+                        "pages": 2,
+                        "nextPage": 2 if page == 1 else 0,
+                        "hasNextPage": page == 1,
+                        "isLastPage": page == 2,
+                        "list": jobs,
+                    },
+                }
+            ),
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -452,6 +498,43 @@ def test_fetch_listing_page_uses_source_post_json_request_options() -> None:
             "form_body": None,
         }
     ]
+
+
+def test_fetch_listing_page_collects_every_lg_electronics_page() -> None:
+    source = CareerSource(
+        company=Company(name="LG전자", slug="lg-electronics"),
+        base_url=(
+            "https://globalcareers.lge.com/api/job/v1/jobs/"
+            "?page=1&size=2"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+    )
+    fetcher = PaginatedLgeFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert fetcher.urls == [
+        "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=2",
+        "https://globalcareers.lge.com/api/job/v1/jobs/?page=2&size=2",
+    ]
+    assert [job["id"] for job in payload["data"]["list"]] == [
+        "lge-1",
+        "lge-2",
+        "lge-3",
+    ]
+    assert payload["data"]["nextPage"] == 0
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+    )
+    assert validate_listing_response(
+        source.source_type,
+        page.text,
+        page.url,
+        openings_count=len(openings),
+    )
 
 
 def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:

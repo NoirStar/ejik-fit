@@ -1,10 +1,12 @@
 import asyncio
+import json
 import logging
 import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
 from sqlalchemy import select
@@ -381,10 +383,72 @@ async def _fetch_listing_page(
                 method=request_method,
                 json_body=source.request_body,
             )
+        if _is_lge_jobs_api(source.base_url):
+            return await _fetch_all_lge_pages(source.base_url, fetcher)
         return await fetcher.fetch(source.base_url)
     if browser_renderer is None:
         raise ValueError("browser renderer is not configured")
     return await browser_renderer.render(source.base_url)
+
+
+def _is_lge_jobs_api(url: str) -> bool:
+    parsed = urlparse(url)
+    return (
+        parsed.hostname == "globalcareers.lge.com"
+        and parsed.path.rstrip("/") == "/api/job/v1/jobs"
+    )
+
+
+def _page_url(url: str, page: int) -> str:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    query["page"] = [str(page)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+async def _fetch_all_lge_pages(
+    url: str,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    first = await fetcher.fetch(url)
+    payload = json.loads(first.text)
+    data = payload.get("data") if isinstance(payload, dict) else None
+    rows = data.get("list") if isinstance(data, dict) else None
+    total = data.get("total") if isinstance(data, dict) else None
+    size = data.get("size") if isinstance(data, dict) else None
+    if (
+        not isinstance(rows, list)
+        or not isinstance(total, int)
+        or not isinstance(size, int)
+        or size <= 0
+        or total <= len(rows)
+    ):
+        return first
+
+    combined_rows = list(rows)
+    total_pages = (total + size - 1) // size
+    last_page_data = data
+    for page_number in range(2, total_pages + 1):
+        page = await fetcher.fetch(_page_url(url, page_number))
+        page_payload = json.loads(page.text)
+        page_data = (
+            page_payload.get("data") if isinstance(page_payload, dict) else None
+        )
+        page_rows = page_data.get("list") if isinstance(page_data, dict) else None
+        if not isinstance(page_rows, list):
+            raise ValueError("LG Electronics jobs page is missing its list")
+        combined_rows.extend(page_rows)
+        last_page_data = page_data
+
+    data.update(last_page_data)
+    data["list"] = combined_rows
+    data["total"] = total
+    return FetchedPage(
+        url=first.url,
+        text=json.dumps(payload, ensure_ascii=False),
+        status_code=first.status_code,
+        headers=first.headers,
+    )
 
 
 async def preview_source(

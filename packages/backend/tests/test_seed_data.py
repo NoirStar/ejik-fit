@@ -295,7 +295,7 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert lg_electronics.status == SourceStatus.ALLOWED
         assert lg_electronics.connector_family == "enterprise_json"
         assert lg_electronics.base_url == (
-            "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20"
+            "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100"
         )
 
         lg_cns = sources_by_slug["lg-cns"]
