@@ -9,7 +9,7 @@ import {
   StackSimple,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import {
@@ -35,6 +35,8 @@ import {
   type JobView,
 } from "./model";
 import styles from "./job-list.module.css";
+
+const JOBS_PER_PAGE = 20;
 
 export type JobListFilters = {
   query: string;
@@ -240,8 +242,10 @@ function ViewEmptyState({ view, hasOwnedSkills }: {
 export function JobList({ postings, filters, error = false }: JobListProps) {
   const [hydrated, setHydrated] = useState(false);
   const [view, setView] = useState<JobView>("all");
+  const [requestedPage, setRequestedPage] = useState(1);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const resultsRef = useRef<HTMLElement>(null);
   const items = useMemo(() => postings?.items ?? [], [postings]);
   const filtering = Boolean(
     filters.query || filters.category || filters.careerType,
@@ -259,6 +263,14 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
     () => filterJobPostings(items, view, ownedSkills, savedIds),
     [items, ownedSkills, savedIds, view],
   );
+  const pageCount = Math.max(1, Math.ceil(visibleJobs.length / JOBS_PER_PAGE));
+  const currentPage = Math.min(requestedPage, pageCount);
+  const pageStart = (currentPage - 1) * JOBS_PER_PAGE;
+  const pageJobs = visibleJobs.slice(pageStart, pageStart + JOBS_PER_PAGE);
+  const pageEnd = pageStart + pageJobs.length;
+  const resultRangeLabel = visibleJobs.length
+    ? `${pageStart + 1}–${pageEnd} / ${visibleJobs.length}건`
+    : "0건";
 
   useEffect(() => {
     setOwnedSkills(readOwnedSkills());
@@ -272,6 +284,14 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
     };
   }, []);
 
+  useEffect(() => {
+    setRequestedPage(1);
+  }, [filters.careerType, filters.category, filters.query]);
+
+  useEffect(() => {
+    setRequestedPage((page) => Math.min(page, pageCount));
+  }, [pageCount]);
+
   function handleToggleSaved(id: string) {
     setSavedIds(toggleSavedJob(id));
   }
@@ -284,7 +304,21 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
   const retryHref = `/jobs${retryQuery ? `?${retryQuery}` : ""}`;
   const resultAnnouncement = !hydrated
     ? "저장한 공고와 기술을 확인하고 있습니다."
-    : `${visibleJobs.length}개 공고를 표시합니다.`;
+    : visibleJobs.length
+      ? `${visibleJobs.length}개 공고 중 ${pageStart + 1}번부터 ${pageEnd}번까지 표시합니다.`
+      : "표시할 공고가 없습니다.";
+
+  function selectView(nextView: JobView) {
+    setView(nextView);
+    setRequestedPage(1);
+  }
+
+  function selectPage(page: number) {
+    setRequestedPage(page);
+    requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ block: "start" });
+    });
+  }
 
   return (
     <main className={styles.main}>
@@ -409,13 +443,17 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
           </div>
         </aside>
 
-        <section aria-labelledby="job-results-title" className={styles.results}>
+        <section
+          aria-labelledby="job-results-title"
+          className={styles.results}
+          ref={resultsRef}
+        >
           <header className={styles.resultHeader}>
             <div>
               <p>{error ? "공식 원문 데이터" : "공식 원문 확인순"}</p>
               <h2 id="job-results-title">검색 결과</h2>
             </div>
-            <span>{error ? "표시 불가" : `${visibleJobs.length}개 표시`}</span>
+            <span>{error ? "표시 불가" : resultRangeLabel}</span>
           </header>
 
           {!error && (
@@ -423,7 +461,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
               <button
                 aria-label={`전체 공고 ${items.length}`}
                 aria-pressed={view === "all"}
-                onClick={() => setView("all")}
+                onClick={() => selectView("all")}
                 type="button"
               >
                 전체 공고 <span>{items.length}</span>
@@ -431,7 +469,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
               <button
                 aria-label={`내 기술 겹침 ${matchingCount}`}
                 aria-pressed={view === "matched"}
-                onClick={() => setView("matched")}
+                onClick={() => selectView("matched")}
                 type="button"
               >
                 내 기술 겹침 <span>{matchingCount}</span>
@@ -439,7 +477,7 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
               <button
                 aria-label={`저장한 공고 ${savedCount}`}
                 aria-pressed={view === "saved"}
-                onClick={() => setView("saved")}
+                onClick={() => selectView("saved")}
                 type="button"
               >
                 저장한 공고 <span>{savedCount}</span>
@@ -474,18 +512,55 @@ export function JobList({ postings, filters, error = false }: JobListProps) {
               view={view}
             />
           ) : (
-            <ul className={styles.jobList} role="list">
-              {visibleJobs.map((job) => (
-                <li key={job.id}>
-                  <JobItem
-                    job={job}
-                    onToggleSaved={handleToggleSaved}
-                    ownedSkills={ownedSkills}
-                    saved={savedIds.includes(job.id)}
-                  />
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className={styles.jobList} role="list">
+                {pageJobs.map((job) => (
+                  <li key={job.id}>
+                    <JobItem
+                      job={job}
+                      onToggleSaved={handleToggleSaved}
+                      ownedSkills={ownedSkills}
+                      saved={savedIds.includes(job.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+              {pageCount > 1 && (
+                <nav aria-label="공고 페이지" className={styles.pagination}>
+                  <button
+                    aria-label="이전 페이지"
+                    disabled={currentPage === 1}
+                    onClick={() => selectPage(currentPage - 1)}
+                    type="button"
+                  >
+                    이전
+                  </button>
+                  <div>
+                    {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+                      (page) => (
+                        <button
+                          aria-current={page === currentPage ? "page" : undefined}
+                          aria-label={`${page}페이지`}
+                          key={page}
+                          onClick={() => selectPage(page)}
+                          type="button"
+                        >
+                          {page}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  <button
+                    aria-label="다음 페이지"
+                    disabled={currentPage === pageCount}
+                    onClick={() => selectPage(currentPage + 1)}
+                    type="button"
+                  >
+                    다음
+                  </button>
+                </nav>
+              )}
+            </>
           )}
         </section>
       </div>

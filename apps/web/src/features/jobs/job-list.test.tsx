@@ -178,6 +178,39 @@ describe("JobList", () => {
     expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 
+  it("paginates a large API response without rendering every card at once", () => {
+    const manyPostings: PostingListResponse = {
+      total: 21,
+      items: Array.from({ length: 21 }, (_, index) => ({
+        ...postings.items[0],
+        id: `page-job-${index + 1}`,
+        title: `페이지 공고 ${index + 1}`,
+        source_url: `https://recruit.navercorp.com/page-job-${index + 1}`,
+      })),
+    };
+
+    render(
+      <JobList
+        filters={{ query: "", careerType: "", category: "" }}
+        postings={manyPostings}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "페이지 공고 1" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "페이지 공고 21" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("1–20 / 21건")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "2페이지" }));
+
+    expect(
+      screen.queryByRole("link", { name: "페이지 공고 1" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "페이지 공고 21" })).toBeInTheDocument();
+    expect(screen.getByText("21–21 / 21건")).toBeInTheDocument();
+  });
+
   it("distinguishes empty, missing-stack, and API error states", async () => {
     const { rerender } = render(
       <JobList
