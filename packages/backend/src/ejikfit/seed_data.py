@@ -497,6 +497,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="하이퍼커넥트",
+        slug="hyperconnect",
+        base_url=(
+            "https://api.lever.co/v0/postings/matchgroup?mode=json"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://career.hyperconnect.com",
+        sector="consumer_tech_ai",
+        connector_family="lever_greenhouse_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Match Group Lever feed mirrored by Hyperconnect's "
+            "careers page; limited to Seoul-based technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

@@ -8,6 +8,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
   dunamu: "https://careers.dunamu.com/favicon.png",
+  hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
   kurly:

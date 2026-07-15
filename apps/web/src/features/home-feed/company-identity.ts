@@ -173,6 +173,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/kurly",
     displayName: "컬리",
   },
+  {
+    aliases: ["하이퍼커넥트", "hyperconnect"],
+    hosts: ["jobs.lever.co", "api.lever.co", "career.hyperconnect.com"],
+    src: "/company-logo-assets/hyperconnect",
+    displayName: "하이퍼커넥트",
+  },
 ];
 
 function normalize(value: string) {

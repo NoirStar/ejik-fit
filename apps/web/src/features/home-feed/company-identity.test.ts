@@ -94,6 +94,11 @@ describe("companyIdentity", () => {
     ["두나무", "https://careers.dunamu.com/detail/588", "dunamu"],
     ["컬리", "https://kurly.career.greetinghr.com/ko/o/198635", "kurly"],
     [
+      "하이퍼커넥트",
+      "https://jobs.lever.co/matchgroup/4004a95b-ed89-4193-ad1a-a2ed5d4703d5",
+      "hyperconnect",
+    ],
+    [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
       "bucketplace",
