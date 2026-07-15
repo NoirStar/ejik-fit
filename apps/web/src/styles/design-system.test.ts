@@ -88,4 +88,23 @@ describe("design system foundation", () => {
     expect(globals).not.toContain(".brand-lockup__copy");
     expect(globals).not.toContain("@media (max-width: 340px)");
   });
+
+  it("uses compact title tokens across service pages", () => {
+    for (const path of [
+      "src/features/saved-library/saved-library.module.css",
+      "src/features/authored-questions/authored-questions.module.css",
+      "src/features/search/search-results.module.css",
+      "src/components/skill-graph-experience.module.css",
+      "src/app/trust-pages.module.css",
+    ]) {
+      expect(read(path), path).toContain("font-size: var(--type-page-title);");
+    }
+
+    for (const path of [
+      "src/features/companies/company-profile.module.css",
+      "src/app/posts/[id]/post-detail.module.css",
+    ]) {
+      expect(read(path), path).toContain("font-size: var(--type-detail-title);");
+    }
+  });
 });

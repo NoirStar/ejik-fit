@@ -31,15 +31,18 @@ describe("market overview styles", () => {
     expect(rule(".dashboardGrid")).toContain("gap: 1.25rem;");
   });
 
-  it("uses restrained semantic colors for required, preferred and uncategorized demand", () => {
+  it("uses the market demand palette for required, preferred and uncategorized demand", () => {
+    expect(rule(".page")).toContain("--market-required: #c34d45;");
+    expect(rule(".page")).toContain("--market-preferred: #3c7894;");
+    expect(rule(".page")).toContain("--market-unspecified: #d8d5ce;");
     expect(rule('.stackedSegment[data-segment="required"]')).toContain(
-      "background: #6d4aff;",
+      "background: var(--market-required);",
     );
     expect(rule('.stackedSegment[data-segment="preferred"]')).toContain(
-      "background: #2f9e63;",
+      "background: var(--market-preferred);",
     );
     expect(rule('.stackedSegment[data-segment="unspecified"]')).toContain(
-      "background: #d9dce4;",
+      "background: var(--market-unspecified);",
     );
   });
 

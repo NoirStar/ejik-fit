@@ -350,13 +350,13 @@ main,
 
 .not-found {
   min-height: 60dvh;
-  padding-top: 120px;
+  padding-top: 3rem;
 }
 
 .not-found h1 {
   margin: 0;
-  font-size: clamp(36px, 6vw, 64px);
-  letter-spacing: -0.055em;
+  font-size: var(--type-page-title);
+  letter-spacing: -0.04em;
 }
 
 .not-found p {

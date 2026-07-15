@@ -20,6 +20,10 @@ describe("skill graph layout CSS", () => {
 
     expect(graphCss).toMatch(/\.page\s*\{[\s\S]*?height: 100%;/);
     expect(graphCss).toMatch(/\.graphFrame\s*\{[\s\S]*?min-height: 31rem;/);
+    expect(graphCss).toMatch(
+      /\.graphFrame\s*\{[\s\S]*?background: var\(--color-graph\);/,
+    );
+    expect(graphCss).not.toContain("background: #07111d;");
     expect(graphCss).toContain("@media (max-width: 640px)");
     expect(shellCss).toContain('.content[data-immersive="true"] > :first-child');
     expect(shellCss).toContain("flex: none;");

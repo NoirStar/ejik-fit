@@ -1,7 +1,7 @@
 .page {
   width: min(100%, 76rem);
   margin: 0 auto;
-  padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) 7rem;
+  padding: 1.5rem clamp(1rem, 3vw, 2.5rem) 7rem;
 }
 
 .intro {
@@ -46,10 +46,10 @@
   max-width: 18ch;
   overflow-wrap: anywhere;
   color: var(--color-text);
-  font-size: clamp(2.15rem, 5vw, 4rem);
-  font-weight: 860;
-  letter-spacing: -0.055em;
-  line-height: 1.05;
+  font-size: var(--type-page-title);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
 }
 
 .resultTitleSuffix {
@@ -58,8 +58,8 @@
 
 .description {
   color: var(--color-muted);
-  font-size: 0.92rem;
-  line-height: 1.65;
+  font-size: var(--type-support);
+  line-height: 1.55;
 }
 
 .searchForm {
@@ -69,7 +69,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.7rem;
-  margin-top: 1.25rem;
+  margin-top: 0.875rem;
   padding-left: 1rem;
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
@@ -763,7 +763,7 @@
   }
 
   .intro h1 {
-    font-size: clamp(2rem, 10vw, 3rem);
+    font-size: 1.75rem;
   }
 
   .startState {
