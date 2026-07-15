@@ -11,10 +11,12 @@
 }
 
 .page {
-  --market-required: #c34d45;
-  --market-preferred: #3c7894;
-  --market-unspecified: #d8d5ce;
-  --market-unspecified-text: #514f4a;
+  --market-required: #24656a;
+  --market-required-text: #ffffff;
+  --market-preferred: #d49a3a;
+  --market-preferred-text: #2d2519;
+  --market-unspecified: #dce1e3;
+  --market-unspecified-text: #3f494d;
 
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -539,10 +541,12 @@
 
 .stackedSegment[data-segment="required"] {
   background: var(--market-required);
+  color: var(--market-required-text);
 }
 
 .stackedSegment[data-segment="preferred"] {
   background: var(--market-preferred);
+  color: var(--market-preferred-text);
 }
 
 .stackedSegment[data-segment="unspecified"] {
