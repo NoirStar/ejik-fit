@@ -76,6 +76,16 @@ describe("companyIdentity", () => {
   });
 
   it.each([
+    [
+      "뱅크샐러드",
+      "https://banksalad.career.greetinghr.com/ko/o/160517",
+      "banksalad",
+    ],
+    [
+      "빗썸",
+      "https://career.bithumbcorp.com/ko/o/226629",
+      "bithumb",
+    ],
     ["마키나락스", "https://makinarocks.career.greetinghr.com/ko/o/1", "makinarocks"],
     ["리벨리온", "https://rebellions.career.greetinghr.com/ko/o/1", "rebellions"],
     ["코빗", "https://korbit.career.greetinghr.com/ko/o/1", "korbit"],

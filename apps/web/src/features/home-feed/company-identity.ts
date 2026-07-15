@@ -16,6 +16,18 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["뱅크샐러드", "banksalad", "bank salad"],
+    hosts: ["banksalad.career.greetinghr.com"],
+    src: "/company-logo-assets/banksalad",
+    displayName: "뱅크샐러드",
+  },
+  {
+    aliases: ["빗썸", "bithumb"],
+    hosts: ["career.bithumbcorp.com"],
+    src: "/company-logo-assets/bithumb",
+    displayName: "빗썸",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

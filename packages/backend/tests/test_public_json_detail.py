@@ -16,6 +16,115 @@ def _next_data_html(page_props: dict[str, object]) -> str:
     )
 
 
+def test_banksalad_public_api_discovers_and_parses_technical_greeting_jobs() -> None:
+    listing = json.dumps(
+        {
+            "jobs": [
+                {
+                    "department": "테크",
+                    "data": [
+                        {
+                            "id": 160517,
+                            "title": "DevOps Engineer (데브옵스 엔지니어)",
+                            "job": "테크",
+                            "url": (
+                                "https://banksalad.career.greetinghr.com/"
+                                "o/160517"
+                            ),
+                        }
+                    ],
+                },
+                {
+                    "department": "경영관리",
+                    "data": [
+                        {
+                            "id": 160233,
+                            "title": "Recruiter (리크루터)",
+                            "job": "경영관리",
+                            "url": (
+                                "https://banksalad.career.greetinghr.com/"
+                                "o/160233"
+                            ),
+                        }
+                    ],
+                },
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        "https://www.banksalad.com/proxy/api/greeting/openings",
+        "banksalad_greeting_api_tech",
+    )
+    refs = filter_public_detail_refs(refs, "banksalad_greeting_api_tech")
+
+    assert [ref.external_id for ref in refs] == ["160517"]
+    assert refs[0].category == "테크"
+    assert refs[0].public_url == (
+        "https://banksalad.career.greetinghr.com/ko/o/160517"
+    )
+
+    detail = _next_data_html(
+        {
+            "dehydratedState": {
+                "queries": [
+                    {
+                        "queryKey": ["opening", "getOpeningById"],
+                        "state": {
+                            "data": {
+                                "data": {
+                                    "openingsInfo": {
+                                        "openingId": 160517,
+                                        "title": (
+                                            "DevOps Engineer "
+                                            "(데브옵스 엔지니어)"
+                                        ),
+                                        "status": "OPEN",
+                                        "detail": (
+                                            "<h3>주요 업무</h3>"
+                                            "<p>AWS와 Kubernetes 플랫폼 운영</p>"
+                                        ),
+                                        "openDate": "2026-06-01T00:00:00Z",
+                                        "dueDate": None,
+                                    },
+                                    "jobPositionSetting": {
+                                        "jobPositions": [
+                                            {
+                                                "jobPositionCareer": {
+                                                    "careerType": "EXPERIENCED",
+                                                    "careerFrom": 5,
+                                                },
+                                                "jobPositionEmployment": {
+                                                    "employmentType": (
+                                                        "FULL_TIME_WORKER"
+                                                    )
+                                                },
+                                            }
+                                        ]
+                                    },
+                                }
+                            }
+                        },
+                    }
+                ]
+            }
+        }
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "banksalad_greeting_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 5
+    assert opening.employment_type == "FULL_TIME_WORKER"
+    assert "AWS와 Kubernetes" in opening.description_text
+
+
 def test_ably_official_page_discovers_and_parses_open_ninehire_tech_jobs() -> None:
     listing = _next_data_html(
         {

@@ -1,6 +1,6 @@
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Mapping
 from urllib.parse import urlencode, urlsplit
@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
 
+from ejikfit.connectors.greeting import parse_opening as parse_greeting_opening
 from ejikfit.connectors.next_data import extract_next_data
 from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.types import ParsedOpening
@@ -71,6 +72,7 @@ NCSOFT_TECH_JOB_TYPES = {
     "QA",
     "System Administration",
 }
+BANKSALAD_TECH_DEPARTMENTS = {"테크", "데이터"}
 
 
 @dataclass(frozen=True)
@@ -527,6 +529,63 @@ def _com2us_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _banksalad_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
+    groups = payload.get("jobs")
+    if not isinstance(groups, list):
+        raise ValueError("Banksalad listing is missing its job groups")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for group in groups:
+        if not isinstance(group, dict):
+            raise ValueError("Banksalad listing contains an invalid job group")
+        department = _text(group.get("department"))
+        rows = group.get("data")
+        if department is None or not isinstance(rows, list):
+            raise ValueError("Banksalad job group is incomplete")
+        if department not in BANKSALAD_TECH_DEPARTMENTS:
+            continue
+
+        for row in rows:
+            if not isinstance(row, dict):
+                raise ValueError("Banksalad listing contains an invalid job row")
+            raw_id = row.get("id")
+            title = _text(row.get("title"))
+            raw_url = _text(row.get("url"))
+            if raw_id is None or isinstance(raw_id, bool) or title is None:
+                raise ValueError("Banksalad open job identity is missing")
+            external_id = str(raw_id)
+            if raw_url is None:
+                raise ValueError("Banksalad open job URL is missing")
+            parsed = urlsplit(raw_url)
+            segments = [segment for segment in parsed.path.split("/") if segment]
+            if (
+                parsed.scheme != "https"
+                or parsed.hostname != "banksalad.career.greetinghr.com"
+                or len(segments) != 2
+                or segments[0] != "o"
+                or segments[1] != external_id
+            ):
+                raise ValueError("Banksalad job URL is not its official detail")
+            if external_id in seen:
+                continue
+            seen.add(external_id)
+            public_url = (
+                "https://banksalad.career.greetinghr.com/ko/o/"
+                f"{external_id}"
+            )
+            refs.append(
+                PublicJsonDetailRef(
+                    external_id=external_id,
+                    detail_url=public_url,
+                    public_url=public_url,
+                    title=title,
+                    category=_text(row.get("job")) or department,
+                )
+            )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -547,6 +606,8 @@ def discover_public_json_detail_refs(
         return _ncsoft_refs(payload)
     if connector_family == "com2us_jobflex_tech":
         return _com2us_refs(payload)
+    if connector_family == "banksalad_greeting_api_tech":
+        return _banksalad_refs(payload)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -577,6 +638,8 @@ def filter_public_detail_refs(
             and not (ref.category == "AI" and "아티스트" in ref.title)
             and not (ref.category == "인프라" and "기획" in ref.title)
         ]
+    if connector_family == "banksalad_greeting_api_tech":
+        return refs
     if not connector_family.endswith("_tech"):
         return refs
     return [
@@ -594,6 +657,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "netmarble_public_api_tech",
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
+        "banksalad_greeting_api_tech",
     }
 
 
@@ -1047,6 +1111,13 @@ def parse_public_json_detail(
         return _ably_opening(raw_json, ref)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_opening(raw_json, ref)
+    if connector_family == "banksalad_greeting_api_tech":
+        opening = parse_greeting_opening(raw_json, ref.detail_url)
+        if opening.external_id != ref.external_id or opening.title != ref.title:
+            raise ValueError(
+                "Banksalad Greeting detail identity does not match its listing"
+            )
+        return replace(opening, url=ref.public_url)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)

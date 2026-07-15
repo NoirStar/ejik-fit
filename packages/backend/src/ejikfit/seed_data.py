@@ -140,6 +140,43 @@ INITIAL_SOURCE_CATALOG = (
         notes="Official public Greeting careers listing and detail pages.",
     ),
     SeedSource(
+        name="빗썸",
+        slug="bithumb",
+        base_url="https://career.bithumbcorp.com/ko",
+        homepage_url="https://www.bithumbcorp.com",
+        sector="fintech",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=3,
+        non_tech_noise=1,
+        notes=(
+            "Official public Bithumb Greeting careers listing and detail "
+            "pages; only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="뱅크샐러드",
+        slug="banksalad",
+        base_url=(
+            "https://www.banksalad.com/proxy/api/greeting/openings"
+        ),
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://corp.banksalad.com",
+        sector="fintech",
+        connector_family="banksalad_greeting_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        non_tech_noise=0,
+        notes=(
+            "Official Banksalad careers JSON and public Greeting details; "
+            "only the technology and data departments are ingested."
+        ),
+    ),
+    SeedSource(
         name="람다256",
         slug="lambda256",
         base_url="https://lambda256.career.greetinghr.com/ko",
