@@ -69,7 +69,9 @@ describe("market overview styles", () => {
 
   it("keeps compact filters keyboard and touch accessible", () => {
     expect(rule(".filter")).toContain("min-width: var(--touch-target);");
-    expect(rule(".filter")).toContain("min-height: var(--touch-target);");
+    expect(rule(".filter")).toContain(
+      "min-height: calc(var(--touch-target) + 1px);",
+    );
     expect(css).toMatch(
       /\.sideHeader > a\s*\{[^}]*min-width: var\(--touch-target\);/,
     );
