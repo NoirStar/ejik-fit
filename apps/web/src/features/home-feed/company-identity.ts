@@ -16,6 +16,12 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["vessl ai", "vessl", "베슬 ai", "베슬에이아이"],
+    hosts: ["vessl.recruit.roundhr.com"],
+    src: "/company-logo-assets/vessl-ai",
+    displayName: "VESSL AI",
+  },
+  {
     aliases: ["리디", "ridi", "리디(ridi)", "리디 주식회사"],
     hosts: ["ridi.recruit.roundhr.com"],
     src: "/company-logo-assets/ridi",

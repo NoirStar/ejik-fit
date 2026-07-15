@@ -192,6 +192,24 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="VESSL AI",
+        slug="vessl-ai",
+        base_url="https://vessl.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://vessl.ai",
+        sector="ai_infrastructure",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=4,
+        non_tech_noise=3,
+        notes=(
+            "Official public VESSL AI RoundHR careers listing and detail "
+            "pages; only open engineering roles are ingested."
+        ),
+    ),
+    SeedSource(
         name="뱅크샐러드",
         slug="banksalad",
         base_url=(

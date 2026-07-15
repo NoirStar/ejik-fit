@@ -82,6 +82,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",
+  "vessl-ai":
+    "https://assets.roundhr.com/upload/site/favicon/1146/1724160614927/color.png",
   wadiz:
     "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
   wrtn:

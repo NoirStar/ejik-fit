@@ -1220,11 +1220,15 @@ def _roundhr_location(
         for location in raw_locations:
             if not isinstance(location, dict):
                 continue
+            location_title = _text(location.get("title"))
+            address = _text(location.get("address")) or _text(
+                location.get("name")
+            )
             parts = [
                 value
                 for value in (
-                    _text(location.get("title")) or _text(location.get("name")),
-                    _text(location.get("address")),
+                    location_title,
+                    address,
                     _text(location.get("address_detail")),
                 )
                 if value is not None
@@ -1352,6 +1356,7 @@ def _roundhr_opening(
         "new_comer": "new_comer",
         "newcomer": "new_comer",
         "new": "new_comer",
+        "entry_level": "new_comer",
         "mixed": "mixed",
         "not_matter": "not_matter",
     }.get(_text(application_form.get("career_kind")) or "")
@@ -1363,9 +1368,11 @@ def _roundhr_opening(
         "part_time": "PART_TIME",
         "freelancer": "FREELANCER",
     }.get(raw_employment_type or "", raw_employment_type)
+    # RoundHR tenants use open_status inconsistently: current public and
+    # directly applicable postings can return either true or false. The
+    # shared lifecycle fields below are consistent across verified tenants.
     is_open = (
         application_form.get("status") == "in_progress"
-        and application_form.get("open_status") is not False
         and application_form.get("expired") is not True
         and job.get("deleted") is not True
     )

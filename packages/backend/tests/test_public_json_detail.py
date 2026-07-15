@@ -148,7 +148,9 @@ def test_roundhr_public_site_discovers_and_parses_only_open_technical_jobs() -> 
                                 "main_task_content": None,
                                 "benefit_content": None,
                                 "hire_round_content": None,
-                                "open_status": True,
+                                # This tenant-specific field can be false on
+                                # a currently public, applicable detail.
+                                "open_status": False,
                                 "expired": False,
                                 "created_at": "2026-03-21T21:44:14+09:00",
                                 "end_at": None,

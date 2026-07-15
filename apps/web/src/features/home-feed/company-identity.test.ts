@@ -77,6 +77,11 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "VESSL AI",
+      "https://vessl.recruit.roundhr.com/c/YdJRvvtVN2",
+      "vessl-ai",
+    ],
+    [
       "리디",
       "https://ridi.recruit.roundhr.com/c/PeiuJj2agt",
       "ridi",
