@@ -9,6 +9,7 @@ from ejikfit.models import (
     Company,
     JobPosting,
     PolicyStatus,
+    PostingStatus,
     RawSnapshot,
     SourceStatus,
     SourceType,
@@ -1229,11 +1230,23 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="SK하이닉스",
         slug="sk-hynix",
-        base_url="https://talent.skhynix.com/hub/en/apply/job",
-        source_type=SourceType.HTML_LISTING_DETAIL,
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-hynix"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.skhynix.com",
         sector="enterprise_it",
-        connector_family="html_listing_detail",
+        connector_family="skcareers_hynix_tech",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10004",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=5,
@@ -1242,8 +1255,8 @@ INITIAL_SOURCE_CATALOG = (
         policy_risk=0,
         non_tech_noise=2,
         notes=(
-            "Official SK hynix Talent Hub jobs page; the current English-path "
-            "endpoint responds with the Korean-localized server-rendered listing."
+            "Official SK Careers JSON listing filtered to SK hynix with "
+            "corpCode=10004; non-technical roles are excluded."
         ),
         status=SourceStatus.ALLOWED,
     ),
@@ -1669,6 +1682,14 @@ SOURCE_URL_MIGRATIONS = {
     "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai": (
         "https://furiosa.ai/sitemap.xml",
     ),
+    "https://www.skcareers.com/Recruit/GetRecruitList#sk-hynix": (
+        "https://talent.skhynix.com/hub/en/apply/job",
+    ),
+}
+
+
+RETIRED_SOURCE_URLS = {
+    "https://talent.skhynix.com/hub/ko/apply/job",
 }
 
 
@@ -1764,6 +1785,21 @@ def seed_sources(session: Session) -> int:
             session.add(source)
             created += 1
         _apply_source_metadata(source, item)
+
+    retired_sources = session.scalars(
+        select(CareerSource).where(
+            CareerSource.base_url.in_(RETIRED_SOURCE_URLS)
+        )
+    ).all()
+    for source in retired_sources:
+        source.status = SourceStatus.STOPPED
+        source.policy_status = PolicyStatus.STOPPED
+        source.last_error_code = None
+        source.last_error_reason = None
+        for posting in session.scalars(
+            select(JobPosting).where(JobPosting.source_id == source.id)
+        ):
+            posting.status = PostingStatus.CLOSED
 
     session.commit()
     return created

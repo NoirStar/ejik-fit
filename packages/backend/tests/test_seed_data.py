@@ -8,6 +8,7 @@ from ejikfit.models import (
     Company,
     JobPosting,
     PolicyStatus,
+    PostingStatus,
     SourceStatus,
     SourceType,
 )
@@ -120,9 +121,7 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["sk-telecom"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["kt"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["kt"].status == SourceStatus.ALLOWED
-    assert catalog_by_slug["sk-hynix"].source_type == (
-        SourceType.HTML_LISTING_DETAIL
-    )
+    assert catalog_by_slug["sk-hynix"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["sk-hynix"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
         SourceType.HTML_LISTING_DETAIL
@@ -619,8 +618,21 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
 
         sk_hynix = sources_by_slug["sk-hynix"]
         assert sk_hynix.status == SourceStatus.ALLOWED
-        assert sk_hynix.connector_family == "html_listing_detail"
-        assert sk_hynix.base_url == "https://talent.skhynix.com/hub/en/apply/job"
+        assert sk_hynix.source_type == SourceType.ENTERPRISE_JSON
+        assert sk_hynix.connector_family == "skcareers_hynix_tech"
+        assert sk_hynix.base_url == (
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-hynix"
+        )
+        assert sk_hynix.request_method == "POST"
+        assert sk_hynix.request_body == {
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10004",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        }
 
         posco_dx = sources_by_slug["posco-dx"]
         assert posco_dx.status == SourceStatus.ALLOWED
@@ -790,6 +802,75 @@ def test_seeding_migrates_naver_to_complete_listing_without_losing_postings() ->
             "lang=ko&firstIndex=0&recordCountPerPage=500"
         )
         assert posting.source_id == legacy_source_id
+
+
+def test_seeding_migrates_hynix_and_retires_obsolete_duplicate() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="SK하이닉스", slug="sk-hynix")
+        legacy_source = CareerSource(
+            company=company,
+            base_url="https://talent.skhynix.com/hub/en/apply/job",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        obsolete_source = CareerSource(
+            company=company,
+            base_url="https://talent.skhynix.com/hub/ko/apply/job",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="fetch_error",
+            last_error_reason="legacy endpoint failed",
+        )
+        active_posting = JobPosting(
+            company=company,
+            source=legacy_source,
+            external_id="active-source-job",
+            url="https://www.skcareers.com/Recruit/Detail/R261500",
+            title="SK hynix Data Engineer",
+        )
+        obsolete_posting = JobPosting(
+            company=company,
+            source=obsolete_source,
+            external_id="obsolete-source-job",
+            url="https://www.skcareers.com/Recruit/Detail/R261400",
+            title="Old SK hynix Engineer",
+        )
+        session.add_all(
+            [legacy_source, obsolete_source, active_posting, obsolete_posting]
+        )
+        session.commit()
+        legacy_source_id = legacy_source.id
+
+        seed_data.seed_sources(session)
+
+        sources = session.scalars(
+            select(CareerSource)
+            .join(Company)
+            .where(Company.slug == "sk-hynix")
+        ).all()
+        migrated = next(
+            source
+            for source in sources
+            if source.base_url.endswith("GetRecruitList#sk-hynix")
+        )
+        retired = next(
+            source
+            for source in sources
+            if source.base_url.endswith("/hub/ko/apply/job")
+        )
+        assert migrated.id == legacy_source_id
+        assert migrated.source_type == SourceType.ENTERPRISE_JSON
+        assert active_posting.source_id == legacy_source_id
+        assert retired.status == SourceStatus.STOPPED
+        assert retired.policy_status == PolicyStatus.STOPPED
+        assert retired.last_error_code is None
+        assert retired.last_error_reason is None
+        assert obsolete_posting.status == PostingStatus.CLOSED
 
 
 def test_seeding_migrates_furiosa_to_ashby_without_losing_existing_postings() -> None:
