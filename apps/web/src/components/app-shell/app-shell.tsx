@@ -251,7 +251,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
-  const viewerLabel = viewer?.email.split("@")[0] || "게스트";
+  const viewerLabel = viewer?.email.split("@")[0] || "로그인";
 
   return (
     <div className={styles.shell}>
@@ -358,7 +358,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="button"
               >
                 <span className={styles.avatar}>
-                  <UserCircle aria-hidden="true" size={26} weight="fill" />
+                  {viewer ? (
+                    <UserCircle aria-hidden="true" size={26} weight="fill" />
+                  ) : (
+                    <SignIn aria-hidden="true" size={20} weight="bold" />
+                  )}
                 </span>
                 <span className={styles.userLabel}>{viewerLabel}</span>
                 <CaretDown aria-hidden="true" className={styles.userCaret} size={14} />
