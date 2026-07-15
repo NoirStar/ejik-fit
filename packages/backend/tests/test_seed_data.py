@@ -181,6 +181,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "pearl-abyss",
         "smilegate",
         "kakao-games",
+        "netmarble",
         "shiftup",
     }
     assert all(
@@ -239,6 +240,11 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+
+    netmarble = catalog_by_slug["netmarble"]
+    assert netmarble.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert netmarble.connector_family == "netmarble_public_api_tech"
+    assert netmarble.status == SourceStatus.ALLOWED
 
     shiftup = catalog_by_slug["shiftup"]
     assert shiftup.source_type == SourceType.HTML_LISTING_DETAIL

@@ -165,6 +165,11 @@ describe("companyIdentity", () => {
       "https://kakaomobility.career.greetinghr.com/ko/o/1",
       "kakao-mobility",
     ],
+    [
+      "넷마블",
+      "https://career.netmarble.com/announce/view?anno_id=1830",
+      "netmarble",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

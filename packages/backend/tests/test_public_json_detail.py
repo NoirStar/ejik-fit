@@ -2,6 +2,7 @@ import json
 
 from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
+    filter_public_detail_refs,
     parse_public_json_detail,
 )
 
@@ -106,6 +107,98 @@ def test_ably_official_page_discovers_and_parses_open_ninehire_tech_jobs() -> No
     assert opening.employment_type == "regular"
     assert opening.location == "서울특별시 서초구 강남대로 465"
     assert "Python, Kafka, Redis" in opening.description_text
+
+
+def test_netmarble_public_api_discovers_and_parses_technical_jobs() -> None:
+    listing = json.dumps(
+        {
+            "content": [
+                {
+                    "carAnnoId": 1830,
+                    "annoSubject": "AI 엔지니어(VLM /음성 에이전트) 모집",
+                    "carJobGroupCd": "05",
+                    "carJobGroupNm": "기술/AI",
+                    "carWorkGroupNm": "AI & Analytics",
+                    "isApply": True,
+                },
+                {
+                    "carAnnoId": 1825,
+                    "annoSubject": "프로젝트 캐릭터 원화 담당 모집",
+                    "carJobGroupCd": "03",
+                    "carJobGroupNm": "아트",
+                    "carWorkGroupNm": "캐릭터 원화",
+                    "isApply": True,
+                },
+                {
+                    "carAnnoId": 1811,
+                    "annoSubject": "클라이언트 프로그래머 모집",
+                    "carJobGroupCd": "01",
+                    "carJobGroupNm": "게임프로그래밍",
+                    "carWorkGroupNm": "클라이언트",
+                    "isApply": True,
+                },
+            ],
+            "page": {
+                "totalDataCnt": 3,
+                "totalPages": 1,
+                "requestPage": 1,
+                "requestSize": 1000,
+                "isLastPage": True,
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://career.netmarble.com/announce",
+        "netmarble_public_api_tech",
+    )
+    refs = filter_public_detail_refs(
+        all_refs,
+        "netmarble_public_api_tech",
+    )
+
+    assert [ref.external_id for ref in refs] == ["1830", "1811"]
+    assert refs[0].detail_url == (
+        "https://career.netmarble.com/api/v1/apply/announces/1830/view"
+    )
+    assert refs[0].public_url == (
+        "https://career.netmarble.com/announce/view?anno_id=1830"
+    )
+
+    detail = json.dumps(
+        {
+            "carAnnoId": 1830,
+            "annoSubject": "AI 엔지니어(VLM /음성 에이전트) 모집",
+            "annoContents": (
+                "<h3>지원자격</h3><p>Python, PyTorch, LLM 개발 경험</p>"
+                "<h3>근무장소</h3><p>- 서울시 구로구 디지털로 26길 38</p>"
+            ),
+            "staDate": "2026-05-30 00:00:00",
+            "endDate": "2026-12-31 23:59:59",
+            "entTypeCd": "01",
+            "reqTypeCd": "90006",
+            "isApply": True,
+            "isOpen": True,
+            "isEnd": False,
+            "isSecrete": False,
+        },
+        ensure_ascii=False,
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "netmarble_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.location == "서울시 구로구 디지털로 26길 38"
+    assert opening.opens_at is not None
+    assert opening.closes_at is not None
+    assert "Python, PyTorch, LLM" in opening.description_text
 
 
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:

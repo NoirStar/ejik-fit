@@ -15,6 +15,9 @@ from ejikfit.html_text import structured_plain_text
 
 
 KST = ZoneInfo("Asia/Seoul")
+NETMARBLE_LISTING_API = (
+    "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
+)
 
 
 @dataclass(frozen=True)
@@ -260,6 +263,59 @@ def _ably_refs(raw_html: str) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _netmarble_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
+    rows = payload.get("content")
+    page = payload.get("page")
+    if not isinstance(rows, list) or not isinstance(page, dict):
+        raise ValueError("Netmarble listing is missing its complete jobs page")
+
+    total = _positive_int(page.get("totalDataCnt"))
+    total_pages = _positive_int(page.get("totalPages"))
+    request_page = _positive_int(page.get("requestPage"))
+    request_size = _positive_int(page.get("requestSize"))
+    if (
+        total != len(rows)
+        or total_pages != 1
+        or request_page != 1
+        or request_size is None
+        or request_size < len(rows)
+        or page.get("isLastPage") is not True
+    ):
+        raise ValueError("Netmarble listing response is incomplete")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Netmarble listing contains an invalid job row")
+        if row.get("isApply") is False:
+            continue
+        raw_id = row.get("carAnnoId")
+        title = _text(row.get("annoSubject"))
+        if raw_id is None or isinstance(raw_id, bool) or title is None:
+            raise ValueError("Netmarble open job identity is missing")
+        external_id = str(raw_id)
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=(
+                    "https://career.netmarble.com/api/v1/apply/announces/"
+                    f"{external_id}/view"
+                ),
+                public_url=(
+                    "https://career.netmarble.com/announce/view?anno_id="
+                    f"{external_id}"
+                ),
+                title=title,
+                category=_text(row.get("carJobGroupCd")),
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -274,6 +330,8 @@ def discover_public_json_detail_refs(
         return _woowahan_refs(payload, listing_url)
     if connector_family == "kakaobank_public_api_tech":
         return _kakaobank_refs(payload, listing_url)
+    if connector_family == "netmarble_public_api_tech":
+        return _netmarble_refs(payload)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -281,6 +339,8 @@ def filter_public_detail_refs(
     refs: list[PublicJsonDetailRef],
     connector_family: str,
 ) -> list[PublicJsonDetailRef]:
+    if connector_family == "netmarble_public_api_tech":
+        return [ref for ref in refs if ref.category in {"01", "05"}]
     if not connector_family.endswith("_tech"):
         return refs
     return [
@@ -295,6 +355,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
     return connector_family in {
         "ably_next_ninehire_tech",
         "dunamu_server_html_tech",
+        "netmarble_public_api_tech",
     }
 
 
@@ -396,6 +457,67 @@ def _kakaobank_opening(
         location=None,
         opens_at=_parse_datetime(payload.get("receiveStartDatetime")),
         closes_at=closes_at,
+    )
+
+
+def _value_after_heading(text: str, heading: str) -> str | None:
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for index, line in enumerate(lines):
+        normalized = line.lstrip("# ").rstrip(":： ")
+        if normalized != heading:
+            continue
+        for value in lines[index + 1 :]:
+            stripped = value.lstrip("•*- ").strip()
+            if stripped:
+                return stripped
+    return None
+
+
+def _netmarble_opening(
+    payload: dict[str, Any],
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    raw_id = payload.get("carAnnoId")
+    external_id = None if raw_id is None or isinstance(raw_id, bool) else str(raw_id)
+    title = _text(payload.get("annoSubject"))
+    if external_id != ref.external_id or title != ref.title:
+        raise ValueError("Netmarble detail identity does not match its listing")
+
+    description_html = _text(payload.get("annoContents")) or ""
+    if not description_html:
+        raise ValueError("Netmarble job detail content is missing")
+    description_text = structured_plain_text(description_html)
+    is_open = (
+        payload.get("isApply") is not False
+        and payload.get("isOpen") is True
+        and payload.get("isEnd") is not True
+        and payload.get("isSecrete") is not True
+    )
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type={
+            "01": "regular",
+            "02": "contract",
+            "03": "intern",
+        }.get(_text(payload.get("entTypeCd")) or ""),
+        career_type={
+            "90005": "new_comer",
+            "90006": "experienced",
+            "90007": "mixed",
+        }.get(_text(payload.get("reqTypeCd")) or ""),
+        career_min=None,
+        career_max=None,
+        location=(
+            _value_after_heading(description_text, "근무장소")
+            or _value_after_heading(description_text, "근무지")
+        ),
+        opens_at=_parse_datetime(payload.get("staDate")),
+        closes_at=_parse_datetime(payload.get("endDate")),
     )
 
 
@@ -555,4 +677,6 @@ def parse_public_json_detail(
         return _woowahan_opening(payload, ref)
     if connector_family == "kakaobank_public_api_tech":
         return _kakaobank_opening(payload, ref)
+    if connector_family == "netmarble_public_api_tech":
+        return _netmarble_opening(payload, ref)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")

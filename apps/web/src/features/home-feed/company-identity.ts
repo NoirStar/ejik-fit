@@ -168,6 +168,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "두나무",
   },
   {
+    aliases: ["넷마블", "netmarble"],
+    hosts: ["career.netmarble.com"],
+    src: "/company-logo-assets/netmarble",
+    displayName: "넷마블",
+  },
+  {
     aliases: ["컬리", "kurly", "마켓컬리"],
     hosts: ["kurly.career.greetinghr.com"],
     src: "/company-logo-assets/kurly",

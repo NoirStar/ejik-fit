@@ -36,6 +36,7 @@ from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
+    NETMARBLE_LISTING_API,
     discover_public_json_detail_refs,
     filter_public_detail_refs,
     parse_public_json_detail,
@@ -444,6 +445,8 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "netmarble_public_api_tech":
+        return await fetcher.fetch(NETMARBLE_LISTING_API)
     if source.connector_family == "shiftup_public_api_tech":
         return await fetcher.fetch(
             SHIFTUP_LISTING_API,

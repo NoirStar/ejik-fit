@@ -1142,22 +1142,22 @@ INITIAL_SOURCE_CATALOG = (
         name="넷마블",
         slug="netmarble",
         base_url="https://career.netmarble.com/announce",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://company.netmarble.com",
         sector="game_content",
-        connector_family="browser_public_render",
+        connector_family="netmarble_public_api_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
-        tech_job_priority=4,
+        tech_job_priority=5,
         expected_job_volume=4,
-        connector_reuse_score=1,
+        connector_reuse_score=2,
         policy_risk=0,
-        non_tech_noise=3,
+        non_tech_noise=0,
         notes=(
-            "Official Netmarble careers announcement page; current server "
-            "HTML does not expose posting cards to the generic HTML parser."
+            "Official Netmarble careers public list and detail APIs; limited "
+            "to game programming and technology/AI job groups."
         ),
-        status=SourceStatus.NEEDS_BROWSER,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="크래프톤",
