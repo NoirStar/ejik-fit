@@ -7,6 +7,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
   "applied-intuition":
     "https://www.appliedintuition.com/icon1.png?icon1.488d774c.png",
+  "amazon-web-services-korea":
+    "https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico",
   banksalad:
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:

@@ -99,6 +99,8 @@ def _apply_source_opening_filters(
 ) -> list[ParsedOpening]:
     if not source.targets_technical_roles:
         return openings
+    if source.connector_family == "amazon_jobs_korea_tech":
+        return openings
     if source.connector_family in {
         "ashby_public_api_korea_tech",
         "lever_greenhouse_korea_tech",
@@ -466,6 +468,8 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "amazon_jobs_korea_tech":
+        return await _fetch_all_amazon_jobs_pages(source.base_url, fetcher)
     if source.connector_family == "workable_public_api_tech":
         bootstrap = await fetcher.fetch(source.base_url)
         account = workable_account_slug(bootstrap.text, source.base_url)
@@ -633,6 +637,74 @@ def _page_url(url: str, page: int) -> str:
     query = parse_qs(parsed.query, keep_blank_values=True)
     query["page"] = [str(page)]
     return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+def _offset_url(url: str, offset: int) -> str:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    query["offset"] = [str(offset)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+async def _fetch_all_amazon_jobs_pages(
+    url: str,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    first = await fetcher.fetch(url)
+    payload = json.loads(first.text)
+    jobs = payload.get("jobs") if isinstance(payload, dict) else None
+    hits = payload.get("hits") if isinstance(payload, dict) else None
+    if not isinstance(jobs, list) or not isinstance(hits, int):
+        return first
+    if hits <= len(jobs):
+        return first
+    if not jobs:
+        raise ValueError("Amazon Jobs reports results but returned an empty page")
+
+    combined_jobs = list(jobs)
+    seen_ids = {
+        str(job.get("id_icims") or job.get("id"))
+        for job in jobs
+        if isinstance(job, dict) and (job.get("id_icims") or job.get("id"))
+    }
+    offset = len(jobs)
+    for _ in range(49):
+        page = await fetcher.fetch(_offset_url(url, offset))
+        page_payload = json.loads(page.text)
+        page_jobs = (
+            page_payload.get("jobs") if isinstance(page_payload, dict) else None
+        )
+        page_hits = (
+            page_payload.get("hits") if isinstance(page_payload, dict) else None
+        )
+        if not isinstance(page_jobs, list) or page_hits != hits:
+            raise ValueError("Amazon Jobs listing changed while paging")
+        if not page_jobs:
+            raise ValueError("Amazon Jobs listing ended before all jobs were fetched")
+
+        for job in page_jobs:
+            if not isinstance(job, dict):
+                raise ValueError("Amazon Jobs page contains an invalid job object")
+            job_id = job.get("id_icims") or job.get("id")
+            if job_id is None or str(job_id) in seen_ids:
+                raise ValueError("Amazon Jobs listing repeated or omitted a job id")
+            seen_ids.add(str(job_id))
+            combined_jobs.append(job)
+        offset += len(page_jobs)
+        if len(combined_jobs) >= hits:
+            break
+    else:
+        raise ValueError("Amazon Jobs listing exceeded the page limit")
+
+    if len(combined_jobs) != hits:
+        raise ValueError("Amazon Jobs listing response is incomplete")
+    payload["jobs"] = combined_jobs
+    return FetchedPage(
+        url=first.url,
+        text=json.dumps(payload, ensure_ascii=False),
+        status_code=first.status_code,
+        headers=first.headers,
+    )
 
 
 async def _fetch_all_lge_pages(

@@ -510,6 +510,30 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Amazon Web Services Korea",
+        slug="amazon-web-services-korea",
+        base_url=(
+            "https://www.amazon.jobs/en/search.json?"
+            "country=KOR&result_limit=100&offset=0"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url=(
+            "https://www.amazon.jobs/content/en/locations/"
+            "asia-pacific/south-korea"
+        ),
+        sector="cloud_infrastructure",
+        connector_family="amazon_jobs_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=58,
+        connector_reuse_score=4,
+        non_tech_noise=7,
+        notes=(
+            "Official Amazon Jobs Korea search API; all pages are merged and "
+            "only roles in Amazon's technical job categories are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

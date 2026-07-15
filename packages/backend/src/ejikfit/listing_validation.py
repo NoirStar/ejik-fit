@@ -82,6 +82,7 @@ TOTAL_KEYS = {
     "totaljobcount",
     "totalelements",
     "totalsize",
+    "hits",
 }
 PAGE_SIZE_KEYS = {
     "limit",
@@ -91,6 +92,7 @@ PAGE_SIZE_KEYS = {
     "rowcount",
     "rowno",
     "size",
+    "result_limit",
 }
 PAGE_KEYS = {
     "currentpage",

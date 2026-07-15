@@ -55,6 +55,68 @@ def test_parse_enterprise_json_openings_maps_public_job_objects() -> None:
     assert opening.closes_at is not None
 
 
+def test_parse_enterprise_json_openings_maps_amazon_korea_technical_jobs() -> None:
+    payload = {
+        "hits": 3,
+        "jobs": [
+            {
+                "id": "internal-1",
+                "id_icims": "10475013",
+                "title": "Senior Delivery Consultant, Security",
+                "job_path": "/en/jobs/10475013/security-consultant",
+                "job_category": "Solutions Architect",
+                "job_family": "Professional Services",
+                "company_name": "Amazon Web Services Korea LLC",
+                "country_code": "KOR",
+                "location": "KR, Seoul",
+                "job_schedule_type": "full-time",
+                "posted_date": "July 15, 2026",
+                "description": "Design secure AWS cloud architectures.",
+                "basic_qualifications": "Experience with Docker.",
+                "preferred_qualifications": "Kubernetes and Python.",
+            },
+            {
+                "id_icims": "10459617",
+                "title": "Selling Partner Support Associate",
+                "job_path": "/en/jobs/10459617/support-associate",
+                "job_category": "Customer Service",
+                "country_code": "KOR",
+                "location": "KR, Virtual",
+            },
+            {
+                "id_icims": "10474982",
+                "title": "Sr. Account Manager, FSI",
+                "job_path": "/en/jobs/10474982/account-manager",
+                "job_category": "Sales, Advertising, & Account Management",
+                "country_code": "KOR",
+                "location": "KR, Seoul",
+            },
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload),
+        "https://www.amazon.jobs/en/search.json?country=KOR&result_limit=100&offset=0",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "10475013"
+    assert opening.url == (
+        "https://www.amazon.jobs/en/jobs/10475013/security-consultant"
+    )
+    assert opening.title == "Senior Delivery Consultant, Security"
+    assert opening.employment_type == "full-time"
+    assert opening.location == "KR, Seoul"
+    assert opening.opens_at is not None
+    assert opening.opens_at.isoformat() == "2026-07-15T00:00:00+09:00"
+    assert opening.description_text == (
+        "Design secure AWS cloud architectures. Experience with Docker. "
+        "Kubernetes and Python. Solutions Architect Professional Services "
+        "Amazon Web Services Korea LLC"
+    )
+
+
 def test_parse_enterprise_json_openings_maps_lg_electronics_jobs_api() -> None:
     payload = {
         "successOrNot": "Y",

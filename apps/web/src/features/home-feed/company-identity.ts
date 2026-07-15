@@ -492,6 +492,17 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "CLO Virtual Fashion",
   },
   {
+    aliases: [
+      "Amazon Web Services Korea",
+      "Amazon Web Services Korea LLC",
+      "AWS Korea",
+      "아마존웹서비스 코리아",
+    ],
+    hosts: ["amazon.jobs"],
+    src: "/company-logo-assets/amazon-web-services-korea",
+    displayName: "Amazon Web Services Korea",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",

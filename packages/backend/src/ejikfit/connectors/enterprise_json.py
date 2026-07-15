@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from html import unescape
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from ejikfit.connectors.next_data import parse_static_payload_openings
 from ejikfit.connectors.types import ParsedOpening
@@ -24,6 +24,18 @@ TOSS_TECH_CATEGORIES = {
     "R&D",
     "Security Engineering",
     "Technical Excellence",
+}
+
+AMAZON_TECH_JOB_CATEGORIES = {
+    "Applied Science",
+    "Data Science",
+    "Hardware Development",
+    "Machine Learning Science",
+    "Operations, IT, & Support Engineering",
+    "Project/Program/Product Management--Technical",
+    "Software Development",
+    "Solutions Architect",
+    "Systems, Quality, & Security Engineering",
 }
 
 
@@ -565,6 +577,69 @@ def _toss_job_groups_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _amazon_jobs_payload(
+    data: dict[str, Any],
+    listing_url: str,
+) -> dict[str, Any] | None:
+    parsed_url = urlparse(listing_url)
+    if (
+        parsed_url.hostname != "www.amazon.jobs"
+        or parsed_url.path.rstrip("/") != "/en/search.json"
+    ):
+        return None
+
+    raw_jobs = data.get("jobs")
+    if not isinstance(raw_jobs, list):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in raw_jobs:
+        if not isinstance(item, dict):
+            continue
+        if item.get("country_code") != "KOR":
+            continue
+        category = item.get("job_category")
+        if category not in AMAZON_TECH_JOB_CATEGORIES:
+            continue
+
+        posting_id = item.get("id_icims") or item.get("id")
+        title = item.get("title")
+        job_path = item.get("job_path")
+        if (
+            posting_id is None
+            or not isinstance(title, str)
+            or not isinstance(job_path, str)
+        ):
+            continue
+
+        description = " ".join(
+            value
+            for key in (
+                "description",
+                "basic_qualifications",
+                "preferred_qualifications",
+            )
+            if isinstance((value := item.get(key)), str) and value.strip()
+        )
+        jobs.append(
+            {
+                "id": str(posting_id),
+                "title": unescape(title),
+                "jobDetailUrl": job_path,
+                "description": description,
+                "employmentType": item.get("job_schedule_type"),
+                "location": item.get("location"),
+                "datePosted": _sk_date(item.get("posted_date")),
+                "jobCategory": category,
+                "department": item.get("job_family"),
+                "companyName": item.get("company_name"),
+                "active": True,
+                "live": True,
+            }
+        )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -575,6 +650,9 @@ def parse_enterprise_json_openings(
         if cj_payload is not None:
             return parse_static_payload_openings(cj_payload, listing_url)
     if isinstance(data, dict):
+        amazon_payload = _amazon_jobs_payload(data, listing_url)
+        if amazon_payload is not None:
+            return parse_static_payload_openings(amazon_payload, listing_url)
         toss_payload = _toss_job_groups_payload(data)
         if toss_payload is not None:
             return parse_static_payload_openings(toss_payload, listing_url)

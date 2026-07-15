@@ -425,6 +425,38 @@ class PaginatedLgeFetcher:
         )
 
 
+class PaginatedAmazonFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        offset = 100 if "offset=100" in url else 0
+        jobs = [
+            {
+                "id_icims": str(index),
+                "title": f"Solutions Architect {index}",
+                "job_path": f"/en/jobs/{index}/solutions-architect-{index}",
+                "job_category": "Solutions Architect",
+                "country_code": "KOR",
+            }
+            for index in range(offset, min(offset + 100, 103))
+        ]
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps({"hits": 103, "jobs": jobs}),
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -617,6 +649,48 @@ def test_fetch_listing_page_collects_every_lg_electronics_page() -> None:
         page.text,
         page.url,
     )
+    assert validate_listing_response(
+        source.source_type,
+        page.text,
+        page.url,
+        openings_count=len(openings),
+    )
+
+
+def test_fetch_listing_page_collects_every_amazon_korea_page() -> None:
+    source = CareerSource(
+        company=Company(
+            name="Amazon Web Services Korea",
+            slug="amazon-web-services-korea",
+        ),
+        base_url=(
+            "https://www.amazon.jobs/en/search.json?"
+            "country=KOR&result_limit=100&offset=0"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="amazon_jobs_korea_tech",
+    )
+    fetcher = PaginatedAmazonFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert fetcher.urls == [
+        source.base_url,
+        (
+            "https://www.amazon.jobs/en/search.json?"
+            "country=KOR&result_limit=100&offset=100"
+        ),
+    ]
+    assert payload["hits"] == 103
+    assert len(payload["jobs"]) == 103
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+        source.connector_family,
+    )
+    assert len(openings) == 103
     assert validate_listing_response(
         source.source_type,
         page.text,
@@ -948,6 +1022,25 @@ def test_page_only_listing_is_partial_and_query_keys_are_case_insensitive() -> N
         ),
         "https://example.com/jobs",
         openings_count=1,
+    )
+
+
+def test_amazon_hits_and_result_limit_expose_partial_listing() -> None:
+    payload = json.dumps(
+        {
+            "hits": 103,
+            "jobs": [{"id_icims": str(index)} for index in range(100)],
+        }
+    )
+
+    assert not validate_listing_response(
+        SourceType.ENTERPRISE_JSON,
+        payload,
+        (
+            "https://www.amazon.jobs/en/search.json?"
+            "country=KOR&result_limit=100&offset=0"
+        ),
+        openings_count=100,
     )
 
 

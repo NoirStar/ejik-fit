@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 101
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 102
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 101
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 102
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -343,6 +343,15 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert dot.source_type == SourceType.LEVER_GREENHOUSE
     assert dot.connector_family == "ashby_public_api_korea_tech"
     assert dot.status == SourceStatus.ALLOWED
+
+    amazon = catalog_by_slug["amazon-web-services-korea"]
+    assert amazon.base_url == (
+        "https://www.amazon.jobs/en/search.json?"
+        "country=KOR&result_limit=100&offset=0"
+    )
+    assert amazon.source_type == SourceType.ENTERPRISE_JSON
+    assert amazon.connector_family == "amazon_jobs_korea_tech"
+    assert amazon.status == SourceStatus.ALLOWED
 
     for slug, source_type, connector_family in (
         (

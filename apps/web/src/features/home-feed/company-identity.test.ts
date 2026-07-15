@@ -428,6 +428,11 @@ describe("companyIdentity", () => {
     ],
     ["위메이드", "https://recruit.wemade.com/", "wemade"],
     [
+      "Amazon Web Services Korea",
+      "https://www.amazon.jobs/en/search.json?country=KOR",
+      "amazon-web-services-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",
