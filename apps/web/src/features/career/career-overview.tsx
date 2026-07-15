@@ -518,7 +518,7 @@ export function CareerOverview({
         <div className={styles.introMeta}>
           <span className={styles.privacyBadge}>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            이 브라우저에만 저장
+            브라우저 저장 · 로그인 시 동기화
           </span>
           <Link className={styles.savedLibraryLink} href="/career/saved">
             <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
@@ -545,7 +545,7 @@ export function CareerOverview({
           </header>
 
           <p className={styles.localNote}>
-            로그인이나 서버 저장 없이 이 브라우저에서만 관리합니다.
+            로그인 전에는 이 브라우저에서 관리하고, 로그인하면 계정과 동기화합니다.
           </p>
 
           <form className={styles.skillForm} onSubmit={handleSubmit}>

@@ -13,6 +13,25 @@ not used as 이직핏 branding, endorsements, or promotional marks.
 | `next-securities.png` | 넥스트증권 | [official career page](https://nextsecurities.career.greetinghr.com/ko/o/172330), [header asset](https://opening-attachments.greetinghr.com/2025-12-03/5a7b31d2-9f1e-4e4a-8499-2ce18f8d1754/Logo_NextS_Primary_Black.png) | 2026-07-14 | Public header logo, stored without image modification. |
 | `onuii.png` | 오누이 | [official career page](https://onuii.career.greetinghr.com/ko/o/190063), [header asset](https://opening-attachments.greetinghr.com/2024-01-09/102c5888-157f-4813-a8b9-5fd81d2b6e7b/__.png) | 2026-07-14 | Public header logo, stored without image modification. |
 
+## Cached official career-page logos
+
+The following logos are read only through the allow-listed
+`/company-logo-assets/[logoKey]` server route. The response is restricted to
+raster image content, capped at 2 MB, cached by the deployment CDN, and falls
+back to company initials when the official asset is unavailable.
+
+| Key | Company | Official career page | Header asset | Verified |
+| --- | --- | --- | --- | --- |
+| `makinarocks` | 마키나락스 | <https://makinarocks.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf> | 2026-07-15 |
+| `rebellions` | 리벨리온 | <https://rebellions.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff> | 2026-07-15 |
+| `korbit` | 코빗 | <https://korbit.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069> | 2026-07-15 |
+| `lambda256` | 람다256 | <https://lambda256.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c> | 2026-07-15 |
+| `upstage` | 업스테이지 | <https://careers.upstage.ai/ko> | <https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219> | 2026-07-15 |
+| `nota-ai` | 노타AI | <https://career.nota.ai/ko> | <https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8> | 2026-07-15 |
+| `portone` | 포트원 | <https://portone.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976> | 2026-07-15 |
+| `carat-ai` | 캐럿AI | <https://carat.career.greetinghr.com/ko> | <https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png> | 2026-07-15 |
+| `wrtn` | 뤼튼테크놀로지스 | <https://wrtn.career.greetinghr.com/ko> | <https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png> | 2026-07-15 |
+
 ## Assets intentionally not stored
 
 - Kakao: the [official Kakao CI page](https://www.kakaocorp.com/page/detail/11340)

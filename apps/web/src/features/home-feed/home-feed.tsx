@@ -742,7 +742,9 @@ export function HomeFeed({
                 기술을 고르면 관련 공식 공고의 요구 조건과 비교할 수 있습니다.
               </p>
             )}
-            <p className={styles.railHint}>선택한 기술은 이 브라우저에만 저장됩니다.</p>
+            <p className={styles.railHint}>
+              로그인 전에는 이 브라우저에 저장되고, 로그인하면 계정과 동기화됩니다.
+            </p>
             <Link className={styles.textLink} href="/career">
               설정 방식 보기 <ArrowRight aria-hidden="true" size={14} />
             </Link>

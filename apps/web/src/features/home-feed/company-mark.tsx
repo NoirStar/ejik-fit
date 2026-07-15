@@ -26,6 +26,7 @@ export function CompanyMark({
       aria-hidden="true"
       className={styles.mark}
       data-kind={showLogo ? "logo" : "initials"}
+      data-surface={showLogo ? identity.surface : undefined}
       style={{ height: size, width: size }}
       title={identity.alt}
     >

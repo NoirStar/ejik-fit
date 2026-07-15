@@ -122,7 +122,7 @@ export function OwnedSkillsSheet({
         </header>
 
         <p className={styles.privacyNote}>
-          로그인 없이 사용하며, 선택한 기술은 이 브라우저에만 저장됩니다.
+          로그인 전에는 이 브라우저에 저장되며, 로그인하면 계정과 동기화됩니다.
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>

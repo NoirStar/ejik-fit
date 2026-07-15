@@ -75,6 +75,24 @@ describe("companyIdentity", () => {
     });
   });
 
+  it.each([
+    ["마키나락스", "https://makinarocks.career.greetinghr.com/ko/o/1", "makinarocks"],
+    ["리벨리온", "https://rebellions.career.greetinghr.com/ko/o/1", "rebellions"],
+    ["코빗", "https://korbit.career.greetinghr.com/ko/o/1", "korbit"],
+    ["람다256", "https://lambda256.career.greetinghr.com/ko/o/1", "lambda256"],
+    ["업스테이지", "https://careers.upstage.ai/ko/o/1", "upstage"],
+    ["노타AI", "https://career.nota.ai/ko/o/1", "nota-ai"],
+    ["포트원", "https://portone.career.greetinghr.com/ko/o/1", "portone"],
+    ["캐럿AI", "https://carat.career.greetinghr.com/ko/o/1", "carat-ai"],
+    ["뤼튼테크놀로지스", "https://wrtn.career.greetinghr.com/ko/o/1", "wrtn"],
+  ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
+    expect(companyIdentity(name, source)).toMatchObject({
+      kind: "logo",
+      src: `/company-logo-assets/${key}`,
+      alt: `${name} 로고`,
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity(

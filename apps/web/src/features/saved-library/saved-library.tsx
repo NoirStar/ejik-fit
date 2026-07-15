@@ -161,7 +161,7 @@ function SavedJobCard({
           </select>
         </label>
         <small id={removalNoteId}>
-          이 브라우저에만 저장
+          브라우저 저장 · 로그인 시 동기화
           {applicationStage ? " · 저장 해제 시 단계도 삭제" : ""}
         </small>
       </div>

@@ -1,6 +1,7 @@
 export type CompanyIdentity = {
   kind: "logo" | "initials";
   src?: string;
+  surface?: "dark";
   alt: string;
   initials: string;
 };
@@ -10,6 +11,7 @@ type VerifiedLogo = {
   hosts: string[];
   src: string;
   displayName: string;
+  surface?: "dark";
 };
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
@@ -54,6 +56,61 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     hosts: ["onuii.career.greetinghr.com"],
     src: "/company-logos/onuii.png",
     displayName: "오누이",
+  },
+  {
+    aliases: ["마키나락스", "makinarocks"],
+    hosts: ["makinarocks.career.greetinghr.com"],
+    src: "/company-logo-assets/makinarocks",
+    displayName: "마키나락스",
+  },
+  {
+    aliases: ["리벨리온", "rebellions"],
+    hosts: ["rebellions.career.greetinghr.com"],
+    src: "/company-logo-assets/rebellions",
+    displayName: "리벨리온",
+  },
+  {
+    aliases: ["코빗", "korbit"],
+    hosts: ["korbit.career.greetinghr.com"],
+    src: "/company-logo-assets/korbit",
+    displayName: "코빗",
+  },
+  {
+    aliases: ["람다256", "lambda256", "lambda 256"],
+    hosts: ["lambda256.career.greetinghr.com"],
+    src: "/company-logo-assets/lambda256",
+    displayName: "람다256",
+  },
+  {
+    aliases: ["업스테이지", "upstage"],
+    hosts: ["careers.upstage.ai"],
+    src: "/company-logo-assets/upstage",
+    displayName: "업스테이지",
+  },
+  {
+    aliases: ["노타ai", "nota ai", "nota"],
+    hosts: ["career.nota.ai"],
+    src: "/company-logo-assets/nota-ai",
+    displayName: "노타AI",
+  },
+  {
+    aliases: ["포트원", "portone", "port one"],
+    hosts: ["portone.career.greetinghr.com"],
+    src: "/company-logo-assets/portone",
+    displayName: "포트원",
+  },
+  {
+    aliases: ["캐럿ai", "carat ai", "carat"],
+    hosts: ["carat.career.greetinghr.com"],
+    src: "/company-logo-assets/carat-ai",
+    displayName: "캐럿AI",
+  },
+  {
+    aliases: ["뤼튼테크놀로지스", "뤼튼", "wrtn"],
+    hosts: ["wrtn.career.greetinghr.com"],
+    src: "/company-logo-assets/wrtn",
+    displayName: "뤼튼테크놀로지스",
+    surface: "dark",
   },
 ];
 
@@ -106,6 +163,7 @@ export function companyIdentity(
       src: verified.src,
       alt: `${verified.displayName} 로고`,
       initials,
+      ...(verified.surface ? { surface: verified.surface } : {}),
     };
   }
 

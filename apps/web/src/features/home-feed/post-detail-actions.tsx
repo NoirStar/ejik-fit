@@ -212,7 +212,7 @@ export function PostDetailActions({
             <div>
               <span>{draft.length}/{MAX_LOCAL_COMMENT_LENGTH}</span>
               <small id="post-comment-storage-note">
-                로그인 연동 전까지 이 브라우저에만 저장됩니다.
+                커뮤니티 댓글은 로그인 후에도 이 브라우저에만 저장됩니다.
               </small>
             </div>
             <button type="submit">

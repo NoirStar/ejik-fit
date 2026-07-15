@@ -17,3 +17,8 @@
   height: 76%;
   object-fit: contain;
 }
+
+.mark[data-surface="dark"] {
+  border-color: #20232b;
+  background: #111318;
+}
