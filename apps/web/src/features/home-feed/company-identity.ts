@@ -16,6 +16,31 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["휴톰", "hutom"],
+    hosts: ["hutom.recruit.roundhr.com"],
+    src: "/company-logo-assets/hutom",
+    displayName: "휴톰",
+  },
+  {
+    aliases: ["snj lab", "snjlab", "에스엔제이랩"],
+    hosts: ["snjlab.recruit.roundhr.com"],
+    src: "/company-logo-assets/snj-lab",
+    displayName: "SNJ LAB",
+  },
+  {
+    aliases: ["인딥에이아이", "indeepai", "indeep ai", "인딥 ai"],
+    hosts: ["indeepai.recruit.roundhr.com"],
+    src: "/company-logo-assets/indeep-ai",
+    displayName: "인딥에이아이",
+  },
+  {
+    aliases: ["기어세컨드", "gear2", "gear 2"],
+    hosts: ["gear2.recruit.roundhr.com"],
+    src: "/company-logo-assets/gear2",
+    displayName: "기어세컨드",
+    surface: "dark",
+  },
+  {
     aliases: ["vessl ai", "vessl", "베슬 ai", "베슬에이아이"],
     hosts: ["vessl.recruit.roundhr.com"],
     src: "/company-logo-assets/vessl-ai",

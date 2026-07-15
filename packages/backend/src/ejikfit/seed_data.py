@@ -210,6 +210,78 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="휴톰",
+        slug="hutom",
+        base_url="https://hutom.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://hutom.io",
+        sector="medical_ai",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=4,
+        non_tech_noise=3,
+        notes=(
+            "Official public Hutom RoundHR careers listing and detail pages; "
+            "only open engineering roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="SNJ LAB",
+        slug="snj-lab",
+        base_url="https://snjlab.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://snjlab.com",
+        sector="quant_fintech",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=3,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=4,
+        non_tech_noise=2,
+        notes=(
+            "Official public SNJ LAB RoundHR careers listing and detail "
+            "pages; only open engineering roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="인딥에이아이",
+        slug="indeep-ai",
+        base_url="https://indeepai.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://indeepai.co.kr",
+        sector="hr_ai",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=3,
+        tech_job_priority=5,
+        expected_job_volume=3,
+        connector_reuse_score=4,
+        non_tech_noise=2,
+        notes=(
+            "Official public InDeepAI RoundHR careers listing and detail "
+            "pages; only open engineering roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="기어세컨드",
+        slug="gear2",
+        base_url="https://gear2.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://gear2.net",
+        sector="game_content",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=5,
+        connector_reuse_score=4,
+        non_tech_noise=4,
+        notes=(
+            "Official public GEAR2 RoundHR careers listing and detail pages; "
+            "only open software and data roles are ingested."
+        ),
+    ),
+    SeedSource(
         name="뱅크샐러드",
         slug="banksalad",
         base_url=(

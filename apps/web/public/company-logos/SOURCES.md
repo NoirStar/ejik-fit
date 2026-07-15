@@ -23,6 +23,10 @@ back to company initials when the official asset is unavailable.
 
 | Key | Company | Official career page | Header asset | Verified |
 | --- | --- | --- | --- | --- |
+| `hutom` | 휴톰 | <https://hutom.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png> | 2026-07-15 |
+| `snj-lab` | SNJ LAB | <https://snjlab.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png> | 2026-07-15 |
+| `indeep-ai` | 인딥에이아이 | <https://indeepai.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/28244/temp/1761270163295/%EB%AF%B8%EB%8B%88%EB%A1%9C%EA%B3%A0.png> | 2026-07-15 |
+| `gear2` | 기어세컨드 | <https://gear2.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/site/favicon/1928/1719299110201/%EB%A1%9C%EA%B3%A0.PNG> | 2026-07-15 |
 | `vessl-ai` | VESSL AI | <https://vessl.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/site/favicon/1146/1724160614927/color.png> | 2026-07-15 |
 | `ridi` | 리디 | <https://ridi.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png> | 2026-07-15 |
 | `banksalad` | 뱅크샐러드 | <https://corp.banksalad.com/jobs/> | <https://corp.banksalad.com/icons/icon-512x512.png> | 2026-07-15 |

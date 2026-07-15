@@ -77,6 +77,26 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "휴톰",
+      "https://hutom.recruit.roundhr.com/c/mZU9T1qDi2",
+      "hutom",
+    ],
+    [
+      "SNJ LAB",
+      "https://snjlab.recruit.roundhr.com/c/UUmDpy9KdE",
+      "snj-lab",
+    ],
+    [
+      "인딥에이아이",
+      "https://indeepai.recruit.roundhr.com/c/8bQzRdU4FR",
+      "indeep-ai",
+    ],
+    [
+      "기어세컨드",
+      "https://gear2.recruit.roundhr.com/c/Vvx2XVYMfq",
+      "gear2",
+    ],
+    [
       "VESSL AI",
       "https://vessl.recruit.roundhr.com/c/YdJRvvtVN2",
       "vessl-ai",

@@ -30,10 +30,14 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "furiosa-ai":
     "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
+  hutom:
+    "https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png",
   "hyundai-motor":
     "https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png",
   gccompany:
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
+  gear2:
+    "https://assets.roundhr.com/upload/site/favicon/1928/1719299110201/%EB%A1%9C%EA%B3%A0.PNG",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
   "kakao-mobility":
@@ -64,6 +68,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
+  "indeep-ai":
+    "https://assets.roundhr.com/upload/user/organization/28244/temp/1761270163295/%EB%AF%B8%EB%8B%88%EB%A1%9C%EA%B3%A0.png",
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   rebellions:
@@ -76,6 +82,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   smilegate:
     "https://careers.smilegate.com/assets/web/img/common/favicon.ico",
+  "snj-lab":
+    "https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",

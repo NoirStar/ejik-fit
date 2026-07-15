@@ -165,7 +165,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 79
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 83
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -285,7 +285,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 79
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 83
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -333,6 +333,18 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert vessl.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert vessl.connector_family == "roundhr_public_api_tech"
     assert vessl.status == SourceStatus.ALLOWED
+
+    for slug, url in {
+        "hutom": "https://hutom.recruit.roundhr.com/",
+        "snj-lab": "https://snjlab.recruit.roundhr.com/",
+        "indeep-ai": "https://indeepai.recruit.roundhr.com/",
+        "gear2": "https://gear2.recruit.roundhr.com/",
+    }.items():
+        source = catalog_by_slug[slug]
+        assert source.base_url == url
+        assert source.source_type == SourceType.PUBLIC_JSON_DETAIL
+        assert source.connector_family == "roundhr_public_api_tech"
+        assert source.status == SourceStatus.ALLOWED
 
     assert catalog_by_slug["toss"].base_url == (
         "https://api-public.toss.im/api/v3/ipd-eggnog/career/job-groups"

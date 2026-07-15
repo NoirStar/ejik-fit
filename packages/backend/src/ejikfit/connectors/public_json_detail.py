@@ -1359,6 +1359,7 @@ def _roundhr_opening(
         "entry_level": "new_comer",
         "mixed": "mixed",
         "not_matter": "not_matter",
+        "not_required": "not_matter",
     }.get(_text(application_form.get("career_kind")) or "")
     raw_employment_type = _text(application_form.get("employment_type"))
     employment_type = {
