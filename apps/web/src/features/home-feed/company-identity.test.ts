@@ -463,6 +463,16 @@ describe("companyIdentity", () => {
       "backpackr",
     ],
     [
+      "Apple Korea",
+      "https://jobs.apple.com/en-us/details/200670285-3631/example",
+      "apple-korea",
+    ],
+    [
+      "Microsoft Korea",
+      "https://apply.careers.microsoft.com/careers/job/1970393556871047",
+      "microsoft-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

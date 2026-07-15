@@ -18,6 +18,11 @@ from tenacity import (
     wait_exponential,
 )
 
+from ejikfit.connectors.apple import (
+    parse_apple_detail_opening,
+    parse_apple_listing_openings,
+    parse_apple_search_page,
+)
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.browser_public import parse_browser_public_render_openings
 from ejikfit.connectors.channel import parse_channel_openings
@@ -33,6 +38,13 @@ from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
 from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
+from ejikfit.connectors.microsoft import (
+    is_microsoft_technical_role,
+    microsoft_detail_api_url,
+    parse_microsoft_detail_opening,
+    parse_microsoft_listing_openings,
+    parse_microsoft_search_page,
+)
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
@@ -122,6 +134,15 @@ def _apply_source_opening_filters(
             opening
             for opening in openings
             if is_korea_technical_role(opening.title, opening.location)
+        ]
+    if source.connector_family == "microsoft_pcsx_korea_tech":
+        return [
+            opening
+            for opening in openings
+            if is_microsoft_technical_role(
+                opening.title,
+                opening.description_text,
+            )
         ]
     return [
         opening
@@ -430,6 +451,10 @@ def _parse_listing_openings(
             return parse_channel_openings(text, url)
         return parse_static_next_data_openings(text, url)
     if source_type == SourceType.ENTERPRISE_JSON:
+        if connector_family == "apple_jobs_korea_tech":
+            return parse_apple_listing_openings(text, url)
+        if connector_family == "microsoft_pcsx_korea_tech":
+            return parse_microsoft_listing_openings(text, url)
         return parse_enterprise_json_openings(text, url)
     if source_type == SourceType.LEVER_GREENHOUSE:
         return parse_lever_greenhouse_openings(text, url)
@@ -482,6 +507,10 @@ async def _fetch_listing_page(
 ) -> FetchedPage:
     if source.connector_family == "amazon_jobs_korea_tech":
         return await _fetch_all_amazon_jobs_pages(source.base_url, fetcher)
+    if source.connector_family == "apple_jobs_korea_tech":
+        return await _fetch_all_apple_jobs_pages(source.base_url, fetcher)
+    if source.connector_family == "microsoft_pcsx_korea_tech":
+        return await _fetch_all_microsoft_careers_pages(source.base_url, fetcher)
     if (
         source.source_type == SourceType.WORKDAY
         and (source.request_method or "GET").upper() == "POST"
@@ -735,6 +764,144 @@ def _workday_job_key(job: dict[str, Any]) -> str | None:
             if isinstance(value, str) and value:
                 return value
     return None
+
+
+def _apple_job_key(job: dict[str, Any]) -> str | None:
+    for field in ("id", "reqId", "positionId"):
+        value = job.get(field)
+        if isinstance(value, (str, int)) and not isinstance(value, bool):
+            normalized = str(value).strip()
+            if normalized:
+                return normalized
+    return None
+
+
+def _apple_search_page_url(url: str, page: int) -> str:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    query["page"] = [str(page)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+async def _fetch_all_apple_jobs_pages(
+    url: str,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    first = await fetcher.fetch(url)
+    jobs, total = parse_apple_search_page(first.text)
+    if len(jobs) > total:
+        raise ValueError("Apple Jobs returned more jobs than its total")
+    if total > 0 and not jobs:
+        raise ValueError("Apple Jobs reports results but returned an empty page")
+
+    combined_jobs = list(jobs)
+    seen_keys: set[str] = set()
+    for job in jobs:
+        if (key := _apple_job_key(job)) is None or key in seen_keys:
+            raise ValueError("Apple Jobs page repeated or omitted a job id")
+        seen_keys.add(key)
+
+    if total > len(combined_jobs):
+        page_size = len(jobs)
+        page_count = (total + page_size - 1) // page_size
+        if page_count > 50:
+            raise ValueError("Apple Jobs listing exceeded the page limit")
+
+        for page_number in range(2, page_count + 1):
+            page = await fetcher.fetch(_apple_search_page_url(url, page_number))
+            page_jobs, page_total = parse_apple_search_page(page.text)
+            if page_total != total or not page_jobs:
+                raise ValueError("Apple Jobs listing changed while paging")
+            for job in page_jobs:
+                if (key := _apple_job_key(job)) is None or key in seen_keys:
+                    raise ValueError("Apple Jobs page repeated or omitted a job id")
+                seen_keys.add(key)
+                combined_jobs.append(job)
+
+    if len(combined_jobs) != total:
+        raise ValueError("Apple Jobs listing response is incomplete")
+    return FetchedPage(
+        url=first.url,
+        text=json.dumps(
+            {"total": total, "jobs": combined_jobs},
+            ensure_ascii=False,
+        ),
+        status_code=first.status_code,
+        headers=first.headers,
+    )
+
+
+def _microsoft_job_key(job: dict[str, Any]) -> str | None:
+    for field in ("id", "displayJobId", "atsJobId"):
+        value = job.get(field)
+        if isinstance(value, (str, int)) and not isinstance(value, bool):
+            normalized = str(value).strip()
+            if normalized:
+                return normalized
+    return None
+
+
+def _microsoft_search_page_url(url: str, start: int) -> str:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    query["start"] = [str(start)]
+    return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+
+
+async def _fetch_all_microsoft_careers_pages(
+    url: str,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    first = await fetcher.fetch(url)
+    jobs, total = parse_microsoft_search_page(first.text)
+    if len(jobs) > total:
+        raise ValueError("Microsoft Careers returned more jobs than its total")
+    if total > 0 and not jobs:
+        raise ValueError(
+            "Microsoft Careers reports results but returned an empty page"
+        )
+
+    combined_jobs = list(jobs)
+    seen_keys: set[str] = set()
+    for job in jobs:
+        if (key := _microsoft_job_key(job)) is None or key in seen_keys:
+            raise ValueError(
+                "Microsoft Careers page repeated or omitted a job id"
+            )
+        seen_keys.add(key)
+
+    if total > len(combined_jobs):
+        page_size = len(jobs)
+        page_count = (total + page_size - 1) // page_size
+        if page_count > 50:
+            raise ValueError("Microsoft Careers listing exceeded the page limit")
+
+        for start in range(page_size, total, page_size):
+            if isinstance(fetcher, HttpFetcher):
+                await asyncio.sleep(1.0)
+            page = await fetcher.fetch(_microsoft_search_page_url(url, start))
+            page_jobs, page_total = parse_microsoft_search_page(page.text)
+            if page_total != total or not page_jobs:
+                raise ValueError("Microsoft Careers listing changed while paging")
+            for job in page_jobs:
+                if (key := _microsoft_job_key(job)) is None or key in seen_keys:
+                    raise ValueError(
+                        "Microsoft Careers page repeated or omitted a job id"
+                    )
+                seen_keys.add(key)
+                combined_jobs.append(job)
+
+    if len(combined_jobs) != total:
+        raise ValueError("Microsoft Careers listing response is incomplete")
+    return FetchedPage(
+        url=first.url,
+        text=json.dumps(
+            {"total": total, "jobs": combined_jobs},
+            ensure_ascii=False,
+        ),
+        status_code=first.status_code,
+        headers=first.headers,
+    )
 
 
 async def _fetch_all_workday_pages(
@@ -1402,6 +1569,35 @@ async def crawl_source(
                 )
                 if detail_opening is None:
                     raise ValueError("Workday detail does not match its listing job")
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "apple_jobs_korea_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_apple_detail_opening(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError("Apple detail does not match its listing job")
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "microsoft_pcsx_korea_tech":
+                if isinstance(fetcher, HttpFetcher):
+                    await asyncio.sleep(max(request_delay_seconds, 2.0))
+                elif index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail_url = microsoft_detail_api_url(listing.url, opening.url)
+                detail = await fetcher.fetch(detail_url)
+                detail_opening = parse_microsoft_detail_opening(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError(
+                        "Microsoft detail does not match its listing job"
+                    )
                 opening = detail_opening
                 opening_payload = detail.text
             ingest_opening(

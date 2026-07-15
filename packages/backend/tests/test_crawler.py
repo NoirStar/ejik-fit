@@ -549,6 +549,206 @@ class WorkdayDetailFetcher:
         )
 
 
+def _apple_hydration_html(loader_data: dict[str, object]) -> str:
+    payload = json.dumps({"loaderData": loader_data}, ensure_ascii=False)
+    return (
+        "<script>window.__staticRouterHydrationData = JSON.parse("
+        f"{json.dumps(payload, ensure_ascii=False)})</script>"
+    )
+
+
+def _apple_search_job(index: int) -> dict[str, object]:
+    return {
+        "id": f"20060000{index}-3631",
+        "positionId": f"20060000{index}",
+        "postingTitle": f"Software Engineer {index}",
+        "transformedPostingTitle": f"software-engineer-{index}",
+        "jobSummary": "Build Apple software.",
+        "locations": [{"name": "Seoul", "countryName": "Korea"}],
+        "team": {"teamCode": "SFTWR"},
+        "postExternal": True,
+    }
+
+
+class PaginatedAppleFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        indexes = (2,) if "page=2" in url else (0, 1)
+        return crawler.FetchedPage(
+            url=url,
+            text=_apple_hydration_html(
+                {
+                    "search": {
+                        "totalRecords": 3,
+                        "searchResults": [
+                            _apple_search_job(index) for index in indexes
+                        ],
+                    }
+                }
+            ),
+            status_code=200,
+            headers={},
+        )
+
+
+class AppleDetailFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        if "/search" in url:
+            text = _apple_hydration_html(
+                {
+                    "search": {
+                        "totalRecords": 1,
+                        "searchResults": [_apple_search_job(1)],
+                    }
+                }
+            )
+        else:
+            text = _apple_hydration_html(
+                {
+                    "jobDetails": {
+                        "jobsData": {
+                            "jobNumber": "200600001-3631",
+                            "postingTitle": "Software Engineer 1",
+                            "jobSummary": "Build Apple software.",
+                            "description": "Own production services.",
+                            "minimumQualifications": (
+                                "3+ years of experience with Swift and Python"
+                            ),
+                            "selectedLocation": {
+                                "name": "서울",
+                                "countryName": "대한민국",
+                            },
+                            "employmentType": "Standard",
+                        }
+                    }
+                }
+            )
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
+def _microsoft_search_position(index: int) -> dict[str, object]:
+    return {
+        "id": 1970393556800000 + index,
+        "displayJobId": f"20003000{index}",
+        "name": f"Software Solution Engineer {index}",
+        "locations": ["Korea, Seoul, Seoul"],
+        "department": "Solution Engineering",
+        "positionUrl": f"/careers/job/{1970393556800000 + index}",
+    }
+
+
+class PaginatedMicrosoftFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        indexes = (2,) if "start=2" in url else (0, 1)
+        payload = {
+            "status": 200,
+            "error": {"message": "", "body": ""},
+            "data": {
+                "count": 3,
+                "positions": [
+                    _microsoft_search_position(index) for index in indexes
+                ],
+            },
+            "metadata": None,
+        }
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(payload),
+            status_code=200,
+            headers={},
+        )
+
+
+class MicrosoftDetailFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        if "/search" in url:
+            payload = {
+                "status": 200,
+                "error": {"message": "", "body": ""},
+                "data": {
+                    "count": 1,
+                    "positions": [_microsoft_search_position(1)],
+                },
+            }
+        else:
+            payload = {
+                "status": 200,
+                "error": {"message": "", "body": ""},
+                "data": {
+                    **_microsoft_search_position(1),
+                    "publicUrl": (
+                        "https://apply.careers.microsoft.com/careers/job/"
+                        "1970393556800001"
+                    ),
+                    "jobDescription": (
+                        "<div>Build Azure services with Python.</div>"
+                        "<div>Required Qualifications</div>"
+                        "<ul><li>4+ years of engineering experience</li></ul>"
+                    ),
+                    "location": "Korea, Seoul, Seoul",
+                    "efcustomTextEmploymentType": ["Full-Time"],
+                },
+            }
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(payload),
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -828,6 +1028,79 @@ def test_fetch_listing_page_collects_every_workday_page() -> None:
     )
     assert [opening.external_id for opening in openings] == ["JR0", "JR1", "JR2"]
     assert len(crawler._apply_source_opening_filters(source, openings)) == 3
+
+
+def test_fetch_listing_page_collects_every_apple_korea_page() -> None:
+    listing_url = (
+        "https://jobs.apple.com/en-us/search?location=korea-republic-of-KOR"
+    )
+    source = CareerSource(
+        company=Company(name="Apple Korea", slug="apple-korea"),
+        base_url=listing_url,
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="apple_jobs_korea_tech",
+    )
+    fetcher = PaginatedAppleFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert fetcher.urls == [listing_url, f"{listing_url}&page=2"]
+    assert payload["total"] == 3
+    assert len(payload["jobs"]) == 3
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+        source.connector_family,
+    )
+    assert len(openings) == 3
+    assert validate_listing_response(
+        source.source_type,
+        page.text,
+        page.url,
+        openings_count=len(openings),
+    )
+
+
+def test_fetch_listing_page_collects_every_microsoft_korea_page() -> None:
+    listing_url = (
+        "https://apply.careers.microsoft.com/api/pcsx/search?"
+        "domain=microsoft.com&query=&location=South%20Korea&start=0"
+    )
+    source = CareerSource(
+        company=Company(name="Microsoft Korea", slug="microsoft-korea"),
+        base_url=listing_url,
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="microsoft_pcsx_korea_tech",
+    )
+    fetcher = PaginatedMicrosoftFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert fetcher.urls == [
+        listing_url,
+        (
+            "https://apply.careers.microsoft.com/api/pcsx/search?"
+            "domain=microsoft.com&query=&location=South+Korea&start=2"
+        ),
+    ]
+    assert payload["total"] == 3
+    assert len(payload["jobs"]) == 3
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+        source.connector_family,
+    )
+    assert len(openings) == 3
+    assert validate_listing_response(
+        source.source_type,
+        page.text,
+        page.url,
+        openings_count=len(openings),
+    )
 
 
 def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:
@@ -1750,6 +2023,111 @@ def test_crawl_source_fetches_workday_details_before_ingestion() -> None:
             "method": "GET",
             "json_body": None,
         }
+
+
+def test_crawl_source_fetches_apple_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = (
+        "https://jobs.apple.com/en-us/search?location=korea-republic-of-KOR"
+    )
+
+    with Session(engine) as session:
+        company = Company(name="Apple Korea", slug="apple-korea")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="apple_jobs_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = AppleDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "200600001-3631"
+        assert posting.description_text == (
+            "Build Apple software. Own production services. "
+            "3+ years of experience with Swift and Python"
+        )
+        assert posting.career_min == 3
+        assert posting.location == "서울 · 대한민국"
+        assert fetcher.urls == [
+            listing_url,
+            (
+                "https://jobs.apple.com/en-us/details/200600001-3631/"
+                "software-engineer-1?team=SFTWR"
+            ),
+        ]
+
+
+def test_crawl_source_fetches_microsoft_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = (
+        "https://apply.careers.microsoft.com/api/pcsx/search?"
+        "domain=microsoft.com&query=&location=South%20Korea&start=0"
+    )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="Microsoft Korea", slug="microsoft-korea"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="microsoft_pcsx_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = MicrosoftDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "200030001"
+        assert posting.description_text == (
+            "Build Azure services with Python. Required Qualifications "
+            "4+ years of engineering experience"
+        )
+        assert posting.career_min == 4
+        assert posting.employment_type == "정규직"
+        assert fetcher.urls == [
+            listing_url,
+            (
+                "https://apply.careers.microsoft.com/api/pcsx/"
+                "position_details?position_id=1970393556800001&"
+                "domain=microsoft.com&hl=en&queried_location=South+Korea"
+            ),
+        ]
 
 
 def test_crawl_source_routes_successfactors_into_ingestion() -> None:

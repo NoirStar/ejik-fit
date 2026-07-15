@@ -503,6 +503,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Amazon Web Services Korea",
   },
   {
+    aliases: ["Apple Korea", "Apple", "애플 코리아", "애플"],
+    hosts: ["jobs.apple.com", "apple.com"],
+    src: "/company-logo-assets/apple-korea",
+    displayName: "Apple Korea",
+  },
+  {
+    aliases: ["Microsoft Korea", "Microsoft", "마이크로소프트 코리아"],
+    hosts: ["apply.careers.microsoft.com", "careers.microsoft.com"],
+    src: "/company-logo-assets/microsoft-korea",
+    displayName: "Microsoft Korea",
+  },
+  {
     aliases: ["NVIDIA Korea", "NVIDIA", "엔비디아 코리아", "엔비디아"],
     hosts: ["nvidia.wd5.myworkdayjobs.com", "nvidia.com"],
     src: "/company-logo-assets/nvidia-korea",

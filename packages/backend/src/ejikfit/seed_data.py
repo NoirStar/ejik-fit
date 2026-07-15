@@ -651,12 +651,58 @@ INITIAL_SOURCE_CATALOG = (
         connector_family="greeting_tech",
         brand_tier_weight=4,
         tech_job_priority=6,
-        expected_job_volume=8,
+        expected_job_volume=7,
         connector_reuse_score=3,
         non_tech_noise=4,
         notes=(
             "Official public Backpackr careers page for idus and Tumblbug; "
             "only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Apple Korea",
+        slug="apple-korea",
+        base_url=(
+            "https://jobs.apple.com/en-us/search?"
+            "location=korea-republic-of-KOR"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.apple.com/kr/",
+        sector="consumer_technology",
+        connector_family="apple_jobs_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=4,
+        non_tech_noise=7,
+        notes=(
+            "Official Apple Jobs Korea search and job details; every search "
+            "page is reconciled and only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Microsoft Korea",
+        slug="microsoft-korea",
+        base_url=(
+            "https://apply.careers.microsoft.com/api/pcsx/search?"
+            "domain=microsoft.com&query=&location=South%20Korea&start=0"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url=(
+            "https://apply.careers.microsoft.com/careers?"
+            "location=South%20Korea"
+        ),
+        sector="cloud_software",
+        connector_family="microsoft_pcsx_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=8,
+        connector_reuse_score=5,
+        non_tech_noise=7,
+        notes=(
+            "Official Microsoft Careers PCS search and detail APIs, which "
+            "are explicitly allowed by its robots policy; every Korea page "
+            "is reconciled and only technical roles are ingested."
         ),
     ),
     SeedSource(
