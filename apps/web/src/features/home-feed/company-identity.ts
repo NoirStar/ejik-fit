@@ -174,6 +174,13 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "넷마블",
   },
   {
+    aliases: ["엔씨소프트", "ncsoft", "nc soft"],
+    hosts: ["careers.ncsoft.com"],
+    src: "/company-logo-assets/ncsoft",
+    displayName: "엔씨소프트",
+    surface: "dark",
+  },
+  {
     aliases: ["컬리", "kurly", "마켓컬리"],
     hosts: ["kurly.career.greetinghr.com"],
     src: "/company-logo-assets/kurly",

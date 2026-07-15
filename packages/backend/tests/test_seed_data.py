@@ -182,6 +182,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "smilegate",
         "kakao-games",
         "netmarble",
+        "ncsoft",
         "shiftup",
     }
     assert all(
@@ -240,6 +241,11 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+
+    ncsoft = catalog_by_slug["ncsoft"]
+    assert ncsoft.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert ncsoft.connector_family == "ncsoft_session_html_tech"
+    assert ncsoft.status == SourceStatus.ALLOWED
 
     netmarble = catalog_by_slug["netmarble"]
     assert netmarble.source_type == SourceType.PUBLIC_JSON_DETAIL

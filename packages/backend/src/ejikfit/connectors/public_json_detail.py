@@ -2,8 +2,8 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
-from urllib.parse import urlsplit
+from typing import Any, Mapping
+from urllib.parse import urlencode, urlsplit
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
@@ -18,6 +18,27 @@ KST = ZoneInfo("Asia/Seoul")
 NETMARBLE_LISTING_API = (
     "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
 )
+NCSOFT_LISTING_API = "https://careers.ncsoft.com/interface/apply/list"
+NCSOFT_DETAIL_API = "https://careers.ncsoft.com/template/html//apply/view"
+NCSOFT_LISTING_FORM: dict[str, object] = {
+    "order_type": "ORDER_ETC",
+    "order_direction": "desc",
+    "page": 1,
+    "pagesize": 200,
+    "channelCds": "",
+    "keywords": "",
+    "job_group_cd": "",
+    "search_text": "",
+    "job_type_cd": "",
+    "companyIds": "",
+}
+NCSOFT_TECH_JOB_TYPES = {
+    "AI R&D",
+    "Game Programming",
+    "General Programming",
+    "QA",
+    "System Administration",
+}
 
 
 @dataclass(frozen=True)
@@ -74,6 +95,47 @@ def _decode_object(raw_json: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("public JSON payload must be an object")
     return payload
+
+
+def _response_header(headers: Mapping[str, str], name: str) -> str | None:
+    lowered = name.lower()
+    return next(
+        (
+            value
+            for key, value in headers.items()
+            if key.lower() == lowered and isinstance(value, str)
+        ),
+        None,
+    )
+
+
+def ncsoft_session_headers(
+    bootstrap_html: str,
+    response_headers: Mapping[str, str],
+    referer: str,
+) -> dict[str, str]:
+    soup = BeautifulSoup(bootstrap_html, "lxml")
+    csrf_node = soup.select_one('meta[name="_csrf"]')
+    csrf = _text(str(csrf_node.get("content") or "")) if csrf_node else None
+    set_cookie = _response_header(response_headers, "set-cookie")
+    cookie = set_cookie.split(";", 1)[0].strip() if set_cookie else None
+    if (
+        csrf is None
+        or re.fullmatch(r"[A-Za-z0-9-]+", csrf) is None
+        or cookie is None
+        or not cookie.startswith("nextrct-web-session=")
+        or "\n" in cookie
+        or "\r" in cookie
+    ):
+        raise ValueError("NC Careers session bootstrap is incomplete")
+    return {
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Cookie": cookie,
+        "Origin": "https://careers.ncsoft.com",
+        "Referer": referer,
+        "X-CSRF-TOKEN": csrf,
+        "X-Requested-With": "XMLHttpRequest",
+    }
 
 
 def _woowahan_refs(
@@ -316,6 +378,69 @@ def _netmarble_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _ncsoft_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
+    result = payload.get("result")
+    if not isinstance(result, dict) or str(result.get("State")) != "0":
+        raise ValueError("NC Careers listing did not return a success envelope")
+    data = result.get("data")
+    rows = data.get("record") if isinstance(data, dict) else None
+    if not isinstance(data, dict) or not isinstance(rows, list):
+        raise ValueError("NC Careers listing is missing its jobs")
+
+    total = _positive_int(data.get("record_count"))
+    page = _positive_int(data.get("page"))
+    page_size = _positive_int(data.get("pagesize"))
+    if (
+        total != len(rows)
+        or page != 1
+        or page_size is None
+        or page_size < len(rows)
+    ):
+        raise ValueError("NC Careers listing response is incomplete")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("NC Careers listing contains an invalid job row")
+        raw_id = row.get("jopenId")
+        operator_id = _text(row.get("regOpId"))
+        title = _text(row.get("jopenNm"))
+        job_type = _text(row.get("jobTypeName"))
+        job_name = _text(row.get("jobName"))
+        if (
+            raw_id is None
+            or isinstance(raw_id, bool)
+            or operator_id is None
+            or title is None
+        ):
+            raise ValueError("NC Careers open job identity is missing")
+        external_id = str(raw_id)
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        detail_query = urlencode(
+            {"companyId": operator_id, "jopenId": external_id}
+        )
+        public_query = urlencode({"companyId": operator_id})
+        category = " | ".join(
+            part for part in (job_type, job_name) if part is not None
+        )
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=f"{NCSOFT_DETAIL_API}?{detail_query}",
+                public_url=(
+                    "https://careers.ncsoft.com/apply/view/"
+                    f"{external_id}?{public_query}"
+                ),
+                title=title,
+                category=category or None,
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -332,6 +457,8 @@ def discover_public_json_detail_refs(
         return _kakaobank_refs(payload, listing_url)
     if connector_family == "netmarble_public_api_tech":
         return _netmarble_refs(payload)
+    if connector_family == "ncsoft_session_html_tech":
+        return _ncsoft_refs(payload)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -341,6 +468,15 @@ def filter_public_detail_refs(
 ) -> list[PublicJsonDetailRef]:
     if connector_family == "netmarble_public_api_tech":
         return [ref for ref in refs if ref.category in {"01", "05"}]
+    if connector_family == "ncsoft_session_html_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.category is not None
+            and ref.category.split(" | ", 1)[0] in NCSOFT_TECH_JOB_TYPES
+            and "어시스턴트" not in ref.title
+            and "인재풀" not in ref.title
+        ]
     if not connector_family.endswith("_tech"):
         return refs
     return [
@@ -356,6 +492,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "ably_next_ninehire_tech",
         "dunamu_server_html_tech",
         "netmarble_public_api_tech",
+        "ncsoft_session_html_tech",
     }
 
 
@@ -521,6 +658,73 @@ def _netmarble_opening(
     )
 
 
+def _ncsoft_date(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        return datetime.strptime(value.strip(), "%Y.%m.%d").replace(tzinfo=KST)
+    except ValueError:
+        return None
+
+
+def _ncsoft_career_range(text: str) -> tuple[int | None, int | None]:
+    match = re.search(
+        r"경력\s*:\s*(\d+)\s*년\s*~\s*(?:(\d+)\s*년)?",
+        text,
+    )
+    if match is None:
+        return None, None
+    return int(match.group(1)), int(match.group(2)) if match.group(2) else None
+
+
+def _ncsoft_opening(raw_html: str, ref: PublicJsonDetailRef) -> ParsedOpening:
+    soup = BeautifulSoup(raw_html, "lxml")
+    title_node = soup.select_one(".apply-detail-header-wrap h2.subject")
+    career_node = soup.select_one(".apply-detail-header-wrap .career-tit")
+    term_node = soup.select_one(".apply-detail-header-wrap .term")
+    contents = soup.select_one(".apply-detail-content article.contents")
+    title = _text(title_node.get_text(" ", strip=True)) if title_node else None
+    if title != ref.title:
+        raise ValueError("NC Careers detail identity does not match its listing")
+    if contents is None:
+        raise ValueError("NC Careers job detail content is missing")
+
+    description_html = str(contents)
+    description_text = structured_plain_text(description_html)
+    career_min, career_max = _ncsoft_career_range(description_text)
+    career_label = (
+        _text(career_node.get_text(" ", strip=True)) if career_node else None
+    )
+    term = _text(term_node.get_text(" ", strip=True)) if term_node else None
+    dates = [part.strip() for part in term.split("~", 1)] if term else []
+    opens_at = _ncsoft_date(dates[0]) if dates else None
+    closes_at = _ncsoft_date(dates[1]) if len(dates) == 2 else None
+    employment_type = (
+        "contract"
+        if "계약직" in title or career_label == "단기"
+        else "regular"
+    )
+    career_type = {
+        "경력": "experienced",
+        "신입": "new_comer",
+    }.get(career_label or "")
+    return ParsedOpening(
+        external_id=ref.external_id,
+        url=ref.public_url,
+        title=title,
+        status="open",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=career_min,
+        career_max=career_max,
+        location=None,
+        opens_at=opens_at,
+        closes_at=closes_at,
+    )
+
+
 def _labeled_value(text: str, label: str) -> str | None:
     pattern = re.compile(rf"^{re.escape(label)}\s*:\s*(.+)$")
     for line in text.splitlines():
@@ -672,6 +876,8 @@ def parse_public_json_detail(
         return _dunamu_opening(raw_json, ref)
     if connector_family == "ably_next_ninehire_tech":
         return _ably_opening(raw_json, ref)
+    if connector_family == "ncsoft_session_html_tech":
+        return _ncsoft_opening(raw_json, ref)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)

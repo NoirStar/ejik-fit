@@ -37,8 +37,13 @@ from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
     NETMARBLE_LISTING_API,
+    NCSOFT_DETAIL_API,
+    NCSOFT_LISTING_API,
+    NCSOFT_LISTING_FORM,
+    PublicJsonDetailRef,
     discover_public_json_detail_refs,
     filter_public_detail_refs,
+    ncsoft_session_headers,
     parse_public_json_detail,
     public_detail_listing_is_self_validated,
 )
@@ -178,6 +183,7 @@ class HttpFetcher:
         method: str = "GET",
         json_body: object | None = None,
         form_body: object | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> FetchedPage:
         request_method = method.upper()
         retrying = AsyncRetrying(
@@ -194,7 +200,10 @@ class HttpFetcher:
                 async with httpx.AsyncClient(
                     follow_redirects=True,
                     timeout=20.0,
-                    headers={"User-Agent": self.user_agent},
+                    headers={
+                        "User-Agent": self.user_agent,
+                        **(dict(headers) if headers is not None else {}),
+                    },
                 ) as client:
                     response = await client.request(
                         request_method,
@@ -445,6 +454,25 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "ncsoft_session_html_tech":
+        bootstrap = await fetcher.fetch(source.base_url)
+        session_headers = ncsoft_session_headers(
+            bootstrap.text,
+            bootstrap.headers,
+            source.base_url,
+        )
+        listing = await fetcher.fetch(
+            NCSOFT_LISTING_API,
+            method="POST",
+            form_body=NCSOFT_LISTING_FORM,
+            headers=session_headers,
+        )
+        return FetchedPage(
+            url=listing.url,
+            text=listing.text,
+            status_code=listing.status_code,
+            headers={**listing.headers, **session_headers},
+        )
     if source.connector_family == "netmarble_public_api_tech":
         return await fetcher.fetch(NETMARBLE_LISTING_API)
     if source.connector_family == "shiftup_public_api_tech":
@@ -473,6 +501,38 @@ async def _fetch_listing_page(
     if browser_renderer is None:
         raise ValueError("browser renderer is not configured")
     return await browser_renderer.render(source.base_url)
+
+
+async def _fetch_public_json_detail(
+    ref: PublicJsonDetailRef,
+    connector_family: str,
+    listing: FetchedPage,
+    fetcher: HttpFetcher,
+) -> FetchedPage:
+    if connector_family != "ncsoft_session_html_tech":
+        return await fetcher.fetch(ref.detail_url)
+
+    parsed = urlparse(ref.detail_url)
+    query = parse_qs(parsed.query)
+    company_id = query.get("companyId", [None])[0]
+    job_id = query.get("jopenId", [None])[0]
+    csrf = listing.headers.get("X-CSRF-TOKEN")
+    cookie = listing.headers.get("Cookie")
+    if not company_id or job_id != ref.external_id or not csrf or not cookie:
+        raise ValueError("NC Careers detail session context is incomplete")
+    return await fetcher.fetch(
+        NCSOFT_DETAIL_API + f"?{urlencode({'companyId': company_id})}",
+        method="POST",
+        form_body={"jopenId": job_id, "regOpId": company_id},
+        headers={
+            "Accept": "text/html, */*; q=0.01",
+            "Cookie": cookie,
+            "Origin": "https://careers.ncsoft.com",
+            "Referer": ref.public_url,
+            "X-CSRF-TOKEN": csrf,
+            "X-Requested-With": "XMLHttpRequest",
+        },
+    )
 
 
 def _is_lge_jobs_api(url: str) -> bool:
@@ -867,7 +927,12 @@ async def crawl_source(
             if index > 0 and request_delay_seconds > 0:
                 await asyncio.sleep(request_delay_seconds)
             try:
-                detail = await fetcher.fetch(ref.detail_url)
+                detail = await _fetch_public_json_detail(
+                    ref,
+                    source.connector_family,
+                    listing,
+                    fetcher,
+                )
                 opening = parse_public_json_detail(
                     detail.text,
                     ref,

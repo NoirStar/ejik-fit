@@ -170,6 +170,11 @@ describe("companyIdentity", () => {
       "https://career.netmarble.com/announce/view?anno_id=1830",
       "netmarble",
     ],
+    [
+      "엔씨소프트",
+      "https://careers.ncsoft.com/apply/view/101003?companyId=NCH",
+      "ncsoft",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

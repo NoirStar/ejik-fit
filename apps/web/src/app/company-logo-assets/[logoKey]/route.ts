@@ -44,6 +44,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
+  ncsoft:
+    "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nota-ai":

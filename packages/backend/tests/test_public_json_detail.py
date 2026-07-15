@@ -3,6 +3,7 @@ import json
 from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
     filter_public_detail_refs,
+    ncsoft_session_headers,
     parse_public_json_detail,
 )
 
@@ -199,6 +200,102 @@ def test_netmarble_public_api_discovers_and_parses_technical_jobs() -> None:
     assert opening.opens_at is not None
     assert opening.closes_at is not None
     assert "Python, PyTorch, LLM" in opening.description_text
+
+
+def test_ncsoft_session_api_discovers_and_parses_technical_jobs() -> None:
+    session_headers = ncsoft_session_headers(
+        '<meta name="_csrf" content="csrf-token-123">',
+        {"set-cookie": "nextrct-web-session=session.worker1; Path=/; HttpOnly"},
+        "https://careers.ncsoft.com/apply/list",
+    )
+    assert session_headers["X-CSRF-TOKEN"] == "csrf-token-123"
+    assert session_headers["Cookie"] == "nextrct-web-session=session.worker1"
+
+    listing = json.dumps(
+        {
+            "result": {
+                "State": "0",
+                "data": {
+                    "record_count": 3,
+                    "record": [
+                        {
+                            "jopenId": 101003,
+                            "regOpId": "NCH",
+                            "jopenNm": "[정보보안] 게임보안 개발자 모집",
+                            "jobTypeName": "General Programming",
+                            "jobName": "Security Engine Programming",
+                        },
+                        {
+                            "jopenId": 101036,
+                            "regOpId": "NCH",
+                            "jopenNm": "신규 FPS FX 아티스트 모집",
+                            "jobTypeName": "Art",
+                            "jobName": "VFX",
+                        },
+                        {
+                            "jopenId": 101032,
+                            "regOpId": "NCAI",
+                            "jopenNm": "AI 데이터 구축 어시스턴트 모집",
+                            "jobTypeName": "AI R&D",
+                            "jobName": "Language AI Research",
+                        },
+                    ],
+                    "page": "1",
+                    "pagesize": "200",
+                },
+            }
+        },
+        ensure_ascii=False,
+    )
+
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://careers.ncsoft.com/apply/list",
+        "ncsoft_session_html_tech",
+    )
+    refs = filter_public_detail_refs(all_refs, "ncsoft_session_html_tech")
+
+    assert [ref.external_id for ref in refs] == ["101003"]
+    assert refs[0].detail_url == (
+        "https://careers.ncsoft.com/template/html//apply/view"
+        "?companyId=NCH&jopenId=101003"
+    )
+    assert refs[0].public_url == (
+        "https://careers.ncsoft.com/apply/view/101003?companyId=NCH"
+    )
+
+    detail = """
+    <section id="container">
+      <header class="apply-detail-header-wrap">
+        <span class="career-tit">경력</span>
+        <h2 class="subject">[정보보안] 게임보안 개발자 모집</h2>
+        <span class="term">2026.07.08 ~ 2026.08.07</span>
+      </header>
+      <section class="apply-detail-content">
+        <article class="contents">
+          <h3>[ 업무내용 ]</h3><p>C++ 보안 엔진을 개발합니다.</p>
+          <h3>[ 지원자격 ]</h3><p>경력 : 3년 ~ 10년</p>
+          <h3>이런 역량을 갖추신 분을 찾고 있습니다(필수)</h3>
+          <p>C++, Windows 시스템 프로그래밍 경험</p>
+        </article>
+      </section>
+      <a class="btn-apply">지원하기</a>
+    </section>
+    """
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "ncsoft_session_html_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 3
+    assert opening.career_max == 10
+    assert opening.opens_at is not None
+    assert opening.closes_at is not None
+    assert "C++, Windows" in opening.description_text
 
 
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:

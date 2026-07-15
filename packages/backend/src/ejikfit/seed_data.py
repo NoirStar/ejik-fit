@@ -1121,22 +1121,22 @@ INITIAL_SOURCE_CATALOG = (
         name="엔씨소프트",
         slug="ncsoft",
         base_url="https://careers.ncsoft.com/apply/list",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.ncsoft.com",
         sector="game_content",
-        connector_family="browser_public_render",
+        connector_family="ncsoft_session_html_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=5,
         expected_job_volume=5,
-        connector_reuse_score=1,
+        connector_reuse_score=2,
         policy_risk=0,
-        non_tech_noise=3,
+        non_tech_noise=0,
         notes=(
-            "Official NC Careers listing; server HTML references JS apply "
-            "APIs, but the posting list needs a browser/API connector."
+            "Official NC Careers session-backed public list and detail "
+            "endpoints; limited to programming, SRE, AI R&D, and QA roles."
         ),
-        status=SourceStatus.NEEDS_BROWSER,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="넷마블",
