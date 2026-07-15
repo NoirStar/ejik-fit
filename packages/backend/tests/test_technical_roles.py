@@ -8,6 +8,9 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("Staff Back-end Engineer") is True
     assert is_technical_role("데이터 엔지니어") is True
     assert is_technical_role("Machine Learning Engineer") is True
+    assert is_technical_role("QA Engineer (자동화 및 품질 전략)") is True
+    assert is_technical_role("AI 연구 및 서비스 개발 채용") is True
+    assert is_technical_role("취약점 진단 및 모의해킹 담당자") is True
 
     assert is_technical_role("Cloud Sales Talent Pool") is False
     assert is_technical_role("HVAC 설계 엔지니어") is False
@@ -17,6 +20,9 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("의료기기 QA 담당자 (QMS / SaMD)") is False
     assert is_technical_role("임상연구전문가 (Clinical Research Scientist)") is False
     assert is_technical_role("과제책임자 (Security)") is False
+    assert is_technical_role("[전략] 경영전략 Staff") is False
+    assert is_technical_role("[AI Frontier] Product Owner") is False
+    assert is_technical_role("[LOST ARK Mobile] 레벨기획 담당") is False
 
 
 def test_korea_technical_filter_requires_both_role_and_domestic_location() -> None:

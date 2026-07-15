@@ -82,3 +82,11 @@ def test_career_source_registry_defaults_and_priority_score() -> None:
     assert source.policy_status == PolicyStatus.REVIEW
     assert source.connector_family == "json_ld"
     assert source.priority_score == 12
+    assert source.targets_technical_roles is True
+
+    unscoped = CareerSource(
+        company=Company(name="범용 기업", slug="general-company"),
+        base_url="https://example.com/all-jobs",
+        source_type=SourceType.JSON_LD,
+    )
+    assert unscoped.targets_technical_roles is False

@@ -1222,6 +1222,7 @@ def test_crawl_source_routes_enterprise_json_into_ingestion() -> None:
             company=company,
             base_url="https://careers.example.com/api/jobs",
             source_type=SourceType.ENTERPRISE_JSON,
+            tech_job_priority=5,
             status=SourceStatus.ALLOWED,
             policy_status=PolicyStatus.ALLOWED,
         )
@@ -1241,6 +1242,14 @@ def test_crawl_source_routes_enterprise_json_into_ingestion() -> None:
                                         "postingId": "ENT-200",
                                         "postingTitle": "Platform Engineer",
                                         "jobDetailUrl": "/jobs/ENT-200",
+                                        "workLocation": "서울",
+                                        "employmentType": "정규직",
+                                        "public": True,
+                                    },
+                                    {
+                                        "postingId": "ENT-201",
+                                        "postingTitle": "경영전략 Staff",
+                                        "jobDetailUrl": "/jobs/ENT-201",
                                         "workLocation": "서울",
                                         "employmentType": "정규직",
                                         "public": True,

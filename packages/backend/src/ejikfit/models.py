@@ -146,6 +146,12 @@ class CareerSource(Base):
         )
 
     @property
+    def targets_technical_roles(self) -> bool:
+        return (self.tech_job_priority or 0) > 0 or (
+            self.connector_family or ""
+        ).endswith("_tech")
+
+    @property
     def is_runnable(self) -> bool:
         return (
             self.status == SourceStatus.ALLOWED

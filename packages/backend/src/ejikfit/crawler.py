@@ -92,19 +92,22 @@ def _apply_source_opening_filters(
     source: CareerSource,
     openings: list[ParsedOpening],
 ) -> list[ParsedOpening]:
-    if source.connector_family == "lever_greenhouse_korea_tech":
+    if not source.targets_technical_roles:
+        return openings
+    if source.connector_family in {
+        "lever_greenhouse_korea_tech",
+        "channel_next_data_tech",
+    }:
         return [
             opening
             for opening in openings
             if is_korea_technical_role(opening.title, opening.location)
         ]
-    if source.connector_family == "channel_next_data_tech":
-        return [
-            opening
-            for opening in openings
-            if is_korea_technical_role(opening.title, opening.location)
-        ]
-    return openings
+    return [
+        opening
+        for opening in openings
+        if is_technical_role(opening.title)
+    ]
 
 
 def _discover_greeting_source_refs(source: CareerSource, html: str):
@@ -112,18 +115,18 @@ def _discover_greeting_source_refs(source: CareerSource, html: str):
         return discover_corporate_greeting_openings(
             html,
             source.base_url,
-            technical_only=True,
+            technical_only=source.targets_technical_roles,
         )
     if source.connector_family == "grouped_greeting_links_tech":
         return discover_grouped_greeting_openings(
             html,
             source.base_url,
-            technical_only=True,
+            technical_only=source.targets_technical_roles,
         )
     return discover_openings(
         html,
         source.base_url,
-        technical_only=source.connector_family == "greeting_tech",
+        technical_only=source.targets_technical_roles,
     )
 
 
@@ -825,7 +828,7 @@ async def crawl_source(
             session.commit()
             return CrawlResult(failed=1)
 
-        technical_only = (source.connector_family or "").endswith("_tech")
+        technical_only = source.targets_technical_roles
         for index, ref in enumerate(refs):
             if index > 0 and request_delay_seconds > 0:
                 await asyncio.sleep(request_delay_seconds)
