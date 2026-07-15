@@ -13,6 +13,8 @@ describe("CompanyMark", () => {
     );
     const image = container.querySelector("img");
     expect(image).not.toBeNull();
+    expect(image).toHaveAttribute("loading", "lazy");
+    expect(image).toHaveAttribute("decoding", "async");
 
     fireEvent.error(image!);
 

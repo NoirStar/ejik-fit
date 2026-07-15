@@ -46,6 +46,8 @@ export function CompanyMark({
         <img
           alt=""
           className={styles.logo}
+          decoding="async"
+          loading="lazy"
           onError={() => setFailedSrc(identity.src ?? null)}
           ref={imageRef}
           src={identity.src}

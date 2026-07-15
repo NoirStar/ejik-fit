@@ -35,7 +35,11 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   },
   {
     aliases: ["서울로보틱스", "seoul robotics"],
-    hosts: ["job-boards.greenhouse.io", "seoulrobotics.org"],
+    hosts: [
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+      "seoulrobotics.org",
+    ],
     src: "/company-logo-assets/seoul-robotics",
     displayName: "서울로보틱스",
   },
@@ -78,7 +82,11 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   },
   {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
-    hosts: ["banksalad.career.greetinghr.com"],
+    hosts: [
+      "banksalad.career.greetinghr.com",
+      "banksalad.com",
+      "www.banksalad.com",
+    ],
     src: "/company-logo-assets/banksalad",
     displayName: "뱅크샐러드",
   },
@@ -539,7 +547,7 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   },
   {
     aliases: ["SK하이닉스", "sk hynix", "skhynix"],
-    hosts: ["skhynix.com", "talent.skhynix.com"],
+    hosts: ["skcareers.com", "skhynix.com", "talent.skhynix.com"],
     src: "/company-logo-assets/sk-hynix",
     displayName: "SK하이닉스",
   },
@@ -596,6 +604,52 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     hosts: ["hyundai-autoever.career.greetinghr.com"],
     src: "/company-logo-assets/hyundai-autoever",
     displayName: "현대오토에버",
+  },
+  {
+    aliases: ["크래프톤", "krafton"],
+    hosts: [
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+      "krafton.com",
+    ],
+    src: "/company-logo-assets/krafton",
+    displayName: "크래프톤",
+  },
+  {
+    aliases: ["한화시스템", "hanwha systems"],
+    hosts: ["hanwhasystems.com", "hwadm.hanwhain.com"],
+    src: "/company-logo-assets/hanwha-systems",
+    displayName: "한화시스템",
+  },
+  {
+    aliases: ["deepauto.ai", "deepauto ai", "딥오토"],
+    hosts: ["deepauto-ai.career.greetinghr.com"],
+    src: "/company-logo-assets/deepauto-ai",
+    displayName: "DeepAuto.ai",
+  },
+  {
+    aliases: ["로앤컴퍼니", "lawcompany", "law company"],
+    hosts: ["lawcompany.career.greetinghr.com"],
+    src: "/company-logo-assets/lawcompany",
+    displayName: "로앤컴퍼니",
+  },
+  {
+    aliases: ["시프트업", "shift up", "shiftup"],
+    hosts: ["shiftup.co.kr"],
+    src: "/company-logo-assets/shiftup",
+    displayName: "시프트업",
+  },
+  {
+    aliases: ["데브시스터즈", "devsisters"],
+    hosts: ["careers.devsisters.com", "devsisters.com"],
+    src: "/company-logo-assets/devsisters",
+    displayName: "데브시스터즈",
+  },
+  {
+    aliases: ["위메이드", "wemade"],
+    hosts: ["recruit.wemade.com", "wemade.com"],
+    src: "/company-logo-assets/wemade",
+    displayName: "위메이드",
   },
 ];
 

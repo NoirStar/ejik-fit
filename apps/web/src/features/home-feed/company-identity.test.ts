@@ -400,6 +400,48 @@ describe("companyIdentity", () => {
       "https://hyundai-autoever.career.greetinghr.com/ko/o/1",
       "hyundai-autoever",
     ],
+    [
+      "크래프톤",
+      "https://boards-api.greenhouse.io/v1/boards/krafton/jobs?content=true",
+      "krafton",
+    ],
+    [
+      "한화시스템",
+      "https://hwadm.hanwhain.com/new-backend/portal/api/rcRecruit/search-rcrt",
+      "hanwha-systems",
+    ],
+    [
+      "DeepAuto.ai",
+      "https://deepauto-ai.career.greetinghr.com/ko",
+      "deepauto-ai",
+    ],
+    [
+      "로앤컴퍼니",
+      "https://lawcompany.career.greetinghr.com/ko",
+      "lawcompany",
+    ],
+    ["시프트업", "https://shiftup.co.kr/recruit/recruit.php", "shiftup"],
+    [
+      "데브시스터즈",
+      "https://careers.devsisters.com/ko/home",
+      "devsisters",
+    ],
+    ["위메이드", "https://recruit.wemade.com/", "wemade"],
+    [
+      "뱅크샐러드",
+      "https://www.banksalad.com/proxy/api/greeting/openings",
+      "banksalad",
+    ],
+    [
+      "서울로보틱스",
+      "https://boards-api.greenhouse.io/v1/boards/seoulrobotics/jobs?content=true",
+      "seoul-robotics",
+    ],
+    [
+      "SK하이닉스",
+      "https://www.skcareers.com/Recruit/GetRecruitList#sk-hynix",
+      "sk-hynix",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",
@@ -449,14 +491,11 @@ describe("companyIdentity", () => {
 
   it("uses compact initials when no verified asset exists", () => {
     expect(
-      companyIdentity(
-        "DeepAuto.ai",
-        "https://deepauto-ai.career.greetinghr.com/ko",
-      ),
+      companyIdentity("Example Robotics", "https://example.com/careers"),
     ).toEqual({
       kind: "initials",
-      initials: "DA",
-      alt: "DeepAuto.ai",
+      initials: "ER",
+      alt: "Example Robotics",
     });
     expect(companyIdentity("LINE Plus")).toEqual({
       kind: "initials",

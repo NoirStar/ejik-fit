@@ -33,6 +33,13 @@ back to company initials when the official asset is unavailable.
 | `overdare` | OVERDARE | <https://overdare.com/> | <https://static.overdare.com/meta/favicon.png> | 2026-07-15 |
 | `cognite` | Cognite | <https://www.cognite.com/en/careers> | <https://www.cognite.com/icon.png?icon.08484x9h5icrf.png> | 2026-07-15 |
 | `clo-virtual-fashion` | CLO Virtual Fashion | <https://www.clovirtualfashion-careers.com/> | <https://cf.clovirtualfashion.com/web/_next/static/images/favicon_192x192.png> | 2026-07-15 |
+| `krafton` | 크래프톤 | <https://job-boards.greenhouse.io/krafton> | <https://s2-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/963/700/original/KRAFTON_1_Primary_Wordmark_Black_260112.png?1772068780> | 2026-07-15 |
+| `hanwha-systems` | 한화시스템 | <https://www.hanwhasystems.com/kr/company/recruit.do> | <https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico> | 2026-07-15 |
+| `deepauto-ai` | DeepAuto.ai | <https://deepauto.ai/company> | <https://deepauto.ai/icon.png?icon.3bd11c4c.png> | 2026-07-15 |
+| `lawcompany` | 로앤컴퍼니 | <https://lawcompany.career.greetinghr.com/ko> | <https://www.lawtalk.co.kr/favicon.ico> | 2026-07-15 |
+| `shiftup` | 시프트업 | <https://shiftup.co.kr/recruit/recruit.php> | <https://shiftup.co.kr/img/favicon.ico> | 2026-07-15 |
+| `devsisters` | 데브시스터즈 | <https://careers.devsisters.com/ko/home> | <https://profiles.greetinghr.com/group/6c261b05-a17f-4749-93dc-7546246c217f> | 2026-07-15 |
+| `wemade` | 위메이드 | <https://recruit.wemade.com/> | <https://image.ninehire.com/homepage/83cdd300-13fa-11ee-a096-95051faa2e73/logo/6bfa5820-6af0-11f1-90eb-f327db58c8db.png> | 2026-07-15 |
 | `twelve-labs` | 트웰브랩스 | <https://www.twelvelabs.io/careers> | <https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png> | 2026-07-15 |
 | `lunit` | 루닛 | <https://apply.workable.com/lunit/> | <https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |

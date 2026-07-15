@@ -32,6 +32,9 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   databricks:
     "https://www.databricks.com/en-website-assets/icons/icon-96x96.png?v=c9b9916c3b27dc51866c46b79a6e9b88",
   datadog: "https://corp.dd-static.net/img/favicons/apple-touch-icon.png",
+  "deepauto-ai": "https://deepauto.ai/icon.png?icon.3bd11c4c.png",
+  devsisters:
+    "https://profiles.greetinghr.com/group/6c261b05-a17f-4749-93dc-7546246c217f",
   bitsensing:
     "https://profiles.greetinghr.com/group/99b5d524-240f-45f9-82d3-789cbc07c4e2",
   dunamu: "https://careers.dunamu.com/favicon.png",
@@ -61,6 +64,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/site/favicon/1928/1719299110201/%EB%A1%9C%EA%B3%A0.PNG",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
+  krafton:
+    "https://s2-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/963/700/original/KRAFTON_1_Primary_Wordmark_Black_260112.png?1772068780",
   "kakao-mobility":
     "https://opening-attachments.greetinghr.com/2025-02-06/0e82fcb5-f39c-4d8f-8aee-f20e3efaa187/111.png",
   "kakao-pay":
@@ -72,6 +77,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
+  lawcompany: "https://www.lawtalk.co.kr/favicon.ico",
   "lg-electronics":
     "https://globalcareers.lge.com/gcr-content/og_image_lge_careers.png",
   "lg-cns":
@@ -122,6 +128,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "seoul-robotics":
     "https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
+  shiftup: "https://shiftup.co.kr/img/favicon.ico",
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   "sk-hynix":
     "https://mis-prod-koce-skhynixhomepage-cdn-01-ep.azureedge.net/img/favicon.ico",
@@ -142,9 +149,13 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/site/favicon/1146/1724160614927/color.png",
   wadiz:
     "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
+  wemade:
+    "https://image.ninehire.com/homepage/83cdd300-13fa-11ee-a096-95051faa2e73/logo/6bfa5820-6af0-11f1-90eb-f327db58c8db.png",
   wrtn:
     "https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png",
   "woowahan-brothers": "https://career.woowahan.com/favicon.ico",
+  "hanwha-systems":
+    "https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico",
 };
 
 type LogoRouteContext = {
