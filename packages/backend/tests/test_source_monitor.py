@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session
 
 from ejikfit.crawler import reconcile_missing
@@ -236,6 +236,69 @@ def test_third_absence_records_closure_in_current_monitor_window() -> None:
         assert closed == 1
         assert posting.status == PostingStatus.CLOSED
         assert report["totals"]["closed_postings"] == 1
+
+
+def test_source_monitor_aggregates_without_loading_posting_bodies() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, 12, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="대용량 기업", slug="aggregate-monitor")
+        source = CareerSource(
+            company=company,
+            base_url="https://example.com/aggregate-jobs",
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=now,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="large-body",
+            url="https://example.com/aggregate-jobs/large-body",
+            title="Backend Engineer",
+            description_html="x" * 100_000,
+            description_text="x" * 100_000,
+            first_seen_at=now,
+            last_seen_at=now,
+            last_verified_at=now,
+        )
+        session.add(posting)
+        session.flush()
+        session.add(
+            PostingSkill(
+                posting_id=posting.id,
+                skill="Python",
+                category="language",
+            )
+        )
+        session.commit()
+
+    statements: list[str] = []
+
+    @event.listens_for(engine, "before_cursor_execute")
+    def capture_statement(_conn, _cursor, statement, _parameters, _context, _many):
+        statements.append(statement)
+
+    with Session(engine) as session:
+        report = build_source_monitor_report(session, now=now)
+
+        assert report["totals"]["open_postings"] == 1
+        assert report["totals"]["tech_job_ratio"] == 1.0
+        posting_queries = [
+            statement
+            for statement in statements
+            if "FROM job_postings" in statement
+        ]
+        assert posting_queries
+        assert all(
+            "description_html" not in statement
+            and "description_text" not in statement
+            and "LEFT OUTER JOIN posting_skills" not in statement
+            for statement in posting_queries
+        )
 
 
 def test_render_source_monitor_markdown_includes_health_tables() -> None:

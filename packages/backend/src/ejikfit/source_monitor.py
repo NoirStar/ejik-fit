@@ -1,14 +1,15 @@
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Mapping
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from ejikfit.models import (
     CareerSource,
     JobPosting,
     JobRevision,
+    PostingSkill,
     PolicyStatus,
     PostingStatus,
     SourceStatus,
@@ -63,31 +64,11 @@ def _health_status(source: CareerSource, since: datetime) -> str:
 
 def _source_item(
     source: CareerSource,
-    postings: list[JobPosting],
-    changed_posting_ids: set[Any],
+    activity: Mapping[str, int],
     since: datetime,
 ) -> dict[str, Any]:
-    open_postings = [
-        posting for posting in postings if posting.status == PostingStatus.OPEN
-    ]
-    new_postings = [
-        posting for posting in postings if _in_window(posting.first_seen_at, since)
-    ]
-    seen_postings = [
-        posting for posting in postings if _in_window(posting.last_seen_at, since)
-    ]
-    closed_postings = [
-        posting
-        for posting in postings
-        if posting.status == PostingStatus.CLOSED
-        and _in_window(posting.last_verified_at, since)
-    ]
-    tech_open_postings = [
-        posting for posting in open_postings if len(posting.skills) > 0
-    ]
-    changed_postings = [
-        posting for posting in postings if posting.id in changed_posting_ids
-    ]
+    open_postings = activity.get("open_postings", 0)
+    tech_open_postings = activity.get("tech_open_postings", 0)
 
     return {
         "source_id": str(source.id),
@@ -99,16 +80,80 @@ def _source_item(
         "policy_status": source.policy_status.value,
         "runnable": source.is_runnable,
         "health_status": _health_status(source, since),
-        "open_postings": len(open_postings),
-        "new_postings": len(new_postings),
-        "seen_postings": len(seen_postings),
-        "changed_postings": len(changed_postings),
-        "closed_postings": len(closed_postings),
-        "tech_open_postings": len(tech_open_postings),
-        "tech_job_ratio": _ratio(len(tech_open_postings), len(open_postings)),
+        "open_postings": open_postings,
+        "new_postings": activity.get("new_postings", 0),
+        "seen_postings": activity.get("seen_postings", 0),
+        "changed_postings": activity.get("changed_postings", 0),
+        "closed_postings": activity.get("closed_postings", 0),
+        "tech_open_postings": tech_open_postings,
+        "tech_job_ratio": _ratio(tech_open_postings, open_postings),
         "last_success_at": _iso(source.last_success_at),
         "last_error_code": source.last_error_code,
     }
+
+
+def _posting_activity_by_source(
+    session: Session,
+    since: datetime,
+) -> dict[Any, dict[str, int]]:
+    has_skill = (
+        select(PostingSkill.id)
+        .where(PostingSkill.posting_id == JobPosting.id)
+        .exists()
+    )
+    activity_rows = session.execute(
+        select(
+            JobPosting.source_id.label("source_id"),
+            func.count(JobPosting.id)
+            .filter(JobPosting.status == PostingStatus.OPEN)
+            .label("open_postings"),
+            func.count(JobPosting.id)
+            .filter(JobPosting.first_seen_at >= since)
+            .label("new_postings"),
+            func.count(JobPosting.id)
+            .filter(JobPosting.last_seen_at >= since)
+            .label("seen_postings"),
+            func.count(JobPosting.id)
+            .filter(
+                JobPosting.status == PostingStatus.CLOSED,
+                JobPosting.last_verified_at >= since,
+            )
+            .label("closed_postings"),
+            func.count(JobPosting.id)
+            .filter(
+                JobPosting.status == PostingStatus.OPEN,
+                has_skill,
+            )
+            .label("tech_open_postings"),
+        ).group_by(JobPosting.source_id)
+    )
+    activity = {
+        row.source_id: {
+            "open_postings": int(row.open_postings or 0),
+            "new_postings": int(row.new_postings or 0),
+            "seen_postings": int(row.seen_postings or 0),
+            "closed_postings": int(row.closed_postings or 0),
+            "tech_open_postings": int(row.tech_open_postings or 0),
+            "changed_postings": 0,
+        }
+        for row in activity_rows
+    }
+
+    changed_rows = session.execute(
+        select(
+            JobPosting.source_id,
+            func.count(func.distinct(JobRevision.posting_id)),
+        )
+        .join(JobRevision, JobRevision.posting_id == JobPosting.id)
+        .where(JobRevision.created_at >= since)
+        .group_by(JobPosting.source_id)
+    )
+    for source_id, changed_postings in changed_rows:
+        activity.setdefault(source_id, {})["changed_postings"] = int(
+            changed_postings or 0
+        )
+
+    return activity
 
 
 def _connector_family_health(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
@@ -166,30 +211,12 @@ def build_source_monitor_report(
         .unique()
         .all()
     )
-    postings = list(
-        session.scalars(
-            select(JobPosting)
-            .options(joinedload(JobPosting.skills))
-            .order_by(JobPosting.url)
-        )
-        .unique()
-        .all()
-    )
-    recent_revision_posting_ids = {
-        revision.posting_id
-        for revision in session.scalars(select(JobRevision)).all()
-        if _in_window(revision.created_at, since)
-    }
-
-    postings_by_source: dict[Any, list[JobPosting]] = defaultdict(list)
-    for posting in postings:
-        postings_by_source[posting.source_id].append(posting)
+    activity_by_source = _posting_activity_by_source(session, since)
 
     items = [
         _source_item(
             source,
-            postings_by_source.get(source.id, []),
-            recent_revision_posting_ids,
+            activity_by_source.get(source.id, {}),
             since,
         )
         for source in sources
