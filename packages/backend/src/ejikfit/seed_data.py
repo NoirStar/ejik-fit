@@ -570,7 +570,7 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="SK하이닉스",
         slug="sk-hynix",
-        base_url="https://talent.skhynix.com/hub/ko/apply/job",
+        base_url="https://talent.skhynix.com/hub/en/apply/job",
         source_type=SourceType.HTML_LISTING_DETAIL,
         homepage_url="https://www.skhynix.com",
         sector="enterprise_it",
@@ -583,8 +583,8 @@ INITIAL_SOURCE_CATALOG = (
         policy_risk=0,
         non_tech_noise=2,
         notes=(
-            "Official SK hynix Talent Hub jobs page; server-rendered listing "
-            "currently shows an empty state when no postings are open."
+            "Official SK hynix Talent Hub jobs page; the current English-path "
+            "endpoint responds with the Korean-localized server-rendered listing."
         ),
         status=SourceStatus.ALLOWED,
     ),

@@ -395,7 +395,7 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         sk_hynix = sources_by_slug["sk-hynix"]
         assert sk_hynix.status == SourceStatus.ALLOWED
         assert sk_hynix.connector_family == "html_listing_detail"
-        assert sk_hynix.base_url == "https://talent.skhynix.com/hub/ko/apply/job"
+        assert sk_hynix.base_url == "https://talent.skhynix.com/hub/en/apply/job"
 
         posco_dx = sources_by_slug["posco-dx"]
         assert posco_dx.status == SourceStatus.ALLOWED

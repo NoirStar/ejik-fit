@@ -83,7 +83,7 @@ describe("JobDetail", () => {
       "href",
       "/corrections",
     );
-    expect(screen.getByTitle("토스")).toBeInTheDocument();
+    expect(screen.getByTitle("토스 커뮤니티 로고")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "토스 기업 채용 현황" }),
     ).toHaveAttribute("href", "/companies/toss");
