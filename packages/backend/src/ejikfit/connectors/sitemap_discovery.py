@@ -1,7 +1,10 @@
 import re
 import xml.etree.ElementTree as ET
-from dataclasses import asdict, dataclass
-from urllib.parse import urljoin, urlparse
+from dataclasses import asdict, dataclass, replace
+from urllib.parse import parse_qs, urljoin, urlparse
+
+from ejikfit.connectors.jsonld import parse_jsonld_openings
+from ejikfit.connectors.types import OpeningRef, ParsedOpening
 
 
 JOB_MARKERS = (
@@ -116,3 +119,65 @@ def parse_sitemap_discovery(
         return _parse_xml_sitemap(raw, source_url)
     except ET.ParseError:
         return _parse_robots(raw, source_url)
+
+
+def _detail_external_id(url: str) -> str | None:
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query)
+    for key in ("job_id", "jobId", "gh_jid", "id", "openingId"):
+        values = query.get(key)
+        if values and values[0]:
+            return values[0]
+
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if not segments:
+        return None
+    tail = segments[-1]
+    if tail.endswith(".xml") or tail.casefold() in {
+        "apply",
+        "career",
+        "careers",
+        "job",
+        "jobs",
+        "recruit",
+    }:
+        return None
+    if any(
+        marker in {segment.casefold() for segment in segments[:-1]}
+        for marker in ("job", "jobs", "role", "opening", "openings", "position")
+    ):
+        return tail
+    return None
+
+
+def discover_sitemap_openings(raw: str, source_url: str) -> list[OpeningRef]:
+    refs: list[OpeningRef] = []
+    seen: set[str] = set()
+    source_hostname = urlparse(source_url).hostname
+    for candidate in parse_sitemap_discovery(raw, source_url):
+        candidate_hostname = urlparse(candidate.url).hostname
+        if (
+            source_hostname is None
+            or candidate_hostname is None
+            or candidate_hostname.casefold() != source_hostname.casefold()
+        ):
+            continue
+        external_id = _detail_external_id(candidate.url)
+        if external_id is None or external_id in seen:
+            continue
+        seen.add(external_id)
+        refs.append(OpeningRef(external_id=external_id, url=candidate.url))
+    if not refs:
+        raise ValueError("sitemap contains no job detail URLs")
+    return refs
+
+
+def parse_sitemap_detail_opening(
+    html: str,
+    page_url: str,
+    external_id: str,
+) -> ParsedOpening:
+    openings = parse_jsonld_openings(html, page_url)
+    if not openings:
+        raise ValueError("job detail has no schema.org JobPosting data")
+    return replace(openings[0], external_id=external_id, url=page_url)

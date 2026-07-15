@@ -85,6 +85,9 @@ describe("companyIdentity", () => {
     ["포트원", "https://portone.career.greetinghr.com/ko/o/1", "portone"],
     ["캐럿AI", "https://carat.career.greetinghr.com/ko/o/1", "carat-ai"],
     ["뤼튼테크놀로지스", "https://wrtn.career.greetinghr.com/ko/o/1", "wrtn"],
+    ["당근", "https://careers.daangn.com/jobs/role/1/", "daangn"],
+    ["무신사", "https://www.musinsacareers.com/ko/o/1", "musinsa"],
+    ["토스 커뮤니티", "https://toss.im/career/job-detail?job_id=1", "toss"],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

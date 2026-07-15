@@ -224,6 +224,72 @@ INITIAL_SOURCE_CATALOG = (
         notes="Official public Greeting careers listing and detail pages.",
     ),
     SeedSource(
+        name="무신사",
+        slug="musinsa",
+        base_url="https://www.musinsacareers.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.musinsa.com",
+        sector="platform",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=1,
+        notes=(
+            "Official public Musinsa careers listing and detail pages; "
+            "limited to technical role families exposed by Greeting."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="토스 커뮤니티",
+        slug="toss",
+        base_url=(
+            "https://api-public.toss.im/api/v3/ipd-eggnog/career/job-groups"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://toss.im",
+        sector="fintech",
+        connector_family="toss_public_api",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Toss public career job-groups endpoint; only explicit "
+            "engineering, data, security, infrastructure, QA, and ML "
+            "categories are ingested."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="당근",
+        slug="daangn",
+        base_url="https://careers.daangn.com/sitemap-0.xml",
+        source_type=SourceType.SITEMAP_DISCOVERY,
+        homepage_url="https://www.daangn.com",
+        sector="platform",
+        connector_family="sitemap_jsonld_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Daangn careers sitemap and public schema.org JobPosting "
+            "detail pages; only technical role titles are ingested."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

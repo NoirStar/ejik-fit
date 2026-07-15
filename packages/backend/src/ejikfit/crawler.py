@@ -29,7 +29,12 @@ from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
+from ejikfit.connectors.sitemap_discovery import (
+    discover_sitemap_openings,
+    parse_sitemap_detail_opening,
+)
 from ejikfit.connectors.successfactors import parse_successfactors_openings
+from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.workday import parse_workday_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
@@ -485,8 +490,27 @@ async def preview_source(
         )
 
     try:
+        if source.source_type == SourceType.SITEMAP_DISCOVERY:
+            refs = discover_sitemap_openings(listing.text, source.base_url)
+            return _preview_payload(
+                source,
+                discovered=len(refs),
+                sample_openings=[
+                    {
+                        "external_id": ref.external_id,
+                        "title": ref.title or ref.external_id,
+                        "url": ref.url,
+                    }
+                    for ref in refs[:sample_limit]
+                ],
+                complete=True,
+            )
         if source.source_type == SourceType.GREETING:
-            refs = discover_openings(listing.text, source.base_url)
+            refs = discover_openings(
+                listing.text,
+                source.base_url,
+                technical_only=source.connector_family == "greeting_tech",
+            )
             return _preview_payload(
                 source,
                 discovered=len(refs),
@@ -593,9 +617,95 @@ async def crawl_source(
     failed = 0
     seen_external_ids: set[str] = set()
 
+    if source.source_type == SourceType.SITEMAP_DISCOVERY:
+        try:
+            refs = discover_sitemap_openings(listing.text, source.base_url)
+        except (TypeError, ValueError) as error:
+            _mark_source_error(source, "listing_parse_error", str(error))
+            session.commit()
+            return CrawlResult(failed=1)
+
+        technical_only = (source.connector_family or "").endswith("_tech")
+        for index, ref in enumerate(refs):
+            if index > 0 and request_delay_seconds > 0:
+                await asyncio.sleep(request_delay_seconds)
+            try:
+                detail = await fetcher.fetch(ref.url)
+                opening = parse_sitemap_detail_opening(
+                    detail.text,
+                    ref.url,
+                    ref.external_id,
+                )
+                if technical_only and not is_technical_role(opening.title):
+                    continue
+                seen_external_ids.add(ref.external_id)
+                discovered += 1
+                ingest_opening(
+                    session,
+                    source,
+                    opening,
+                    detail.text,
+                    store,
+                    now,
+                    posting_index,
+                )
+                ingested += 1
+            except BlockedSourceError as error:
+                _mark_source_error(
+                    source,
+                    "blocked",
+                    str(error),
+                    status=SourceStatus.BLOCKED,
+                    policy_status=PolicyStatus.BLOCKED,
+                )
+                session.commit()
+                failed += 1
+                return CrawlResult(
+                    discovered=discovered,
+                    ingested=ingested,
+                    failed=failed,
+                )
+            except Exception as error:
+                session.rollback()
+                # Preserve the previous posting state when a detail page fails.
+                # Successfully parsed non-technical roles remain absent so an
+                # old technical posting can age out after changing role family.
+                seen_external_ids.add(ref.external_id)
+                logger.exception("Sitemap detail ingestion failed for %s", ref.url)
+                failed += 1
+                _mark_source_error(
+                    source,
+                    "partial_detail_failure",
+                    f"{type(error).__name__}: {error}",
+                )
+
+        source.last_verified_at = now
+        if discovered > 0:
+            source.last_discovered_at = now
+        if failed == 0:
+            _mark_source_success(source, now)
+        session.commit()
+        closed = reconcile_missing(
+            session,
+            source.id,
+            seen_external_ids,
+            successful_listing=True,
+            now=now,
+        )
+        return CrawlResult(
+            discovered=discovered,
+            ingested=ingested,
+            failed=failed,
+            closed=closed,
+        )
+
     if source.source_type == SourceType.GREETING:
         try:
-            refs = discover_openings(listing.text, source.base_url)
+            refs = discover_openings(
+                listing.text,
+                source.base_url,
+                technical_only=source.connector_family == "greeting_tech",
+            )
         except (KeyError, TypeError, ValueError) as error:
             _mark_source_error(source, "listing_parse_error", str(error))
             session.commit()

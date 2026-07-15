@@ -112,6 +112,24 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "뤼튼테크놀로지스",
     surface: "dark",
   },
+  {
+    aliases: ["당근", "당근마켓", "daangn", "karrot"],
+    hosts: ["careers.daangn.com"],
+    src: "/company-logo-assets/daangn",
+    displayName: "당근",
+  },
+  {
+    aliases: ["무신사", "musinsa"],
+    hosts: ["musinsacareers.com"],
+    src: "/company-logo-assets/musinsa",
+    displayName: "무신사",
+  },
+  {
+    aliases: ["토스 커뮤니티", "토스", "toss", "toss community"],
+    hosts: ["toss.im"],
+    src: "/company-logo-assets/toss",
+    displayName: "토스 커뮤니티",
+  },
 ];
 
 function normalize(value: string) {

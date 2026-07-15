@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CompanyMark } from "@/features/home-feed/company-mark";
 import { getSourceDirectory } from "@/lib/api";
 import type {
   SourceDirectoryItem,
@@ -38,9 +39,11 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
   return (
     <li className={styles.sourceRow}>
       <div className={styles.sourceIdentity}>
-        <span aria-hidden="true" className={styles.companyInitial}>
-          {item.company_name.slice(0, 1)}
-        </span>
+        <CompanyMark
+          companyName={item.company_name}
+          size={32}
+          sourceUrl={item.careers_url}
+        />
         <div>
           {isCollecting ? (
             <Link

@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from ejikfit.connectors.next_data import extract_next_data
+from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.types import OpeningRef, ParsedOpening
 from ejikfit.html_text import structured_plain_text
 
@@ -33,7 +34,40 @@ def _unique_join(values: list[str]) -> str | None:
     return ", ".join(unique_values) or None
 
 
-def discover_openings(html: str, page_url: str) -> list[OpeningRef]:
+def _opening_role_names(opening: dict[str, Any]) -> list[str]:
+    position_group = opening.get("openingJobPosition")
+    if not isinstance(position_group, dict):
+        return []
+    positions = position_group.get("openingJobPositions")
+    if not isinstance(positions, list):
+        return []
+
+    names: list[str] = []
+    for position in positions:
+        if not isinstance(position, dict):
+            continue
+        for container_key, value_keys in (
+            ("workspaceJob", ("job", "name")),
+            ("workspaceOccupation", ("occupation", "name")),
+            ("workspaceField", ("field", "name")),
+        ):
+            container = position.get(container_key)
+            if not isinstance(container, dict):
+                continue
+            for value_key in value_keys:
+                value = container.get(value_key)
+                if isinstance(value, str) and value:
+                    names.append(value)
+                    break
+    return names
+
+
+def discover_openings(
+    html: str,
+    page_url: str,
+    *,
+    technical_only: bool = False,
+) -> list[OpeningRef]:
     data = extract_next_data(html)
     openings: list[dict[str, Any]] | None = None
 
@@ -56,6 +90,16 @@ def discover_openings(html: str, page_url: str) -> list[OpeningRef]:
         opening_id = opening.get("openingId")
         if opening_id is None:
             continue
+        title = (
+            opening.get("title")
+            if isinstance(opening.get("title"), str)
+            else None
+        )
+        if technical_only and not is_technical_role(
+            title,
+            *_opening_role_names(opening),
+        ):
+            continue
         external_id = str(opening_id)
         if external_id in seen:
             continue
@@ -64,11 +108,7 @@ def discover_openings(html: str, page_url: str) -> list[OpeningRef]:
             OpeningRef(
                 external_id=external_id,
                 url=f"{page_url.rstrip('/')}/o/{external_id}",
-                title=(
-                    opening.get("title")
-                    if isinstance(opening.get("title"), str)
-                    else None
-                ),
+                title=title,
             )
         )
     return refs

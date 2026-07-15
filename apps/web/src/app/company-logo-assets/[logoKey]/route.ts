@@ -4,18 +4,22 @@ const MAX_LOGO_BYTES = 2_000_000;
 const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
+  daangn: "https://careers.daangn.com/apple-touch-icon.png",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
   makinarocks:
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
+  musinsa:
+    "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
+  toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",
   wrtn:

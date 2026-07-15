@@ -1553,6 +1553,85 @@ def test_preview_source_parses_greeting_listing_without_fetching_details() -> No
         assert session.scalars(select(JobPosting)).all() == []
 
 
+class SitemapDetailFetcher:
+    def __init__(self, listing_url: str, listing: str, details: dict[str, str]) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.details = details
+        self.urls: list[str] = []
+
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        self.urls.append(url)
+        return crawler.FetchedPage(
+            url=url,
+            text=self.listing if url == self.listing_url else self.details[url],
+            status_code=200,
+            headers={},
+        )
+
+
+def test_sitemap_detail_crawl_ingests_only_technical_jsonld_roles() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = "https://careers.example.com/sitemap.xml"
+    backend_url = "https://careers.example.com/jobs/role/101/"
+    marketing_url = "https://careers.example.com/jobs/role/102/"
+    listing = f"""
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url><loc>{backend_url}</loc></url>
+      <url><loc>{marketing_url}</loc></url>
+    </urlset>
+    """
+    details = {
+        backend_url: """
+          <script type="application/ld+json">
+            {"@type":"JobPosting","title":"Backend Engineer",
+             "description":"<p>Python과 FastAPI</p>"}
+          </script>
+        """,
+        marketing_url: """
+          <script type="application/ld+json">
+            {"@type":"JobPosting","title":"Brand Marketing Manager",
+             "description":"<p>브랜드 캠페인 운영</p>"}
+          </script>
+        """,
+    }
+
+    with Session(engine) as session:
+        company = Company(name="당근", slug="daangn")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.SITEMAP_DISCOVERY,
+            connector_family="sitemap_jsonld_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = SitemapDetailFetcher(listing_url, listing, details)
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert result.failed == 0
+        assert [posting.external_id for posting in postings] == ["101"]
+        assert postings[0].title == "Backend Engineer"
+        assert fetcher.urls == [listing_url, backend_url, marketing_url]
+        assert source.last_success_at is not None
+
+
 def test_greeting_listing_parse_failure_is_persisted() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

@@ -19,6 +19,26 @@ def test_discovers_greeting_opening_urls() -> None:
     ]
 
 
+def test_discovers_only_technical_roles_when_source_requests_it() -> None:
+    html = (FIXTURES / "list.html").read_text().replace(
+        '{"openingId": 205581, "title": "Security Engineer"}',
+        (
+            '{"openingId": 205581, "title": "Security Engineer"},'
+            '{"openingId": 205582, "title": "Brand Marketing Manager"},'
+            '{"openingId": 205583, "title": '
+            '"Program Manager (Commerce Platform)"}'
+        ),
+    )
+
+    refs = discover_openings(
+        html,
+        "https://sample.career.greetinghr.com/ko",
+        technical_only=True,
+    )
+
+    assert [ref.external_id for ref in refs] == ["209187", "205581"]
+
+
 def test_parses_greeting_opening_with_mixed_career() -> None:
     html = (FIXTURES / "opening.html").read_text()
     opening = parse_opening(

@@ -9,6 +9,24 @@ from ejikfit.connectors.next_data import parse_static_payload_openings
 from ejikfit.connectors.types import ParsedOpening
 
 
+TOSS_TECH_CATEGORIES = {
+    "App",
+    "Backend",
+    "Data Analysis",
+    "Data Engineering",
+    "Data Managing",
+    "Device",
+    "Frontend",
+    "Information Security",
+    "Infra",
+    "ML",
+    "QA",
+    "R&D",
+    "Security Engineering",
+    "Technical Excellence",
+}
+
+
 def _posco_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     recu_list = data.get("recuList")
     if not isinstance(recu_list, list):
@@ -418,6 +436,135 @@ def _hanwha_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     return {"jobs": jobs}
 
 
+def _toss_metadata(item: dict[str, Any]) -> dict[str, Any]:
+    metadata = item.get("metadata")
+    if not isinstance(metadata, list):
+        return {}
+    return {
+        str(entry.get("name")): entry.get("value")
+        for entry in metadata
+        if isinstance(entry, dict) and isinstance(entry.get("name"), str)
+    }
+
+
+def _metadata_value(
+    metadata: dict[str, Any],
+    marker: str,
+) -> Any:
+    for name, value in metadata.items():
+        if marker in name:
+            return value
+    return None
+
+
+def _toss_keywords(value: Any) -> list[str]:
+    if isinstance(value, list):
+        raw_values = [str(item) for item in value]
+    elif isinstance(value, str):
+        raw_values = re.split(r"[,|]", value)
+    else:
+        return []
+    return list(
+        dict.fromkeys(
+            keyword.strip()
+            for keyword in raw_values
+            if keyword.strip()
+        )
+    )
+
+
+def _toss_career_label(description: str) -> str | None:
+    has_newcomer = "신입" in description
+    has_experienced = "경력" in description or re.search(
+        r"\d+\s*년(?:\s*이상)?",
+        description,
+    ) is not None
+    if has_newcomer and has_experienced:
+        return "신입/경력"
+    if has_newcomer:
+        return "신입"
+    if has_experienced:
+        return "경력"
+    return None
+
+
+def _toss_job_groups_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    groups = data.get("success")
+    if data.get("resultType") != "SUCCESS" or not isinstance(groups, list):
+        return None
+    if not any(
+        isinstance(group, dict)
+        and isinstance(group.get("jobs"), list)
+        and any(
+            isinstance(item, dict) and "absolute_url" in item
+            for item in group["jobs"]
+        )
+        for group in groups
+    ):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        raw_jobs = group.get("jobs")
+        if not isinstance(raw_jobs, list):
+            continue
+        for item in raw_jobs:
+            if not isinstance(item, dict):
+                continue
+            posting_id = item.get("id")
+            title = item.get("title")
+            if posting_id is None or not isinstance(title, str):
+                continue
+            posting_id_text = str(posting_id)
+            if posting_id_text in seen_ids:
+                continue
+
+            metadata = _toss_metadata(item)
+            category = _metadata_value(metadata, "Job Category")
+            if category not in TOSS_TECH_CATEGORIES:
+                continue
+            if _metadata_value(metadata, '메뉴에 "미노출"') is True:
+                continue
+
+            description = _metadata_value(metadata, "Job Description")
+            description_text = description if isinstance(description, str) else ""
+            keyword_value = _metadata_value(metadata, "검색에 쓰일 키워드")
+            keywords = _toss_keywords(keyword_value)
+            location = item.get("location")
+            if isinstance(location, dict):
+                location = location.get("name")
+
+            seen_ids.add(posting_id_text)
+            jobs.append(
+                {
+                    "id": posting_id_text,
+                    "title": unescape(title),
+                    "jobDetailUrl": (
+                        "https://toss.im/career/job-detail?"
+                        f"{urlencode({'job_id': posting_id_text})}"
+                    ),
+                    "description": description_text,
+                    "employmentType": metadata.get("Employment_Type"),
+                    "careerTypeName": _toss_career_label(description_text),
+                    "location": location,
+                    "datePosted": item.get("first_published"),
+                    "validThrough": item.get("application_deadline")
+                    or _metadata_value(metadata, "클로징 일자"),
+                    "companyName": _metadata_value(metadata, "소속 자회사")
+                    or item.get("company_name")
+                    or "Toss",
+                    "jobGroupName": category,
+                    "skills": keywords,
+                    "active": True,
+                    "live": True,
+                }
+            )
+    return {"jobs": jobs}
+
+
 def parse_enterprise_json_openings(
     raw_json: str,
     listing_url: str,
@@ -428,6 +575,9 @@ def parse_enterprise_json_openings(
         if cj_payload is not None:
             return parse_static_payload_openings(cj_payload, listing_url)
     if isinstance(data, dict):
+        toss_payload = _toss_job_groups_payload(data)
+        if toss_payload is not None:
+            return parse_static_payload_openings(toss_payload, listing_url)
         posco_payload = _posco_recruit_payload(data)
         if posco_payload is not None:
             return parse_static_payload_openings(posco_payload, listing_url)

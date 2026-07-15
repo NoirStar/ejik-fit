@@ -509,3 +509,84 @@ def test_parse_enterprise_json_openings_maps_hanwha_recruit_api() -> None:
     assert opening.opens_at.isoformat() == "2026-07-02T09:00:00+09:00"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-12T23:59:00+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_toss_technical_job_groups() -> None:
+    description_name = (
+        "Job Description을 작성해 주세요."
+        "(작성 전, 채용 커뮤니케이션 가이드 노션을 꼭 참고해 주세요.)"
+    )
+    category_name = "커리어 페이지 노출 Job Category 값을 선택해주세요"
+    payload = {
+        "resultType": "SUCCESS",
+        "error": None,
+        "success": [
+            {
+                "id": 7786567003,
+                "title": "AI Engineer",
+                "jobs": [
+                    {
+                        "id": 7786567003,
+                        "title": "AI Engineer (Serving)",
+                        "absolute_url": (
+                            "https://toss.im/career/job-detail?gh_jid=7786567003"
+                        ),
+                        "location": {"name": "Seoul"},
+                        "first_published": "2026-07-01T09:00:00+09:00",
+                        "metadata": [
+                            {
+                                "name": "Employment_Type",
+                                "value": "정규직",
+                            },
+                            {"name": category_name, "value": "ML"},
+                            {
+                                "name": description_name,
+                                "value": (
+                                    "# 이런 분과 함께하고 싶어요\n"
+                                    "Python과 Kubernetes 경험이 있는 분"
+                                ),
+                            },
+                            {
+                                "name": "검색에 쓰일 키워드를 입력해주세요",
+                                "value": "Python,Kubernetes,LLM",
+                            },
+                        ],
+                    }
+                ],
+            },
+            {
+                "id": 6008890003,
+                "title": "Account Manager",
+                "jobs": [
+                    {
+                        "id": 6008890003,
+                        "title": "Account Manager (FacePay)",
+                        "absolute_url": (
+                            "https://toss.im/career/job-detail?gh_jid=6008890003"
+                        ),
+                        "metadata": [
+                            {"name": category_name, "value": "Sales"},
+                            {"name": description_name, "value": "가맹점 영업"},
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://api-public.toss.im/api/v3/ipd-eggnog/career/job-groups",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "7786567003"
+    assert opening.url == (
+        "https://toss.im/career/job-detail?job_id=7786567003"
+    )
+    assert opening.title == "AI Engineer (Serving)"
+    assert opening.employment_type == "정규직"
+    assert opening.location == "Seoul"
+    assert "Python과 Kubernetes" in opening.description_text
+    assert "Python Kubernetes LLM" in opening.description_text

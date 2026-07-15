@@ -31,6 +31,9 @@ back to company initials when the official asset is unavailable.
 | `portone` | 포트원 | <https://portone.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976> | 2026-07-15 |
 | `carat-ai` | 캐럿AI | <https://carat.career.greetinghr.com/ko> | <https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png> | 2026-07-15 |
 | `wrtn` | 뤼튼테크놀로지스 | <https://wrtn.career.greetinghr.com/ko> | <https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png> | 2026-07-15 |
+| `daangn` | 당근 | <https://careers.daangn.com/jobs/> | <https://careers.daangn.com/apple-touch-icon.png> | 2026-07-15 |
+| `musinsa` | 무신사 | <https://www.musinsacareers.com/ko> | <https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5> | 2026-07-15 |
+| `toss` | 토스 커뮤니티 | <https://toss.im/career/jobs> | <https://static.toss.im/tds/favicon/favicon-196x196.png> | 2026-07-15 |
 
 ## Assets intentionally not stored
 
