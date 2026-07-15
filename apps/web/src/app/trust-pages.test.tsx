@@ -89,6 +89,10 @@ describe("public trust pages", () => {
       '{"careerCondition":"experienced","targetDomain":"cloud"}',
     );
     localStorage.setItem(
+      "ejik-fit:followed-company-slugs",
+      '["naver"]',
+    );
+    localStorage.setItem(
       "ejik-fit:local-community-posts",
       '[{"id":"local-post","title":"내 글","body":"본문","tags":[],"createdAt":"2026-07-14T00:00:00.000Z"}]',
     );
@@ -108,6 +112,7 @@ describe("public trust pages", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:social-interactions/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:career-preferences/)).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:followed-company-slugs/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:local-community-posts/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:recent-community-topics/)).toBeInTheDocument();
     expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
@@ -121,6 +126,7 @@ describe("public trust pages", () => {
     ).toBeNull();
     expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
     expect(localStorage.getItem("ejik-fit:career-preferences")).toBeNull();
+    expect(localStorage.getItem("ejik-fit:followed-company-slugs")).toBeNull();
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
     expect(localStorage.getItem("ejik-fit:recent-community-topics")).toBeNull();
     expect(window.location.search).toBe("");

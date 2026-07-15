@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  accountCareerStateToLegacyRow,
+  accountCareerStateToRow,
   clearBrowserAccountState,
   mergeAccountCareerState,
   readBrowserAccountState,
@@ -29,6 +31,7 @@ describe("account career state", () => {
       careerPreferences: { careerCondition: "", targetDomain: "backend" },
       savedJobIds: ["job-2", "job-3"],
       applicationStages: { "job-2": "interview" },
+      followedCompanySlugs: ["naver", "toss"],
     };
     const server: AccountCareerState = {
       ownedSkills: ["Docker", "Python"],
@@ -38,6 +41,7 @@ describe("account career state", () => {
       },
       savedJobIds: ["job-1", "job-2"],
       applicationStages: { "job-1": "applied", "job-2": "preparing" },
+      followedCompanySlugs: ["kakao-pay", "naver"],
     };
 
     expect(mergeAccountCareerState(browser, server)).toEqual({
@@ -48,6 +52,7 @@ describe("account career state", () => {
       },
       savedJobIds: ["job-1", "job-2", "job-3"],
       applicationStages: { "job-1": "applied", "job-2": "interview" },
+      followedCompanySlugs: ["kakao-pay", "naver", "toss"],
     });
   });
 
@@ -62,6 +67,7 @@ describe("account career state", () => {
         },
         savedJobIds: ["job-1"],
         applicationStages: { "job-1": "applied" },
+        followedCompanySlugs: [" Naver ", "naver"],
       },
       storage,
     );
@@ -74,6 +80,7 @@ describe("account career state", () => {
       },
       savedJobIds: ["job-1"],
       applicationStages: { "job-1": "applied" },
+      followedCompanySlugs: ["naver"],
     });
 
     clearBrowserAccountState(storage);
@@ -82,6 +89,25 @@ describe("account career state", () => {
       careerPreferences: { careerCondition: "", targetDomain: "" },
       savedJobIds: [],
       applicationStages: {},
+      followedCompanySlugs: [],
     });
+  });
+
+  it("keeps the legacy write payload usable while the followed-company migration rolls out", () => {
+    const state: AccountCareerState = {
+      ownedSkills: ["Python"],
+      careerPreferences: { careerCondition: "", targetDomain: "" },
+      savedJobIds: [],
+      applicationStages: {},
+      followedCompanySlugs: ["naver"],
+    };
+
+    expect(accountCareerStateToRow("user-1", state)).toMatchObject({
+      user_id: "user-1",
+      followed_company_slugs: ["naver"],
+    });
+    expect(accountCareerStateToLegacyRow("user-1", state)).not.toHaveProperty(
+      "followed_company_slugs",
+    );
   });
 });

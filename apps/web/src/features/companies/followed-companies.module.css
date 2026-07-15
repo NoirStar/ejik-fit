@@ -1,0 +1,366 @@
+.page {
+  width: min(100%, 74rem);
+  margin: 0 auto;
+  padding: 1.5rem clamp(1rem, 3vw, 2rem) 5rem;
+}
+
+.backLink,
+.intro a,
+.state a,
+.companyIdentity a,
+.companyActions a {
+  display: inline-flex;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  text-decoration: none;
+}
+
+.backLink {
+  width: fit-content;
+  gap: 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 720;
+}
+
+.intro {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.intro > div {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.intro p,
+.intro h1,
+.intro span,
+.panelHeader p,
+.panelHeader h2,
+.state h3,
+.state p,
+.scopeNote {
+  margin: 0;
+}
+
+.intro p,
+.panelHeader p {
+  color: var(--color-accent-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.intro h1 {
+  color: var(--color-text);
+  font-size: var(--type-page-title);
+  font-weight: 770;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+
+.intro span {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.intro a,
+.state a,
+.companyActions a {
+  gap: 0.3rem;
+  color: var(--color-accent-strong);
+  font-size: 0.78rem;
+  font-weight: 760;
+}
+
+.panel {
+  margin-top: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.panelHeader {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.15rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.panelHeader > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.panelHeader h2 {
+  color: var(--color-text);
+  font-size: 1.05rem;
+  font-weight: 820;
+}
+
+.panelHeader > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.panelHeader span {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 720;
+}
+
+.panelHeader button,
+.companyActions button {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.panelHeader button {
+  min-height: var(--touch-target);
+  padding: 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 720;
+}
+
+.panelHeader button:hover,
+.companyActions button:hover {
+  color: var(--color-danger);
+}
+
+.state {
+  display: grid;
+  min-height: 12rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.state > svg {
+  color: var(--color-accent-strong);
+}
+
+.state > div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.state h3 {
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 820;
+}
+
+.state p,
+.scopeNote,
+.directoryWarning {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.loadingMark {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid var(--color-line);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.directoryWarning {
+  margin: 0;
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface-subtle);
+}
+
+.companyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companyRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(10rem, 1fr) minmax(13rem, 1.25fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1.15rem;
+}
+
+.companyRow + .companyRow {
+  border-top: 1px solid var(--color-line);
+}
+
+.companyRow:hover {
+  background: var(--color-surface-subtle);
+}
+
+.missingMark {
+  display: grid;
+  width: 2.625rem;
+  height: 2.625rem;
+  place-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: 0.65rem;
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+}
+
+.companyIdentity,
+.companyStatus {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.companyIdentity a,
+.companyIdentity > strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 810;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.companyIdentity span,
+.companyStatus span {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.companyStatus strong {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+}
+
+.companyActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.companyActions a {
+  padding: 0 0.35rem;
+  white-space: nowrap;
+}
+
+.companyActions button {
+  display: grid;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--radius-control);
+}
+
+.scopeNote {
+  max-width: 58rem;
+  margin-top: 0.85rem;
+}
+
+.backLink:hover,
+.intro a:hover,
+.state a:hover,
+.companyIdentity a:hover,
+.companyActions a:hover {
+  color: var(--color-text);
+}
+
+.backLink:focus-visible,
+.intro a:focus-visible,
+.state a:focus-visible,
+.companyIdentity a:focus-visible,
+.companyActions a:focus-visible,
+.panelHeader button:focus-visible,
+.companyActions button:focus-visible {
+  border-radius: 0.35rem;
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+  .companyRow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .companyStatus {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .companyActions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 1.25rem 1rem calc(2rem + var(--mobile-nav-height));
+  }
+
+  .intro {
+    display: grid;
+  }
+
+  .intro a {
+    width: fit-content;
+  }
+
+  .state,
+  .companyRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .state a {
+    width: fit-content;
+    grid-column: 2;
+  }
+
+  .companyStatus,
+  .companyActions {
+    grid-column: 2;
+    grid-row: auto;
+  }
+
+  .companyActions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .companyIdentity span,
+  .companyStatus span {
+    white-space: normal;
+  }
+}

@@ -12,6 +12,7 @@ import { formatEmployment } from "@/lib/labels";
 import type { PostingListResponse, PostingSummary } from "@/lib/types";
 
 import styles from "./company-profile.module.css";
+import { CompanyFollowButton } from "./company-follow-button";
 import {
   buildCompanyHiringSnapshot,
   type CompanyDistributionItem,
@@ -215,15 +216,21 @@ export function CompanyProfile({
             현재 공개 상태로 확인된 채용 공고에서 기술과 채용 조건을 모았습니다.
           </p>
         </div>
-        <a
-          className={styles.sourceLink}
-          href={primarySource}
-          rel="noreferrer"
-          target="_blank"
-        >
-          최근 공식 원문
-          <ArrowSquareOut aria-hidden="true" size={16} weight="bold" />
-        </a>
+        <div className={styles.heroActions}>
+          <CompanyFollowButton
+            companyName={companyName}
+            companySlug={companySlug}
+          />
+          <a
+            className={styles.sourceLink}
+            href={primarySource}
+            rel="noreferrer"
+            target="_blank"
+          >
+            최근 공식 원문
+            <ArrowSquareOut aria-hidden="true" size={16} weight="bold" />
+          </a>
+        </div>
       </header>
 
       <section aria-labelledby="company-snapshot-title">

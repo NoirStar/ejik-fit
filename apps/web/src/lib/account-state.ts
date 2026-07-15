@@ -20,6 +20,12 @@ import {
   writeOwnedSkills,
 } from "./owned-skills";
 import {
+  clearFollowedCompanies,
+  normalizeFollowedCompanySlugs,
+  readFollowedCompanySlugs,
+  writeFollowedCompanySlugs,
+} from "./followed-companies";
+import {
   clearSavedJobs,
   normalizeSavedJobIds,
   readSavedJobIds,
@@ -31,6 +37,7 @@ export type AccountCareerState = {
   careerPreferences: CareerPreferences;
   savedJobIds: string[];
   applicationStages: JobApplicationStages;
+  followedCompanySlugs: string[];
 };
 
 export type AccountCareerStateRow = {
@@ -39,6 +46,7 @@ export type AccountCareerStateRow = {
   career_preferences: unknown;
   saved_job_ids: unknown;
   application_stages: unknown;
+  followed_company_slugs: unknown;
   updated_at: string;
 };
 
@@ -47,6 +55,7 @@ export const EMPTY_ACCOUNT_CAREER_STATE: AccountCareerState = {
   careerPreferences: { ...EMPTY_CAREER_PREFERENCES },
   savedJobIds: [],
   applicationStages: {},
+  followedCompanySlugs: [],
 };
 
 const MAX_ACCOUNT_SKILLS = 100;
@@ -76,6 +85,9 @@ export function normalizeAccountCareerState(value: unknown): AccountCareerState 
     careerPreferences: normalizeCareerPreferences(candidate.careerPreferences),
     savedJobIds: normalizeSavedJobIds(stringArray(candidate.savedJobIds)),
     applicationStages: normalizeJobApplicationStages(candidate.applicationStages),
+    followedCompanySlugs: normalizeFollowedCompanySlugs(
+      stringArray(candidate.followedCompanySlugs),
+    ),
   };
 }
 
@@ -88,6 +100,7 @@ export function accountCareerStateFromRow(
     careerPreferences: value.career_preferences,
     savedJobIds: value.saved_job_ids,
     applicationStages: value.application_stages,
+    followedCompanySlugs: value.followed_company_slugs,
   });
 }
 
@@ -118,6 +131,10 @@ export function mergeAccountCareerState(
       ...server.applicationStages,
       ...browser.applicationStages,
     }),
+    followedCompanySlugs: normalizeFollowedCompanySlugs([
+      ...server.followedCompanySlugs,
+      ...browser.followedCompanySlugs,
+    ]),
   };
 }
 
@@ -129,6 +146,7 @@ export function readBrowserAccountState(
     careerPreferences: readCareerPreferences(storage),
     savedJobIds: readSavedJobIds(storage),
     applicationStages: readJobApplicationStages(storage),
+    followedCompanySlugs: readFollowedCompanySlugs(storage),
   };
 }
 
@@ -141,6 +159,7 @@ export function writeBrowserAccountState(
   writeCareerPreferences(normalized.careerPreferences, storage);
   writeSavedJobIds(normalized.savedJobIds, storage);
   writeJobApplicationStages(normalized.applicationStages, storage);
+  writeFollowedCompanySlugs(normalized.followedCompanySlugs, storage);
   return normalized;
 }
 
@@ -149,6 +168,7 @@ export function clearBrowserAccountState(storage?: Storage | null) {
   clearCareerPreferences(storage);
   clearSavedJobs(storage);
   clearJobApplicationStages(storage);
+  clearFollowedCompanies(storage);
 }
 
 export function accountCareerStateToRow(
@@ -162,6 +182,16 @@ export function accountCareerStateToRow(
     career_preferences: normalized.careerPreferences,
     saved_job_ids: normalized.savedJobIds,
     application_stages: normalized.applicationStages,
+    followed_company_slugs: normalized.followedCompanySlugs,
     updated_at: new Date().toISOString(),
   };
+}
+
+export function accountCareerStateToLegacyRow(
+  userId: string,
+  value: AccountCareerState,
+): Omit<AccountCareerStateRow, "followed_company_slugs"> {
+  const { followed_company_slugs: _followedCompanies, ...legacyRow } =
+    accountCareerStateToRow(userId, value);
+  return legacyRow;
 }

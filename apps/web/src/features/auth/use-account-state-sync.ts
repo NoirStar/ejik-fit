@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   accountCareerStateFromRow,
+  accountCareerStateToLegacyRow,
   accountCareerStateToRow,
   mergeAccountCareerState,
   readBrowserAccountState,
@@ -12,6 +13,7 @@ import {
   type AccountCareerStateRow,
 } from "@/lib/account-state";
 import { subscribeCareerPreferences } from "@/lib/career-preferences";
+import { subscribeFollowedCompanies } from "@/lib/followed-companies";
 import { subscribeJobApplicationStages } from "@/lib/job-application-stages";
 import { subscribeOwnedSkills } from "@/lib/owned-skills";
 import { subscribeSavedJobs } from "@/lib/saved-jobs";
@@ -27,8 +29,32 @@ const STATE_COLUMNS = [
   "career_preferences",
   "saved_job_ids",
   "application_stages",
+  "followed_company_slugs",
   "updated_at",
 ].join(",");
+
+const LEGACY_STATE_COLUMNS = [
+  "user_id",
+  "owned_skills",
+  "career_preferences",
+  "saved_job_ids",
+  "application_stages",
+  "updated_at",
+].join(",");
+
+function isMissingFollowedCompaniesColumn(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; message?: unknown };
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  const message =
+    typeof candidate.message === "string"
+      ? candidate.message.toLocaleLowerCase("en-US")
+      : "";
+  return (
+    (code === "42703" || code === "PGRST204") &&
+    message.includes("followed_company_slugs")
+  );
+}
 
 function sameState(left: AccountCareerState, right: AccountCareerState) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -55,15 +81,40 @@ export function useAccountStateSync(viewer: AuthViewer | null) {
     let synced = false;
     let dirty = false;
     let saving = false;
+    let remoteSupportsFollowedCompanies = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function writeRemote(value: AccountCareerState) {
       const { error } = await client
         .from("user_career_states")
-        .upsert(accountCareerStateToRow(activeViewer.id, value), {
-          onConflict: "user_id",
-        });
+        .upsert(
+          remoteSupportsFollowedCompanies
+            ? accountCareerStateToRow(activeViewer.id, value)
+            : accountCareerStateToLegacyRow(activeViewer.id, value),
+          {
+            onConflict: "user_id",
+          },
+        );
       if (error) throw error;
+    }
+
+    async function readRemote() {
+      const current = await client
+        .from("user_career_states")
+        .select(STATE_COLUMNS)
+        .eq("user_id", activeViewer.id)
+        .maybeSingle();
+      if (!current.error) return current.data;
+      if (!isMissingFollowedCompaniesColumn(current.error)) throw current.error;
+
+      remoteSupportsFollowedCompanies = false;
+      const legacy = await client
+        .from("user_career_states")
+        .select(LEGACY_STATE_COLUMNS)
+        .eq("user_id", activeViewer.id)
+        .maybeSingle();
+      if (legacy.error) throw legacy.error;
+      return legacy.data;
     }
 
     async function flush() {
@@ -95,17 +146,13 @@ export function useAccountStateSync(viewer: AuthViewer | null) {
       subscribeCareerPreferences(scheduleSave),
       subscribeSavedJobs(scheduleSave),
       subscribeJobApplicationStages(scheduleSave),
+      subscribeFollowedCompanies(scheduleSave),
     ];
 
     async function reconcile() {
       setStatus("syncing");
       try {
-        const { data, error } = await client
-          .from("user_career_states")
-          .select(STATE_COLUMNS)
-          .eq("user_id", activeViewer.id)
-          .maybeSingle();
-        if (error) throw error;
+        const data = await readRemote();
 
         const merged = mergeAccountCareerState(
           readBrowserAccountState(),

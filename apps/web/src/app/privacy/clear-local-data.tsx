@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { clearCareerPreferences } from "@/lib/career-preferences";
+import { clearFollowedCompanies } from "@/lib/followed-companies";
 import { clearJobApplicationStages } from "@/lib/job-application-stages";
 import { clearLocalCommunityPosts } from "@/lib/local-community-posts";
 import { clearOwnedSkills } from "@/lib/owned-skills";
@@ -26,6 +27,7 @@ export function ClearLocalData() {
       clearSavedJobs(storage);
       clearJobApplicationStages(storage);
       clearSocialInteractions(storage);
+      clearFollowedCompanies(storage);
       storageCleared =
         storage.getItem("ejik-fit:owned-skills") === null &&
         storage.getItem("ejik-fit:career-preferences") === null &&
@@ -33,7 +35,8 @@ export function ClearLocalData() {
         storage.getItem("ejik-fit:recent-community-topics") === null &&
         storage.getItem("ejik-fit:saved-job-ids") === null &&
         storage.getItem("ejik-fit:job-application-stages") === null &&
-        storage.getItem("ejik-fit:social-interactions") === null;
+        storage.getItem("ejik-fit:social-interactions") === null &&
+        storage.getItem("ejik-fit:followed-company-slugs") === null;
     } catch {
       storageCleared = false;
     }

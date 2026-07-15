@@ -92,6 +92,13 @@
   white-space: nowrap;
 }
 
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
 .sourceLink:hover,
 .jobHeader a:hover,
 .jobFooter a:hover,
@@ -564,9 +571,10 @@
     align-items: start;
   }
 
-  .sourceLink {
+  .heroActions {
     width: fit-content;
     grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .metrics {

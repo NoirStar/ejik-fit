@@ -3,6 +3,7 @@
 import {
   BookmarkSimple,
   Briefcase,
+  Buildings,
   ChartLineUp,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -22,6 +23,10 @@ import {
   readSavedJobIds,
   subscribeSavedJobs,
 } from "@/lib/saved-jobs";
+import {
+  readFollowedCompanySlugs,
+  subscribeFollowedCompanies,
+} from "@/lib/followed-companies";
 
 import styles from "./activity-notification-center.module.css";
 
@@ -55,11 +60,13 @@ export function ActivityNotificationCenter({
   const [applicationStages, setApplicationStages] =
     useState<JobApplicationStages>({});
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
+  const [followedCompanySlugs, setFollowedCompanySlugs] = useState<string[]>([]);
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
     setApplicationStages(readJobApplicationStages());
     setOwnedSkills(readOwnedSkills());
+    setFollowedCompanySlugs(readFollowedCompanySlugs());
     setHydrated(true);
 
     const unsubscribeSavedJobs = subscribeSavedJobs(setSavedJobIds);
@@ -67,10 +74,14 @@ export function ActivityNotificationCenter({
       setApplicationStages,
     );
     const unsubscribeSkills = subscribeOwnedSkills(setOwnedSkills);
+    const unsubscribeCompanies = subscribeFollowedCompanies(
+      setFollowedCompanySlugs,
+    );
     return () => {
       unsubscribeSavedJobs();
       unsubscribeApplications();
       unsubscribeSkills();
+      unsubscribeCompanies();
     };
   }, []);
 
@@ -83,7 +94,10 @@ export function ActivityNotificationCenter({
     [applicationStages, savedJobIds],
   );
   const hasActivity =
-    savedJobIds.length > 0 || applicationCount > 0 || ownedSkills.length > 0;
+    savedJobIds.length > 0 ||
+    applicationCount > 0 ||
+    ownedSkills.length > 0 ||
+    followedCompanySlugs.length > 0;
 
   if (!hydrated) {
     return (
@@ -124,6 +138,18 @@ export function ActivityNotificationCenter({
           <span className={styles.copy}>
             <strong>저장한 공고 {savedJobIds.length}건</strong>
             <small>공고 상태와 마감일을 다시 확인해 보세요.</small>
+          </span>
+        </Link>
+      )}
+
+      {followedCompanySlugs.length > 0 && (
+        <Link href="/career/companies" onClick={onNavigate}>
+          <span className={styles.icon} data-tone="companies">
+            <Buildings aria-hidden="true" size={18} weight="fill" />
+          </span>
+          <span className={styles.copy}>
+            <strong>관심 기업 {followedCompanySlugs.length}개</strong>
+            <small>현재 열린 공식 공고를 다시 확인해 보세요.</small>
           </span>
         </Link>
       )}

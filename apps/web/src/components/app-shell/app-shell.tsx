@@ -370,7 +370,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span aria-live={viewer ? "polite" : undefined}>
                       {viewer
                         ? accountSyncStatus === "synced"
-                          ? "내 스택과 저장 공고가 동기화되었습니다."
+                          ? "내 스택·관심 기업·저장 공고가 동기화되었습니다."
                           : accountSyncStatus === "error"
                             ? "계정 데이터를 동기화하지 못했습니다."
                             : "내 커리어 정보를 동기화하고 있습니다."
@@ -392,6 +392,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                   <Link href="/career/saved" onClick={closeUtilityMenus}>
                     저장 보관함
+                  </Link>
+                  <Link href="/career/companies" onClick={closeUtilityMenus}>
+                    관심 기업
                   </Link>
                   <Link href="/career/questions" onClick={closeUtilityMenus}>
                     내 질문

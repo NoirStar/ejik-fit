@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   BookmarkSimple,
+  Buildings,
   Database,
   Plus,
   ShieldCheck,
@@ -523,6 +524,10 @@ export function CareerOverview({
           <Link className={styles.savedLibraryLink} href="/career/saved">
             <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
             저장 보관함
+          </Link>
+          <Link className={styles.savedLibraryLink} href="/career/companies">
+            <Buildings aria-hidden="true" size={16} weight="fill" />
+            관심 기업
           </Link>
         </div>
       </header>
