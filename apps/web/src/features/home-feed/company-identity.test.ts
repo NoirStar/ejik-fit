@@ -90,6 +90,7 @@ describe("companyIdentity", () => {
     ["토스 커뮤니티", "https://toss.im/career/job-detail?job_id=1", "toss"],
     ["Moloco", "https://job-boards.greenhouse.io/moloco/jobs/1", "moloco"],
     ["Sendbird", "https://job-boards.greenhouse.io/sendbird/jobs/1", "sendbird"],
+    ["쏘카", "https://socar.career.greetinghr.com/ko/o/225577", "socar"],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

@@ -1,6 +1,11 @@
+import json
 from pathlib import Path
 
-from ejikfit.connectors.greeting import discover_openings, parse_opening
+from ejikfit.connectors.greeting import (
+    discover_corporate_greeting_openings,
+    discover_openings,
+    parse_opening,
+)
 
 
 FIXTURES = Path(__file__).parents[3] / "tests" / "fixtures" / "greeting"
@@ -37,6 +42,70 @@ def test_discovers_only_technical_roles_when_source_requests_it() -> None:
     )
 
     assert [ref.external_id for ref in refs] == ["209187", "205581"]
+
+
+def test_discovers_complete_technical_greeting_links_from_corporate_next_data() -> None:
+    next_data = {
+        "props": {
+            "pageProps": {
+                "codeList": {
+                    "jobGroup": {
+                        "jsonResult": {
+                            "data": [
+                                {"code": "JG01", "code_name": "개발/데이터"},
+                                {"code": "JG06", "code_name": "홍보/마케팅"},
+                            ]
+                        }
+                    }
+                },
+                "jobList": {
+                    "statusCode": 200,
+                    "jsonResult": {
+                        "metaData": {"totalCount": "3"},
+                        "data": [
+                            {
+                                "title": "Platform Engineer (DBA)",
+                                "job_group_code": "JG01",
+                                "notice_url": (
+                                    "https://socar.career.greetinghr.com/ko/o/225577"
+                                ),
+                            },
+                            {
+                                "title": "Applied Research Scientist",
+                                "job_group_code": "JG01",
+                                "notice_url": (
+                                    "https://socar.career.greetinghr.com/ko/o/225579"
+                                ),
+                            },
+                            {
+                                "title": "브랜드 커뮤니케이션 매니저",
+                                "job_group_code": "JG06",
+                                "notice_url": (
+                                    "https://socar.career.greetinghr.com/ko/o/227529"
+                                ),
+                            },
+                        ],
+                    },
+                },
+            }
+        }
+    }
+    html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        f"{json.dumps(next_data, ensure_ascii=False)}"
+        "</script>"
+    )
+
+    refs = discover_corporate_greeting_openings(
+        html,
+        "https://www.socarcorp.kr/careers/jobs",
+        technical_only=True,
+    )
+
+    assert [(ref.external_id, ref.title) for ref in refs] == [
+        ("225577", "Platform Engineer (DBA)"),
+        ("225579", "Applied Research Scientist"),
+    ]
 
 
 def test_parses_greeting_opening_with_mixed_career() -> None:

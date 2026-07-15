@@ -37,6 +37,7 @@ back to company initials when the official asset is unavailable.
 | `toss` | 토스 커뮤니티 | <https://toss.im/career/jobs> | <https://static.toss.im/tds/favicon/favicon-196x196.png> | 2026-07-15 |
 | `moloco` | Moloco | <https://www.moloco.com/ko/careers> | <https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png> | 2026-07-15 |
 | `sendbird` | Sendbird | <https://sendbird.com/careers> | <https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png> | 2026-07-15 |
+| `socar` | 쏘카 | <https://www.socarcorp.kr/careers/jobs> | <https://www.socarcorp.kr/images/favicons/favicon_180x180.png> | 2026-07-15 |
 
 ## Assets intentionally not stored
 

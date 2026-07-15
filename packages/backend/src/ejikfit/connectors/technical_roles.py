@@ -21,6 +21,7 @@ TECHNICAL_ROLE_MARKERS = (
     "machine learning",
     "mlops",
     "qa",
+    "research scientist",
     "rpa",
     "security",
     "server",

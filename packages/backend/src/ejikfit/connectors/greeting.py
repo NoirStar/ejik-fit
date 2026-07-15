@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse
 
 from ejikfit.connectors.next_data import extract_next_data
 from ejikfit.connectors.technical_roles import is_technical_role
@@ -109,6 +110,101 @@ def discover_openings(
                 external_id=external_id,
                 url=f"{page_url.rstrip('/')}/o/{external_id}",
                 title=title,
+            )
+        )
+    return refs
+
+
+def _as_non_negative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed >= 0 else None
+
+
+def _corporate_job_group_names(page_props: dict[str, Any]) -> dict[str, str]:
+    code_list = page_props.get("codeList")
+    job_group = code_list.get("jobGroup") if isinstance(code_list, dict) else None
+    json_result = (
+        job_group.get("jsonResult") if isinstance(job_group, dict) else None
+    )
+    rows = json_result.get("data") if isinstance(json_result, dict) else None
+    if not isinstance(rows, list):
+        return {}
+    return {
+        code: name
+        for row in rows
+        if isinstance(row, dict)
+        if (code := row.get("code")) is not None
+        if isinstance((name := row.get("code_name")), str) and name
+    }
+
+
+def discover_corporate_greeting_openings(
+    html: str,
+    page_url: str,
+    *,
+    technical_only: bool = False,
+) -> list[OpeningRef]:
+    """Discover Greeting details exposed by a corporate Next.js careers page."""
+
+    listing = urlparse(page_url)
+    if listing.scheme not in {"http", "https"} or not listing.hostname:
+        raise ValueError("corporate careers URL must be absolute")
+    data = extract_next_data(html)
+    try:
+        page_props = data["props"]["pageProps"]
+        job_list = page_props["jobList"]
+        result = job_list["jsonResult"]
+        rows = result["data"]
+        declared_total = result["metaData"]["totalCount"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("corporate Greeting job list is missing") from error
+    if not isinstance(page_props, dict) or not isinstance(rows, list):
+        raise ValueError("corporate Greeting job list must be an array")
+    if _as_non_negative_int(job_list.get("statusCode")) != 200:
+        raise ValueError("corporate Greeting job list did not return success")
+    total = _as_non_negative_int(declared_total)
+    if total is None or total != len(rows):
+        raise ValueError("corporate Greeting job list is incomplete")
+
+    group_names = _corporate_job_group_names(page_props)
+    refs: list[OpeningRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        title = row.get("title")
+        raw_url = row.get("notice_url")
+        if not isinstance(title, str) or not title.strip():
+            continue
+        if not isinstance(raw_url, str):
+            continue
+        parsed_url = urlparse(raw_url)
+        hostname = (parsed_url.hostname or "").casefold()
+        segments = [segment for segment in parsed_url.path.split("/") if segment]
+        if (
+            parsed_url.scheme != "https"
+            or not hostname.endswith(".career.greetinghr.com")
+            or len(segments) < 2
+            or segments[-2] != "o"
+        ):
+            continue
+        external_id = segments[-1]
+        if not external_id or external_id in seen:
+            continue
+        category = group_names.get(str(row.get("job_group_code")))
+        if technical_only and not is_technical_role(title, category):
+            continue
+        seen.add(external_id)
+        refs.append(
+            OpeningRef(
+                external_id=external_id,
+                url=raw_url,
+                title=title.strip(),
             )
         )
     return refs

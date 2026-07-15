@@ -22,6 +22,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
+  socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",

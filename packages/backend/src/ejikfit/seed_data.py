@@ -413,6 +413,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="쏘카",
+        slug="socar",
+        base_url="https://www.socarcorp.kr/careers/jobs",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.socarcorp.kr",
+        sector="mobility",
+        connector_family="corporate_greeting_links_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Socar corporate careers listing linked to public "
+            "Greeting detail pages; limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

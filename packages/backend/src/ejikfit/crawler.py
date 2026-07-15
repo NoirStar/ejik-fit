@@ -21,7 +21,11 @@ from tenacity import (
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.browser_public import parse_browser_public_render_openings
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
-from ejikfit.connectors.greeting import discover_openings, parse_opening
+from ejikfit.connectors.greeting import (
+    discover_corporate_greeting_openings,
+    discover_openings,
+    parse_opening,
+)
 from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
@@ -76,6 +80,20 @@ def _apply_source_opening_filters(
             if is_korea_technical_role(opening.title, opening.location)
         ]
     return openings
+
+
+def _discover_greeting_source_refs(source: CareerSource, html: str):
+    if source.connector_family == "corporate_greeting_links_tech":
+        return discover_corporate_greeting_openings(
+            html,
+            source.base_url,
+            technical_only=True,
+        )
+    return discover_openings(
+        html,
+        source.base_url,
+        technical_only=source.connector_family == "greeting_tech",
+    )
 
 
 class RetryableFetchError(RuntimeError):
@@ -570,11 +588,7 @@ async def preview_source(
                 ),
             )
         if source.source_type == SourceType.GREETING:
-            refs = discover_openings(
-                listing.text,
-                source.base_url,
-                technical_only=source.connector_family == "greeting_tech",
-            )
+            refs = _discover_greeting_source_refs(source, listing.text)
             return _preview_payload(
                 source,
                 discovered=len(refs),
@@ -880,11 +894,7 @@ async def crawl_source(
 
     if source.source_type == SourceType.GREETING:
         try:
-            refs = discover_openings(
-                listing.text,
-                source.base_url,
-                technical_only=source.connector_family == "greeting_tech",
-            )
+            refs = _discover_greeting_source_refs(source, listing.text)
         except (KeyError, TypeError, ValueError) as error:
             _mark_source_error(source, "listing_parse_error", str(error))
             session.commit()

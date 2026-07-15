@@ -149,6 +149,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logos/kakaobank.svg",
     displayName: "카카오뱅크",
   },
+  {
+    aliases: ["쏘카", "socar"],
+    hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
+    src: "/company-logo-assets/socar",
+    displayName: "쏘카",
+  },
 ];
 
 function normalize(value: string) {
