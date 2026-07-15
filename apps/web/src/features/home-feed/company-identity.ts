@@ -509,6 +509,24 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "NVIDIA Korea",
   },
   {
+    aliases: ["Riot Games Korea", "Riot Games", "라이엇 게임즈 코리아"],
+    hosts: ["riotgames.com", "boards-api.greenhouse.io", "boards.greenhouse.io"],
+    src: "/company-logo-assets/riot-games-korea",
+    displayName: "Riot Games Korea",
+  },
+  {
+    aliases: ["Wiz Korea", "Wiz", "위즈 코리아"],
+    hosts: ["wiz.io", "boards-api.greenhouse.io", "boards.greenhouse.io"],
+    src: "/company-logo-assets/wiz-korea",
+    displayName: "Wiz Korea",
+  },
+  {
+    aliases: ["Celonis Korea", "Celonis", "셀로니스 코리아"],
+    hosts: ["celonis.com", "boards-api.greenhouse.io", "boards.greenhouse.io"],
+    src: "/company-logo-assets/celonis-korea",
+    displayName: "Celonis Korea",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",

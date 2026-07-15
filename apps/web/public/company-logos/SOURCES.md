@@ -27,6 +27,9 @@ back to company initials when the official asset is unavailable.
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `amazon-web-services-korea` | Amazon Web Services Korea | <https://www.amazon.jobs/content/en/locations/asia-pacific/south-korea> | <https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico> | 2026-07-15 |
 | `nvidia-korea` | NVIDIA Korea | <https://www.nvidia.com/en-us/about-nvidia/careers/> | <https://www.nvidia.com/favicon.ico> | 2026-07-15 |
+| `riot-games-korea` | Riot Games Korea | <https://www.riotgames.com/en/work-with-us> | <https://www.riotgames.com/assets/img/meta/87021767499a895b42bbe1e6a9edaf27/apple-touch-icon-precomposed-180x180.png> | 2026-07-15 |
+| `wiz-korea` | Wiz Korea | <https://www.wiz.io/careers> | <https://www.wiz.io/favicon.png> | 2026-07-15 |
+| `celonis-korea` | Celonis Korea | <https://www.celonis.com/careers/jobs> | <https://www.celonis.com/favicon.ico> | 2026-07-15 |
 | `reflection-ai` | Reflection AI | <https://reflection.ai/> | <https://reflection.ai/apple-touch-icon.png> | 2026-07-15 |
 | `cheiron` | Cheiron | <https://www.cheiron.bio/> | <https://www.cheiron.bio/apple-touch-icon.png> | 2026-07-15 |
 | `cohere` | Cohere | <https://cohere.com/careers> | <https://cohere.com/apple-touch-icon.png> | 2026-07-15 |

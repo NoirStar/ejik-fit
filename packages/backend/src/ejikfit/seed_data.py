@@ -562,6 +562,69 @@ INITIAL_SOURCE_CATALOG = (
         },
     ),
     SeedSource(
+        name="Riot Games Korea",
+        slug="riot-games-korea",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "riotgames/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.riotgames.com/en/work-with-us",
+        sector="game_content",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=6,
+        notes=(
+            "Official public Riot Games Greenhouse feed; only technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Wiz Korea",
+        slug="wiz-korea",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "wizinc/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.wiz.io/careers",
+        sector="cloud_security",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public Wiz Greenhouse feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Celonis Korea",
+        slug="celonis-korea",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "celonis/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.celonis.com/careers/jobs",
+        sector="enterprise_software",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public Celonis Greenhouse feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

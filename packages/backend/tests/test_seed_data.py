@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 103
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 106
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 103
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 106
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -368,6 +368,20 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
         "searchText": "Korea",
     }
     assert nvidia.status == SourceStatus.ALLOWED
+
+    for slug, board in {
+        "riot-games-korea": "riotgames",
+        "wiz-korea": "wizinc",
+        "celonis-korea": "celonis",
+    }.items():
+        source = catalog_by_slug[slug]
+        assert source.base_url == (
+            "https://boards-api.greenhouse.io/v1/boards/"
+            f"{board}/jobs?content=true"
+        )
+        assert source.source_type == SourceType.LEVER_GREENHOUSE
+        assert source.connector_family == "lever_greenhouse_korea_tech"
+        assert source.status == SourceStatus.ALLOWED
 
     for slug, source_type, connector_family in (
         (

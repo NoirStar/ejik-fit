@@ -19,6 +19,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
   cheiron: "https://www.cheiron.bio/apple-touch-icon.png",
+  "celonis-korea": "https://www.celonis.com/favicon.ico",
   "clo-virtual-fashion":
     "https://cf.clovirtualfashion.com/web/_next/static/images/favicon_192x192.png",
   "cj-olivenetworks":
@@ -124,6 +125,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
+  "riot-games-korea":
+    "https://www.riotgames.com/assets/img/meta/87021767499a895b42bbe1e6a9edaf27/apple-touch-icon-precomposed-180x180.png",
   "samsung-sds":
     "https://image.samsungsds.com/resource/kr/images/app_ico.gif",
   "samsung-electronics":
@@ -154,6 +157,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
   wemade:
     "https://image.ninehire.com/homepage/83cdd300-13fa-11ee-a096-95051faa2e73/logo/6bfa5820-6af0-11f1-90eb-f327db58c8db.png",
+  "wiz-korea": "https://www.wiz.io/favicon.png",
   wrtn:
     "https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png",
   "woowahan-brothers": "https://career.woowahan.com/favicon.ico",

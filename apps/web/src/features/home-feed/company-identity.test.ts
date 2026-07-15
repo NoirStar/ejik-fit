@@ -438,6 +438,21 @@ describe("companyIdentity", () => {
       "nvidia-korea",
     ],
     [
+      "Riot Games Korea",
+      "https://boards-api.greenhouse.io/v1/boards/riotgames/jobs?content=true",
+      "riot-games-korea",
+    ],
+    [
+      "Wiz Korea",
+      "https://boards-api.greenhouse.io/v1/boards/wizinc/jobs?content=true",
+      "wiz-korea",
+    ],
+    [
+      "Celonis Korea",
+      "https://boards-api.greenhouse.io/v1/boards/celonis/jobs?content=true",
+      "celonis-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",
