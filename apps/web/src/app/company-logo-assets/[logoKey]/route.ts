@@ -92,6 +92,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
+  "twelve-labs":
+    "https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",
   "vessl-ai":

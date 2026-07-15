@@ -95,3 +95,63 @@ def test_parse_lever_greenhouse_openings_maps_greenhouse_jobs() -> None:
     assert opening.location == "Seoul, Korea"
     assert opening.description_text == "AI Seoul Tech Stack Python Build model serving systems."
     assert opening.opens_at is not None
+
+
+def test_parse_lever_greenhouse_openings_maps_ashby_jobs() -> None:
+    payload = {
+        "apiVersion": "1",
+        "jobs": [
+            {
+                "id": "042715bb-0674-4e2a-9155-19c54835fe18",
+                "title": "Senior Infrastructure Engineer",
+                "department": "Tech",
+                "team": "Engineering",
+                "location": "Seoul, South Korea",
+                "employmentType": "FullTime",
+                "isListed": True,
+                "isRemote": False,
+                "workplaceType": "Hybrid",
+                "publishedAt": "2026-04-06T06:58:45.512+00:00",
+                "jobUrl": (
+                    "https://jobs.ashbyhq.com/twelve-labs/"
+                    "042715bb-0674-4e2a-9155-19c54835fe18"
+                ),
+                "descriptionHtml": (
+                    "<h2>Role</h2><p>Build Kubernetes infrastructure.</p>"
+                ),
+                "descriptionPlain": "Role\nBuild Kubernetes infrastructure.",
+            },
+            {
+                "id": "152715bb-0674-4e2a-9155-19c54835fe19",
+                "title": "Hidden Backend Engineer",
+                "location": "Seoul, South Korea",
+                "isListed": False,
+                "jobUrl": (
+                    "https://jobs.ashbyhq.com/twelve-labs/"
+                    "152715bb-0674-4e2a-9155-19c54835fe19"
+                ),
+                "descriptionHtml": "<p>Hidden role</p>",
+            },
+        ],
+    }
+
+    openings = parse_lever_greenhouse_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://api.ashbyhq.com/posting-api/job-board/twelve-labs",
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "042715bb-0674-4e2a-9155-19c54835fe18"
+    assert opening.url == (
+        "https://jobs.ashbyhq.com/twelve-labs/"
+        "042715bb-0674-4e2a-9155-19c54835fe18"
+    )
+    assert opening.title == "Senior Infrastructure Engineer"
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.location == "Seoul, South Korea"
+    assert "Kubernetes infrastructure" in opening.description_text
+    assert "<h2>Role</h2>" in opening.description_html
+    assert opening.opens_at is not None

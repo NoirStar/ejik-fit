@@ -77,6 +77,11 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "트웰브랩스",
+      "https://jobs.ashbyhq.com/twelve-labs/042715bb-0674-4e2a-9155-19c54835fe18",
+      "twelve-labs",
+    ],
+    [
       "루닛",
       "https://apply.workable.com/lunit/j/50EAF11E27/",
       "lunit",

@@ -100,6 +100,7 @@ def _apply_source_opening_filters(
     if not source.targets_technical_roles:
         return openings
     if source.connector_family in {
+        "ashby_public_api_korea_tech",
         "lever_greenhouse_korea_tech",
         "channel_next_data_tech",
     }:

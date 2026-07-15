@@ -192,6 +192,26 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="트웰브랩스",
+        slug="twelve-labs",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/twelve-labs"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.twelvelabs.io",
+        sector="ai_saas",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=14,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public Twelve Labs Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

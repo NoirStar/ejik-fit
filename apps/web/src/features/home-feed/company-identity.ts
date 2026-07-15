@@ -16,6 +16,12 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["트웰브랩스", "twelve labs", "twelvelabs"],
+    hosts: ["jobs.ashbyhq.com", "twelvelabs.io"],
+    src: "/company-logo-assets/twelve-labs",
+    displayName: "트웰브랩스",
+  },
+  {
     aliases: ["루닛", "lunit"],
     hosts: ["apply.workable.com", "lunit.io"],
     src: "/company-logo-assets/lunit",

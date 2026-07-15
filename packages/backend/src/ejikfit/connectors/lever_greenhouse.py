@@ -1,6 +1,8 @@
 import json
+import re
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
@@ -185,6 +187,100 @@ def _parse_greenhouse_item(item: dict[str, Any]) -> ParsedOpening | None:
     )
 
 
+def _ashby_account(listing_url: str) -> str:
+    parsed = urlsplit(listing_url)
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "api.ashbyhq.com"
+        or len(segments) != 3
+        or segments[:2] != ["posting-api", "job-board"]
+        or re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", segments[2]) is None
+    ):
+        raise ValueError("Ashby feed must use an official public job board")
+    return segments[2]
+
+
+def _parse_ashby_item(
+    item: dict[str, Any],
+    account: str,
+) -> ParsedOpening | None:
+    if item.get("isListed") is not True:
+        return None
+
+    external_id = _text(item.get("id"))
+    title = _text(item.get("title"))
+    url = _text(item.get("jobUrl"))
+    description_html = _text(item.get("descriptionHtml"))
+    if (
+        external_id is None
+        or re.fullmatch(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            external_id,
+            flags=re.IGNORECASE,
+        )
+        is None
+        or title is None
+        or url is None
+        or description_html is None
+    ):
+        raise ValueError("Ashby listed job identity or content is missing")
+
+    parsed_url = urlsplit(url)
+    path_segments = [
+        segment for segment in parsed_url.path.split("/") if segment
+    ]
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname != "jobs.ashbyhq.com"
+        or path_segments != [account, external_id]
+    ):
+        raise ValueError("Ashby job URL does not match its public board")
+
+    lower_title = title.lower()
+    career_type = None
+    if "intern" in lower_title:
+        career_type = "new_comer"
+    elif any(
+        marker in lower_title
+        for marker in (
+            "senior",
+            "staff",
+            "lead",
+            "manager",
+            "director",
+            "head of",
+        )
+    ):
+        career_type = "experienced"
+
+    employment_type = {
+        "FullTime": "regular",
+        "PartTime": "part_time",
+        "Contract": "contract",
+        "Temporary": "temporary",
+        "Intern": "intern",
+    }.get(_text(item.get("employmentType")) or "")
+    description_text = _text(item.get("descriptionPlain")) or (
+        _html_text(description_html) or ""
+    )
+    return ParsedOpening(
+        external_id=external_id,
+        url=url,
+        title=title,
+        status="open",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=None,
+        career_max=None,
+        location=_text(item.get("location")),
+        opens_at=_parse_iso_datetime(item.get("publishedAt")),
+        closes_at=None,
+    )
+
+
 def parse_lever_greenhouse_openings(
     raw_json: str,
     listing_url: str,
@@ -196,6 +292,19 @@ def parse_lever_greenhouse_openings(
             for item in data
             if isinstance(item, dict)
             for opening in [_parse_lever_item(item)]
+            if opening is not None
+        ]
+    if (
+        isinstance(data, dict)
+        and data.get("apiVersion") == "1"
+        and isinstance(data.get("jobs"), list)
+    ):
+        account = _ashby_account(listing_url)
+        return [
+            opening
+            for item in data["jobs"]
+            if isinstance(item, dict)
+            for opening in [_parse_ashby_item(item, account)]
             if opening is not None
         ]
     if isinstance(data, dict) and isinstance(data.get("jobs"), list):
