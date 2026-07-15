@@ -44,7 +44,7 @@ describe("ActivityNotificationCenter", () => {
     expect(screen.getByText("관심 기업 1개")).toBeInTheDocument();
     expect(screen.getByText("지원 기록 1건").closest("a")).toHaveAttribute(
       "href",
-      "/career/saved",
+      "/career/saved?scope=applications",
     );
     expect(screen.getByText("내 기술 2개").closest("a")).toHaveAttribute(
       "href",

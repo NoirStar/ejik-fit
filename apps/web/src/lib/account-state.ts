@@ -3,6 +3,7 @@ import {
   EMPTY_CAREER_PREFERENCES,
   normalizeCareerPreferences,
   readCareerPreferences,
+  subscribeCareerPreferences,
   writeCareerPreferences,
   type CareerPreferences,
 } from "./career-preferences";
@@ -10,6 +11,7 @@ import {
   clearJobApplicationStages,
   normalizeJobApplicationStages,
   readJobApplicationStages,
+  subscribeJobApplicationStages,
   writeJobApplicationStages,
   type JobApplicationStages,
 } from "./job-application-stages";
@@ -17,18 +19,21 @@ import {
   clearOwnedSkills,
   normalizeOwnedSkills,
   readOwnedSkills,
+  subscribeOwnedSkills,
   writeOwnedSkills,
 } from "./owned-skills";
 import {
   clearFollowedCompanies,
   normalizeFollowedCompanySlugs,
   readFollowedCompanySlugs,
+  subscribeFollowedCompanies,
   writeFollowedCompanySlugs,
 } from "./followed-companies";
 import {
   clearSavedJobs,
   normalizeSavedJobIds,
   readSavedJobIds,
+  subscribeSavedJobs,
   writeSavedJobIds,
 } from "./saved-jobs";
 
@@ -148,6 +153,20 @@ export function readBrowserAccountState(
     applicationStages: readJobApplicationStages(storage),
     followedCompanySlugs: readFollowedCompanySlugs(storage),
   };
+}
+
+export function subscribeBrowserAccountState(
+  listener: (state: AccountCareerState) => void,
+) {
+  const emitCurrent = () => listener(readBrowserAccountState());
+  const unsubscribe = [
+    subscribeOwnedSkills(emitCurrent),
+    subscribeCareerPreferences(emitCurrent),
+    subscribeSavedJobs(emitCurrent),
+    subscribeJobApplicationStages(emitCurrent),
+    subscribeFollowedCompanies(emitCurrent),
+  ];
+  return () => unsubscribe.forEach((stop) => stop());
 }
 
 export function writeBrowserAccountState(

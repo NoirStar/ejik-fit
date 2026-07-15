@@ -119,7 +119,7 @@ export function ActivityNotificationCenter({
   return (
     <div className={styles.list}>
       {applicationCount > 0 && (
-        <Link href="/career/saved" onClick={onNavigate}>
+        <Link href="/career/saved?scope=applications" onClick={onNavigate}>
           <span className={styles.icon} data-tone="application">
             <Briefcase aria-hidden="true" size={18} weight="fill" />
           </span>

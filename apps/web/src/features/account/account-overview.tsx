@@ -18,6 +18,7 @@ import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import {
   EMPTY_ACCOUNT_CAREER_STATE,
   readBrowserAccountState,
+  subscribeBrowserAccountState,
   type AccountCareerState,
 } from "@/lib/account-state";
 
@@ -39,6 +40,7 @@ export function AccountOverview() {
 
   useEffect(() => {
     setCareerState(readBrowserAccountState());
+    return subscribeBrowserAccountState(setCareerState);
   }, []);
 
   const applicationCount = Object.keys(careerState.applicationStages).length;

@@ -1,7 +1,14 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
+import { writeOwnedSkills } from "@/lib/owned-skills";
 
 import { AccountOverview } from "./account-overview";
 
@@ -74,5 +81,24 @@ describe("AccountOverview", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
     expect(signOut).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes counts when account reconciliation updates browser state", async () => {
+    vi.mocked(useAuthViewer).mockReturnValue({
+      viewer: { id: "viewer-1", email: "dev@example.com" },
+      ready: true,
+      signingOut: false,
+      error: "",
+      signOut,
+    });
+
+    render(<AccountOverview />);
+    expect(screen.getByText("내 기술").closest("a")).toHaveTextContent("0개");
+
+    writeOwnedSkills(["Python", "Kubernetes"]);
+
+    await waitFor(() =>
+      expect(screen.getByText("내 기술").closest("a")).toHaveTextContent("2개"),
+    );
   });
 });
