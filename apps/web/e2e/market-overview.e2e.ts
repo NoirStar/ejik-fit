@@ -15,11 +15,13 @@ for (const width of [1440, 820, 390]) {
 
     const title = page.getByRole("heading", { level: 1, name: "채용 시장" });
     await expect(title).toBeVisible();
-    expect(
-      await title.evaluate((element) =>
-        Number.parseFloat(getComputedStyle(element).fontSize),
-      ),
-    ).toBeLessThanOrEqual(width <= 839 ? 28 : 32);
+    await expect
+      .poll(() =>
+        title.evaluate((element) =>
+          Number.parseFloat(getComputedStyle(element).fontSize),
+        ),
+      )
+      .toBeLessThanOrEqual(width <= 839 ? 28 : 32);
 
     await expect(
       page.getByText(/이직핏이 확인한 기업 공식 채용 공고 범위입니다/),

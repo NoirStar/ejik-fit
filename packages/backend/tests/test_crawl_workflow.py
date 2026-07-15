@@ -14,6 +14,7 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert "company_slug:" in workflow
     assert 'ejikfit crawl-source --company-slug "$COMPANY_SLUG"' in workflow
     assert "cancel-in-progress: false" in workflow
+    assert "timeout-minutes: 120" in workflow
     assert "ejikfit crawl-all" in workflow
     assert "pip install './packages/backend[browser]'" in workflow
     assert "python -m playwright install --with-deps chromium" in workflow

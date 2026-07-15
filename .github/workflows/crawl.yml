@@ -20,7 +20,7 @@ concurrency:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       EJIKFIT_ENV: production
       DATABASE_URL: ${{ secrets.CRAWLER_DATABASE_URL }}
