@@ -455,6 +455,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="두나무",
+        slug="dunamu",
+        base_url="https://www.dunamu.com/careers/jobs",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.dunamu.com",
+        sector="fintech",
+        connector_family="dunamu_server_html_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Dunamu current-jobs list and server-rendered detail "
+            "pages; limited to explicit engineering and security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

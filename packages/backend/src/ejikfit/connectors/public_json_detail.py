@@ -1,10 +1,15 @@
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
+from bs4 import BeautifulSoup
+
+from ejikfit.connectors.next_data import extract_next_data
+from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.types import ParsedOpening
 from ejikfit.html_text import structured_plain_text
 
@@ -150,17 +155,92 @@ def _kakaobank_refs(
     return refs
 
 
+def _dunamu_refs(raw_html: str) -> list[PublicJsonDetailRef]:
+    data = extract_next_data(raw_html)
+    try:
+        articles = data["props"]["pageProps"]["articles"]
+        rows = articles["content"]
+        total = articles["totalElements"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Dunamu current jobs list is missing") from error
+    if not isinstance(articles, dict) or not isinstance(rows, list):
+        raise ValueError("Dunamu current jobs list must be an array")
+    if (
+        isinstance(total, bool)
+        or not isinstance(total, int)
+        or total != len(rows)
+        or articles.get("last") is not True
+    ):
+        raise ValueError("Dunamu current jobs list is incomplete")
+    number_of_elements = articles.get("numberOfElements")
+    if number_of_elements is not None and number_of_elements != len(rows):
+        raise ValueError("Dunamu current jobs count does not match its list")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict) or row.get("categoryKind") != "LINK":
+            continue
+        title = _text(row.get("title"))
+        raw_url = _text(row.get("summary")) or _text(row.get("subject"))
+        if title is None or raw_url is None:
+            raise ValueError("Dunamu linked job identity is missing")
+        parsed = urlsplit(raw_url)
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "careers.dunamu.com"
+            or len(segments) < 2
+            or segments[-2] != "detail"
+        ):
+            raise ValueError("Dunamu linked job URL is not an official detail")
+        external_id = segments[-1]
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=raw_url,
+                public_url=raw_url,
+                title=title,
+                category=_text(row.get("categoryDisplayName")),
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
     connector_family: str,
 ) -> list[PublicJsonDetailRef]:
+    if connector_family == "dunamu_server_html_tech":
+        return _dunamu_refs(raw_json)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_refs(payload, listing_url)
     if connector_family == "kakaobank_public_api_tech":
         return _kakaobank_refs(payload, listing_url)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
+
+
+def filter_public_detail_refs(
+    refs: list[PublicJsonDetailRef],
+    connector_family: str,
+) -> list[PublicJsonDetailRef]:
+    if not connector_family.endswith("_tech"):
+        return refs
+    return [
+        ref
+        for ref in refs
+        if "인재풀" not in ref.title
+        and is_technical_role(ref.title, ref.category)
+    ]
+
+
+def public_detail_listing_is_self_validated(connector_family: str) -> bool:
+    return connector_family == "dunamu_server_html_tech"
 
 
 def _nested_code(payload: dict[str, Any], key: str) -> str | None:
@@ -264,11 +344,63 @@ def _kakaobank_opening(
     )
 
 
+def _labeled_value(text: str, label: str) -> str | None:
+    pattern = re.compile(rf"^{re.escape(label)}\s*:\s*(.+)$")
+    for line in text.splitlines():
+        match = pattern.match(line.strip().lstrip("•*- "))
+        if match is not None:
+            return match.group(1).strip() or None
+    return None
+
+
+def _dunamu_opening(
+    raw_html: str,
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    soup = BeautifulSoup(raw_html, "lxml")
+    title_node = soup.select_one(".detailView_title")
+    information = soup.select_one(".detailView_information")
+    title = _text(title_node.get_text(" ", strip=True)) if title_node else None
+    if title is None or title != ref.title:
+        raise ValueError("Dunamu detail identity does not match its listing")
+    if information is None:
+        raise ValueError("Dunamu detail content is missing")
+
+    description_html = str(information)
+    description_text = structured_plain_text(description_html)
+    employment_label = _labeled_value(description_text, "고용형태") or ""
+    career_label = _labeled_value(description_text, "채용유형") or ""
+    employment_type = (
+        _employment_type_from_title(employment_label)
+        if employment_label
+        else None
+    )
+    career_type = _career_type_from_title(career_label)
+
+    return ParsedOpening(
+        external_id=ref.external_id,
+        url=ref.public_url,
+        title=title,
+        status="open",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=None,
+        career_max=None,
+        location=_labeled_value(description_text, "근무지역"),
+        opens_at=None,
+        closes_at=None,
+    )
+
+
 def parse_public_json_detail(
     raw_json: str,
     ref: PublicJsonDetailRef,
     connector_family: str,
 ) -> ParsedOpening:
+    if connector_family == "dunamu_server_html_tech":
+        return _dunamu_opening(raw_json, ref)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)

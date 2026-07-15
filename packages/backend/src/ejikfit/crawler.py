@@ -36,7 +36,9 @@ from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
+    filter_public_detail_refs,
     parse_public_json_detail,
+    public_detail_listing_is_self_validated,
 )
 from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
@@ -557,21 +559,22 @@ async def preview_source(
                 source.base_url,
                 source.connector_family,
             )
-            complete = validate_listing_response(
-                source.source_type,
-                listing.text,
-                listing.url,
-                len(all_refs),
-                source.request_body,
+            complete = (
+                True
+                if public_detail_listing_is_self_validated(
+                    source.connector_family
+                )
+                else validate_listing_response(
+                    source.source_type,
+                    listing.text,
+                    listing.url,
+                    len(all_refs),
+                    source.request_body,
+                )
             )
-            refs = (
-                [
-                    ref
-                    for ref in all_refs
-                    if is_technical_role(ref.title, ref.category)
-                ]
-                if (source.connector_family or "").endswith("_tech")
-                else all_refs
+            refs = filter_public_detail_refs(
+                all_refs,
+                source.connector_family,
             )
             return _preview_payload(
                 source,
@@ -792,21 +795,22 @@ async def crawl_source(
                 source.base_url,
                 source.connector_family,
             )
-            complete_listing = validate_listing_response(
-                source.source_type,
-                listing.text,
-                listing.url,
-                len(all_refs),
-                source.request_body,
+            complete_listing = (
+                True
+                if public_detail_listing_is_self_validated(
+                    source.connector_family
+                )
+                else validate_listing_response(
+                    source.source_type,
+                    listing.text,
+                    listing.url,
+                    len(all_refs),
+                    source.request_body,
+                )
             )
-            refs = (
-                [
-                    ref
-                    for ref in all_refs
-                    if is_technical_role(ref.title, ref.category)
-                ]
-                if (source.connector_family or "").endswith("_tech")
-                else all_refs
+            refs = filter_public_detail_refs(
+                all_refs,
+                source.connector_family,
             )
         except (KeyError, TypeError, ListingValidationError, ValueError) as error:
             _mark_source_error(source, "listing_parse_error", str(error))

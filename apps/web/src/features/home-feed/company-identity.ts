@@ -161,6 +161,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/bucketplace",
     displayName: "오늘의집",
   },
+  {
+    aliases: ["두나무", "dunamu"],
+    hosts: ["careers.dunamu.com", "dunamu.com"],
+    src: "/company-logo-assets/dunamu",
+    displayName: "두나무",
+  },
 ];
 
 function normalize(value: string) {

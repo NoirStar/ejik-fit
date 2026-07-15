@@ -91,6 +91,7 @@ describe("companyIdentity", () => {
     ["Moloco", "https://job-boards.greenhouse.io/moloco/jobs/1", "moloco"],
     ["Sendbird", "https://job-boards.greenhouse.io/sendbird/jobs/1", "sendbird"],
     ["쏘카", "https://socar.career.greetinghr.com/ko/o/225577", "socar"],
+    ["두나무", "https://careers.dunamu.com/detail/588", "dunamu"],
     [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
