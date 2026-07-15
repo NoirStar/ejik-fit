@@ -9,6 +9,8 @@ import {
   House,
   MagnifyingGlass,
   NotePencil,
+  SignIn,
+  SignOut,
   Stack,
   UserCircle,
 } from "@phosphor-icons/react";
@@ -18,6 +20,8 @@ import type { ReactNode, RefObject } from "react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
+import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
+import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
 import {
   readCareerPreferences,
@@ -158,6 +162,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { viewer, signingOut, error: authError, signOut } = useAuthViewer();
+  const accountSyncStatus = useAccountStateSync(viewer);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const stackButtonRef = useRef<HTMLButtonElement>(null);
   const notificationAnchorRef = useRef<HTMLDivElement>(null);
@@ -242,6 +248,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     closeUtilityMenus();
     setSheetOpen(true);
   }
+
+  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
+  const viewerLabel = viewer?.email.split("@")[0] || "게스트";
 
   return (
     <div className={styles.shell}>
@@ -350,15 +359,33 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className={styles.avatar}>
                   <UserCircle aria-hidden="true" size={26} weight="fill" />
                 </span>
-                <span className={styles.userLabel}>게스트</span>
+                <span className={styles.userLabel}>{viewerLabel}</span>
                 <CaretDown aria-hidden="true" className={styles.userCaret} size={14} />
               </button>
               {userMenuOpen && (
                 <div aria-label="사용자 메뉴" className={styles.menu} id="user-disclosure">
                   <div className={styles.menuHeader}>
-                    <strong>로그인 없이 둘러보는 중</strong>
-                    <span>내 스택은 이 브라우저에만 저장됩니다.</span>
+                    <strong>{viewer ? viewer.email : "로그인 없이 둘러보는 중"}</strong>
+                    <span aria-live={viewer ? "polite" : undefined}>
+                      {viewer
+                        ? accountSyncStatus === "synced"
+                          ? "내 스택과 저장 공고가 동기화되었습니다."
+                          : accountSyncStatus === "error"
+                            ? "계정 데이터를 동기화하지 못했습니다."
+                            : "내 커리어 정보를 동기화하고 있습니다."
+                        : "내 스택은 현재 이 브라우저에만 저장됩니다."}
+                    </span>
                   </div>
+                  {!viewer && (
+                    <Link
+                      className={styles.loginAction}
+                      href={loginHref}
+                      onClick={closeUtilityMenus}
+                    >
+                      <SignIn aria-hidden="true" size={18} weight="bold" />
+                      로그인
+                    </Link>
+                  )}
                   <Link href="/career" onClick={closeUtilityMenus}>
                     내 커리어
                   </Link>
@@ -371,6 +398,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link href="/data-policy" onClick={closeUtilityMenus}>
                     데이터 정책
                   </Link>
+                  {viewer && (
+                    <button
+                      className={styles.menuAction}
+                      disabled={signingOut}
+                      onClick={async () => {
+                        if (await signOut()) {
+                          closeUtilityMenus();
+                          router.refresh();
+                        }
+                      }}
+                      type="button"
+                    >
+                      <SignOut aria-hidden="true" size={18} />
+                      {signingOut ? "로그아웃 중" : "로그아웃"}
+                    </button>
+                  )}
+                  {authError && <p className={styles.menuError} role="alert">{authError}</p>}
                 </div>
               )}
             </div>

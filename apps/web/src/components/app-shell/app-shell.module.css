@@ -238,6 +238,7 @@
   display: flex;
   min-height: var(--touch-target);
   align-items: center;
+  gap: 0.5rem;
   padding: 0 1rem;
   color: var(--color-muted);
   font-size: 0.875rem;
@@ -248,6 +249,52 @@
 .menu > a:hover {
   background: var(--color-surface-muted);
   color: var(--color-text);
+}
+
+.menu > .loginAction {
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+  font-weight: 750;
+}
+
+.menu > .loginAction:hover {
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  color: var(--color-accent-strong);
+}
+
+.menuAction {
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.menuAction:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.menuAction:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.menuError {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  font-weight: 650;
 }
 
 .emptyMenuItem {

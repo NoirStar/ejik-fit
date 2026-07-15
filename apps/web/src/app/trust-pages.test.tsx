@@ -99,7 +99,8 @@ describe("public trust pages", () => {
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "개인정보와 브라우저 저장" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "개인정보와 계정 저장" })).toBeInTheDocument();
+    expect(screen.getByText(/Supabase Auth/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:owned-skills/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:saved-job-ids/)).toBeInTheDocument();
     expect(

@@ -58,6 +58,7 @@ GitHub 저장소 Settings → Secrets and variables → Actions에 다음 Reposi
 - backend `browser` extra와 Playwright Chromium 설치
 - migration → source seed → 전체 출처 수집
 - 출처별 결과를 Actions Summary에 기록
+- 현재 44개 이상 출처를 순차 처리할 수 있도록 실행 한도 120분 적용
 
 `browser_public_render` 출처는 공개 JavaScript 렌더링 결과만 읽습니다. CAPTCHA,
 로그인, Cloudflare challenge, 접근 통제는 우회하지 않고 출처 상태로 남깁니다.
@@ -109,9 +110,18 @@ https://API프로젝트주소/api/postings?limit=1
 
 ```text
 API_BASE_URL=https://API프로젝트주소
+NEXT_PUBLIC_SITE_URL=https://웹프로젝트주소
+NEXT_PUBLIC_SUPABASE_URL=https://Supabase프로젝트참조.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=Supabase publishable key
 ```
 
 `API_BASE_URL`은 Next.js 서버 전용 값이며 끝에 `/`를 붙이지 않습니다.
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`는 브라우저 인증용 공개 키입니다. 서버
+전용 secret key나 service-role key는 Vercel Web에 넣지 않습니다.
+
+Supabase Authentication의 Site URL은 Web 운영 주소로 설정하고 Redirect URLs에
+`https://웹프로젝트주소/auth/callback`을 등록합니다. 로컬 개발에서는 사용하는
+호스트의 `/auth/callback`만 추가합니다.
 
 ## 5. 사용자 도메인
 

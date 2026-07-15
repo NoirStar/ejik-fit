@@ -175,9 +175,20 @@ Web/API는 `main` 브랜치에서 자동 배포된다.
   미설정 시 `/health`는 200이지만 `/api/postings`는 500(DB 연결 실패).
 
 ### Web 프로젝트 필수 설정
-- **환경변수**: `API_BASE_URL` = API 배포 주소(끝에 `/` 없이). 예: `https://ejik-fit-api.vercel.app`
-  미설정 시 `apps/web/src/lib/api.ts`가 `http://localhost:8000`으로 폴백 → "공고를 불러오지 못했습니다" 에러.
+- **환경변수**:
+
+  | Key | Value |
+  | --- | --- |
+  | `API_BASE_URL` | API 배포 주소, 끝에 `/` 없이 |
+  | `NEXT_PUBLIC_SITE_URL` | Web 운영 주소 |
+  | `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL |
+  | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 브라우저 인증용 publishable key |
+
+  `API_BASE_URL` 미설정 시 `apps/web/src/lib/api.ts`가 `http://localhost:8000`으로
+  폴백해 공고 요청이 실패합니다. Supabase 공개 설정이 없으면 공개 페이지는 계속
+  열리지만 이메일 로그인은 설정 오류를 표시합니다.
 - `API_BASE_URL`은 **Next.js 서버 전용**(브라우저 노출 안 됨). 그래서 Web/API가 다른 호스트여도 CORS 문제 없음.
+- Supabase secret/service-role key는 Vercel Web과 저장소에 넣지 않습니다.
 
 > 환경변수 변경은 **다음 배포부터** 적용된다. 변경 후 Deployments → 최신 → Redeploy.
 

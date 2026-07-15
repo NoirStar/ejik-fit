@@ -1,0 +1,119 @@
+.form {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field label {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.inputWrap {
+  display: grid;
+  min-height: 3rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-faint);
+}
+
+.inputWrap:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+.inputWrap input {
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.inputWrap input::placeholder {
+  color: var(--color-faint);
+}
+
+.submit {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 1rem;
+  border: 1px solid var(--color-accent-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-accent-strong);
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.helper,
+.error {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.helper {
+  color: var(--color-muted);
+}
+
+.error {
+  color: var(--color-danger);
+  font-weight: 650;
+}
+
+.sentState {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, var(--color-line));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-success) 6%, var(--color-surface));
+  color: var(--color-success);
+}
+
+.sentState strong {
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.sentState p {
+  margin: 0.2rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.sentState button {
+  grid-column: 2;
+  width: fit-content;
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}

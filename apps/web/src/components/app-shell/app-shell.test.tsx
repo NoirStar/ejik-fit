@@ -160,6 +160,10 @@ describe("AppShell", () => {
       "href",
       "/career/questions",
     );
+    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute(
+      "href",
+      "/login?next=%2F",
+    );
     fireEvent.pointerDown(screen.getByText("내용"));
     expect(screen.queryByLabelText("사용자 메뉴")).not.toBeInTheDocument();
   });

@@ -262,3 +262,19 @@ class JobRevision(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow
     )
+
+
+class UserCareerState(Base):
+    __tablename__ = "user_career_states"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    owned_skills: Mapped[list[str]] = mapped_column(JSON, default=list)
+    career_preferences: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    saved_job_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    application_stages: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
