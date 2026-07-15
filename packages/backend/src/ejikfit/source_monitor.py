@@ -9,6 +9,7 @@ from ejikfit.models import (
     CareerSource,
     JobPosting,
     JobRevision,
+    PolicyStatus,
     PostingStatus,
     SourceStatus,
 )
@@ -39,16 +40,23 @@ def _ratio(numerator: int, denominator: int) -> float:
 
 
 def _health_status(source: CareerSource, since: datetime) -> str:
-    if source.status == SourceStatus.BLOCKED:
+    if (
+        source.status == SourceStatus.BLOCKED
+        or source.policy_status == PolicyStatus.BLOCKED
+    ):
         return "blocked"
+    if (
+        source.status == SourceStatus.STOPPED
+        or source.policy_status == PolicyStatus.STOPPED
+    ):
+        return "stopped"
+    if source.policy_status != PolicyStatus.ALLOWED:
+        return "pending"
     if source.last_error_code:
         return "failing"
-    if source.status == SourceStatus.ALLOWED and _in_window(
-        source.last_success_at,
-        since,
-    ):
+    if source.is_runnable and _in_window(source.last_success_at, since):
         return "healthy"
-    if source.status == SourceStatus.ALLOWED:
+    if source.is_runnable:
         return "stale"
     return "pending"
 
@@ -88,6 +96,8 @@ def _source_item(
         "source_type": source.source_type.value,
         "connector_family": source.connector_family,
         "status": source.status.value,
+        "policy_status": source.policy_status.value,
+        "runnable": source.is_runnable,
         "health_status": _health_status(source, since),
         "open_postings": len(open_postings),
         "new_postings": len(new_postings),
@@ -116,7 +126,7 @@ def _connector_family_health(items: list[dict[str, Any]]) -> dict[str, dict[str,
         health[family] = {
             "sources": len(family_items),
             "allowed_sources": sum(
-                1 for item in family_items if item["status"] == "allowed"
+                1 for item in family_items if item["runnable"]
             ),
             "healthy_sources": sum(
                 1 for item in family_items if item["health_status"] == "healthy"
@@ -215,7 +225,7 @@ def build_source_monitor_report(
         "totals": {
             "sources": len(items),
             "allowed_sources": sum(
-                1 for item in items if item["status"] == "allowed"
+                1 for item in items if item["runnable"]
             ),
             "healthy_sources": sum(
                 1 for item in items if item["health_status"] == "healthy"

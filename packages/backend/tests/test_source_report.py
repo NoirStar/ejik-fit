@@ -107,6 +107,7 @@ def test_build_source_report_summarizes_status_policy_errors_and_open_counts() -
         "sources": 3,
         "open_postings": 2,
         "allowed_sources": 1,
+        "runnable_sources": 1,
         "blocked_sources": 1,
     }
     assert report["status_counts"] == {
@@ -139,6 +140,7 @@ def test_render_source_report_markdown_includes_distribution_and_top_sources() -
             "sources": 2,
             "open_postings": 3,
             "allowed_sources": 1,
+            "runnable_sources": 1,
             "blocked_sources": 1,
         },
         "status_counts": {"allowed": 1, "blocked": 1},

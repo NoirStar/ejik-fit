@@ -34,5 +34,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("career_sources", "request_body")
-    op.drop_column("career_sources", "request_method")
+    raise RuntimeError(
+        "20260710_0012 is intentionally irreversible as part of the source "
+        "registry migration chain; use an explicit forward migration"
+    )

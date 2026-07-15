@@ -154,25 +154,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_column("career_sources", "notes")
-    op.drop_column("career_sources", "last_error_reason")
-    op.drop_column("career_sources", "last_error_code")
-    op.drop_column("career_sources", "last_success_at")
-    op.drop_column("career_sources", "last_discovered_at")
-    op.drop_column("career_sources", "non_tech_noise")
-    op.drop_column("career_sources", "policy_risk")
-    op.drop_column("career_sources", "connector_reuse_score")
-    op.drop_column("career_sources", "expected_job_volume")
-    op.drop_column("career_sources", "tech_job_priority")
-    op.drop_column("career_sources", "brand_tier_weight")
-    op.drop_column("career_sources", "sector")
-    op.drop_column("career_sources", "connector_family")
-    op.drop_column("career_sources", "policy_status")
-
-    if context.is_offline_mode():
-        op.execute("DROP TYPE policystatus")
-        return
-
-    bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
-        POLICY_STATUS_ENUM.drop(bind, checkfirst=True)
+    raise RuntimeError(
+        "20260709_0006 is intentionally irreversible: source status enum "
+        "values and operational policy data need an explicit forward migration"
+    )

@@ -38,6 +38,7 @@ def _source_item(source: CareerSource, open_count: int) -> dict[str, Any]:
         "connector_family": source.connector_family,
         "status": source.status.value,
         "policy_status": source.policy_status.value,
+        "runnable": source.is_runnable,
         "sector": source.sector,
         "priority_score": source.priority_score,
         "open_postings": open_count,
@@ -73,6 +74,7 @@ def build_source_report(session: Session) -> dict[str, Any]:
             "allowed_sources": sum(
                 1 for item in items if item["status"] == SourceStatus.ALLOWED.value
             ),
+            "runnable_sources": sum(1 for item in items if item["runnable"]),
             "blocked_sources": sum(
                 1 for item in items if item["status"] == SourceStatus.BLOCKED.value
             ),
@@ -128,6 +130,7 @@ def render_source_report_markdown(report: dict[str, Any]) -> str:
         "| --- | ---: |",
         f"| 전체 출처 | {totals['sources']} |",
         f"| 허용 출처 | {totals['allowed_sources']} |",
+        f"| 실행 가능 출처 | {totals.get('runnable_sources', totals['allowed_sources'])} |",
         f"| 차단 출처 | {totals['blocked_sources']} |",
         f"| 오픈 공고 | {totals['open_postings']} |",
         "",

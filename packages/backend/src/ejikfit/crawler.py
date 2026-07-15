@@ -31,6 +31,10 @@ from ejikfit.connectors.successfactors import parse_successfactors_openings
 from ejikfit.connectors.workday import parse_workday_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
+from ejikfit.listing_validation import (
+    ListingValidationError,
+    validate_listing_response,
+)
 from ejikfit.models import (
     CareerSource,
     JobPosting,
@@ -195,6 +199,8 @@ class PlaywrightBrowserRenderer:
         status_code = response.status if response is not None else 200
         if status_code in {401, 403}:
             raise BlockedSourceError(f"source denied access with {status_code}")
+        if 400 <= status_code < 500:
+            raise RetryableFetchError(f"browser upstream status {status_code}")
         if status_code == 429 or status_code >= 500:
             raise RetryableFetchError(
                 f"temporary upstream status {status_code}"
@@ -232,6 +238,7 @@ def reconcile_missing(
     source_id: uuid.UUID,
     seen_external_ids: set[str],
     successful_listing: bool,
+    now: datetime | None = None,
 ) -> int:
     postings = session.scalars(
         select(JobPosting).where(JobPosting.source_id == source_id)
@@ -240,12 +247,19 @@ def reconcile_missing(
 
     for posting in postings:
         was_closed = posting.status == PostingStatus.CLOSED
-        posting.missing_runs, posting.status = next_missing_state(
-            posting.missing_runs,
-            successful_listing=successful_listing,
-            seen=posting.external_id in seen_external_ids,
-        )
+        if not successful_listing:
+            continue
+        if posting.external_id in seen_external_ids:
+            posting.missing_runs = 0
+        else:
+            posting.missing_runs, posting.status = next_missing_state(
+                posting.missing_runs,
+                successful_listing=True,
+                seen=False,
+            )
         if not was_closed and posting.status == PostingStatus.CLOSED:
+            if now is not None:
+                posting.last_verified_at = now
             closed += 1
 
     session.commit()
@@ -335,6 +349,7 @@ def _preview_payload(
     discovered: int = 0,
     sample_openings: list[dict[str, str]] | None = None,
     error: dict[str, str] | None = None,
+    complete: bool | None = None,
 ) -> dict[str, Any]:
     return {
         "source_id": str(source.id),
@@ -343,6 +358,7 @@ def _preview_payload(
         "discovered": discovered,
         "sample_openings": sample_openings or [],
         "error": error,
+        "complete": complete,
     }
 
 
@@ -377,8 +393,34 @@ async def preview_source(
     sample_limit: int = 5,
     browser_renderer: BrowserRenderer | None = None,
 ) -> dict[str, Any]:
+    if source.policy_status in {PolicyStatus.BLOCKED, PolicyStatus.STOPPED}:
+        return _preview_payload(
+            source,
+            error={
+                "code": "policy_not_allowed",
+                "reason": f"source policy is {source.policy_status.value}",
+            },
+        )
+
     try:
         listing = await _fetch_listing_page(source, fetcher, browser_renderer)
+    except BlockedSourceError as error:
+        return _preview_payload(
+            source,
+            error={"code": "blocked", "reason": str(error)},
+        )
+    except (httpx.HTTPError, RetryableFetchError) as error:
+        return _preview_payload(
+            source,
+            error={"code": "temporary_fetch_error", "reason": str(error)},
+        )
+    except ValueError as error:
+        return _preview_payload(
+            source,
+            error={"code": "unsupported_connector", "reason": str(error)},
+        )
+
+    try:
         if source.source_type == SourceType.GREETING:
             refs = discover_openings(listing.text, source.base_url)
             return _preview_payload(
@@ -392,27 +434,25 @@ async def preview_source(
                     }
                     for ref in refs[:sample_limit]
                 ],
+                complete=True,
             )
         openings = _parse_listing_openings(
             source.source_type,
             listing.text,
             listing.url,
         )
-    except BlockedSourceError as error:
-        return _preview_payload(
-            source,
-            error={"code": "blocked", "reason": str(error)},
+        complete = validate_listing_response(
+            source.source_type,
+            listing.text,
+            listing.url,
+            len(openings),
+            source.request_body,
         )
-    except (httpx.HTTPError, RetryableFetchError) as error:
-        return _preview_payload(
-            source,
-            error={"code": "temporary_fetch_error", "reason": str(error)},
-        )
-    except (KeyError, TypeError, ValueError) as error:
+    except (KeyError, TypeError, ListingValidationError, ValueError) as error:
         return _preview_payload(
             source,
             error={
-                "code": "unsupported_connector",
+                "code": "listing_parse_error",
                 "reason": str(error),
             },
         )
@@ -429,6 +469,15 @@ async def preview_source(
         source,
         discovered=len(openings),
         sample_openings=samples,
+        complete=complete,
+        error=(
+            None
+            if complete
+            else {
+                "code": "incomplete_listing",
+                "reason": "listing response indicates additional pages",
+            }
+        ),
     )
 
 
@@ -442,7 +491,7 @@ async def crawl_source(
     posting_index: PostingIndex | None = None,
     browser_renderer: BrowserRenderer | None = None,
 ) -> CrawlResult:
-    if source.status != SourceStatus.ALLOWED:
+    if not source.is_runnable:
         return CrawlResult()
 
     try:
@@ -483,7 +532,9 @@ async def crawl_source(
     if source.source_type == SourceType.GREETING:
         try:
             refs = discover_openings(listing.text, source.base_url)
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError) as error:
+            _mark_source_error(source, "listing_parse_error", str(error))
+            session.commit()
             return CrawlResult(failed=1)
 
         discovered = len(refs)
@@ -515,101 +566,124 @@ async def crawl_source(
                 )
                 session.commit()
                 failed += 1
-                break
-            except (
-                httpx.HTTPError,
-                RetryableFetchError,
-                KeyError,
-                TypeError,
-                ValueError,
-            ):
+                return CrawlResult(
+                    discovered=discovered,
+                    ingested=ingested,
+                    failed=failed,
+                )
+            except Exception as error:
+                session.rollback()
+                logger.exception("Greeting detail ingestion failed for %s", ref.url)
                 failed += 1
-    elif source.source_type == SourceType.JSON_LD:
+                _mark_source_error(
+                    source,
+                    "partial_detail_failure",
+                    f"{type(error).__name__}: {error}",
+                )
+
+        source.last_verified_at = now
+        if discovered > 0:
+            source.last_discovered_at = now
+        if failed == 0:
+            _mark_source_success(source, now)
+        session.commit()
+        closed = reconcile_missing(
+            session,
+            source.id,
+            seen_external_ids,
+            successful_listing=True,
+            now=now,
+        )
+        return CrawlResult(
+            discovered=discovered,
+            ingested=ingested,
+            failed=failed,
+            closed=closed,
+        )
+
+    try:
         openings = _parse_listing_openings(
             source.source_type,
             listing.text,
             listing.url,
         )
-        discovered = len(openings)
-        for opening in openings:
-            seen_external_ids.add(opening.external_id)
-            ingest_opening(
-                session,
-                source,
-                opening,
-                listing.text,
-                store,
-                now,
-                posting_index,
-            )
-            ingested += 1
-    elif source.source_type in {
-        SourceType.NAVER_JSON,
-        SourceType.KAKAO_JSON,
-        SourceType.LINE_GATSBY,
-        SourceType.STATIC_NEXT_DATA,
-        SourceType.ENTERPRISE_JSON,
-        SourceType.LEVER_GREENHOUSE,
-        SourceType.WORKDAY,
-        SourceType.SAP_SUCCESSFACTORS,
-        SourceType.BROWSER_PUBLIC_RENDER,
-    }:
-        openings = _parse_listing_openings(
+        complete_listing = validate_listing_response(
             source.source_type,
             listing.text,
             listing.url,
+            len(openings),
+            source.request_body,
         )
-        discovered = len(openings)
-        for opening in openings:
-            seen_external_ids.add(opening.external_id)
-            ingest_opening(
-                session,
+    except Exception as error:
+        session.rollback()
+        logger.exception("Listing parse or validation failed for %s", listing.url)
+        error_text = str(error)
+        if error_text.startswith("connector is not implemented"):
+            _mark_source_error(
                 source,
-                opening,
-                listing.text,
-                store,
-                now,
-                posting_index,
+                "unsupported_connector",
+                error_text,
+                status=_unsupported_connector_status(source.source_type),
             )
-            ingested += 1
-    elif source.source_type == SourceType.HTML_LISTING_DETAIL:
-        openings = _parse_listing_openings(
-            source.source_type,
-            listing.text,
-            listing.url,
-        )
-        discovered = len(openings)
-        for opening in openings:
-            seen_external_ids.add(opening.external_id)
-            ingest_opening(
-                session,
-                source,
-                opening,
-                listing.text,
-                store,
-                now,
-                posting_index,
-            )
-            ingested += 1
-    else:
-        _mark_source_error(
-            source,
-            "unsupported_connector",
-            f"connector is not implemented: {source.source_type.value}",
-            status=_unsupported_connector_status(source.source_type),
-        )
+        else:
+            _mark_source_error(source, "listing_parse_error", error_text)
         session.commit()
         return CrawlResult(failed=1)
 
-    _mark_source_success(source, now)
+    discovered = len(openings)
+    ingestion_error: Exception | None = None
+    for opening in openings:
+        seen_external_ids.add(opening.external_id)
+        try:
+            ingest_opening(
+                session,
+                source,
+                opening,
+                listing.text,
+                store,
+                now,
+                posting_index,
+            )
+            ingested += 1
+        except Exception as error:
+            session.rollback()
+            logger.exception("Opening ingestion failed for %s", opening.url)
+            failed += 1
+            ingestion_error = error
+
+    source.last_verified_at = now
     if discovered > 0:
         source.last_discovered_at = now
+
+    if not complete_listing:
+        failed += 1
+        _mark_source_error(
+            source,
+            "incomplete_listing",
+            "listing response indicates additional pages; absences were not reconciled",
+        )
+        session.commit()
+        return CrawlResult(
+            discovered=discovered,
+            ingested=ingested,
+            failed=failed,
+        )
+
+    if ingestion_error is not None:
+        _mark_source_error(
+            source,
+            "partial_ingestion_failure",
+            f"{type(ingestion_error).__name__}: {ingestion_error}",
+        )
+    else:
+        _mark_source_success(source, now)
     session.commit()
     closed = reconcile_missing(
         session,
         source.id,
         seen_external_ids,
         successful_listing=True,
+        now=now,
     )
     return CrawlResult(
         discovered=discovered,
@@ -678,7 +752,10 @@ def _allowed_sources() -> list[SourceRunTarget]:
         statement = (
             select(CareerSource)
             .options(joinedload(CareerSource.company))
-            .where(CareerSource.status == SourceStatus.ALLOWED)
+            .where(
+                CareerSource.status == SourceStatus.ALLOWED,
+                CareerSource.policy_status == PolicyStatus.ALLOWED,
+            )
             .order_by(CareerSource.base_url)
         )
         return [

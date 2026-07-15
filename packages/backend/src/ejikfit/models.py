@@ -143,6 +143,13 @@ class CareerSource(Base):
             - (self.non_tech_noise or 0)
         )
 
+    @property
+    def is_runnable(self) -> bool:
+        return (
+            self.status == SourceStatus.ALLOWED
+            and self.policy_status == PolicyStatus.ALLOWED
+        )
+
 
 class RawSnapshot(Base):
     __tablename__ = "raw_snapshots"

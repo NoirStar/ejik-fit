@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from ejikfit.crawler import reconcile_missing
 from ejikfit.models import (
     Base,
     CareerSource,
@@ -11,6 +12,7 @@ from ejikfit.models import (
     JobRevision,
     PostingSkill,
     PostingStatus,
+    PolicyStatus,
     RawSnapshot,
     SourceStatus,
     SourceType,
@@ -40,6 +42,7 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
             base_url="https://recruit.navercorp.com/jobs",
             source_type=SourceType.NAVER_JSON,
             status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
             connector_family="naver_json",
             last_success_at=recent,
         )
@@ -48,6 +51,7 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
             base_url="https://hyundai.example/jobs",
             source_type=SourceType.HTML_LISTING_DETAIL,
             status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
             connector_family="html_listing_detail",
             last_success_at=old,
         )
@@ -56,6 +60,7 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
             base_url="https://lg.example/jobs",
             source_type=SourceType.STATIC_NEXT_DATA,
             status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
             connector_family="static_next_data",
             last_success_at=old,
             last_error_code="temporary_fetch_error",
@@ -66,6 +71,7 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
             base_url="https://blocked.example/jobs",
             source_type=SourceType.HTML_LISTING_DETAIL,
             status=SourceStatus.BLOCKED,
+            policy_status=PolicyStatus.BLOCKED,
             connector_family="html_listing_detail",
             last_error_code="blocked",
         )
@@ -185,6 +191,51 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
     assert report["connector_family_health"]["html_listing_detail"]["sources"] == 2
     assert report["top_stale_sources"][0]["company_slug"] == "hyundai"
     assert report["top_failing_sources"][0]["company_slug"] in {"blocked", "lg-cns"}
+
+
+def test_third_absence_records_closure_in_current_monitor_window() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, 12, tzinfo=timezone.utc)
+    old = now - timedelta(days=3)
+
+    with Session(engine) as session:
+        company = Company(name="마감 확인 기업", slug="closure-monitor")
+        source = CareerSource(
+            company=company,
+            base_url="https://example.com/jobs",
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=now,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="closing",
+            url="https://example.com/jobs/closing",
+            title="Closing Engineer",
+            status=PostingStatus.OPEN,
+            missing_runs=2,
+            first_seen_at=old,
+            last_seen_at=old,
+            last_verified_at=old,
+        )
+        session.add(posting)
+        session.commit()
+
+        closed = reconcile_missing(
+            session,
+            source.id,
+            seen_external_ids=set(),
+            successful_listing=True,
+            now=now,
+        )
+        report = build_source_monitor_report(session, now=now, window_hours=24)
+
+        assert closed == 1
+        assert posting.status == PostingStatus.CLOSED
+        assert report["totals"]["closed_postings"] == 1
 
 
 def test_render_source_monitor_markdown_includes_health_tables() -> None:

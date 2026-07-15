@@ -34,7 +34,7 @@
 
 ### 1차 공식 기업 소스 확장
 
-- 기존 Greeting 15개 소스가 `INITIAL_SOURCE_CATALOG`에 포함되어 있다.
+- 기존 Greeting 16개 소스가 `INITIAL_SOURCE_CATALOG`에 포함되어 있다.
 - 네이버 공식 채용 JSON 소스가 추가되어 있다.
 - 카카오 공식 채용 JSON 소스가 추가되어 있다.
 - LINE Careers Gatsby page-data 소스가 추가되어 있다.
@@ -86,14 +86,15 @@
 ### 공식 기업 카탈로그
 
 - 현재는 코드의 `INITIAL_SOURCE_CATALOG`를 seed registry로 사용하고, 실제 운영 상태는 `Company`/`CareerSource` 테이블에 저장한다.
-- 2단계 대기업/제조/통신 12개 출처가 등록되어 있지만 대부분 `needs_connector` 또는 `needs_browser`로 남아 있다.
+- 현재 카탈로그는 42개 출처이며 `allowed` 35개, `needs_browser` 4개, `needs_connector` 3개다.
+- 대기업/제조/통신 출처의 공식 목록 API와 공개 렌더링 커넥터를 실제 미리보기로 점검해 다수를 `allowed`로 승격했다.
 - 별도 관리자 화면이나 DB 기반 카탈로그 편집 UI는 아직 없다.
 - 100개 이상 후보 전체가 운영 카탈로그로 등록된 상태는 아니다.
 
 ### 수집 규모
 
-- 네이버, 카카오, LINE, Greeting 15개까지는 `allowed` 기반이 들어왔다.
-- 2단계 대기업 12개는 공식 URL과 커넥터 후보가 seed에 있지만 live smoke check와 승격이 남아 있다.
+- 네이버, 카카오, LINE, Greeting 16개와 검증된 기업 공식 출처를 합쳐 35개가 `allowed` 상태다.
+- 네이버, 삼성전자, 현대자동차, LG CNS, 크래프톤, SK텔레콤, KT, 포스코DX, CJ올리브네트웍스, 한화시스템, 스마일게이트, 기아, 카카오게임즈 등은 2026-07-15 공개 응답 미리보기를 확인했다.
 - 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보는 스펙에 있지만 대부분 아직 운영 카탈로그에 없다.
 
 ### 브라우저 기반 수집
@@ -120,10 +121,10 @@
 
 ### 2. 대기업/제조/통신 소스 조사와 커넥터 분류
 
-- seed에 등록된 삼성전자, 삼성SDS, 현대자동차, 기아, LG전자, LG CNS, SK하이닉스, SK텔레콤, KT, 포스코DX, CJ올리브네트웍스, 한화시스템을 live smoke check한다.
-- preview 결과가 정상인 출처는 `allowed`로 승격한다.
+- 남은 `needs_browser` 4개와 `needs_connector` 3개 출처를 공개 범위 안에서 추가 조사한다.
+- preview 결과가 정상인 출처만 `allowed`로 승격한다.
 - 구조가 맞지 않는 출처는 connector 설정 또는 전용 파서 테스트를 추가한다.
-- 6개 이상 allowed 수집을 2단계 완료 기준으로 둔다.
+- 정책 상태와 목록 완전성 검증을 통과한 출처만 전체 수집 대상에 포함한다.
 
 ### 3. 게임/콘텐츠, 핀테크/금융, AI/SaaS 단계 확장
 
@@ -152,11 +153,10 @@
 
 ## 다음 작업 추천 순서
 
-1. seed에 있는 2단계 대기업 12개를 `preview-sources`로 live smoke check한다.
-2. 정상 preview가 나오는 `html_listing_detail`, `static_next_data`, `browser_public_render` 출처를 `allowed`로 승격한다.
-3. 실패 출처는 `last_error_code`와 preview 결과를 기준으로 connector 설정/파서 fixture를 추가한다.
-4. 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보를 운영 카탈로그에 추가한다.
-5. 홈 대시보드가 운영 집계 데이터를 더 직접적으로 쓰도록 연결한다.
+1. 남은 7개 비허용 출처를 `preview-sources`로 점검한다.
+2. 실패 출처는 `last_error_code`와 preview 결과를 기준으로 connector 설정/파서 fixture를 추가한다.
+3. 게임/콘텐츠, 핀테크/금융, AI/SaaS 후보를 운영 카탈로그에 추가한다.
+4. 홈 대시보드가 운영 집계 데이터를 더 직접적으로 쓰도록 연결한다.
 
 ## 마지막 확인
 

@@ -35,4 +35,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    pass
+    raise RuntimeError(
+        "20260709_0005 is intentionally irreversible: PostgreSQL enum values "
+        "and rows using them require an explicit forward data migration"
+    )
