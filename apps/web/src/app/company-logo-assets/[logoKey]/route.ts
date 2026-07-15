@@ -9,6 +9,14 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
   dunamu: "https://careers.dunamu.com/favicon.png",
+  deepnoid:
+    "https://profiles.greetinghr.com/group/52e7484b-ffef-47e8-bd66-774309ad01d5",
+  enerzai:
+    "https://profiles.greetinghr.com/group/af5e4e1b-d4a3-4bbb-bab2-9c963848f958",
+  finda:
+    "https://profiles.greetinghr.com/group/07b16511-6dcd-4732-bb25-d0df0164ddd5",
+  "furiosa-ai":
+    "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
   gccompany:
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",

@@ -51,6 +51,7 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "civil engineer",
     "counsel",
     "customer service",
+    "clinical research",
     "facilities",
     "facility",
     "hvac",
@@ -59,6 +60,7 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "legal",
     "loss prevention",
     "marketing",
+    "medical device qa",
     "mechanical engineer",
     "product manager",
     "program manager",
@@ -75,6 +77,9 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "영업",
     "운영 개선",
     "공조",
+    "과제책임자",
+    "의료기기 qa",
+    "임상연구",
 )
 
 KOREA_LOCATION_MARKERS = (

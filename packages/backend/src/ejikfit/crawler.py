@@ -736,8 +736,15 @@ async def crawl_source(
                     detail.text,
                     ref.url,
                     ref.external_id,
+                    connector_family=source.connector_family,
                 )
-                if technical_only and not is_technical_role(opening.title):
+                if source.connector_family == "furiosa_webflow_korea_tech":
+                    if not is_korea_technical_role(
+                        opening.title,
+                        opening.location,
+                    ):
+                        continue
+                elif technical_only and not is_technical_role(opening.title):
                     continue
                 seen_external_ids.add(ref.external_id)
                 discovered += 1

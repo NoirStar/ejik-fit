@@ -25,6 +25,20 @@ def test_discovers_greeting_opening_urls() -> None:
     ]
 
 
+def test_discovers_greeting_detail_urls_from_custom_home_route() -> None:
+    html = (FIXTURES / "list.html").read_text()
+
+    refs = discover_openings(
+        html,
+        "https://sample.career.greetinghr.com/ko/career",
+    )
+
+    assert [(ref.external_id, ref.url) for ref in refs] == [
+        ("209187", "https://sample.career.greetinghr.com/ko/o/209187"),
+        ("205581", "https://sample.career.greetinghr.com/ko/o/205581"),
+    ]
+
+
 def test_discovers_only_technical_roles_when_source_requests_it() -> None:
     html = (FIXTURES / "list.html").read_text().replace(
         '{"openingId": 205581, "title": "Security Engineer"}',

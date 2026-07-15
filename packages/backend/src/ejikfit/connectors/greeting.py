@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 
@@ -65,6 +65,26 @@ def _opening_role_names(opening: dict[str, Any]) -> list[str]:
     return names
 
 
+def _detail_url(page_url: str, external_id: str) -> str:
+    parsed = urlparse(page_url)
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    locale_path = (
+        f"/{segments[0]}"
+        if segments and len(segments[0]) == 2
+        else ""
+    )
+    return urlunparse(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            f"{locale_path}/o/{external_id}",
+            "",
+            "",
+            "",
+        )
+    )
+
+
 def discover_openings(
     html: str,
     page_url: str,
@@ -110,7 +130,7 @@ def discover_openings(
         refs.append(
             OpeningRef(
                 external_id=external_id,
-                url=f"{page_url.rstrip('/')}/o/{external_id}",
+                url=_detail_url(page_url, external_id),
                 title=title,
             )
         )

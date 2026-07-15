@@ -124,6 +124,22 @@ describe("companyIdentity", () => {
       "https://channel.io/kr/careers/56661820-4c76-4ded-b1cd-7bad478d192d",
       "channel-corporation",
     ],
+    ["핀다", "https://finda.career.greetinghr.com/ko/o/204284", "finda"],
+    [
+      "딥노이드",
+      "https://deepnoid.career.greetinghr.com/ko/o/203035",
+      "deepnoid",
+    ],
+    [
+      "에너자이",
+      "https://enerzai.career.greetinghr.com/ko/o/69418",
+      "enerzai",
+    ],
+    [
+      "퓨리오사AI",
+      "https://furiosa.ai/careers/software-engineer-runtime",
+      "furiosa-ai",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

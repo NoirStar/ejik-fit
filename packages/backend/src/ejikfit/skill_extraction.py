@@ -25,6 +25,7 @@ _BLOCK_TAGS = ("div", "p", "li", "ul", "ol", "table", "section", "article")
 _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 REQUIRED_HEADINGS = {
+    "minimum qualifications",
     "자격 요건",
     "자격요건",
     "필수 자격 요건",

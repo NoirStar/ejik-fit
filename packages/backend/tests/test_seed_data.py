@@ -36,8 +36,11 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "wadiz",
         "gccompany",
         "scatterlab",
+        "finda",
+        "deepnoid",
+        "enerzai",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 33
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 36
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -162,7 +165,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 69
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 73
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -251,7 +254,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 69
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 73
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -371,6 +374,23 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert channel.source_type == SourceType.STATIC_NEXT_DATA
     assert channel.connector_family == "channel_next_data_tech"
     assert channel.status == SourceStatus.ALLOWED
+
+    for slug, base_url in {
+        "finda": "https://finda.career.greetinghr.com/ko/career",
+        "deepnoid": "https://deepnoid.career.greetinghr.com/ko/intro",
+        "enerzai": "https://enerzai.career.greetinghr.com/ko/home",
+    }.items():
+        source = catalog_by_slug[slug]
+        assert source.base_url == base_url
+        assert source.source_type == SourceType.GREETING
+        assert source.connector_family == "greeting_tech"
+        assert source.status == SourceStatus.ALLOWED
+
+    furiosa = catalog_by_slug["furiosa-ai"]
+    assert furiosa.base_url == "https://furiosa.ai/sitemap.xml"
+    assert furiosa.source_type == SourceType.SITEMAP_DISCOVERY
+    assert furiosa.connector_family == "furiosa_webflow_korea_tech"
+    assert furiosa.status == SourceStatus.ALLOWED
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:

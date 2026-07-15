@@ -3,8 +3,11 @@ import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass, replace
 from urllib.parse import parse_qs, urljoin, urlparse
 
+from bs4 import BeautifulSoup
+
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.types import OpeningRef, ParsedOpening
+from ejikfit.html_text import structured_plain_text
 
 
 JOB_MARKERS = (
@@ -144,7 +147,17 @@ def _detail_external_id(url: str) -> str | None:
         return None
     if any(
         marker in {segment.casefold() for segment in segments[:-1]}
-        for marker in ("job", "jobs", "role", "opening", "openings", "position")
+        for marker in (
+            "career",
+            "careers",
+            "job",
+            "jobs",
+            "recruit",
+            "role",
+            "opening",
+            "openings",
+            "position",
+        )
     ):
         return tail
     return None
@@ -176,8 +189,30 @@ def parse_sitemap_detail_opening(
     html: str,
     page_url: str,
     external_id: str,
+    connector_family: str | None = None,
 ) -> ParsedOpening:
     openings = parse_jsonld_openings(html, page_url)
     if not openings:
         raise ValueError("job detail has no schema.org JobPosting data")
-    return replace(openings[0], external_id=external_id, url=page_url)
+
+    opening = replace(openings[0], external_id=external_id, url=page_url)
+    if connector_family != "furiosa_webflow_korea_tech":
+        return opening
+
+    soup = BeautifulSoup(html, "lxml")
+    description = soup.select_one(
+        "main .rich-text.w-richtext, .rich-text-component .w-richtext"
+    )
+    if description is None:
+        raise ValueError("Furiosa job detail has no visible requirements body")
+
+    description_html = str(description)
+    return replace(
+        opening,
+        description_html=description_html,
+        description_text=structured_plain_text(description_html),
+        # Furiosa currently places the workplace mode (for example, On-site)
+        # in schema.org's employmentType field. Do not expose that as a
+        # full-time/contract classification.
+        employment_type=None,
+    )

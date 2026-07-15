@@ -627,6 +627,90 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="핀다",
+        slug="finda",
+        base_url="https://finda.career.greetinghr.com/ko/career",
+        source_type=SourceType.GREETING,
+        homepage_url="https://finda.co.kr",
+        sector="fintech",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Finda Greeting careers listing and detail pages; "
+            "limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="딥노이드",
+        slug="deepnoid",
+        base_url="https://deepnoid.career.greetinghr.com/ko/intro",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.deepnoid.com",
+        sector="medical_ai",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Deepnoid Greeting careers listing and detail pages; "
+            "limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="에너자이",
+        slug="enerzai",
+        base_url="https://enerzai.career.greetinghr.com/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://enerzai.com",
+        sector="edge_ai",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Enerzai Greeting careers listing and detail pages; "
+            "limited to explicit technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="퓨리오사AI",
+        slug="furiosa-ai",
+        base_url="https://furiosa.ai/sitemap.xml",
+        source_type=SourceType.SITEMAP_DISCOVERY,
+        homepage_url="https://furiosa.ai",
+        sector="ai_semiconductor",
+        connector_family="furiosa_webflow_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official FuriosaAI sitemap and Webflow careers detail pages; "
+            "limited to Korea-based technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

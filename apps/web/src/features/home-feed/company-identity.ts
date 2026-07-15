@@ -209,6 +209,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/channel-corporation",
     displayName: "채널코퍼레이션",
   },
+  {
+    aliases: ["핀다", "finda"],
+    hosts: ["finda.career.greetinghr.com"],
+    src: "/company-logo-assets/finda",
+    displayName: "핀다",
+  },
+  {
+    aliases: ["딥노이드", "deepnoid", "deep noid"],
+    hosts: ["deepnoid.career.greetinghr.com"],
+    src: "/company-logo-assets/deepnoid",
+    displayName: "딥노이드",
+  },
+  {
+    aliases: ["에너자이", "enerzai"],
+    hosts: ["enerzai.career.greetinghr.com"],
+    src: "/company-logo-assets/enerzai",
+    displayName: "에너자이",
+  },
+  {
+    aliases: ["퓨리오사AI", "퓨리오사에이아이", "furiosa ai", "furiosaai"],
+    hosts: ["furiosa.ai"],
+    src: "/company-logo-assets/furiosa-ai",
+    displayName: "퓨리오사AI",
+  },
 ];
 
 function normalize(value: string) {
