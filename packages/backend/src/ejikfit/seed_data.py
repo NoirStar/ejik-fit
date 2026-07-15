@@ -706,6 +706,29 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Qualcomm Korea",
+        slug="qualcomm-korea",
+        base_url=(
+            "https://careers.qualcomm.com/api/pcsx/search?"
+            "domain=qualcomm.com&query=&location=Korea%2C%20Republic%20of&"
+            "start=0"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.qualcomm.com/company/careers",
+        sector="semiconductor_mobile_ai",
+        connector_family="qualcomm_pcsx_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=18,
+        connector_reuse_score=5,
+        non_tech_noise=1,
+        notes=(
+            "Official Qualcomm Careers PCS search and detail APIs, which "
+            "are explicitly allowed by its robots policy; every Korea page "
+            "is reconciled and official engineering job families are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

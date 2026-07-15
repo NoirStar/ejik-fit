@@ -515,6 +515,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Microsoft Korea",
   },
   {
+    aliases: ["Qualcomm Korea", "Qualcomm", "퀄컴 코리아", "퀄컴"],
+    hosts: ["careers.qualcomm.com", "qualcomm.com"],
+    src: "/company-logo-assets/qualcomm-korea",
+    displayName: "Qualcomm Korea",
+  },
+  {
     aliases: ["NVIDIA Korea", "NVIDIA", "엔비디아 코리아", "엔비디아"],
     hosts: ["nvidia.wd5.myworkdayjobs.com", "nvidia.com"],
     src: "/company-logo-assets/nvidia-korea",

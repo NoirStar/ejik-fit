@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 110
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 111
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 110
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 111
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -413,6 +413,15 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert microsoft.source_type == SourceType.ENTERPRISE_JSON
     assert microsoft.connector_family == "microsoft_pcsx_korea_tech"
     assert microsoft.status == SourceStatus.ALLOWED
+
+    qualcomm = catalog_by_slug["qualcomm-korea"]
+    assert qualcomm.base_url == (
+        "https://careers.qualcomm.com/api/pcsx/search?"
+        "domain=qualcomm.com&query=&location=Korea%2C%20Republic%20of&start=0"
+    )
+    assert qualcomm.source_type == SourceType.ENTERPRISE_JSON
+    assert qualcomm.connector_family == "qualcomm_pcsx_korea_tech"
+    assert qualcomm.status == SourceStatus.ALLOWED
 
     for slug, source_type, connector_family in (
         (

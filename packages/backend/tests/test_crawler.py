@@ -749,6 +749,61 @@ class MicrosoftDetailFetcher:
         )
 
 
+class QualcommDetailFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        position = {
+            "id": 446719415948,
+            "displayJobId": "3093300",
+            "name": "Audio ML Systems Engineer",
+            "positionUrl": "/careers/job/446719415948",
+            "locations": ["Suwon, Gyeonggi-do, Korea, Republic of"],
+            "postedTs": 1783036800,
+            "department": "Systems Engineering",
+        }
+        if "/search" in url:
+            payload = {
+                "status": 200,
+                "error": {"message": "", "body": ""},
+                "data": {"count": 1, "positions": [position]},
+            }
+        else:
+            payload = {
+                "status": 200,
+                "error": {"message": "", "body": ""},
+                "data": {
+                    **position,
+                    "publicUrl": (
+                        "https://careers.qualcomm.com/careers/job/"
+                        "446719415948"
+                    ),
+                    "jobDescription": (
+                        "<div>Build audio ML systems with Python.</div>"
+                        "<div>Minimum Qualifications</div>"
+                        "<ul><li>3+ years of engineering experience</li></ul>"
+                    ),
+                    "location": "Suwon, Gyeonggi-do, Korea, Republic of",
+                },
+            }
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(payload),
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -2126,6 +2181,59 @@ def test_crawl_source_fetches_microsoft_details_before_ingestion() -> None:
                 "https://apply.careers.microsoft.com/api/pcsx/"
                 "position_details?position_id=1970393556800001&"
                 "domain=microsoft.com&hl=en&queried_location=South+Korea"
+            ),
+        ]
+
+
+def test_crawl_source_fetches_qualcomm_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = (
+        "https://careers.qualcomm.com/api/pcsx/search?"
+        "domain=qualcomm.com&query=&location=Korea%2C%20Republic%20of&start=0"
+    )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="Qualcomm Korea", slug="qualcomm-korea"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="qualcomm_pcsx_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = QualcommDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "3093300"
+        assert posting.description_text == (
+            "Build audio ML systems with Python. Minimum Qualifications "
+            "3+ years of engineering experience"
+        )
+        assert posting.career_min == 3
+        assert posting.location == "Suwon, Gyeonggi-do, Korea, Republic of"
+        assert fetcher.urls == [
+            listing_url,
+            (
+                "https://careers.qualcomm.com/api/pcsx/position_details?"
+                "position_id=446719415948&domain=qualcomm.com&hl=en&"
+                "queried_location=Korea%2C+Republic+of"
             ),
         ]
 

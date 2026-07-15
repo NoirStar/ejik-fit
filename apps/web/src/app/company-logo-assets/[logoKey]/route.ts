@@ -111,6 +111,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nvidia-korea": "https://www.nvidia.com/favicon.ico",
+  "qualcomm-korea":
+    "https://static.vscdn.net/images/careers/demo/qualcomm/1686215981::Qualcomm-Favicon.png",
   "openai-korea":
     "https://cdn.oaistatic.com/assets/favicon-180x180-od45eci6.webp",
   "nota-ai":

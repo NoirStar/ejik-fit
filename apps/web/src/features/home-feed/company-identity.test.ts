@@ -473,6 +473,11 @@ describe("companyIdentity", () => {
       "microsoft-korea",
     ],
     [
+      "Qualcomm Korea",
+      "https://careers.qualcomm.com/careers/job/446719415948",
+      "qualcomm-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

@@ -34,12 +34,32 @@ MICROSOFT_TECHNICAL_DEPARTMENTS = {
     "technical support engineering",
 }
 
+QUALCOMM_TECHNICAL_DEPARTMENTS = {
+    "asics engineering",
+    "interim engineering intern - hw",
+    "interim engineering intern - sw",
+    "machine learning engineering",
+    "manufacturing engineering",
+    "software engineering",
+    "systems engineering",
+    "technical standards engineering",
+}
+
 
 def is_microsoft_technical_role(
     _title: str | None,
     department: str | None,
 ) -> bool:
     return (department or "").strip().casefold() in MICROSOFT_TECHNICAL_DEPARTMENTS
+
+
+def is_qualcomm_technical_role(
+    _title: str | None,
+    department: str | None,
+) -> bool:
+    """Use Qualcomm's official job family instead of title keywords."""
+
+    return (department or "").strip().casefold() in QUALCOMM_TECHNICAL_DEPARTMENTS
 
 
 def _text(value: Any) -> str | None:
@@ -54,19 +74,19 @@ def _text(value: Any) -> str | None:
 def _response_data(raw_json: str) -> dict[str, Any]:
     payload = json.loads(raw_json)
     if not isinstance(payload, dict) or payload.get("status") != 200:
-        raise ValueError("Microsoft Careers API returned an invalid status")
+        raise ValueError("PCS Careers API returned an invalid status")
     error = payload.get("error")
     if isinstance(error, dict) and any(
         _text(error.get(key)) for key in ("message", "body")
     ):
-        raise ValueError("Microsoft Careers API returned an error")
+        raise ValueError("PCS Careers API returned an error")
     data = payload.get("data")
     if not isinstance(data, dict):
-        raise ValueError("Microsoft Careers API is missing data")
+        raise ValueError("PCS Careers API is missing data")
     return data
 
 
-def parse_microsoft_search_page(
+def parse_pcsx_search_page(
     raw_json: str,
 ) -> tuple[list[dict[str, Any]], int]:
     data = _response_data(raw_json)
@@ -78,8 +98,14 @@ def parse_microsoft_search_page(
         or total < 0
         or not all(isinstance(position, dict) for position in positions)
     ):
-        raise ValueError("Microsoft Careers search envelope is invalid")
+        raise ValueError("PCS Careers search envelope is invalid")
     return positions, total
+
+
+def parse_microsoft_search_page(
+    raw_json: str,
+) -> tuple[list[dict[str, Any]], int]:
+    return parse_pcsx_search_page(raw_json)
 
 
 def _timestamp(value: Any) -> datetime | None:
@@ -150,14 +176,14 @@ def _listing_opening(
     )
 
 
-def parse_microsoft_listing_openings(
+def parse_pcsx_listing_openings(
     raw_json: str,
     listing_url: str,
 ) -> list[ParsedOpening]:
     payload = json.loads(raw_json)
     jobs = payload.get("jobs") if isinstance(payload, dict) else None
     if not isinstance(jobs, list):
-        raise ValueError("Microsoft merged listing is missing jobs")
+        raise ValueError("PCS merged listing is missing jobs")
     return [
         opening
         for item in jobs
@@ -167,17 +193,24 @@ def parse_microsoft_listing_openings(
     ]
 
 
-def microsoft_detail_api_url(listing_url: str, public_job_url: str) -> str:
+def parse_microsoft_listing_openings(
+    raw_json: str,
+    listing_url: str,
+) -> list[ParsedOpening]:
+    return parse_pcsx_listing_openings(raw_json, listing_url)
+
+
+def pcsx_detail_api_url(listing_url: str, public_job_url: str) -> str:
     listing = urlparse(listing_url)
     public = urlparse(public_job_url)
     if public.netloc != listing.netloc:
-        raise ValueError("Microsoft public job host does not match its listing")
+        raise ValueError("PCS public job host does not match its listing")
     path_parts = public.path.rstrip("/").split("/")
     if len(path_parts) < 3 or path_parts[-2] != "job":
-        raise ValueError("Microsoft public job URL is invalid")
+        raise ValueError("PCS public job URL is invalid")
     position_id = path_parts[-1]
     if not position_id.isdigit():
-        raise ValueError("Microsoft public job id is invalid")
+        raise ValueError("PCS public job id is invalid")
 
     listing_query = parse_qs(listing.query, keep_blank_values=True)
     domain = listing_query.get("domain", ["microsoft.com"])[0]
@@ -191,6 +224,10 @@ def microsoft_detail_api_url(listing_url: str, public_job_url: str) -> str:
         }
     )
     return f"{listing.scheme}://{listing.netloc}/api/pcsx/position_details?{query}"
+
+
+def microsoft_detail_api_url(listing_url: str, public_job_url: str) -> str:
+    return pcsx_detail_api_url(listing_url, public_job_url)
 
 
 def _required_qualifications(description_text: str) -> str:
@@ -232,7 +269,7 @@ def _employment_type(value: Any) -> str | None:
     }.get(normalized, raw)
 
 
-def parse_microsoft_detail_opening(
+def parse_pcsx_detail_opening(
     raw_json: str,
     detail_url: str,
 ) -> ParsedOpening:
@@ -241,7 +278,7 @@ def parse_microsoft_detail_opening(
     title = _text(item.get("name"))
     public_url = _public_url(item, detail_url)
     if external_id is None or title is None or public_url is None:
-        raise ValueError("Microsoft detail is missing job identity")
+        raise ValueError("PCS detail is missing job identity")
 
     description_html = _text(item.get("jobDescription")) or ""
     description_text = (
@@ -267,3 +304,10 @@ def parse_microsoft_detail_opening(
         opens_at=_timestamp(item.get("postedTs")),
         closes_at=None,
     )
+
+
+def parse_microsoft_detail_opening(
+    raw_json: str,
+    detail_url: str,
+) -> ParsedOpening:
+    return parse_pcsx_detail_opening(raw_json, detail_url)
