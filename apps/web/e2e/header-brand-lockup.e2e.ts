@@ -1,6 +1,19 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 const viewports = [390, 360, 350, 341, 340, 320] as const;
+
+async function renderedBox(target: Locator) {
+  await expect(target).toBeVisible();
+  return target.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    return {
+      height: box.height,
+      width: box.width,
+      x: box.x,
+      y: box.y,
+    };
+  });
+}
 
 for (const width of viewports) {
   test(`keeps the header legible and tappable at ${width}px`, async ({ page }) => {
@@ -37,10 +50,9 @@ for (const width of viewports) {
     ];
 
     for (const { name, target } of targets) {
-      const box = await target.boundingBox();
-      expect(box, `${name} should have a rendered box`).not.toBeNull();
-      expect(box!.width, `${name} width`).toBeGreaterThanOrEqual(44);
-      expect(box!.height, `${name} height`).toBeGreaterThanOrEqual(44);
+      const box = await renderedBox(target);
+      expect(box.width, `${name} width`).toBeGreaterThanOrEqual(44);
+      expect(box.height, `${name} height`).toBeGreaterThanOrEqual(44);
     }
 
     const hasHorizontalOverflow = await page.evaluate(
@@ -50,10 +62,9 @@ for (const width of viewports) {
 
     await page.getByRole("button", { name: "알림 열기" }).click();
     const notification = page.getByLabel("알림", { exact: true });
-    const notificationBox = await notification.boundingBox();
-    expect(notificationBox).not.toBeNull();
-    expect(notificationBox!.x).toBeGreaterThanOrEqual(16);
-    expect(notificationBox!.width).toBeGreaterThanOrEqual(width - 32);
+    const notificationBox = await renderedBox(notification);
+    expect(notificationBox.x).toBeGreaterThanOrEqual(16);
+    expect(notificationBox.width).toBeGreaterThanOrEqual(width - 32);
   });
 }
 
@@ -62,9 +73,8 @@ test("keeps utility menus below the single desktop header", async ({ page }) => 
   await page.goto("/privacy");
 
   const header = page.locator("header").first();
-  const headerBox = await header.boundingBox();
-  expect(headerBox).not.toBeNull();
-  expect(headerBox!.height).toBeLessThanOrEqual(64);
+  const headerBox = await renderedBox(header);
+  expect(headerBox.height).toBeLessThanOrEqual(64);
 
   const navigation = page.getByRole("navigation", { name: "주요 탐색" });
   const navigationLinkYs = await navigation.getByRole("link").evaluateAll((links) =>
@@ -79,9 +89,8 @@ test("keeps utility menus below the single desktop header", async ({ page }) => 
     await page.getByRole("button", { name: control.button }).click();
     const menu = page.getByLabel(control.menu, { exact: true });
     await expect(menu).toBeVisible();
-    const menuBox = await menu.boundingBox();
-    expect(menuBox).not.toBeNull();
-    expect(menuBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height + 8);
+    const menuBox = await renderedBox(menu);
+    expect(menuBox.y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height + 8);
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
   }
@@ -110,22 +119,18 @@ for (const width of [981, 980, 940, 840, 821] as const) {
       await expect(desktopNavigation).toBeVisible();
       await expect(mobileNavigation).toBeHidden();
 
-      const searchBox = await page
-        .getByRole("searchbox", { name: "통합 검색" })
-        .locator("..")
-        .boundingBox();
-      const navigationBox = await desktopNavigation.boundingBox();
-      const firstUtilityBox = await page
-        .getByRole("link", { name: "글쓰기" })
-        .boundingBox();
-      expect(searchBox).not.toBeNull();
-      expect(navigationBox).not.toBeNull();
-      expect(firstUtilityBox).not.toBeNull();
-      expect(searchBox!.x + searchBox!.width).toBeLessThanOrEqual(
-        navigationBox!.x,
+      const searchBox = await renderedBox(
+        page.getByRole("searchbox", { name: "통합 검색" }).locator(".."),
       );
-      expect(navigationBox!.x + navigationBox!.width).toBeLessThanOrEqual(
-        firstUtilityBox!.x,
+      const navigationBox = await renderedBox(desktopNavigation);
+      const firstUtilityBox = await renderedBox(
+        page.getByRole("link", { name: "글쓰기" }),
+      );
+      expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(
+        navigationBox.x,
+      );
+      expect(navigationBox.x + navigationBox.width).toBeLessThanOrEqual(
+        firstUtilityBox.x,
       );
     }
 
