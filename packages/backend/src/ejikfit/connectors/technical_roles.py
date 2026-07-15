@@ -101,7 +101,9 @@ NON_TECHNICAL_ROLE_MARKERS = (
 )
 
 KOREA_LOCATION_MARKERS = (
+    "gyeonggi",
     "korea",
+    "pangyo",
     "seoul",
     "대한민국",
     "서울",

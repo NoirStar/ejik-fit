@@ -78,6 +78,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   "samsung-sds":
     "https://image.samsungsds.com/resource/kr/images/app_ico.gif",
+  "seoul-robotics":
+    "https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   smilegate:

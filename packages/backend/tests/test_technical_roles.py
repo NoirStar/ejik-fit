@@ -31,6 +31,10 @@ def test_korea_technical_filter_requires_both_role_and_domestic_location() -> No
         "Seoul, South Korea",
     ) is True
     assert is_korea_technical_role(
+        "Quality Assurance Engineer",
+        "Pangyo, Gyeonggido",
+    ) is True
+    assert is_korea_technical_role(
         "Software Engineer, AI Agent",
         "San Mateo, California, United States",
     ) is False

@@ -524,6 +524,30 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="서울로보틱스",
+        slug="seoul-robotics",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "seoulrobotics/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://seoulrobotics.org",
+        sector="autonomous_driving",
+        connector_family="lever_greenhouse_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=1,
+        notes=(
+            "Official Seoul Robotics public Greenhouse feed; limited to "
+            "domestic software, ML, infrastructure, and QA roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="우아한형제들",
         slug="woowahan-brothers",
         base_url=(

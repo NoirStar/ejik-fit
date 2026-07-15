@@ -165,7 +165,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 83
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 84
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -285,7 +285,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 83
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 84
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -351,6 +351,15 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     )
     assert catalog_by_slug["toss"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["toss"].status == SourceStatus.ALLOWED
+
+    seoul_robotics = catalog_by_slug["seoul-robotics"]
+    assert seoul_robotics.base_url == (
+        "https://boards-api.greenhouse.io/v1/boards/"
+        "seoulrobotics/jobs?content=true"
+    )
+    assert seoul_robotics.source_type == SourceType.LEVER_GREENHOUSE
+    assert seoul_robotics.connector_family == "lever_greenhouse_korea_tech"
+    assert seoul_robotics.status == SourceStatus.ALLOWED
 
     assert catalog_by_slug["musinsa"].base_url == (
         "https://www.musinsacareers.com/ko"

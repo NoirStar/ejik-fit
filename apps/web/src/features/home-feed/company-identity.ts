@@ -16,6 +16,12 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["서울로보틱스", "seoul robotics"],
+    hosts: ["job-boards.greenhouse.io", "seoulrobotics.org"],
+    src: "/company-logo-assets/seoul-robotics",
+    displayName: "서울로보틱스",
+  },
+  {
     aliases: ["휴톰", "hutom"],
     hosts: ["hutom.recruit.roundhr.com"],
     src: "/company-logo-assets/hutom",
