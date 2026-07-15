@@ -246,6 +246,36 @@ describe("companyIdentity", () => {
       "cheiron",
     ],
     [
+      "Cohere",
+      "https://jobs.ashbyhq.com/cohere/00000000-0000-0000-0000-000000000000",
+      "cohere",
+    ],
+    [
+      "Datadog",
+      "https://job-boards.greenhouse.io/datadog/jobs/0000000000",
+      "datadog",
+    ],
+    [
+      "UJET",
+      "https://job-boards.greenhouse.io/ujet/jobs/0000000000",
+      "ujet",
+    ],
+    [
+      "OVERDARE",
+      "https://job-boards.greenhouse.io/overdare/jobs/0000000000",
+      "overdare",
+    ],
+    [
+      "Cognite",
+      "https://job-boards.greenhouse.io/cognite/jobs/0000000000",
+      "cognite",
+    ],
+    [
+      "CLO Virtual Fashion",
+      "https://jobs.lever.co/clovirtualfashion/00000000-0000-0000-0000-000000000000",
+      "clo-virtual-fashion",
+    ],
+    [
       "LG전자",
       "https://globalcareers.lge.com/job/1",
       "lg-electronics",

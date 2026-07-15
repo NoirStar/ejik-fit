@@ -388,6 +388,128 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Cohere",
+        slug="cohere",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/cohere",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://cohere.com/careers",
+        sector="ai_saas",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public Cohere Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Datadog",
+        slug="datadog",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/datadog/"
+            "jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://careers.datadoghq.com",
+        sector="cloud_observability",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=5,
+        expected_job_volume=5,
+        connector_reuse_score=5,
+        non_tech_noise=8,
+        notes=(
+            "Official public Datadog Greenhouse feed; only technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="UJET",
+        slug="ujet",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/ujet/"
+            "jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.ujet.cx",
+        sector="ai_saas",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official public UJET Greenhouse feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="OVERDARE",
+        slug="overdare",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/overdare/"
+            "jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://overdare.com",
+        sector="game_content",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public OVERDARE Greenhouse feed; only technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Cognite",
+        slug="cognite",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/cognite/"
+            "jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.cognite.com/en/careers",
+        sector="industrial_ai",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public Cognite Greenhouse feed; only technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="CLO Virtual Fashion",
+        slug="clo-virtual-fashion",
+        base_url=(
+            "https://api.lever.co/v0/postings/clovirtualfashion?mode=json"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.clovirtualfashion-careers.com",
+        sector="fashion_tech",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=10,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public CLO Virtual Fashion Lever feed; only "
+            "technical roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

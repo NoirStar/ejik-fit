@@ -27,6 +27,12 @@ back to company initials when the official asset is unavailable.
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `reflection-ai` | Reflection AI | <https://reflection.ai/> | <https://reflection.ai/apple-touch-icon.png> | 2026-07-15 |
 | `cheiron` | Cheiron | <https://www.cheiron.bio/> | <https://www.cheiron.bio/apple-touch-icon.png> | 2026-07-15 |
+| `cohere` | Cohere | <https://cohere.com/careers> | <https://cohere.com/apple-touch-icon.png> | 2026-07-15 |
+| `datadog` | Datadog | <https://careers.datadoghq.com/> | <https://corp.dd-static.net/img/favicons/apple-touch-icon.png> | 2026-07-15 |
+| `ujet` | UJET | <https://www.ujet.cx/> | <https://www.ujet.cx/favicon.ico> | 2026-07-15 |
+| `overdare` | OVERDARE | <https://overdare.com/> | <https://static.overdare.com/meta/favicon.png> | 2026-07-15 |
+| `cognite` | Cognite | <https://www.cognite.com/en/careers> | <https://www.cognite.com/icon.png?icon.08484x9h5icrf.png> | 2026-07-15 |
+| `clo-virtual-fashion` | CLO Virtual Fashion | <https://www.clovirtualfashion-careers.com/> | <https://cf.clovirtualfashion.com/web/_next/static/images/favicon_192x192.png> | 2026-07-15 |
 | `twelve-labs` | 트웰브랩스 | <https://www.twelvelabs.io/careers> | <https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png> | 2026-07-15 |
 | `lunit` | 루닛 | <https://apply.workable.com/lunit/> | <https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |

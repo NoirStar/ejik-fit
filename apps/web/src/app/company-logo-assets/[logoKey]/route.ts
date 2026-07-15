@@ -17,16 +17,21 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
   cheiron: "https://www.cheiron.bio/apple-touch-icon.png",
+  "clo-virtual-fashion":
+    "https://cf.clovirtualfashion.com/web/_next/static/images/favicon_192x192.png",
   "cj-olivenetworks":
     "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
+  cognite: "https://www.cognite.com/icon.png?icon.08484x9h5icrf.png",
   com2us:
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
+  cohere: "https://cohere.com/apple-touch-icon.png",
   coupang: "https://www.coupang.jobs/favicon.ico",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
   databricks:
     "https://www.databricks.com/en-website-assets/icons/icon-96x96.png?v=c9b9916c3b27dc51866c46b79a6e9b88",
+  datadog: "https://corp.dd-static.net/img/favicons/apple-touch-icon.png",
   bitsensing:
     "https://profiles.greetinghr.com/group/99b5d524-240f-45f9-82d3-789cbc07c4e2",
   dunamu: "https://careers.dunamu.com/favicon.png",
@@ -96,6 +101,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
+  overdare: "https://static.overdare.com/meta/favicon.png",
   "indeep-ai":
     "https://assets.roundhr.com/upload/user/organization/28244/temp/1761270163295/%EB%AF%B8%EB%8B%88%EB%A1%9C%EA%B3%A0.png",
   portone:
@@ -129,6 +135,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   "twelve-labs":
     "https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png",
+  ujet: "https://www.ujet.cx/favicon.ico",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",
   "vessl-ai":

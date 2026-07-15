@@ -22,6 +22,7 @@ TECHNICAL_ROLE_MARKERS = (
     "infrastructure",
     "ios",
     "machine learning",
+    "member of technical staff",
     "mlops",
     "platform",
     "programmer",

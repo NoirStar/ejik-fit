@@ -432,6 +432,58 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Cheiron",
   },
   {
+    aliases: ["Cohere", "코히어"],
+    hosts: ["cohere.com", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/cohere",
+    displayName: "Cohere",
+  },
+  {
+    aliases: ["Datadog", "데이터독"],
+    hosts: [
+      "datadoghq.com",
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+    ],
+    src: "/company-logo-assets/datadog",
+    displayName: "Datadog",
+  },
+  {
+    aliases: ["UJET", "유젯"],
+    hosts: [
+      "ujet.cx",
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+    ],
+    src: "/company-logo-assets/ujet",
+    displayName: "UJET",
+  },
+  {
+    aliases: ["OVERDARE", "오버데어"],
+    hosts: [
+      "overdare.com",
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+    ],
+    src: "/company-logo-assets/overdare",
+    displayName: "OVERDARE",
+  },
+  {
+    aliases: ["Cognite", "코그나이트"],
+    hosts: [
+      "cognite.com",
+      "boards-api.greenhouse.io",
+      "job-boards.greenhouse.io",
+    ],
+    src: "/company-logo-assets/cognite",
+    displayName: "Cognite",
+  },
+  {
+    aliases: ["CLO Virtual Fashion", "클로버추얼패션", "CLO"],
+    hosts: ["clovirtualfashion.com", "api.lever.co", "jobs.lever.co"],
+    src: "/company-logo-assets/clo-virtual-fashion",
+    displayName: "CLO Virtual Fashion",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",
