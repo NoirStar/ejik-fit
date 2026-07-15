@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -59,6 +60,24 @@ class SkillStat(BaseModel):
 class SkillStatsResponse(BaseModel):
     items: list[SkillStat]
     total: int
+
+
+class SourceDirectoryItem(BaseModel):
+    company_name: str
+    company_slug: str
+    homepage_url: str | None = None
+    careers_url: str
+    collection_status: Literal["collecting", "preparing"]
+    open_postings: int
+    last_success_at: datetime | None = None
+
+
+class SourceDirectoryResponse(BaseModel):
+    items: list[SourceDirectoryItem]
+    total: int
+    collecting_count: int
+    preparing_count: int
+    open_postings: int
 
 
 class SkillGraphNode(BaseModel):

@@ -5,6 +5,7 @@ import type {
   PostingListResponse,
   SkillGraphResponse,
   SkillStatsResponse,
+  SourceDirectoryResponse,
 } from "./types";
 import {
   normalizePostingDetail,
@@ -105,6 +106,11 @@ export function getSkillStats(filters: {
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<SkillStatsResponse>(`/api/skills/stats${query}`);
+}
+
+
+export function getSourceDirectory(): Promise<SourceDirectoryResponse> {
+  return request<SourceDirectoryResponse>("/api/sources");
 }
 
 

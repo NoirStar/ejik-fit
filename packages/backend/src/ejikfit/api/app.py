@@ -20,6 +20,11 @@ from ejikfit.api.skills import (
     SkillStatsReader,
     create_skills_router,
 )
+from ejikfit.api.sources import (
+    DatabaseSourceDirectoryReader,
+    SourceDirectoryReader,
+    create_sources_router,
+)
 from ejikfit.config import Settings, get_settings
 from ejikfit.search import MeiliPostingIndex
 
@@ -42,6 +47,7 @@ def create_app(
     skill_stats_reader: SkillStatsReader | None = None,
     skill_graph_reader: SkillGraphReader | None = None,
     fit_analysis_reader: FitAnalysisReader | None = None,
+    source_directory_reader: SourceDirectoryReader | None = None,
 ) -> FastAPI:
     application = FastAPI(title="이직핏 API", version="0.1.0")
 
@@ -65,6 +71,10 @@ def create_app(
     if fit_analysis_reader is None:
         fit_analysis_reader = DatabaseFitAnalysisReader()
     application.include_router(create_fit_router(fit_analysis_reader))
+
+    if source_directory_reader is None:
+        source_directory_reader = DatabaseSourceDirectoryReader()
+    application.include_router(create_sources_router(source_directory_reader))
 
     return application
 

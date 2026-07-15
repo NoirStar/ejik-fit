@@ -1,0 +1,131 @@
+from __future__ import annotations
+
+from typing import Protocol
+
+from fastapi import APIRouter
+from sqlalchemy import func, select
+from sqlalchemy.orm import joinedload
+
+from ejikfit.db import SessionLocal
+from ejikfit.models import (
+    CareerSource,
+    JobPosting,
+    PolicyStatus,
+    PostingStatus,
+    SourceStatus,
+)
+
+from .schemas import SourceDirectoryResponse
+
+
+class SourceDirectoryReader(Protocol):
+    def list(self) -> list[dict]: ...
+
+
+class DatabaseSourceDirectoryReader:
+    def __init__(self, session_factory=SessionLocal) -> None:
+        self.session_factory = session_factory
+
+    def list(self) -> list[dict]:
+        hidden_statuses = {SourceStatus.BLOCKED, SourceStatus.STOPPED}
+        hidden_policy_statuses = {PolicyStatus.BLOCKED, PolicyStatus.STOPPED}
+
+        with self.session_factory() as session:
+            sources = list(
+                session.scalars(
+                    select(CareerSource)
+                    .options(joinedload(CareerSource.company))
+                    .where(
+                        CareerSource.status.not_in(hidden_statuses),
+                        CareerSource.policy_status.not_in(
+                            hidden_policy_statuses
+                        ),
+                    )
+                    .order_by(CareerSource.base_url)
+                )
+                .unique()
+                .all()
+            )
+            open_counts = {
+                source_id: int(count)
+                for source_id, count in session.execute(
+                    select(
+                        JobPosting.source_id,
+                        func.count(JobPosting.id),
+                    )
+                    .where(JobPosting.status == PostingStatus.OPEN)
+                    .group_by(JobPosting.source_id)
+                )
+            }
+
+        companies: dict[str, dict] = {}
+        preferred_source_counts: dict[str, int] = {}
+        for source in sources:
+            company = source.company
+            collecting = source.is_runnable
+            source_count = open_counts.get(source.id, 0) if collecting else 0
+            status = "collecting" if collecting else "preparing"
+            item = companies.get(company.slug)
+
+            if item is None:
+                companies[company.slug] = {
+                    "company_name": company.name,
+                    "company_slug": company.slug,
+                    "homepage_url": company.homepage_url,
+                    "careers_url": source.base_url,
+                    "collection_status": status,
+                    "open_postings": source_count,
+                    "last_success_at": source.last_success_at,
+                }
+                preferred_source_counts[company.slug] = source_count
+                continue
+
+            item["open_postings"] += source_count
+            previous_success = item["last_success_at"]
+            if source.last_success_at is not None and (
+                previous_success is None
+                or source.last_success_at > previous_success
+            ):
+                item["last_success_at"] = source.last_success_at
+
+            should_prefer_source = (
+                collecting and item["collection_status"] != "collecting"
+            ) or (
+                status == item["collection_status"]
+                and source_count > preferred_source_counts[company.slug]
+            )
+            if should_prefer_source:
+                item["careers_url"] = source.base_url
+                preferred_source_counts[company.slug] = source_count
+            if collecting:
+                item["collection_status"] = "collecting"
+
+        return sorted(
+            companies.values(),
+            key=lambda item: (
+                item["collection_status"] != "collecting",
+                -item["open_postings"],
+                item["company_name"].casefold(),
+            ),
+        )
+
+
+def create_sources_router(reader: SourceDirectoryReader) -> APIRouter:
+    router = APIRouter(prefix="/api/sources", tags=["sources"])
+
+    @router.get("", response_model=SourceDirectoryResponse)
+    def list_sources() -> dict:
+        items = reader.list()
+        return {
+            "items": items,
+            "total": len(items),
+            "collecting_count": sum(
+                item["collection_status"] == "collecting" for item in items
+            ),
+            "preparing_count": sum(
+                item["collection_status"] == "preparing" for item in items
+            ),
+            "open_postings": sum(item["open_postings"] for item in items),
+        }
+
+    return router

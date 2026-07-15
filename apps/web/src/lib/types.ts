@@ -55,6 +55,24 @@ export type SkillStatsResponse = {
   total: number;
 };
 
+export type SourceDirectoryItem = {
+  company_name: string;
+  company_slug: string;
+  homepage_url: string | null;
+  careers_url: string;
+  collection_status: "collecting" | "preparing";
+  open_postings: number;
+  last_success_at: string | null;
+};
+
+export type SourceDirectoryResponse = {
+  items: SourceDirectoryItem[];
+  total: number;
+  collecting_count: number;
+  preparing_count: number;
+  open_postings: number;
+};
+
 export type SkillGraphNode = {
   id: string;
   label: string;
