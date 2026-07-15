@@ -88,11 +88,26 @@ describe("companyIdentity", () => {
     ["당근", "https://careers.daangn.com/jobs/role/1/", "daangn"],
     ["무신사", "https://www.musinsacareers.com/ko/o/1", "musinsa"],
     ["토스 커뮤니티", "https://toss.im/career/job-detail?job_id=1", "toss"],
+    ["Moloco", "https://job-boards.greenhouse.io/moloco/jobs/1", "moloco"],
+    ["Sendbird", "https://job-boards.greenhouse.io/sendbird/jobs/1", "sendbird"],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",
       src: `/company-logo-assets/${key}`,
       alt: `${name} 로고`,
+    });
+  });
+
+  it("recognizes the Korean Moloco alias", () => {
+    expect(
+      companyIdentity(
+        "몰로코",
+        "https://job-boards.greenhouse.io/moloco/jobs/1",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/moloco",
+      alt: "Moloco 로고",
     });
   });
 

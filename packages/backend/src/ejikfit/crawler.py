@@ -34,7 +34,11 @@ from ejikfit.connectors.sitemap_discovery import (
     parse_sitemap_detail_opening,
 )
 from ejikfit.connectors.successfactors import parse_successfactors_openings
-from ejikfit.connectors.technical_roles import is_technical_role
+from ejikfit.connectors.technical_roles import (
+    is_korea_technical_role,
+    is_technical_role,
+)
+from ejikfit.connectors.types import ParsedOpening
 from ejikfit.connectors.workday import parse_workday_openings
 from ejikfit.db import SessionLocal
 from ejikfit.ingestion import ingest_opening
@@ -55,6 +59,19 @@ from ejikfit.storage import S3SnapshotStore, SnapshotStore
 
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_source_opening_filters(
+    source: CareerSource,
+    openings: list[ParsedOpening],
+) -> list[ParsedOpening]:
+    if source.connector_family == "lever_greenhouse_korea_tech":
+        return [
+            opening
+            for opening in openings
+            if is_korea_technical_role(opening.title, opening.location)
+        ]
+    return openings
 
 
 class RetryableFetchError(RuntimeError):
@@ -536,6 +553,7 @@ async def preview_source(
             len(openings),
             source.request_body,
         )
+        openings = _apply_source_opening_filters(source, openings)
     except (KeyError, TypeError, ListingValidationError, ValueError) as error:
         return _preview_payload(
             source,
@@ -788,6 +806,7 @@ async def crawl_source(
             len(openings),
             source.request_body,
         )
+        openings = _apply_source_opening_filters(source, openings)
     except Exception as error:
         session.rollback()
         logger.exception("Listing parse or validation failed for %s", listing.url)

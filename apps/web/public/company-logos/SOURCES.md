@@ -34,6 +34,8 @@ back to company initials when the official asset is unavailable.
 | `daangn` | 당근 | <https://careers.daangn.com/jobs/> | <https://careers.daangn.com/apple-touch-icon.png> | 2026-07-15 |
 | `musinsa` | 무신사 | <https://www.musinsacareers.com/ko> | <https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5> | 2026-07-15 |
 | `toss` | 토스 커뮤니티 | <https://toss.im/career/jobs> | <https://static.toss.im/tds/favicon/favicon-196x196.png> | 2026-07-15 |
+| `moloco` | Moloco | <https://www.moloco.com/ko/careers> | <https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png> | 2026-07-15 |
+| `sendbird` | Sendbird | <https://sendbird.com/careers> | <https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png> | 2026-07-15 |
 
 ## Assets intentionally not stored
 

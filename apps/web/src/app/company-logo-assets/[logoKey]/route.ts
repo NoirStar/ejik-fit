@@ -13,12 +13,15 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
   musinsa:
     "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
+  moloco:
+    "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   "nota-ai":
     "https://profiles.greetinghr.com/group/9c58dd87-aaec-4cc8-8a3f-6e93205d0df8",
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
+  sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   upstage:
     "https://profiles.greetinghr.com/group/b26b9ea2-f544-4f97-b3e6-5ab033440219",

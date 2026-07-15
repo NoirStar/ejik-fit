@@ -290,6 +290,78 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="쿠팡",
+        slug="coupang",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "coupang/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.coupang.jobs/kr/",
+        sector="commerce",
+        connector_family="lever_greenhouse_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Coupang public Greenhouse feed; limited to domestic "
+            "software, data, infrastructure, QA, and security role titles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="Moloco",
+        slug="moloco",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "moloco/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.moloco.com/ko/careers",
+        sector="ai_adtech",
+        connector_family="lever_greenhouse_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Moloco public Greenhouse feed; limited to domestic "
+            "technical role titles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="Sendbird",
+        slug="sendbird",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "sendbird/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://sendbird.com/careers",
+        sector="saas_ai",
+        connector_family="lever_greenhouse_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Sendbird public Greenhouse feed; limited to domestic "
+            "technical role titles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

@@ -1250,6 +1250,7 @@ def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
             company=company,
             base_url="https://boards.greenhouse.io/acme",
             source_type=SourceType.LEVER_GREENHOUSE,
+            connector_family="lever_greenhouse_korea_tech",
             status=SourceStatus.ALLOWED,
             policy_status=PolicyStatus.ALLOWED,
         )
@@ -1267,11 +1268,36 @@ def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
                                 {
                                     "id": 3300,
                                     "title": "Backend Engineer",
-                                    "absolute_url": "https://boards.greenhouse.io/acme/jobs/3300",
+                                    "absolute_url": (
+                                        "https://boards.greenhouse.io/"
+                                        "acme/jobs/3300"
+                                    ),
                                     "location": {"name": "Seoul"},
                                     "departments": [{"name": "Engineering"}],
                                     "active": True,
-                                }
+                                },
+                                {
+                                    "id": 3301,
+                                    "title": "Backend Engineer",
+                                    "absolute_url": (
+                                        "https://boards.greenhouse.io/"
+                                        "acme/jobs/3301"
+                                    ),
+                                    "location": {"name": "San Mateo, United States"},
+                                    "departments": [{"name": "Engineering"}],
+                                    "active": True,
+                                },
+                                {
+                                    "id": 3302,
+                                    "title": "Digital Marketing Manager",
+                                    "absolute_url": (
+                                        "https://boards.greenhouse.io/"
+                                        "acme/jobs/3302"
+                                    ),
+                                    "location": {"name": "Seoul, South Korea"},
+                                    "departments": [{"name": "Marketing"}],
+                                    "active": True,
+                                },
                             ]
                         },
                         ensure_ascii=False,

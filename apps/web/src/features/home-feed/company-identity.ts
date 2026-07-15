@@ -130,6 +130,19 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/toss",
     displayName: "토스 커뮤니티",
   },
+  {
+    aliases: ["moloco", "몰로코"],
+    hosts: ["boards-api.greenhouse.io", "job-boards.greenhouse.io"],
+    src: "/company-logo-assets/moloco",
+    displayName: "Moloco",
+  },
+  {
+    aliases: ["sendbird", "센드버드"],
+    hosts: ["boards-api.greenhouse.io", "job-boards.greenhouse.io"],
+    src: "/company-logo-assets/sendbird",
+    displayName: "Sendbird",
+    surface: "dark",
+  },
 ];
 
 function normalize(value: string) {
