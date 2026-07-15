@@ -248,6 +248,14 @@ const fitAnalysis = {
   ],
 };
 
+const skillTrends = {
+  status: "collecting",
+  collected_weeks: 1,
+  minimum_weeks: 4,
+  latest_snapshot_at: "2026-07-15T00:00:00.000Z",
+  series: [],
+};
+
 const skillGraph = {
   seed: "Kubernetes",
   nodes: [
@@ -529,6 +537,8 @@ const server = createServer((request, response) => {
       ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
         ? skillStatsForRequest(requestUrl)
+        : pathname === "/api/skills/trends"
+          ? skillTrends
         : pathname === "/api/fit/analyze" && request.method === "POST"
           ? fitAnalysis
         : pathname === "/api/graph/skills"
