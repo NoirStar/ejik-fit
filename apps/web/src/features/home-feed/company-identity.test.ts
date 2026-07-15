@@ -226,6 +226,26 @@ describe("companyIdentity", () => {
       "databricks",
     ],
     [
+      "Airwallex",
+      "https://jobs.ashbyhq.com/airwallex/00000000-0000-0000-0000-000000000000",
+      "airwallex",
+    ],
+    [
+      "Applied Intuition",
+      "https://jobs.ashbyhq.com/applied/00000000-0000-0000-0000-000000000000",
+      "applied-intuition",
+    ],
+    [
+      "Reflection AI",
+      "https://jobs.ashbyhq.com/reflectionai/00000000-0000-0000-0000-000000000000",
+      "reflection-ai",
+    ],
+    [
+      "Cheiron",
+      "https://jobs.ashbyhq.com/cheiron/00000000-0000-0000-0000-000000000000",
+      "cheiron",
+    ],
+    [
       "LG전자",
       "https://globalcareers.lge.com/job/1",
       "lg-electronics",

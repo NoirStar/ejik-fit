@@ -1266,7 +1266,7 @@ async def crawl_source(
     )
 
 
-def run_source_by_id(source_id: str) -> dict[str, int]:
+def run_source_by_id(source_id: str) -> dict[str, Any]:
     settings = get_settings()
     store = S3SnapshotStore(
         endpoint_url=settings.s3_endpoint_url,
@@ -1292,7 +1292,13 @@ def run_source_by_id(source_id: str) -> dict[str, int]:
                 browser_renderer=PlaywrightBrowserRenderer(),
             )
         )
-    return asdict(result)
+        report: dict[str, Any] = asdict(result)
+        if result.failed:
+            report["error"] = {
+                "code": source.last_error_code or "crawl_failed",
+                "reason": source.last_error_reason or "source collection failed",
+            }
+        return report
 
 
 def preview_source_by_id(source_id: str) -> dict[str, Any]:

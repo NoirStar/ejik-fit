@@ -347,14 +347,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.company_slug,
             args.source_type,
         )
+        report = run_source_by_id(source_id)
         print(
-            json.dumps(
-                run_source_by_id(source_id),
-                ensure_ascii=False,
-                sort_keys=True,
-            )
+            json.dumps(report, ensure_ascii=False, sort_keys=True)
         )
-        return 0
+        return 1 if report["failed"] else 0
 
     if args.command == "preview-source":
         from ejikfit.crawler import preview_source_by_id

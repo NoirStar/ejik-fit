@@ -301,6 +301,50 @@ def test_crawl_source_accepts_company_slug_selector(monkeypatch, capsys) -> None
     assert json.loads(capsys.readouterr().out) == report
 
 
+def test_crawl_source_returns_failure_when_collection_failed(
+    monkeypatch,
+    capsys,
+) -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    source_id = uuid.UUID("00000000-0000-0000-0000-000000000012")
+    _insert_source(
+        engine,
+        source_id=source_id,
+        status=SourceStatus.ALLOWED,
+    )
+    report = {
+        "discovered": 0,
+        "ingested": 0,
+        "failed": 1,
+        "closed": 0,
+        "error": {
+            "code": "temporary_fetch_error",
+            "reason": "ReadTimeout",
+        },
+    }
+
+    monkeypatch.setattr(cli, "SessionLocal", lambda: Session(engine))
+    monkeypatch.setattr(
+        "ejikfit.crawler.run_source_by_id",
+        lambda selected_source_id: report,
+    )
+
+    assert (
+        cli.main(
+            [
+                "crawl-source",
+                "--company-slug",
+                "lg-cns",
+                "--source-type",
+                "static_next_data",
+            ]
+        )
+        == 1
+    )
+    assert json.loads(capsys.readouterr().out) == report
+
+
 def test_set_source_status_promotes_source_and_clears_stale_errors(
     monkeypatch,
     capsys,

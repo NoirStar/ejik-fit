@@ -56,6 +56,7 @@ TECHNICAL_ROLE_MARKERS = (
 )
 
 NON_TECHNICAL_ROLE_MARKERS = (
+    "account executive",
     "artist",
     "business development",
     "civil engineer",

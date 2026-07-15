@@ -3,6 +3,10 @@ const MAX_LOGO_BYTES = 2_000_000;
 
 const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "42dot": "https://www.42dot.ai/favicon.ico",
+  airwallex:
+    "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
+  "applied-intuition":
+    "https://www.appliedintuition.com/icon1.png?icon1.488d774c.png",
   banksalad:
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:
@@ -12,6 +16,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
+  cheiron: "https://www.cheiron.bio/apple-touch-icon.png",
   "cj-olivenetworks":
     "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
   com2us:
@@ -101,6 +106,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "posco-dx": "https://www.poscodx.com/resources/favicon.ico",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
+  "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   "samsung-sds":

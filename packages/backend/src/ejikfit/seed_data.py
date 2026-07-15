@@ -312,6 +312,82 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Airwallex",
+        slug="airwallex",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/airwallex"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://careers.airwallex.com",
+        sector="fintech",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=5,
+        non_tech_noise=8,
+        notes=(
+            "Official public Airwallex Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Applied Intuition",
+        slug="applied-intuition",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/applied",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.appliedintuition.com/careers",
+        sector="mobility_ai",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public Applied Intuition Ashby feed; only listed "
+            "technical roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Reflection AI",
+        slug="reflection-ai",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/reflectionai"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://reflection.ai",
+        sector="ai_saas",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official public Reflection AI Ashby feed; only listed "
+            "technical roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Cheiron",
+        slug="cheiron",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/cheiron",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.cheiron.bio",
+        sector="biotech_ai",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official public Cheiron Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

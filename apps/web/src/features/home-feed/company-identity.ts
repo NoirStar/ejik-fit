@@ -408,6 +408,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Databricks",
   },
   {
+    aliases: ["Airwallex", "에어월렉스"],
+    hosts: ["airwallex.com", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/airwallex",
+    displayName: "Airwallex",
+  },
+  {
+    aliases: ["Applied Intuition", "어플라이드 인튜이션"],
+    hosts: ["appliedintuition.com", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/applied-intuition",
+    displayName: "Applied Intuition",
+  },
+  {
+    aliases: ["Reflection AI", "리플렉션 AI"],
+    hosts: ["reflection.ai", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/reflection-ai",
+    displayName: "Reflection AI",
+  },
+  {
+    aliases: ["Cheiron", "케이론"],
+    hosts: ["cheiron.bio", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/cheiron",
+    displayName: "Cheiron",
+  },
+  {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
     hosts: ["ably.team", "tydtr0dj.ninehire.site"],
     src: "/company-logos/ably.svg",
