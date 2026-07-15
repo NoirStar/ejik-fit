@@ -54,6 +54,7 @@ export async function getPostings(filters: {
   category?: string;
   company?: string;
   limit?: number;
+  offset?: number;
 } = {}): Promise<PostingListResponse> {
   const params = new URLSearchParams();
   if (filters.q) {
@@ -70,6 +71,9 @@ export async function getPostings(filters: {
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));
+  }
+  if (filters.offset) {
+    params.set("offset", String(filters.offset));
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return normalizePostingList(

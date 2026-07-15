@@ -70,8 +70,8 @@ describe("JobList", () => {
     expect(screen.getByLabelText("공고 검색")).toHaveValue("backend");
     expect(screen.getByLabelText("경력 조건")).toHaveValue("experienced");
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
-    expect(screen.getByText("현재 결과 2건")).toBeInTheDocument();
-    expect(screen.getByText("기업 2곳")).toBeInTheDocument();
+    expect(screen.getByText("전체 공식 공고 2건")).toBeInTheDocument();
+    expect(screen.getByText("이번 페이지 기업 2곳")).toBeInTheDocument();
     expect(screen.getByTitle("네이버 로고")).toBeInTheDocument();
 
     const job = screen
@@ -178,10 +178,10 @@ describe("JobList", () => {
     expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 
-  it("paginates a large API response without rendering every card at once", () => {
+  it("links server pages without rendering jobs that were not fetched", () => {
     const manyPostings: PostingListResponse = {
       total: 21,
-      items: Array.from({ length: 21 }, (_, index) => ({
+      items: Array.from({ length: 20 }, (_, index) => ({
         ...postings.items[0],
         id: `page-job-${index + 1}`,
         title: `페이지 공고 ${index + 1}`,
@@ -189,9 +189,11 @@ describe("JobList", () => {
       })),
     };
 
-    render(
+    const { rerender } = render(
       <JobList
+        currentPage={1}
         filters={{ query: "", careerType: "", category: "" }}
+        pageSize={20}
         postings={manyPostings}
       />,
     );
@@ -201,8 +203,29 @@ describe("JobList", () => {
       screen.queryByRole("link", { name: "페이지 공고 21" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("1–20 / 21건")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "2페이지" })).toHaveAttribute(
+      "href",
+      "/jobs?page=2",
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "2페이지" }));
+    rerender(
+      <JobList
+        currentPage={2}
+        filters={{ query: "", careerType: "", category: "" }}
+        pageSize={20}
+        postings={{
+          total: 21,
+          items: [
+            {
+              ...postings.items[0],
+              id: "page-job-21",
+              title: "페이지 공고 21",
+              source_url: "https://recruit.navercorp.com/page-job-21",
+            },
+          ],
+        }}
+      />,
+    );
 
     expect(
       screen.queryByRole("link", { name: "페이지 공고 1" }),

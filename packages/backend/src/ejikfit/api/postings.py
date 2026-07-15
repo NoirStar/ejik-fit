@@ -5,7 +5,7 @@ import uuid
 from typing import Protocol
 
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 
 from ejikfit.db import SessionLocal
@@ -29,7 +29,16 @@ class PostingReader(Protocol):
         career_type: str | None = None,
         category: str | None = None,
         limit: int = 20,
+        offset: int = 0,
     ) -> list[dict]: ...
+
+    def count(
+        self,
+        q: str | None = None,
+        company: str | None = None,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int: ...
 
 
 def _summary(posting: JobPosting) -> dict:
@@ -140,6 +149,7 @@ class DatabasePostingReader:
         career_type: str | None = None,
         category: str | None = None,
         limit: int = 20,
+        offset: int = 0,
     ) -> list[dict]:
         if q and self.search_index is not None and not category:
             try:
@@ -148,6 +158,7 @@ class DatabasePostingReader:
                     company=company,
                     career_type=career_type,
                     limit=limit,
+                    offset=offset,
                 )
             except Exception:
                 logger.exception(
@@ -162,6 +173,7 @@ class DatabasePostingReader:
                 career_type=career_type,
                 category=category,
                 limit=limit,
+                offset=offset,
             )
 
     def _list_from_database(
@@ -173,6 +185,7 @@ class DatabasePostingReader:
         career_type: str | None,
         category: str | None,
         limit: int,
+        offset: int,
     ) -> list[dict]:
         statement = (
             select(JobPosting)
@@ -183,6 +196,7 @@ class DatabasePostingReader:
             )
             .where(JobPosting.status == PostingStatus.OPEN)
             .order_by(JobPosting.last_verified_at.desc())
+            .offset(offset)
             .limit(limit)
         )
         if q:
@@ -209,6 +223,41 @@ class DatabasePostingReader:
             _summary(posting)
             for posting in session.scalars(statement).unique().all()
         ]
+
+    def count(
+        self,
+        q: str | None = None,
+        company: str | None = None,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int:
+        with self.session_factory() as session:
+            statement = (
+                select(func.count(JobPosting.id))
+                .select_from(JobPosting)
+                .join(JobPosting.company)
+                .where(JobPosting.status == PostingStatus.OPEN)
+            )
+            if q:
+                statement = statement.where(
+                    _posting_search_clause(q, self.use_pgroonga)
+                )
+            if company:
+                statement = statement.where(Company.slug == company)
+            if career_type:
+                statement = statement.where(
+                    JobPosting.career_type == career_type
+                )
+            if category:
+                statement = statement.where(
+                    JobPosting.skills.any(
+                        and_(
+                            PostingSkill.category == category,
+                            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                        )
+                    )
+                )
+            return int(session.scalar(statement) or 0)
 
     def get(self, posting_id: str) -> dict | None:
         try:
@@ -239,6 +288,7 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
         career_type: str | None = Query(default=None, max_length=100),
         category: str | None = Query(default=None, max_length=64),
         limit: int = Query(default=20, ge=1, le=100),
+        offset: int = Query(default=0, ge=0, le=100_000),
     ) -> dict:
         items = reader.list(
             q=q,
@@ -246,8 +296,15 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
             career_type=career_type,
             category=category,
             limit=limit,
+            offset=offset,
         )
-        return {"items": items, "total": len(items)}
+        total = reader.count(
+            q=q,
+            company=company,
+            career_type=career_type,
+            category=category,
+        )
+        return {"items": items, "total": total}
 
     @router.get("/{posting_id}", response_model=PostingDetail)
     def get_posting(posting_id: str) -> dict:

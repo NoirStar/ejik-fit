@@ -155,9 +155,9 @@ describe("market overview model", () => {
     ]);
   });
 
-  it("treats the 100 item posting response as a lower bound", () => {
-    expect(formatPostingCoverage(100)).toBe("100건 이상 확인");
-    expect(formatPostingCoverage(147)).toBe("100건 이상 확인");
+  it("formats the database-backed filtered posting total", () => {
+    expect(formatPostingCoverage(100)).toBe("100건 확인");
+    expect(formatPostingCoverage(147)).toBe("147건 확인");
     expect(formatPostingCoverage(99)).toBe("99건 확인");
     expect(formatPostingCoverage(null)).toBe("확인 불가");
   });

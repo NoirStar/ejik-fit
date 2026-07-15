@@ -89,6 +89,7 @@ class MeiliPostingIndex:
         company: str | None = None,
         career_type: str | None = None,
         limit: int = 20,
+        offset: int = 0,
     ) -> list[dict]:
         filters = ['status = "open"']
         if company:
@@ -103,6 +104,7 @@ class MeiliPostingIndex:
             {
                 "filter": " AND ".join(filters),
                 "limit": limit,
+                "offset": offset,
                 "sort": ["last_verified_at:desc"],
             },
         )

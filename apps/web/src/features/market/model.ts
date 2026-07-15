@@ -44,8 +44,6 @@ export type MarketSkillCombination = {
   postingCount: number;
 };
 
-const POSTING_RESULT_CAP = 100;
-
 export const MARKET_CAREER_FILTERS = [
   { value: "", label: "전체" },
   { value: "new_comer", label: "신입" },
@@ -131,9 +129,6 @@ function latestValidDate(values: string[]) {
 export function formatPostingCoverage(total: number | null) {
   if (total === null) {
     return "확인 불가";
-  }
-  if (total >= POSTING_RESULT_CAP) {
-    return `${POSTING_RESULT_CAP}건 이상 확인`;
   }
   return `${total.toLocaleString("ko-KR")}건 확인`;
 }

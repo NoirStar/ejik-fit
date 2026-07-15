@@ -59,11 +59,30 @@ describe("JobsPage", () => {
       q: "Python",
       career_type: "experienced",
       category: "infra",
-      limit: 100,
+      limit: 20,
+      offset: 0,
     });
     expect(screen.getByRole("link", { name: "Python Engineer" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵" })).toBeInTheDocument();
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
+  });
+
+  it("requests the selected server page instead of stopping at 100 jobs", async () => {
+    vi.mocked(getPostings).mockResolvedValue({ ...response, total: 61 });
+
+    render(
+      await JobsPage({
+        searchParams: Promise.resolve({ page: "3" }),
+      }),
+    );
+
+    expect(getPostings).toHaveBeenCalledWith({ limit: 20, offset: 40 });
+    expect(screen.getByText("전체 공식 공고 61건")).toBeInTheDocument();
+    expect(screen.getByText("41–41 / 61건")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "2페이지" })).toHaveAttribute(
+      "href",
+      "/jobs?page=2",
+    );
   });
 
   it("keeps filters usable without leaking request errors", async () => {
@@ -101,7 +120,7 @@ describe("JobsPage", () => {
       }),
     );
 
-    expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
+    expect(getPostings).toHaveBeenCalledWith({ limit: 20, offset: 0 });
     expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 

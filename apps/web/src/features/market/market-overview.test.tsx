@@ -130,7 +130,7 @@ describe("MarketOverview", () => {
     replaceMock.mockReset();
   });
 
-  it("states the official-posting scope and capped totals honestly", () => {
+  it("states the official-posting scope and filtered total honestly", () => {
     renderReadyMarket();
 
     expect(
@@ -141,7 +141,7 @@ describe("MarketOverview", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/국내 전체 채용시장을 의미하지 않습니다/)).toBeInTheDocument();
     expect(screen.getByText("확인된 공고").closest("div")).toHaveTextContent(
-      "100건 이상 확인",
+      "100건 확인",
     );
     expect(screen.getByText("확인된 기술").closest("div")).toHaveTextContent(
       "69종",

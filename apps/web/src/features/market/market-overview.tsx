@@ -33,7 +33,7 @@ function Summary({ snapshot }: { snapshot: MarketOverviewSnapshot }) {
     {
       label: "확인된 공고",
       value: snapshot.postingCountLabel,
-      detail: "현재 API가 반환한 범위 기준",
+      detail: "현재 필터와 공식 공고 상태 기준",
     },
     {
       label: "확인된 기술",

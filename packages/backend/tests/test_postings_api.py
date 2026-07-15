@@ -8,6 +8,7 @@ from ejikfit.api.app import create_app
 class FakePostingReader:
     def __init__(self) -> None:
         self.calls: list[dict] = []
+        self.count_calls: list[dict] = []
 
     def list(
         self,
@@ -16,6 +17,7 @@ class FakePostingReader:
         career_type: str | None = None,
         category: str | None = None,
         limit: int = 20,
+        offset: int = 0,
     ) -> list[dict]:
         self.calls.append(
             {
@@ -24,6 +26,7 @@ class FakePostingReader:
                 "career_type": career_type,
                 "category": category,
                 "limit": limit,
+                "offset": offset,
             }
         )
         return [
@@ -48,6 +51,23 @@ class FakePostingReader:
                 ),
             }
         ]
+
+    def count(
+        self,
+        q: str | None = None,
+        company: str | None = None,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int:
+        self.count_calls.append(
+            {
+                "q": q,
+                "company": company,
+                "career_type": career_type,
+                "category": category,
+            }
+        )
+        return 321
 
     def get(self, posting_id: str) -> dict | None:
         if posting_id != "00000000-0000-0000-0000-000000000001":
@@ -85,7 +105,7 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     reader = FakePostingReader()
     app = create_app(posting_reader=reader)
     response = TestClient(app).get(
-        "/api/postings?career_type=new_comer&category=backend"
+        "/api/postings?career_type=new_comer&category=backend&offset=40"
     )
 
     assert response.status_code == 200
@@ -98,6 +118,7 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     assert item["required_skills"] == ["Python"]
     assert item["preferred_skills"] == ["Docker"]
     assert item["unspecified_skills"] == ["Linux"]
+    assert response.json()["total"] == 321
     assert reader.calls == [
         {
             "q": None,
@@ -105,6 +126,15 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
             "career_type": "new_comer",
             "category": "backend",
             "limit": 20,
+            "offset": 40,
+        }
+    ]
+    assert reader.count_calls == [
+        {
+            "q": None,
+            "company": None,
+            "career_type": "new_comer",
+            "category": "backend",
         }
     ]
 

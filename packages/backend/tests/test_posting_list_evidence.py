@@ -166,6 +166,9 @@ def test_database_list_filters_by_confirmed_skill_category() -> None:
     assert len(reader.list(category="infra", limit=10)) == 1
     assert len(reader.list(category="language", limit=10)) == 1
     assert reader.list(category="ai", limit=10) == []
+    assert reader.list(category="infra", limit=10, offset=1) == []
+    assert reader.count(category="infra") == 1
+    assert reader.count(category="ai") == 0
 
 
 def test_category_search_uses_database_until_the_index_has_category_fields() -> None:
