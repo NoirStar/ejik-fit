@@ -5,6 +5,7 @@ from ejikfit.connectors.public_json_detail import (
     filter_public_detail_refs,
     ncsoft_session_headers,
     parse_public_json_detail,
+    roundhr_site_code,
 )
 
 
@@ -14,6 +15,175 @@ def _next_data_html(page_props: dict[str, object]) -> str:
         '<html><body><script id="__NEXT_DATA__" type="application/json">'
         f"{payload}</script></body></html>"
     )
+
+
+def test_roundhr_public_site_discovers_and_parses_only_open_technical_jobs() -> None:
+    bootstrap = _next_data_html(
+        {
+            "site_config": {
+                "organization": {
+                    "code": "TAERFmj4QT",
+                    "name": "리디(RIDI)",
+                }
+            }
+        }
+    )
+    assert roundhr_site_code(bootstrap) == "TAERFmj4QT"
+
+    def job(
+        job_id: int,
+        title: str,
+        code: str,
+        group: str,
+        position: str,
+        *,
+        status: str = "in_progress",
+        deleted: bool = False,
+    ) -> dict[str, object]:
+        return {
+            "id": job_id,
+            "title": title,
+            "site_title": None,
+            "deleted": deleted,
+            "position_group": {"title": group},
+            "position": {"title": position},
+            "application_form": {
+                "job_id": job_id,
+                "code": code,
+                "status": status,
+                # RoundHR's list response currently returns false here even
+                # while the matching public detail is open. It is not a
+                # reliable listing-status field.
+                "open_status": False,
+                "expired": False,
+            },
+        }
+
+    listing = json.dumps(
+        {
+            "page": {"total": 4, "pages": 1, "current": 1},
+            "results": [
+                job(
+                    5169,
+                    "Frontend Engineer",
+                    "PeiuJj2agt",
+                    "제품/개발",
+                    "프론트엔드 엔지니어",
+                ),
+                job(
+                    5170,
+                    "Product Manager",
+                    "Aei2Jj2agx",
+                    "제품/개발",
+                    "프로덕트 매니저",
+                ),
+                job(
+                    5171,
+                    "재무 담당자",
+                    "Bei2Jj2agy",
+                    "경영지원",
+                    "회계/재무",
+                ),
+                job(
+                    5172,
+                    "Backend Engineer",
+                    "Cei2Jj2agz",
+                    "제품/개발",
+                    "백엔드 엔지니어",
+                    status="closed",
+                ),
+            ],
+        },
+        ensure_ascii=False,
+    )
+    refs = discover_public_json_detail_refs(
+        listing,
+        "https://ridi.recruit.roundhr.com/",
+        "roundhr_public_api_tech",
+    )
+    refs = filter_public_detail_refs(refs, "roundhr_public_api_tech")
+
+    assert [ref.external_id for ref in refs] == ["5169"]
+    assert refs[0].detail_url == (
+        "https://ridi.recruit.roundhr.com/c/PeiuJj2agt"
+    )
+    assert refs[0].category == "제품/개발 | 프론트엔드 엔지니어"
+
+    detail = _next_data_html(
+        {
+            "site_config": {
+                "organization": {
+                    "address": "서울시 강남구 테헤란로 325",
+                    "address_detail": "어반벤치빌딩",
+                }
+            },
+            "_dehydratedState": {
+                "queries": [
+                    {
+                        "queryKey": [
+                            "SiteApplicationForm",
+                            "show",
+                            "PeiuJj2agt",
+                        ],
+                        "state": {
+                            "data": {
+                                "id": 5152,
+                                "job_id": 5169,
+                                "code": "PeiuJj2agt",
+                                "status": "in_progress",
+                                "career_kind": "experienced",
+                                "career_start": 5,
+                                "career_end": None,
+                                "employment_type": "full_time",
+                                "enable_remote": False,
+                                "intro_content": (
+                                    "<h3>직무 설명</h3>"
+                                    "<p>React 기반 웹 서비스를 "
+                                    "개발합니다.</p>"
+                                ),
+                                "requirement_content": (
+                                    "<p>TypeScript 개발 경험</p>"
+                                ),
+                                "preferred_point_content": None,
+                                "main_task_content": None,
+                                "benefit_content": None,
+                                "hire_round_content": None,
+                                "open_status": True,
+                                "expired": False,
+                                "created_at": "2026-03-21T21:44:14+09:00",
+                                "end_at": None,
+                                "job": {
+                                    "id": 5169,
+                                    "title": "Frontend Engineer",
+                                    "site_title": None,
+                                    "deleted": False,
+                                },
+                                "locations": [],
+                            }
+                        },
+                    }
+                ]
+            },
+        }
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "roundhr_public_api_tech",
+    )
+
+    assert opening.external_id == "5169"
+    assert opening.status == "open"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 5
+    assert opening.career_max is None
+    assert opening.employment_type == "FULL_TIME"
+    assert opening.location == (
+        "서울시 강남구 테헤란로 325 어반벤치빌딩"
+    )
+    assert opening.opens_at is not None
+    assert "React 기반 웹 서비스" in opening.description_text
+    assert "TypeScript 개발 경험" in opening.description_text
 
 
 def test_banksalad_public_api_discovers_and_parses_technical_greeting_jobs() -> None:

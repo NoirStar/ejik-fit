@@ -68,6 +68,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
+  ridi:
+    "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   "samsung-sds":
     "https://image.samsungsds.com/resource/kr/images/app_ico.gif",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",

@@ -73,6 +73,7 @@ NCSOFT_TECH_JOB_TYPES = {
     "System Administration",
 }
 BANKSALAD_TECH_DEPARTMENTS = {"테크", "데이터"}
+ROUNDHR_LISTING_API = "https://api-prod.roundhr.com/api/site/jobs"
 
 
 @dataclass(frozen=True)
@@ -129,6 +130,26 @@ def _decode_object(raw_json: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("public JSON payload must be an object")
     return payload
+
+
+def roundhr_site_code(raw_html: str) -> str:
+    data = extract_next_data(raw_html)
+    try:
+        organization = data["props"]["pageProps"]["site_config"][
+            "organization"
+        ]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "RoundHR organization configuration is missing"
+        ) from error
+    code = (
+        _text(organization.get("code"))
+        if isinstance(organization, dict)
+        else None
+    )
+    if code is None or re.fullmatch(r"[A-Za-z0-9_-]{6,64}", code) is None:
+        raise ValueError("RoundHR organization code is invalid")
+    return code
 
 
 def _response_header(headers: Mapping[str, str], name: str) -> str | None:
@@ -586,6 +607,92 @@ def _banksalad_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _roundhr_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    rows = payload.get("results")
+    page = payload.get("page")
+    if not isinstance(rows, list) or not isinstance(page, dict):
+        raise ValueError("RoundHR listing is missing its complete jobs page")
+
+    total = _positive_int(page.get("total"))
+    pages = _positive_int(page.get("pages"))
+    current = _positive_int(page.get("current"))
+    if total != len(rows) or pages != 1 or current != 1:
+        raise ValueError("RoundHR listing response is incomplete")
+
+    parsed_listing_url = urlsplit(listing_url)
+    hostname = parsed_listing_url.hostname or ""
+    if (
+        parsed_listing_url.scheme != "https"
+        or not hostname.endswith(".recruit.roundhr.com")
+    ):
+        raise ValueError("RoundHR listing must use an official public site")
+    origin = f"https://{parsed_listing_url.netloc}"
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("RoundHR listing contains an invalid job row")
+        form = row.get("application_form")
+        if not isinstance(form, dict):
+            continue
+        if (
+            row.get("deleted") is True
+            or form.get("status") != "in_progress"
+            or form.get("expired") is True
+        ):
+            continue
+
+        raw_id = row.get("id")
+        raw_form_job_id = form.get("job_id")
+        title = _text(row.get("site_title")) or _text(row.get("title"))
+        form_code = _text(form.get("code"))
+        if (
+            raw_id is None
+            or isinstance(raw_id, bool)
+            or raw_form_job_id is None
+            or isinstance(raw_form_job_id, bool)
+            or str(raw_form_job_id) != str(raw_id)
+            or title is None
+            or form_code is None
+            or re.fullmatch(r"[A-Za-z0-9_-]{6,64}", form_code) is None
+        ):
+            raise ValueError("RoundHR open job identity is missing")
+
+        external_id = str(raw_id)
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        position_group = row.get("position_group")
+        position = row.get("position")
+        category_parts = [
+            value
+            for value in (
+                _text(position_group.get("title"))
+                if isinstance(position_group, dict)
+                else None,
+                _text(position.get("title"))
+                if isinstance(position, dict)
+                else None,
+            )
+            if value is not None
+        ]
+        detail_url = f"{origin}/c/{form_code}"
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=detail_url,
+                title=title,
+                category=" | ".join(dict.fromkeys(category_parts)) or None,
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -608,6 +715,8 @@ def discover_public_json_detail_refs(
         return _com2us_refs(payload)
     if connector_family == "banksalad_greeting_api_tech":
         return _banksalad_refs(payload)
+    if connector_family == "roundhr_public_api_tech":
+        return _roundhr_refs(payload, listing_url)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -658,6 +767,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
         "banksalad_greeting_api_tech",
+        "roundhr_public_api_tech",
     }
 
 
@@ -1100,6 +1210,182 @@ def _ably_opening(
     )
 
 
+def _roundhr_location(
+    application_form: dict[str, Any],
+    page_props: dict[str, Any],
+) -> str | None:
+    location_labels: list[str] = []
+    raw_locations = application_form.get("locations")
+    if isinstance(raw_locations, list):
+        for location in raw_locations:
+            if not isinstance(location, dict):
+                continue
+            parts = [
+                value
+                for value in (
+                    _text(location.get("title")) or _text(location.get("name")),
+                    _text(location.get("address")),
+                    _text(location.get("address_detail")),
+                )
+                if value is not None
+            ]
+            label = " ".join(dict.fromkeys(parts))
+            if label:
+                location_labels.append(label)
+
+    if not location_labels:
+        site_config = page_props.get("site_config")
+        organization = (
+            site_config.get("organization")
+            if isinstance(site_config, dict)
+            else None
+        )
+        if isinstance(organization, dict):
+            organization_parts = [
+                value
+                for value in (
+                    _text(organization.get("address")),
+                    _text(organization.get("address_detail")),
+                )
+                if value is not None
+            ]
+            organization_label = " ".join(dict.fromkeys(organization_parts))
+            if organization_label:
+                location_labels.append(organization_label)
+
+    if application_form.get("enable_remote") is True:
+        location_labels.append("원격 근무 가능")
+    return ", ".join(dict.fromkeys(location_labels)) or None
+
+
+def _roundhr_opening(
+    raw_html: str,
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    data = extract_next_data(raw_html)
+    try:
+        page_props = data["props"]["pageProps"]
+        dehydrated_state = page_props["_dehydratedState"]
+        queries = dehydrated_state["queries"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("RoundHR public job detail is missing") from error
+    if not isinstance(page_props, dict) or not isinstance(queries, list):
+        raise ValueError("RoundHR public job detail must be an object")
+
+    parsed_url = urlsplit(ref.detail_url)
+    path_segments = [
+        segment for segment in parsed_url.path.split("/") if segment
+    ]
+    if (
+        parsed_url.scheme != "https"
+        or not (parsed_url.hostname or "").endswith(".recruit.roundhr.com")
+        or len(path_segments) != 2
+        or path_segments[0] != "c"
+    ):
+        raise ValueError("RoundHR public job detail URL is invalid")
+    form_code = path_segments[1]
+
+    application_form: dict[str, Any] | None = None
+    for query in queries:
+        if not isinstance(query, dict):
+            continue
+        if query.get("queryKey") != [
+            "SiteApplicationForm",
+            "show",
+            form_code,
+        ]:
+            continue
+        state = query.get("state")
+        candidate = state.get("data") if isinstance(state, dict) else None
+        if isinstance(candidate, dict):
+            application_form = candidate
+            break
+    if application_form is None:
+        raise ValueError("RoundHR public application form is missing")
+
+    raw_job_id = application_form.get("job_id")
+    job = application_form.get("job")
+    if not isinstance(job, dict):
+        raise ValueError("RoundHR public job identity is missing")
+    raw_embedded_job_id = job.get("id")
+    external_id = (
+        None
+        if raw_job_id is None or isinstance(raw_job_id, bool)
+        else str(raw_job_id)
+    )
+    embedded_job_id = (
+        None
+        if raw_embedded_job_id is None or isinstance(raw_embedded_job_id, bool)
+        else str(raw_embedded_job_id)
+    )
+    title = _text(job.get("site_title")) or _text(job.get("title"))
+    if (
+        external_id != ref.external_id
+        or embedded_job_id != ref.external_id
+        or _text(application_form.get("code")) != form_code
+        or title != ref.title
+    ):
+        raise ValueError("RoundHR detail identity does not match its listing")
+
+    content_fields = (
+        (None, "intro_content"),
+        ("주요 업무", "main_task_content"),
+        ("자격 요건", "requirement_content"),
+        ("우대 사항", "preferred_point_content"),
+        ("복지 및 혜택", "benefit_content"),
+        ("채용 절차", "hire_round_content"),
+    )
+    description_parts: list[str] = []
+    for heading, field in content_fields:
+        content = _text(application_form.get(field))
+        if content is None:
+            continue
+        if heading is not None:
+            description_parts.append(f"<h3>{heading}</h3>")
+        description_parts.append(content)
+    if not description_parts:
+        raise ValueError("RoundHR public job detail content is missing")
+    description_html = "".join(description_parts)
+
+    career_type = {
+        "experienced": "experienced",
+        "new_comer": "new_comer",
+        "newcomer": "new_comer",
+        "new": "new_comer",
+        "mixed": "mixed",
+        "not_matter": "not_matter",
+    }.get(_text(application_form.get("career_kind")) or "")
+    raw_employment_type = _text(application_form.get("employment_type"))
+    employment_type = {
+        "full_time": "FULL_TIME",
+        "contract": "CONTRACT",
+        "intern": "INTERN",
+        "part_time": "PART_TIME",
+        "freelancer": "FREELANCER",
+    }.get(raw_employment_type or "", raw_employment_type)
+    is_open = (
+        application_form.get("status") == "in_progress"
+        and application_form.get("open_status") is not False
+        and application_form.get("expired") is not True
+        and job.get("deleted") is not True
+    )
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=structured_plain_text(description_html),
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=_positive_int(application_form.get("career_start")) or None,
+        career_max=_positive_int(application_form.get("career_end")) or None,
+        location=_roundhr_location(application_form, page_props),
+        opens_at=_parse_datetime(application_form.get("created_at")),
+        closes_at=_parse_datetime(application_form.get("end_at")),
+    )
+
+
 def parse_public_json_detail(
     raw_json: str,
     ref: PublicJsonDetailRef,
@@ -1118,6 +1404,8 @@ def parse_public_json_detail(
                 "Banksalad Greeting detail identity does not match its listing"
             )
         return replace(opening, url=ref.public_url)
+    if connector_family == "roundhr_public_api_tech":
+        return _roundhr_opening(raw_json, ref)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)

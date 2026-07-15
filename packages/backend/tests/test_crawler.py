@@ -355,6 +355,30 @@ class RecordingFetcher:
         )
 
 
+class RoundhrFetcher:
+    def __init__(self, bootstrap_html: str, listing_json: str) -> None:
+        self.bootstrap_html = bootstrap_html
+        self.listing_json = listing_json
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        text = self.bootstrap_html if len(self.urls) == 1 else self.listing_json
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
 class PaginatedLgeFetcher:
     def __init__(self) -> None:
         self.urls: list[str] = []
@@ -526,6 +550,42 @@ def test_fetch_listing_page_uses_source_post_json_request_options() -> None:
             "form_body": None,
         }
     ]
+
+
+def test_fetch_listing_page_bootstraps_roundhr_organization_code() -> None:
+    source = CareerSource(
+        company=Company(name="리디", slug="ridi"),
+        base_url="https://ridi.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="roundhr_public_api_tech",
+    )
+    bootstrap = json.dumps(
+        {
+            "props": {
+                "pageProps": {
+                    "site_config": {"organization": {"code": "TAERFmj4QT"}}
+                }
+            }
+        }
+    )
+    fetcher = RoundhrFetcher(
+        (
+            '<script id="__NEXT_DATA__" type="application/json">'
+            f"{bootstrap}</script>"
+        ),
+        '{"page":{"total":0,"pages":1,"current":1},"results":[]}',
+    )
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+
+    assert fetcher.urls == [
+        "https://ridi.recruit.roundhr.com/",
+        (
+            "https://api-prod.roundhr.com/api/site/jobs?"
+            "code=TAERFmj4QT&per=100&page=1"
+        ),
+    ]
+    assert page.text == fetcher.listing_json
 
 
 def test_fetch_listing_page_collects_every_lg_electronics_page() -> None:

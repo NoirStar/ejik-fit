@@ -77,6 +77,11 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "리디",
+      "https://ridi.recruit.roundhr.com/c/PeiuJj2agt",
+      "ridi",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",

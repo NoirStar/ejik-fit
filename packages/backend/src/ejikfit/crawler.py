@@ -43,12 +43,14 @@ from ejikfit.connectors.public_json_detail import (
     NCSOFT_DETAIL_API,
     NCSOFT_LISTING_API,
     NCSOFT_LISTING_FORM,
+    ROUNDHR_LISTING_API,
     PublicJsonDetailRef,
     discover_public_json_detail_refs,
     filter_public_detail_refs,
     ncsoft_session_headers,
     parse_public_json_detail,
     public_detail_listing_is_self_validated,
+    roundhr_site_code,
 )
 from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
@@ -460,6 +462,13 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    if source.connector_family == "roundhr_public_api_tech":
+        bootstrap = await fetcher.fetch(source.base_url)
+        organization_code = roundhr_site_code(bootstrap.text)
+        listing_url = ROUNDHR_LISTING_API + "?" + urlencode(
+            {"code": organization_code, "per": 100, "page": 1}
+        )
+        return await fetcher.fetch(listing_url)
     if source.connector_family == "com2us_jobflex_tech":
         return await fetcher.fetch(
             COM2US_LISTING_API,

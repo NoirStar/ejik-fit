@@ -174,6 +174,24 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="리디",
+        slug="ridi",
+        base_url="https://ridi.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://ridicorp.com",
+        sector="content_platform",
+        connector_family="roundhr_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=4,
+        non_tech_noise=3,
+        notes=(
+            "Official public RIDI RoundHR careers listing and detail pages; "
+            "only open technical roles are ingested."
+        ),
+    ),
+    SeedSource(
         name="뱅크샐러드",
         slug="banksalad",
         base_url=(

@@ -16,6 +16,12 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["리디", "ridi", "리디(ridi)", "리디 주식회사"],
+    hosts: ["ridi.recruit.roundhr.com"],
+    src: "/company-logo-assets/ridi",
+    displayName: "리디",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: ["banksalad.career.greetinghr.com"],
     src: "/company-logo-assets/banksalad",
