@@ -6,6 +6,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:
     "https://profiles.greetinghr.com/group/1ebf8172-b186-49e5-b8de-eb4ae4d14b64",
+  buzzvil:
+    "https://profiles.greetinghr.com/group/f23ad931-b183-40f1-9b66-01770fc87960",
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",

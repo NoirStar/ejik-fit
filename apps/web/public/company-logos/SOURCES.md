@@ -25,6 +25,7 @@ back to company initials when the official asset is unavailable.
 | --- | --- | --- | --- | --- |
 | `banksalad` | 뱅크샐러드 | <https://corp.banksalad.com/jobs/> | <https://corp.banksalad.com/icons/icon-512x512.png> | 2026-07-15 |
 | `bithumb` | 빗썸 | <https://career.bithumbcorp.com/ko> | <https://profiles.greetinghr.com/group/1ebf8172-b186-49e5-b8de-eb4ae4d14b64> | 2026-07-15 |
+| `buzzvil` | 버즈빌 | <https://buzzvil.career.greetinghr.com/ko/home> | <https://profiles.greetinghr.com/group/f23ad931-b183-40f1-9b66-01770fc87960> | 2026-07-15 |
 | `makinarocks` | 마키나락스 | <https://makinarocks.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf> | 2026-07-15 |
 | `rebellions` | 리벨리온 | <https://rebellions.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff> | 2026-07-15 |
 | `korbit` | 코빗 | <https://korbit.career.greetinghr.com/ko> | <https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069> | 2026-07-15 |

@@ -46,7 +46,10 @@ def test_discovers_only_technical_roles_when_source_requests_it() -> None:
             '{"openingId": 205581, "title": "Security Engineer"},'
             '{"openingId": 205582, "title": "Brand Marketing Manager"},'
             '{"openingId": 205583, "title": '
-            '"Program Manager (Commerce Platform)"}'
+            '"Program Manager (Commerce Platform)"},'
+            '{"openingId": 205584, "title": "External Referral Program",'
+            '"openingJobPosition": {"openingJobPositions": ['
+            '{"workspaceJob": {"name": "Engineering"}}]}}'
         ),
     )
 

@@ -28,6 +28,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "빗썸",
   },
   {
+    aliases: ["버즈빌", "buzzvil"],
+    hosts: ["buzzvil.career.greetinghr.com"],
+    src: "/company-logo-assets/buzzvil",
+    displayName: "버즈빌",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

@@ -157,6 +157,23 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="버즈빌",
+        slug="buzzvil",
+        base_url="https://buzzvil.career.greetinghr.com/ko/home",
+        homepage_url="https://www.buzzvil.com",
+        sector="adtech",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        non_tech_noise=1,
+        notes=(
+            "Official public Buzzvil Greeting careers listing and detail "
+            "pages; referral directories and non-technical roles are excluded."
+        ),
+    ),
+    SeedSource(
         name="뱅크샐러드",
         slug="banksalad",
         base_url=(

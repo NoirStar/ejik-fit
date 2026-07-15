@@ -86,6 +86,11 @@ describe("companyIdentity", () => {
       "https://career.bithumbcorp.com/ko/o/226629",
       "bithumb",
     ],
+    [
+      "버즈빌",
+      "https://buzzvil.career.greetinghr.com/ko/o/215186",
+      "buzzvil",
+    ],
     ["마키나락스", "https://makinarocks.career.greetinghr.com/ko/o/1", "makinarocks"],
     ["리벨리온", "https://rebellions.career.greetinghr.com/ko/o/1", "rebellions"],
     ["코빗", "https://korbit.career.greetinghr.com/ko/o/1", "korbit"],

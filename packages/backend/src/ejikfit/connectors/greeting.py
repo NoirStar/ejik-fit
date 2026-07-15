@@ -10,6 +10,19 @@ from ejikfit.connectors.types import OpeningRef, ParsedOpening
 from ejikfit.html_text import structured_plain_text
 
 
+NON_JOB_DIRECTORY_TITLES = (
+    "external referral program",
+    "employee referral program",
+    "talent pool",
+    "인재풀",
+)
+
+
+def _is_non_job_directory(title: str | None) -> bool:
+    normalized = (title or "").casefold()
+    return any(marker in normalized for marker in NON_JOB_DIRECTORY_TITLES)
+
+
 def _queries(data: dict[str, Any]) -> list[dict[str, Any]]:
     try:
         queries = data["props"]["pageProps"]["dehydratedState"]["queries"]
@@ -118,11 +131,12 @@ def discover_openings(
             if isinstance(opening.get("title"), str)
             else None
         )
-        if technical_only and not is_technical_role(
-            title,
-            *_opening_role_names(opening),
-        ):
-            continue
+        if technical_only:
+            if _is_non_job_directory(title) or not is_technical_role(
+                title,
+                *_opening_role_names(opening),
+            ):
+                continue
         external_id = str(opening_id)
         if external_id in seen:
             continue
@@ -223,8 +237,12 @@ def discover_corporate_greeting_openings(
         if not external_id or external_id in seen:
             continue
         category = group_names.get(str(row.get("job_group_code")))
-        if technical_only and not is_technical_role(title, category):
-            continue
+        if technical_only:
+            if _is_non_job_directory(title) or not is_technical_role(
+                title,
+                category,
+            ):
+                continue
         seen.add(external_id)
         refs.append(
             OpeningRef(
@@ -282,7 +300,8 @@ def discover_grouped_greeting_openings(
     return [
         ref
         for ref, category in all_refs
-        if is_technical_role(ref.title, category)
+        if not _is_non_job_directory(ref.title)
+        and is_technical_role(ref.title, category)
     ]
 
 
