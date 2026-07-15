@@ -431,6 +431,60 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/kakao-mobility",
     displayName: "카카오모빌리티",
   },
+  {
+    aliases: ["우아한형제들", "배달의민족", "woowahan brothers", "woowa"],
+    hosts: ["career.woowahan.com"],
+    src: "/company-logo-assets/woowahan-brothers",
+    displayName: "우아한형제들",
+  },
+  {
+    aliases: ["삼성전자", "samsung electronics"],
+    hosts: ["samsungcareers.com"],
+    src: "/company-logo-assets/samsung-electronics",
+    displayName: "삼성전자",
+  },
+  {
+    aliases: ["LG CNS", "엘지씨엔에스", "lgcns"],
+    hosts: ["api.careers.lg.com", "lgcns.com"],
+    src: "/company-logo-assets/lg-cns",
+    displayName: "LG CNS",
+  },
+  {
+    aliases: ["SK하이닉스", "sk hynix", "skhynix"],
+    hosts: ["skhynix.com", "talent.skhynix.com"],
+    src: "/company-logo-assets/sk-hynix",
+    displayName: "SK하이닉스",
+  },
+  {
+    aliases: ["KT", "케이티"],
+    hosts: ["recruit.kt.com"],
+    src: "/company-logo-assets/kt",
+    displayName: "KT",
+  },
+  {
+    aliases: ["포스코DX", "posco dx", "poscodx"],
+    hosts: ["poscodx.com", "recruit.posco.com"],
+    src: "/company-logo-assets/posco-dx",
+    displayName: "포스코DX",
+  },
+  {
+    aliases: ["넥슨", "nexon"],
+    hosts: ["careers.nexon.com", "nexon.com"],
+    src: "/company-logo-assets/nexon",
+    displayName: "넥슨",
+  },
+  {
+    aliases: ["펄어비스", "pearl abyss", "pearlabyss"],
+    hosts: ["pearlabyss.com"],
+    src: "/company-logo-assets/pearl-abyss",
+    displayName: "펄어비스",
+  },
+  {
+    aliases: ["네오위즈", "neowiz"],
+    hosts: ["api.lever.co", "jobs.lever.co", "neowiz.com"],
+    src: "/company-logo-assets/neowiz",
+    displayName: "네오위즈",
+  },
 ];
 
 function normalize(value: string) {

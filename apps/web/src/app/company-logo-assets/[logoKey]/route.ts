@@ -50,12 +50,15 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
   "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
   kia: "https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico",
+  kt: "https://recruit.kt.com/favicon.ico",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
   "lg-electronics":
     "https://globalcareers.lge.com/gcr-content/og_image_lge_careers.png",
+  "lg-cns":
+    "https://www.lgcns.com/etc.clientlibs/lgcns/clientlibs/clientlib-site/resources/image/favicon.ico",
   "line-plus":
     "https://vos.line-scdn.net/landpress-content-v2-3ub8nanc40829phmlme9ov4o/1708056773171.png",
   lunit:
@@ -64,6 +67,9 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
   musinsa:
     "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
+  neowiz:
+    "https://cdn.neowiz.com/neowiz-site/assets/images/favicons/android-icon-72x72.png",
+  nexon: "https://careers.nexon.com/favicon.ico",
   moloco:
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   myrealtrip:
@@ -79,16 +85,23 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   palantir: "https://www.palantir.com/favicon.ico",
+  "pearl-abyss":
+    "https://static.pearlcdn.com/asset/company/global/contents/img/common/favicon64.ico",
+  "posco-dx": "https://www.poscodx.com/resources/favicon.ico",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   "samsung-sds":
     "https://image.samsungsds.com/resource/kr/images/app_ico.gif",
+  "samsung-electronics":
+    "https://www.samsungcareers.com/assets/images/favicon.ico",
   "seoul-robotics":
     "https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w",
   sendbird: "https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png",
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
+  "sk-hynix":
+    "https://mis-prod-koce-skhynixhomepage-cdn-01-ep.azureedge.net/img/favicon.ico",
   smilegate:
     "https://careers.smilegate.com/assets/web/img/common/favicon.ico",
   "snj-lab":
@@ -107,6 +120,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
   wrtn:
     "https://opening-attachments.greetinghr.com/2026-02-04/7541c46c-0f18-4a14-9fd9-2f9c4cea4192/logo_full_profile_dark.png",
+  "woowahan-brothers": "https://career.woowahan.com/favicon.ico",
 };
 
 type LogoRouteContext = {

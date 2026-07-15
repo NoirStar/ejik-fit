@@ -287,6 +287,39 @@ describe("companyIdentity", () => {
       "https://recruit.kakaogames.com/ko/o/1",
       "kakao-games",
     ],
+    [
+      "우아한형제들",
+      "https://career.woowahan.com/w1/recruits/1",
+      "woowahan-brothers",
+    ],
+    [
+      "삼성전자",
+      "https://www.samsungcareers.com/hr/?no=1",
+      "samsung-electronics",
+    ],
+    ["LG CNS", "https://api.careers.lg.com/jobs/1", "lg-cns"],
+    [
+      "SK하이닉스",
+      "https://talent.skhynix.com/hub/ko/apply/job/1",
+      "sk-hynix",
+    ],
+    ["KT", "https://recruit.kt.com/jobs/1", "kt"],
+    [
+      "포스코DX",
+      "https://recruit.posco.com/h22a01-recruit/jobs/1",
+      "posco-dx",
+    ],
+    ["넥슨", "https://careers.nexon.com/job/1", "nexon"],
+    [
+      "펄어비스",
+      "https://www.pearlabyss.com/ko-KR/Company/Careers/1",
+      "pearl-abyss",
+    ],
+    [
+      "네오위즈",
+      "https://api.lever.co/v0/postings/neowiz?mode=json",
+      "neowiz",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",
