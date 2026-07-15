@@ -485,9 +485,11 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
         assert source.status == SourceStatus.ALLOWED
 
     furiosa = catalog_by_slug["furiosa-ai"]
-    assert furiosa.base_url == "https://furiosa.ai/sitemap.xml"
-    assert furiosa.source_type == SourceType.SITEMAP_DISCOVERY
-    assert furiosa.connector_family == "furiosa_webflow_korea_tech"
+    assert furiosa.base_url == (
+        "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai"
+    )
+    assert furiosa.source_type == SourceType.LEVER_GREENHOUSE
+    assert furiosa.connector_family == "ashby_public_api_korea_tech"
     assert furiosa.status == SourceStatus.ALLOWED
 
     ably = catalog_by_slug["ably"]
@@ -723,6 +725,49 @@ def test_seeding_migrates_lg_source_url_without_losing_existing_postings() -> No
         assert len(lg_sources) == 1
         assert lg_sources[0].id == legacy_source_id
         assert lg_sources[0].base_url.endswith("?page=1&size=100")
+        assert posting.source_id == legacy_source_id
+
+
+def test_seeding_migrates_furiosa_to_ashby_without_losing_existing_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="퓨리오사AI", slug="furiosa-ai")
+        legacy_source = CareerSource(
+            company=company,
+            base_url="https://furiosa.ai/sitemap.xml",
+            source_type=SourceType.SITEMAP_DISCOVERY,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=legacy_source,
+            external_id="existing-furiosa-job",
+            url="https://furiosa.ai/careers/existing-furiosa-job",
+            title="Existing Furiosa Engineer",
+        )
+        session.add_all([legacy_source, posting])
+        session.commit()
+        legacy_source_id = legacy_source.id
+
+        seed_data.seed_sources(session)
+
+        furiosa_sources = session.scalars(
+            select(CareerSource)
+            .join(Company)
+            .where(Company.slug == "furiosa-ai")
+        ).all()
+        assert len(furiosa_sources) == 1
+        assert furiosa_sources[0].id == legacy_source_id
+        assert furiosa_sources[0].base_url == (
+            "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai"
+        )
+        assert furiosa_sources[0].source_type == SourceType.LEVER_GREENHOUSE
+        assert furiosa_sources[0].connector_family == (
+            "ashby_public_api_korea_tech"
+        )
         assert posting.source_id == legacy_source_id
 
 

@@ -916,21 +916,23 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="퓨리오사AI",
         slug="furiosa-ai",
-        base_url="https://furiosa.ai/sitemap.xml",
-        source_type=SourceType.SITEMAP_DISCOVERY,
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
         homepage_url="https://furiosa.ai",
         sector="ai_semiconductor",
-        connector_family="furiosa_webflow_korea_tech",
+        connector_family="ashby_public_api_korea_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=6,
-        expected_job_volume=6,
-        connector_reuse_score=2,
+        expected_job_volume=30,
+        connector_reuse_score=5,
         policy_risk=0,
-        non_tech_noise=0,
+        non_tech_noise=5,
         notes=(
-            "Official FuriosaAI sitemap and Webflow careers detail pages; "
-            "limited to Korea-based technical roles."
+            "Official FuriosaAI Ashby feed; limited to listed Korea-based "
+            "technical roles."
         ),
         status=SourceStatus.ALLOWED,
     ),
@@ -1594,6 +1596,9 @@ INITIAL_GREETING_SOURCES = tuple(
 SOURCE_URL_MIGRATIONS = {
     "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100": (
         "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20",
+    ),
+    "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai": (
+        "https://furiosa.ai/sitemap.xml",
     ),
 }
 
