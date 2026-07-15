@@ -148,6 +148,19 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("uses Ably's official local mark for its career and application hosts", () => {
+    expect(
+      companyIdentity(
+        "에이블리코퍼레이션",
+        "https://tydtr0dj.ninehire.site/job_posting/1Ni2VkMj",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logos/ably.svg",
+      alt: "에이블리코퍼레이션 로고",
+    });
+  });
+
   it("recognizes the Korean Moloco alias", () => {
     expect(
       companyIdentity(

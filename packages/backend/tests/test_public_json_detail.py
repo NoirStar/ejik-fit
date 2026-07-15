@@ -6,6 +6,108 @@ from ejikfit.connectors.public_json_detail import (
 )
 
 
+def _next_data_html(page_props: dict[str, object]) -> str:
+    payload = json.dumps({"props": {"pageProps": page_props}}, ensure_ascii=False)
+    return (
+        '<html><body><script id="__NEXT_DATA__" type="application/json">'
+        f"{payload}</script></body></html>"
+    )
+
+
+def test_ably_official_page_discovers_and_parses_open_ninehire_tech_jobs() -> None:
+    listing = _next_data_html(
+        {
+            "recruits": [
+                {
+                    "id": "f49e48c0-56fe-11ee-be94-6d60768bf508",
+                    "title": "백엔드 엔지니어 (시니어)",
+                    "status": "in_progress",
+                    "applyUrl": (
+                        "https://tydtr0dj.ninehire.site/job_posting/1Ni2VkMj"
+                    ),
+                    "jobGroup": "Engineering",
+                    "isPrivate": False,
+                },
+                {
+                    "id": "closed-marketing",
+                    "title": "마케팅 매니저",
+                    "status": "closed",
+                    "applyUrl": (
+                        "https://tydtr0dj.ninehire.site/job_posting/closed"
+                    ),
+                    "jobGroup": "Business",
+                    "isPrivate": False,
+                },
+                {
+                    "id": "military-service-index",
+                    "title": "[산업기능요원] 엔지니어 채용",
+                    "status": "in_progress",
+                    "applyUrl": (
+                        "https://tydtr0dj.ninehire.site/job_posting/0Eu5yjmY"
+                    ),
+                    "jobGroup": "Engineering",
+                    "isPrivate": False,
+                },
+            ]
+        }
+    )
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        "https://ably.team/recruit",
+        "ably_next_ninehire_tech",
+    )
+
+    assert len(refs) == 1
+    assert refs[0].external_id == "f49e48c0-56fe-11ee-be94-6d60768bf508"
+    assert refs[0].category == "Engineering"
+    assert refs[0].detail_url == (
+        "https://tydtr0dj.ninehire.site/job_posting/1Ni2VkMj"
+    )
+
+    detail = _next_data_html(
+        {
+            "recruitment": {
+                "recruitmentId": "f49e48c0-56fe-11ee-be94-6d60768bf508",
+                "externalTitle": "백엔드 엔지니어 (시니어)",
+                "status": "in_progress",
+                "career": {"type": "experienced", "range": {"over": 7, "below": 0}},
+                "employmentType": ["full_time"],
+                "createdAt": "2026-04-24T06:29:01.000Z",
+                "deadlineValue": None,
+                "jobLocations": [
+                    {
+                        "placeName": "신논현",
+                        "addressName": "서울특별시 서초구 강남대로 465",
+                    }
+                ],
+            },
+            "jobPosting": {
+                "isActive": True,
+                "content": (
+                    "<h3>이런 분과 함께 하고 싶어요</h3>"
+                    "<p>Django와 Spring 개발 경험</p>"
+                    "<h3>이런 기술을 활용해요</h3><p>Python, Kafka, Redis</p>"
+                ),
+            },
+        }
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "ably_next_ninehire_tech",
+    )
+
+    assert opening.title == "백엔드 엔지니어 (시니어)"
+    assert opening.status == "open"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 7
+    assert opening.career_max is None
+    assert opening.employment_type == "regular"
+    assert opening.location == "서울특별시 서초구 강남대로 465"
+    assert "Python, Kafka, Redis" in opening.description_text
+
+
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:
     listing = json.dumps(
         {

@@ -711,6 +711,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="에이블리코퍼레이션",
+        slug="ably",
+        base_url="https://ably.team/recruit",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://ably.team",
+        sector="fashion_commerce",
+        connector_family="ably_next_ninehire_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Ably careers page and linked Ninehire application "
+            "details; limited to open technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

@@ -210,6 +210,56 @@ def _dunamu_refs(raw_html: str) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _ably_refs(raw_html: str) -> list[PublicJsonDetailRef]:
+    data = extract_next_data(raw_html)
+    try:
+        rows = data["props"]["pageProps"]["recruits"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Ably current jobs list is missing") from error
+    if not isinstance(rows, list):
+        raise ValueError("Ably current jobs list must be an array")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if row.get("status") != "in_progress" or row.get("isPrivate") is True:
+            continue
+        external_id = _text(row.get("id"))
+        title = _text(row.get("title"))
+        detail_url = _text(row.get("applyUrl"))
+        if external_id is None or title is None or detail_url is None:
+            raise ValueError("Ably open job identity is missing")
+        if title == "[산업기능요원] 엔지니어 채용":
+            # This is a directory that links back to the same engineering
+            # openings, not a distinct role with its own requirements.
+            continue
+
+        parsed = urlsplit(detail_url)
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "tydtr0dj.ninehire.site"
+            or len(segments) != 2
+            or segments[0] != "job_posting"
+        ):
+            raise ValueError("Ably job URL is not its official Ninehire detail")
+        if external_id in seen:
+            continue
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=detail_url,
+                title=title,
+                category=_text(row.get("jobGroup")),
+            )
+        )
+    return refs
+
+
 def discover_public_json_detail_refs(
     raw_json: str,
     listing_url: str,
@@ -217,6 +267,8 @@ def discover_public_json_detail_refs(
 ) -> list[PublicJsonDetailRef]:
     if connector_family == "dunamu_server_html_tech":
         return _dunamu_refs(raw_json)
+    if connector_family == "ably_next_ninehire_tech":
+        return _ably_refs(raw_json)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_refs(payload, listing_url)
@@ -240,7 +292,10 @@ def filter_public_detail_refs(
 
 
 def public_detail_listing_is_self_validated(connector_family: str) -> bool:
-    return connector_family == "dunamu_server_html_tech"
+    return connector_family in {
+        "ably_next_ninehire_tech",
+        "dunamu_server_html_tech",
+    }
 
 
 def _nested_code(payload: dict[str, Any], key: str) -> str | None:
@@ -394,6 +449,98 @@ def _dunamu_opening(
     )
 
 
+def _ably_opening(
+    raw_html: str,
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    data = extract_next_data(raw_html)
+    try:
+        page_props = data["props"]["pageProps"]
+        recruitment = page_props["recruitment"]
+        job_posting = page_props["jobPosting"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("Ably Ninehire job detail is missing") from error
+    if not isinstance(recruitment, dict) or not isinstance(job_posting, dict):
+        raise ValueError("Ably Ninehire job detail must be an object")
+
+    external_id = _text(recruitment.get("recruitmentId"))
+    title = _text(recruitment.get("externalTitle")) or _text(
+        recruitment.get("title")
+    )
+    if external_id != ref.external_id or title != ref.title:
+        raise ValueError("Ably Ninehire detail identity does not match its listing")
+
+    description_html = _text(job_posting.get("content")) or ""
+    if not description_html:
+        raise ValueError("Ably Ninehire job detail content is missing")
+
+    career = recruitment.get("career")
+    career_type = None
+    career_min = None
+    career_max = None
+    if isinstance(career, dict):
+        career_type = {
+            "experienced": "experienced",
+            "new_comer": "new_comer",
+            "newcomer": "new_comer",
+        }.get(_text(career.get("type")) or "")
+        career_range = career.get("range")
+        if isinstance(career_range, dict):
+            career_min = _positive_int(career_range.get("over"))
+            career_max = _positive_int(career_range.get("below"))
+            career_min = career_min or None
+            career_max = career_max or None
+
+    raw_employment_types = recruitment.get("employmentType")
+    employment_types = (
+        raw_employment_types if isinstance(raw_employment_types, list) else []
+    )
+    employment_map = {
+        "contractor": "contract",
+        "full_time": "regular",
+        "intern": "intern",
+    }
+    mapped_employment_types = list(
+        dict.fromkeys(
+            employment_map.get(item, item)
+            for item in employment_types
+            if isinstance(item, str) and item
+        )
+    )
+
+    raw_locations = recruitment.get("jobLocations")
+    locations = raw_locations if isinstance(raw_locations, list) else []
+    location_names: list[str] = []
+    for location in locations:
+        if not isinstance(location, dict):
+            continue
+        name = _text(location.get("addressName")) or _text(
+            location.get("placeName")
+        )
+        if name:
+            location_names.append(name)
+
+    is_open = (
+        recruitment.get("status") == "in_progress"
+        and job_posting.get("isActive") is not False
+    )
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=structured_plain_text(description_html),
+        employment_type=", ".join(mapped_employment_types) or None,
+        career_type=career_type,
+        career_min=career_min,
+        career_max=career_max,
+        location=", ".join(dict.fromkeys(location_names)) or None,
+        opens_at=_parse_datetime(recruitment.get("createdAt")),
+        closes_at=_parse_datetime(recruitment.get("deadlineValue")),
+    )
+
+
 def parse_public_json_detail(
     raw_json: str,
     ref: PublicJsonDetailRef,
@@ -401,6 +548,8 @@ def parse_public_json_detail(
 ) -> ParsedOpening:
     if connector_family == "dunamu_server_html_tech":
         return _dunamu_opening(raw_json, ref)
+    if connector_family == "ably_next_ninehire_tech":
+        return _ably_opening(raw_json, ref)
     payload = _decode_object(raw_json)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_opening(payload, ref)

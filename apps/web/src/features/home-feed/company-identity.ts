@@ -233,6 +233,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/furiosa-ai",
     displayName: "퓨리오사AI",
   },
+  {
+    aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],
+    hosts: ["ably.team", "tydtr0dj.ninehire.site"],
+    src: "/company-logos/ably.svg",
+    displayName: "에이블리코퍼레이션",
+  },
 ];
 
 function normalize(value: string) {
