@@ -10,6 +10,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   dunamu: "https://careers.dunamu.com/favicon.png",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
+  kurly:
+    "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
   makinarocks:

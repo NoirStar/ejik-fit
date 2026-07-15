@@ -476,6 +476,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="컬리",
+        slug="kurly",
+        base_url="https://kurly.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.kurly.com",
+        sector="commerce_platform",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Kurly Greeting careers listing and detail pages; "
+            "limited to software, data, infrastructure, and security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

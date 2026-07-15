@@ -33,7 +33,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "carat-ai",
         "wrtn",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 28
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 29
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -158,7 +158,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 62
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 63
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -247,7 +247,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 62
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 63
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -335,6 +335,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert dunamu.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert dunamu.connector_family == "dunamu_server_html_tech"
     assert dunamu.status == SourceStatus.ALLOWED
+
+    kurly = catalog_by_slug["kurly"]
+    assert kurly.base_url == "https://kurly.career.greetinghr.com/ko"
+    assert kurly.source_type == SourceType.GREETING
+    assert kurly.connector_family == "greeting_tech"
+    assert kurly.status == SourceStatus.ALLOWED
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:

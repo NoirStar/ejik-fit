@@ -167,6 +167,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/dunamu",
     displayName: "두나무",
   },
+  {
+    aliases: ["컬리", "kurly", "마켓컬리"],
+    hosts: ["kurly.career.greetinghr.com"],
+    src: "/company-logo-assets/kurly",
+    displayName: "컬리",
+  },
 ];
 
 function normalize(value: string) {
