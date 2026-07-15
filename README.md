@@ -122,6 +122,9 @@ npm run build
 
 ## 초기 공식 출처
 
+아래 표는 프로젝트 최초 검증에 사용한 출처입니다. 현재 운영 중이거나 연결을 준비하는
+전체 기업 목록은 서비스의 `/data-policy` 페이지에서 운영 DB 기준으로 확인할 수 있습니다.
+
 | 기업 | 공식 채용페이지 |
 | --- | --- |
 | DeepAuto.ai | <https://deepauto-ai.career.greetinghr.com/ko> |
