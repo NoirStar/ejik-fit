@@ -387,6 +387,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                       로그인
                     </Link>
                   )}
+                  <Link href="/career/account" onClick={closeUtilityMenus}>
+                    계정 및 동기화
+                  </Link>
                   <Link href="/career" onClick={closeUtilityMenus}>
                     내 커리어
                   </Link>

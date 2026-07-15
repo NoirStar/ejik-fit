@@ -7,12 +7,25 @@ describe("SavedPage", () => {
   beforeEach(() => window.localStorage.clear());
   afterEach(() => cleanup());
 
-  it("renders the browser-owned saved library", () => {
-    render(<SavedPage />);
+  it("renders the browser-owned saved library", async () => {
+    render(await SavedPage());
 
     expect(
       screen.getByRole("heading", { level: 1, name: "저장 보관함" }),
     ).toBeInTheDocument();
+  });
+
+  it("opens a valid collection scope from the account hub", async () => {
+    render(
+      await SavedPage({
+        searchParams: Promise.resolve({ scope: "applications" }),
+      }),
+    );
+
+    expect(screen.getByRole("tab", { name: /지원 관리/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   it("keeps the personalized local page out of search indexes", () => {

@@ -160,6 +160,10 @@ describe("AppShell", () => {
       "href",
       "/career/questions",
     );
+    expect(screen.getByRole("link", { name: "계정 및 동기화" })).toHaveAttribute(
+      "href",
+      "/career/account",
+    );
     expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute(
       "href",
       "/login?next=%2F",

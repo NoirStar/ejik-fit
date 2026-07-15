@@ -30,20 +30,26 @@ export function useAuthViewer() {
     }
 
     let active = true;
+    const readyFallback = window.setTimeout(() => {
+      if (active) setReady(true);
+    }, 3_000);
     void supabase.auth.getUser().then(({ data }) => {
       if (!active) return;
+      window.clearTimeout(readyFallback);
       setViewer(viewerFromUser(data.user));
       setReady(true);
     });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
+      window.clearTimeout(readyFallback);
       setViewer(viewerFromUser(session?.user ?? null));
       setReady(true);
     });
 
     return () => {
       active = false;
+      window.clearTimeout(readyFallback);
       data.subscription.unsubscribe();
     };
   }, []);

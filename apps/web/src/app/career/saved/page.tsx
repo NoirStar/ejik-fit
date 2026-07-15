@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 
-import { SavedLibrary } from "@/features/saved-library/saved-library";
+import {
+  SavedLibrary,
+  type SavedScope,
+} from "@/features/saved-library/saved-library";
 
 export const metadata: Metadata = {
   title: "저장 보관함",
@@ -9,6 +12,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SavedPage() {
-  return <SavedLibrary />;
+type SavedPageProps = {
+  searchParams?: Promise<{ scope?: string | string[] }>;
+};
+
+function normalizeSavedScope(scope: string | string[] | undefined): SavedScope {
+  const value = Array.isArray(scope) ? scope[0] : scope;
+  if (
+    value === "jobs" ||
+    value === "applications" ||
+    value === "community"
+  ) {
+    return value;
+  }
+  return "all";
+}
+
+export default async function SavedPage({ searchParams }: SavedPageProps = {}) {
+  const params = searchParams ? await searchParams : undefined;
+  return <SavedLibrary initialScope={normalizeSavedScope(params?.scope)} />;
 }

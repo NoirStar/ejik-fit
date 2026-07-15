@@ -53,7 +53,7 @@ import {
 } from "./model";
 import styles from "./saved-library.module.css";
 
-type SavedScope = "all" | "jobs" | "applications" | "community";
+export type SavedScope = "all" | "jobs" | "applications" | "community";
 
 type JobRequestState =
   | { status: "idle" }
@@ -189,7 +189,11 @@ function SavedJobCard({
   );
 }
 
-export function SavedLibrary() {
+export function SavedLibrary({
+  initialScope = "all",
+}: {
+  initialScope?: SavedScope;
+}) {
   const [hydrated, setHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [applicationStages, setApplicationStages] =
@@ -198,7 +202,7 @@ export function SavedLibrary() {
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [jobState, setJobState] = useState<JobRequestState>({ status: "idle" });
-  const [activeScope, setActiveScope] = useState<SavedScope>("all");
+  const [activeScope, setActiveScope] = useState<SavedScope>(initialScope);
   const [retryVersion, setRetryVersion] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);

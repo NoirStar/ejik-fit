@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useAuthViewer } from "./use-auth-viewer";
 
@@ -15,6 +15,8 @@ vi.mock("@/lib/supabase/client", () => ({
 }));
 
 describe("useAuthViewer", () => {
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     localStorage.clear();
     auth.getUser.mockReset();
@@ -53,5 +55,18 @@ describe("useAuthViewer", () => {
 
     unmount();
     expect(auth.unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not leave the account UI waiting forever when auth is unreachable", () => {
+    vi.useFakeTimers();
+    auth.getUser.mockReturnValue(new Promise(() => undefined));
+
+    const { result } = renderHook(() => useAuthViewer());
+    expect(result.current.ready).toBe(false);
+
+    act(() => vi.advanceTimersByTime(3_000));
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.viewer).toBeNull();
   });
 });

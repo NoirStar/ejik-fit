@@ -1,0 +1,312 @@
+.page {
+  display: grid;
+  width: min(calc(100% - 2rem), 60rem);
+  align-content: start;
+  gap: 1rem;
+  margin: 0 auto;
+  padding: 1.75rem 0 3.5rem;
+}
+
+.pageHeader {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pageHeader > span {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.pageHeader h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.55rem, 2.4vw, 1.75rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.pageHeader p,
+.identityCopy p,
+.sectionHeader p,
+.privacyNotice p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.identityPanel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1.125rem 1.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.identityIcon,
+.summaryIcon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.identityIcon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+}
+
+.identityCopy {
+  min-width: 0;
+}
+
+.identityCopy h2,
+.sectionHeader h2 {
+  margin: 0 0 0.25rem;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.identityCopy h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identityAction a,
+.identityAction button {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.identityAction a {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.identityAction button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.identityAction a:hover {
+  background: var(--color-accent-strong);
+}
+
+.identityAction button:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+
+.identityAction a:focus-visible,
+.identityAction button:focus-visible,
+.summaryGrid a:focus-visible,
+.privacyNotice a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, var(--color-line));
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+  color: var(--color-danger);
+  font-size: 0.8125rem;
+}
+
+.dataSection {
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.scopeBadge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.scopeBadge[data-signed-in="true"] {
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.summaryGrid a {
+  display: grid;
+  min-width: 0;
+  min-height: 5rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.summaryGrid a:nth-child(odd) {
+  border-right: 1px solid var(--color-line);
+}
+
+.summaryGrid a:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.summaryGrid a:hover {
+  background: var(--color-surface-muted);
+}
+
+.summaryIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+}
+
+.summaryCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.summaryCopy strong {
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.summaryCopy small {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryGrid b {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+}
+
+.privacyNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+}
+
+.privacyNotice > svg {
+  margin-top: 0.05rem;
+  color: var(--color-accent-strong);
+}
+
+.privacyNotice strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+}
+
+.privacyNotice a {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .page {
+    width: min(calc(100% - 1.25rem), 60rem);
+    padding-top: 1.25rem;
+  }
+
+  .identityPanel,
+  .privacyNotice {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .identityAction,
+  .privacyNotice a {
+    grid-column: 1 / -1;
+  }
+
+  .identityAction a,
+  .identityAction button {
+    width: 100%;
+  }
+
+  .sectionHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryGrid a,
+  .summaryGrid a:nth-child(odd),
+  .summaryGrid a:nth-last-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .summaryGrid a:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .identityAction a,
+  .identityAction button,
+  .summaryGrid a {
+    transition: none;
+  }
+}
