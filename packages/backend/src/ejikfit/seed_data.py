@@ -1020,7 +1020,10 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         "네이버",
         "naver",
-        "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
+        (
+            "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+            "&firstIndex=0&recordCountPerPage=500"
+        ),
         SourceType.NAVER_JSON,
         "https://www.navercorp.com",
         "platform",
@@ -1654,6 +1657,12 @@ INITIAL_GREETING_SOURCES = tuple(
 
 
 SOURCE_URL_MIGRATIONS = {
+    (
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+        "&firstIndex=0&recordCountPerPage=500"
+    ): (
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
+    ),
     "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100": (
         "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=20",
     ),

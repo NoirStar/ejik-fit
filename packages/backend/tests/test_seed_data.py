@@ -47,6 +47,9 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
     )
 
     assert catalog_by_slug["naver"].source_type == SourceType.NAVER_JSON
+    assert catalog_by_slug["naver"].base_url.endswith(
+        "lang=ko&firstIndex=0&recordCountPerPage=500"
+    )
     assert catalog_by_slug["kakao"].source_type == SourceType.KAKAO_JSON
     assert catalog_by_slug["line-plus"].source_type == SourceType.LINE_GATSBY
     assert len({item.slug for item in seed_data.INITIAL_SOURCE_CATALOG}) == len(
@@ -747,6 +750,45 @@ def test_seeding_migrates_lg_source_url_without_losing_existing_postings() -> No
         assert len(lg_sources) == 1
         assert lg_sources[0].id == legacy_source_id
         assert lg_sources[0].base_url.endswith("?page=1&size=100")
+        assert posting.source_id == legacy_source_id
+
+
+def test_seeding_migrates_naver_to_complete_listing_without_losing_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="네이버", slug="naver")
+        legacy_source = CareerSource(
+            company=company,
+            base_url="https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
+            source_type=SourceType.NAVER_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=legacy_source,
+            external_id="existing-naver-job",
+            url="https://recruit.navercorp.com/rcrt/view.do?annoId=existing",
+            title="Existing Naver Engineer",
+        )
+        session.add_all([legacy_source, posting])
+        session.commit()
+        legacy_source_id = legacy_source.id
+
+        seed_data.seed_sources(session)
+
+        naver_sources = session.scalars(
+            select(CareerSource)
+            .join(Company)
+            .where(Company.slug == "naver")
+        ).all()
+        assert len(naver_sources) == 1
+        assert naver_sources[0].id == legacy_source_id
+        assert naver_sources[0].base_url.endswith(
+            "lang=ko&firstIndex=0&recordCountPerPage=500"
+        )
         assert posting.source_id == legacy_source_id
 
 
