@@ -38,6 +38,7 @@ class S3SnapshotStore:
         bucket: str,
     ) -> None:
         self.bucket = bucket
+        self.uploaded_keys: set[str] = set()
         self.client = boto3.client(
             "s3",
             endpoint_url=endpoint_url,
@@ -53,10 +54,12 @@ class S3SnapshotStore:
     ) -> tuple[str, str]:
         digest = hashlib.sha256(content).hexdigest()
         key = f"sha256/{digest[:2]}/{digest}.html"
-        self.client.put_object(
-            Bucket=self.bucket,
-            Key=key,
-            Body=content,
-            ContentType=content_type,
-        )
+        if key not in self.uploaded_keys:
+            self.client.put_object(
+                Bucket=self.bucket,
+                Key=key,
+                Body=content,
+                ContentType=content_type,
+            )
+            self.uploaded_keys.add(key)
         return key, digest
