@@ -297,20 +297,6 @@
   font-weight: 650;
 }
 
-.emptyMenuItem {
-  display: grid;
-  gap: 0.375rem;
-  padding: 1.25rem 1rem;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-
-.emptyMenuItem strong {
-  color: var(--color-text);
-  font-size: 0.875rem;
-}
-
 .desktopNav {
   min-width: 0;
   height: 100%;

@@ -22,6 +22,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
+import { ActivityNotificationCenter } from "@/features/notifications/activity-notification-center";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
 import {
   readCareerPreferences,
@@ -333,11 +334,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className={styles.menu}
                   id="notification-disclosure"
                 >
-                  <div className={styles.menuHeader}>알림</div>
-                  <div className={styles.emptyMenuItem}>
-                    <strong>새 알림이 없습니다.</strong>
-                    <span>저장한 기술과 관련된 소식이 생기면 알려드릴게요.</span>
+                  <div className={styles.menuHeader}>
+                    <strong>알림</strong>
+                    <span>현재는 저장·지원 현황을 모아 보여드려요.</span>
                   </div>
+                  <ActivityNotificationCenter onNavigate={closeUtilityMenus} />
                 </div>
               )}
             </div>
