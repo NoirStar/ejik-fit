@@ -379,6 +379,20 @@ async def preview_source(
 ) -> dict[str, Any]:
     try:
         listing = await _fetch_listing_page(source, fetcher, browser_renderer)
+        if source.source_type == SourceType.GREETING:
+            refs = discover_openings(listing.text, source.base_url)
+            return _preview_payload(
+                source,
+                discovered=len(refs),
+                sample_openings=[
+                    {
+                        "external_id": ref.external_id,
+                        "title": ref.title or ref.external_id,
+                        "url": ref.url,
+                    }
+                    for ref in refs[:sample_limit]
+                ],
+            )
         openings = _parse_listing_openings(
             source.source_type,
             listing.text,

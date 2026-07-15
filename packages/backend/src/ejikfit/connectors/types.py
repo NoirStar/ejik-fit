@@ -6,6 +6,7 @@ from datetime import datetime
 class OpeningRef:
     external_id: str
     url: str
+    title: str | None = None
 
 
 @dataclass(frozen=True)

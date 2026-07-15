@@ -64,6 +64,11 @@ def discover_openings(html: str, page_url: str) -> list[OpeningRef]:
             OpeningRef(
                 external_id=external_id,
                 url=f"{page_url.rstrip('/')}/o/{external_id}",
+                title=(
+                    opening.get("title")
+                    if isinstance(opening.get("title"), str)
+                    else None
+                ),
             )
         )
     return refs

@@ -2,6 +2,7 @@ import asyncio
 import json
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from types import ModuleType
 
 from sqlalchemy import create_engine, select
@@ -954,6 +955,63 @@ def test_preview_source_parses_listing_without_persisting_or_mutating() -> None:
         assert source.status == SourceStatus.NEEDS_CONNECTOR
         assert source.last_error_code == "previous_error"
         assert source.last_error_reason == "previous reason"
+
+
+def test_preview_source_parses_greeting_listing_without_fetching_details() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_html = (
+        Path(__file__).parents[3]
+        / "tests"
+        / "fixtures"
+        / "greeting"
+        / "list.html"
+    ).read_text()
+
+    with Session(engine) as session:
+        company = Company(name="카카오게임즈", slug="kakao-games")
+        source = CareerSource(
+            company=company,
+            base_url="https://recruit.kakaogames.com/ko",
+            source_type=SourceType.GREETING,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = RecordingFetcher(listing_html)
+
+        preview = asyncio.run(
+            crawler.preview_source(
+                source=source,
+                fetcher=fetcher,
+                sample_limit=2,
+            )
+        )
+
+        assert preview["discovered"] == 2
+        assert preview["sample_openings"] == [
+            {
+                "external_id": "209187",
+                "title": "Backend Engineer",
+                "url": "https://recruit.kakaogames.com/ko/o/209187",
+            },
+            {
+                "external_id": "205581",
+                "title": "Security Engineer",
+                "url": "https://recruit.kakaogames.com/ko/o/205581",
+            },
+        ]
+        assert preview["error"] is None
+        assert fetcher.calls == [
+            {
+                "url": "https://recruit.kakaogames.com/ko",
+                "method": "GET",
+                "json_body": None,
+                "form_body": None,
+            }
+        ]
+        assert session.scalars(select(JobPosting)).all() == []
 
 
 def test_preview_source_reports_unsupported_browser_connector_without_mutating() -> None:
