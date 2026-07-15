@@ -485,6 +485,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/neowiz",
     displayName: "네오위즈",
   },
+  {
+    aliases: ["NHN KCP", "nhnkcp", "kcp"],
+    hosts: ["kcp.career.greetinghr.com"],
+    src: "/company-logo-assets/nhn-kcp",
+    displayName: "NHN KCP",
+  },
+  {
+    aliases: ["뉴빌리티", "neubility"],
+    hosts: ["neubility.career.greetinghr.com"],
+    src: "/company-logo-assets/neubility",
+    displayName: "뉴빌리티",
+  },
+  {
+    aliases: ["비트센싱", "bitsensing", "bitsensing inc"],
+    hosts: ["bitsensing.career.greetinghr.com"],
+    src: "/company-logo-assets/bitsensing",
+    displayName: "비트센싱",
+  },
+  {
+    aliases: ["현대오토에버", "hyundai autoever", "autoever"],
+    hosts: ["hyundai-autoever.career.greetinghr.com"],
+    src: "/company-logo-assets/hyundai-autoever",
+    displayName: "현대오토에버",
+  },
 ];
 
 function normalize(value: string) {

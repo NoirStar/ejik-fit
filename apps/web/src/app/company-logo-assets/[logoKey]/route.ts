@@ -19,6 +19,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
+  bitsensing:
+    "https://profiles.greetinghr.com/group/99b5d524-240f-45f9-82d3-789cbc07c4e2",
   dunamu: "https://careers.dunamu.com/favicon.png",
   deepnoid:
     "https://profiles.greetinghr.com/group/52e7484b-ffef-47e8-bd66-774309ad01d5",
@@ -36,6 +38,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
   hutom:
     "https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png",
+  "hyundai-autoever":
+    "https://profiles.greetinghr.com/group/15ac956f-bf20-4a9d-8327-232c5ddfade8",
   "hyundai-motor":
     "https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png",
   gccompany:
@@ -74,6 +78,10 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
+  neubility:
+    "https://profiles.greetinghr.com/group/91fe8697-42c9-4b65-ab87-903d8ce27d51",
+  "nhn-kcp":
+    "https://profiles.greetinghr.com/group/135690b4-a80e-4f3a-9589-388082488e7c",
   ncsoft:
     "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
   netmarble:

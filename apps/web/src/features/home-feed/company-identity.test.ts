@@ -320,6 +320,26 @@ describe("companyIdentity", () => {
       "https://api.lever.co/v0/postings/neowiz?mode=json",
       "neowiz",
     ],
+    [
+      "NHN KCP",
+      "https://kcp.career.greetinghr.com/ko/o/1",
+      "nhn-kcp",
+    ],
+    [
+      "뉴빌리티",
+      "https://neubility.career.greetinghr.com/ko/o/1",
+      "neubility",
+    ],
+    [
+      "비트센싱",
+      "https://bitsensing.career.greetinghr.com/ko/o/1",
+      "bitsensing",
+    ],
+    [
+      "현대오토에버",
+      "https://hyundai-autoever.career.greetinghr.com/ko/o/1",
+      "hyundai-autoever",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",
