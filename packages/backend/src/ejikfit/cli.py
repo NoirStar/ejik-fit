@@ -191,6 +191,9 @@ def _resolve_source_id(
             selector = f"{selector} / {source_type_value}"
         raise ValueError(f"career source not found: {selector}")
     if len(sources) > 1:
+        runnable_sources = [source for source in sources if source.is_runnable]
+        if len(runnable_sources) == 1:
+            return str(runnable_sources[0].id)
         raise ValueError(
             f"multiple career sources found for company slug {company_slug!r}; "
             "pass --source-type"

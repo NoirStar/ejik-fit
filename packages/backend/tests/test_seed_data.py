@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 89
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 91
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 89
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 91
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -338,6 +338,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert twelve_labs.connector_family == "ashby_public_api_korea_tech"
     assert twelve_labs.status == SourceStatus.ALLOWED
 
+    dot = catalog_by_slug["42dot"]
+    assert dot.base_url == "https://api.ashbyhq.com/posting-api/job-board/42dot"
+    assert dot.source_type == SourceType.LEVER_GREENHOUSE
+    assert dot.connector_family == "ashby_public_api_korea_tech"
+    assert dot.status == SourceStatus.ALLOWED
+
     for slug, source_type, connector_family in (
         (
             "fieldguide",
@@ -351,6 +357,11 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
         ),
         (
             "palantir",
+            SourceType.LEVER_GREENHOUSE,
+            "lever_greenhouse_korea_tech",
+        ),
+        (
+            "databricks",
             SourceType.LEVER_GREENHOUSE,
             "lever_greenhouse_korea_tech",
         ),

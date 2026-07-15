@@ -213,6 +213,24 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="42dot",
+        slug="42dot",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/42dot",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.42dot.ai",
+        sector="mobility_ai",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=60,
+        connector_reuse_score=5,
+        non_tech_noise=7,
+        notes=(
+            "Official public 42dot Ashby feed; only listed technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="Fieldguide",
         slug="fieldguide",
         base_url=(
@@ -270,6 +288,27 @@ INITIAL_SOURCE_CATALOG = (
         notes=(
             "Official public Palantir Lever feed; only technical roles "
             "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Databricks",
+        slug="databricks",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/databricks/"
+            "jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.databricks.com",
+        sector="data_ai_platform",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        non_tech_noise=7,
+        notes=(
+            "Official public Databricks Greenhouse feed; only technical "
+            "roles based in Korea are ingested."
         ),
     ),
     SeedSource(

@@ -16,6 +16,12 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["42dot", "포티투닷", "42닷"],
+    hosts: ["42dot.ai", "api.ashbyhq.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/42dot",
+    displayName: "42dot",
+  },
+  {
     aliases: ["트웰브랩스", "twelve labs", "twelvelabs"],
     hosts: ["api.ashbyhq.com", "jobs.ashbyhq.com", "twelvelabs.io"],
     src: "/company-logo-assets/twelve-labs",
@@ -394,6 +400,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     hosts: ["api.lever.co", "palantir.com", "jobs.lever.co"],
     src: "/company-logo-assets/palantir",
     displayName: "Palantir Technologies",
+  },
+  {
+    aliases: ["Databricks", "데이터브릭스"],
+    hosts: ["boards-api.greenhouse.io", "databricks.com"],
+    src: "/company-logo-assets/databricks",
+    displayName: "Databricks",
   },
   {
     aliases: ["에이블리코퍼레이션", "에이블리", "ably corporation", "ably"],

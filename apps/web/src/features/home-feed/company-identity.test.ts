@@ -77,6 +77,11 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "42dot",
+      "https://api.ashbyhq.com/posting-api/job-board/42dot",
+      "42dot",
+    ],
+    [
       "트웰브랩스",
       "https://api.ashbyhq.com/posting-api/job-board/twelve-labs",
       "twelve-labs",
@@ -214,6 +219,11 @@ describe("companyIdentity", () => {
       "Palantir Technologies",
       "https://api.lever.co/v0/postings/palantir?mode=json",
       "palantir",
+    ],
+    [
+      "Databricks",
+      "https://boards-api.greenhouse.io/v1/boards/databricks/jobs?content=true",
+      "databricks",
     ],
     [
       "LG전자",

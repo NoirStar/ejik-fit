@@ -2,6 +2,7 @@ const CACHE_SECONDS = 60 * 60 * 24 * 7;
 const MAX_LOGO_BYTES = 2_000_000;
 
 const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
+  "42dot": "https://www.42dot.ai/favicon.ico",
   banksalad:
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:
@@ -19,6 +20,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
+  databricks:
+    "https://www.databricks.com/en-website-assets/icons/icon-96x96.png?v=c9b9916c3b27dc51866c46b79a6e9b88",
   bitsensing:
     "https://profiles.greetinghr.com/group/99b5d524-240f-45f9-82d3-789cbc07c4e2",
   dunamu: "https://careers.dunamu.com/favicon.png",

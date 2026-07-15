@@ -415,6 +415,45 @@ def test_company_slug_selector_requires_source_type_for_multiple_sources(
         cli.main(["preview-source", "--company-slug", "lg-cns"])
 
 
+def test_company_slug_selector_prefers_the_only_runnable_source() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    active_id = uuid.UUID("00000000-0000-0000-0000-000000000015")
+
+    with Session(engine) as session:
+        company = Company(name="SK하이닉스", slug="sk-hynix")
+        session.add_all(
+            [
+                CareerSource(
+                    id=active_id,
+                    company=company,
+                    base_url="https://example.com/sk-hynix/current",
+                    source_type=SourceType.ENTERPRISE_JSON,
+                    status=SourceStatus.ALLOWED,
+                    policy_status=PolicyStatus.ALLOWED,
+                ),
+                CareerSource(
+                    id=uuid.UUID("00000000-0000-0000-0000-000000000016"),
+                    company=company,
+                    base_url="https://example.com/sk-hynix/retired",
+                    source_type=SourceType.HTML_LISTING_DETAIL,
+                    status=SourceStatus.STOPPED,
+                    policy_status=PolicyStatus.STOPPED,
+                ),
+            ]
+        )
+        session.commit()
+
+        selected = cli._resolve_source_id(
+            session,
+            source_id=None,
+            company_slug="sk-hynix",
+            source_type_value=None,
+        )
+
+    assert selected == str(active_id)
+
+
 def test_set_source_status_accepts_policy_status_override(
     monkeypatch,
     capsys,
