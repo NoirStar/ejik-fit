@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { CompanyMark } from "@/features/home-feed/company-mark";
+import { SourceDirectory } from "@/features/sources/source-directory";
 import { getSourceDirectory } from "@/lib/api";
-import type {
-  SourceDirectoryItem,
-  SourceDirectoryResponse,
-} from "@/lib/types";
+import type { SourceDirectoryResponse } from "@/lib/types";
 
 import { TrustPageLayout } from "../trust-page-layout";
 import styles from "../trust-pages.module.css";
@@ -15,129 +12,6 @@ export const metadata: Metadata = {
   title: "데이터 수집 정책",
   description: "이직핏이 공식 채용공고를 수집하고 검증하며 마감 상태를 판단하는 원칙입니다.",
 };
-
-const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
-  dateStyle: "medium",
-  timeZone: "Asia/Seoul",
-});
-
-function lastCollectedLabel(
-  value: string | null,
-  status: SourceDirectoryItem["collection_status"],
-) {
-  if (!value) {
-    return status === "collecting" ? "최근 수집 시각 없음" : "첫 수집 준비 중";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "확인 시각 점검 중";
-  return `${DATE_FORMATTER.format(date)} 수집`;
-}
-
-function SourceRow({ item }: { item: SourceDirectoryItem }) {
-  const isCollecting = item.collection_status === "collecting";
-
-  return (
-    <li className={styles.sourceRow}>
-      <div className={styles.sourceIdentity}>
-        <CompanyMark
-          companyName={item.company_name}
-          size={32}
-          sourceUrl={item.careers_url}
-        />
-        <div>
-          {isCollecting ? (
-            <Link
-              aria-label={`${item.company_name} 공고 보기`}
-              href={`/companies/${encodeURIComponent(item.company_slug)}`}
-            >
-              {item.company_name}
-            </Link>
-          ) : (
-            <strong>{item.company_name}</strong>
-          )}
-          <small>
-            {lastCollectedLabel(item.last_success_at, item.collection_status)}
-          </small>
-        </div>
-      </div>
-      <div className={styles.sourceMeta}>
-        <span
-          className={styles.collectionStatus}
-          data-status={item.collection_status}
-        >
-          {isCollecting ? "수집 중" : "연결 준비"}
-        </span>
-        {isCollecting && (
-          <span className={styles.openCount}>열린 공고 {item.open_postings}건</span>
-        )}
-        <a
-          aria-label={`${item.company_name} 공식 수집 출처`}
-          href={item.careers_url}
-          rel="noreferrer"
-          target="_blank"
-        >
-          공식 출처 ↗
-        </a>
-      </div>
-    </li>
-  );
-}
-
-function SourceGroup({
-  items,
-  title,
-  description,
-}: {
-  items: SourceDirectoryItem[];
-  title: string;
-  description: string;
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <div className={styles.sourceGroup}>
-      <div className={styles.sourceGroupHeading}>
-        <h3>{title}</h3>
-        <span>{items.length}개 기업</span>
-        <p>{description}</p>
-      </div>
-      <ul className={styles.sourceList}>
-        {items.map((item) => (
-          <SourceRow item={item} key={item.company_slug} />
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function SourceDirectory({ directory }: { directory: SourceDirectoryResponse }) {
-  const collecting = directory.items.filter(
-    (item) => item.collection_status === "collecting",
-  );
-  const preparing = directory.items.filter(
-    (item) => item.collection_status === "preparing",
-  );
-
-  return (
-    <>
-      <div aria-label="수집 출처 요약" className={styles.directorySummary}>
-        <span>수집 중 {directory.collecting_count}개 기업</span>
-        <span>연결 준비 {directory.preparing_count}개 기업</span>
-        <span>열린 공고 {directory.open_postings}건</span>
-      </div>
-      <SourceGroup
-        description="정기 수집 대상이며, 확인된 열린 공고를 서비스에 반영하는 출처입니다."
-        items={collecting}
-        title="현재 수집 중"
-      />
-      <SourceGroup
-        description="연결 방식 또는 수집 정책을 더 확인 중이며, 공고 수에는 포함하지 않습니다."
-        items={preparing}
-        title="연결 준비 중"
-      />
-    </>
-  );
-}
 
 export default async function DataPolicyPage() {
   let directory: SourceDirectoryResponse | null = null;

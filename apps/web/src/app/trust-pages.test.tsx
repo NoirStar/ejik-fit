@@ -65,6 +65,21 @@ describe("public trust pages", () => {
     );
     expect(screen.getByText("수집 중 1개 기업")).toBeInTheDocument();
     expect(screen.getByText("연결 준비 1개 기업")).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "수집 기업 검색" }),
+      { target: { value: "현대" } },
+    );
+    expect(screen.queryByRole("link", { name: "네이버 공고 보기" })).not.toBeInTheDocument();
+    expect(screen.getByText("현대자동차")).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "수집 기업 검색" }),
+      { target: { value: "" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "수집 중만 보기" }));
+    expect(screen.getByRole("link", { name: "네이버 공고 보기" })).toBeInTheDocument();
+    expect(screen.queryByText("현대자동차")).not.toBeInTheDocument();
     unmount();
 
     render(<MethodologyPage />);

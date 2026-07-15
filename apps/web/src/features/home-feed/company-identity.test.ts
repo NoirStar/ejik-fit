@@ -78,7 +78,7 @@ describe("companyIdentity", () => {
   it.each([
     [
       "트웰브랩스",
-      "https://jobs.ashbyhq.com/twelve-labs/042715bb-0674-4e2a-9155-19c54835fe18",
+      "https://api.ashbyhq.com/posting-api/job-board/twelve-labs",
       "twelve-labs",
     ],
     [
@@ -197,22 +197,22 @@ describe("companyIdentity", () => {
     ],
     [
       "퓨리오사AI",
-      "https://jobs.ashbyhq.com/furiosa-ai/07bca3c7-2865-42dc-8154-e4bf84f337e2",
+      "https://api.ashbyhq.com/posting-api/job-board/furiosa-ai",
       "furiosa-ai",
     ],
     [
       "Fieldguide",
-      "https://jobs.ashbyhq.com/fieldguide/6fb23db9-ee3d-49b5-97bb-3f4a5e4a6768",
+      "https://api.ashbyhq.com/posting-api/job-board/fieldguide",
       "fieldguide",
     ],
     [
       "Gauss Labs",
-      "https://jobs.lever.co/gausslabs/191e39a0-18e4-4618-881b-56a7a62bbe8f",
+      "https://api.lever.co/v0/postings/gausslabs?mode=json",
       "gauss-labs",
     ],
     [
       "Palantir Technologies",
-      "https://jobs.lever.co/palantir/1bb19522-3936-4adc-9ced-c3df8b5900b9",
+      "https://api.lever.co/v0/postings/palantir?mode=json",
       "palantir",
     ],
     [

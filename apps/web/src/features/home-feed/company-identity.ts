@@ -17,7 +17,7 @@ type VerifiedLogo = {
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["트웰브랩스", "twelve labs", "twelvelabs"],
-    hosts: ["jobs.ashbyhq.com", "twelvelabs.io"],
+    hosts: ["api.ashbyhq.com", "jobs.ashbyhq.com", "twelvelabs.io"],
     src: "/company-logo-assets/twelve-labs",
     displayName: "트웰브랩스",
   },
@@ -373,25 +373,25 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   },
   {
     aliases: ["퓨리오사AI", "퓨리오사에이아이", "furiosa ai", "furiosaai"],
-    hosts: ["furiosa.ai", "jobs.ashbyhq.com"],
+    hosts: ["api.ashbyhq.com", "furiosa.ai", "jobs.ashbyhq.com"],
     src: "/company-logo-assets/furiosa-ai",
     displayName: "퓨리오사AI",
   },
   {
     aliases: ["Fieldguide", "field guide"],
-    hosts: ["fieldguide.io", "jobs.ashbyhq.com"],
+    hosts: ["api.ashbyhq.com", "fieldguide.io", "jobs.ashbyhq.com"],
     src: "/company-logo-assets/fieldguide",
     displayName: "Fieldguide",
   },
   {
     aliases: ["Gauss Labs", "가우스랩스", "gausslabs"],
-    hosts: ["gausslabs.ai", "jobs.lever.co"],
+    hosts: ["api.lever.co", "gausslabs.ai", "jobs.lever.co"],
     src: "/company-logo-assets/gauss-labs",
     displayName: "Gauss Labs",
   },
   {
     aliases: ["Palantir Technologies", "Palantir", "팔란티어"],
-    hosts: ["palantir.com", "jobs.lever.co"],
+    hosts: ["api.lever.co", "palantir.com", "jobs.lever.co"],
     src: "/company-logo-assets/palantir",
     displayName: "Palantir Technologies",
   },

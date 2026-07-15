@@ -58,7 +58,7 @@ GitHub 저장소 Settings → Secrets and variables → Actions에 다음 Reposi
 - backend `browser` extra와 Playwright Chromium 설치
 - migration → source seed → 전체 출처 수집
 - 출처별 결과를 Actions Summary에 기록
-- 현재 44개 이상 출처를 순차 처리할 수 있도록 실행 한도 120분 적용
+- 카탈로그에 등록된 수집 가능 출처를 순차 처리할 수 있도록 실행 한도 120분 적용
 
 `browser_public_render` 출처는 공개 JavaScript 렌더링 결과만 읽습니다. CAPTCHA,
 로그인, Cloudflare challenge, 접근 통제는 우회하지 않고 출처 상태로 남깁니다.
