@@ -12,6 +12,7 @@ not used as 이직핏 branding, endorsements, or promotional marks.
 | `afi-backend.jpg` | AFI 뒤끝 | [official career page](https://thebackend.career.greetinghr.com/ko/o/141428), [header asset](https://opening-attachments.greetinghr.com/20230526/21215ae0-2c2d-494b-9100-46f6696a4366/.jpg) | 2026-07-14 | Public header logo, stored without image modification. |
 | `next-securities.png` | 넥스트증권 | [official career page](https://nextsecurities.career.greetinghr.com/ko/o/172330), [header asset](https://opening-attachments.greetinghr.com/2025-12-03/5a7b31d2-9f1e-4e4a-8499-2ce18f8d1754/Logo_NextS_Primary_Black.png) | 2026-07-14 | Public header logo, stored without image modification. |
 | `onuii.png` | 오누이 | [official career page](https://onuii.career.greetinghr.com/ko/o/190063), [header asset](https://opening-attachments.greetinghr.com/2024-01-09/102c5888-157f-4813-a8b9-5fd81d2b6e7b/__.png) | 2026-07-14 | Public header logo, stored without image modification. |
+| `kakaobank.svg` | 카카오뱅크 | [official career page](https://recruit.kakaobank.com/), [career-page logo asset](https://recruit.kakaobank.com/images/main/kakaobank-circle-logo.svg) | 2026-07-15 | Original public career-page SVG, stored without path or color modification. |
 
 ## Cached official career-page logos
 
@@ -45,3 +46,6 @@ back to company initials when the official asset is unavailable.
 - LINE Plus: no official downloadable corporate identity asset with sufficiently
   clear reuse terms was found during this implementation. The product uses an
   initials mark instead.
+- 우아한형제들: the official careers page currently exposes only a small
+  favicon and a wide social-share image, neither of which is suitable for a
+  compact posting mark. The product uses an initials mark instead.

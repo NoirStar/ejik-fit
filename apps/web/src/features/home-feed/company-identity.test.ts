@@ -111,6 +111,19 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("uses KakaoBank's official careers logo only for its trusted host", () => {
+    expect(
+      companyIdentity("카카오뱅크", "https://recruit.kakaobank.com/jobs/257846"),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logos/kakaobank.svg",
+      alt: "카카오뱅크 로고",
+    });
+    expect(
+      companyIdentity("카카오뱅크", "https://untrusted.example/jobs/257846"),
+    ).toMatchObject({ kind: "initials" });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity(

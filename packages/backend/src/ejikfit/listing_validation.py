@@ -23,6 +23,7 @@ JSON_SOURCE_TYPES = {
     SourceType.LEVER_GREENHOUSE,
     SourceType.WORKDAY,
     SourceType.SAP_SUCCESSFACTORS,
+    SourceType.PUBLIC_JSON_DETAIL,
 }
 
 COLLECTION_KEYS_BY_SOURCE = {
@@ -58,6 +59,7 @@ COLLECTION_KEYS_BY_SOURCE = {
         "results",
         "value",
     },
+    SourceType.PUBLIC_JSON_DETAIL: {"list"},
 }
 SINGLETON_KEYS_BY_SOURCE = {
     SourceType.WORKDAY: {"jobPostingInfo"},
@@ -78,6 +80,8 @@ TOTAL_KEYS = {
     "total",
     "totalcount",
     "totaljobcount",
+    "totalelements",
+    "totalsize",
 }
 PAGE_SIZE_KEYS = {
     "limit",

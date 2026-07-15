@@ -38,6 +38,7 @@ class SourceType(str, enum.Enum):
     SAP_SUCCESSFACTORS = "sap_successfactors"
     SITEMAP_DISCOVERY = "sitemap_discovery"
     BROWSER_PUBLIC_RENDER = "browser_public_render"
+    PUBLIC_JSON_DETAIL = "public_json_detail"
 
 
 class SourceStatus(str, enum.Enum):

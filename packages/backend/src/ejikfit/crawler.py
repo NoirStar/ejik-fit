@@ -29,6 +29,10 @@ from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.next_data import parse_static_next_data_openings
+from ejikfit.connectors.public_json_detail import (
+    discover_public_json_detail_refs,
+    parse_public_json_detail,
+)
 from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
     parse_sitemap_detail_opening,
@@ -522,6 +526,49 @@ async def preview_source(
                 ],
                 complete=True,
             )
+        if source.source_type == SourceType.PUBLIC_JSON_DETAIL:
+            all_refs = discover_public_json_detail_refs(
+                listing.text,
+                source.base_url,
+                source.connector_family,
+            )
+            complete = validate_listing_response(
+                source.source_type,
+                listing.text,
+                listing.url,
+                len(all_refs),
+                source.request_body,
+            )
+            refs = (
+                [
+                    ref
+                    for ref in all_refs
+                    if is_technical_role(ref.title, ref.category)
+                ]
+                if (source.connector_family or "").endswith("_tech")
+                else all_refs
+            )
+            return _preview_payload(
+                source,
+                discovered=len(refs),
+                sample_openings=[
+                    {
+                        "external_id": ref.external_id,
+                        "title": ref.title,
+                        "url": ref.public_url,
+                    }
+                    for ref in refs[:sample_limit]
+                ],
+                complete=complete,
+                error=(
+                    None
+                    if complete
+                    else {
+                        "code": "incomplete_listing",
+                        "reason": "listing response indicates additional pages",
+                    }
+                ),
+            )
         if source.source_type == SourceType.GREETING:
             refs = discover_openings(
                 listing.text,
@@ -702,6 +749,120 @@ async def crawl_source(
             source.last_discovered_at = now
         if failed == 0:
             _mark_source_success(source, now)
+        session.commit()
+        closed = reconcile_missing(
+            session,
+            source.id,
+            seen_external_ids,
+            successful_listing=True,
+            now=now,
+        )
+        return CrawlResult(
+            discovered=discovered,
+            ingested=ingested,
+            failed=failed,
+            closed=closed,
+        )
+
+    if source.source_type == SourceType.PUBLIC_JSON_DETAIL:
+        try:
+            all_refs = discover_public_json_detail_refs(
+                listing.text,
+                source.base_url,
+                source.connector_family,
+            )
+            complete_listing = validate_listing_response(
+                source.source_type,
+                listing.text,
+                listing.url,
+                len(all_refs),
+                source.request_body,
+            )
+            refs = (
+                [
+                    ref
+                    for ref in all_refs
+                    if is_technical_role(ref.title, ref.category)
+                ]
+                if (source.connector_family or "").endswith("_tech")
+                else all_refs
+            )
+        except (KeyError, TypeError, ListingValidationError, ValueError) as error:
+            _mark_source_error(source, "listing_parse_error", str(error))
+            session.commit()
+            return CrawlResult(failed=1)
+
+        discovered = len(refs)
+        seen_external_ids = {ref.external_id for ref in refs}
+        detail_error: Exception | None = None
+        for index, ref in enumerate(refs):
+            if index > 0 and request_delay_seconds > 0:
+                await asyncio.sleep(request_delay_seconds)
+            try:
+                detail = await fetcher.fetch(ref.detail_url)
+                opening = parse_public_json_detail(
+                    detail.text,
+                    ref,
+                    source.connector_family,
+                )
+                ingest_opening(
+                    session,
+                    source,
+                    opening,
+                    detail.text,
+                    store,
+                    now,
+                    posting_index,
+                )
+                ingested += 1
+            except BlockedSourceError as error:
+                _mark_source_error(
+                    source,
+                    "blocked",
+                    str(error),
+                    status=SourceStatus.BLOCKED,
+                    policy_status=PolicyStatus.BLOCKED,
+                )
+                session.commit()
+                return CrawlResult(
+                    discovered=discovered,
+                    ingested=ingested,
+                    failed=failed + 1,
+                )
+            except Exception as error:
+                session.rollback()
+                logger.exception(
+                    "Public JSON detail ingestion failed for %s",
+                    ref.detail_url,
+                )
+                failed += 1
+                detail_error = error
+
+        source.last_verified_at = now
+        if discovered > 0:
+            source.last_discovered_at = now
+        if not complete_listing:
+            failed += 1
+            _mark_source_error(
+                source,
+                "incomplete_listing",
+                "listing response indicates additional pages; absences were not reconciled",
+            )
+            session.commit()
+            return CrawlResult(
+                discovered=discovered,
+                ingested=ingested,
+                failed=failed,
+            )
+
+        if detail_error is None:
+            _mark_source_success(source, now)
+        else:
+            _mark_source_error(
+                source,
+                "partial_detail_failure",
+                f"{type(detail_error).__name__}: {detail_error}",
+            )
         session.commit()
         closed = reconcile_missing(
             session,

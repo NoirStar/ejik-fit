@@ -362,6 +362,57 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="우아한형제들",
+        slug="woowahan-brothers",
+        base_url=(
+            "https://career.woowahan.com/w1/recruits?page=0&size=100"
+            "&sort=updateDate,desc&recruitCampaignSeq=0"
+        ),
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://career.woowahan.com",
+        sector="platform",
+        connector_family="woowahan_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Woowahan careers public list and detail APIs; limited "
+            "to software, data, infrastructure, QA, and security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="카카오뱅크",
+        slug="kakaobank",
+        base_url="https://recruit.kakaobank.com/api/recruits",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://recruit.kakaobank.com",
+        sector="fintech",
+        connector_family="kakaobank_public_api_tech",
+        request_method="POST",
+        request_body={
+            "pageNumber": 1,
+            "pageSize": 100,
+            "receiptFilterType": "ONGOING",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official KakaoBank careers public list and detail APIs; limited "
+            "to software, data, infrastructure, QA, and security roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "네이버",
         "naver",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",

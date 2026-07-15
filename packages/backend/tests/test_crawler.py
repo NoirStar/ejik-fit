@@ -1596,6 +1596,119 @@ class SitemapDetailFetcher:
         )
 
 
+class PublicJsonDetailFetcher:
+    def __init__(self, listing_url: str, listing: str, details: dict[str, str]) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.details = details
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        return crawler.FetchedPage(
+            url=url,
+            text=self.listing if url == self.listing_url else self.details[url],
+            status_code=200,
+            headers={},
+        )
+
+
+def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = "https://career.woowahan.com/w1/recruits?page=0&size=100"
+    detail_url = "https://career.woowahan.com/w1/recruits/R2606023"
+    listing = json.dumps(
+        {
+            "code": "2000",
+            "data": {
+                "pageSize": 100,
+                "pageNumber": 1,
+                "totalPageNumber": 1,
+                "totalSize": 2,
+                "list": [
+                    {
+                        "recruitNumber": "R2606023",
+                        "recruitName": "Server(배차시스템)",
+                        "recruitDeleteYn": False,
+                        "isHidden": False,
+                        "isAfterOrEqualOpenDay": True,
+                    },
+                    {
+                        "recruitNumber": "R2607004",
+                        "recruitName": "운영지원(B마트 상품전략)",
+                        "recruitDeleteYn": False,
+                        "isHidden": False,
+                        "isAfterOrEqualOpenDay": True,
+                    },
+                ],
+            },
+        },
+        ensure_ascii=False,
+    )
+    details = {
+        detail_url: json.dumps(
+            {
+                "code": "2000",
+                "data": {
+                    "recruitNumber": "R2606023",
+                    "recruitName": "Server(배차시스템)",
+                    "recruitContents": "<p>Java, Spring, AWS</p>",
+                    "recruitOpenDate": "2026-06-15 16:54:40",
+                    "recruitEndDate": "9999-12-31 00:00:00",
+                    "careerRestrictionMinYears": 5,
+                    "careerRestrictionMaxYears": 15,
+                    "careerType": {"recruitItemCode": "BA003002"},
+                    "employmentType": {"recruitItemCode": "BA002001"},
+                    "recruitDeleteYn": False,
+                    "isAfterOrEqualEndDay": False,
+                },
+            },
+            ensure_ascii=False,
+        )
+    }
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="우아한형제들", slug="woowahan-brothers"),
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="woowahan_public_api_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = PublicJsonDetailFetcher(listing_url, listing, details)
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert [posting.external_id for posting in postings] == ["R2606023"]
+        assert postings[0].url == (
+            "https://career.woowahan.com/recruitment/R2606023/detail"
+        )
+        assert fetcher.urls == [listing_url, detail_url]
+        assert source.last_success_at is not None
+
+
 def test_sitemap_detail_crawl_ingests_only_technical_jsonld_roles() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

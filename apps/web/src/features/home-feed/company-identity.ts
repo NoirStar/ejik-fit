@@ -143,6 +143,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Sendbird",
     surface: "dark",
   },
+  {
+    aliases: ["카카오뱅크", "kakaobank", "kakao bank"],
+    hosts: ["recruit.kakaobank.com"],
+    src: "/company-logos/kakaobank.svg",
+    displayName: "카카오뱅크",
+  },
 ];
 
 function normalize(value: string) {

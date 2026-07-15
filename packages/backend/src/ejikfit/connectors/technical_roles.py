@@ -21,14 +21,18 @@ TECHNICAL_ROLE_MARKERS = (
     "machine learning",
     "mlops",
     "qa",
+    "rpa",
     "security",
+    "server",
     "site reliability",
     "software",
     "solution architect",
     "개발자",
     "데이터 분석",
+    "데이터과학",
     "데이터 사이언",
     "데이터 엔지니어",
+    "데이터엔지니어",
     "데이터베이스",
     "보안",
     "소프트웨어",
@@ -38,6 +42,7 @@ TECHNICAL_ROLE_MARKERS = (
     "시스템 개발",
     "앱 개발",
     "웹 개발",
+    "s/w",
 )
 
 NON_TECHNICAL_ROLE_MARKERS = (
