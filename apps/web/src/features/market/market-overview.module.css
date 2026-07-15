@@ -11,12 +11,13 @@
 }
 
 .page {
-  --market-required: #24656a;
-  --market-required-text: #ffffff;
-  --market-preferred: #d49a3a;
-  --market-preferred-text: #2d2519;
-  --market-unspecified: #dce1e3;
-  --market-unspecified-text: #3f494d;
+  --market-required: #67a2c5;
+  --market-required-text: #123247;
+  --market-preferred: #9bcec1;
+  --market-preferred-text: #183e38;
+  --market-unspecified: #ffebd3;
+  --market-unspecified-text: #68492c;
+  --market-relative: #ffb6a6;
 
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -574,7 +575,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: color-mix(in srgb, var(--color-accent) 82%, #ffffff);
+  background: var(--market-relative);
   transition: width 340ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
