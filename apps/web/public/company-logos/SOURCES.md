@@ -38,6 +38,7 @@ back to company initials when the official asset is unavailable.
 | `moloco` | Moloco | <https://www.moloco.com/ko/careers> | <https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png> | 2026-07-15 |
 | `sendbird` | Sendbird | <https://sendbird.com/careers> | <https://sendbird.com/_nuxt/icons/icon_512x512.e709d1.png> | 2026-07-15 |
 | `socar` | 쏘카 | <https://www.socarcorp.kr/careers/jobs> | <https://www.socarcorp.kr/images/favicons/favicon_180x180.png> | 2026-07-15 |
+| `bucketplace` | 오늘의집 | <https://www.bucketplace.com/careers/> | <https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406> | 2026-07-15 |
 
 ## Assets intentionally not stored
 

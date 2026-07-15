@@ -23,6 +23,7 @@ from ejikfit.connectors.browser_public import parse_browser_public_render_openin
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import (
     discover_corporate_greeting_openings,
+    discover_grouped_greeting_openings,
     discover_openings,
     parse_opening,
 )
@@ -85,6 +86,12 @@ def _apply_source_opening_filters(
 def _discover_greeting_source_refs(source: CareerSource, html: str):
     if source.connector_family == "corporate_greeting_links_tech":
         return discover_corporate_greeting_openings(
+            html,
+            source.base_url,
+            technical_only=True,
+        )
+    if source.connector_family == "grouped_greeting_links_tech":
+        return discover_grouped_greeting_openings(
             html,
             source.base_url,
             technical_only=True,

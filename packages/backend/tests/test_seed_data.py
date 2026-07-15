@@ -33,7 +33,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "carat-ai",
         "wrtn",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 27
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 28
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -158,7 +158,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 60
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 61
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -247,7 +247,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 60
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 61
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -323,6 +323,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert socar.source_type == SourceType.GREETING
     assert socar.connector_family == "corporate_greeting_links_tech"
     assert socar.status == SourceStatus.ALLOWED
+
+    bucketplace = catalog_by_slug["bucketplace"]
+    assert bucketplace.base_url == "https://www.bucketplace.com/careers/"
+    assert bucketplace.source_type == SourceType.GREETING
+    assert bucketplace.connector_family == "grouped_greeting_links_tech"
+    assert bucketplace.status == SourceStatus.ALLOWED
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:

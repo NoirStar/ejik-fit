@@ -155,6 +155,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     src: "/company-logo-assets/socar",
     displayName: "쏘카",
   },
+  {
+    aliases: ["오늘의집", "버킷플레이스", "bucketplace", "ohouse"],
+    hosts: ["bucketplace.com", "bucketplace.career.greetinghr.com"],
+    src: "/company-logo-assets/bucketplace",
+    displayName: "오늘의집",
+  },
 ];
 
 function normalize(value: string) {

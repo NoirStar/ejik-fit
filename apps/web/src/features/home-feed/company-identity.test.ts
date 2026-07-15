@@ -91,6 +91,11 @@ describe("companyIdentity", () => {
     ["Moloco", "https://job-boards.greenhouse.io/moloco/jobs/1", "moloco"],
     ["Sendbird", "https://job-boards.greenhouse.io/sendbird/jobs/1", "sendbird"],
     ["쏘카", "https://socar.career.greetinghr.com/ko/o/225577", "socar"],
+    [
+      "오늘의집",
+      "https://bucketplace.career.greetinghr.com/ko/o/167227",
+      "bucketplace",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

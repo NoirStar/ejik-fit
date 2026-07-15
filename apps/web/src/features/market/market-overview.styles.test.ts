@@ -16,9 +16,7 @@ function rule(selector: string) {
 describe("market overview styles", () => {
   it("uses a compact service scale and a bounded 1280px canvas", () => {
     expect(rule(".page")).toContain("width: min(100%, 80rem);");
-    expect(rule(".intro h1")).toContain(
-      "font-size: clamp(1.75rem, 2.4vw, 2rem);",
-    );
+    expect(rule(".intro h1")).toContain("font-size: var(--type-page-title);");
     expect(css).toMatch(
       /\.sectionHeader h2,[\s\S]*?\.combinationHeader h2\s*\{[^}]*font-size: 1rem;/,
     );

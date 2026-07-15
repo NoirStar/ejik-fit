@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlparse
 
+from bs4 import BeautifulSoup
+
 from ejikfit.connectors.next_data import extract_next_data
 from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.types import OpeningRef, ParsedOpening
@@ -143,6 +145,20 @@ def _corporate_job_group_names(page_props: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def _greeting_detail_id(raw_url: str) -> str | None:
+    parsed_url = urlparse(raw_url)
+    hostname = (parsed_url.hostname or "").casefold()
+    segments = [segment for segment in parsed_url.path.split("/") if segment]
+    if (
+        parsed_url.scheme != "https"
+        or not hostname.endswith(".career.greetinghr.com")
+        or len(segments) < 2
+        or segments[-2] != "o"
+    ):
+        return None
+    return segments[-1] or None
+
+
 def discover_corporate_greeting_openings(
     html: str,
     page_url: str,
@@ -183,17 +199,7 @@ def discover_corporate_greeting_openings(
             continue
         if not isinstance(raw_url, str):
             continue
-        parsed_url = urlparse(raw_url)
-        hostname = (parsed_url.hostname or "").casefold()
-        segments = [segment for segment in parsed_url.path.split("/") if segment]
-        if (
-            parsed_url.scheme != "https"
-            or not hostname.endswith(".career.greetinghr.com")
-            or len(segments) < 2
-            or segments[-2] != "o"
-        ):
-            continue
-        external_id = segments[-1]
+        external_id = _greeting_detail_id(raw_url)
         if not external_id or external_id in seen:
             continue
         category = group_names.get(str(row.get("job_group_code")))
@@ -208,6 +214,56 @@ def discover_corporate_greeting_openings(
             )
         )
     return refs
+
+
+def discover_grouped_greeting_openings(
+    html: str,
+    page_url: str,
+    *,
+    technical_only: bool = False,
+) -> list[OpeningRef]:
+    """Discover Greeting links grouped in server-rendered corporate HTML."""
+
+    listing = urlparse(page_url)
+    if listing.scheme not in {"http", "https"} or not listing.hostname:
+        raise ValueError("corporate careers URL must be absolute")
+
+    soup = BeautifulSoup(html.replace("\x00", ""), "lxml")
+    if soup.select_one("a[rel='next']") is not None:
+        raise ValueError("grouped corporate careers list has another page")
+
+    all_refs: list[tuple[OpeningRef, str | None]] = []
+    seen: set[str] = set()
+    for link in soup.find_all("a", href=True):
+        raw_url = link.get("href")
+        if not isinstance(raw_url, str):
+            continue
+        external_id = _greeting_detail_id(raw_url)
+        if external_id is None or external_id in seen:
+            continue
+        title = link.get_text(" ", strip=True)
+        if not title:
+            continue
+        parent = link.parent
+        heading = parent.find(("div", "h2", "h3"), recursive=False) if parent else None
+        category = heading.get_text(" ", strip=True) if heading else None
+        seen.add(external_id)
+        all_refs.append(
+            (
+                OpeningRef(external_id=external_id, url=raw_url, title=title),
+                category,
+            )
+        )
+
+    if not all_refs:
+        raise ValueError("grouped corporate careers list has no Greeting jobs")
+    if not technical_only:
+        return [ref for ref, _ in all_refs]
+    return [
+        ref
+        for ref, category in all_refs
+        if is_technical_role(ref.title, category)
+    ]
 
 
 def _opening_payload(data: dict[str, Any]) -> dict[str, Any]:

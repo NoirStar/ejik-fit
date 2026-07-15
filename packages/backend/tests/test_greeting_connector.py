@@ -3,6 +3,7 @@ from pathlib import Path
 
 from ejikfit.connectors.greeting import (
     discover_corporate_greeting_openings,
+    discover_grouped_greeting_openings,
     discover_openings,
     parse_opening,
 )
@@ -105,6 +106,40 @@ def test_discovers_complete_technical_greeting_links_from_corporate_next_data() 
     assert [(ref.external_id, ref.title) for ref in refs] == [
         ("225577", "Platform Engineer (DBA)"),
         ("225579", "Applied Research Scientist"),
+    ]
+
+
+def test_discovers_technical_greeting_links_from_server_rendered_groups() -> None:
+    html = """
+    <main>
+      <h1>채용 중인 직무</h1>
+      <div class="job-list-group">
+        <div class="job-list-group-title">Engineering</div>
+        <a href="https://bucketplace.career.greetinghr.com/ko/o/167227">
+          Senior Backend Engineer, Commerce
+        </a>
+        <a href="https://bucketplace.career.greetinghr.com/ko/o/173769">
+          Frontend Engineer, Content
+        </a>
+      </div>
+      <div class="job-list-group">
+        <div class="job-list-group-title">마케팅</div>
+        <a href="https://bucketplace.career.greetinghr.com/ko/o/227521">
+          콘텐츠 마케터
+        </a>
+      </div>
+    </main>
+    """
+
+    refs = discover_grouped_greeting_openings(
+        html,
+        "https://www.bucketplace.com/careers/",
+        technical_only=True,
+    )
+
+    assert [(ref.external_id, ref.title) for ref in refs] == [
+        ("167227", "Senior Backend Engineer, Commerce"),
+        ("173769", "Frontend Engineer, Content"),
     ]
 
 
