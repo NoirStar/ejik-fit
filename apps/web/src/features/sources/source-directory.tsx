@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import styles from "@/app/trust-pages.module.css";
 import { CompanyMark } from "@/features/home-feed/company-mark";
@@ -16,6 +17,8 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 });
 
 type SourceStatusFilter = "all" | SourceDirectoryItem["collection_status"];
+
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 const STATUS_FILTERS: ReadonlyArray<{
   label: string;
@@ -129,8 +132,25 @@ export function SourceDirectory({
 }: {
   directory: SourceDirectoryResponse;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<SourceStatusFilter>("all");
+  useEffect(() => {
+    const refresh = () => router.refresh();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const interval = window.setInterval(
+      refreshWhenVisible,
+      AUTO_REFRESH_INTERVAL_MS,
+    );
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [router]);
+
   const filteredItems = useMemo(() => {
     const normalizedQuery = normalizedSearchValue(query.trim());
     return directory.items.filter((item) => {
@@ -164,6 +184,7 @@ export function SourceDirectory({
         <span>수집 중 {directory.collecting_count}개 기업</span>
         <span>연결 준비 {directory.preparing_count}개 기업</span>
         <span>열린 공고 {directory.open_postings}건</span>
+        <span>운영 DB 기준 · 1분 자동 갱신</span>
       </div>
 
       <div className={styles.sourceToolbar}>

@@ -8,6 +8,10 @@ import DataPolicyPage from "./data-policy/page";
 import MethodologyPage from "./methodology/page";
 import PrivacyPage from "./privacy/page";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
+
 vi.mock("@/lib/api", () => ({
   getSourceDirectory: vi.fn(),
 }));

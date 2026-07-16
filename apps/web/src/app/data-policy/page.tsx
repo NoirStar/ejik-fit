@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: "이직핏이 공식 채용공고를 수집하고 검증하며 마감 상태를 판단하는 원칙입니다.",
 };
 
+export const dynamic = "force-dynamic";
+
 const SOURCE_REQUEST_URL =
   "https://github.com/NoirStar/ejik-fit/issues/new?" +
   new URLSearchParams({
