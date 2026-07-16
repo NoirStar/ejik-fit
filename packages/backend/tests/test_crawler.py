@@ -804,6 +804,60 @@ class QualcommDetailFetcher:
         )
 
 
+class SapDetailFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        if "/search/" in url:
+            text = """
+            <div class="paginationLabel">Results 1 – 1 of 1</div>
+            <table id="searchresults"><tbody>
+              <tr class="data-row">
+                <td class="colTitle"><a class="jobTitle-link"
+                  href="/job/Seoul-HANA-Cloud-Developer-06578/1270982501/">
+                  HANA Cloud Developer
+                </a></td>
+                <td class="colLocation">
+                  <span class="jobLocation">Seoul, KR, 06578</span>
+                </td>
+              </tr>
+            </tbody></table>
+            """
+        else:
+            text = """
+            <div itemscope itemtype="http://schema.org/JobPosting">
+              <meta itemprop="datePosted" content="Sun Jun 21 02:00:00 UTC 2026">
+              <h1><span itemprop="title" data-careersite-propertyid="title">
+                HANA Cloud Developer
+              </span></h1>
+              <span data-careersite-propertyid="department">Development</span>
+              <span itemprop="description" data-careersite-propertyid="description">
+                Build SAP HANA Cloud services with Python and SQL for production.
+                Minimum of 4 years of software engineering experience is required.
+              </span>
+              <span data-careersite-propertyid="customfield3">Professional</span>
+              <span data-careersite-propertyid="shifttype">Regular Full Time</span>
+              <span data-careersite-propertyid="location">Seoul, KR, 06578</span>
+            </div>
+            """
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -2311,6 +2365,52 @@ def test_crawl_source_fetches_qualcomm_details_before_ingestion() -> None:
                 "https://careers.qualcomm.com/api/pcsx/position_details?"
                 "position_id=446719415948&domain=qualcomm.com&hl=en&"
                 "queried_location=Korea%2C+Republic+of"
+            ),
+        ]
+
+
+def test_crawl_source_fetches_sap_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = "https://jobs.sap.com/search/?q=&locationsearch=Korea"
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="SAP Korea", slug="sap-korea"),
+            base_url=listing_url,
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="sap_public_jobs_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = SapDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "1270982501"
+        assert "Python and SQL" in posting.description_text
+        assert posting.career_min == 4
+        assert posting.employment_type == "정규직"
+        assert fetcher.urls == [
+            listing_url,
+            (
+                "https://jobs.sap.com/job/Seoul-HANA-Cloud-Developer-06578/"
+                "1270982501/"
             ),
         ]
 

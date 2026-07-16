@@ -751,6 +751,26 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="SAP Korea",
+        slug="sap-korea",
+        base_url="https://jobs.sap.com/search/?q=&locationsearch=Korea",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://jobs.sap.com/search/?q=&locationsearch=Korea",
+        sector="enterprise_software_cloud",
+        connector_family="sap_public_jobs_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=4,
+        non_tech_noise=6,
+        notes=(
+            "Official public SAP Jobs Korea search and detail pages; the "
+            "published result total is reconciled and only developer, "
+            "engineering, architecture, and technical operations roles are "
+            "ingested."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

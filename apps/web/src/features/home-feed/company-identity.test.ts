@@ -483,6 +483,11 @@ describe("companyIdentity", () => {
       "amd-korea",
     ],
     [
+      "SAP Korea",
+      "https://jobs.sap.com/job/Seoul-HANA-Cloud-Developer/1270982501/",
+      "sap-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

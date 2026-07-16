@@ -69,6 +69,10 @@ from ejikfit.connectors.public_json_detail import (
     roundhr_site_code,
     workable_account_slug,
 )
+from ejikfit.connectors.sap import (
+    parse_sap_job_detail,
+    parse_sap_korea_listing_openings,
+)
 from ejikfit.connectors.sitemap_discovery import (
     discover_sitemap_openings,
     parse_sitemap_detail_opening,
@@ -119,6 +123,8 @@ def _apply_source_opening_filters(
     if source.connector_family == "amazon_jobs_korea_tech":
         return openings
     if source.connector_family == "jibe_api_korea_tech":
+        return openings
+    if source.connector_family == "sap_public_jobs_korea_tech":
         return openings
     if source.connector_family == "workday_public_api_korea_tech":
         return [
@@ -458,6 +464,8 @@ def _parse_listing_openings(
     if source_type == SourceType.HTML_LISTING_DETAIL:
         if connector_family == "shiftup_public_api_tech":
             return parse_shiftup_openings(text)
+        if connector_family == "sap_public_jobs_korea_tech":
+            return parse_sap_korea_listing_openings(text, url)
         return parse_html_listing_openings(text, url)
     if source_type == SourceType.STATIC_NEXT_DATA:
         if connector_family == "channel_next_data_tech":
@@ -486,7 +494,10 @@ def _parse_listing_openings(
 
 
 def _listing_is_self_validated(connector_family: str | None) -> bool:
-    return connector_family == "shiftup_public_api_tech"
+    return connector_family in {
+        "sap_public_jobs_korea_tech",
+        "shiftup_public_api_tech",
+    }
 
 
 def _unsupported_connector_status(source_type: SourceType) -> SourceStatus:
@@ -1622,6 +1633,15 @@ async def crawl_source(
                     raise ValueError(
                         "PCS detail does not match its listing job"
                     )
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "sap_public_jobs_korea_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_sap_job_detail(detail.text, detail.url)
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError("SAP detail does not match its listing job")
                 opening = detail_opening
                 opening_payload = detail.text
             ingest_opening(
