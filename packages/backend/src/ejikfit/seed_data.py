@@ -1902,6 +1902,50 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="피에프씨테크놀로지스",
+        slug="pfct",
+        base_url="https://pfct.career.greetinghr.com/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.pfct.co.kr",
+        sector="fintech_credit",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official PFCT Greeting careers listing and detail pages; "
+            "limited to explicit software, data, machine-learning, and "
+            "infrastructure roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="리멤버앤컴퍼니",
+        slug="remember",
+        base_url="https://hello.remember.co.kr/recruit",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://corp.remember.co.kr",
+        sector="professional_network",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official Remember careers site and its public Ninehire feed; "
+            "limited to active technical roles and excludes the evergreen "
+            "talent pool."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="마이리얼트립",
         slug="myrealtrip",
         base_url="https://myrealtrip.career.greetinghr.com/ko",

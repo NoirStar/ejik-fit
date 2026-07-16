@@ -176,6 +176,16 @@ describe("companyIdentity", () => {
       "alsemy",
     ],
     [
+      "피에프씨테크놀로지스",
+      "https://pfct.career.greetinghr.com/ko/o/221489",
+      "pfct",
+    ],
+    [
+      "리멤버앤컴퍼니",
+      "https://hello.remember.co.kr/job_posting/8n1nIySe",
+      "remember",
+    ],
+    [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
       "bucketplace",

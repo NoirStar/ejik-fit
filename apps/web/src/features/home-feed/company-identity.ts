@@ -547,6 +547,28 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "알세미",
   },
   {
+    aliases: [
+      "피에프씨테크놀로지스",
+      "피에프씨테크놀로지스(pfct)",
+      "pfct",
+      "peoplefund",
+    ],
+    hosts: ["pfct.career.greetinghr.com", "pfct.co.kr"],
+    src: "/company-logo-assets/pfct",
+    displayName: "피에프씨테크놀로지스",
+  },
+  {
+    aliases: [
+      "리멤버앤컴퍼니",
+      "리멤버",
+      "remember",
+      "remember & company",
+    ],
+    hosts: ["hello.remember.co.kr", "corp.remember.co.kr"],
+    src: "/company-logo-assets/remember",
+    displayName: "리멤버앤컴퍼니",
+  },
+  {
     aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
     hosts: ["myrealtrip.career.greetinghr.com"],
     src: "/company-logo-assets/myrealtrip",

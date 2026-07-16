@@ -174,12 +174,15 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   palantir: "https://www.palantir.com/favicon.ico",
+  pfct: "https://pfct.co.kr/assets/seo/favicon/apple-icon-180x180.png",
   "pearl-abyss":
     "https://static.pearlcdn.com/asset/company/global/contents/img/common/favicon64.ico",
   "posco-dx": "https://www.poscodx.com/resources/favicon.ico",
   rebellions:
     "https://profiles.greetinghr.com/group/2dd3c0de-aa17-44f2-90cb-0788a948bcff",
   "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
+  remember:
+    "https://image.ninehire.com/homepage/b9057f30-73c9-11ee-ac42-cb29611d1dad/a7736210-b40f-11ee-b6c9-93f4e899ecd6.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   rlwrld:
