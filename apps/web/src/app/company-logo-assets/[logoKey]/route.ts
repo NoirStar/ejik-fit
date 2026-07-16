@@ -121,6 +121,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   kt: "https://recruit.kt.com/favicon.ico",
   kbds:
     "https://profiles.greetinghr.com/group/c07bd211-094a-404a-817b-d79769903216",
+  kbank:
+    "https://kbank.recruiter.co.kr/upload/68209/site/etc/202503/497f32e9-e4f6-43c7-9bfc-2282d565b7d8.png",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:

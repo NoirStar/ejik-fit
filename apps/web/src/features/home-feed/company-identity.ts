@@ -462,6 +462,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "카카오뱅크",
   },
   {
+    aliases: ["케이뱅크", "kbank", "k bank"],
+    hosts: ["kbank.recruiter.co.kr", "kbanknow.com"],
+    src: "/company-logo-assets/kbank",
+    displayName: "케이뱅크",
+  },
+  {
     aliases: ["쏘카", "socar"],
     hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
     src: "/company-logo-assets/socar",

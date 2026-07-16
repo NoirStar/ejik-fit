@@ -49,6 +49,15 @@ COM2US_TECH_CLASSIFICATIONS = {
     "웹개발·디자인",
     "인프라",
 }
+RECRUITER_LEGACY_TECH_CLASSIFICATIONS = {
+    "Data",
+    "IT",
+    "R&D",
+    "Security",
+    "Tech",
+    "개발",
+    "기술",
+}
 NETMARBLE_LISTING_API = (
     "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
 )
@@ -144,6 +153,8 @@ class PublicJsonDetailRef:
     category: str | None = None
     location: str | None = None
     country_code: str | None = None
+    opens_at: datetime | None = None
+    closes_at: datetime | None = None
 
 
 def _text(value: Any) -> str | None:
@@ -174,6 +185,18 @@ def _parse_datetime(value: Any) -> datetime | None:
     if parsed.year >= 2999:
         return None
     return parsed.replace(tzinfo=KST) if parsed.tzinfo is None else parsed
+
+
+def _jobflex_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, dict):
+        return None
+    milliseconds = _positive_int(value.get("time"))
+    if milliseconds is None:
+        return None
+    try:
+        return datetime.fromtimestamp(milliseconds / 1000, tz=KST)
+    except (OverflowError, OSError, ValueError):
+        return None
 
 
 def _origin(listing_url: str) -> str:
@@ -1048,6 +1071,73 @@ def _com2us_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _recruiter_legacy_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    page = payload.get("pageUtil")
+    rows = payload.get("list")
+    if not isinstance(page, dict) or not isinstance(rows, list):
+        raise ValueError("Recruiter listing is missing its jobs page")
+    current_page = _positive_int(page.get("currentPage"))
+    last_page = _positive_int(page.get("lastPage"))
+    page_size = _positive_int(page.get("maxRows"))
+    total = _positive_int(page.get("recordCount"))
+    if (
+        current_page != 1
+        or last_page != 1
+        or page_size is None
+        or page_size < len(rows)
+        or total != len(rows)
+    ):
+        raise ValueError("Recruiter listing response is incomplete")
+
+    origin = _origin(listing_url)
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Recruiter listing contains an invalid job row")
+        raw_id = row.get("jobnoticeSn")
+        title = _text(row.get("jobnoticeName"))
+        receipt_state = _text(row.get("receiptState"))
+        category = _text(row.get("recruitClassName"))
+        system_kind = _text(row.get("systemKindCode"))
+        if (
+            raw_id is None
+            or isinstance(raw_id, bool)
+            or title is None
+            or receipt_state is None
+            or category is None
+            or system_kind is None
+        ):
+            raise ValueError("Recruiter job identity is missing")
+        external_id = str(raw_id)
+        if not external_id.isdigit():
+            raise ValueError("Recruiter job identifier is invalid")
+        if external_id in seen:
+            raise ValueError("Recruiter listing contains a duplicate job")
+        seen.add(external_id)
+        if receipt_state != "접수중":
+            continue
+        query = urlencode(
+            {"systemKindCode": system_kind, "jobnoticeSn": external_id}
+        )
+        detail_url = f"{origin}/app/jobnotice/view?{query}"
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=detail_url,
+                title=title,
+                category=category,
+                opens_at=_jobflex_datetime(row.get("applyStartDate")),
+                closes_at=_jobflex_datetime(row.get("applyEndDate")),
+            )
+        )
+    return refs
+
+
 def _banksalad_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     groups = payload.get("jobs")
     if not isinstance(groups, list):
@@ -1328,6 +1418,8 @@ def discover_public_json_detail_refs(
         return _ncsoft_refs(payload)
     if connector_family == "com2us_jobflex_tech":
         return _com2us_refs(payload)
+    if connector_family == "recruiter_legacy_public_api_tech":
+        return _recruiter_legacy_refs(payload, listing_url)
     if connector_family == "banksalad_greeting_api_tech":
         return _banksalad_refs(payload)
     if connector_family == "roundhr_public_api_tech":
@@ -1375,6 +1467,13 @@ def filter_public_detail_refs(
             and not (ref.category == "AI" and "아티스트" in ref.title)
             and not (ref.category == "인프라" and "기획" in ref.title)
         ]
+    if connector_family == "recruiter_legacy_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.category in RECRUITER_LEGACY_TECH_CLASSIFICATIONS
+            and "인재풀" not in ref.title
+        ]
     if connector_family == "banksalad_greeting_api_tech":
         return refs
     if connector_family == "ninehire_public_api_tech":
@@ -1416,6 +1515,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "nhn_public_api_tech",
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
+        "recruiter_legacy_public_api_tech",
         "banksalad_greeting_api_tech",
         "roundhr_public_api_tech",
         "workable_public_api_tech",
@@ -1858,6 +1958,75 @@ def _labeled_value(text: str, label: str) -> str | None:
         if match is not None:
             return match.group(1).strip() or None
     return None
+
+
+def _recruiter_legacy_opening(
+    raw_html: str,
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    soup = BeautifulSoup(raw_html, "lxml")
+    id_node = soup.select_one("#jobnoticeSn")
+    title_node = soup.select_one(".view-bbs-title")
+    write_state_node = soup.select_one("#writeButtonState")
+    external_id = (
+        _text(str(id_node.get("value") or "")) if id_node else None
+    )
+    title = _text(title_node.get_text(" ", strip=True)) if title_node else None
+    if external_id != ref.external_id or title != ref.title:
+        raise ValueError("Recruiter detail identity does not match its listing")
+
+    contents = soup.select_one("#viewSmartEditorContent")
+    if contents is None:
+        textarea = soup.select_one("textarea#jobnoticeContents")
+        embedded = textarea.get_text() if textarea is not None else ""
+        embedded_soup = BeautifulSoup(embedded, "lxml")
+        contents = embedded_soup.body
+    if contents is None:
+        raise ValueError("Recruiter job detail content is missing")
+
+    description_html = str(contents)
+    description_text = structured_plain_text(description_html)
+    career_min, career_max = _career_range_from_title(description_text)
+    has_newcomer = "신입" in description_text
+    has_experience = "경력" in description_text or career_min is not None
+    career_type = (
+        "mixed"
+        if has_newcomer and has_experience
+        else "new_comer"
+        if has_newcomer
+        else "experienced"
+        if has_experience
+        else None
+    )
+    employment_type = (
+        "contract"
+        if "계약직" in description_text
+        else "intern"
+        if "인턴" in description_text
+        else "regular"
+        if "정규직" in description_text
+        else None
+    )
+    write_state = (
+        _text(str(write_state_node.get("value") or ""))
+        if write_state_node
+        else None
+    )
+    return ParsedOpening(
+        external_id=ref.external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if write_state == "WRITEABLE" else "closed",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=employment_type,
+        career_type=career_type,
+        career_min=career_min,
+        career_max=career_max,
+        location=_labeled_value(description_text, "근무지"),
+        opens_at=ref.opens_at,
+        closes_at=ref.closes_at,
+    )
 
 
 def _dunamu_opening(
@@ -2374,6 +2543,8 @@ def parse_public_json_detail(
         return _ninehire_opening(raw_json, ref)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_opening(raw_json, ref)
+    if connector_family == "recruiter_legacy_public_api_tech":
+        return _recruiter_legacy_opening(raw_json, ref)
     if connector_family == "banksalad_greeting_api_tech":
         opening = parse_greeting_opening(raw_json, ref.detail_url)
         if opening.external_id != ref.external_id or opening.title != ref.title:

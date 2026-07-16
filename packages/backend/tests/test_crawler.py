@@ -1615,6 +1615,35 @@ def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:
     ]
 
 
+def test_fetch_listing_page_uses_form_body_for_legacy_recruiter_api() -> None:
+    source = CareerSource(
+        company=Company(name="케이뱅크", slug="kbank"),
+        base_url=(
+            "https://kbank.recruiter.co.kr/app/jobnotice/list.json"
+        ),
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="recruiter_legacy_public_api_tech",
+        request_method="POST",
+        request_body={"jobnoticeStateCode": "10", "pageSize": "100"},
+    )
+    fetcher = RecordingFetcher('{"pageUtil":{},"list":[]}')
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+
+    assert page.url == source.base_url
+    assert fetcher.calls == [
+        {
+            "url": source.base_url,
+            "method": "POST",
+            "json_body": None,
+            "form_body": {
+                "jobnoticeStateCode": "10",
+                "pageSize": "100",
+            },
+        }
+    ]
+
+
 def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)

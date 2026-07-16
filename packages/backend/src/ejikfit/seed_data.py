@@ -1749,6 +1749,39 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="케이뱅크",
+        slug="kbank",
+        base_url=(
+            "https://kbank.recruiter.co.kr/app/jobnotice/list.json"
+        ),
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.kbanknow.com",
+        sector="fintech",
+        connector_family="recruiter_legacy_public_api_tech",
+        request_method="POST",
+        request_body={
+            "recruitClassSn": "",
+            "recruitClassName": "",
+            "jobnoticeStateCode": "10",
+            "pageSize": "100",
+            "searchByNameOnly": True,
+            "currentPage": "1",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=7,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Kbank Recruiter public listing and detail pages; "
+            "limited to currently accepting roles in the official Tech, "
+            "Data, IT, security, development, and R&D classifications."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="쏘카",
         slug="socar",
         base_url="https://www.socarcorp.kr/careers/jobs",

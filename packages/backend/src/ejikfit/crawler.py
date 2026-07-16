@@ -861,7 +861,11 @@ async def _fetch_listing_page(
     if source.source_type != SourceType.BROWSER_PUBLIC_RENDER:
         request_method = (source.request_method or "GET").upper()
         if request_method != "GET":
-            if source.source_type == SourceType.HTML_LISTING_DETAIL:
+            if (
+                source.source_type == SourceType.HTML_LISTING_DETAIL
+                or source.connector_family
+                == "recruiter_legacy_public_api_tech"
+            ):
                 return await fetcher.fetch(
                     source.base_url,
                     method=request_method,

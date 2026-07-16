@@ -902,6 +902,92 @@ def test_com2us_jobflex_api_parses_verified_technical_jobs() -> None:
     assert "<img" in opening.description_html
 
 
+def test_recruiter_legacy_api_discovers_and_parses_open_technical_jobs() -> None:
+    listing = json.dumps(
+        {
+            "pageUtil": {
+                "currentPage": 1,
+                "lastPage": 1,
+                "maxRows": 100,
+                "recordCount": 3,
+            },
+            "list": [
+                {
+                    "jobnoticeSn": 259460,
+                    "jobnoticeName": "계정계 수신 업무 개발 및 운영 담당자",
+                    "receiptState": "접수중",
+                    "recruitClassName": "Tech",
+                    "recruitTypeName": "일반채용",
+                    "systemKindCode": "MRS2",
+                    "applyStartDate": {"time": 1783436400000},
+                    "applyEndDate": {"time": 1784732399000},
+                },
+                {
+                    "jobnoticeSn": 259444,
+                    "jobnoticeName": "그래픽 디자이너",
+                    "receiptState": "접수중",
+                    "recruitClassName": "UXㆍBXㆍDesign",
+                    "systemKindCode": "MRS2",
+                },
+                {
+                    "jobnoticeSn": 257061,
+                    "jobnoticeName": "IT기획 담당자",
+                    "receiptState": "접수마감",
+                    "recruitClassName": "Tech",
+                    "systemKindCode": "MRS2",
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://kbank.recruiter.co.kr/app/jobnotice/list.json",
+        "recruiter_legacy_public_api_tech",
+    )
+    refs = filter_public_detail_refs(
+        all_refs,
+        "recruiter_legacy_public_api_tech",
+    )
+
+    assert [ref.external_id for ref in refs] == ["259460"]
+    assert refs[0].detail_url == (
+        "https://kbank.recruiter.co.kr/app/jobnotice/view"
+        "?systemKindCode=MRS2&jobnoticeSn=259460"
+    )
+
+    detail = """
+    <html><body>
+      <input id="jobnoticeSn" value="259460">
+      <input id="writeButtonState" value="WRITEABLE">
+      <span class="view-bbs-title">계정계 수신 업무 개발 및 운영 담당자</span>
+      <div id="viewSmartEditorContent">
+        <div class="inner" id="title">
+          <p>계정계 수신 업무 개발 및 운영 담당자</p>
+        </div>
+        <div class="inner" id="job-detail">
+          <dl><dt>자격요건</dt><dd>Java 개발 경력 3년 이상</dd></dl>
+          <li>근무형태 : 정규직</li>
+          <li>근무지 : 서울 중구 을지로 170</li>
+        </div>
+      </div>
+    </body></html>
+    """
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "recruiter_legacy_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 3
+    assert opening.location == "서울 중구 을지로 170"
+    assert opening.opens_at is not None
+    assert opening.closes_at is not None
+
+
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:
     listing = json.dumps(
         {

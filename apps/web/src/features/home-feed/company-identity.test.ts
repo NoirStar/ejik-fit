@@ -818,6 +818,19 @@ describe("companyIdentity", () => {
     ).toMatchObject({ kind: "initials" });
   });
 
+  it("uses Kbank's official careers mark for its trusted hosts", () => {
+    expect(
+      companyIdentity(
+        "케이뱅크",
+        "https://kbank.recruiter.co.kr/app/jobnotice/view?jobnoticeSn=259460",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/kbank",
+      alt: "케이뱅크 로고",
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity("Example Robotics", "https://example.com/careers"),
