@@ -42,6 +42,7 @@ back to company initials when the official asset is unavailable.
 | `kakao-mobility-mark` | 카카오모빌리티 | <https://kakaomobility.career.greetinghr.com/ko/home> | <https://www.kakaomobility.com/favicon-32x32.png> | 2026-07-16 |
 | `supercent` | 슈퍼센트 | <https://supercent.career.greetinghr.com/ko/home> | <https://supercent.io/favicon.png> | 2026-07-16 |
 | `next-securities` | 넥스트증권 | <https://nextsecurities.career.greetinghr.com/ko/home> | <https://profiles.greetinghr.com/group/e1cb1dd4-a725-4f5b-981f-96289b6ae0ff> | 2026-07-16 |
+| `liner` | 라이너 | <https://liner.com/careers/jobs> | <https://liner.com/favicon.ico?v=20250605> | 2026-07-16 |
 | `hanwha-systems` | 한화시스템 | <https://www.hanwhasystems.com/kr/company/recruit.do> | <https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico> | 2026-07-15 |
 | `deepauto-ai` | DeepAuto.ai | <https://deepauto.ai/company> | <https://deepauto.ai/icon.png?icon.3bd11c4c.png> | 2026-07-15 |
 | `lawcompany` | 로앤컴퍼니 | <https://lawcompany.career.greetinghr.com/ko> | <https://www.lawtalk.co.kr/favicon.ico> | 2026-07-15 |

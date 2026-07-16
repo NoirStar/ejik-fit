@@ -2250,6 +2250,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="라이너",
+        slug="liner",
+        base_url="https://liner.com/careers/jobs",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://liner.com/ko",
+        sector="consumer_ai_search",
+        connector_family="liner_next_data_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=7,
+        expected_job_volume=8,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=10,
+        notes=(
+            "Official Liner careers listing and detail pages; collects "
+            "current software, AI, data, infrastructure, and security "
+            "engineering roles while excluding product, marketing, legal, "
+            "business, and talent-pool entries."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="숨고",
         slug="soomgo",
         base_url="https://soomgo.team/career",

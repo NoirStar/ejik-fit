@@ -100,6 +100,11 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
     lablup = catalog_by_slug["lablup"]
     assert lablup.source_type == SourceType.HTML_LISTING_DETAIL
     assert lablup.connector_family == "lablup_next_data_tech"
+    liner = catalog_by_slug["liner"]
+    assert liner.source_type == SourceType.HTML_LISTING_DETAIL
+    assert liner.connector_family == "liner_next_data_tech"
+    assert liner.status == SourceStatus.ALLOWED
+    assert liner.policy_status == PolicyStatus.ALLOWED
     elice = catalog_by_slug["elice"]
     assert elice.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert elice.connector_family == "elice_softr_public_api_tech"
@@ -275,7 +280,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 174
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 175
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -415,7 +420,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 174
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 175
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url

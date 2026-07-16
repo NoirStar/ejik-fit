@@ -874,6 +874,20 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("uses Liner's official mark for its careers host", () => {
+    expect(
+      companyIdentity(
+        "라이너",
+        "https://liner.com/careers/jobs/187408",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/liner",
+      alt: "라이너 로고",
+      surface: "dark",
+    });
+  });
+
   it("uses Elice's official mark for its careers host", () => {
     expect(
       companyIdentity(

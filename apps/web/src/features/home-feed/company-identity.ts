@@ -488,6 +488,13 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "래블업",
   },
   {
+    aliases: ["라이너", "liner"],
+    hosts: ["liner.com"],
+    src: "/company-logo-assets/liner",
+    displayName: "라이너",
+    surface: "dark",
+  },
+  {
     aliases: ["쏘카", "socar"],
     hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
     src: "/company-logo-assets/socar",

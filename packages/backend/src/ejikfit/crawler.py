@@ -51,6 +51,10 @@ from ejikfit.connectors.lablup import (
     parse_lablup_detail_opening,
     parse_lablup_listing_openings,
 )
+from ejikfit.connectors.liner import (
+    parse_liner_detail_opening,
+    parse_liner_listing_openings,
+)
 from ejikfit.connectors.lever_greenhouse import parse_lever_greenhouse_openings
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_openings
 from ejikfit.connectors.microsoft import (
@@ -188,6 +192,8 @@ def _apply_source_opening_filters(
     if source.connector_family == "jibe_api_korea_tech":
         return openings
     if source.connector_family == "lablup_next_data_tech":
+        return openings
+    if source.connector_family == "liner_next_data_tech":
         return openings
     if source.connector_family == "sap_public_jobs_korea_tech":
         return openings
@@ -608,6 +614,8 @@ def _parse_listing_openings(
     if source_type == SourceType.HTML_LISTING_DETAIL:
         if connector_family == "lablup_next_data_tech":
             return parse_lablup_listing_openings(text, url)
+        if connector_family == "liner_next_data_tech":
+            return parse_liner_listing_openings(text, url)
         if connector_family == "hyundai_mobis_html_tech":
             return parse_hyundai_mobis_listing_openings(text, url)
         if connector_family == "shiftup_public_api_tech":
@@ -648,6 +656,7 @@ def _listing_is_self_validated(connector_family: str | None) -> bool:
         "google_careers_korea_tech",
         "hyundai_mobis_html_tech",
         "lablup_next_data_tech",
+        "liner_next_data_tech",
         "sap_public_jobs_korea_tech",
         "shiftup_public_api_tech",
     }
@@ -1993,6 +2002,17 @@ async def crawl_source(
                     await asyncio.sleep(request_delay_seconds)
                 detail = await fetcher.fetch(opening.url)
                 detail_opening = parse_lablup_detail_opening(
+                    detail.text,
+                    detail.url,
+                    opening,
+                )
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "liner_next_data_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_liner_detail_opening(
                     detail.text,
                     detail.url,
                     opening,
