@@ -1712,7 +1712,15 @@ async def crawl_source(
             try:
                 detail = await fetcher.fetch(ref.url)
                 opening = parse_opening(detail.text, ref.url)
-                if not _apply_source_opening_filters(source, [opening]):
+                # Greeting's listing discovery already applies the source's
+                # technical-role filter with richer role/group context. Do not
+                # classify the detail title a second time after that context is
+                # gone. Korea-only feeds are the exception because the detail
+                # page supplies the location needed for the domestic filter.
+                if (
+                    source.connector_family == "greeting_korea_tech"
+                    and not _apply_source_opening_filters(source, [opening])
+                ):
                     seen_external_ids.discard(ref.external_id)
                     discovered -= 1
                     continue

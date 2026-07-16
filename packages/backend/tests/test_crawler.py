@@ -3864,6 +3864,59 @@ class GreetingDetailFetcher:
         )
 
 
+def test_greeting_crawl_keeps_role_accepted_from_listing_group() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    fixture_dir = (
+        Path(__file__).parents[3] / "tests" / "fixtures" / "greeting"
+    )
+    detail_html = (fixture_dir / "opening.html").read_text().replace(
+        '"title": "Backend Engineer"',
+        '"title": "IT Manager"',
+    )
+    listing_html = """
+    <main>
+      <div class="job-list-group">
+        <div class="job-list-group-title">Security</div>
+        <a href="https://sample.career.greetinghr.com/ko/o/209187">
+          IT Manager
+        </a>
+      </div>
+    </main>
+    """
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="테스트 기업", slug="greeting-grouped-crawl"),
+            base_url="https://example.com/careers",
+            source_type=SourceType.GREETING,
+            connector_family="grouped_greeting_links_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=GreetingDetailFetcher(
+                    listing_html,
+                    {"209187": detail_html},
+                ),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert [posting.title for posting in postings] == ["IT Manager"]
+
+
 def test_greeting_korea_crawl_does_not_ingest_foreign_details() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
