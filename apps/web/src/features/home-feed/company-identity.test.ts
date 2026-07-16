@@ -844,6 +844,19 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("uses Elice's official mark for its careers host", () => {
+    expect(
+      companyIdentity(
+        "엘리스그룹",
+        "https://www.elice.careers/jobs?recordId=recwTAG9wHYNLGVdn",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/elice",
+      alt: "엘리스그룹 로고",
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity("Example Robotics", "https://example.com/careers"),

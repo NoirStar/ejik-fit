@@ -97,6 +97,44 @@ WORKABLE_DETAIL_API_TEMPLATE = (
 NINEHIRE_LISTING_API = (
     "https://api.ninehire.com/identity-access/homepage/recruitments"
 )
+ELICE_LISTING_API = (
+    "https://www.elice.careers/v1/datasource/airtable/"
+    "07473e9b-e01d-44a7-8574-bfb9ef7636eb/"
+    "177442e2-8523-41fb-9eb3-37969d716b78/"
+    "7b93975c-b0cf-48e3-b4c4-536a3f1c41b7/"
+    "e9d04b0b-43b5-4201-88ae-f2a908e81f6d/data"
+)
+ELICE_DETAIL_API_PREFIX = (
+    "https://www.elice.careers/v1/datasource/applications/"
+    "07473e9b-e01d-44a7-8574-bfb9ef7636eb/pages/"
+    "92e9203b-3e2b-4a14-9c87-291166cd7deb/blocks/"
+    "3687473e-d2f5-43a9-a5ae-04b8a3a3d906/datasources/"
+    "7bda1710-d6c6-4d1a-b596-7813bc2d7165/records"
+)
+ELICE_LISTING_PAGE_SIZE = 100
+ELICE_LISTING_HEADERS = {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Origin": "https://www.elice.careers",
+    "Referer": "https://www.elice.careers/",
+}
+ELICE_DETAIL_BODY: dict[str, object] = {
+    "options": {"timeZone": "Asia/Seoul", "userLocale": "ko-KR"},
+    "pageContext": None,
+    "filterCriteria": {},
+}
+ELICE_NON_SOFTWARE_TITLE_MARKERS = (
+    "[singapore]",
+    "데이터센터 사업개발",
+    "데이터센터 인프라 운영",
+    "데이터센터 전기",
+    "데이터센터 냉각",
+    "디자이너",
+    "office it technician",
+    "product manager",
+    "project manager",
+    "프로덕트 매니저",
+)
 NINEHIRE_EXPLICIT_NON_TECH_GROUPS = frozenset(
     {"business", "design", "finance", "legal", "marketing", "people", "sales"}
 )
@@ -337,6 +375,63 @@ def parse_ninehire_listing_page(
     ):
         raise ValueError("Ninehire listing page is invalid or incomplete")
     return rows, total
+
+
+def elice_listing_request_body(offset: str | None) -> dict[str, object]:
+    if offset is not None and (
+        not offset.strip() or len(offset) > 500 or any(c in offset for c in "\r\n")
+    ):
+        raise ValueError("Elice listing cursor is invalid")
+    return {
+        "options": {
+            "cellFormat": "string",
+            "timeZone": "UTC",
+            "userLocale": "ko-KR",
+        },
+        "pageContext": None,
+        "filterCriteria": {},
+        "pagingOption": {
+            "offset": offset,
+            "count": ELICE_LISTING_PAGE_SIZE,
+        },
+    }
+
+
+def parse_elice_listing_page(
+    raw_json: str,
+) -> tuple[list[dict[str, Any]], str | None]:
+    payload = _decode_object(raw_json)
+    rows = payload.get("records")
+    raw_offset = payload.get("offset")
+    offset = _text(raw_offset)
+    if (
+        not isinstance(rows, list)
+        or len(rows) > ELICE_LISTING_PAGE_SIZE
+        or any(not isinstance(row, dict) for row in rows)
+        or (raw_offset is not None and offset is None)
+        or (
+            offset is not None
+            and (len(offset) > 500 or "\n" in offset or "\r" in offset)
+        )
+        or (offset is not None and not rows)
+    ):
+        raise ValueError("Elice listing page is invalid or incomplete")
+
+    seen: set[str] = set()
+    for row in rows:
+        external_id = _text(row.get("id"))
+        fields = row.get("fields")
+        if (
+            external_id is None
+            or re.fullmatch(r"rec[A-Za-z0-9]{10,40}", external_id) is None
+            or external_id in seen
+            or not isinstance(fields, dict)
+            or _text(fields.get("포지션")) is None
+            or _text(fields.get("카테고리 대분류값(softr)")) is None
+        ):
+            raise ValueError("Elice listing contains an invalid job record")
+        seen.add(external_id)
+    return rows, offset
 
 
 def parse_workable_listing_page(
@@ -721,6 +816,68 @@ def _ably_refs(raw_html: str) -> list[PublicJsonDetailRef]:
                 public_url=detail_url,
                 title=title,
                 category=_text(row.get("jobGroup")),
+            )
+        )
+    return refs
+
+
+def _elice_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    parsed_listing = urlsplit(listing_url)
+    if (
+        parsed_listing.scheme != "https"
+        or parsed_listing.hostname != "www.elice.careers"
+        or parsed_listing.path.rstrip("/")
+        or parsed_listing.query
+        or parsed_listing.fragment
+    ):
+        raise ValueError("Elice listing must use its official careers page")
+
+    rows = payload.get("records")
+    if (
+        payload.get("complete") is not True
+        or payload.get("offset") is not None
+        or not isinstance(rows, list)
+        or any(not isinstance(row, dict) for row in rows)
+    ):
+        raise ValueError("Elice combined jobs listing is incomplete")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        external_id = _text(row.get("id"))
+        fields = row.get("fields")
+        title = (
+            _text(fields.get("포지션"))
+            if isinstance(fields, dict)
+            else None
+        )
+        category = (
+            _text(fields.get("카테고리 대분류값(softr)"))
+            if isinstance(fields, dict)
+            else None
+        )
+        if (
+            external_id is None
+            or re.fullmatch(r"rec[A-Za-z0-9]{10,40}", external_id) is None
+            or title is None
+            or category is None
+            or external_id in seen
+        ):
+            raise ValueError("Elice open job identity is missing")
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=f"{ELICE_DETAIL_API_PREFIX}/{external_id}",
+                public_url=(
+                    "https://www.elice.careers/jobs?recordId="
+                    f"{external_id}"
+                ),
+                title=title,
+                category=category,
             )
         )
     return refs
@@ -1406,6 +1563,8 @@ def discover_public_json_detail_refs(
     if connector_family == "ably_next_ninehire_tech":
         return _ably_refs(raw_json)
     payload = _decode_object(raw_json)
+    if connector_family == "elice_softr_public_api_tech":
+        return _elice_refs(payload, listing_url)
     if connector_family == "woowahan_public_api_tech":
         return _woowahan_refs(payload, listing_url)
     if connector_family == "kakaobank_public_api_tech":
@@ -1476,6 +1635,17 @@ def filter_public_detail_refs(
         ]
     if connector_family == "banksalad_greeting_api_tech":
         return refs
+    if connector_family == "elice_softr_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.category == "Tech & Product"
+            and not any(
+                marker in ref.title.casefold()
+                for marker in ELICE_NON_SOFTWARE_TITLE_MARKERS
+            )
+            and is_technical_role(ref.title, ref.category)
+        ]
     if connector_family == "ninehire_public_api_tech":
         return [
             ref
@@ -1515,6 +1685,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "nhn_public_api_tech",
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
+        "elice_softr_public_api_tech",
         "recruiter_legacy_public_api_tech",
         "banksalad_greeting_api_tech",
         "roundhr_public_api_tech",
@@ -2126,6 +2297,110 @@ def _dunamu_api_opening(
     )
 
 
+def _elice_field_text(value: Any) -> str | None:
+    if isinstance(value, str):
+        return _text(value)
+    if isinstance(value, dict):
+        return _text(value.get("label"))
+    if not isinstance(value, list):
+        return None
+
+    parts: list[str] = []
+    for item in value:
+        part = _text(item) if isinstance(item, str) else None
+        if part is None and isinstance(item, dict):
+            part = _text(item.get("label"))
+        if part is not None:
+            parts.append(part)
+    return "\n".join(parts) or None
+
+
+def _elice_career_type(label: str | None) -> str | None:
+    normalized = (label or "").replace(" ", "").casefold()
+    if not normalized:
+        return None
+    if "무관" in normalized or ("신입" in normalized and "경력" in normalized):
+        return "mixed"
+    if "신입" in normalized:
+        return "new_comer"
+    if "경력" in normalized or "senior" in normalized:
+        return "experienced"
+    return None
+
+
+def _elice_employment_type(label: str | None) -> str | None:
+    normalized = (label or "").casefold()
+    if "정규" in normalized or "full" in normalized:
+        return "regular"
+    if "계약" in normalized or "contract" in normalized:
+        return "contract"
+    if "인턴" in normalized or "intern" in normalized:
+        return "intern"
+    return label
+
+
+def _elice_opening(
+    payload: dict[str, Any],
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    external_id = _text(payload.get("id"))
+    fields = payload.get("fields")
+    title = (
+        _text(fields.get("포지션")) if isinstance(fields, dict) else None
+    )
+    if (
+        external_id != ref.external_id
+        or title != ref.title
+        or not isinstance(fields, dict)
+    ):
+        raise ValueError("Elice detail identity does not match its listing")
+
+    section_fields = (
+        ("팀 소개", "팀소개 헤더", "팀소개 내용"),
+        ("직무 소개", "직무 헤더", "직무 인트로"),
+        ("성장 기회", "성장기회 헤더", "성장기회 내용"),
+        ("주요 업무", "주요업무 헤더", "주요업무 내용"),
+        ("자격 요건", "자격요건 헤더", "자격요건 내용"),
+        ("우대 사항", "우대사항 헤더", "우대사항 내용"),
+    )
+    if not any(
+        _elice_field_text(fields.get(key))
+        for key in ("직무 인트로", "주요업무 내용", "자격요건 내용")
+    ):
+        raise ValueError("Elice job detail content is missing")
+
+    sections: list[str] = []
+    for fallback_heading, heading_key, body_key in section_fields:
+        body = _elice_field_text(fields.get(body_key))
+        if body is None:
+            continue
+        heading = _elice_field_text(fields.get(heading_key)) or fallback_heading
+        sections.append(
+            f"<section><h3>{escape(heading)}</h3>"
+            f"<p>{escape(body).replace(chr(10), '<br>')}</p></section>"
+        )
+    description_html = "".join(sections)
+    description_text = structured_plain_text(description_html)
+    career_match = re.search(r"(\d+)\s*년\s*이상", description_text)
+    career_label = _elice_field_text(fields.get("경력사항"))
+    employment_label = _elice_field_text(fields.get("고용형태"))
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=_elice_employment_type(employment_label),
+        career_type=_elice_career_type(career_label),
+        career_min=int(career_match.group(1)) if career_match else None,
+        career_max=None,
+        location=_elice_field_text(fields.get("근무지")),
+        opens_at=None,
+        closes_at=None,
+    )
+
+
 def _ninehire_opening(
     raw_html: str,
     ref: PublicJsonDetailRef,
@@ -2555,6 +2830,8 @@ def parse_public_json_detail(
     if connector_family == "roundhr_public_api_tech":
         return _roundhr_opening(raw_json, ref)
     payload = _decode_object(raw_json)
+    if connector_family == "elice_softr_public_api_tech":
+        return _elice_opening(payload, ref)
     if connector_family == "workable_public_api_tech":
         return _workable_opening(payload, ref)
     if connector_family == "woowahan_public_api_tech":

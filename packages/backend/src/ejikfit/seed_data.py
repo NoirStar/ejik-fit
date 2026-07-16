@@ -257,7 +257,7 @@ INITIAL_SOURCE_CATALOG = (
         connector_family="greeting_korea_tech",
         brand_tier_weight=5,
         tech_job_priority=6,
-        expected_job_volume=16,
+        expected_job_volume=17,
         connector_reuse_score=3,
         non_tech_noise=2,
         notes=(
@@ -2200,6 +2200,30 @@ INITIAL_SOURCE_CATALOG = (
             "NPU, compiler, system software, firmware, DevOps, verification, "
             "and semiconductor design roles while excluding sales, PM, "
             "customer FAE, production-yield, safety, HR, and business roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="엘리스그룹",
+        slug="elice",
+        base_url="https://www.elice.careers/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://elice.io/ko",
+        sector="ai_cloud_edtech",
+        connector_family="elice_softr_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=7,
+        expected_job_volume=16,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=30,
+        notes=(
+            "Official Elice careers page and its same-origin public Softr "
+            "data API; collects current Korea-based software, AI, cloud, "
+            "infrastructure, and security engineering roles with complete "
+            "detail records while excluding product, design, physical data "
+            "center, and Singapore roles."
         ),
         status=SourceStatus.ALLOWED,
     ),

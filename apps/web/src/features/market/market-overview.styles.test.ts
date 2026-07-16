@@ -29,13 +29,13 @@ describe("market overview styles", () => {
     expect(rule(".dashboardGrid")).toContain("gap: 1.25rem;");
   });
 
-  it("uses the coordinated iris, sage, mist and apricot market palette", () => {
-    expect(rule(".page")).toContain("--market-required: #7568c8;");
-    expect(rule(".page")).toContain("--market-required-text: #ffffff;");
-    expect(rule(".page")).toContain("--market-preferred: #61aa96;");
-    expect(rule(".page")).toContain("--market-preferred-text: #123c34;");
-    expect(rule(".page")).toContain("--market-unspecified: #e4e1e9;");
-    expect(rule(".page")).toContain("--market-relative: #e99070;");
+  it("uses the coordinated blue, mint, cream and coral market palette", () => {
+    expect(rule(".page")).toContain("--market-required: #67a2c5;");
+    expect(rule(".page")).toContain("--market-required-text: #102f42;");
+    expect(rule(".page")).toContain("--market-preferred: #9bcec1;");
+    expect(rule(".page")).toContain("--market-preferred-text: #173b33;");
+    expect(rule(".page")).toContain("--market-unspecified: #ffebd3;");
+    expect(rule(".page")).toContain("--market-relative: #ffb6a6;");
     expect(rule('.stackedSegment[data-segment="required"]')).toContain(
       "background: var(--market-required);",
     );
@@ -65,11 +65,10 @@ describe("market overview styles", () => {
     );
   });
 
-  it("keeps compact filters keyboard and touch accessible", () => {
-    expect(rule(".filter")).toContain("min-width: var(--touch-target);");
-    expect(rule(".filter")).toContain(
-      "min-height: calc(var(--touch-target) + 1px);",
-    );
+  it("keeps filter pills short and keyboard accessible", () => {
+    expect(rule(".filter")).toContain("min-width: 0;");
+    expect(rule(".filter")).toContain("min-height: 2rem;");
+    expect(rule(".filter")).toContain("padding: 0 0.75rem;");
     expect(css).toMatch(
       /\.sideHeader > a\s*\{[^}]*min-width: var\(--touch-target\);/,
     );

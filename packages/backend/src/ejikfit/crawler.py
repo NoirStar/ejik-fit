@@ -68,6 +68,9 @@ from ejikfit.connectors.public_json_detail import (
     COM2US_LISTING_BODY,
     COM2US_REQUEST_HEADERS,
     DUNAMU_CONNECTOR_FAMILIES,
+    ELICE_DETAIL_BODY,
+    ELICE_LISTING_API,
+    ELICE_LISTING_HEADERS,
     NETMARBLE_LISTING_API,
     NHN_LISTING_API,
     NCSOFT_DETAIL_API,
@@ -77,10 +80,12 @@ from ejikfit.connectors.public_json_detail import (
     WORKABLE_LISTING_API_TEMPLATE,
     PublicJsonDetailRef,
     discover_public_json_detail_refs,
+    elice_listing_request_body,
     filter_public_detail_refs,
     ncsoft_session_headers,
     ninehire_listing_api_url,
     ninehire_listing_config,
+    parse_elice_listing_page,
     parse_ninehire_listing_page,
     parse_public_json_detail,
     parse_workable_listing_page,
@@ -764,6 +769,57 @@ async def _fetch_listing_page(
             status_code=latest_page.status_code,
             headers=latest_page.headers,
         )
+    if source.connector_family == "elice_softr_public_api_tech":
+        parsed_source = urlparse(source.base_url)
+        if (
+            parsed_source.scheme != "https"
+            or parsed_source.hostname != "www.elice.careers"
+            or parsed_source.path.rstrip("/")
+            or parsed_source.query
+            or parsed_source.fragment
+        ):
+            raise ValueError("Elice source must use its official careers page")
+
+        rows: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        seen_cursors: set[str] = set()
+        cursor: str | None = None
+        latest_page: FetchedPage | None = None
+        for _ in range(50):
+            latest_page = await fetcher.fetch(
+                ELICE_LISTING_API,
+                method="POST",
+                json_body=elice_listing_request_body(cursor),
+                headers=ELICE_LISTING_HEADERS,
+            )
+            page_rows, next_cursor = parse_elice_listing_page(latest_page.text)
+            for row in page_rows:
+                external_id = str(row["id"])
+                if external_id in seen_ids:
+                    raise ValueError("Elice listing repeated a job record")
+                seen_ids.add(external_id)
+                rows.append(row)
+
+            if next_cursor is None:
+                break
+            if next_cursor in seen_cursors:
+                raise ValueError("Elice listing repeated a page cursor")
+            seen_cursors.add(next_cursor)
+            cursor = next_cursor
+        else:
+            raise ValueError("Elice listing exceeded the page limit")
+
+        if latest_page is None:
+            raise ValueError("Elice listing response is missing")
+        return FetchedPage(
+            url=source.base_url,
+            text=json.dumps(
+                {"complete": True, "offset": None, "records": rows},
+                ensure_ascii=False,
+            ),
+            status_code=latest_page.status_code,
+            headers=latest_page.headers,
+        )
     if (
         source.source_type == SourceType.WORKDAY
         and (source.request_method or "GET").upper() == "POST"
@@ -908,6 +964,18 @@ async def _fetch_public_json_detail(
         return await fetcher.fetch(
             ref.detail_url,
             headers=COM2US_REQUEST_HEADERS,
+        )
+    if connector_family == "elice_softr_public_api_tech":
+        return await fetcher.fetch(
+            ref.detail_url,
+            method="POST",
+            json_body=ELICE_DETAIL_BODY,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Origin": "https://www.elice.careers",
+                "Referer": ref.public_url,
+            },
         )
     if connector_family != "ncsoft_session_html_tech":
         return await fetcher.fetch(ref.detail_url)

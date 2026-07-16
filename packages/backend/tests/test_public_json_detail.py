@@ -2,10 +2,12 @@ import json
 
 from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
+    elice_listing_request_body,
     filter_public_detail_refs,
     ncsoft_session_headers,
     ninehire_listing_config,
     parse_public_json_detail,
+    parse_elice_listing_page,
     parse_ninehire_listing_page,
     roundhr_site_code,
     workable_account_slug,
@@ -18,6 +20,108 @@ def _next_data_html(page_props: dict[str, object]) -> str:
         '<html><body><script id="__NEXT_DATA__" type="application/json">'
         f"{payload}</script></body></html>"
     )
+
+
+def test_elice_public_api_keeps_only_software_roles_and_parses_details() -> None:
+    listing_rows = [
+        {
+            "id": "recBackend123456",
+            "fields": {
+                "포지션": "백엔드 엔지니어 (Python)",
+                "카테고리 대분류값(softr)": "Tech & Product",
+            },
+        },
+        {
+            "id": "recProduct123456",
+            "fields": {
+                "포지션": "클라우드 프로덕트 매니저",
+                "카테고리 대분류값(softr)": "Tech & Product",
+            },
+        },
+        {
+            "id": "recElectric12345",
+            "fields": {
+                "포지션": "데이터센터 전기 계통 엔지니어",
+                "카테고리 대분류값(softr)": "Tech & Product",
+            },
+        },
+        {
+            "id": "recSingapore1234",
+            "fields": {
+                "포지션": "[Singapore] Full stack Engineer",
+                "카테고리 대분류값(softr)": "Tech & Product",
+            },
+        },
+    ]
+    page_rows, cursor = parse_elice_listing_page(
+        json.dumps(
+            {"records": listing_rows[:2], "offset": "next-page/record"},
+            ensure_ascii=False,
+        )
+    )
+    assert [row["id"] for row in page_rows] == [
+        "recBackend123456",
+        "recProduct123456",
+    ]
+    assert cursor == "next-page/record"
+    assert elice_listing_request_body(cursor)["pagingOption"] == {
+        "offset": cursor,
+        "count": 100,
+    }
+
+    refs = discover_public_json_detail_refs(
+        json.dumps(
+            {"complete": True, "offset": None, "records": listing_rows},
+            ensure_ascii=False,
+        ),
+        "https://www.elice.careers/",
+        "elice_softr_public_api_tech",
+    )
+    filtered = filter_public_detail_refs(
+        refs,
+        "elice_softr_public_api_tech",
+    )
+
+    assert [ref.external_id for ref in filtered] == ["recBackend123456"]
+    assert filtered[0].public_url == (
+        "https://www.elice.careers/jobs?recordId=recBackend123456"
+    )
+
+    detail = json.dumps(
+        {
+            "id": "recBackend123456",
+            "fields": {
+                "포지션": "백엔드 엔지니어 (Python)",
+                "팀소개 헤더": "클라우드팀을 소개합니다.",
+                "팀소개 내용": "GPU 클라우드 플랫폼을 개발합니다.",
+                "직무 헤더": ["백엔드 엔지니어는 어떤 역할을 하나요?"],
+                "직무 인트로": "대규모 AI 인프라를 위한 API를 만듭니다.",
+                "주요업무 헤더": "주요 업무",
+                "주요업무 내용": "Python과 Go로 REST API를 개발합니다.",
+                "자격요건 헤더": "자격 요건",
+                "자격요건 내용": "Kubernetes 기반 개발 경력 3년 이상",
+                "우대사항 헤더": "우대 사항",
+                "우대사항 내용": "AWS 운영 경험",
+                "경력사항": {"label": "경력"},
+                "고용형태": {"label": "정규직"},
+                "근무지": {"label": "서울 강남구"},
+            },
+        },
+        ensure_ascii=False,
+    )
+    opening = parse_public_json_detail(
+        detail,
+        filtered[0],
+        "elice_softr_public_api_tech",
+    )
+
+    assert opening.url == filtered[0].public_url
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 3
+    assert opening.employment_type == "regular"
+    assert opening.location == "서울 강남구"
+    assert "Python과 Go" in opening.description_text
+    assert "Kubernetes" in opening.description_text
 
 
 def test_roundhr_public_site_discovers_and_parses_only_open_technical_jobs() -> None:

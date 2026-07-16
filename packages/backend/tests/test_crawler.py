@@ -1339,6 +1339,89 @@ def test_fetch_listing_page_collects_every_workday_page() -> None:
     assert len(crawler._apply_source_opening_filters(source, openings)) == 3
 
 
+class PaginatedEliceFetcher:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append(
+            {"url": url, "method": method, "json_body": json_body}
+        )
+        assert isinstance(json_body, dict)
+        paging = json_body["pagingOption"]
+        assert isinstance(paging, dict)
+        cursor = paging["offset"]
+        if cursor is None:
+            records = [
+                {
+                    "id": "recEliceBackend01",
+                    "fields": {
+                        "포지션": "백엔드 엔지니어",
+                        "카테고리 대분류값(softr)": "Tech & Product",
+                    },
+                },
+                {
+                    "id": "recEliceProduct01",
+                    "fields": {
+                        "포지션": "프로덕트 매니저",
+                        "카테고리 대분류값(softr)": "Tech & Product",
+                    },
+                },
+            ]
+            next_cursor = "next-page/recEliceProduct01"
+        else:
+            assert cursor == "next-page/recEliceProduct01"
+            records = [
+                {
+                    "id": "recEliceFrontend1",
+                    "fields": {
+                        "포지션": "프론트엔드 엔지니어",
+                        "카테고리 대분류값(softr)": "Tech & Product",
+                    },
+                }
+            ]
+            next_cursor = None
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps({"records": records, "offset": next_cursor}),
+            status_code=200,
+            headers={},
+        )
+
+
+def test_fetch_listing_page_collects_every_elice_cursor_page() -> None:
+    source = CareerSource(
+        company=Company(name="엘리스그룹", slug="elice"),
+        base_url="https://www.elice.careers/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="elice_softr_public_api_tech",
+    )
+    fetcher = PaginatedEliceFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+
+    assert payload["complete"] is True
+    assert payload["offset"] is None
+    assert [row["id"] for row in payload["records"]] == [
+        "recEliceBackend01",
+        "recEliceProduct01",
+        "recEliceFrontend1",
+    ]
+    assert [
+        call["json_body"]["pagingOption"]["offset"]  # type: ignore[index]
+        for call in fetcher.calls
+    ] == [None, "next-page/recEliceProduct01"]
+
+
 def test_lg_uplus_filter_keeps_security_and_excludes_facilities_engineering() -> None:
     source = CareerSource(
         company=Company(name="LG유플러스", slug="lg-uplus"),

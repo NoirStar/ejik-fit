@@ -64,6 +64,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/52e7484b-ffef-47e8-bd66-774309ad01d5",
   deepx:
     "https://cdn.deepx.ai/wp-content/uploads/2025/04/09130144/cropped-dx_pavicon02-192x192.png",
+  elice:
+    "https://assets.softr-files.com/applications/07473e9b-e01d-44a7-8574-bfb9ef7636eb/assets/6ecf46c6-143b-42db-a601-50138c1d91cc.svg?rnd=1763968412551",
   enerzai:
     "https://profiles.greetinghr.com/group/af5e4e1b-d4a3-4bbb-bab2-9c963848f958",
   exem: "https://www.ex-em.com/apple-icon.png",

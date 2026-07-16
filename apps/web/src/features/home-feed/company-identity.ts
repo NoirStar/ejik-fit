@@ -468,6 +468,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "케이뱅크",
   },
   {
+    aliases: ["엘리스그룹", "엘리스", "elice group", "elice"],
+    hosts: ["elice.careers", "elice.io"],
+    src: "/company-logo-assets/elice",
+    displayName: "엘리스그룹",
+  },
+  {
     aliases: ["래블업", "lablup"],
     hosts: ["lablup.com"],
     src: "/company-logo-assets/lablup",
