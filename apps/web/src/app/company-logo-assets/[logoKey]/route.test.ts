@@ -64,8 +64,8 @@ describe("company logo asset proxy", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/company-logo-assets/sap-korea"),
-      { params: Promise.resolve({ logoKey: "sap-korea" }) },
+      new Request("http://localhost/company-logo-assets/sap-korea-mark"),
+      { params: Promise.resolve({ logoKey: "sap-korea-mark" }) },
     );
 
     expect(response.status).toBe(200);
@@ -85,8 +85,8 @@ describe("company logo asset proxy", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await GET(
-      new Request("http://localhost/company-logo-assets/sap-korea"),
-      { params: Promise.resolve({ logoKey: "sap-korea" }) },
+      new Request("http://localhost/company-logo-assets/sap-korea-mark"),
+      { params: Promise.resolve({ logoKey: "sap-korea-mark" }) },
     );
 
     expect(response.status).toBe(415);

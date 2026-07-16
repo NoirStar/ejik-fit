@@ -541,7 +541,7 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["SAP Korea", "SAP", "SAP 코리아", "에스에이피 코리아"],
     hosts: ["jobs.sap.com", "sap.com"],
-    src: "/company-logo-assets/sap-korea",
+    src: "/company-logo-assets/sap-korea-mark",
     displayName: "SAP Korea",
   },
   {

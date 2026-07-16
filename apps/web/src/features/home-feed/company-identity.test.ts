@@ -485,7 +485,7 @@ describe("companyIdentity", () => {
     [
       "SAP Korea",
       "https://jobs.sap.com/job/Seoul-HANA-Cloud-Developer/1270982501/",
-      "sap-korea",
+      "sap-korea-mark",
     ],
     [
       "Google Korea",

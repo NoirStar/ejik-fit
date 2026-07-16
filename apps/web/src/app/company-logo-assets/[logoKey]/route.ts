@@ -139,6 +139,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
   "sap-korea":
     "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
+  "sap-korea-mark":
+    "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
   backpackr:
     "https://profiles.greetinghr.com/group/a0b6b9f8-ba05-4b3f-bab2-e05520d17971",
   "riot-games-korea":
