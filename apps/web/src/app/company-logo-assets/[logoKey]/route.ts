@@ -23,6 +23,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
+  class101:
+    "https://image.ninehire.com/homepage/f20ace90-8932-11f0-8815-d9c0c4c32872/image/d5c43c50-d5c0-11f0-be5c-cf61d3aa942b.png",
   cheiron: "https://www.cheiron.bio/apple-touch-icon.png",
   "celonis-korea": "https://www.celonis.com/favicon.ico",
   "clo-virtual-fashion":
@@ -151,6 +153,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "nvidia-korea": "https://www.nvidia.com/favicon.ico",
   "qualcomm-korea":
     "https://static.vscdn.net/images/careers/demo/qualcomm/1686215981::Qualcomm-Favicon.png",
+  qanda:
+    "https://profiles.greetinghr.com/group/68ac9ee2-98b0-4f1a-a9d2-ed029995a365",
   "openai-korea":
     "https://cdn.oaistatic.com/assets/favicon-180x180-od45eci6.webp",
   "nota-ai":

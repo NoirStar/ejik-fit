@@ -61,6 +61,8 @@ back to company initials when the official asset is unavailable.
 | `kakao-healthcare` | 카카오헬스케어 | <https://recruit.kakaohealthcare.com/> | <https://image.ninehire.com/homepage/48b8c300-ac2c-11ed-9a7f-25af3e3b8401/bd23e840-ed5a-11ed-bef0-33cdfeb3dfc8.png> | 2026-07-15 |
 | `megazone-cloud` | 메가존클라우드 그룹 | <https://www.megazone.com/> | <https://www.megazone.com/favicon_BK_152.png> | 2026-07-15 |
 | `11st` | 11번가 | <https://11st.career.greetinghr.com/ko/career> | <https://profiles.greetinghr.com/group/7660163f-40cd-404d-a894-567dd54b3993> | 2026-07-15 |
+| `class101` | CLASS101 | <https://jobs.class101.net/career> | <https://image.ninehire.com/homepage/f20ace90-8932-11f0-8815-d9c0c4c32872/image/d5c43c50-d5c0-11f0-be5c-cf61d3aa942b.png> | 2026-07-15 |
+| `qanda` | 콴다(QANDA) | <https://recruit.mathpresso.com/ko/home> | <https://profiles.greetinghr.com/group/68ac9ee2-98b0-4f1a-a9d2-ed029995a365> | 2026-07-15 |
 | `nhn-group` | NHN 그룹 | <https://careers.nhn.com/recruits> | <https://careers.nhn.com/images/meta/favicon_32x32.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |
 | `hutom` | 휴톰 | <https://hutom.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png> | 2026-07-15 |

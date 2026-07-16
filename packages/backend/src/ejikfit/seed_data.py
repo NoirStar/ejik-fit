@@ -699,6 +699,42 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="CLASS101",
+        slug="class101",
+        base_url="https://jobs.class101.net/career",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://class101.net",
+        sector="creator_education",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official CLASS101 careers site and public Ninehire feed; "
+            "limited to active software and infrastructure roles."
+        ),
+    ),
+    SeedSource(
+        name="콴다(QANDA)",
+        slug="qanda",
+        base_url="https://recruit.mathpresso.com/ko/home",
+        homepage_url="https://qanda.ai",
+        sector="education_ai",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official QANDA/Mathpresso Greeting careers listing and detail "
+            "pages; the source remains monitored when no technical role is "
+            "open."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(

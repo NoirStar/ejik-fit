@@ -27,6 +27,7 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("Account Executive, Startups (AI Solutions)") is False
     assert is_technical_role("[Business] AI 프로젝트 매니저 (PM)") is False
     assert is_technical_role("Business Developer") is False
+    assert is_technical_role("Strategy Developer (Global)") is False
 
 
 def test_korea_technical_filter_requires_both_role_and_domestic_location() -> None:

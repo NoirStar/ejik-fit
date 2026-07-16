@@ -83,6 +83,7 @@ NON_TECHNICAL_ROLE_MARKERS = (
     " pm",
     "sales",
     "business strategy",
+    "strategy developer",
     "tech bd",
     "냉난방",
     "노무",

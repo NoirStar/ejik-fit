@@ -620,6 +620,16 @@ describe("companyIdentity", () => {
       "11st",
     ],
     [
+      "CLASS101",
+      "https://jobs.class101.net/job_posting/DL5fCbnJ",
+      "class101",
+    ],
+    [
+      "콴다(QANDA)",
+      "https://recruit.mathpresso.com/ko/o/1",
+      "qanda",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

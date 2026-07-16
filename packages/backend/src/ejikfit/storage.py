@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import Protocol
 
 import boto3
+from botocore.config import Config
 
 
 class SnapshotStore(Protocol):
@@ -45,6 +46,12 @@ class S3SnapshotStore:
             region_name=region,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+            ),
         )
 
     def put(
@@ -59,6 +66,7 @@ class S3SnapshotStore:
                 Bucket=self.bucket,
                 Key=key,
                 Body=content,
+                ContentLength=len(content),
                 ContentType=content_type,
             )
             self.uploaded_keys.add(key)

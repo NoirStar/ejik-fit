@@ -20,6 +20,11 @@ def test_s3_store_passes_supabase_region(monkeypatch) -> None:
     )
 
     assert captured["region_name"] == "ap-northeast-2"
+    config = captured["config"]
+    assert config.s3 == {"addressing_style": "path"}
+    assert config.signature_version == "s3v4"
+    assert config.request_checksum_calculation == "when_required"
+    assert config.response_checksum_validation == "when_required"
 
 
 def test_s3_store_uploads_identical_content_once_per_run(monkeypatch) -> None:
@@ -47,3 +52,4 @@ def test_s3_store_uploads_identical_content_once_per_run(monkeypatch) -> None:
 
     assert first == second
     assert len(uploads) == 2
+    assert uploads[0]["ContentLength"] == len(b"same listing")

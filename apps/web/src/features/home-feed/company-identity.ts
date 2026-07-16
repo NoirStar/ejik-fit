@@ -223,6 +223,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "11번가",
   },
   {
+    aliases: ["class101", "클래스101"],
+    hosts: ["jobs.class101.net", "class101.net"],
+    src: "/company-logo-assets/class101",
+    displayName: "CLASS101",
+  },
+  {
+    aliases: ["콴다(qanda)", "콴다", "qanda", "mathpresso", "매스프레소"],
+    hosts: ["recruit.mathpresso.com", "qanda.ai", "mathpresso.com"],
+    src: "/company-logo-assets/qanda",
+    displayName: "콴다(QANDA)",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",
