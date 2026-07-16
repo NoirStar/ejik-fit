@@ -1,6 +1,11 @@
-name: crawl production sources
+name: sync and crawl production sources
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/backend/src/ejikfit/seed_data.py"
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
@@ -40,8 +45,15 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: packages/backend/pyproject.toml
-      - run: pip install './packages/backend[browser]'
-      - run: python -m playwright install --with-deps chromium
+      - name: Install source registry dependencies
+        if: ${{ github.event_name == 'push' }}
+        run: pip install './packages/backend'
+      - name: Install crawler dependencies
+        if: ${{ github.event_name != 'push' }}
+        run: pip install './packages/backend[browser]'
+      - name: Install crawler browser
+        if: ${{ github.event_name != 'push' }}
+        run: python -m playwright install --with-deps chromium
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
       - name: Crawl selected sources
@@ -62,5 +74,5 @@ jobs:
           done
           exit "$status"
       - name: Crawl all production sources
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.company_slug == '' }}
+        if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.company_slug == '') }}
         run: ejikfit crawl-all

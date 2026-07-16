@@ -168,6 +168,11 @@ describe("companyIdentity", () => {
     ],
     ["마키나락스", "https://makinarocks.career.greetinghr.com/ko/o/1", "makinarocks"],
     ["미리디", "https://www.miridih.com/ko/o/69762", "miridih"],
+    [
+      "왓챠",
+      "https://watchateam.career.greetinghr.com/ko/o/214341",
+      "watcha",
+    ],
     ["리벨리온", "https://rebellions.career.greetinghr.com/ko/o/1", "rebellions"],
     ["코빗", "https://korbit.career.greetinghr.com/ko/o/1", "korbit"],
     ["람다256", "https://lambda256.career.greetinghr.com/ko/o/1", "lambda256"],

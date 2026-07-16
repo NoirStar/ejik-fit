@@ -2273,6 +2273,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="왓챠",
+        slug="watcha",
+        base_url="https://watchateam.career.greetinghr.com/ko/apply",
+        source_type=SourceType.GREETING,
+        homepage_url="https://team.watcha.com",
+        sector="content_streaming",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Watcha Greeting careers listing and detail pages; "
+            "limited to current software engineering roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="숨고",
         slug="soomgo",
         base_url="https://soomgo.team/career",

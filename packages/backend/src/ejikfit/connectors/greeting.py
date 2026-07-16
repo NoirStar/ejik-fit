@@ -421,6 +421,9 @@ def parse_opening(html: str, page_url: str) -> ParsedOpening:
     title = info.get("title")
     if external_id is None or not isinstance(title, str):
         raise ValueError("Greeting opening identity is missing")
+    title = title.strip()
+    if not title:
+        raise ValueError("Greeting opening identity is missing")
 
     return ParsedOpening(
         external_id=str(external_id),

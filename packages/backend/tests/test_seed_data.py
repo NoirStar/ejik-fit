@@ -52,8 +52,9 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "deepx",
         "soomgo",
         "miridih",
+        "watcha",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 67
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 68
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -105,6 +106,11 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
     assert liner.connector_family == "liner_next_data_tech"
     assert liner.status == SourceStatus.ALLOWED
     assert liner.policy_status == PolicyStatus.ALLOWED
+    watcha = catalog_by_slug["watcha"]
+    assert watcha.source_type == SourceType.GREETING
+    assert watcha.connector_family == "greeting_tech"
+    assert watcha.status == SourceStatus.ALLOWED
+    assert watcha.policy_status == PolicyStatus.ALLOWED
     elice = catalog_by_slug["elice"]
     assert elice.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert elice.connector_family == "elice_softr_public_api_tech"
@@ -280,7 +286,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 175
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 176
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -420,7 +426,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 175
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 176
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url

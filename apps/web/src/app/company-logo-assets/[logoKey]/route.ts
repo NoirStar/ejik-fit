@@ -135,6 +135,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
   lablup: "https://www.lablup.com/favicon.ico",
   liner: "https://liner.com/favicon.ico?v=20250605",
+  watcha: "https://watcha.com/favicon.ico",
   levit:
     "https://image.ninehire.com/profile/c25bdf50-c356-11f0-950a-2bc6bdfc1959/12e82ef0-c358-11f0-b8eb-3fe403194dab.png",
   lawcompany: "https://www.lawtalk.co.kr/favicon.ico",

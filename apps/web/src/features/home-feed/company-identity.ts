@@ -495,6 +495,16 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     surface: "dark",
   },
   {
+    aliases: ["왓챠", "watcha"],
+    hosts: [
+      "watchateam.career.greetinghr.com",
+      "watcha.com",
+      "team.watcha.com",
+    ],
+    src: "/company-logo-assets/watcha",
+    displayName: "왓챠",
+  },
+  {
     aliases: ["쏘카", "socar"],
     hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
     src: "/company-logo-assets/socar",

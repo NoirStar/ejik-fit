@@ -275,3 +275,20 @@ def test_normalizes_greeting_newcomer_for_api_filter() -> None:
     )
 
     assert opening.career_type == "new_comer"
+
+
+def test_strips_greeting_opening_title_whitespace() -> None:
+    html = (FIXTURES / "opening.html").read_text()
+    title_field = '"title": "Backend Engineer"'
+    assert title_field in html
+    html = html.replace(
+        title_field,
+        '"title": "  Backend Engineer  "',
+    )
+
+    opening = parse_opening(
+        html,
+        "https://sample.career.greetinghr.com/ko/o/209187",
+    )
+
+    assert opening.title == "Backend Engineer"
