@@ -337,6 +337,7 @@ export function SkillGraphForceCanvas({
   const selectedIdRef = useRef<string | null>(selectedId);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
+  const initialViewReadyRef = useRef(false);
   const readyRef = useRef(false);
   const revealGraphRef = useRef<() => void>(() => undefined);
   const [mounted, setMounted] = useState(false);
@@ -354,6 +355,7 @@ export function SkillGraphForceCanvas({
 
     setMounted(false);
     setReady(false);
+    initialViewReadyRef.current = false;
     readyRef.current = false;
     onReadyChange?.(false);
 
@@ -362,6 +364,7 @@ export function SkillGraphForceCanvas({
       if (
         cancelled ||
         readyRef.current ||
+        !initialViewReadyRef.current ||
         !graph ||
         graph.graphData().nodes.length === 0
       ) {
@@ -488,6 +491,7 @@ export function SkillGraphForceCanvas({
       mountedGraph?._destructor();
       graphRef.current = null;
       revealGraphRef.current = () => undefined;
+      initialViewReadyRef.current = false;
       readyRef.current = false;
       setMounted(false);
       setReady(false);
@@ -504,22 +508,26 @@ export function SkillGraphForceCanvas({
     graph.graphData(cloneGraphData(data));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
-    if (reduceMotionRef.current) {
-      window.requestAnimationFrame(() => revealGraphRef.current());
-    }
 
+    let initialFitTimer = 0;
     if (data.nodes.length > 0) {
-      window.setTimeout(() => {
+      initialFitTimer = window.setTimeout(() => {
         if (!graphRef.current) {
           return;
         }
         if (data.nodes.length <= 3) {
-          graphRef.current.centerAt(0, 0, 520).zoom(1.35, 520);
-          return;
+          graphRef.current.centerAt(0, 0).zoom(1.35);
+        } else {
+          graphRef.current.zoomToFit(0, touchInputRef.current ? 64 : 92);
         }
-        graphRef.current.zoomToFit(520, 92);
+        initialViewReadyRef.current = true;
+        window.requestAnimationFrame(() => revealGraphRef.current());
       }, 80);
     }
+
+    return () => {
+      window.clearTimeout(initialFitTimer);
+    };
   }, [data, display.animate, forces, mounted]);
 
   useEffect(() => {
