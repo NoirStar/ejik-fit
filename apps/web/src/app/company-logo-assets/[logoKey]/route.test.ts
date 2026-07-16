@@ -53,4 +53,42 @@ describe("company logo asset proxy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/x-icon");
   });
+
+  it("serves a safe official SVG with a restrictive content policy", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0h10v10z"/></svg>',
+        { headers: { "Content-Type": "text/plain" }, status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/sap-korea"),
+      { params: Promise.resolve({ logoKey: "sap-korea" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
+    expect(response.headers.get("Content-Security-Policy")).toContain(
+      "default-src 'none'",
+    );
+  });
+
+  it("rejects an SVG containing executable content", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+        { headers: { "Content-Type": "image/svg+xml" }, status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/sap-korea"),
+      { params: Promise.resolve({ logoKey: "sap-korea" }) },
+    );
+
+    expect(response.status).toBe(415);
+  });
 });

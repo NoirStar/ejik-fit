@@ -61,6 +61,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
   hutom:
     "https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png",
+  hopae:
+    "https://framerusercontent.com/images/o6Zk0QGmUwwlQW8tAtkUoeni8Q.svg",
   "hyundai-autoever":
     "https://profiles.greetinghr.com/group/15ac956f-bf20-4a9d-8327-232c5ddfade8",
   "hyundai-motor":
@@ -135,7 +137,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
-  "sap-korea": "https://jobs.sap.com/favicon.ico",
+  "sap-korea":
+    "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
   backpackr:
     "https://profiles.greetinghr.com/group/a0b6b9f8-ba05-4b3f-bab2-e05520d17971",
   "riot-games-korea":
@@ -215,6 +218,31 @@ function rasterContentType(body: ArrayBuffer) {
   return null;
 }
 
+function svgContentType(body: ArrayBuffer) {
+  let source: string;
+  try {
+    source = new TextDecoder("utf-8", { fatal: true }).decode(body).trim();
+  } catch {
+    return null;
+  }
+  if (!/^(?:<\?xml[^>]*>\s*)?<svg(?:\s|>)/i.test(source)) return null;
+  if (/<(?:script|foreignObject|iframe|object|embed)\b/i.test(source)) {
+    return null;
+  }
+  if (/\son[a-z0-9_-]+\s*=/i.test(source)) return null;
+  if (
+    /(?:href|xlink:href)\s*=\s*["']\s*(?:javascript:|data:|https?:|\/\/)/i.test(
+      source,
+    )
+  ) {
+    return null;
+  }
+  if (/url\s*\(\s*["']?\s*(?:data:|https?:|\/\/)/i.test(source)) {
+    return null;
+  }
+  return "image/svg+xml";
+}
+
 function errorResponse(status: number) {
   return new Response(null, {
     headers: { "Cache-Control": "public, max-age=300" },
@@ -231,7 +259,7 @@ export async function GET(_request: Request, context: LogoRouteContext) {
     const upstream = await fetch(upstreamUrl, {
       headers: {
         Accept:
-          "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon",
+          "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon,image/svg+xml",
         "User-Agent": "ejik-fit-company-logo/1.0",
       },
       next: { revalidate: CACHE_SECONDS },
@@ -246,7 +274,7 @@ export async function GET(_request: Request, context: LogoRouteContext) {
 
     const body = await upstream.arrayBuffer();
     if (body.byteLength > MAX_LOGO_BYTES) return errorResponse(413);
-    const contentType = rasterContentType(body);
+    const contentType = rasterContentType(body) ?? svgContentType(body);
     if (!contentType) return errorResponse(415);
 
     return new Response(body, {
@@ -254,6 +282,12 @@ export async function GET(_request: Request, context: LogoRouteContext) {
         "Cache-Control":
           `public, max-age=86400, s-maxage=${CACHE_SECONDS}, ` +
           "stale-while-revalidate=2592000",
+        ...(contentType === "image/svg+xml"
+          ? {
+              "Content-Security-Policy":
+                "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            }
+          : {}),
         "Content-Type": contentType,
         "X-Content-Type-Options": "nosniff",
       },

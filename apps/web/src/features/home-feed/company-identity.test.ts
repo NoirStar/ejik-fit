@@ -498,6 +498,11 @@ describe("companyIdentity", () => {
       "friendli-ai",
     ],
     [
+      "Hopae",
+      "https://api.ashbyhq.com/posting-api/job-board/hopae",
+      "hopae",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

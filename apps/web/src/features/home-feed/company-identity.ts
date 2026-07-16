@@ -404,6 +404,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "FriendliAI",
   },
   {
+    aliases: ["Hopae", "호패"],
+    hosts: ["api.ashbyhq.com", "hopae.com", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/hopae",
+    displayName: "Hopae",
+  },
+  {
     aliases: ["Gauss Labs", "가우스랩스", "gausslabs"],
     hosts: ["api.lever.co", "gausslabs.ai", "jobs.lever.co"],
     src: "/company-logo-assets/gauss-labs",
