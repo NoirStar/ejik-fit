@@ -170,7 +170,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 136
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 137
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -306,7 +306,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 136
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 137
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -368,6 +368,12 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert banksalad.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert banksalad.connector_family == "banksalad_greeting_api_tech"
     assert banksalad.status == SourceStatus.ALLOWED
+
+    nhn = catalog_by_slug["nhn-group"]
+    assert nhn.base_url == "https://careers.nhn.com/recruits"
+    assert nhn.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert nhn.connector_family == "nhn_public_api_tech"
+    assert nhn.status == SourceStatus.ALLOWED
 
     bithumb = catalog_by_slug["bithumb"]
     assert bithumb.base_url == "https://career.bithumbcorp.com/ko"

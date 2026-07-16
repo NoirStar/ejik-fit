@@ -133,6 +133,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/91fe8697-42c9-4b65-ab87-903d8ce27d51",
   "nhn-kcp":
     "https://profiles.greetinghr.com/group/135690b4-a80e-4f3a-9589-388082488e7c",
+  "nhn-group": "https://careers.nhn.com/images/meta/favicon_32x32.png",
   ncsoft:
     "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
   "naver-cloud":

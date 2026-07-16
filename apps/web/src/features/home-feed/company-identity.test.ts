@@ -381,6 +381,11 @@ describe("companyIdentity", () => {
       "neowiz",
     ],
     [
+      "NHN 그룹",
+      "https://careers.nhn.com/recruits/4370711607830110861",
+      "nhn-group",
+    ],
+    [
       "NHN KCP",
       "https://kcp.career.greetinghr.com/ko/o/1",
       "nhn-kcp",

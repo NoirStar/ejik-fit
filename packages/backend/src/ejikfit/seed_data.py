@@ -46,6 +46,28 @@ INITIAL_SOURCE_CATALOG = (
     ),
     SeedSource("NHN KCP", "nhn-kcp", "https://kcp.career.greetinghr.com/ko"),
     SeedSource(
+        name="NHN 그룹",
+        slug="nhn-group",
+        base_url="https://careers.nhn.com/recruits",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.nhn.com",
+        sector="platform_cloud",
+        connector_family="nhn_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=5,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official NHN Careers public list and detail APIs; limited to "
+            "Korea-based Tech job groups, excluding talent pools and NHN "
+            "JAPAN postings. Affiliate names are preserved in job titles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         "Sionic AI",
         "sionic-ai",
         "https://sionicai.career.greetinghr.com/ko",

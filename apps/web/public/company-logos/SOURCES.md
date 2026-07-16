@@ -57,6 +57,7 @@ back to company initials when the official asset is unavailable.
 | `zigbang` | 직방 | <https://zigbang.career.greetinghr.com/ko/home> | <https://profiles.greetinghr.com/group/e993711a-5f1c-45e0-b292-4ea939289952> | 2026-07-15 |
 | `yanolja` | 야놀자 | <https://careers.yanolja.co/ko/home> | <https://profiles.greetinghr.com/group/ffd2b389-294e-4546-88b3-5d35456a156f> | 2026-07-15 |
 | `kakao-enterprise` | 카카오엔터프라이즈 | <https://careers.kakaoenterprise.com/ko/intro> | <https://profiles.greetinghr.com/group/a163f8c5-f9aa-44da-b5a3-1425303180e1> | 2026-07-15 |
+| `nhn-group` | NHN 그룹 | <https://careers.nhn.com/recruits> | <https://careers.nhn.com/images/meta/favicon_32x32.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |
 | `hutom` | 휴톰 | <https://hutom.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png> | 2026-07-15 |
 | `snj-lab` | SNJ LAB | <https://snjlab.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png> | 2026-07-15 |

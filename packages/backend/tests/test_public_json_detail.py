@@ -590,6 +590,125 @@ def test_netmarble_public_api_discovers_and_parses_technical_jobs() -> None:
     assert "Python, PyTorch, LLM" in opening.description_text
 
 
+def test_nhn_public_api_keeps_only_korea_technical_jobs_and_parses_detail() -> None:
+    def job(
+        job_id: str,
+        corporation: str,
+        title: str,
+        job_group: str,
+        *,
+        region: str = "KR",
+    ) -> dict[str, object]:
+        return {
+            "id": job_id,
+            "corporation": {
+                "name": corporation,
+                "regionCd": region,
+            },
+            "name": title,
+            "finishYn": "N",
+            "postingYn": "Y",
+            "postingStaDatetime": "2026-07-01T09:00:00",
+            "postingEndDatetime": "2999-12-31T00:00:00",
+            "careerType": {"name": "경력"},
+            "employeeType": {"name": "정규"},
+            "jobSeries": [
+                {
+                    "name": "AI/ML",
+                    "jobGroup": {"name": job_group},
+                }
+            ],
+        }
+
+    listing = json.dumps(
+        {
+            "header": {"resultCode": 0, "isSuccessful": True},
+            "totalCount": 4,
+            "result": [
+                job("4370711607830110861", "NHN", "LLM 기술 개발", "Tech"),
+                job("4370711607830110862", "NHN", "서비스 기획", "Business"),
+                job(
+                    "4370711607830110863",
+                    "NHN JAPAN",
+                    "AI 추진 담당",
+                    "Tech",
+                ),
+                job(
+                    "4370711607830110864",
+                    "NHN Enterprise",
+                    "IDC 운영자(인재풀)",
+                    "Tech",
+                ),
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://careers.nhn.com/v1/job-postings"
+        "?intensive-recruiting=&page=0&size=100",
+        "nhn_public_api_tech",
+    )
+    refs = filter_public_detail_refs(all_refs, "nhn_public_api_tech")
+
+    assert [ref.external_id for ref in refs] == ["4370711607830110861"]
+    assert refs[0].title == "[NHN] LLM 기술 개발"
+    assert refs[0].category == "Tech · AI/ML"
+    assert refs[0].detail_url == (
+        "https://careers.nhn.com/v1/job-postings/4370711607830110861"
+    )
+    assert refs[0].public_url == (
+        "https://careers.nhn.com/recruits/4370711607830110861"
+    )
+
+    detail = json.dumps(
+        {
+            "header": {"resultCode": 0, "isSuccessful": True},
+            "result": {
+                **job(
+                    "4370711607830110861",
+                    "NHN",
+                    "LLM 기술 개발",
+                    "Tech",
+                ),
+                "jobPostingContentsItems": [
+                    {
+                        "title": "이런 분들을 찾고 있어요 (자격요건)",
+                        "contents": ["Python과 RAG 개발 경험이 있으신 분"],
+                        "footer": "",
+                        "orderNo": 1,
+                    },
+                    {
+                        "title": "이런 분이면 더 좋아요 (우대사항)",
+                        "contents": ["LLM Agent 개발 경험이 있으신 분"],
+                        "footer": (
+                            "<p>근무지는 경기도 성남시 분당구입니다.</p>"
+                        ),
+                        "orderNo": 2,
+                    },
+                ],
+            },
+        },
+        ensure_ascii=False,
+    )
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "nhn_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert opening.career_type == "experienced"
+    assert opening.opens_at is not None
+    assert opening.closes_at is None
+    assert opening.location == "경기도 성남시 분당구"
+    assert "자격요건" in opening.description_text
+    assert "Python과 RAG" in opening.description_text
+    assert "우대사항" in opening.description_text
+
+
 def test_ncsoft_session_api_discovers_and_parses_technical_jobs() -> None:
     session_headers = ncsoft_session_headers(
         '<meta name="_csrf" content="csrf-token-123">',

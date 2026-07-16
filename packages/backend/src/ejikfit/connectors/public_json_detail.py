@@ -2,6 +2,7 @@ import json
 import re
 from dataclasses import dataclass, replace
 from datetime import datetime
+from html import escape
 from typing import Any, Mapping
 from urllib.parse import urlencode, urljoin, urlsplit
 from zoneinfo import ZoneInfo
@@ -50,6 +51,10 @@ COM2US_TECH_CLASSIFICATIONS = {
 }
 NETMARBLE_LISTING_API = (
     "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
+)
+NHN_LISTING_API = (
+    "https://careers.nhn.com/v1/job-postings"
+    "?intensive-recruiting=&page=0&size=1000"
 )
 NCSOFT_LISTING_API = "https://careers.ncsoft.com/interface/apply/list"
 NCSOFT_DETAIL_API = "https://careers.ncsoft.com/template/html//apply/view"
@@ -827,6 +832,102 @@ def _netmarble_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     return refs
 
 
+def _nhn_success_payload(payload: dict[str, Any], label: str) -> Any:
+    header = payload.get("header")
+    if (
+        not isinstance(header, dict)
+        or header.get("isSuccessful") is not True
+        or header.get("resultCode") != 0
+    ):
+        raise ValueError(f"NHN Careers {label} did not return a success envelope")
+    return payload.get("result")
+
+
+def _nhn_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    parsed_url = urlsplit(listing_url)
+    if (
+        parsed_url.hostname != "careers.nhn.com"
+        or parsed_url.path.rstrip("/")
+        not in {"/recruits", "/v1/job-postings"}
+    ):
+        raise ValueError("NHN Careers listing URL is not an official endpoint")
+
+    rows = _nhn_success_payload(payload, "listing")
+    total = _positive_int(payload.get("totalCount"))
+    if not isinstance(rows, list) or total != len(rows) or total > 1000:
+        raise ValueError("NHN Careers listing response is incomplete")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("NHN Careers listing contains an invalid job row")
+        if row.get("finishYn") != "N" or row.get("postingYn") != "Y":
+            continue
+
+        external_id = _text(row.get("id"))
+        raw_title = _text(row.get("name"))
+        corporation = row.get("corporation")
+        corporation_name = (
+            _text(corporation.get("name"))
+            if isinstance(corporation, dict)
+            else None
+        )
+        if (
+            external_id is None
+            or re.fullmatch(r"\d{10,25}", external_id) is None
+            or raw_title is None
+            or corporation_name is None
+        ):
+            raise ValueError("NHN Careers open job identity is missing")
+        if external_id in seen:
+            raise ValueError("NHN Careers listing contains a duplicate job")
+        seen.add(external_id)
+
+        category_parts: list[str] = []
+        raw_series = row.get("jobSeries")
+        series = raw_series if isinstance(raw_series, list) else []
+        for item in series:
+            if not isinstance(item, dict):
+                continue
+            group = item.get("jobGroup")
+            group_name = (
+                _text(group.get("name")) if isinstance(group, dict) else None
+            )
+            series_name = _text(item.get("name"))
+            for label in (group_name, series_name):
+                if label and label not in category_parts:
+                    category_parts.append(label)
+
+        region = (
+            _text(corporation.get("regionCd"))
+            if isinstance(corporation, dict)
+            else None
+        )
+        # NHN Careers currently labels NHN JAPAN with KR in regionCd, so the
+        # corporation name is the more reliable country signal for that feed.
+        country_code = (
+            "JP" if "JAPAN" in corporation_name.upper() else region
+        )
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=(
+                    "https://careers.nhn.com/v1/job-postings/"
+                    f"{external_id}"
+                ),
+                public_url=f"https://careers.nhn.com/recruits/{external_id}",
+                title=f"[{corporation_name}] {raw_title}",
+                category=" · ".join(category_parts) or None,
+                country_code=country_code,
+            )
+        )
+    return refs
+
+
 def _ncsoft_refs(payload: dict[str, Any]) -> list[PublicJsonDetailRef]:
     result = payload.get("result")
     if not isinstance(result, dict) or str(result.get("State")) != "0":
@@ -1218,6 +1319,8 @@ def discover_public_json_detail_refs(
         return _kakaobank_refs(payload, listing_url)
     if connector_family == "netmarble_public_api_tech":
         return _netmarble_refs(payload)
+    if connector_family == "nhn_public_api_tech":
+        return _nhn_refs(payload, listing_url)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_refs(payload)
     if connector_family == "com2us_jobflex_tech":
@@ -1239,6 +1342,15 @@ def filter_public_detail_refs(
 ) -> list[PublicJsonDetailRef]:
     if connector_family == "netmarble_public_api_tech":
         return [ref for ref in refs if ref.category in {"01", "05"}]
+    if connector_family == "nhn_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if ref.country_code == "KR"
+            and ref.category is not None
+            and ref.category.split(" · ", 1)[0] == "Tech"
+            and "인재풀" not in ref.title
+        ]
     if connector_family == "ncsoft_session_html_tech":
         return [
             ref
@@ -1286,6 +1398,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
     return connector_family in {
         "ably_next_ninehire_tech",
         "netmarble_public_api_tech",
+        "nhn_public_api_tech",
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
         "banksalad_greeting_api_tech",
@@ -1454,6 +1567,137 @@ def _netmarble_opening(
         ),
         opens_at=_parse_datetime(payload.get("staDate")),
         closes_at=_parse_datetime(payload.get("endDate")),
+    )
+
+
+def _nhn_career_type(value: Any) -> str | None:
+    label = _text(value.get("name")) if isinstance(value, dict) else None
+    if label is None:
+        return None
+    if "신입" in label and "경력" in label:
+        return "mixed"
+    if "신입" in label:
+        return "new_comer"
+    if "경력" in label:
+        return "experienced"
+    if "무관" in label:
+        return "mixed"
+    return None
+
+
+def _nhn_employment_type(value: Any) -> str | None:
+    label = _text(value.get("name")) if isinstance(value, dict) else None
+    if label is None:
+        return None
+    if "정규" in label:
+        return "regular"
+    if "계약" in label:
+        return "contract"
+    if "인턴" in label:
+        return "intern"
+    return None
+
+
+def _nhn_description(items: Any) -> str:
+    if not isinstance(items, list):
+        raise ValueError("NHN Careers job detail content is missing")
+
+    valid_items = [item for item in items if isinstance(item, dict)]
+    valid_items.sort(
+        key=lambda item: float(item.get("orderNo") or 0),
+    )
+    sections: list[str] = []
+    for item in valid_items:
+        title = _text(item.get("title"))
+        raw_contents = item.get("contents")
+        contents = raw_contents if isinstance(raw_contents, list) else []
+        content_lines = [
+            value
+            for value in (_text(content) for content in contents)
+            if value is not None
+        ]
+        footer_html = _text(item.get("footer"))
+        footer_text = (
+            structured_plain_text(footer_html) if footer_html is not None else ""
+        )
+        if not title and not content_lines and not footer_text:
+            continue
+
+        section: list[str] = []
+        if title:
+            section.append(f"<h3>{escape(title)}</h3>")
+        if content_lines:
+            section.append("<ul>")
+            section.extend(
+                "<li>" + escape(line).replace("\n", "<br>") + "</li>"
+                for line in content_lines
+            )
+            section.append("</ul>")
+        if footer_text:
+            section.append(
+                "<p>" + escape(footer_text).replace("\n", "<br>") + "</p>"
+            )
+        sections.append("".join(section))
+
+    description_html = "".join(sections)
+    if not structured_plain_text(description_html):
+        raise ValueError("NHN Careers job detail content is missing")
+    return description_html
+
+
+def _nhn_location(description_text: str) -> str | None:
+    for heading in ("근무지", "근무장소", "근무 장소"):
+        location = _value_after_heading(description_text, heading)
+        if location:
+            return location.rstrip(". ")
+    match = re.search(
+        r"근무지는?\s*[:：]?\s*(.+?)(?:\s*입니다[.]?|\n|$)",
+        description_text,
+    )
+    return match.group(1).strip().rstrip(". ") if match else None
+
+
+def _nhn_opening(
+    payload: dict[str, Any],
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    data = _nhn_success_payload(payload, "detail")
+    if not isinstance(data, dict):
+        raise ValueError("NHN Careers detail is missing its job")
+
+    external_id = _text(data.get("id"))
+    raw_title = _text(data.get("name"))
+    corporation = data.get("corporation")
+    corporation_name = (
+        _text(corporation.get("name"))
+        if isinstance(corporation, dict)
+        else None
+    )
+    title = (
+        f"[{corporation_name}] {raw_title}"
+        if corporation_name and raw_title
+        else None
+    )
+    if external_id != ref.external_id or title != ref.title:
+        raise ValueError("NHN Careers detail identity does not match its listing")
+
+    description_html = _nhn_description(data.get("jobPostingContentsItems"))
+    description_text = structured_plain_text(description_html)
+    is_open = data.get("finishYn") == "N" and data.get("postingYn") == "Y"
+    return ParsedOpening(
+        external_id=external_id,
+        url=ref.public_url,
+        title=title,
+        status="open" if is_open else "closed",
+        description_html=description_html,
+        description_text=description_text,
+        employment_type=_nhn_employment_type(data.get("employeeType")),
+        career_type=_nhn_career_type(data.get("careerType")),
+        career_min=None,
+        career_max=None,
+        location=_nhn_location(description_text),
+        opens_at=_parse_datetime(data.get("postingStaDatetime")),
+        closes_at=_parse_datetime(data.get("postingEndDatetime")),
     )
 
 
@@ -2133,6 +2377,8 @@ def parse_public_json_detail(
         return _kakaobank_opening(payload, ref)
     if connector_family == "netmarble_public_api_tech":
         return _netmarble_opening(payload, ref)
+    if connector_family == "nhn_public_api_tech":
+        return _nhn_opening(payload, ref)
     if connector_family == "com2us_jobflex_tech":
         return _com2us_opening(payload, ref)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")

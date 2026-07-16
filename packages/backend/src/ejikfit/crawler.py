@@ -60,6 +60,7 @@ from ejikfit.connectors.public_json_detail import (
     COM2US_REQUEST_HEADERS,
     DUNAMU_CONNECTOR_FAMILIES,
     NETMARBLE_LISTING_API,
+    NHN_LISTING_API,
     NCSOFT_DETAIL_API,
     NCSOFT_LISTING_API,
     NCSOFT_LISTING_FORM,
@@ -749,6 +750,8 @@ async def _fetch_listing_page(
         )
     if source.connector_family == "netmarble_public_api_tech":
         return await fetcher.fetch(NETMARBLE_LISTING_API)
+    if source.connector_family == "nhn_public_api_tech":
+        return await fetcher.fetch(NHN_LISTING_API)
     if source.connector_family == "shiftup_public_api_tech":
         return await fetcher.fetch(
             SHIFTUP_LISTING_API,

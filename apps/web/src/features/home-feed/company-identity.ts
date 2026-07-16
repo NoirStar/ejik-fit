@@ -797,6 +797,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "네오위즈",
   },
   {
+    aliases: ["NHN 그룹", "nhn group"],
+    hosts: ["careers.nhn.com", "nhn.com"],
+    src: "/company-logo-assets/nhn-group",
+    displayName: "NHN 그룹",
+  },
+  {
     aliases: ["NHN KCP", "nhnkcp", "kcp"],
     hosts: ["kcp.career.greetinghr.com"],
     src: "/company-logo-assets/nhn-kcp",
