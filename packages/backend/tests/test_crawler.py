@@ -1199,6 +1199,53 @@ def test_fetch_listing_page_collects_every_workday_page() -> None:
     assert len(crawler._apply_source_opening_filters(source, openings)) == 3
 
 
+def test_lg_uplus_filter_keeps_security_and_excludes_facilities_engineering() -> None:
+    source = CareerSource(
+        company=Company(name="LG유플러스", slug="lg-uplus"),
+        base_url=(
+            "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
+            "#lg-uplus"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="lg_careers_lguplus_tech",
+    )
+    payload = {
+        "status": "S",
+        "data": {
+            "jobNoticeList": [
+                {
+                    "jobNoticeId": 1001,
+                    "companyName": "LG유플러스",
+                    "jobNoticeName": "[정보보안센터] 침해사고 예방 및 대응 경력채용",
+                    "noticeStatus": "POSTING",
+                },
+                {
+                    "jobNoticeId": 1002,
+                    "companyName": "LG유플러스",
+                    "jobNoticeName": "[Enterprise부문] AIDC 전기/기계 엔지니어 경력채용",
+                    "noticeStatus": "POSTING",
+                },
+                {
+                    "jobNoticeId": 1003,
+                    "companyName": "LG유플러스",
+                    "jobNoticeName": "[Consumer부문] 회계/정산 계약직 채용",
+                    "noticeStatus": "POSTING",
+                },
+            ]
+        },
+    }
+
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        json.dumps(payload, ensure_ascii=False),
+        source.base_url,
+        source.connector_family,
+    )
+    filtered = crawler._apply_source_opening_filters(source, openings)
+
+    assert [opening.external_id for opening in filtered] == ["1001"]
+
+
 def test_fetch_listing_page_collects_every_apple_korea_page() -> None:
     listing_url = (
         "https://jobs.apple.com/en-us/search?location=korea-republic-of-KOR"

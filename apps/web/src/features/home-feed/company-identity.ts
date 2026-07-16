@@ -235,6 +235,23 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "콴다(QANDA)",
   },
   {
+    aliases: ["lg ai연구원", "lg ai 연구원", "lg ai research"],
+    hosts: ["lgresearch.ai", "www.lgresearch.ai"],
+    src: "/company-logo-assets/lg-ai-research",
+    displayName: "LG AI연구원",
+  },
+  {
+    aliases: ["lg유플러스", "lg u+", "lg uplus", "lguplus"],
+    hosts: [
+      "api.careers.lg.com",
+      "careers.lg.com",
+      "lguplus.com",
+      "www.lguplus.com",
+    ],
+    src: "/company-logo-assets/lg-uplus",
+    displayName: "LG유플러스",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

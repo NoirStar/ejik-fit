@@ -142,6 +142,15 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "amazon_jobs_korea_tech":
         return openings
+    if source.connector_family == "lg_ai_research_public_api_tech":
+        return openings
+    if source.connector_family == "lg_careers_lguplus_tech":
+        return [
+            opening
+            for opening in openings
+            if is_technical_role(opening.title)
+            and "전기/기계 엔지니어" not in opening.title
+        ]
     if source.connector_family == "jibe_api_korea_tech":
         return openings
     if source.connector_family == "sap_public_jobs_korea_tech":

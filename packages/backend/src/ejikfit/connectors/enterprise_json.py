@@ -38,6 +38,34 @@ AMAZON_TECH_JOB_CATEGORIES = {
     "Systems, Quality, & Security Engineering",
 }
 
+LG_AI_EMPLOYMENT_TYPES = {
+    "JBAAAA": "Full-time",
+    "JBBBBB": "Contract",
+    "JBCCCC": "Internship",
+    "JBEEEE": "Postdoctoral",
+}
+LG_AI_TECH_GROUPS = {
+    "JCAAAA": "AI Research",
+    "JCAAAC": "AI Engineering",
+}
+LG_AI_RESEARCH_AREAS = {
+    "JAAAAA": "Data Intelligence",
+    "JAAADD": "Language",
+    "JAAAEE": "Physical Intelligence",
+    "JAAAHH": "Superintelligence",
+    "JAAAHU": "Advanced Agent",
+    "JAAAKK": "Platform & Infra",
+    "JAAAXX": "Materials Intelligence",
+    "JAPPPA": "Data & Analytics",
+    "JAPPPP": "Product Development",
+    "JAQQQQ": "Bio Intelligence",
+    "JASSSS": "EXAONE",
+}
+LG_AI_OFFICES = {
+    "JDAAAA": "Magok, Seoul",
+    "JDBBBB": "Ann Arbor, Michigan",
+}
+
 
 def _posco_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
     recu_list = data.get("recuList")
@@ -111,6 +139,75 @@ def _sk_careers_payload(data: dict[str, Any]) -> dict[str, Any] | None:
                 "closeDate": _sk_date(item.get("end")),
                 "department": item.get("corpName"),
                 "jobGroup": item.get("jobRole"),
+            }
+        )
+    return {"jobs": jobs}
+
+
+def _lg_ai_group_names(value: Any) -> list[str]:
+    if not isinstance(value, str):
+        return []
+    return list(
+        dict.fromkeys(
+            LG_AI_TECH_GROUPS[code]
+            for code in value.split(",")
+            if code in LG_AI_TECH_GROUPS
+        )
+    )
+
+
+def _lg_ai_research_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+    payload = data.get("data")
+    if not isinstance(payload, dict):
+        return None
+    recruit_list = payload.get("list")
+    if not isinstance(recruit_list, list) or not any(
+        isinstance(item, dict) and "seq" in item and "jbrl" in item
+        for item in recruit_list
+    ):
+        return None
+
+    jobs: list[dict[str, Any]] = []
+    for item in recruit_list:
+        if not isinstance(item, dict):
+            continue
+        posting_id = item.get("seq")
+        title = item.get("jbrl")
+        groups = _lg_ai_group_names(item.get("groupCd"))
+        if (
+            posting_id is None
+            or not isinstance(title, str)
+            or not groups
+            or item.get("officeCd") != "JDAAAA"
+            or item.get("expsYn") != "Y"
+        ):
+            continue
+        compact_title = "".join(title.casefold().split())
+        if "인재풀" in compact_title or "talentpool" in compact_title:
+            continue
+
+        employment_type = LG_AI_EMPLOYMENT_TYPES.get(item.get("jobtypeCd"))
+        jobs.append(
+            {
+                "id": str(posting_id),
+                "title": unescape(title),
+                "jobDetailUrl": (
+                    "https://www.lgresearch.ai/careers/view?"
+                    f"{urlencode({'seq': str(posting_id)})}"
+                ),
+                "content": item.get("cont") or item.get("rspn"),
+                "employmentType": employment_type,
+                "careerTypeName": (
+                    "신입" if employment_type == "Internship" else None
+                ),
+                "location": LG_AI_OFFICES.get(item.get("officeCd")),
+                "startDate": _compact_yyyymmdd(item.get("prdStrtYmd")),
+                "closeDate": _compact_yyyymmdd(item.get("prdEndYmd")),
+                "department": LG_AI_RESEARCH_AREAS.get(item.get("rlmCd")),
+                "jobGroup": " | ".join(groups),
+                "companyName": "LG AI Research",
+                "active": True,
+                "live": True,
             }
         )
     return {"jobs": jobs}
@@ -650,6 +747,9 @@ def parse_enterprise_json_openings(
         if cj_payload is not None:
             return parse_static_payload_openings(cj_payload, listing_url)
     if isinstance(data, dict):
+        lg_ai_payload = _lg_ai_research_payload(data)
+        if lg_ai_payload is not None:
+            return parse_static_payload_openings(lg_ai_payload, listing_url)
         amazon_payload = _amazon_jobs_payload(data, listing_url)
         if amazon_payload is not None:
             return parse_static_payload_openings(amazon_payload, listing_url)

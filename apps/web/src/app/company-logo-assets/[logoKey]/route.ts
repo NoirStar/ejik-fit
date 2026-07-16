@@ -113,6 +113,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://globalcareers.lge.com/gcr-content/og_image_lge_careers.png",
   "lg-cns":
     "https://www.lgcns.com/etc.clientlibs/lgcns/clientlibs/clientlib-site/resources/image/favicon.ico",
+  "lg-ai-research": "https://www.lgresearch.ai/favicon.ico",
+  "lg-uplus": "https://www.lguplus.com/static/pc-static/icon_512_lgu.png",
   "line-plus":
     "https://vos.line-scdn.net/landpress-content-v2-3ub8nanc40829phmlme9ov4o/1708056773171.png",
   lunit:

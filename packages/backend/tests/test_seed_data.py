@@ -76,6 +76,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "kia",
         "lg-electronics",
         "lg-cns",
+        "lg-ai-research",
+        "lg-uplus",
         "sk-hynix",
         "sk-telecom",
         "kt",
@@ -90,6 +92,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     blocked_enterprise_slugs: set[str] = set()
     non_runnable_enterprise_slugs = enterprise_slugs - {
         "lg-cns",
+        "lg-ai-research",
+        "lg-uplus",
         "lg-electronics",
         "sk-hynix",
         "posco-dx",
@@ -118,6 +122,28 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["lg-electronics"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["lg-cns"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["lg-cns"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["lg-ai-research"].source_type == (
+        SourceType.ENTERPRISE_JSON
+    )
+    assert catalog_by_slug["lg-ai-research"].connector_family == (
+        "lg_ai_research_public_api_tech"
+    )
+    assert catalog_by_slug["lg-ai-research"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["lg-uplus"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["lg-uplus"].connector_family == (
+        "lg_careers_lguplus_tech"
+    )
+    assert catalog_by_slug["lg-uplus"].request_body == {
+        "lnbSearch": "",
+        "hashTagText": "",
+        "recDate": "CREATION_DATE",
+        "order": "DESC",
+        "careerList": [],
+        "companyCodeList": ["LGU"],
+        "desireLocList": [],
+        "jobGroupList": [],
+    }
+    assert catalog_by_slug["lg-uplus"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["posco-dx"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["posco-dx"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-telecom"].source_type == SourceType.ENTERPRISE_JSON
@@ -170,7 +196,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 146
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 148
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -306,7 +332,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 146
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 148
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url

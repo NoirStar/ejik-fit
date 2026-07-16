@@ -101,6 +101,8 @@ back to company initials when the official asset is unavailable.
 | `samsung-sds` | 삼성SDS | <https://www.samsungcareers.com/> | <https://image.samsungsds.com/resource/kr/images/app_ico.gif> | 2026-07-15 |
 | `exem` | EXEM | <https://ex-em.career.greetinghr.com/ko> | <https://www.ex-em.com/apple-icon.png> | 2026-07-15 |
 | `kakao-games` | 카카오게임즈 | <https://recruit.kakaogames.com/ko> | <https://www.kakaogamescorp.com/favicon.ico> | 2026-07-15 |
+| `lg-ai-research` | LG AI연구원 | <https://www.lgresearch.ai/careers> | <https://www.lgresearch.ai/favicon.ico> | 2026-07-15 |
+| `lg-uplus` | LG유플러스 | <https://careers.lg.com/> | <https://www.lguplus.com/static/pc-static/icon_512_lgu.png> | 2026-07-15 |
 
 ## Assets intentionally not stored
 

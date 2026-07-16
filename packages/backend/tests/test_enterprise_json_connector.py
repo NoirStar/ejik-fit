@@ -217,6 +217,103 @@ def test_parse_enterprise_json_openings_maps_lg_cns_job_notice_api() -> None:
     assert opening.closes_at.isoformat() == "2026-07-31T23:00:00+09:00"
 
 
+def test_parse_enterprise_json_openings_keeps_only_domestic_lg_ai_technical_roles() -> None:
+    payload = {
+        "status": 200,
+        "code": "00",
+        "message": "Success",
+        "data": {
+            "totalSize": 5,
+            "pageSize": 100,
+            "lastPage": True,
+            "nextPageAvailable": False,
+            "list": [
+                {
+                    "seq": 316,
+                    "jbrl": "Tech Lead (Agentic Search) - Superintelligence Lab",
+                    "rspn": "Lead agentic retrieval and production deployment.",
+                    "cont": "<p>Build Python and distributed inference systems.</p>",
+                    "jobtypeCd": "JBAAAA",
+                    "groupCd": "JCAAAA,JCAAAA",
+                    "officeCd": "JDAAAA",
+                    "rlmCd": "JAAAHH",
+                    "prdStrtYmd": "20260713",
+                    "prdEndYmd": "20261231",
+                    "expsYn": "Y",
+                },
+                {
+                    "seq": 254,
+                    "jbrl": "Backend Engineer Internship",
+                    "rspn": "Develop backend APIs.",
+                    "cont": "<p>Experience with FastAPI and PostgreSQL.</p>",
+                    "jobtypeCd": "JBCCCC",
+                    "groupCd": "JCAAAC,JCAAAC",
+                    "officeCd": "JDAAAA",
+                    "rlmCd": "JAPPPP",
+                    "prdStrtYmd": "20260422",
+                    "prdEndYmd": "20261231",
+                    "expsYn": "Y",
+                },
+                {
+                    "seq": 312,
+                    "jbrl": "Enterprise Customer Success Manager",
+                    "jobtypeCd": "JBAAAA",
+                    "groupCd": "JCAADD,JCAADD",
+                    "officeCd": "JDAAAA",
+                    "rlmCd": "JAQWWE",
+                    "expsYn": "Y",
+                },
+                {
+                    "seq": 165,
+                    "jbrl": "Research Engineer (Global AI Center, Ann Arbor)",
+                    "jobtypeCd": "JBAAAA",
+                    "groupCd": "JCAAAA",
+                    "officeCd": "JDBBBB",
+                    "rlmCd": "JAAADD",
+                    "expsYn": "Y",
+                },
+                {
+                    "seq": 66,
+                    "jbrl": "(인재풀) Research Scientist/Engineer - Language Lab",
+                    "jobtypeCd": "JBAAAA",
+                    "groupCd": "JCAAAA",
+                    "officeCd": "JDAAAA",
+                    "rlmCd": "JAAADD",
+                    "expsYn": "Y",
+                },
+            ],
+        },
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        "https://www.lgresearch.ai/api/board/rcrt/list?pg=1&pgSz=100",
+    )
+
+    assert [opening.external_id for opening in openings] == ["316", "254"]
+    lead, internship = openings
+    assert lead.url == "https://www.lgresearch.ai/careers/view?seq=316"
+    assert lead.title == "Tech Lead (Agentic Search) - Superintelligence Lab"
+    assert lead.location == "Magok, Seoul"
+    assert lead.employment_type == "Full-time"
+    assert lead.career_type is None
+    assert lead.description_text == (
+        "Build Python and distributed inference systems. "
+        "Superintelligence AI Research LG AI Research"
+    )
+    assert lead.opens_at is not None
+    assert lead.opens_at.isoformat() == "2026-07-13T00:00:00+09:00"
+    assert lead.closes_at is not None
+    assert lead.closes_at.isoformat() == "2026-12-31T00:00:00+09:00"
+
+    assert internship.career_type == "new_comer"
+    assert internship.employment_type == "Internship"
+    assert internship.description_text == (
+        "Experience with FastAPI and PostgreSQL. "
+        "Product Development AI Engineering LG AI Research"
+    )
+
+
 def test_parse_enterprise_json_openings_maps_posco_recruit_list_api() -> None:
     payload = {
         "summary": [{"TOT_CNT": 1, "CNT": 1, "S_NM": "경력"}],

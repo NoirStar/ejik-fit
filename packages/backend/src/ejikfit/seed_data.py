@@ -2306,6 +2306,68 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="LG AI연구원",
+        slug="lg-ai-research",
+        base_url=(
+            "https://www.lgresearch.ai/api/board/rcrt/list?pg=1&pgSz=100"
+            "&schLangTp=KR&schExpsYn=Y&schJobtypeCd=&schGroupCd="
+            "&schRlmCd=&schFld=career&schTxt="
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.lgresearch.ai",
+        sector="ai_research",
+        connector_family="lg_ai_research_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official LG AI Research public recruitment API; limited to "
+            "visible AI Research and AI Engineering roles based in Seoul, "
+            "excluding overseas openings and talent pools."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="LG유플러스",
+        slug="lg-uplus",
+        base_url=(
+            "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
+            "#lg-uplus"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.lguplus.com",
+        sector="telecommunications",
+        connector_family="lg_careers_lguplus_tech",
+        request_method="POST",
+        request_body={
+            "lnbSearch": "",
+            "hashTagText": "",
+            "recDate": "CREATION_DATE",
+            "order": "DESC",
+            "careerList": [],
+            "companyCodeList": ["LGU"],
+            "desireLocList": [],
+            "jobGroupList": [],
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=3,
+        notes=(
+            "Official LG Careers API filtered to LG Uplus; only explicit "
+            "software, data, infrastructure, QA, and information-security "
+            "roles are retained."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="SK하이닉스",
         slug="sk-hynix",
         base_url=(

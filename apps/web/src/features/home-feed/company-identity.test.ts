@@ -374,6 +374,16 @@ describe("companyIdentity", () => {
     ],
     ["LG CNS", "https://api.careers.lg.com/jobs/1", "lg-cns"],
     [
+      "LG AI연구원",
+      "https://www.lgresearch.ai/careers/view?seq=316",
+      "lg-ai-research",
+    ],
+    [
+      "LG유플러스",
+      "https://careers.lg.com/apply/detail?id=1001958",
+      "lg-uplus",
+    ],
+    [
       "SK하이닉스",
       "https://talent.skhynix.com/hub/ko/apply/job/1",
       "sk-hynix",
