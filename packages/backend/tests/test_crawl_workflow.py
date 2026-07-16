@@ -12,7 +12,9 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert 'cron: "17 */6 * * *"' in workflow
     assert "workflow_dispatch:" in workflow
     assert "company_slug:" in workflow
-    assert 'ejikfit crawl-source --company-slug "$COMPANY_SLUG"' in workflow
+    assert "IFS=',' read -r -a slugs" in workflow
+    assert 'for slug in "${slugs[@]}"' in workflow
+    assert 'ejikfit crawl-source --company-slug "$slug"' in workflow
     assert "cancel-in-progress: false" in workflow
     assert "timeout-minutes: 120" in workflow
     assert "ejikfit crawl-all" in workflow
