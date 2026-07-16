@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     s3_secret_key: str = "ejikfit-local-secret"
     s3_bucket: str = "raw-snapshots"
     crawler_user_agent: str = "EjikFitBot/0.1 (+https://github.com/NoirStar/ejik-fit)"
+    crawler_max_workers: int = Field(default=4, ge=1, le=8)
 
 
 @lru_cache

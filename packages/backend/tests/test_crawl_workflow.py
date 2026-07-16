@@ -22,4 +22,5 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert "python -m playwright install --with-deps chromium" in workflow
     assert "SEARCH_BACKEND: postgres" in workflow
     assert "POSTGRES_SEARCH_MODE: pgroonga" in workflow
+    assert 'CRAWLER_MAX_WORKERS: "4"' in workflow
     assert "secrets.CRAWLER_DATABASE_URL" in workflow

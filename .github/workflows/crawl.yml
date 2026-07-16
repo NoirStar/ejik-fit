@@ -32,6 +32,7 @@ jobs:
       S3_ACCESS_KEY: ${{ secrets.SUPABASE_S3_ACCESS_KEY }}
       S3_SECRET_KEY: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
       S3_BUCKET: raw-snapshots
+      CRAWLER_MAX_WORKERS: "4"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

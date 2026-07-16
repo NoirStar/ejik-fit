@@ -3,6 +3,8 @@ import json
 import logging
 import time
 import uuid
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol
@@ -287,6 +289,7 @@ class CrawlResult:
 class SourceRunTarget:
     source_id: str
     label: str
+    base_url: str = ""
 
 
 class BrowserRenderer(Protocol):
@@ -1978,6 +1981,7 @@ def _allowed_sources() -> list[SourceRunTarget]:
             SourceRunTarget(
                 str(source.id),
                 f"{source.company.name} / {source.source_type.value}",
+                source.base_url,
             )
             for source in session.scalars(statement)
         ]
@@ -2008,46 +2012,116 @@ def _capture_run_market_snapshot(
         }
 
 
-def run_all_sources() -> dict[str, Any]:
-    results: list[dict[str, Any]] = []
+PROVIDER_HOST_SUFFIXES = (
+    "ashbyhq.com",
+    "greenhouse.io",
+    "greetinghr.com",
+    "lever.co",
+    "myworkdayjobs.com",
+    "ninehire.site",
+    "recruiter.co.kr",
+    "roundhr.com",
+    "skcareers.com",
+    "workable.com",
+)
+
+
+def _source_concurrency_key(target: SourceRunTarget) -> str:
+    hostname = (urlparse(target.base_url).hostname or "").casefold()
+    for provider_host in PROVIDER_HOST_SUFFIXES:
+        if hostname == provider_host or hostname.endswith(f".{provider_host}"):
+            return provider_host
+    return hostname or f"source:{target.source_id}"
+
+
+def _crawl_run_target(
+    index: int,
+    total_sources: int,
+    target: SourceRunTarget,
+) -> tuple[int, dict[str, Any]]:
+    print(
+        f"crawl source {index}/{total_sources} started: {target.label}",
+        flush=True,
+    )
+    started_at = time.monotonic()
+    try:
+        counts = run_source_by_id(target.source_id)
+    except Exception as error:
+        logger.exception("Source %s failed unexpectedly", target.source_id)
+        counts = {
+            "discovered": 0,
+            "ingested": 0,
+            "failed": 1,
+            "closed": 0,
+            "error": type(error).__name__,
+        }
+    elapsed_seconds = time.monotonic() - started_at
+    print(
+        f"crawl source {index}/{total_sources} finished: {target.label} "
+        f"discovered={counts['discovered']} "
+        f"ingested={counts['ingested']} "
+        f"failed={counts['failed']} "
+        f"closed={counts['closed']} "
+        f"elapsed={elapsed_seconds:.1f}s",
+        flush=True,
+    )
+    return index, {
+        "source_id": target.source_id,
+        "source_label": target.label,
+        "elapsed_seconds": elapsed_seconds,
+        **counts,
+    }
+
+
+def _crawl_host_group(
+    targets: list[tuple[int, SourceRunTarget]],
+    total_sources: int,
+) -> list[tuple[int, dict[str, Any]]]:
+    return [
+        _crawl_run_target(index, total_sources, target)
+        for index, target in targets
+    ]
+
+
+def run_all_sources(max_workers: int | None = None) -> dict[str, Any]:
     targets = _allowed_sources()
     total_sources = len(targets)
+    configured_workers = (
+        get_settings().crawler_max_workers
+        if max_workers is None
+        else max_workers
+    )
+    if configured_workers < 1:
+        raise ValueError("max_workers must be greater than 0")
 
+    grouped_targets: dict[
+        str,
+        list[tuple[int, SourceRunTarget]],
+    ] = defaultdict(list)
     for index, target in enumerate(targets, start=1):
-        print(
-            f"crawl source {index}/{total_sources} started: {target.label}",
-            flush=True,
-        )
-        started_at = time.monotonic()
-        try:
-            counts = run_source_by_id(target.source_id)
-        except Exception as error:
-            logger.exception("Source %s failed unexpectedly", target.source_id)
-            counts = {
-                "discovered": 0,
-                "ingested": 0,
-                "failed": 1,
-                "closed": 0,
-                "error": type(error).__name__,
-            }
-        elapsed_seconds = time.monotonic() - started_at
-        print(
-            f"crawl source {index}/{total_sources} finished: {target.label} "
-            f"discovered={counts['discovered']} "
-            f"ingested={counts['ingested']} "
-            f"failed={counts['failed']} "
-            f"closed={counts['closed']} "
-            f"elapsed={elapsed_seconds:.1f}s",
-            flush=True,
-        )
-        results.append(
-            {
-                "source_id": target.source_id,
-                "source_label": target.label,
-                "elapsed_seconds": elapsed_seconds,
-                **counts,
-            }
-        )
+        grouped_targets[_source_concurrency_key(target)].append((index, target))
+
+    indexed_results: list[tuple[int, dict[str, Any]]] = []
+    worker_count = min(configured_workers, len(grouped_targets))
+    if worker_count <= 1:
+        for group in grouped_targets.values():
+            indexed_results.extend(_crawl_host_group(group, total_sources))
+    else:
+        with ThreadPoolExecutor(
+            max_workers=worker_count,
+            thread_name_prefix="ejikfit-crawler",
+        ) as executor:
+            futures = [
+                executor.submit(_crawl_host_group, group, total_sources)
+                for group in grouped_targets.values()
+            ]
+            for future in as_completed(futures):
+                indexed_results.extend(future.result())
+
+    results = [
+        result
+        for _, result in sorted(indexed_results, key=lambda item: item[0])
+    ]
 
     market_snapshot = _capture_run_market_snapshot(results, total_sources)
     print(

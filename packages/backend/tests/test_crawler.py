@@ -1,6 +1,8 @@
 import asyncio
 import json
 import sys
+import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
@@ -312,6 +314,85 @@ def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
     ) in output
     assert isinstance(report["results"][0]["elapsed_seconds"], float)
     assert "market snapshot captured: date=2026-07-15" in output
+
+
+def test_crawl_all_parallelizes_hosts_but_serializes_shared_provider(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        crawler,
+        "_allowed_sources",
+        lambda: [
+            crawler.SourceRunTarget(
+                "greeting-first",
+                "첫 번째 / greeting",
+                "https://first.career.greetinghr.com/ko",
+            ),
+            crawler.SourceRunTarget(
+                "greeting-second",
+                "두 번째 / greeting",
+                "https://second.career.greetinghr.com/ko",
+            ),
+            crawler.SourceRunTarget(
+                "independent",
+                "독립 출처 / json",
+                "https://jobs.example.com/openings.json",
+            ),
+        ],
+    )
+
+    lock = threading.Lock()
+    active_total = 0
+    active_greeting = 0
+    max_active_total = 0
+    max_active_greeting = 0
+
+    def fake_run(source_id: str) -> dict[str, int]:
+        nonlocal active_total
+        nonlocal active_greeting
+        nonlocal max_active_total
+        nonlocal max_active_greeting
+
+        with lock:
+            active_total += 1
+            if source_id.startswith("greeting"):
+                active_greeting += 1
+            max_active_total = max(max_active_total, active_total)
+            max_active_greeting = max(max_active_greeting, active_greeting)
+        time.sleep(0.04)
+        with lock:
+            active_total -= 1
+            if source_id.startswith("greeting"):
+                active_greeting -= 1
+        return {
+            "discovered": 1,
+            "ingested": 1,
+            "failed": 0,
+            "closed": 0,
+        }
+
+    monkeypatch.setattr(crawler, "run_source_by_id", fake_run)
+    monkeypatch.setattr(
+        crawler,
+        "_capture_run_market_snapshot",
+        lambda results, total: {
+            "observed_on": "2026-07-15",
+            "open_postings": 3,
+            "verified_sources": 3,
+            "total_sources": total,
+            "skill_count": 1,
+        },
+    )
+
+    report = crawler.run_all_sources(max_workers=3)
+
+    assert max_active_total >= 2
+    assert max_active_greeting == 1
+    assert [item["source_id"] for item in report["results"]] == [
+        "greeting-first",
+        "greeting-second",
+        "independent",
+    ]
 
 
 class StaticFetcher:
