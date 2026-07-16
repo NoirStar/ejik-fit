@@ -23,7 +23,7 @@ back to company initials when the official asset is unavailable.
 
 | Key | Company | Official career page | Header asset | Verified |
 | --- | --- | --- | --- | --- |
-| `nexon` | 넥슨코리아 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon.png> | 2026-07-16 |
+| `nexon-korea` | 넥슨코리아 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon.png> | 2026-07-16 |
 | `neople` | 네오플 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-neople.png> | 2026-07-16 |
 | `nexon-games` | 넥슨게임즈 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon-games.png> | 2026-07-16 |
 | `nexon-hq` | 넥슨에이치큐 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/3546431e-8b05-4a03-9de0-07f5727db552.jpg> | 2026-07-16 |
@@ -36,6 +36,7 @@ back to company initials when the official asset is unavailable.
 | `diloquest` | 딜로퀘스트 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/4d80d2ca-7df3-45f3-a0e3-f62ce0f4f918.jpg> | 2026-07-16 |
 | `nexon-space` | 넥슨스페이스 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/8bcada4e-1aeb-449c-b4ae-e59cba852d6c.png> | 2026-07-16 |
 | `nxc` | 엔엑스씨 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nxc.png> | 2026-07-16 |
+| `kakao` | 카카오 | <https://careers.kakao.com/> | <https://t1.daumcdn.net/comis/common/images/favicon_64x64.ico> | 2026-07-16 |
 | `airwallex` | Airwallex | <https://careers.airwallex.com/> | <https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png> | 2026-07-15 |
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `amazon-web-services-korea` | Amazon Web Services Korea | <https://www.amazon.jobs/content/en/locations/asia-pacific/south-korea> | <https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico> | 2026-07-15 |
@@ -125,9 +126,10 @@ back to company initials when the official asset is unavailable.
 
 ## Assets intentionally not stored
 
-- Kakao: the [official Kakao CI page](https://www.kakaocorp.com/page/detail/11340)
-  says its provided images, video, and materials cannot be used commercially.
-  The product uses an initials mark instead.
+- Kakao: the restricted downloadable CI package from the
+  [official Kakao CI page](https://www.kakaocorp.com/page/detail/11340) is not
+  stored. The UI uses only the small icon currently declared by the official
+  Kakao Careers page, through the cached proxy above.
 - LINE Plus: no official downloadable corporate identity asset with sufficiently
   clear reuse terms was found during this implementation. The product uses an
   initials mark instead.

@@ -4,7 +4,7 @@ import { companyIdentity } from "./company-identity";
 
 describe("companyIdentity", () => {
   it.each([
-    ["넥슨코리아", "nexon"],
+    ["넥슨코리아", "nexon-korea"],
     ["네오플", "neople"],
     ["넥슨게임즈", "nexon-games"],
     ["넥슨에이치큐", "nexon-hq"],
@@ -42,10 +42,16 @@ describe("companyIdentity", () => {
     );
   });
 
-  it("does not store a Kakao logo whose official page forbids commercial use", () => {
+  it("uses the official Kakao careers favicon only for its trusted host", () => {
     expect(
       companyIdentity("카카오", "https://careers.kakao.com/jobs/1"),
     ).toEqual({
+      kind: "logo",
+      src: "/company-logo-assets/kakao",
+      alt: "카카오 로고",
+      initials: "카",
+    });
+    expect(companyIdentity("카카오", "https://example.com/jobs/1")).toEqual({
       kind: "initials",
       alt: "카카오",
       initials: "카",
@@ -511,7 +517,7 @@ describe("companyIdentity", () => {
       "https://recruit.posco.com/h22a01-recruit/jobs/1",
       "posco-dx",
     ],
-    ["넥슨", "https://careers.nexon.com/job/1", "nexon"],
+    ["넥슨", "https://careers.nexon.com/job/1", "nexon-korea"],
     [
       "펄어비스",
       "https://www.pearlabyss.com/ko-KR/Company/Careers/1",

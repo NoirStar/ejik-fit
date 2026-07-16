@@ -334,6 +334,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "LG유플러스",
   },
   {
+    aliases: ["카카오", "kakao"],
+    hosts: ["careers.kakao.com"],
+    src: "/company-logo-assets/kakao",
+    displayName: "카카오",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",
@@ -1086,13 +1092,13 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["넥슨코리아", "nexon korea"],
     hosts: ["careers.nexon.com", "nexon.com"],
-    src: "/company-logo-assets/nexon",
+    src: "/company-logo-assets/nexon-korea",
     displayName: "넥슨코리아",
   },
   {
     aliases: ["넥슨", "nexon"],
     hosts: ["careers.nexon.com", "nexon.com"],
-    src: "/company-logo-assets/nexon",
+    src: "/company-logo-assets/nexon-korea",
     displayName: "넥슨",
   },
   {

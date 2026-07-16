@@ -114,6 +114,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.kakaomobility.com/favicon-32x32.png",
   "kakao-mobility-mark":
     "https://www.kakaomobility.com/favicon-32x32.png",
+  kakao:
+    "https://t1.daumcdn.net/comis/common/images/favicon_64x64.ico",
   "kakao-pay":
     "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
   "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
@@ -160,6 +162,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   neowiz:
     "https://cdn.neowiz.com/neowiz-site/assets/images/favicons/android-icon-72x72.png",
   nexon:
+    "https://careers.nexon.com/files/logo/company-logo-nexon.png",
+  "nexon-korea":
     "https://careers.nexon.com/files/logo/company-logo-nexon.png",
   neople:
     "https://careers.nexon.com/files/logo/company-logo-neople.png",

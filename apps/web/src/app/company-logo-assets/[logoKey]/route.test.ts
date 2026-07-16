@@ -57,6 +57,46 @@ describe("company logo asset proxy", () => {
     );
   });
 
+  it("uses a fresh key for the official Nexon Korea wordmark", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/nexon-korea"),
+      { params: Promise.resolve({ logoKey: "nexon-korea" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://careers.nexon.com/files/logo/company-logo-nexon.png",
+      expect.any(Object),
+    );
+  });
+
+  it("proxies the icon declared by the official Kakao careers page", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array([0, 0, 1, 0, 1, 0, 64, 64]), {
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/kakao"),
+      { params: Promise.resolve({ logoKey: "kakao" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://t1.daumcdn.net/comis/common/images/favicon_64x64.ico",
+      expect.any(Object),
+    );
+  });
+
   it("uses a transparent browser-compatible user agent for official sites that reject bare bot agents", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
