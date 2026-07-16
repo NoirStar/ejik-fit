@@ -806,6 +806,39 @@ class PaginatedMicrosoftFetcher:
         )
 
 
+class DuplicatePaginatedMicrosoftFetcher(PaginatedMicrosoftFetcher):
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        indexes = (1, 2) if "start=2" in url else (0, 1)
+        payload = {
+            "status": 200,
+            "error": {"message": "", "body": ""},
+            "data": {
+                # PCS X counts location result rows, so one position can occur
+                # on more than one page while the raw row total remains four.
+                "count": 4,
+                "positions": [
+                    _microsoft_search_position(index) for index in indexes
+                ],
+            },
+            "metadata": None,
+        }
+        return crawler.FetchedPage(
+            url=url,
+            text=json.dumps(payload),
+            status_code=200,
+            headers={},
+        )
+
+
 class MicrosoftDetailFetcher:
     def __init__(self) -> None:
         self.urls: list[str] = []
@@ -1513,6 +1546,43 @@ def test_fetch_listing_page_collects_every_microsoft_korea_page() -> None:
         source.connector_family,
     )
     assert len(openings) == 3
+    assert validate_listing_response(
+        source.source_type,
+        page.text,
+        page.url,
+        openings_count=len(openings),
+    )
+
+
+def test_fetch_listing_page_deduplicates_pcsx_location_rows() -> None:
+    listing_url = (
+        "https://apply.careers.microsoft.com/api/pcsx/search?"
+        "domain=microsoft.com&query=&location=South%20Korea&start=0"
+    )
+    source = CareerSource(
+        company=Company(name="Microsoft Korea", slug="microsoft-korea"),
+        base_url=listing_url,
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="microsoft_pcsx_korea_tech",
+    )
+    fetcher = DuplicatePaginatedMicrosoftFetcher()
+
+    page = asyncio.run(crawler._fetch_listing_page(source, fetcher, None))
+    payload = json.loads(page.text)
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        page.text,
+        page.url,
+        source.connector_family,
+    )
+
+    assert payload["total"] == 3
+    assert len(payload["jobs"]) == 3
+    assert {opening.external_id for opening in openings} == {
+        "200030000",
+        "200030001",
+        "200030002",
+    }
     assert validate_listing_response(
         source.source_type,
         page.text,

@@ -1111,16 +1111,19 @@ async def _fetch_all_pcsx_careers_pages(
             "PCS Careers reports results but returned an empty page"
         )
 
-    combined_jobs = list(jobs)
+    combined_jobs: list[dict[str, Any]] = []
     seen_keys: set[str] = set()
+    raw_rows_fetched = 0
     for job in jobs:
-        if (key := _pcsx_job_key(job)) is None or key in seen_keys:
-            raise ValueError(
-                "PCS Careers page repeated or omitted a job id"
-            )
+        raw_rows_fetched += 1
+        if (key := _pcsx_job_key(job)) is None:
+            raise ValueError("PCS Careers page omitted a job id")
+        if key in seen_keys:
+            continue
         seen_keys.add(key)
+        combined_jobs.append(job)
 
-    if total > len(combined_jobs):
+    if total > len(jobs):
         page_size = len(jobs)
         page_count = (total + page_size - 1) // page_size
         if page_count > 50:
@@ -1134,19 +1137,20 @@ async def _fetch_all_pcsx_careers_pages(
             if page_total != total or not page_jobs:
                 raise ValueError("PCS Careers listing changed while paging")
             for job in page_jobs:
-                if (key := _pcsx_job_key(job)) is None or key in seen_keys:
-                    raise ValueError(
-                        "PCS Careers page repeated or omitted a job id"
-                    )
+                raw_rows_fetched += 1
+                if (key := _pcsx_job_key(job)) is None:
+                    raise ValueError("PCS Careers page omitted a job id")
+                if key in seen_keys:
+                    continue
                 seen_keys.add(key)
                 combined_jobs.append(job)
 
-    if len(combined_jobs) != total:
+    if raw_rows_fetched != total:
         raise ValueError("PCS Careers listing response is incomplete")
     return FetchedPage(
         url=first.url,
         text=json.dumps(
-            {"total": total, "jobs": combined_jobs},
+            {"total": len(combined_jobs), "jobs": combined_jobs},
             ensure_ascii=False,
         ),
         status_code=first.status_code,
