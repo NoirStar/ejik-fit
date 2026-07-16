@@ -22,6 +22,7 @@ import type {
   SourceDirectoryItem,
   SourceDirectoryResponse,
 } from "@/lib/types";
+import { getSourcePreparationCopy } from "@/lib/source-status";
 
 import styles from "./followed-companies.module.css";
 
@@ -45,6 +46,7 @@ function FollowedCompanyRow({
   onRemove: () => void;
 }) {
   const collecting = item.collection_status === "collecting";
+  const preparation = getSourcePreparationCopy(item.preparation_reason);
 
   return (
     <li className={styles.companyRow}>
@@ -57,14 +59,18 @@ function FollowedCompanyRow({
         <Link href={`/companies/${encodeURIComponent(item.company_slug)}`}>
           {item.company_name}
         </Link>
-        <span>{collectedLabel(item.last_success_at)}</span>
+        <span>
+          {collecting ? collectedLabel(item.last_success_at) : preparation.detail}
+        </span>
       </div>
       <div className={styles.companyStatus}>
-        <strong>{collecting ? `열린 공고 ${item.open_postings}건` : "연결 준비 중"}</strong>
+        <strong>
+          {collecting ? `열린 공고 ${item.open_postings}건` : preparation.label}
+        </strong>
         <span>
           {collecting
             ? "이직핏이 공식 채용페이지를 정기 확인합니다."
-            : "공고 데이터는 아직 서비스 집계에 포함하지 않습니다."}
+            : preparation.detail}
         </span>
       </div>
       <div className={styles.companyActions}>

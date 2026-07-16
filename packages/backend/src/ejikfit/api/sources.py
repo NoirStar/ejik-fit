@@ -71,6 +71,18 @@ class OfficialDunamuJobsReader:
         return payload
 
 
+def _preparation_reason(source: CareerSource) -> str | None:
+    if source.is_runnable:
+        return None
+    if source.policy_status == PolicyStatus.REVIEW:
+        return "policy_review"
+    if source.status == SourceStatus.NEEDS_BROWSER:
+        return "access_limited"
+    if source.status == SourceStatus.NEEDS_CONNECTOR:
+        return "connector_pending"
+    return "policy_review"
+
+
 class DatabaseSourceDirectoryReader:
     def __init__(self, session_factory=SessionLocal) -> None:
         self.session_factory = session_factory
@@ -114,6 +126,7 @@ class DatabaseSourceDirectoryReader:
             collecting = source.is_runnable
             source_count = open_counts.get(source.id, 0) if collecting else 0
             status = "collecting" if collecting else "preparing"
+            preparation_reason = _preparation_reason(source)
             item = companies.get(company.slug)
 
             if item is None:
@@ -123,6 +136,7 @@ class DatabaseSourceDirectoryReader:
                     "homepage_url": company.homepage_url,
                     "careers_url": source.base_url,
                     "collection_status": status,
+                    "preparation_reason": preparation_reason,
                     "open_postings": source_count,
                     "last_success_at": source.last_success_at,
                 }
@@ -145,9 +159,11 @@ class DatabaseSourceDirectoryReader:
             )
             if should_prefer_source:
                 item["careers_url"] = source.base_url
+                item["preparation_reason"] = preparation_reason
                 preferred_source_counts[company.slug] = source_count
             if collecting:
                 item["collection_status"] = "collecting"
+                item["preparation_reason"] = None
 
         return sorted(
             companies.values(),

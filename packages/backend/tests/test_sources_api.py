@@ -28,6 +28,7 @@ class FakeSourceDirectoryReader:
                 "homepage_url": "https://www.navercorp.com",
                 "careers_url": "https://recruit.navercorp.com",
                 "collection_status": "collecting",
+                "preparation_reason": None,
                 "open_postings": 12,
                 "last_success_at": datetime(
                     2026,
@@ -77,6 +78,7 @@ def test_public_source_directory_exposes_only_safe_company_fields() -> None:
                 "homepage_url": "https://www.navercorp.com",
                 "careers_url": "https://recruit.navercorp.com",
                 "collection_status": "collecting",
+                "preparation_reason": None,
                 "open_postings": 12,
                 "last_success_at": "2026-07-15T03:20:00Z",
             }
@@ -162,6 +164,18 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             status=SourceStatus.NEEDS_CONNECTOR,
             policy_status=PolicyStatus.ALLOWED,
         )
+        nexon = Company(
+            name="넥슨",
+            slug="nexon",
+            homepage_url="https://www.nexon.com",
+        )
+        nexon_source = CareerSource(
+            company=nexon,
+            base_url="https://careers.nexon.com/",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            status=SourceStatus.NEEDS_BROWSER,
+            policy_status=PolicyStatus.ALLOWED,
+        )
         blocked = Company(name="비공개 운영 대상", slug="blocked-company")
         blocked_source = CareerSource(
             company=blocked,
@@ -170,7 +184,9 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             status=SourceStatus.BLOCKED,
             policy_status=PolicyStatus.BLOCKED,
         )
-        session.add_all([naver_source, hyundai_source, blocked_source])
+        session.add_all(
+            [naver_source, hyundai_source, nexon_source, blocked_source]
+        )
         session.flush()
         session.add_all(
             [
@@ -203,9 +219,20 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "homepage_url": "https://www.navercorp.com",
             "careers_url": "https://recruit.navercorp.com/rcrt/list.do",
             "collection_status": "collecting",
+            "preparation_reason": None,
             "open_postings": 1,
             # SQLite drops timezone information for DateTime columns.
             "last_success_at": now.replace(tzinfo=None),
+        },
+        {
+            "company_name": "넥슨",
+            "company_slug": "nexon",
+            "homepage_url": "https://www.nexon.com",
+            "careers_url": "https://careers.nexon.com/",
+            "collection_status": "preparing",
+            "preparation_reason": "access_limited",
+            "open_postings": 0,
+            "last_success_at": None,
         },
         {
             "company_name": "현대자동차",
@@ -213,6 +240,7 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "homepage_url": "https://www.hyundai.com",
             "careers_url": "https://talent.hyundai.com/apply/list.hc",
             "collection_status": "preparing",
+            "preparation_reason": "connector_pending",
             "open_postings": 0,
             "last_success_at": None,
         },

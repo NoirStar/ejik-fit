@@ -26,6 +26,7 @@ describe("public trust pages", () => {
           homepage_url: "https://www.navercorp.com",
           careers_url: "https://recruit.navercorp.com",
           collection_status: "collecting",
+          preparation_reason: null,
           open_postings: 12,
           last_success_at: "2026-07-15T03:20:00Z",
         },
@@ -35,13 +36,24 @@ describe("public trust pages", () => {
           homepage_url: "https://www.hyundai.com",
           careers_url: "https://talent.hyundai.com",
           collection_status: "preparing",
+          preparation_reason: "connector_pending",
+          open_postings: 0,
+          last_success_at: null,
+        },
+        {
+          company_name: "넥슨",
+          company_slug: "nexon",
+          homepage_url: "https://www.nexon.com",
+          careers_url: "https://careers.nexon.com/",
+          collection_status: "preparing",
+          preparation_reason: "access_limited",
           open_postings: 0,
           last_success_at: null,
         },
       ],
-      total: 2,
+      total: 3,
       collecting_count: 1,
-      preparing_count: 1,
+      preparing_count: 2,
       open_postings: 12,
     });
   });
@@ -68,7 +80,11 @@ describe("public trust pages", () => {
       "https://talent.hyundai.com",
     );
     expect(screen.getByText("수집 중 1개 기업")).toBeInTheDocument();
-    expect(screen.getByText("연결 준비 1개 기업")).toBeInTheDocument();
+    expect(screen.getByText("연결 준비 2개 기업")).toBeInTheDocument();
+    expect(screen.getByText("공식 사이트 접근 제한")).toBeInTheDocument();
+    expect(
+      screen.getByText("보안 확인을 우회하지 않아 자동 수집을 보류했습니다."),
+    ).toBeInTheDocument();
 
     fireEvent.change(
       screen.getByRole("searchbox", { name: "수집 기업 검색" }),

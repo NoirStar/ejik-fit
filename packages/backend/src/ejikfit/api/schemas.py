@@ -91,6 +91,11 @@ class SourceDirectoryItem(BaseModel):
     homepage_url: str | None = None
     careers_url: str
     collection_status: Literal["collecting", "preparing"]
+    preparation_reason: Literal[
+        "access_limited",
+        "connector_pending",
+        "policy_review",
+    ] | None = None
     open_postings: int
     last_success_at: datetime | None = None
 

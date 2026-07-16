@@ -84,6 +84,11 @@ export type SourceDirectoryItem = {
   homepage_url: string | null;
   careers_url: string;
   collection_status: "collecting" | "preparing";
+  preparation_reason?:
+    | "access_limited"
+    | "connector_pending"
+    | "policy_review"
+    | null;
   open_postings: number;
   last_success_at: string | null;
 };

@@ -10,6 +10,7 @@ import type {
   SourceDirectoryItem,
   SourceDirectoryResponse,
 } from "@/lib/types";
+import { getSourcePreparationCopy } from "@/lib/source-status";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "medium",
@@ -52,6 +53,7 @@ function lastCollectedLabel(
 
 function SourceRow({ item }: { item: SourceDirectoryItem }) {
   const isCollecting = item.collection_status === "collecting";
+  const preparation = getSourcePreparationCopy(item.preparation_reason);
 
   return (
     <li className={styles.sourceRow}>
@@ -72,8 +74,10 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
           ) : (
             <strong>{item.company_name}</strong>
           )}
-          <small>
-            {lastCollectedLabel(item.last_success_at, item.collection_status)}
+          <small title={isCollecting ? undefined : preparation.detail}>
+            {isCollecting
+              ? lastCollectedLabel(item.last_success_at, item.collection_status)
+              : preparation.detail}
           </small>
         </div>
       </div>
@@ -81,8 +85,9 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
         <span
           className={styles.collectionStatus}
           data-status={item.collection_status}
+          data-reason={item.preparation_reason ?? undefined}
         >
-          {isCollecting ? "수집 중" : "연결 준비"}
+          {isCollecting ? "수집 중" : preparation.label}
         </span>
         {isCollecting && (
           <span className={styles.openCount}>열린 공고 {item.open_postings}건</span>
