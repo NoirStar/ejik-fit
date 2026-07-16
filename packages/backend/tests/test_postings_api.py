@@ -146,6 +146,19 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     ]
 
 
+def test_list_postings_combines_repeated_company_filters() -> None:
+    reader = FakePostingReader()
+    app = create_app(posting_reader=reader)
+
+    response = TestClient(app).get(
+        "/api/postings?companies=naver&companies=kakao"
+    )
+
+    assert response.status_code == 200
+    assert reader.calls[0]["company"] == "naver,kakao"
+    assert reader.count_calls[0]["company"] == "naver,kakao"
+
+
 def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:
     app = create_app(posting_reader=FakePostingReader())
     response = TestClient(app).get(

@@ -1,11 +1,26 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActivityNotificationCenter } from "./activity-notification-center";
 
 describe("ActivityNotificationCenter", () => {
-  beforeEach(() => localStorage.clear());
-  afterEach(() => cleanup());
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    localStorage.clear();
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ items: [], total: 0 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("does not invent notifications when there is no saved activity", async () => {
     render(<ActivityNotificationCenter />);
@@ -54,5 +69,63 @@ describe("ActivityNotificationCenter", () => {
       "href",
       "/career/companies",
     );
+  });
+
+  it("shows newly discovered jobs from followed companies once", async () => {
+    localStorage.setItem(
+      "ejik-fit:followed-company-slugs",
+      JSON.stringify(["naver"]),
+    );
+    localStorage.setItem(
+      "ejik-fit:company-job-notifications-checked-at",
+      "2026-07-14T00:00:00.000Z",
+    );
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          total: 1,
+          items: [
+            {
+              id: "new-job",
+              title: "검색 플랫폼 백엔드 개발자",
+              company_name: "네이버",
+              company_slug: "naver",
+              career_type: "experienced",
+              employment_type: "정규직",
+              career_min: 3,
+              career_max: null,
+              location: "성남",
+              status: "open",
+              source_url: "https://recruit.navercorp.com/new-job",
+              first_seen_at: "2026-07-15T03:00:00.000Z",
+              last_verified_at: "2026-07-15T04:00:00.000Z",
+              opens_at: null,
+              closes_at: null,
+              required_skills: ["Java"],
+              preferred_skills: [],
+              unspecified_skills: [],
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+
+    render(<ActivityNotificationCenter />);
+
+    const alert = await screen.findByText("네이버 · 새로 확인");
+    expect(alert.closest("a")).toHaveAttribute("href", "/jobs/new-job");
+    expect(screen.getByText("검색 플랫폼 백엔드 개발자")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/notifications/company-jobs",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(
+      Date.parse(
+        localStorage.getItem(
+          "ejik-fit:company-job-notifications-checked-at",
+        ) ?? "",
+      ),
+    ).toBeGreaterThan(Date.parse("2026-07-14T00:00:00.000Z"));
   });
 });

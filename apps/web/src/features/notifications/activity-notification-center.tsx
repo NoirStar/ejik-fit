@@ -27,12 +27,45 @@ import {
   readFollowedCompanySlugs,
   subscribeFollowedCompanies,
 } from "@/lib/followed-companies";
+import { normalizePostingList } from "@/lib/posting-contract";
+import type { PostingSummary } from "@/lib/types";
 
 import styles from "./activity-notification-center.module.css";
 
 type ActivityNotificationCenterProps = {
   onNavigate?: () => void;
 };
+
+type RecentCompanyJobsState =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; items: PostingSummary[] }
+  | { status: "error" };
+
+const COMPANY_JOBS_CHECKED_AT_KEY =
+  "ejik-fit:company-job-notifications-checked-at";
+const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1_000;
+
+function notificationCheckpoint(now: number) {
+  try {
+    const value = window.localStorage.getItem(COMPANY_JOBS_CHECKED_AT_KEY);
+    const parsed = value ? Date.parse(value) : Number.NaN;
+    if (Number.isFinite(parsed) && parsed <= now) return parsed;
+  } catch {
+    // A blocked local store should not hide current job data.
+  }
+  return now - INITIAL_LOOKBACK_MS;
+}
+
+function saveNotificationCheckpoint(now: number) {
+  try {
+    window.localStorage.setItem(
+      COMPANY_JOBS_CHECKED_AT_KEY,
+      new Date(now).toISOString(),
+    );
+  } catch {
+    // Notifications remain usable for the current open menu.
+  }
+}
 
 function applicationSummary(
   savedJobIds: string[],
@@ -61,6 +94,8 @@ export function ActivityNotificationCenter({
     useState<JobApplicationStages>({});
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [followedCompanySlugs, setFollowedCompanySlugs] = useState<string[]>([]);
+  const [recentCompanyJobs, setRecentCompanyJobs] =
+    useState<RecentCompanyJobsState>({ status: "idle" });
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
@@ -84,6 +119,53 @@ export function ActivityNotificationCenter({
       unsubscribeCompanies();
     };
   }, []);
+
+  const followedCompanyKey = followedCompanySlugs.join("\u0000");
+  useEffect(() => {
+    if (!hydrated || followedCompanySlugs.length === 0) {
+      setRecentCompanyJobs({ status: "ready", items: [] });
+      return;
+    }
+
+    const controller = new AbortController();
+    const checkedAt = notificationCheckpoint(Date.now());
+    setRecentCompanyJobs({ status: "loading" });
+
+    async function loadRecentCompanyJobs() {
+      try {
+        const response = await fetch("/notifications/company-jobs", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ company_slugs: followedCompanySlugs }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("company job request failed");
+        const postings = normalizePostingList(await response.json());
+        const items = postings.items
+          .filter((posting) => {
+            if (!posting.first_seen_at) return false;
+            const discoveredAt = Date.parse(posting.first_seen_at);
+            return Number.isFinite(discoveredAt) && discoveredAt > checkedAt;
+          })
+          .slice(0, 3);
+        setRecentCompanyJobs({ status: "ready", items });
+
+        if (
+          postings.items.length === 0 ||
+          postings.items.some((posting) => posting.first_seen_at)
+        ) {
+          saveNotificationCheckpoint(Date.now());
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          setRecentCompanyJobs({ status: "error" });
+        }
+      }
+    }
+
+    void loadRecentCompanyJobs();
+    return () => controller.abort();
+  }, [followedCompanyKey, followedCompanySlugs, hydrated]);
 
   const applicationCount = useMemo(
     () => savedJobIds.filter((id) => applicationStages[id]).length,
@@ -118,6 +200,23 @@ export function ActivityNotificationCenter({
 
   return (
     <div className={styles.list}>
+      {recentCompanyJobs.status === "ready" &&
+        recentCompanyJobs.items.map((job) => (
+          <Link
+            href={`/jobs/${encodeURIComponent(job.id)}`}
+            key={job.id}
+            onClick={onNavigate}
+          >
+            <span className={styles.icon} data-tone="new-job">
+              <Briefcase aria-hidden="true" size={18} weight="fill" />
+            </span>
+            <span className={styles.copy}>
+              <strong>{job.company_name} · 새로 확인</strong>
+              <small>{job.title}</small>
+            </span>
+          </Link>
+        ))}
+
       {applicationCount > 0 && (
         <Link href="/career/saved?scope=applications" onClick={onNavigate}>
           <span className={styles.icon} data-tone="application">
@@ -164,6 +263,17 @@ export function ActivityNotificationCenter({
             <small>현재 공고에서 기술별 수요를 비교해 보세요.</small>
           </span>
         </Link>
+      )}
+
+      {recentCompanyJobs.status === "loading" && (
+        <p className={styles.jobAlertStatus} role="status">
+          관심 기업의 새 공고를 확인하고 있습니다.
+        </p>
+      )}
+      {recentCompanyJobs.status === "error" && (
+        <p className={styles.jobAlertStatus} role="status">
+          관심 기업의 최근 공고를 지금은 확인하지 못했습니다.
+        </p>
       )}
     </div>
   );

@@ -50,6 +50,11 @@
   color: #a95849;
 }
 
+.icon[data-tone="new-job"] {
+  background: color-mix(in srgb, #ffebd3 72%, var(--color-surface));
+  color: #8b673c;
+}
+
 .copy {
   display: grid;
   min-width: 0;
@@ -85,6 +90,14 @@
 .state strong {
   color: var(--color-text);
   font-size: 0.875rem;
+}
+
+.jobAlertStatus {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 @media (prefers-reduced-motion: reduce) {

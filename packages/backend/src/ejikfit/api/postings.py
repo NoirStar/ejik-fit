@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Protocol
 
@@ -19,6 +20,20 @@ from .schemas import PostingDetail, PostingListResponse
 
 
 logger = logging.getLogger(__name__)
+COMPANY_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,119}$")
+MAX_COMPANY_FILTERS = 20
+
+
+def _company_slugs(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return list(
+        dict.fromkeys(
+            slug
+            for part in value.split(",")
+            if (slug := part.strip()) and COMPANY_SLUG_PATTERN.fullmatch(slug)
+        )
+    )[:MAX_COMPANY_FILTERS]
 
 
 class PostingReader(Protocol):
@@ -152,11 +167,17 @@ class DatabasePostingReader:
         limit: int = 20,
         offset: int = 0,
     ) -> list[dict]:
-        if q and self.search_index is not None and not category:
+        company_slugs = _company_slugs(company)
+        if (
+            q
+            and self.search_index is not None
+            and not category
+            and len(company_slugs) <= 1
+        ):
             try:
                 return self.search_index.search(
                     q,
-                    company=company,
+                    company=company_slugs[0] if company_slugs else None,
                     career_type=career_type,
                     limit=limit,
                     offset=offset,
@@ -208,8 +229,9 @@ class DatabasePostingReader:
             statement = statement.where(
                 _posting_search_clause(q, self.use_pgroonga)
             )
-        if company:
-            statement = statement.where(Company.slug == company)
+        company_slugs = _company_slugs(company)
+        if company_slugs:
+            statement = statement.where(Company.slug.in_(company_slugs))
         if career_type:
             statement = statement.where(
                 JobPosting.career_type == career_type
@@ -247,8 +269,9 @@ class DatabasePostingReader:
                 statement = statement.where(
                     _posting_search_clause(q, self.use_pgroonga)
                 )
-            if company:
-                statement = statement.where(Company.slug == company)
+            company_slugs = _company_slugs(company)
+            if company_slugs:
+                statement = statement.where(Company.slug.in_(company_slugs))
             if career_type:
                 statement = statement.where(
                     JobPosting.career_type == career_type
@@ -290,14 +313,23 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
     def list_postings(
         q: str | None = Query(default=None, max_length=200),
         company: str | None = Query(default=None, max_length=120),
+        companies: list[str] | None = Query(default=None),
         career_type: str | None = Query(default=None, max_length=100),
         category: str | None = Query(default=None, max_length=64),
         limit: int = Query(default=20, ge=1, le=100),
         offset: int = Query(default=0, ge=0, le=100_000),
     ) -> dict:
+        company_values = [company] if company else []
+        company_values.extend(companies or [])
+        if len(company_values) > MAX_COMPANY_FILTERS or any(
+            not COMPANY_SLUG_PATTERN.fullmatch(value)
+            for value in company_values
+        ):
+            raise HTTPException(status_code=422, detail="invalid company filter")
+        company_filter = ",".join(dict.fromkeys(company_values)) or None
         items = reader.list(
             q=q,
-            company=company,
+            company=company_filter,
             career_type=career_type,
             category=category,
             limit=limit,
@@ -305,7 +337,7 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
         )
         total = reader.count(
             q=q,
-            company=company,
+            company=company_filter,
             career_type=career_type,
             category=category,
         )

@@ -53,6 +53,7 @@ export async function getPostings(filters: {
   career_type?: string;
   category?: string;
   company?: string;
+  companies?: string[];
   limit?: number;
   offset?: number;
 } = {}): Promise<PostingListResponse> {
@@ -68,6 +69,9 @@ export async function getPostings(filters: {
   }
   if (filters.company) {
     params.set("company", filters.company);
+  }
+  for (const company of filters.companies ?? []) {
+    params.append("companies", company);
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));

@@ -216,6 +216,41 @@ def test_database_list_filters_by_confirmed_skill_category() -> None:
     assert reader.count(category="ai") == 0
 
 
+def test_database_list_filters_multiple_company_slugs_in_one_query() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    with factory() as session:
+        for slug in ("naver", "kakao", "unrelated"):
+            company = Company(name=slug, slug=slug)
+            source = CareerSource(
+                company=company,
+                base_url=f"https://careers.example.com/{slug}",
+                source_type=SourceType.JSON_LD,
+                status=SourceStatus.ALLOWED,
+            )
+            session.add(
+                JobPosting(
+                    company=company,
+                    source=source,
+                    external_id=f"job-{slug}",
+                    url=f"https://careers.example.com/{slug}/job",
+                    title=f"{slug} 공고",
+                    first_seen_at=now,
+                    last_seen_at=now,
+                    last_verified_at=now,
+                )
+            )
+        session.commit()
+
+    reader = DatabasePostingReader(session_factory=factory)
+
+    items = reader.list(company="naver,kakao", limit=10)
+    assert {item["company_slug"] for item in items} == {"naver", "kakao"}
+    assert reader.count(company="naver,kakao") == 2
+
+
 def test_category_search_uses_database_until_the_index_has_category_fields() -> None:
     class EmptySearchIndex:
         def __init__(self) -> None:
