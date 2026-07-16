@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell/app-shell";
@@ -45,6 +45,14 @@ export const metadata: Metadata = {
     icon: "/brand/ejik-fit-mascot.png",
     apple: "/brand/ejik-fit-mascot-apple.png",
   },
+};
+
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  initialScale: 1,
+  viewportFit: "cover",
+  width: "device-width",
 };
 
 

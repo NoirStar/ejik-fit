@@ -229,7 +229,7 @@
   .primaryActions {
     position: fixed;
     right: 0;
-    bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+    bottom: calc(var(--mobile-nav-height) + var(--mobile-safe-area-bottom));
     left: 0;
     z-index: calc(var(--layer-mobile-nav) - 1);
     grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.42fr);

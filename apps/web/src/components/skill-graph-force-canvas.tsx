@@ -1,5 +1,6 @@
 "use client";
 
+import { CornersOut, Minus, Plus } from "@phosphor-icons/react";
 import { forceCollide, forceX, forceY } from "d3-force";
 import type {
   ForceLink as D3ForceLink,
@@ -205,8 +206,19 @@ function paintPointerArea(
   node: SkillForceNode,
   color: string,
   ctx: CanvasRenderingContext2D,
+  touchInput: boolean,
 ) {
-  const radius = Math.max(node.kind === "posting" ? 8 : 12, (node.val ?? 4) + 7);
+  const minimumRadius = touchInput
+    ? node.kind === "posting"
+      ? 15
+      : 18
+    : node.kind === "posting"
+      ? 8
+      : 12;
+  const radius = Math.max(
+    minimumRadius,
+    (node.val ?? 4) + 7,
+  );
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);
@@ -324,6 +336,10 @@ export function SkillGraphForceCanvas({
   });
   const selectedIdRef = useRef<string | null>(selectedId);
   const reduceMotionRef = useRef(false);
+  const touchInputRef = useRef(false);
+  const readyRef = useRef(false);
+  const revealGraphRef = useRef<() => void>(() => undefined);
+  const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -334,9 +350,34 @@ export function SkillGraphForceCanvas({
     let cancelled = false;
     let mountedGraph: ForceGraphInstance | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let revealFrame = 0;
 
+    setMounted(false);
     setReady(false);
+    readyRef.current = false;
     onReadyChange?.(false);
+
+    const revealGraph = () => {
+      const graph = graphRef.current;
+      if (
+        cancelled ||
+        readyRef.current ||
+        !graph ||
+        graph.graphData().nodes.length === 0
+      ) {
+        return;
+      }
+      window.cancelAnimationFrame(revealFrame);
+      revealFrame = window.requestAnimationFrame(() => {
+        if (cancelled || readyRef.current || graphRef.current !== graph) {
+          return;
+        }
+        readyRef.current = true;
+        setReady(true);
+        onReadyChange?.(true);
+      });
+    };
+    revealGraphRef.current = revealGraph;
 
     async function mount() {
       const element = containerRef.current;
@@ -347,6 +388,9 @@ export function SkillGraphForceCanvas({
       reduceMotionRef.current = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
+      touchInputRef.current =
+        window.navigator.maxTouchPoints > 0 ||
+        window.matchMedia("(pointer: coarse)").matches;
 
       const { default: ForceGraphCtor } = await import("force-graph");
       if (cancelled || !containerRef.current) {
@@ -365,9 +409,10 @@ export function SkillGraphForceCanvas({
         .linkTarget("target")
         .minZoom(0.18)
         .maxZoom(9)
-        .enableNodeDrag(true)
+        .enableNodeDrag(!touchInputRef.current)
         .enablePanInteraction(true)
         .enableZoomInteraction(true)
+        .onEngineTick(revealGraph)
         .showPointerCursor((object) => Boolean(object))
         .onNodeHover((node) => {
           const graph = graphRef.current;
@@ -397,7 +442,9 @@ export function SkillGraphForceCanvas({
           if (node.kind === "skill") {
             onNodeSelect(String(node.id));
             if (typeof node.x === "number" && typeof node.y === "number") {
-              graphRef.current?.centerAt(node.x, node.y, 520).zoom(2.15, 520);
+              graphRef.current
+                ?.centerAt(node.x, node.y, 420)
+                .zoom(touchInputRef.current ? 1.72 : 2.15, 420);
             }
             graphRef.current?.d3ReheatSimulation();
           }
@@ -414,8 +461,7 @@ export function SkillGraphForceCanvas({
         });
 
       graphRef.current = mountedGraph;
-      setReady(true);
-      onReadyChange?.(true);
+      setMounted(true);
 
       resizeObserver = new ResizeObserver(() => {
         if (!containerRef.current || !graphRef.current) {
@@ -437,9 +483,13 @@ export function SkillGraphForceCanvas({
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(revealFrame);
       resizeObserver?.disconnect();
       mountedGraph?._destructor();
       graphRef.current = null;
+      revealGraphRef.current = () => undefined;
+      readyRef.current = false;
+      setMounted(false);
       setReady(false);
       onReadyChange?.(false);
     };
@@ -454,6 +504,9 @@ export function SkillGraphForceCanvas({
     graph.graphData(cloneGraphData(data));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
+    if (reduceMotionRef.current) {
+      window.requestAnimationFrame(() => revealGraphRef.current());
+    }
 
     if (data.nodes.length > 0) {
       window.setTimeout(() => {
@@ -467,7 +520,7 @@ export function SkillGraphForceCanvas({
         graphRef.current.zoomToFit(520, 92);
       }, 80);
     }
-  }, [data, display.animate, forces, ready]);
+  }, [data, display.animate, forces, mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -494,7 +547,9 @@ export function SkillGraphForceCanvas({
         ),
       )
       .nodeCanvasObjectMode(() => "replace")
-      .nodePointerAreaPaint(paintPointerArea)
+      .nodePointerAreaPaint((node, color, ctx) =>
+        paintPointerArea(node, color, ctx, touchInputRef.current),
+      )
       .linkWidth((link) => {
         const focused =
           highlightRef.current.links.size === 0 || highlightRef.current.links.has(link.id);
@@ -520,7 +575,7 @@ export function SkillGraphForceCanvas({
 
     configureAnimation(graph, display.animate, reduceMotionRef.current);
     graph.d3ReheatSimulation();
-  }, [display, selectedId, ready]);
+  }, [display, selectedId, mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -529,7 +584,7 @@ export function SkillGraphForceCanvas({
     }
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
-  }, [forces, display.animate, ready]);
+  }, [forces, display.animate, mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -560,7 +615,7 @@ export function SkillGraphForceCanvas({
         window.cancelAnimationFrame(animationFrame);
       }
     };
-  }, [reheatKey, data.nodes.length, display.animate, ready]);
+  }, [reheatKey, data.nodes.length, display.animate, mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -573,11 +628,48 @@ export function SkillGraphForceCanvas({
     }
   }, [selectedId, ready]);
 
+  function changeZoom(multiplier: number) {
+    const graph = graphRef.current;
+    if (!graph) {
+      return;
+    }
+    const nextZoom = Math.min(9, Math.max(0.18, graph.zoom() * multiplier));
+    graph.zoom(nextZoom, 220);
+  }
+
+  function fitGraph() {
+    graphRef.current?.zoomToFit(360, touchInputRef.current ? 64 : 92);
+  }
+
   return (
-    <div
-      ref={containerRef}
-      className={`force-canvas ${ready ? "force-canvas--ready" : ""}`}
-      aria-hidden="true"
-    />
+    <div className={`force-canvas ${ready ? "force-canvas--ready" : ""}`}>
+      <div aria-hidden="true" className="force-canvas__surface" ref={containerRef} />
+      <div aria-label="그래프 보기 조절" className="force-canvas__controls" role="group">
+        <button
+          aria-label="그래프 축소"
+          disabled={!ready}
+          onClick={() => changeZoom(0.78)}
+          type="button"
+        >
+          <Minus aria-hidden="true" size={17} />
+        </button>
+        <button
+          aria-label="그래프 전체 맞춤"
+          disabled={!ready}
+          onClick={fitGraph}
+          type="button"
+        >
+          <CornersOut aria-hidden="true" size={17} />
+        </button>
+        <button
+          aria-label="그래프 확대"
+          disabled={!ready}
+          onClick={() => changeZoom(1.28)}
+          type="button"
+        >
+          <Plus aria-hidden="true" size={17} />
+        </button>
+      </div>
+    </div>
   );
 }

@@ -53,7 +53,18 @@ for (const width of [1440, 820, 390]) {
     page.on("pageerror", (error) => browserErrors.push(error.message));
 
     await page.setViewportSize({ height: 900, width });
+    const session = await page.context().newCDPSession(page);
+    if (width === 390) {
+      await session.send("Emulation.setSafeAreaInsetsOverride", {
+        insets: { bottom: 34, left: 0, right: 0, top: 0 },
+      });
+    }
     await page.goto("/skill-map?skill=Kubernetes");
+
+    await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
+      "content",
+      /viewport-fit=cover/,
+    );
 
     await expect(page).toHaveURL(/\/skills\/graph\?seed=Kubernetes$/);
     await expect(
@@ -98,6 +109,12 @@ for (const width of [1440, 820, 390]) {
     const graphFrame = page.getByTestId("skill-graph-frame");
     const graphBox = await graphFrame.boundingBox();
     expect(graphBox?.height).toBeGreaterThanOrEqual(width <= 640 ? 400 : 496);
+    const forceCanvas = graphFrame.locator(".force-canvas");
+    await expect(forceCanvas).toHaveClass(/force-canvas--ready/);
+    await expect(forceCanvas.locator("canvas")).toBeVisible();
+    await expect(
+      graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
+    ).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
@@ -130,17 +147,101 @@ for (const width of [1440, 820, 390]) {
     }
 
     if (width === 390) {
+      const mobileNavigation = page.getByRole("navigation", {
+        name: "모바일 주요 탐색",
+      });
+      await expect(mobileNavigation).toBeVisible();
+      await graphFrame.evaluate((element) =>
+        element.scrollIntoView({ block: "end" }),
+      );
+      const mobileNavigationBox = await mobileNavigation.boundingBox();
+      expect(mobileNavigationBox).not.toBeNull();
+
+      for (const overlay of [
+        graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
+        graphFrame.getByText("이동 · 핀치 확대 · 탭 선택"),
+      ]) {
+        const overlayBox = await overlay.boundingBox();
+        expect(overlayBox).not.toBeNull();
+        expect(overlayBox!.y + overlayBox!.height).toBeLessThanOrEqual(
+          mobileNavigationBox!.y,
+        );
+      }
+
       const quickTarget = await quickSkills
         .getByRole("link", { name: "Docker" })
         .boundingBox();
       expect(quickTarget?.height).toBeGreaterThanOrEqual(44);
 
-      const mobileNavigation = page.getByRole("navigation", {
-        name: "모바일 주요 탐색",
-      });
-      await expect(mobileNavigation).toBeVisible();
+      expect(mobileNavigationBox?.height).toBeGreaterThanOrEqual(102);
+      expect(mobileNavigationBox?.y).toBeGreaterThanOrEqual(0);
+      expect(
+        await page.evaluate(
+          () => window.visualViewport?.height ?? window.innerHeight,
+        ),
+      ).toBeGreaterThanOrEqual(
+        (mobileNavigationBox?.y ?? 0) + (mobileNavigationBox?.height ?? 0),
+      );
     }
 
     expect(browserErrors).toEqual([]);
   });
 }
+
+test("supports direct graph panning on a touch device", async ({ browser }) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3102",
+    deviceScaleFactor: 3,
+    hasTouch: true,
+    isMobile: true,
+    viewport: { height: 844, width: 390 },
+  });
+  const page = await context.newPage();
+  const session = await context.newCDPSession(page);
+  await page.goto("/skills/graph?seed=Kubernetes");
+
+  const graphFrame = page.getByTestId("skill-graph-frame");
+  const forceCanvas = graphFrame.locator(".force-canvas");
+  await expect(forceCanvas).toHaveClass(/force-canvas--ready/);
+  await graphFrame.scrollIntoViewIfNeeded();
+  const graphBox = await graphFrame.boundingBox();
+  expect(graphBox).not.toBeNull();
+
+  const canvas = forceCanvas.locator("canvas");
+  const readZoom = () =>
+    canvas.evaluate((element) => {
+      const zoom = (
+        element as HTMLCanvasElement & {
+          __zoom?: { k: number; x: number; y: number };
+        }
+      ).__zoom;
+      return zoom ? { k: zoom.k, x: zoom.x, y: zoom.y } : null;
+    });
+  const beforePan = await readZoom();
+  const x = graphBox!.x + 72;
+  const y = graphBox!.y + 72;
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [{ force: 1, id: 1, radiusX: 4, radiusY: 4, x, y }],
+    type: "touchStart",
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [
+      { force: 1, id: 1, radiusX: 4, radiusY: 4, x: x + 48, y: y + 24 },
+    ],
+    type: "touchMove",
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [],
+    type: "touchEnd",
+  });
+  await page.waitForTimeout(100);
+
+  const afterPan = await readZoom();
+  expect(beforePan).not.toBeNull();
+  expect(afterPan?.x).not.toBe(beforePan?.x);
+
+  await graphFrame.getByRole("button", { name: "그래프 확대" }).click();
+  await page.waitForTimeout(280);
+  expect((await readZoom())?.k).toBeGreaterThan(afterPan?.k ?? 0);
+  await context.close();
+});

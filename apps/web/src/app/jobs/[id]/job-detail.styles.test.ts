@@ -29,10 +29,10 @@ describe("job detail service density", () => {
       /@media \(max-width: 839px\)[\s\S]*?\.primaryActions\s*\{[\s\S]*?position: fixed/,
     );
     expect(actionCss).toContain(
-      "bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom))",
+      "bottom: calc(var(--mobile-nav-height) + var(--mobile-safe-area-bottom))",
     );
     expect(detailCss).toContain(
-      "calc(var(--mobile-nav-height) + 5.5rem + env(safe-area-inset-bottom))",
+      "calc(var(--mobile-nav-height) + 5.5rem + var(--mobile-safe-area-bottom))",
     );
   });
 });

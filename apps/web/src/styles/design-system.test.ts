@@ -35,6 +35,9 @@ describe("design system foundation", () => {
     }
 
     expect(tokens).toContain("--touch-target: 2.75rem");
+    expect(tokens).toContain(
+      "--mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);",
+    );
     expect(tokens).not.toContain("@media (prefers-color-scheme: dark)");
     expect(typography).toContain("/fonts/PretendardVariable.woff2");
     expect(typography).toContain("font-display: swap");

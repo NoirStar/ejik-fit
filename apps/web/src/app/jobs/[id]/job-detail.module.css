@@ -445,7 +445,7 @@
 @media (max-width: 839px) {
   .main {
     padding-bottom: calc(
-      var(--mobile-nav-height) + 5.5rem + env(safe-area-inset-bottom)
+      var(--mobile-nav-height) + 5.5rem + var(--mobile-safe-area-bottom)
     );
   }
 }
@@ -453,7 +453,7 @@
 @media (max-width: 680px) {
   .main {
     padding: 1.25rem 1rem
-      calc(var(--mobile-nav-height) + 5.5rem + env(safe-area-inset-bottom));
+      calc(var(--mobile-nav-height) + 5.5rem + var(--mobile-safe-area-bottom));
   }
 
   .article {

@@ -25,6 +25,11 @@ describe("skill graph layout CSS", () => {
     );
     expect(graphCss).not.toContain("background: #07111d;");
     expect(graphCss).toContain("@media (max-width: 640px)");
+    expect(css).toContain(".force-canvas__surface");
+    expect(css).not.toContain("filter: saturate(1.05) contrast(1.04);");
+    expect(css).toMatch(
+      /@media \(pointer: coarse\)[\s\S]*?touch-action: none;/,
+    );
     expect(shellCss).toContain('.content[data-immersive="true"] > :first-child');
     expect(shellCss).toContain("flex: none;");
     expect(shellCss).toContain('.content[data-immersive="true"] .footer');

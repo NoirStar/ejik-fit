@@ -706,7 +706,10 @@ export function SkillGraphExperience({
 
               <div className={styles.graphStatus}>
                 <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
-                <span>드래그 · 확대 · 선택</span>
+                <span className={styles.pointerHint}>드래그 · 확대 · 선택</span>
+                <span className={styles.touchHint}>
+                  이동 · 핀치 확대 · 탭 선택
+                </span>
               </div>
 
               {viewData.nodes.length === 0 && (

@@ -636,6 +636,20 @@
   font-weight: 700;
 }
 
+.touchHint {
+  display: none !important;
+}
+
+@media (pointer: coarse) {
+  .pointerHint {
+    display: none !important;
+  }
+
+  .touchHint {
+    display: inline-flex !important;
+  }
+}
+
 .emptyState {
   z-index: 6;
 }
@@ -1020,11 +1034,24 @@
   }
 
   .graphStatus {
-    bottom: calc(var(--mobile-nav-height) + 0.75rem);
+    bottom: calc(
+      var(--mobile-nav-height) + var(--mobile-safe-area-bottom) + 0.75rem
+    );
   }
 
-  .graphStatus span:last-child {
-    display: none;
+  .graphFrame :global(.force-canvas__controls) {
+    bottom: calc(
+      var(--mobile-nav-height) + var(--mobile-safe-area-bottom) + 0.75rem
+    );
+  }
+
+  .graphStatus span:first-child,
+  .graphStatus .pointerHint {
+    display: none !important;
+  }
+
+  .graphStatus .touchHint {
+    display: inline-flex !important;
   }
 
   .signals,
