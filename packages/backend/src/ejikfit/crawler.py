@@ -18,7 +18,6 @@ from tenacity import (
     AsyncRetrying,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
 )
 
 from ejikfit.connectors.apple import (
@@ -272,7 +271,50 @@ def _discover_greeting_source_refs(source: CareerSource, html: str):
 
 
 class RetryableFetchError(RuntimeError):
-    pass
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        retry_after_seconds: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.retry_after_seconds = retry_after_seconds
+
+
+def _retry_delay_seconds(
+    error: BaseException | None,
+    *,
+    attempt_number: int,
+) -> float:
+    """Use a real cooldown for rate limits without slowing ordinary retries."""
+
+    if isinstance(error, RetryableFetchError) and error.status_code == 429:
+        progressive_cooldown = min(10 * max(attempt_number, 1), 60)
+        return float(
+            max(error.retry_after_seconds or 0, progressive_cooldown)
+        )
+    return float(min(2 ** max(attempt_number - 1, 0), 8))
+
+
+def _retry_wait(retry_state: Any) -> float:
+    outcome = retry_state.outcome
+    error = outcome.exception() if outcome is not None else None
+    return _retry_delay_seconds(
+        error,
+        attempt_number=retry_state.attempt_number,
+    )
+
+
+def _retry_after_seconds(value: str | None) -> int | None:
+    if value is None:
+        return None
+    try:
+        seconds = int(value.strip())
+    except ValueError:
+        return None
+    return min(max(seconds, 0), 60)
 
 
 class BlockedSourceError(RuntimeError):
@@ -324,6 +366,7 @@ def contains_access_challenge(html: str) -> bool:
 class HttpFetcher:
     def __init__(self, user_agent: str) -> None:
         self.user_agent = user_agent
+        self._cookies = httpx.Cookies()
 
     async def fetch(
         self,
@@ -337,7 +380,7 @@ class HttpFetcher:
         request_method = method.upper()
         retrying = AsyncRetrying(
             stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=1, max=8),
+            wait=_retry_wait,
             retry=retry_if_exception_type(
                 (RetryableFetchError, httpx.TransportError)
             ),
@@ -349,6 +392,7 @@ class HttpFetcher:
                 async with httpx.AsyncClient(
                     follow_redirects=True,
                     timeout=20.0,
+                    cookies=self._cookies,
                     headers={
                         "User-Agent": self.user_agent,
                         **(dict(headers) if headers is not None else {}),
@@ -360,6 +404,7 @@ class HttpFetcher:
                         json=json_body if request_method != "GET" else None,
                         data=form_body if request_method != "GET" else None,
                     )
+                    self._cookies.update(response.cookies)
 
                 if response.status_code in {401, 403}:
                     raise BlockedSourceError(
@@ -367,7 +412,11 @@ class HttpFetcher:
                     )
                 if response.status_code == 429 or response.status_code >= 500:
                     raise RetryableFetchError(
-                        f"temporary upstream status {response.status_code}"
+                        f"temporary upstream status {response.status_code}",
+                        status_code=response.status_code,
+                        retry_after_seconds=_retry_after_seconds(
+                            response.headers.get("Retry-After")
+                        ),
                     )
                 response.raise_for_status()
 

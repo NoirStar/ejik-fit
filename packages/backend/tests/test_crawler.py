@@ -109,6 +109,29 @@ def test_access_challenge_detection_avoids_job_description_false_positive() -> N
     ) is True
 
 
+def test_rate_limit_retry_waits_longer_and_honors_retry_after() -> None:
+    rate_limited = crawler.RetryableFetchError(
+        "temporary upstream status 429",
+        status_code=429,
+    )
+    server_directed = crawler.RetryableFetchError(
+        "temporary upstream status 429",
+        status_code=429,
+        retry_after_seconds=45,
+    )
+
+    assert crawler._retry_delay_seconds(rate_limited, attempt_number=1) == 10
+    assert crawler._retry_delay_seconds(rate_limited, attempt_number=2) == 20
+    assert crawler._retry_delay_seconds(server_directed, attempt_number=1) == 45
+    assert crawler._retry_delay_seconds(
+        crawler.RetryableFetchError(
+            "temporary upstream status 503",
+            status_code=503,
+        ),
+        attempt_number=2,
+    ) == 2
+
+
 def test_playwright_renderer_uses_domcontentloaded_and_tolerates_networkidle_timeout(
     monkeypatch,
 ) -> None:
