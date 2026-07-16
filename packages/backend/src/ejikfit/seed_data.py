@@ -2370,6 +2370,105 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="티맵모빌리티",
+        slug="tmap-mobility",
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#tmap-mobility"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.tmapmobility.com",
+        sector="mobility_platform",
+        connector_family="enterprise_json",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10084",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=2,
+        notes=(
+            "Official SK Careers JSON listing filtered to Tmap Mobility "
+            "with corpCode=10084; only technical roles are retained."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="SK실트론",
+        slug="sk-siltron",
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-siltron"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.sksiltron.com",
+        sector="semiconductor",
+        connector_family="enterprise_json",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10008",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=2,
+        notes=(
+            "Official SK Careers JSON listing filtered to SK siltron with "
+            "corpCode=10008; only technical roles are retained."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="SK시그넷",
+        slug="sk-signet",
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-signet"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.sksignet.com",
+        sector="ev_infrastructure",
+        connector_family="enterprise_json",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10042",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=2,
+        notes=(
+            "Official SK Careers JSON listing filtered to SK signet with "
+            "corpCode=10042; only technical roles are retained."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="KT",
         slug="kt",
         base_url=(

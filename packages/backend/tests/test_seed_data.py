@@ -170,7 +170,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 143
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 146
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -306,7 +306,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 143
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 146
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -978,6 +978,22 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
             "workingType": "",
             "workingRegion": "",
         }
+
+        for slug, corp_code in {
+            "tmap-mobility": "10084",
+            "sk-siltron": "10008",
+            "sk-signet": "10042",
+        }.items():
+            source = sources_by_slug[slug]
+            assert source.status == SourceStatus.ALLOWED
+            assert source.source_type == SourceType.ENTERPRISE_JSON
+            assert source.connector_family == "enterprise_json"
+            assert source.base_url == (
+                "https://www.skcareers.com/Recruit/GetRecruitList#" + slug
+            )
+            assert source.request_method == "POST"
+            assert source.request_body is not None
+            assert source.request_body["corpCode"] == corp_code
 
         kt = sources_by_slug["kt"]
         assert kt.status == SourceStatus.ALLOWED

@@ -440,6 +440,24 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "SK텔레콤",
   },
   {
+    aliases: ["티맵모빌리티", "tmap mobility", "tmapmobility"],
+    hosts: ["skcareers.com", "tmapmobility.com"],
+    src: "/company-logo-assets/tmap-mobility",
+    displayName: "티맵모빌리티",
+  },
+  {
+    aliases: ["SK실트론", "sk siltron", "sksiltron"],
+    hosts: ["skcareers.com", "sksiltron.com"],
+    src: "/company-logo-assets/sk-siltron",
+    displayName: "SK실트론",
+  },
+  {
+    aliases: ["SK시그넷", "sk signet", "sksignet"],
+    hosts: ["skcareers.com", "sksignet.com"],
+    src: "/company-logo-assets/sk-signet",
+    displayName: "SK시그넷",
+  },
+  {
     aliases: ["삼성SDS", "samsung sds"],
     hosts: ["samsungcareers.com"],
     src: "/company-logo-assets/samsung-sds",

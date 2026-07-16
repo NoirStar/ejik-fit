@@ -337,6 +337,21 @@ describe("companyIdentity", () => {
       "sk-telecom",
     ],
     [
+      "티맵모빌리티",
+      "https://www.skcareers.com/Recruit/Detail/2",
+      "tmap-mobility",
+    ],
+    [
+      "SK실트론",
+      "https://www.skcareers.com/Recruit/Detail/3",
+      "sk-siltron",
+    ],
+    [
+      "SK시그넷",
+      "https://www.skcareers.com/Recruit/Detail/4",
+      "sk-signet",
+    ],
+    [
       "삼성SDS",
       "https://www.samsungcareers.com/hr/?no=1",
       "samsung-sds",

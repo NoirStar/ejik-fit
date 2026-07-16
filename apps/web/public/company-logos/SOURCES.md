@@ -95,6 +95,9 @@ back to company initials when the official asset is unavailable.
 | `hyundai-motor` | 현대자동차 | <https://talent.hyundai.com/> | <https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png> | 2026-07-15 |
 | `kia` | 기아 | <https://career.kia.com/> | <https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico> | 2026-07-15 |
 | `sk-telecom` | SK텔레콤 | <https://www.skcareers.com/> | <https://www.sktelecom.com/favicon1.ico> | 2026-07-15 |
+| `tmap-mobility` | 티맵모빌리티 | <https://www.tmapmobility.com/> | <https://www.tmapmobility.com/favicon.ico> | 2026-07-15 |
+| `sk-siltron` | SK실트론 | <https://www.sksiltron.com/> | <https://www.sksiltron.com/ko/imgs/cmm/apple-icon-144x144.png> | 2026-07-15 |
+| `sk-signet` | SK시그넷 | <https://www.sksignet.com/> | <https://www.sksignet.com/favicon.ico> | 2026-07-15 |
 | `samsung-sds` | 삼성SDS | <https://www.samsungcareers.com/> | <https://image.samsungsds.com/resource/kr/images/app_ico.gif> | 2026-07-15 |
 | `exem` | EXEM | <https://ex-em.career.greetinghr.com/ko> | <https://www.ex-em.com/apple-icon.png> | 2026-07-15 |
 | `kakao-games` | 카카오게임즈 | <https://recruit.kakaogames.com/ko> | <https://www.kakaogamescorp.com/favicon.ico> | 2026-07-15 |

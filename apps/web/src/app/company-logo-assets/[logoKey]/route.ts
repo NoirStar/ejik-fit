@@ -194,6 +194,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   "sk-hynix":
     "https://mis-prod-koce-skhynixhomepage-cdn-01-ep.azureedge.net/img/favicon.ico",
+  "sk-signet": "https://www.sksignet.com/favicon.ico",
+  "sk-siltron": "https://www.sksiltron.com/ko/imgs/cmm/apple-icon-144x144.png",
   smilegate:
     "https://careers.smilegate.com/assets/web/img/common/favicon.ico",
   "snj-lab":
@@ -207,6 +209,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   teamblind:
     "https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png",
+  "tmap-mobility": "https://www.tmapmobility.com/favicon.ico",
   "twelve-labs":
     "https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png",
   ujet: "https://www.ujet.cx/favicon.ico",
