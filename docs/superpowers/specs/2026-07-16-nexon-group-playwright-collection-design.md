@@ -164,4 +164,3 @@ data:
    official detail links, and no web console errors.
 
 No broad UI TDD or unrelated regression suite is added for this connector.
-
