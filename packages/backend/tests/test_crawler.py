@@ -2159,6 +2159,80 @@ def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="네이버웹툰", slug="naver-webtoon"),
+            base_url=(
+                "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?"
+                "firstIndex=0&recordCountPerPage=500"
+            ),
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_webtoon_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "totalSize": 3,
+                            "list": [
+                                {
+                                    "annoId": 30005124,
+                                    "annoSubject": "[네이버웹툰] 백엔드 서버 개발 (경력)",
+                                    "classCdNm": "Tech",
+                                    "subJobCdNm": "Backend",
+                                    "jobDetailLink": (
+                                        "https://recruit.webtoonscorp.com/rcrt/"
+                                        "view.do?annoId=30005124"
+                                    ),
+                                },
+                                {
+                                    "annoId": 3000027,
+                                    "annoSubject": "네이버웹툰(유) 경력 개발자 인재 Pool",
+                                    "classCdNm": "Tech",
+                                    "subJobCdNm": "Backend",
+                                    "jobDetailLink": (
+                                        "https://recruit.webtoonscorp.com/rcrt/"
+                                        "view.do?annoId=3000027"
+                                    ),
+                                },
+                                {
+                                    "annoId": 30005120,
+                                    "annoSubject": "Business Operations Manager",
+                                    "classCdNm": "Corporate",
+                                    "subJobCdNm": "Operations",
+                                    "jobDetailLink": (
+                                        "https://recruit.webtoonscorp.com/rcrt/"
+                                        "view.do?annoId=30005120"
+                                    ),
+                                },
+                            ],
+                        },
+                        ensure_ascii=False,
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert [posting.external_id for posting in postings] == ["30005124"]
+
+
 def test_crawl_source_routes_workday_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

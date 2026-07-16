@@ -545,6 +545,21 @@ describe("companyIdentity", () => {
       "allganize",
     ],
     [
+      "마크비전",
+      "https://boards-api.greenhouse.io/v1/boards/marqvision/jobs/1",
+      "marqvision",
+    ],
+    [
+      "네이버웹툰",
+      "https://recruit.webtoonscorp.com/rcrt/view.do?annoId=1",
+      "naver-webtoon",
+    ],
+    [
+      "팀블라인드",
+      "https://recruit.teamblind.com/job_posting/QmXf5Tqm",
+      "teamblind",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

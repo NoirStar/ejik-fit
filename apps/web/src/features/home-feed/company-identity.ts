@@ -139,6 +139,24 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "올거나이즈",
   },
   {
+    aliases: ["마크비전", "marqvision"],
+    hosts: ["boards-api.greenhouse.io", "marqvision.com"],
+    src: "/company-logo-assets/marqvision",
+    displayName: "마크비전",
+  },
+  {
+    aliases: ["네이버웹툰", "naver webtoon", "webtoon"],
+    hosts: ["recruit.webtoonscorp.com", "webtoonscorp.com"],
+    src: "/company-logo-assets/naver-webtoon",
+    displayName: "네이버웹툰",
+  },
+  {
+    aliases: ["팀블라인드", "teamblind", "blind"],
+    hosts: ["recruit.teamblind.com", "teamblind.com"],
+    src: "/company-logo-assets/teamblind",
+    displayName: "팀블라인드",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

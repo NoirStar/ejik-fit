@@ -461,6 +461,66 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="마크비전",
+        slug="marqvision",
+        base_url=(
+            "https://boards-api.greenhouse.io/v1/boards/"
+            "marqvision/jobs?content=true"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://www.marqvision.com",
+        sector="ai_brand_protection",
+        connector_family="lever_greenhouse_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public MarqVision Greenhouse feed; only listed "
+            "technical roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="네이버웹툰",
+        slug="naver-webtoon",
+        base_url=(
+            "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?"
+            "firstIndex=0&recordCountPerPage=500"
+        ),
+        source_type=SourceType.NAVER_JSON,
+        homepage_url="https://webtoonscorp.com",
+        sector="content_platform",
+        connector_family="naver_webtoon_json_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official NAVER WEBTOON careers JSON listing; limited to active "
+            "Tech-category roles and excludes evergreen talent pools."
+        ),
+    ),
+    SeedSource(
+        name="팀블라인드",
+        slug="teamblind",
+        base_url="https://recruit.teamblind.com/recruit",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.teamblind.com/kr",
+        sector="professional_network",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official Teamblind careers site and its public Ninehire feed; "
+            "limited to active technical roles with verified detail pages."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(

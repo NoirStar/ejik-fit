@@ -109,6 +109,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png",
   makinarocks:
     "https://profiles.greetinghr.com/group/900e83ac-2ad7-42aa-9f2a-306e88914acf",
+  marqvision:
+    "https://cdn.prod.website-files.com/5e51f2cd33d368869635e146/68c77f69fc99ad99932476f3_favicon_gradient_small.png",
   musinsa:
     "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
   neowiz:
@@ -129,6 +131,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/135690b4-a80e-4f3a-9589-388082488e7c",
   ncsoft:
     "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
+  "naver-webtoon":
+    "https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/og/webtoon_favicon_32_2025.ico",
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nvidia-korea": "https://www.nvidia.com/favicon.ico",
@@ -183,6 +187,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
+  teamblind:
+    "https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png",
   "twelve-labs":
     "https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png",
   ujet: "https://www.ujet.cx/favicon.ico",

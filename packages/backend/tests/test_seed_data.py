@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 126
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 129
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -291,7 +291,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 126
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 129
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -742,6 +742,30 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert ably.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert ably.connector_family == "ably_next_ninehire_tech"
     assert ably.status == SourceStatus.ALLOWED
+
+    marqvision = catalog_by_slug["marqvision"]
+    assert marqvision.base_url == (
+        "https://boards-api.greenhouse.io/v1/boards/"
+        "marqvision/jobs?content=true"
+    )
+    assert marqvision.source_type == SourceType.LEVER_GREENHOUSE
+    assert marqvision.connector_family == "lever_greenhouse_korea_tech"
+    assert marqvision.status == SourceStatus.ALLOWED
+
+    webtoon = catalog_by_slug["naver-webtoon"]
+    assert webtoon.base_url == (
+        "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?"
+        "firstIndex=0&recordCountPerPage=500"
+    )
+    assert webtoon.source_type == SourceType.NAVER_JSON
+    assert webtoon.connector_family == "naver_webtoon_json_tech"
+    assert webtoon.status == SourceStatus.ALLOWED
+
+    teamblind = catalog_by_slug["teamblind"]
+    assert teamblind.base_url == "https://recruit.teamblind.com/recruit"
+    assert teamblind.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert teamblind.connector_family == "ninehire_public_api_tech"
+    assert teamblind.status == SourceStatus.ALLOWED
 
 
 def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> None:

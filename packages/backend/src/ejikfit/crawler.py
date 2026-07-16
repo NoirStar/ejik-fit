@@ -69,6 +69,9 @@ from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
     filter_public_detail_refs,
     ncsoft_session_headers,
+    ninehire_listing_api_url,
+    ninehire_listing_config,
+    parse_ninehire_listing_page,
     parse_public_json_detail,
     parse_workable_listing_page,
     public_detail_listing_is_self_validated,
@@ -125,6 +128,11 @@ DUNAMU_PROXY_URL = (
 logger = logging.getLogger(__name__)
 
 
+def _is_talent_pool_title(title: str) -> bool:
+    compact = "".join(title.casefold().split())
+    return "인재pool" in compact or "talentpool" in compact
+
+
 def _apply_source_opening_filters(
     source: CareerSource,
     openings: list[ParsedOpening],
@@ -147,6 +155,17 @@ def _apply_source_opening_filters(
                 opening.title,
                 f"{opening.location or ''} {opening.url}",
             )
+        ]
+    if source.connector_family == "naver_webtoon_json_tech":
+        return [
+            opening
+            for opening in openings
+            if (
+                (opening.description_text or "").casefold().split()[:1]
+                == ["tech"]
+            )
+            and is_technical_role(opening.title)
+            and not _is_talent_pool_title(opening.title)
         ]
     if source.connector_family in {
         "ashby_public_api_korea_tech",
@@ -594,6 +613,45 @@ async def _fetch_listing_page(
         "qualcomm_pcsx_korea_tech",
     }:
         return await _fetch_all_pcsx_careers_pages(source.base_url, fetcher)
+    if source.connector_family == "ninehire_public_api_tech":
+        bootstrap = await fetcher.fetch(source.base_url)
+        company_id, _ = ninehire_listing_config(
+            bootstrap.text,
+            source.base_url,
+        )
+        rows: list[dict[str, Any]] = []
+        expected_total: int | None = None
+        latest_page: FetchedPage | None = None
+        for page_number in range(1, 51):
+            api_url = ninehire_listing_api_url(company_id, page_number)
+            latest_page = await fetcher.fetch(api_url)
+            page_rows, total = parse_ninehire_listing_page(
+                latest_page.text,
+                company_id,
+            )
+            if expected_total is None:
+                expected_total = total
+            elif total != expected_total:
+                raise ValueError("Ninehire listing total changed while paging")
+            rows.extend(page_rows)
+            if len(rows) >= total:
+                break
+            if not page_rows:
+                raise ValueError("Ninehire listing ended before its total")
+        else:
+            raise ValueError("Ninehire listing exceeded the page limit")
+
+        if latest_page is None or expected_total != len(rows):
+            raise ValueError("Ninehire listing response is incomplete")
+        return FetchedPage(
+            url=source.base_url,
+            text=json.dumps(
+                {"count": expected_total, "results": rows},
+                ensure_ascii=False,
+            ),
+            status_code=latest_page.status_code,
+            headers=latest_page.headers,
+        )
     if (
         source.source_type == SourceType.WORKDAY
         and (source.request_method or "GET").upper() == "POST"

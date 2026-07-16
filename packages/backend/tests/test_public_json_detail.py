@@ -4,7 +4,9 @@ from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
     filter_public_detail_refs,
     ncsoft_session_headers,
+    ninehire_listing_config,
     parse_public_json_detail,
+    parse_ninehire_listing_page,
     roundhr_site_code,
     workable_account_slug,
 )
@@ -390,6 +392,110 @@ def test_ably_official_page_discovers_and_parses_open_ninehire_tech_jobs() -> No
     assert opening.employment_type == "regular"
     assert opening.location == "서울특별시 서초구 강남대로 465"
     assert "Python, Kafka, Redis" in opening.description_text
+
+
+def test_ninehire_public_api_discovers_and_parses_only_open_technical_jobs() -> None:
+    listing_url = "https://recruit.teamblind.com/recruit"
+    company_id = "06de3c70-c17b-11ee-a4e8-19ace188b0c8"
+    bootstrap = _next_data_html(
+        {
+            "homepageProps": {
+                "domain": {"hostname": "recruit.teamblind.com"},
+                "info": {"companyId": company_id, "status": "published"},
+            }
+        }
+    )
+    assert ninehire_listing_config(bootstrap, listing_url) == (
+        company_id,
+        "https://recruit.teamblind.com",
+    )
+    listing = json.dumps(
+        {
+            "count": 3,
+            "results": [
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "776471f0-1d1b-11f1-821d-1fa51bdaccc6",
+                    "addressKey": "QmXf5Tqm",
+                    "externalTitle": (
+                        "[팀블라인드 한국 지사] AI Technical Lead "
+                        "(AI 테크 리드)"
+                    ),
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "Engineering"},
+                    "jobTask": {"title": "AI Engineering"},
+                },
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "sales-role",
+                    "addressKey": "RYpAZRvg",
+                    "externalTitle": "SMB 광고사업 파트장 (대행사 세일즈)",
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "Sales"},
+                    "jobTask": None,
+                },
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "talent-pool",
+                    "addressKey": "MVPoqxC0",
+                    "externalTitle": "나에게 맞는 오픈 포지션이 없다면? 인재풀 등록",
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "General"},
+                    "jobTask": None,
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+    assert parse_ninehire_listing_page(listing, company_id)[1] == 3
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        listing_url,
+        "ninehire_public_api_tech",
+    )
+    filtered = filter_public_detail_refs(refs, "ninehire_public_api_tech")
+
+    assert len(refs) == 3
+    assert len(filtered) == 1
+    assert filtered[0].category == "Engineering · AI Engineering"
+    assert filtered[0].detail_url == (
+        "https://recruit.teamblind.com/job_posting/QmXf5Tqm"
+    )
+
+    detail = _next_data_html(
+        {
+            "recruitment": {
+                "recruitmentId": "776471f0-1d1b-11f1-821d-1fa51bdaccc6",
+                "externalTitle": (
+                    "[팀블라인드 한국 지사] AI Technical Lead "
+                    "(AI 테크 리드)"
+                ),
+                "status": "in_progress",
+                "career": None,
+                "employmentType": ["full_time"],
+                "createdAt": "2026-03-11T07:53:30.000Z",
+                "deadlineValue": None,
+                "jobLocations": [],
+            },
+            "jobPosting": {
+                "isActive": True,
+                "content": "<h3>담당 업무</h3><p>AI 제품과 플랫폼을 개발합니다.</p>",
+            },
+        }
+    )
+    opening = parse_public_json_detail(
+        detail,
+        filtered[0],
+        "ninehire_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.employment_type == "regular"
+    assert "AI 제품과 플랫폼" in opening.description_text
 
 
 def test_netmarble_public_api_discovers_and_parses_technical_jobs() -> None:

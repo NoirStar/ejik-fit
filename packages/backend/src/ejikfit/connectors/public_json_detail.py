@@ -80,6 +80,9 @@ WORKABLE_LISTING_API_TEMPLATE = (
 WORKABLE_DETAIL_API_TEMPLATE = (
     "https://apply.workable.com/api/v2/accounts/{account}/jobs/{shortcode}"
 )
+NINEHIRE_LISTING_API = (
+    "https://api.ninehire.com/identity-access/homepage/recruitments"
+)
 DUNAMU_JOB_GROUP_LABELS = {
     "T_ENGINEERING": "Engineering",
     "T_SECURITY": "Security",
@@ -228,6 +231,81 @@ def workable_account_slug(raw_html: str, listing_url: str) -> str:
     ):
         raise ValueError("Workable account identity is missing or inconsistent")
     return account
+
+
+def ninehire_listing_config(
+    raw_html: str,
+    listing_url: str,
+) -> tuple[str, str]:
+    parsed_url = urlsplit(listing_url)
+    if (
+        parsed_url.scheme != "https"
+        or parsed_url.hostname is None
+        or parsed_url.username is not None
+        or parsed_url.password is not None
+    ):
+        raise ValueError("Ninehire listing must use an official HTTPS page")
+
+    data = extract_next_data(raw_html)
+    try:
+        homepage_props = data["props"]["pageProps"]["homepageProps"]
+        info = homepage_props["info"]
+        domain = homepage_props["domain"]
+    except (KeyError, TypeError) as error:
+        raise ValueError(
+            "Ninehire public homepage configuration is missing"
+        ) from error
+    if not isinstance(info, dict) or not isinstance(domain, dict):
+        raise ValueError("Ninehire public homepage configuration is invalid")
+
+    company_id = _text(info.get("companyId"))
+    hostname = _text(domain.get("hostname"))
+    if (
+        company_id is None
+        or re.fullmatch(
+            r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            company_id,
+            flags=re.IGNORECASE,
+        )
+        is None
+        or info.get("status") != "published"
+        or hostname is None
+        or hostname.casefold() != parsed_url.hostname.casefold()
+    ):
+        raise ValueError("Ninehire public homepage identity is inconsistent")
+    return company_id, f"https://{parsed_url.hostname}"
+
+
+def ninehire_listing_api_url(company_id: str, page: int) -> str:
+    if page < 1:
+        raise ValueError("Ninehire listing page must be positive")
+    return NINEHIRE_LISTING_API + "?" + urlencode(
+        {
+            "companyId": company_id,
+            "page": page,
+            "countPerPage": 100,
+            "externalTitle": "",
+            "order": "created_at_desc",
+        }
+    )
+
+
+def parse_ninehire_listing_page(
+    raw_json: str,
+    company_id: str,
+) -> tuple[list[dict[str, Any]], int]:
+    payload = _decode_object(raw_json)
+    rows = payload.get("results")
+    total = _positive_int(payload.get("count"))
+    if (
+        not isinstance(rows, list)
+        or total is None
+        or len(rows) > min(total, 100)
+        or any(not isinstance(row, dict) for row in rows)
+        or any(_text(row.get("companyId")) != company_id for row in rows)
+    ):
+        raise ValueError("Ninehire listing page is invalid or incomplete")
+    return rows, total
 
 
 def parse_workable_listing_page(
@@ -612,6 +690,85 @@ def _ably_refs(raw_html: str) -> list[PublicJsonDetailRef]:
                 public_url=detail_url,
                 title=title,
                 category=_text(row.get("jobGroup")),
+            )
+        )
+    return refs
+
+
+def _ninehire_refs(
+    payload: dict[str, Any],
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    parsed_listing = urlsplit(listing_url)
+    if (
+        parsed_listing.scheme != "https"
+        or parsed_listing.hostname is None
+        or parsed_listing.username is not None
+        or parsed_listing.password is not None
+    ):
+        raise ValueError("Ninehire public listing URL is invalid")
+
+    rows = payload.get("results")
+    total = _positive_int(payload.get("count"))
+    if (
+        not isinstance(rows, list)
+        or total is None
+        or total != len(rows)
+        or any(not isinstance(row, dict) for row in rows)
+    ):
+        raise ValueError("Ninehire combined jobs listing is incomplete")
+
+    origin = f"https://{parsed_listing.hostname}"
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in rows:
+        if (
+            row.get("status") != "in_progress"
+            or row.get("isPrivate") is True
+            or row.get("isSample") is True
+        ):
+            continue
+        external_id = _text(row.get("recruitmentId"))
+        address_key = _text(row.get("addressKey"))
+        title = _text(row.get("externalTitle")) or _text(row.get("title"))
+        if (
+            external_id is None
+            or address_key is None
+            or re.fullmatch(r"[A-Za-z0-9_-]{6,64}", address_key) is None
+            or title is None
+        ):
+            raise ValueError("Ninehire open job identity is missing")
+        if external_id in seen:
+            raise ValueError("Ninehire jobs listing contains a duplicate job")
+        seen.add(external_id)
+
+        category_parts: list[str] = []
+        for key in ("jobGroup", "jobTask"):
+            value = row.get(key)
+            label = _text(value.get("title")) if isinstance(value, dict) else None
+            if label and label not in category_parts:
+                category_parts.append(label)
+        raw_locations = row.get("jobLocations")
+        locations = raw_locations if isinstance(raw_locations, list) else []
+        location_parts: list[str] = []
+        for location in locations:
+            if not isinstance(location, dict):
+                continue
+            label = _text(location.get("addressName")) or _text(
+                location.get("placeName")
+            )
+            if label and label not in location_parts:
+                location_parts.append(label)
+
+        detail_url = f"{origin}/job_posting/{address_key}"
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=detail_url,
+                title=title,
+                category=" · ".join(category_parts) or None,
+                location=" · ".join(location_parts) or None,
             )
         )
     return refs
@@ -1071,6 +1228,8 @@ def discover_public_json_detail_refs(
         return _roundhr_refs(payload, listing_url)
     if connector_family == "workable_public_api_tech":
         return _workable_refs(payload, listing_url)
+    if connector_family == "ninehire_public_api_tech":
+        return _ninehire_refs(payload, listing_url)
     raise ValueError(f"unsupported public JSON detail family: {connector_family}")
 
 
@@ -1132,6 +1291,7 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "banksalad_greeting_api_tech",
         "roundhr_public_api_tech",
         "workable_public_api_tech",
+        "ninehire_public_api_tech",
     }
 
 
@@ -1538,7 +1698,7 @@ def _dunamu_api_opening(
     )
 
 
-def _ably_opening(
+def _ninehire_opening(
     raw_html: str,
     ref: PublicJsonDetailRef,
 ) -> ParsedOpening:
@@ -1548,20 +1708,20 @@ def _ably_opening(
         recruitment = page_props["recruitment"]
         job_posting = page_props["jobPosting"]
     except (KeyError, TypeError) as error:
-        raise ValueError("Ably Ninehire job detail is missing") from error
+        raise ValueError("Ninehire job detail is missing") from error
     if not isinstance(recruitment, dict) or not isinstance(job_posting, dict):
-        raise ValueError("Ably Ninehire job detail must be an object")
+        raise ValueError("Ninehire job detail must be an object")
 
     external_id = _text(recruitment.get("recruitmentId"))
     title = _text(recruitment.get("externalTitle")) or _text(
         recruitment.get("title")
     )
     if external_id != ref.external_id or title != ref.title:
-        raise ValueError("Ably Ninehire detail identity does not match its listing")
+        raise ValueError("Ninehire detail identity does not match its listing")
 
     description_html = _text(job_posting.get("content")) or ""
     if not description_html:
-        raise ValueError("Ably Ninehire job detail content is missing")
+        raise ValueError("Ninehire job detail content is missing")
 
     career = recruitment.get("career")
     career_type = None
@@ -1948,8 +2108,11 @@ def parse_public_json_detail(
         if raw_json.lstrip().startswith("{"):
             return _dunamu_api_opening(raw_json, ref)
         return _dunamu_opening(raw_json, ref)
-    if connector_family == "ably_next_ninehire_tech":
-        return _ably_opening(raw_json, ref)
+    if connector_family in {
+        "ably_next_ninehire_tech",
+        "ninehire_public_api_tech",
+    }:
+        return _ninehire_opening(raw_json, ref)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_opening(raw_json, ref)
     if connector_family == "banksalad_greeting_api_tech":

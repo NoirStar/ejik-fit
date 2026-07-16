@@ -47,6 +47,9 @@ back to company initials when the official asset is unavailable.
 | `wemade` | 위메이드 | <https://recruit.wemade.com/> | <https://image.ninehire.com/homepage/83cdd300-13fa-11ee-a096-95051faa2e73/logo/6bfa5820-6af0-11f1-90eb-f327db58c8db.png> | 2026-07-15 |
 | `twelve-labs` | 트웰브랩스 | <https://www.twelvelabs.io/careers> | <https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png> | 2026-07-15 |
 | `lunit` | 루닛 | <https://apply.workable.com/lunit/> | <https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png> | 2026-07-15 |
+| `marqvision` | 마크비전 | <https://www.marqvision.com/> | <https://cdn.prod.website-files.com/5e51f2cd33d368869635e146/68c77f69fc99ad99932476f3_favicon_gradient_small.png> | 2026-07-15 |
+| `naver-webtoon` | 네이버웹툰 | <https://recruit.webtoonscorp.com/> | <https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/og/webtoon_favicon_32_2025.ico> | 2026-07-15 |
+| `teamblind` | 팀블라인드 | <https://recruit.teamblind.com/> | <https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |
 | `hutom` | 휴톰 | <https://hutom.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png> | 2026-07-15 |
 | `snj-lab` | SNJ LAB | <https://snjlab.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png> | 2026-07-15 |
