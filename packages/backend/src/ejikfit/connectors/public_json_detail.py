@@ -80,6 +80,42 @@ WORKABLE_LISTING_API_TEMPLATE = (
 WORKABLE_DETAIL_API_TEMPLATE = (
     "https://apply.workable.com/api/v2/accounts/{account}/jobs/{shortcode}"
 )
+DUNAMU_JOB_GROUP_LABELS = {
+    "T_ENGINEERING": "Engineering",
+    "T_SECURITY": "Security",
+    "T_TALENT_POOL": "Talent Pool",
+    "T_COMMUNICATION": "Communication",
+    "T_COMPLIANCE": "Compliance",
+    "T_BUSINESS": "Business",
+    "T_CUSTOMER_SERVICE": "Customer Service",
+    "T_DESIGN": "Design",
+    "T_FINANCE": "Finance",
+    "T_LEGAL": "Legal",
+    "T_MARKETING": "Marketing",
+    "T_PEOPLE": "People",
+    "T_PRODUCT": "Product",
+}
+DUNAMU_CAREER_TYPES = {
+    "EXPERIENCED": "experienced",
+    "NEWBIE": "new_comer",
+    "NONE": "mixed",
+}
+DUNAMU_CAREER_LABELS = {
+    "EXPERIENCED": "경력",
+    "NEWBIE": "신입",
+    "NONE": "경력 무관",
+}
+DUNAMU_EMPLOYMENT_TYPES = {
+    "FULL_TIME": "regular",
+    "CONTRACT": "contract",
+    "INTERN": "intern",
+}
+DUNAMU_EMPLOYMENT_LABELS = {
+    "FULL_TIME": "정규직",
+    "CONTRACT": "계약직",
+    "INTERN": "인턴",
+    "NONE": "미표기",
+}
 
 
 @dataclass(frozen=True)
@@ -448,10 +484,77 @@ def _dunamu_careers_refs(
     return refs
 
 
+def _dunamu_api_rows(raw_json: str) -> list[dict[str, Any]]:
+    payload = _decode_object(raw_json)
+    content = payload.get("content")
+    rows = content.get("jobNoticeResponses") if isinstance(content, dict) else None
+    if (
+        payload.get("statusCode") != 200
+        or not isinstance(content, dict)
+        or content.get("jobBoardName") != "Dunamu"
+        or not isinstance(rows, list)
+        or not rows
+        or not all(isinstance(row, dict) for row in rows)
+    ):
+        raise ValueError("Dunamu current jobs API response is incomplete")
+    return rows
+
+
+def _dunamu_api_refs(
+    raw_json: str,
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    parsed_listing = urlsplit(listing_url)
+    if (
+        parsed_listing.scheme != "https"
+        or parsed_listing.hostname != "careers.dunamu.com"
+        or parsed_listing.path
+        != "/api/job-boards/jd0wjv/job-notices"
+    ):
+        raise ValueError("Dunamu jobs API must use its official endpoint")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for row in _dunamu_api_rows(raw_json):
+        raw_id = row.get("id")
+        title = _text(row.get("name"))
+        group_code = _text(row.get("jobGroupCode"))
+        if (
+            isinstance(raw_id, bool)
+            or not isinstance(raw_id, int)
+            or raw_id < 1
+            or title is None
+            or group_code is None
+            or re.fullmatch(r"T_[A-Z_]+", group_code) is None
+        ):
+            raise ValueError("Dunamu API job identity is missing")
+
+        external_id = str(raw_id)
+        if external_id in seen:
+            raise ValueError("Dunamu jobs API contains a duplicate job")
+        seen.add(external_id)
+        category = DUNAMU_JOB_GROUP_LABELS.get(
+            group_code,
+            group_code.removeprefix("T_").replace("_", " ").title(),
+        )
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=listing_url,
+                public_url=f"https://careers.dunamu.com/detail/{external_id}",
+                title=title,
+                category=category,
+            )
+        )
+    return refs
+
+
 def _dunamu_refs(
     raw_html: str,
     listing_url: str,
 ) -> list[PublicJsonDetailRef]:
+    if raw_html.lstrip().startswith("{"):
+        return _dunamu_api_refs(raw_html, listing_url)
     soup = BeautifulSoup(raw_html, "lxml")
     if soup.find("script", id="__NEXT_DATA__") is not None:
         return _dunamu_legacy_refs(raw_html)
@@ -1372,6 +1475,62 @@ def _dunamu_opening(
     )
 
 
+def _dunamu_api_opening(
+    raw_json: str,
+    ref: PublicJsonDetailRef,
+) -> ParsedOpening:
+    matched_row: dict[str, Any] | None = None
+    for row in _dunamu_api_rows(raw_json):
+        raw_id = row.get("id")
+        if not isinstance(raw_id, bool) and str(raw_id) == ref.external_id:
+            matched_row = row
+            break
+    if matched_row is None:
+        raise ValueError("Dunamu API detail identity is missing")
+
+    title = _text(matched_row.get("name"))
+    group_code = _text(matched_row.get("jobGroupCode"))
+    career_code = _text(matched_row.get("experienceLevel")) or "NONE"
+    employment_code = _text(matched_row.get("employmentType")) or "NONE"
+    category = (
+        DUNAMU_JOB_GROUP_LABELS.get(
+            group_code,
+            group_code.removeprefix("T_").replace("_", " ").title(),
+        )
+        if group_code is not None
+        else None
+    )
+    if title != ref.title or category != ref.category:
+        raise ValueError("Dunamu API detail identity does not match its listing")
+    if career_code not in DUNAMU_CAREER_LABELS:
+        raise ValueError("Dunamu API career type is unsupported")
+    if employment_code not in DUNAMU_EMPLOYMENT_LABELS:
+        raise ValueError("Dunamu API employment type is unsupported")
+
+    description_text = "\n".join(
+        (
+            f"직군: {category}",
+            f"경력 조건: {DUNAMU_CAREER_LABELS[career_code]}",
+            f"고용 형태: {DUNAMU_EMPLOYMENT_LABELS[employment_code]}",
+        )
+    )
+    return ParsedOpening(
+        external_id=ref.external_id,
+        url=ref.public_url,
+        title=title,
+        status="open",
+        description_html="",
+        description_text=description_text,
+        employment_type=DUNAMU_EMPLOYMENT_TYPES.get(employment_code),
+        career_type=DUNAMU_CAREER_TYPES[career_code],
+        career_min=None,
+        career_max=None,
+        location=None,
+        opens_at=None,
+        closes_at=None,
+    )
+
+
 def _ably_opening(
     raw_html: str,
     ref: PublicJsonDetailRef,
@@ -1779,6 +1938,8 @@ def parse_public_json_detail(
     connector_family: str,
 ) -> ParsedOpening:
     if connector_family == "dunamu_server_html_tech":
+        if raw_json.lstrip().startswith("{"):
+            return _dunamu_api_opening(raw_json, ref)
         return _dunamu_opening(raw_json, ref)
     if connector_family == "ably_next_ninehire_tech":
         return _ably_opening(raw_json, ref)

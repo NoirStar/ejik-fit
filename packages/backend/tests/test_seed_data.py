@@ -640,7 +640,9 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert bucketplace.status == SourceStatus.ALLOWED
 
     dunamu = catalog_by_slug["dunamu"]
-    assert dunamu.base_url == "https://careers.dunamu.com/"
+    assert dunamu.base_url == (
+        "https://careers.dunamu.com/api/job-boards/jd0wjv/job-notices"
+    )
     assert dunamu.source_type == SourceType.PUBLIC_JSON_DETAIL
     assert dunamu.connector_family == "dunamu_server_html_tech"
     assert dunamu.status == SourceStatus.ALLOWED

@@ -2996,6 +2996,73 @@ def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
         assert source.last_success_at is not None
 
 
+def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    listing = json.dumps(
+        {
+            "content": {
+                "jobBoardName": "Dunamu",
+                "jobNoticeResponses": [
+                    {
+                        "id": 588,
+                        "name": "Frontend Engineer_데이터 프로덕트 서비스 개발",
+                        "jobGroupCode": "T_ENGINEERING",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "FULL_TIME",
+                    },
+                    {
+                        "id": 599,
+                        "name": "PR 담당자",
+                        "jobGroupCode": "T_COMMUNICATION",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "CONTRACT",
+                    },
+                ],
+            },
+            "statusCode": 200,
+        },
+        ensure_ascii=False,
+    )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="두나무", slug="dunamu"),
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="dunamu_server_html_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = PublicJsonDetailFetcher(listing_url, listing, {})
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "588"
+        assert posting.url == "https://careers.dunamu.com/detail/588"
+        assert posting.career_type == "experienced"
+        assert posting.employment_type == "regular"
+        assert fetcher.urls == [listing_url]
+
+
 class WorkableListingFetcher:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []

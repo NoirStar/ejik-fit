@@ -938,6 +938,80 @@ def test_dunamu_careers_html_discovers_server_rendered_job_cards() -> None:
     assert refs[0].category == "Engineering"
 
 
+def test_dunamu_public_api_discovers_and_parses_current_job_rows() -> None:
+    listing = json.dumps(
+        {
+            "content": {
+                "jobBoardName": "Dunamu",
+                "jobNoticeResponses": [
+                    {
+                        "id": 599,
+                        "name": "PR 담당자",
+                        "jobGroupCode": "T_COMMUNICATION",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "CONTRACT",
+                    },
+                    {
+                        "id": 588,
+                        "name": "Frontend Engineer_데이터 프로덕트 서비스 개발",
+                        "jobGroupCode": "T_ENGINEERING",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "FULL_TIME",
+                    },
+                    {
+                        "id": 586,
+                        "name": "정보보호 AX 운영 담당자",
+                        "jobGroupCode": "T_SECURITY",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "FULL_TIME",
+                    },
+                    {
+                        "id": 80,
+                        "name": "개발직군 인재풀",
+                        "jobGroupCode": "T_TALENT_POOL",
+                        "experienceLevel": "NONE",
+                        "employmentType": "NONE",
+                    },
+                ],
+            },
+            "statusCode": 200,
+            "message": "요청을 처리하였습니다.",
+        },
+        ensure_ascii=False,
+    )
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        listing_url,
+        "dunamu_server_html_tech",
+    )
+    technical_refs = filter_public_detail_refs(
+        refs,
+        "dunamu_server_html_tech",
+    )
+    opening = parse_public_json_detail(
+        listing,
+        technical_refs[0],
+        "dunamu_server_html_tech",
+    )
+
+    assert [ref.external_id for ref in technical_refs] == ["588", "586"]
+    assert technical_refs[0].detail_url == listing_url
+    assert technical_refs[0].public_url == (
+        "https://careers.dunamu.com/detail/588"
+    )
+    assert technical_refs[0].category == "Engineering"
+    assert opening.title == "Frontend Engineer_데이터 프로덕트 서비스 개발"
+    assert opening.url == "https://careers.dunamu.com/detail/588"
+    assert opening.career_type == "experienced"
+    assert opening.employment_type == "regular"
+    assert "Engineering" in opening.description_text
+
+
 def test_workable_public_api_discovers_domestic_technical_jobs_and_parses_detail() -> None:
     bootstrap = """
     <html><head>

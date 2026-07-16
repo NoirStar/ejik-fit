@@ -682,6 +682,13 @@ async def _fetch_public_json_detail(
     listing: FetchedPage,
     fetcher: HttpFetcher,
 ) -> FetchedPage:
+    listing_url = urlparse(listing.url)
+    if (
+        connector_family == "dunamu_server_html_tech"
+        and listing_url.hostname == "careers.dunamu.com"
+        and listing_url.path == "/api/job-boards/jd0wjv/job-notices"
+    ):
+        return listing
     if connector_family == "com2us_jobflex_tech":
         return await fetcher.fetch(
             ref.detail_url,
