@@ -11,13 +11,13 @@
 }
 
 .page {
-  --market-required: #67a2c5;
-  --market-required-text: #123247;
-  --market-preferred: #9bcec1;
-  --market-preferred-text: #183e38;
-  --market-unspecified: #ffebd3;
-  --market-unspecified-text: #68492c;
-  --market-relative: #ffb6a6;
+  --market-required: #7568c8;
+  --market-required-text: #ffffff;
+  --market-preferred: #61aa96;
+  --market-preferred-text: #123c34;
+  --market-unspecified: #e4e1e9;
+  --market-unspecified-text: #514c59;
+  --market-relative: #e99070;
 
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -524,13 +524,13 @@
   display: none;
 }
 
-@container (min-width: 1.125rem) {
+@container (min-width: 1.5rem) {
   .segmentLabelShort {
     display: inline;
   }
 }
 
-@container (min-width: 2.75rem) {
+@container (min-width: 5.25rem) {
   .segmentLabelFull {
     display: inline;
   }

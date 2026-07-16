@@ -29,13 +29,13 @@ describe("market overview styles", () => {
     expect(rule(".dashboardGrid")).toContain("gap: 1.25rem;");
   });
 
-  it("uses the coordinated blue, mint, cream and peach market palette", () => {
-    expect(rule(".page")).toContain("--market-required: #67a2c5;");
-    expect(rule(".page")).toContain("--market-required-text: #123247;");
-    expect(rule(".page")).toContain("--market-preferred: #9bcec1;");
-    expect(rule(".page")).toContain("--market-preferred-text: #183e38;");
-    expect(rule(".page")).toContain("--market-unspecified: #ffebd3;");
-    expect(rule(".page")).toContain("--market-relative: #ffb6a6;");
+  it("uses the coordinated iris, sage, mist and apricot market palette", () => {
+    expect(rule(".page")).toContain("--market-required: #7568c8;");
+    expect(rule(".page")).toContain("--market-required-text: #ffffff;");
+    expect(rule(".page")).toContain("--market-preferred: #61aa96;");
+    expect(rule(".page")).toContain("--market-preferred-text: #123c34;");
+    expect(rule(".page")).toContain("--market-unspecified: #e4e1e9;");
+    expect(rule(".page")).toContain("--market-relative: #e99070;");
     expect(rule('.stackedSegment[data-segment="required"]')).toContain(
       "background: var(--market-required);",
     );
