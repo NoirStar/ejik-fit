@@ -2230,7 +2230,7 @@ def test_crawl_source_routes_naver_json_into_ingestion() -> None:
         assert source.last_error_reason is None
 
 
-def test_blocked_listing_marks_source_blocked_without_closing_postings() -> None:
+def test_blocked_listing_marks_source_for_review_without_closing_postings() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -2266,8 +2266,8 @@ def test_blocked_listing_marks_source_blocked_without_closing_postings() -> None
         )
 
         assert result.failed == 1
-        assert source.status == SourceStatus.BLOCKED
-        assert source.policy_status == PolicyStatus.BLOCKED
+        assert source.status == SourceStatus.REVIEW
+        assert source.policy_status == PolicyStatus.REVIEW
         assert source.last_error_code == "blocked"
         assert "403" in (source.last_error_reason or "")
         assert posting.missing_runs == 2
@@ -4604,7 +4604,7 @@ class GreetingDetailBlockedFetcher:
         raise crawler.BlockedSourceError("source denied access with 403")
 
 
-def test_greeting_blocked_detail_never_gets_cleared_by_success() -> None:
+def test_greeting_blocked_detail_stays_in_review_without_false_success() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     listing_html = (
@@ -4643,8 +4643,8 @@ def test_greeting_blocked_detail_never_gets_cleared_by_success() -> None:
         assert result.discovered == 2
         assert result.ingested == 0
         assert result.failed == 1
-        assert source.status == SourceStatus.BLOCKED
-        assert source.policy_status == PolicyStatus.BLOCKED
+        assert source.status == SourceStatus.REVIEW
+        assert source.policy_status == PolicyStatus.REVIEW
         assert source.last_error_code == "blocked"
         assert _as_utc(source.last_success_at) == previous_success
 

@@ -1832,8 +1832,8 @@ async def crawl_source(
             source,
             "blocked",
             str(error),
-            status=SourceStatus.BLOCKED,
-            policy_status=PolicyStatus.BLOCKED,
+            status=SourceStatus.REVIEW,
+            policy_status=PolicyStatus.REVIEW,
         )
         session.commit()
         return CrawlResult(failed=1)
@@ -1905,8 +1905,8 @@ async def crawl_source(
                     source,
                     "blocked",
                     str(error),
-                    status=SourceStatus.BLOCKED,
-                    policy_status=PolicyStatus.BLOCKED,
+                    status=SourceStatus.REVIEW,
+                    policy_status=PolicyStatus.REVIEW,
                 )
                 session.commit()
                 failed += 1
@@ -2011,8 +2011,8 @@ async def crawl_source(
                     source,
                     "blocked",
                     str(error),
-                    status=SourceStatus.BLOCKED,
-                    policy_status=PolicyStatus.BLOCKED,
+                    status=SourceStatus.REVIEW,
+                    policy_status=PolicyStatus.REVIEW,
                 )
                 session.commit()
                 return CrawlResult(
@@ -2113,8 +2113,8 @@ async def crawl_source(
                     source,
                     "blocked",
                     str(error),
-                    status=SourceStatus.BLOCKED,
-                    policy_status=PolicyStatus.BLOCKED,
+                    status=SourceStatus.REVIEW,
+                    policy_status=PolicyStatus.REVIEW,
                 )
                 session.commit()
                 failed += 1

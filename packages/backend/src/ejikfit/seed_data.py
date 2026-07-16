@@ -3662,10 +3662,19 @@ def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
         and source.last_error_code == "blocked"
         and source.last_success_at is None
     )
+    reverify_nexon_browser_access = (
+        item.connector_family == NEXON_CONNECTOR_FAMILY
+        and source.connector_family == NEXON_CONNECTOR_FAMILY
+        and source.status == SourceStatus.BLOCKED
+        and source.policy_status == PolicyStatus.BLOCKED
+        and source.last_error_code == "blocked"
+        and (source.last_error_reason or "").startswith("Nexon ")
+        and source.last_success_at is None
+    )
     source.source_type = item.source_type
     source.request_method = item.request_method
     source.request_body = item.request_body
-    if reverify_dunamu_transport:
+    if reverify_dunamu_transport or reverify_nexon_browser_access:
         source.status = item.status
         source.policy_status = item.policy_status
         source.last_error_code = None

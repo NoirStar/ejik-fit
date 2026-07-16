@@ -1490,6 +1490,31 @@ def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
         assert source.last_error_code == "blocked"
 
 
+def test_seeding_reverifies_new_nexon_source_after_automatic_access_block() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        seed_data.seed_sources(session)
+        source = session.scalar(
+            select(CareerSource).join(Company).where(Company.slug == "neople")
+        )
+        assert source is not None
+        assert source.last_success_at is None
+        source.status = SourceStatus.BLOCKED
+        source.policy_status = PolicyStatus.BLOCKED
+        source.last_error_code = "blocked"
+        source.last_error_reason = "Nexon home page denied access with 403"
+        session.commit()
+
+        assert seed_data.seed_sources(session) == 0
+
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
+
+
 def test_seeding_reverifies_dunamu_after_transport_connector_upgrade() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
