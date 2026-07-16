@@ -107,9 +107,13 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   kmong:
     "https://opening-attachments.greetinghr.com/2025-12-03/330d1a88-4c51-4a8e-bcd0-5b35956b9e5e/kmong__green.png",
   krafton:
-    "https://s2-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/963/700/original/KRAFTON_1_Primary_Wordmark_Black_260112.png?1772068780",
+    "https://www.krafton.com/wp-content/uploads/2026/02/cropped-cropped-ms-icon-70x70-1-192x192.png",
+  "krafton-mark":
+    "https://www.krafton.com/wp-content/uploads/2026/02/cropped-cropped-ms-icon-70x70-1-192x192.png",
   "kakao-mobility":
-    "https://opening-attachments.greetinghr.com/2025-02-06/0e82fcb5-f39c-4d8f-8aee-f20e3efaa187/111.png",
+    "https://www.kakaomobility.com/favicon-32x32.png",
+  "kakao-mobility-mark":
+    "https://www.kakaomobility.com/favicon-32x32.png",
   "kakao-pay":
     "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
   "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
@@ -214,6 +218,9 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
   "sap-korea-mark":
     "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
+  supercent: "https://supercent.io/favicon.png",
+  "next-securities":
+    "https://profiles.greetinghr.com/group/e1cb1dd4-a725-4f5b-981f-96289b6ae0ff",
   backpackr:
     "https://profiles.greetinghr.com/group/a0b6b9f8-ba05-4b3f-bab2-e05520d17971",
   "riot-games-korea":
@@ -362,7 +369,8 @@ export async function GET(_request: Request, context: LogoRouteContext) {
       headers: {
         Accept:
           "image/avif,image/webp,image/png,image/jpeg,image/gif,image/x-icon,image/svg+xml",
-        "User-Agent": "ejik-fit-company-logo/1.0",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; EjikFitLogoProxy/1.0; +https://ejik-fit-web.vercel.app)",
       },
       next: { revalidate: CACHE_SECONDS },
       signal: AbortSignal.timeout(5_000),

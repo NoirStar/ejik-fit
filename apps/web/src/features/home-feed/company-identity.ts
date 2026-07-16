@@ -342,8 +342,9 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["슈퍼센트", "supercent"],
     hosts: ["supercent.career.greetinghr.com"],
-    src: "/company-logos/supercent.png",
+    src: "/company-logo-assets/supercent",
     displayName: "슈퍼센트",
+    surface: "dark",
   },
   {
     aliases: ["sionic ai", "사이오닉 ai", "사이오닉 에이아이"],
@@ -366,8 +367,9 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["넥스트증권", "next securities"],
     hosts: ["nextsecurities.career.greetinghr.com"],
-    src: "/company-logos/next-securities.png",
+    src: "/company-logo-assets/next-securities",
     displayName: "넥스트증권",
+    surface: "dark",
   },
   {
     aliases: ["오누이", "onuii"],
@@ -1008,8 +1010,9 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
     aliases: ["카카오모빌리티", "kakao mobility", "kakaomobility"],
     hosts: ["kakaomobility.career.greetinghr.com"],
-    src: "/company-logo-assets/kakao-mobility",
+    src: "/company-logo-assets/kakao-mobility-mark",
     displayName: "카카오모빌리티",
+    surface: "dark",
   },
   {
     aliases: ["우아한형제들", "배달의민족", "woowahan brothers", "woowa"],
@@ -1102,8 +1105,9 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
       "job-boards.greenhouse.io",
       "krafton.com",
     ],
-    src: "/company-logo-assets/krafton",
+    src: "/company-logo-assets/krafton-mark",
     displayName: "크래프톤",
+    surface: "dark",
   },
   {
     aliases: ["한화시스템", "hanwha systems"],

@@ -6,11 +6,11 @@ not used as 이직핏 branding, endorsements, or promotional marks.
 | File | Company | Official source | Retrieved | Usage note |
 | --- | --- | --- | --- | --- |
 | `naver.svg` | NAVER | [NAVER brand guide](https://www.navercorp.com/en/company/brandGuide), [official resource archive](https://static-homepage.pstatic.net/cdn-static/naver/download/NaverBrand_Resource.zip) | 2026-07-13 | Original `Logotype_Green.svg`, stored without path or color modification. |
-| `supercent.png` | 슈퍼센트 | [official career page](https://supercent.career.greetinghr.com/ko/o/213168), [header asset](https://opening-attachments.greetinghr.com/20230511/6b4be44e-7a39-4129-b4a2-3de24a0309a2/1_CI_supercent_BLACK3.png) | 2026-07-14 | Public header logo, stored without image modification. |
+| `supercent.png` | 슈퍼센트 | [official career page](https://supercent.career.greetinghr.com/ko/o/213168), [header asset](https://opening-attachments.greetinghr.com/20230511/6b4be44e-7a39-4129-b4a2-3de24a0309a2/1_CI_supercent_BLACK3.png) | 2026-07-14 | Legacy wordmark retained; the UI now uses the square official-site icon through the proxy below. |
 | `sionic-ai.png` | Sionic AI | [official career page](https://sionicai.career.greetinghr.com/ko/o/205209), [header asset](https://profiles.greetinghr.com/group/f7b3fc29-e610-4ceb-b00f-27c18934b2fd) | 2026-07-14 | Public header logo, stored without image modification. |
 | `s2w.png` | S2W | [official career page](https://s2w.career.greetinghr.com/ko/o/199550), [header asset](https://profiles.greetinghr.com/group/bfa61f38-309b-4c91-9903-89f1e32f52d5) | 2026-07-14 | Public header logo, stored without image modification. |
 | `afi-backend.jpg` | AFI 뒤끝 | [official career page](https://thebackend.career.greetinghr.com/ko/o/141428), [header asset](https://opening-attachments.greetinghr.com/20230526/21215ae0-2c2d-494b-9100-46f6696a4366/.jpg) | 2026-07-14 | Public header logo, stored without image modification. |
-| `next-securities.png` | 넥스트증권 | [official career page](https://nextsecurities.career.greetinghr.com/ko/o/172330), [header asset](https://opening-attachments.greetinghr.com/2025-12-03/5a7b31d2-9f1e-4e4a-8499-2ce18f8d1754/Logo_NextS_Primary_Black.png) | 2026-07-14 | Public header logo, stored without image modification. |
+| `next-securities.png` | 넥스트증권 | [official career page](https://nextsecurities.career.greetinghr.com/ko/o/172330), [header asset](https://opening-attachments.greetinghr.com/2025-12-03/5a7b31d2-9f1e-4e4a-8499-2ce18f8d1754/Logo_NextS_Primary_Black.png) | 2026-07-14 | Legacy wordmark retained; the UI now uses the square official career-page profile through the proxy below. |
 | `onuii.png` | 오누이 | [official career page](https://onuii.career.greetinghr.com/ko/o/190063), [header asset](https://opening-attachments.greetinghr.com/2024-01-09/102c5888-157f-4813-a8b9-5fd81d2b6e7b/__.png) | 2026-07-14 | Public header logo, stored without image modification. |
 | `kakaobank.svg` | 카카오뱅크 | [official career page](https://recruit.kakaobank.com/), [career-page logo asset](https://recruit.kakaobank.com/images/main/kakaobank-circle-logo.svg) | 2026-07-15 | Original public career-page SVG, stored without path or color modification. |
 
@@ -38,7 +38,10 @@ back to company initials when the official asset is unavailable.
 | `overdare` | OVERDARE | <https://overdare.com/> | <https://static.overdare.com/meta/favicon.png> | 2026-07-15 |
 | `cognite` | Cognite | <https://www.cognite.com/en/careers> | <https://www.cognite.com/icon.png?icon.08484x9h5icrf.png> | 2026-07-15 |
 | `clo-virtual-fashion` | CLO Virtual Fashion | <https://www.clovirtualfashion-careers.com/> | <https://cf.clovirtualfashion.com/web/_next/static/images/favicon_192x192.png> | 2026-07-15 |
-| `krafton` | 크래프톤 | <https://job-boards.greenhouse.io/krafton> | <https://s2-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/963/700/original/KRAFTON_1_Primary_Wordmark_Black_260112.png?1772068780> | 2026-07-15 |
+| `krafton-mark` | 크래프톤 | <https://job-boards.greenhouse.io/krafton> | <https://www.krafton.com/wp-content/uploads/2026/02/cropped-cropped-ms-icon-70x70-1-192x192.png> | 2026-07-16 |
+| `kakao-mobility-mark` | 카카오모빌리티 | <https://kakaomobility.career.greetinghr.com/ko/home> | <https://www.kakaomobility.com/favicon-32x32.png> | 2026-07-16 |
+| `supercent` | 슈퍼센트 | <https://supercent.career.greetinghr.com/ko/home> | <https://supercent.io/favicon.png> | 2026-07-16 |
+| `next-securities` | 넥스트증권 | <https://nextsecurities.career.greetinghr.com/ko/home> | <https://profiles.greetinghr.com/group/e1cb1dd4-a725-4f5b-981f-96289b6ae0ff> | 2026-07-16 |
 | `hanwha-systems` | 한화시스템 | <https://www.hanwhasystems.com/kr/company/recruit.do> | <https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico> | 2026-07-15 |
 | `deepauto-ai` | DeepAuto.ai | <https://deepauto.ai/company> | <https://deepauto.ai/icon.png?icon.3bd11c4c.png> | 2026-07-15 |
 | `lawcompany` | 로앤컴퍼니 | <https://lawcompany.career.greetinghr.com/ko> | <https://www.lawtalk.co.kr/favicon.ico> | 2026-07-15 |

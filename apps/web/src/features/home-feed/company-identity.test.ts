@@ -38,11 +38,6 @@ describe("companyIdentity", () => {
 
   it.each([
     [
-      "슈퍼센트",
-      "https://supercent.career.greetinghr.com/ko/o/213168",
-      "/company-logos/supercent.png",
-    ],
-    [
       "Sionic AI",
       "https://sionicai.career.greetinghr.com/ko/o/205209",
       "/company-logos/sionic-ai.png",
@@ -56,11 +51,6 @@ describe("companyIdentity", () => {
       "AFI 뒤끝",
       "https://thebackend.career.greetinghr.com/ko/o/141428",
       "/company-logos/afi-backend.jpg",
-    ],
-    [
-      "넥스트증권",
-      "https://nextsecurities.career.greetinghr.com/ko/o/172330",
-      "/company-logos/next-securities.png",
     ],
     [
       "오누이",
@@ -366,7 +356,17 @@ describe("companyIdentity", () => {
     [
       "카카오모빌리티",
       "https://kakaomobility.career.greetinghr.com/ko/o/1",
-      "kakao-mobility",
+      "kakao-mobility-mark",
+    ],
+    [
+      "슈퍼센트",
+      "https://supercent.career.greetinghr.com/ko/o/213168",
+      "supercent",
+    ],
+    [
+      "넥스트증권",
+      "https://nextsecurities.career.greetinghr.com/ko/o/172330",
+      "next-securities",
     ],
     [
       "넷마블",
@@ -516,7 +516,7 @@ describe("companyIdentity", () => {
     [
       "크래프톤",
       "https://boards-api.greenhouse.io/v1/boards/krafton/jobs?content=true",
-      "krafton",
+      "krafton-mark",
     ],
     [
       "한화시스템",
@@ -777,6 +777,35 @@ describe("companyIdentity", () => {
       kind: "logo",
       src: `/company-logo-assets/${key}`,
       alt: `${name} 로고`,
+    });
+  });
+
+  it.each([
+    [
+      "크래프톤",
+      "https://boards-api.greenhouse.io/v1/boards/krafton/jobs?content=true",
+      "krafton-mark",
+    ],
+    [
+      "카카오모빌리티",
+      "https://kakaomobility.career.greetinghr.com/ko/o/1",
+      "kakao-mobility-mark",
+    ],
+    [
+      "슈퍼센트",
+      "https://supercent.career.greetinghr.com/ko/o/213168",
+      "supercent",
+    ],
+    [
+      "넥스트증권",
+      "https://nextsecurities.career.greetinghr.com/ko/o/172330",
+      "next-securities",
+    ],
+  ])("uses the dark icon surface for %s", (name, source, key) => {
+    expect(companyIdentity(name, source)).toMatchObject({
+      kind: "logo",
+      src: `/company-logo-assets/${key}`,
+      surface: "dark",
     });
   });
 

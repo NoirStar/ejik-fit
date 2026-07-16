@@ -36,6 +36,28 @@ describe("company logo asset proxy", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("uses a transparent browser-compatible user agent for official sites that reject bare bot agents", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await GET(new Request("http://localhost/company-logo-assets/krafton"), {
+      params: Promise.resolve({ logoKey: "krafton" }),
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": expect.stringMatching(/^Mozilla\/5\.0 .*EjikFitLogoProxy/),
+        }),
+      }),
+    );
+  });
+
   it("accepts a whitelisted Windows icon by its file signature", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(new Uint8Array([0, 0, 1, 0, 1, 0, 32, 32]), {
