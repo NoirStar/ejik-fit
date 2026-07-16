@@ -587,6 +587,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "페이히어",
   },
   {
+    aliases: ["셀렉트스타", "selectstar", "select star"],
+    hosts: ["selectstar.ninehire.site", "selectstar.ai"],
+    src: "/company-logo-assets/selectstar",
+    displayName: "셀렉트스타",
+  },
+  {
     aliases: ["소크라ai", "소크라 ai", "socra ai", "riiid", "뤼이드"],
     hosts: [
       "socraai.career.greetinghr.com",

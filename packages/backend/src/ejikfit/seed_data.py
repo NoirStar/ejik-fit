@@ -2010,6 +2010,28 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="셀렉트스타",
+        slug="selectstar",
+        base_url="https://selectstar.ninehire.site/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://selectstar.ai",
+        sector="ai_safety",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official SelectStar careers site and its public Ninehire feed; "
+            "limited to active AI engineering and research roles while "
+            "excluding data operations, sales, and presales positions."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

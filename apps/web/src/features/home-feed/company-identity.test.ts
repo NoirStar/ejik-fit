@@ -186,6 +186,11 @@ describe("companyIdentity", () => {
       "remember",
     ],
     [
+      "셀렉트스타",
+      "https://selectstar.ninehire.site/job_posting/y0utyOpo",
+      "selectstar",
+    ],
+    [
       "KREAM",
       "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005165",
       "kream",

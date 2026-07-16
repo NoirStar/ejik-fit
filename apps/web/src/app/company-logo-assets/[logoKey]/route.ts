@@ -230,6 +230,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.stradvision.com/image/favicon/apple-icon-180x180.png",
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
+  selectstar:
+    "https://selectstar.ai/wp-content/uploads/2025/04/new_favicon.png",
   snow: "https://snowcorp.com/img/favicon.ico",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   teamblind:
