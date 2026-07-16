@@ -41,7 +41,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "deepnoid",
         "enerzai",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 52
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 53
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -189,6 +189,8 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
         "com2us",
         "netmarble",
         "ncsoft",
+        "wemade",
+        "devsisters",
         "shiftup",
     }
     assert all(
@@ -247,6 +249,16 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
     assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+
+    wemade = catalog_by_slug["wemade"]
+    assert wemade.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert wemade.connector_family == "ninehire_public_api_tech"
+    assert wemade.status == SourceStatus.ALLOWED
+
+    devsisters = catalog_by_slug["devsisters"]
+    assert devsisters.source_type == SourceType.GREETING
+    assert devsisters.connector_family == "greeting_tech"
+    assert devsisters.status == SourceStatus.ALLOWED
 
     ncsoft = catalog_by_slug["ncsoft"]
     assert ncsoft.source_type == SourceType.PUBLIC_JSON_DETAIL

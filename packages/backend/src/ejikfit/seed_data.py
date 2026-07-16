@@ -2519,22 +2519,22 @@ INITIAL_SOURCE_CATALOG = (
         name="위메이드",
         slug="wemade",
         base_url="https://recruit.wemade.com/",
-        source_type=SourceType.STATIC_NEXT_DATA,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.wemade.com",
         sector="game_content",
-        connector_family="ninehire_next_data",
+        connector_family="ninehire_public_api_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=4,
-        tech_job_priority=4,
+        tech_job_priority=5,
         expected_job_volume=2,
-        connector_reuse_score=2,
+        connector_reuse_score=5,
         policy_risk=0,
         non_tech_noise=2,
         notes=(
-            "Official Wemade recruitment site embeds Ninehire job links in "
-            "Next data; needs a Ninehire-aware parser."
+            "Official Wemade recruitment site and its public Ninehire feed; "
+            "limited to active technical roles with verified detail pages."
         ),
-        status=SourceStatus.NEEDS_CONNECTOR,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="컴투스",
@@ -2561,22 +2561,22 @@ INITIAL_SOURCE_CATALOG = (
         name="데브시스터즈",
         slug="devsisters",
         base_url="https://careers.devsisters.com/ko/home",
-        source_type=SourceType.STATIC_NEXT_DATA,
+        source_type=SourceType.GREETING,
         homepage_url="https://www.devsisters.com",
         sector="game_content",
-        connector_family="greeting_embedded_next_data",
+        connector_family="greeting_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=3,
         tech_job_priority=4,
         expected_job_volume=2,
-        connector_reuse_score=2,
+        connector_reuse_score=5,
         policy_risk=0,
         non_tech_noise=2,
         notes=(
-            "Official Devsisters Greeting-powered custom careers page; "
-            "currently exposes no open postings, so detail mapping is pending."
+            "Official Devsisters Greeting-powered careers listing and detail "
+            "pages; monitored through periods with no open technical roles."
         ),
-        status=SourceStatus.NEEDS_CONNECTOR,
+        status=SourceStatus.ALLOWED,
     ),
     SeedSource(
         name="시프트업",
