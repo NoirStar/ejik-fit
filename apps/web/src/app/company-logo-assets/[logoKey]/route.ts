@@ -130,8 +130,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://static.wixstatic.com/media/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png",
   moreh:
     "https://profiles.greetinghr.com/group/2a79989e-53a7-4c80-8c9f-0af7d8677a38",
-  "megazone-cloud":
-    "https://image.ninehire.com/homepage/f3b6f7b0-94a2-11ec-990c-a70e6ab23542/e9577070-4469-11ed-8235-55c2bd82f4c4.png",
+  "megazone-cloud": "https://www.megazone.com/favicon_BK_152.png",
   "microsoft-korea": "https://www.microsoft.com/favicon.ico?v2",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",

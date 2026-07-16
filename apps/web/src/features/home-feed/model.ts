@@ -144,6 +144,36 @@ function skillMatches(
   };
 }
 
+function postingFitScore(
+  evidence: SkillGraphEvidence | undefined,
+  ownedSet: ReadonlySet<string>,
+) {
+  if (!evidence || ownedSet.size === 0) return null;
+  const matchedRequired = evidence.required.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  const matchedPreferred = evidence.preferred.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  const matchedUnspecified = evidence.unspecified.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  const matchedTotal = matchedRequired + matchedPreferred + matchedUnspecified;
+  if (matchedTotal === 0) return null;
+
+  const missingRequired = evidence.required.length - matchedRequired;
+  const requiredCoverage = evidence.required.length > 0
+    ? matchedRequired / evidence.required.length
+    : 0;
+  return (
+    matchedRequired * 120
+    + matchedPreferred * 45
+    + matchedUnspecified * 20
+    + requiredCoverage * 35
+    - missingRequired * 12
+  );
+}
+
 function buildJobs(
   postings: PostingListResponse | null,
   graph: SkillGraphResponse | null,
@@ -151,7 +181,24 @@ function buildJobs(
 ): RecommendedJobFeedItem[] {
   const evidenceMap = evidenceByPostingId(graph);
   const ownedSet = new Set(ownedSkills.map(normalize));
-  return (postings?.items ?? []).slice(0, 2).map((posting) => ({
+  const rankedPostings = (postings?.items ?? [])
+    .map((posting, index) => ({
+      index,
+      posting,
+      score: postingFitScore(evidenceMap.get(posting.id), ownedSet),
+    }))
+    .sort((left, right) => {
+      if (left.score === null && right.score === null) {
+        return left.index - right.index;
+      }
+      if (left.score === null) return 1;
+      if (right.score === null) return -1;
+      return right.score - left.score || left.index - right.index;
+    })
+    .slice(0, 2)
+    .map(({ posting }) => posting);
+
+  return rankedPostings.map((posting) => ({
     id: `job-${posting.id}`,
     postingId: posting.id,
     type: "recommended_job",

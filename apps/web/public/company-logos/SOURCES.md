@@ -59,7 +59,7 @@ back to company initials when the official asset is unavailable.
 | `kakao-enterprise` | 카카오엔터프라이즈 | <https://careers.kakaoenterprise.com/ko/intro> | <https://profiles.greetinghr.com/group/a163f8c5-f9aa-44da-b5a3-1425303180e1> | 2026-07-15 |
 | `kakao-style` | 카카오스타일 | <https://career.kakaostyle.com/> | <https://image.ninehire.com/homepage/1573cfe0-2c72-11ef-950a-65a32c77a0c3/image/65e55ba0-5b1b-11f0-acb4-7b0599a7f9c9.png> | 2026-07-15 |
 | `kakao-healthcare` | 카카오헬스케어 | <https://recruit.kakaohealthcare.com/> | <https://image.ninehire.com/homepage/48b8c300-ac2c-11ed-9a7f-25af3e3b8401/bd23e840-ed5a-11ed-bef0-33cdfeb3dfc8.png> | 2026-07-15 |
-| `megazone-cloud` | 메가존클라우드 그룹 | <https://career.megazone.com/> | <https://image.ninehire.com/homepage/f3b6f7b0-94a2-11ec-990c-a70e6ab23542/e9577070-4469-11ed-8235-55c2bd82f4c4.png> | 2026-07-15 |
+| `megazone-cloud` | 메가존클라우드 그룹 | <https://www.megazone.com/> | <https://www.megazone.com/favicon_BK_152.png> | 2026-07-15 |
 | `11st` | 11번가 | <https://11st.career.greetinghr.com/ko/career> | <https://profiles.greetinghr.com/group/7660163f-40cd-404d-a894-567dd54b3993> | 2026-07-15 |
 | `nhn-group` | NHN 그룹 | <https://careers.nhn.com/recruits> | <https://careers.nhn.com/images/meta/favicon_32x32.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |

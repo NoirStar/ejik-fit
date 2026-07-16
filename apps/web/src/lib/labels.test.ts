@@ -14,6 +14,12 @@ describe("posting labels", () => {
   });
 
   it.each([
+    ["regular", "정규직"],
+    ["full_time", "정규직"],
+    ["contract", "계약직"],
+    ["intern", "인턴"],
+    ["part_time", "파트타임"],
+    ["freelancer", "프리랜서"],
     ["FULL_TIME_WORKER", "정규직"],
     ["CONTRACT_WORKER", "계약직"],
     ["INTERN_WORKER", "인턴"],

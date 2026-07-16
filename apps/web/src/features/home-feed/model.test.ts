@@ -208,6 +208,57 @@ describe("buildHomeFeedSnapshot", () => {
     expect(JSON.stringify(snapshot)).not.toContain("matchScore");
   });
 
+  it("prioritizes a later posting when verified skill evidence matches my stack", () => {
+    const rankedPostings: PostingListResponse = {
+      total: 3,
+      items: [
+        postings.items[0],
+        {
+          ...postings.items[0],
+          id: "job-2",
+          title: "Unrelated Frontend Engineer",
+        },
+        {
+          ...postings.items[0],
+          id: "job-3",
+          title: "Java Platform Engineer",
+        },
+      ],
+    };
+    const rankedGraph: SkillGraphResponse = {
+      ...graph,
+      evidence: [
+        {
+          posting_id: "job-3",
+          title: "Java Platform Engineer",
+          company_name: "토스",
+          skills: ["Java", "Kafka", "Spring"],
+          required: ["Java", "Spring"],
+          preferred: ["Kafka"],
+          unspecified: [],
+        },
+      ],
+    };
+
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(rankedPostings),
+      skillStats: ready(skillStats),
+      graph: ready(rankedGraph),
+      fit: ready(fit),
+      ownedSkills: ["Java", "Kafka"],
+    });
+
+    expect(snapshot.recommendedJobs.map((job) => job.postingId)).toEqual([
+      "job-3",
+      "job-1",
+    ]);
+    expect(snapshot.recommendedJobs[0]).toMatchObject({
+      matchedRequiredSkills: ["Java"],
+      missingRequiredSkills: ["Spring"],
+      matchedPreferredSkills: ["Kafka"],
+    });
+  });
+
   it("keeps community and verified posting content when graph loading fails", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
