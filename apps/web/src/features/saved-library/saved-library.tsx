@@ -395,16 +395,19 @@ export function SavedLibrary({
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>브라우저 저장함</p>
+          <p className={styles.eyebrow}>내 커리어 보관함</p>
           <h1>저장 보관함</h1>
           <p className={styles.description}>
-            저장 여부와 지원 단계, 직접 작성한 글은 이 브라우저에만 남고, 공고 내용은 열 때마다 현재 공식 API에서 다시 확인합니다.
+            공고 저장과 지원 단계는 로그인 전에는 이 브라우저에
+            남고, 로그인하면 계정과 동기화됩니다. 직접 작성한 커뮤니티
+            글은 현재 브라우저에만 남으며, 공고 내용은 열 때마다 공식
+            API에서 다시 확인합니다.
           </p>
         </div>
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            로컬 저장
+            계정 연동 지원
           </span>
           <Link href="/career">
             내 기술 비교
@@ -442,7 +445,7 @@ export function SavedLibrary({
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          현재 브라우저 저장·지원 기준
+          현재 기기에 병합된 저장·지원 기준
         </p>
       </section>
 
