@@ -96,6 +96,10 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
   "kakao-enterprise":
     "https://profiles.greetinghr.com/group/a163f8c5-f9aa-44da-b5a3-1425303180e1",
+  "kakao-style":
+    "https://image.ninehire.com/homepage/1573cfe0-2c72-11ef-950a-65a32c77a0c3/image/65e55ba0-5b1b-11f0-acb4-7b0599a7f9c9.png",
+  "kakao-healthcare":
+    "https://image.ninehire.com/homepage/48b8c300-ac2c-11ed-9a7f-25af3e3b8401/bd23e840-ed5a-11ed-bef0-33cdfeb3dfc8.png",
   kia: "https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico",
   kt: "https://recruit.kt.com/favicon.ico",
   kurly:
@@ -126,6 +130,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://static.wixstatic.com/media/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png",
   moreh:
     "https://profiles.greetinghr.com/group/2a79989e-53a7-4c80-8c9f-0af7d8677a38",
+  "megazone-cloud":
+    "https://image.ninehire.com/homepage/f3b6f7b0-94a2-11ec-990c-a70e6ab23542/e9577070-4469-11ed-8235-55c2bd82f4c4.png",
   "microsoft-korea": "https://www.microsoft.com/favicon.ico?v2",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
@@ -219,6 +225,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico",
   zigbang:
     "https://profiles.greetinghr.com/group/e993711a-5f1c-45e0-b292-4ea939289952",
+  "11st": "https://profiles.greetinghr.com/group/7660163f-40cd-404d-a894-567dd54b3993",
 };
 
 type LogoRouteContext = {

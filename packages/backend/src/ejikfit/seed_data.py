@@ -625,6 +625,80 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="카카오스타일",
+        slug="kakao-style",
+        base_url="https://career.kakaostyle.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://kakaostyle.com",
+        sector="commerce_platform",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official KakaoStyle careers site and public Ninehire feed; "
+            "limited to active technical roles and excludes explicitly "
+            "business-classified AI operations roles."
+        ),
+    ),
+    SeedSource(
+        name="카카오헬스케어",
+        slug="kakao-healthcare",
+        base_url="https://recruit.kakaohealthcare.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://kakaohealthcare.com",
+        sector="healthcare_ai",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official Kakao Healthcare careers site and public Ninehire "
+            "feed; limited to active software, data, AI, and infrastructure "
+            "roles."
+        ),
+    ),
+    SeedSource(
+        name="메가존클라우드 그룹",
+        slug="megazone-cloud",
+        base_url="https://career.megazone.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.megazone.com",
+        sector="cloud_infrastructure",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=5,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official MegazoneCloud group careers site and public Ninehire "
+            "feed; limited to active technical roles while preserving each "
+            "affiliate name in the posting title."
+        ),
+    ),
+    SeedSource(
+        name="11번가",
+        slug="11st",
+        base_url="https://11st.career.greetinghr.com/ko/career",
+        homepage_url="https://www.11stcorp.com",
+        sector="commerce_platform",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official 11st Greeting careers listing and detail pages; the "
+            "source remains monitored when no technical role is open."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(

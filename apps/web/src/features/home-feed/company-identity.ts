@@ -199,6 +199,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "카카오엔터프라이즈",
   },
   {
+    aliases: ["카카오스타일", "kakao style", "kakaostyle"],
+    hosts: ["career.kakaostyle.com", "kakaostyle.com"],
+    src: "/company-logo-assets/kakao-style",
+    displayName: "카카오스타일",
+  },
+  {
+    aliases: ["카카오헬스케어", "kakao healthcare"],
+    hosts: ["recruit.kakaohealthcare.com", "kakaohealthcare.com"],
+    src: "/company-logo-assets/kakao-healthcare",
+    displayName: "카카오헬스케어",
+  },
+  {
+    aliases: ["메가존클라우드 그룹", "메가존클라우드", "megazone cloud"],
+    hosts: ["career.megazone.com", "megazone.com"],
+    src: "/company-logo-assets/megazone-cloud",
+    displayName: "메가존클라우드 그룹",
+  },
+  {
+    aliases: ["11번가", "11st"],
+    hosts: ["11st.career.greetinghr.com", "11stcorp.com"],
+    src: "/company-logo-assets/11st",
+    displayName: "11번가",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

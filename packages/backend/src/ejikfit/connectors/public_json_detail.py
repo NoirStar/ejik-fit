@@ -88,6 +88,9 @@ WORKABLE_DETAIL_API_TEMPLATE = (
 NINEHIRE_LISTING_API = (
     "https://api.ninehire.com/identity-access/homepage/recruitments"
 )
+NINEHIRE_EXPLICIT_NON_TECH_GROUPS = frozenset(
+    {"business", "design", "finance", "legal", "marketing", "people", "sales"}
+)
 DUNAMU_JOB_GROUP_LABELS = {
     "T_ENGINEERING": "Engineering",
     "T_SECURITY": "Security",
@@ -1374,6 +1377,18 @@ def filter_public_detail_refs(
         ]
     if connector_family == "banksalad_greeting_api_tech":
         return refs
+    if connector_family == "ninehire_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if "인재풀" not in ref.title
+            and (
+                ref.category is None
+                or ref.category.split(" · ", 1)[0].casefold()
+                not in NINEHIRE_EXPLICIT_NON_TECH_GROUPS
+            )
+            and is_technical_role(ref.title, ref.category)
+        ]
     if connector_family == "workable_public_api_tech":
         return [
             ref

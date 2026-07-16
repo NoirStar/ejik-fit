@@ -600,6 +600,26 @@ describe("companyIdentity", () => {
       "kakao-enterprise",
     ],
     [
+      "카카오스타일",
+      "https://career.kakaostyle.com/job_posting/1",
+      "kakao-style",
+    ],
+    [
+      "카카오헬스케어",
+      "https://recruit.kakaohealthcare.com/job_posting/1",
+      "kakao-healthcare",
+    ],
+    [
+      "메가존클라우드 그룹",
+      "https://career.megazone.com/job_posting/1",
+      "megazone-cloud",
+    ],
+    [
+      "11번가",
+      "https://11st.career.greetinghr.com/ko/o/1",
+      "11st",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

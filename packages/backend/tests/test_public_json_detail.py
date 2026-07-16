@@ -411,8 +411,18 @@ def test_ninehire_public_api_discovers_and_parses_only_open_technical_jobs() -> 
     )
     listing = json.dumps(
         {
-            "count": 3,
+            "count": 4,
             "results": [
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "business-ai-role",
+                    "addressKey": "BusinessAI",
+                    "externalTitle": "CX AI 챗봇 운영 매니저",
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "Business"},
+                    "jobTask": None,
+                },
                 {
                     "companyId": company_id,
                     "recruitmentId": "776471f0-1d1b-11f1-821d-1fa51bdaccc6",
@@ -450,7 +460,7 @@ def test_ninehire_public_api_discovers_and_parses_only_open_technical_jobs() -> 
         },
         ensure_ascii=False,
     )
-    assert parse_ninehire_listing_page(listing, company_id)[1] == 3
+    assert parse_ninehire_listing_page(listing, company_id)[1] == 4
 
     refs = discover_public_json_detail_refs(
         listing,
@@ -459,7 +469,7 @@ def test_ninehire_public_api_discovers_and_parses_only_open_technical_jobs() -> 
     )
     filtered = filter_public_detail_refs(refs, "ninehire_public_api_tech")
 
-    assert len(refs) == 3
+    assert len(refs) == 4
     assert len(filtered) == 1
     assert filtered[0].category == "Engineering · AI Engineering"
     assert filtered[0].detail_url == (
