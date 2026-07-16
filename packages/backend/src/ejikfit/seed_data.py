@@ -2032,6 +2032,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="AB180",
+        slug="ab180",
+        base_url="https://recruit.ab180.co/jobs",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://ab180.co",
+        sector="martech_adtech",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=18,
+        notes=(
+            "Official AB180 careers site and its public Ninehire feed; "
+            "limited to active software, DevOps, QA, solution architecture, "
+            "and hands-on security roles while excluding compliance, sales, "
+            "product, and customer-success positions."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

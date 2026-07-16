@@ -65,6 +65,7 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "counsel",
     "customer service",
     "clinical research",
+    "compliance manager",
     "coordinator",
     "facilities",
     "facility",

@@ -16,6 +16,7 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("Cloud Sales Talent Pool") is False
     assert is_technical_role("HVAC 설계 엔지니어") is False
     assert is_technical_role("Data Privacy & AI Legal Counsel") is False
+    assert is_technical_role("Information Security & Privacy Compliance Manager") is False
     assert is_technical_role("CS QA - 상담 품질 평가") is False
     assert is_technical_role("라스트마일 데이터 분석 및 운영 개선 담당자") is False
     assert is_technical_role("의료기기 QA 담당자 (QMS / SaMD)") is False

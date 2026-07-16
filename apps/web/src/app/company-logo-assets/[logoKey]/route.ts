@@ -3,6 +3,8 @@ const MAX_LOGO_BYTES = 2_000_000;
 
 const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "42dot": "https://www.42dot.ai/favicon.ico",
+  ab180:
+    "https://image.ninehire.com/homepage/dab31690-f51a-11f0-82d7-69b90bd91b4e/image/5bb38750-21dc-11f1-ace3-df9fba100c30.png",
   airwallex:
     "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
   "amd-korea":

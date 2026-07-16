@@ -77,6 +77,11 @@ describe("companyIdentity", () => {
 
   it.each([
     [
+      "AB180",
+      "https://recruit.ab180.co/job_posting/yTlPR6Ki",
+      "ab180",
+    ],
+    [
       "42dot",
       "https://api.ashbyhq.com/posting-api/job-board/42dot",
       "42dot",

@@ -16,6 +16,13 @@ type VerifiedLogo = {
 
 const VERIFIED_LOGOS: VerifiedLogo[] = [
   {
+    aliases: ["ab180", "에이비일팔공", "에이비180"],
+    hosts: ["recruit.ab180.co", "ab180.co"],
+    src: "/company-logo-assets/ab180",
+    displayName: "AB180",
+    surface: "dark",
+  },
+  {
     aliases: ["42dot", "포티투닷", "42닷"],
     hosts: ["42dot.ai", "api.ashbyhq.com", "jobs.ashbyhq.com"],
     src: "/company-logo-assets/42dot",
