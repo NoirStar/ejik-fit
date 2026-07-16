@@ -12,6 +12,11 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("AI 연구 및 서비스 개발 채용") is True
     assert is_technical_role("취약점 진단 및 모의해킹 담당자") is True
     assert is_technical_role("Member of Technical Staff, MLE (Korea)") is True
+    assert is_technical_role("[Management] IT Infra & System Manager") is True
+    assert is_technical_role("[HW] SoC Design (MIPI & ISP Subsystem)") is True
+    assert is_technical_role("[SW] NPU (DL) Compiler") is True
+    assert is_technical_role("Azure Cloud 운영 및 관리") is True
+    assert is_technical_role("Private Cloud 운영 (k8s)") is True
 
     assert is_technical_role("Cloud Sales Talent Pool") is False
     assert is_technical_role("HVAC 설계 엔지니어") is False
