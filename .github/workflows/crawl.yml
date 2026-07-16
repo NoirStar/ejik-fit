@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       company_slug:
-        description: "Run one company source only (leave blank for all)"
+        description: "Run one or comma-separated company slugs (leave blank for all)"
         required: false
         type: string
 
@@ -43,11 +43,23 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
-      - name: Crawl one source
+      - name: Crawl selected sources
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.company_slug != '' }}
         env:
           COMPANY_SLUG: ${{ inputs.company_slug }}
-        run: ejikfit crawl-source --company-slug "$COMPANY_SLUG"
+        shell: bash
+        run: |
+          status=0
+          IFS=',' read -r -a slugs <<< "$COMPANY_SLUG"
+          for slug in "${slugs[@]}"; do
+            if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+              echo "::error::Invalid company slug: $slug"
+              status=1
+            elif ! ejikfit crawl-source --company-slug "$slug"; then
+              status=1
+            fi
+          done
+          exit "$status"
       - name: Crawl all production sources
         if: ${{ github.event_name != 'workflow_dispatch' || inputs.company_slug == '' }}
         run: ejikfit crawl-all
