@@ -116,6 +116,12 @@ DUNAMU_EMPLOYMENT_LABELS = {
     "INTERN": "인턴",
     "NONE": "미표기",
 }
+DUNAMU_CONNECTOR_FAMILIES = frozenset(
+    {
+        "dunamu_server_html_tech",
+        "dunamu_official_api_proxy_tech",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -1044,7 +1050,7 @@ def discover_public_json_detail_refs(
     listing_url: str,
     connector_family: str,
 ) -> list[PublicJsonDetailRef]:
-    if connector_family == "dunamu_server_html_tech":
+    if connector_family in DUNAMU_CONNECTOR_FAMILIES:
         return _dunamu_refs(raw_json, listing_url)
     if connector_family == "ably_next_ninehire_tech":
         return _ably_refs(raw_json)
@@ -1116,9 +1122,10 @@ def filter_public_detail_refs(
 
 
 def public_detail_listing_is_self_validated(connector_family: str) -> bool:
+    if connector_family in DUNAMU_CONNECTOR_FAMILIES:
+        return True
     return connector_family in {
         "ably_next_ninehire_tech",
-        "dunamu_server_html_tech",
         "netmarble_public_api_tech",
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
@@ -1937,7 +1944,7 @@ def parse_public_json_detail(
     ref: PublicJsonDetailRef,
     connector_family: str,
 ) -> ParsedOpening:
-    if connector_family == "dunamu_server_html_tech":
+    if connector_family in DUNAMU_CONNECTOR_FAMILIES:
         if raw_json.lstrip().startswith("{"):
             return _dunamu_api_opening(raw_json, ref)
         return _dunamu_opening(raw_json, ref)

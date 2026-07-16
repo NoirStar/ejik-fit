@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from typing import Protocol
+import json
+from typing import Any, Protocol
 
-from fastapi import APIRouter
+import httpx
+from fastapi import APIRouter, HTTPException, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
+from ejikfit.connectors.public_json_detail import (
+    discover_public_json_detail_refs,
+)
 from ejikfit.db import SessionLocal
 from ejikfit.models import (
     CareerSource,
@@ -20,6 +25,50 @@ from .schemas import SourceDirectoryResponse
 
 class SourceDirectoryReader(Protocol):
     def list(self) -> list[dict]: ...
+
+
+DUNAMU_OFFICIAL_JOBS_URL = (
+    "https://careers.dunamu.com/api/job-boards/"
+    "jd0wjv/job-notices?lang=ko"
+)
+
+
+class DunamuJobsReader(Protocol):
+    def read(self) -> dict[str, Any]: ...
+
+
+class OfficialDunamuJobsReader:
+    def __init__(
+        self,
+        *,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        self.transport = transport
+
+    def read(self) -> dict[str, Any]:
+        with httpx.Client(
+            transport=self.transport,
+            follow_redirects=True,
+            timeout=10.0,
+            headers={
+                "User-Agent": (
+                    "EjikFitAPI/0.1 "
+                    "(+https://ejik-fit-web.vercel.app/data-policy)"
+                )
+            },
+        ) as client:
+            response = client.get(DUNAMU_OFFICIAL_JOBS_URL)
+            response.raise_for_status()
+
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise ValueError("Dunamu jobs response must be an object")
+        discover_public_json_detail_refs(
+            json.dumps(payload, ensure_ascii=False),
+            DUNAMU_OFFICIAL_JOBS_URL,
+            "dunamu_official_api_proxy_tech",
+        )
+        return payload
 
 
 class DatabaseSourceDirectoryReader:
@@ -110,8 +159,12 @@ class DatabaseSourceDirectoryReader:
         )
 
 
-def create_sources_router(reader: SourceDirectoryReader) -> APIRouter:
+def create_sources_router(
+    reader: SourceDirectoryReader,
+    dunamu_jobs_reader: DunamuJobsReader | None = None,
+) -> APIRouter:
     router = APIRouter(prefix="/api/sources", tags=["sources"])
+    jobs_reader = dunamu_jobs_reader or OfficialDunamuJobsReader()
 
     @router.get("", response_model=SourceDirectoryResponse)
     def list_sources() -> dict:
@@ -127,5 +180,19 @@ def create_sources_router(reader: SourceDirectoryReader) -> APIRouter:
             ),
             "open_postings": sum(item["open_postings"] for item in items),
         }
+
+    @router.get("/dunamu/current-jobs")
+    def dunamu_current_jobs(response: Response) -> dict[str, Any]:
+        try:
+            payload = jobs_reader.read()
+        except (httpx.HTTPError, ValueError) as error:
+            raise HTTPException(
+                status_code=502,
+                detail="두나무 공식 채용 데이터를 불러오지 못했습니다.",
+            ) from error
+        response.headers["Cache-Control"] = (
+            "public, s-maxage=300, stale-while-revalidate=900"
+        )
+        return payload
 
     return router

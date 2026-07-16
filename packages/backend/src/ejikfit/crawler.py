@@ -58,6 +58,7 @@ from ejikfit.connectors.public_json_detail import (
     COM2US_LISTING_API,
     COM2US_LISTING_BODY,
     COM2US_REQUEST_HEADERS,
+    DUNAMU_CONNECTOR_FAMILIES,
     NETMARBLE_LISTING_API,
     NCSOFT_DETAIL_API,
     NCSOFT_LISTING_API,
@@ -114,6 +115,11 @@ from ejikfit.models import (
 from ejikfit.search import MeiliPostingIndex, PostingIndex
 from ejikfit.skill_trends import capture_skill_demand_snapshot
 from ejikfit.storage import S3SnapshotStore, SnapshotStore
+
+
+DUNAMU_PROXY_URL = (
+    "https://ejik-fit-api.vercel.app/api/sources/dunamu/current-jobs"
+)
 
 
 logger = logging.getLogger(__name__)
@@ -547,13 +553,17 @@ async def _fetch_listing_page(
 ) -> FetchedPage:
     source_url = urlparse(source.base_url)
     if (
-        source.connector_family == "dunamu_server_html_tech"
+        source.connector_family in DUNAMU_CONNECTOR_FAMILIES
         and source_url.hostname == "careers.dunamu.com"
         and source_url.path == "/api/job-boards/jd0wjv/job-notices"
     ):
         try:
             return await fetcher.fetch(source.base_url)
         except BlockedSourceError:
+            try:
+                return await fetcher.fetch(DUNAMU_PROXY_URL)
+            except (BlockedSourceError, RetryableFetchError, httpx.HTTPError):
+                pass
             if browser_renderer is None:
                 raise
             rendered = await browser_renderer.render(source.base_url)
@@ -713,11 +723,9 @@ async def _fetch_public_json_detail(
     listing: FetchedPage,
     fetcher: HttpFetcher,
 ) -> FetchedPage:
-    listing_url = urlparse(listing.url)
     if (
-        connector_family == "dunamu_server_html_tech"
-        and listing_url.hostname == "careers.dunamu.com"
-        and listing_url.path == "/api/job-boards/jd0wjv/job-notices"
+        connector_family in DUNAMU_CONNECTOR_FAMILIES
+        and listing.text.lstrip().startswith("{")
     ):
         return listing
     if connector_family == "com2us_jobflex_tech":

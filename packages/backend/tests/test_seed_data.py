@@ -645,7 +645,7 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
         "jd0wjv/job-notices?lang=ko"
     )
     assert dunamu.source_type == SourceType.PUBLIC_JSON_DETAIL
-    assert dunamu.connector_family == "dunamu_server_html_tech"
+    assert dunamu.connector_family == "dunamu_official_api_proxy_tech"
     assert dunamu.status == SourceStatus.ALLOWED
 
     kurly = catalog_by_slug["kurly"]
@@ -1119,6 +1119,32 @@ def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
         assert source.status == SourceStatus.BLOCKED
         assert source.policy_status == PolicyStatus.BLOCKED
         assert source.last_error_code == "blocked"
+
+
+def test_seeding_reverifies_dunamu_after_transport_connector_upgrade() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        seed_data.seed_sources(session)
+        source = session.scalar(
+            select(CareerSource).join(Company).where(Company.slug == "dunamu")
+        )
+        assert source is not None
+        source.connector_family = "dunamu_server_html_tech"
+        source.status = SourceStatus.BLOCKED
+        source.policy_status = PolicyStatus.BLOCKED
+        source.last_error_code = "blocked"
+        source.last_error_reason = "source denied access with 403"
+        session.commit()
+
+        assert seed_data.seed_sources(session) == 0
+
+        assert source.connector_family == "dunamu_official_api_proxy_tech"
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code is None
+        assert source.last_error_reason is None
 
 
 def test_seeding_sources_does_not_clear_stopped_source_status() -> None:

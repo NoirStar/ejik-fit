@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
 
+import httpx
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from ejikfit.api.app import create_app
+from ejikfit.api.sources import OfficialDunamuJobsReader
 from ejikfit.models import (
     Base,
     CareerSource,
@@ -40,6 +42,25 @@ class FakeSourceDirectoryReader:
         ]
 
 
+class FakeDunamuJobsReader:
+    def read(self) -> dict:
+        return {
+            "content": {
+                "jobBoardName": "Dunamu",
+                "jobNoticeResponses": [
+                    {
+                        "id": 588,
+                        "name": "Frontend Engineer",
+                        "jobGroupCode": "T_ENGINEERING",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "FULL_TIME",
+                    }
+                ],
+            },
+            "statusCode": 200,
+        }
+
+
 def test_public_source_directory_exposes_only_safe_company_fields() -> None:
     client = TestClient(
         create_app(source_directory_reader=FakeSourceDirectoryReader())
@@ -65,6 +86,46 @@ def test_public_source_directory_exposes_only_safe_company_fields() -> None:
         "preparing_count": 0,
         "open_postings": 12,
     }
+
+
+def test_dunamu_current_jobs_proxy_exposes_only_fixed_official_payload() -> None:
+    client = TestClient(
+        create_app(
+            source_directory_reader=FakeSourceDirectoryReader(),
+            dunamu_jobs_reader=FakeDunamuJobsReader(),
+        )
+    )
+
+    response = client.get("/api/sources/dunamu/current-jobs")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == (
+        "public, s-maxage=300, stale-while-revalidate=900"
+    )
+    assert response.json()["content"]["jobNoticeResponses"][0]["id"] == 588
+
+
+def test_official_dunamu_jobs_reader_calls_only_the_allowlisted_api() -> None:
+    requested_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_urls.append(str(request.url))
+        return httpx.Response(
+            200,
+            json=FakeDunamuJobsReader().read(),
+        )
+
+    reader = OfficialDunamuJobsReader(
+        transport=httpx.MockTransport(handler),
+    )
+
+    payload = reader.read()
+
+    assert payload["statusCode"] == 200
+    assert requested_urls == [
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices?lang=ko"
+    ]
 
 
 def test_database_source_directory_groups_companies_and_hides_blocked_sources() -> None:

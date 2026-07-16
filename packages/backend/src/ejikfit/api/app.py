@@ -23,6 +23,7 @@ from ejikfit.api.skills import (
 )
 from ejikfit.api.sources import (
     DatabaseSourceDirectoryReader,
+    DunamuJobsReader,
     SourceDirectoryReader,
     create_sources_router,
 )
@@ -51,6 +52,7 @@ def create_app(
     skill_graph_reader: SkillGraphReader | None = None,
     fit_analysis_reader: FitAnalysisReader | None = None,
     source_directory_reader: SourceDirectoryReader | None = None,
+    dunamu_jobs_reader: DunamuJobsReader | None = None,
 ) -> FastAPI:
     application = FastAPI(title="이직핏 API", version="0.1.0")
 
@@ -81,7 +83,9 @@ def create_app(
 
     if source_directory_reader is None:
         source_directory_reader = DatabaseSourceDirectoryReader()
-    application.include_router(create_sources_router(source_directory_reader))
+    application.include_router(
+        create_sources_router(source_directory_reader, dunamu_jobs_reader)
+    )
 
     return application
 

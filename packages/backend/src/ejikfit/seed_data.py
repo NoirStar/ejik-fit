@@ -1379,7 +1379,7 @@ INITIAL_SOURCE_CATALOG = (
         source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.dunamu.com",
         sector="fintech",
-        connector_family="dunamu_server_html_tech",
+        connector_family="dunamu_official_api_proxy_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=6,
         tech_job_priority=6,
@@ -2329,10 +2329,24 @@ RETIRED_SOURCE_URLS = {
 
 
 def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
+    reverify_dunamu_transport = (
+        item.slug == "dunamu"
+        and item.connector_family == "dunamu_official_api_proxy_tech"
+        and source.connector_family == "dunamu_server_html_tech"
+        and source.status == SourceStatus.BLOCKED
+        and source.policy_status == PolicyStatus.BLOCKED
+        and source.last_error_code == "blocked"
+        and source.last_success_at is None
+    )
     source.source_type = item.source_type
     source.request_method = item.request_method
     source.request_body = item.request_body
-    if source.status not in {SourceStatus.BLOCKED, SourceStatus.STOPPED}:
+    if reverify_dunamu_transport:
+        source.status = item.status
+        source.policy_status = item.policy_status
+        source.last_error_code = None
+        source.last_error_reason = None
+    elif source.status not in {SourceStatus.BLOCKED, SourceStatus.STOPPED}:
         source.status = item.status
     if (
         source.policy_status not in {PolicyStatus.BLOCKED, PolicyStatus.STOPPED}

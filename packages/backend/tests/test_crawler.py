@@ -2919,6 +2919,30 @@ class BlockedDunamuFetcher:
         raise crawler.BlockedSourceError("source denied access with 403")
 
 
+class ProxiedDunamuFetcher:
+    def __init__(self, listing: str) -> None:
+        self.listing = listing
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        if url != crawler.DUNAMU_PROXY_URL:
+            raise crawler.BlockedSourceError("source denied access with 403")
+        return crawler.FetchedPage(
+            url=url,
+            text=self.listing,
+            status_code=200,
+            headers={},
+        )
+
+
 class DunamuJsonBrowserRenderer:
     def __init__(self, response_html: str) -> None:
         self.response_html = response_html
@@ -2976,6 +3000,49 @@ def test_dunamu_api_listing_falls_back_to_browser_json_document() -> None:
     assert json.loads(page.text)["content"]["jobBoardName"] == "Dunamu"
     assert page.url == listing_url
     assert renderer.urls == [listing_url]
+
+
+def test_dunamu_api_listing_uses_fixed_internal_proxy_before_browser() -> None:
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices?lang=ko"
+    )
+    listing = json.dumps(
+        {
+            "content": {
+                "jobBoardName": "Dunamu",
+                "jobNoticeResponses": [
+                    {
+                        "id": 588,
+                        "name": "Frontend Engineer",
+                        "jobGroupCode": "T_ENGINEERING",
+                        "experienceLevel": "EXPERIENCED",
+                        "employmentType": "FULL_TIME",
+                    }
+                ],
+            },
+            "statusCode": 200,
+        },
+        ensure_ascii=False,
+    )
+    source = CareerSource(
+        company=Company(name="두나무", slug="dunamu"),
+        base_url=listing_url,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="dunamu_official_api_proxy_tech",
+        status=SourceStatus.ALLOWED,
+        policy_status=PolicyStatus.ALLOWED,
+    )
+    fetcher = ProxiedDunamuFetcher(listing)
+    renderer = DunamuJsonBrowserRenderer("unused")
+
+    page = asyncio.run(
+        crawler._fetch_listing_page(source, fetcher, renderer)
+    )
+
+    assert json.loads(page.text)["statusCode"] == 200
+    assert fetcher.urls == [listing_url, crawler.DUNAMU_PROXY_URL]
+    assert renderer.urls == []
 
 
 def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
