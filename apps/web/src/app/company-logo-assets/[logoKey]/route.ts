@@ -14,6 +14,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "apple-korea": "https://www.apple.com/favicon.ico",
   allganize:
     "https://profiles.greetinghr.com/group/b2951f01-33fc-45df-a24b-d7ebe8e63cae",
+  alsemy: "https://www.alsemy.com/favicon.ico",
   banksalad:
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:
@@ -47,6 +48,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   dable:
     "https://profiles.greetinghr.com/group/b3c84141-fa0e-4848-9c1d-5f7294c8f627",
   dnotitia: "https://dnotitia-recruit.com/logo.png",
+  doeat:
+    "https://profiles.greetinghr.com/group/849d9fb1-f2ce-43b2-8ac7-69aef9223993",
   "deepauto-ai": "https://deepauto.ai/icon.png?icon.3bd11c4c.png",
   devsisters:
     "https://profiles.greetinghr.com/group/6c261b05-a17f-4749-93dc-7546246c217f",

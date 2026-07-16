@@ -1860,6 +1860,48 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="두잇",
+        slug="doeat",
+        base_url="https://career.doeat.io/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://doeat.io",
+        sector="consumer_delivery",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=4,
+        notes=(
+            "Official Doeat Greeting-powered careers listing and detail "
+            "pages; limited to explicit software engineering roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="알세미",
+        slug="alsemy",
+        base_url="https://alsemy.career.greetinghr.com/ko/intro",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.alsemy.com",
+        sector="semiconductor_ai",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=3,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=3,
+        notes=(
+            "Official Alsemy Greeting careers listing and detail pages; "
+            "limited to explicit software and graphics engineering roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="마이리얼트립",
         slug="myrealtrip",
         base_url="https://myrealtrip.career.greetinghr.com/ko",

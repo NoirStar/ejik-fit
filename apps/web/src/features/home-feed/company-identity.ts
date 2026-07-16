@@ -535,6 +535,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "스푼랩스",
   },
   {
+    aliases: ["두잇", "주식회사 두잇", "doeat"],
+    hosts: ["career.doeat.io", "teamdoeat.career.greetinghr.com", "doeat.io"],
+    src: "/company-logo-assets/doeat",
+    displayName: "두잇",
+  },
+  {
+    aliases: ["알세미", "주식회사 알세미", "alsemy", "alsemy inc."],
+    hosts: ["alsemy.career.greetinghr.com", "alsemy.com"],
+    src: "/company-logo-assets/alsemy",
+    displayName: "알세미",
+  },
+  {
     aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
     hosts: ["myrealtrip.career.greetinghr.com"],
     src: "/company-logo-assets/myrealtrip",

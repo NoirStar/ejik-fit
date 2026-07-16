@@ -169,6 +169,12 @@ describe("companyIdentity", () => {
       "https://career.spoonlabs.com/ko/o/220250",
       "spoonlabs",
     ],
+    ["두잇", "https://career.doeat.io/ko/o/97177", "doeat"],
+    [
+      "알세미",
+      "https://alsemy.career.greetinghr.com/ko/o/213440",
+      "alsemy",
+    ],
     [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
