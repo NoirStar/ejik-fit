@@ -230,7 +230,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 157
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 158
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -366,7 +366,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 157
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 158
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -840,6 +840,11 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert webtoon.source_type == SourceType.NAVER_JSON
     assert webtoon.connector_family == "naver_webtoon_json_tech"
     assert webtoon.status == SourceStatus.ALLOWED
+
+    kream = catalog_by_slug["kream"]
+    assert kream.source_type == SourceType.NAVER_JSON
+    assert kream.connector_family == "naver_company_json_tech"
+    assert kream.status == SourceStatus.ALLOWED
 
     for slug, company_code in {
         "naver-cloud": "NB",

@@ -525,6 +525,27 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="KREAM",
+        slug="kream",
+        base_url=(
+            "https://recruit.kreamcorp.com/rcrt/loadJobList.do?"
+            "firstIndex=0&recordCountPerPage=500"
+        ),
+        source_type=SourceType.NAVER_JSON,
+        homepage_url="https://kream.co.kr",
+        sector="commerce_platform",
+        connector_family="naver_company_json_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=9,
+        connector_reuse_score=5,
+        non_tech_noise=13,
+        notes=(
+            "Official KREAM careers JSON listing; limited to active "
+            "openings in KREAM's explicit Tech job category."
+        ),
+    ),
+    SeedSource(
         name="팀블라인드",
         slug="teamblind",
         base_url="https://recruit.teamblind.com/recruit",

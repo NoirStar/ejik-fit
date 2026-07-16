@@ -151,6 +151,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "네이버웹툰",
   },
   {
+    aliases: ["KREAM", "크림", "kream corp."],
+    hosts: ["recruit.kreamcorp.com", "kreamcorp.com", "kream.co.kr"],
+    src: "/company-logo-assets/kream",
+    displayName: "KREAM",
+  },
+  {
     aliases: ["네이버클라우드", "naver cloud", "naver cloud platform"],
     hosts: ["recruit.navercorp.com", "navercloudcorp.com", "ncloud.com"],
     src: "/company-logo-assets/naver-cloud",

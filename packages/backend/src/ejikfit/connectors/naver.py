@@ -13,12 +13,14 @@ KST = ZoneInfo("Asia/Seoul")
 def _parse_datetime(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value.strip():
         return None
-    try:
-        return datetime.strptime(value.strip(), "%Y.%m.%d %H:%M").replace(
-            tzinfo=KST
-        )
-    except ValueError:
-        return None
+    for date_format in ("%Y.%m.%d %H:%M", "%Y.%m.%d %H:%M:%S"):
+        try:
+            return datetime.strptime(value.strip(), date_format).replace(
+                tzinfo=KST
+            )
+        except ValueError:
+            continue
+    return None
 
 
 def _text(value: Any) -> str | None:

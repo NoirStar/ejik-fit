@@ -186,6 +186,11 @@ describe("companyIdentity", () => {
       "remember",
     ],
     [
+      "KREAM",
+      "https://recruit.kreamcorp.com/rcrt/view.do?annoId=30005165",
+      "kream",
+    ],
+    [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",
       "bucketplace",

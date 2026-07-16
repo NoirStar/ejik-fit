@@ -19,8 +19,8 @@ def test_parse_naver_openings_maps_public_job_list_json() -> None:
                 "subJobCdNm": "Backend",
                 "annoKeyword": "Java, Spring, Kubernetes",
                 "sysCompanyCdNm": "NAVER",
-                "staYmdTime": "2026.07.01 10:00",
-                "endYmdTime": "2026.07.31 18:00",
+                "staYmdTime": "2026.07.01 10:00:00",
+                "endYmdTime": "2026.07.31 18:00:00",
             },
             {
                 "annoId": 1002,
