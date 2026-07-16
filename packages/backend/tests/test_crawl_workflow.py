@@ -26,6 +26,14 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert "github.event_name != 'push'" in workflow
     assert "pip install './packages/backend[browser]'" in workflow
     assert "python -m playwright install --with-deps chromium" in workflow
+    assert "Xvfb :99 -screen 0 1440x900x24" in workflow
+    assert 'echo "DISPLAY=:99" >> "$GITHUB_ENV"' in workflow
+    assert workflow.index("python -m playwright install --with-deps chromium") < (
+        workflow.index("Xvfb :99 -screen 0 1440x900x24")
+    )
+    assert workflow.index("Xvfb :99 -screen 0 1440x900x24") < workflow.index(
+        "ejikfit crawl-all"
+    )
     assert "SEARCH_BACKEND: postgres" in workflow
     assert "POSTGRES_SEARCH_MODE: pgroonga" in workflow
     assert 'CRAWLER_MAX_WORKERS: "4"' in workflow

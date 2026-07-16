@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ejikfit.connectors.nexon import NEXON_CONNECTOR_FAMILY
 from ejikfit.models import (
     CareerSource,
     Company,
@@ -36,6 +37,58 @@ class SeedSource:
     status: SourceStatus = SourceStatus.ALLOWED
     request_method: str = "GET"
     request_body: dict[str, Any] | None = None
+
+
+NEXON_GROUP_AFFILIATES = (
+    ("NX", "넥슨코리아", "nexon"),
+    ("NO", "네오플", "neople"),
+    ("AG", "넥슨게임즈", "nexon-games"),
+    ("HQ", "넥슨에이치큐", "nexon-hq"),
+    ("DV", "데브캣", "devcat"),
+    ("MR", "민트로켓", "mintrocket"),
+    ("UV", "넥슨유니버스", "nexon-universe"),
+    ("SD", "넥슨네트웍스", "nexon-networks"),
+    ("NU", "넥슨커뮤니케이션즈", "nexon-communications"),
+    ("MD", "엔미디어플랫폼", "nmedia-platform"),
+    ("DQ", "딜로퀘스트", "diloquest"),
+    ("SE", "넥슨스페이스", "nexon-space"),
+    ("XC", "엔엑스씨", "nxc"),
+)
+
+
+def _nexon_group_source(
+    corporation_code: str,
+    company_name: str,
+    slug: str,
+) -> SeedSource:
+    return SeedSource(
+        name=company_name,
+        slug=slug,
+        base_url=(
+            f"https://careers.nexon.com/recruit#{corporation_code}"
+        ),
+        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        homepage_url="https://company.nexon.com/ko/company",
+        sector="game_content",
+        connector_family=NEXON_CONNECTOR_FAMILY,
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5 if corporation_code == "NX" else 4,
+        tech_job_priority=5,
+        expected_job_volume=4,
+        connector_reuse_score=5,
+        policy_risk=1,
+        non_tech_noise=3,
+        notes=(
+            "Official Nexon Company integrated careers listing, partitioned "
+            f"to {company_name} ({corporation_code}); ordinary headed "
+            "Playwright Chromium is used and only technical roles are kept."
+        ),
+        status=SourceStatus.ALLOWED,
+        request_body={
+            "corpCode": corporation_code,
+            "corpName": company_name,
+        },
+    )
 
 
 INITIAL_SOURCE_CATALOG = (
@@ -3316,26 +3369,9 @@ INITIAL_SOURCE_CATALOG = (
         ),
         status=SourceStatus.ALLOWED,
     ),
-    SeedSource(
-        name="넥슨",
-        slug="nexon",
-        base_url="https://careers.nexon.com/",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
-        homepage_url="https://www.nexon.com",
-        sector="game_content",
-        connector_family="browser_public_render",
-        policy_status=PolicyStatus.ALLOWED,
-        brand_tier_weight=5,
-        tech_job_priority=5,
-        expected_job_volume=4,
-        connector_reuse_score=1,
-        policy_risk=1,
-        non_tech_noise=3,
-        notes=(
-            "Official Nexon Careers page; direct HTTP preview returns a "
-            "public anti-bot page, so keep as a browser-render candidate."
-        ),
-        status=SourceStatus.NEEDS_BROWSER,
+    *(
+        _nexon_group_source(corporation_code, company_name, slug)
+        for corporation_code, company_name, slug in NEXON_GROUP_AFFILIATES
     ),
     SeedSource(
         name="엔씨소프트",
@@ -3588,6 +3624,9 @@ INITIAL_GREETING_SOURCES = tuple(
 
 
 SOURCE_URL_MIGRATIONS = {
+    "https://careers.nexon.com/recruit#NX": (
+        "https://careers.nexon.com/",
+    ),
     (
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
         "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
@@ -3711,6 +3750,9 @@ def seed_sources(session: Session) -> int:
             )
             session.add(company)
             session.flush()
+        elif item.slug == "nexon" and company.name == "넥슨":
+            company.name = item.name
+            company.homepage_url = item.homepage_url
         elif item.homepage_url and company.homepage_url is None:
             company.homepage_url = item.homepage_url
 

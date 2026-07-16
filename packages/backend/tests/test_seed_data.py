@@ -292,7 +292,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 177
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 189
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -303,6 +303,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     )
 
     runnable_slugs = {
+        "nexon",
         "krafton",
         "neowiz",
         "pearl-abyss",
@@ -370,7 +371,10 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     assert catalog_by_slug["kakao-games"].connector_family == "greeting"
 
     assert catalog_by_slug["nexon"].source_type == SourceType.BROWSER_PUBLIC_RENDER
-    assert catalog_by_slug["nexon"].status == SourceStatus.NEEDS_BROWSER
+    assert catalog_by_slug["nexon"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["nexon"].connector_family == (
+        "nexon_group_browser_api_tech"
+    )
 
     wemade = catalog_by_slug["wemade"]
     assert wemade.source_type == SourceType.PUBLIC_JSON_DETAIL
@@ -410,6 +414,42 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     assert shiftup.status == SourceStatus.ALLOWED
 
 
+def test_initial_sources_register_every_nexon_recruiting_affiliate() -> None:
+    expected = (
+        ("NX", "넥슨코리아", "nexon"),
+        ("NO", "네오플", "neople"),
+        ("AG", "넥슨게임즈", "nexon-games"),
+        ("HQ", "넥슨에이치큐", "nexon-hq"),
+        ("DV", "데브캣", "devcat"),
+        ("MR", "민트로켓", "mintrocket"),
+        ("UV", "넥슨유니버스", "nexon-universe"),
+        ("SD", "넥슨네트웍스", "nexon-networks"),
+        ("NU", "넥슨커뮤니케이션즈", "nexon-communications"),
+        ("MD", "엔미디어플랫폼", "nmedia-platform"),
+        ("DQ", "딜로퀘스트", "diloquest"),
+        ("SE", "넥슨스페이스", "nexon-space"),
+        ("XC", "엔엑스씨", "nxc"),
+    )
+    catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    for code, name, slug in expected:
+        source = catalog_by_slug[slug]
+        assert source.name == name
+        assert source.base_url == f"https://careers.nexon.com/recruit#{code}"
+        assert source.source_type == SourceType.BROWSER_PUBLIC_RENDER
+        assert source.connector_family == "nexon_group_browser_api_tech"
+        assert source.request_body == {"corpCode": code, "corpName": name}
+        assert source.status == SourceStatus.ALLOWED
+        assert source.policy_status == PolicyStatus.ALLOWED
+
+    assert len(
+        {
+            catalog_by_slug[slug].base_url
+            for _, _, slug in expected
+        }
+    ) == len(expected)
+
+
 def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> None:
     verified_sources = {
         "makinarocks": "https://makinarocks.career.greetinghr.com/ko",
@@ -432,7 +472,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 177
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 189
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -1228,6 +1268,50 @@ def test_seeding_migrates_lg_source_url_without_losing_existing_postings() -> No
         assert len(lg_sources) == 1
         assert lg_sources[0].id == legacy_source_id
         assert lg_sources[0].base_url.endswith("?page=1&size=100")
+        assert posting.source_id == legacy_source_id
+
+
+def test_seeding_migrates_legacy_nexon_source_to_nexon_korea() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(
+            name="넥슨",
+            slug="nexon",
+            homepage_url="https://www.nexon.com",
+        )
+        legacy_source = CareerSource(
+            company=company,
+            base_url="https://careers.nexon.com/",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            status=SourceStatus.NEEDS_BROWSER,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=legacy_source,
+            external_id="existing-nexon-job",
+            url="https://careers.nexon.com/recruit/existing-nexon-job",
+            title="Existing Nexon Engineer",
+        )
+        session.add_all([legacy_source, posting])
+        session.commit()
+        legacy_source_id = legacy_source.id
+
+        seed_data.seed_sources(session)
+
+        nexon_source = session.scalar(
+            select(CareerSource)
+            .join(Company)
+            .where(Company.slug == "nexon")
+        )
+        assert nexon_source is not None
+        assert nexon_source.id == legacy_source_id
+        assert nexon_source.company.name == "넥슨코리아"
+        assert nexon_source.base_url == "https://careers.nexon.com/recruit#NX"
+        assert nexon_source.connector_family == "nexon_group_browser_api_tech"
+        assert nexon_source.status == SourceStatus.ALLOWED
         assert posting.source_id == legacy_source_id
 
 

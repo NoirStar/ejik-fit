@@ -54,6 +54,12 @@ jobs:
       - name: Install crawler browser
         if: ${{ github.event_name != 'push' }}
         run: python -m playwright install --with-deps chromium
+      - name: Start virtual display for headed browser sources
+        if: ${{ github.event_name != 'push' }}
+        shell: bash
+        run: |
+          Xvfb :99 -screen 0 1440x900x24 >/tmp/ejikfit-xvfb.log 2>&1 &
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
       - name: Crawl selected sources
