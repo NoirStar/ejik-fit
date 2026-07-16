@@ -142,6 +142,11 @@ describe("companyIdentity", () => {
       "levit",
     ],
     [
+      "슈프리마",
+      "https://hr-suprema.career.greetinghr.com/ko/o/196994",
+      "suprema",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",

@@ -2102,6 +2102,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="슈프리마",
+        slug="suprema",
+        base_url="https://hr-suprema.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.supremainc.com",
+        sector="biometrics_security",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=6,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=15,
+        notes=(
+            "Official Suprema Group Greeting careers page; limited to "
+            "active software, embedded, AI, and software-quality roles "
+            "while excluding sales, support, PM, design, and talent-pool "
+            "entries."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

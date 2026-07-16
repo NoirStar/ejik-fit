@@ -105,6 +105,16 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "레브잇",
   },
   {
+    aliases: ["슈프리마", "suprema", "슈프리마 그룹"],
+    hosts: [
+      "hr-suprema.career.greetinghr.com",
+      "supremainc.com",
+      "www.supremainc.com",
+    ],
+    src: "/company-logo-assets/suprema",
+    displayName: "슈프리마",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",

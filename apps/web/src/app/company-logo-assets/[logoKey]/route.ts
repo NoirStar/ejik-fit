@@ -230,6 +230,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
   "socra-ai":
     "https://profiles.greetinghr.com/group/cdfb7cbb-ffba-48dd-9da1-cb11ef0150ed",
+  suprema:
+    "https://profiles.greetinghr.com/group/be1eb72a-b6fb-4c86-97ba-006f1c95a19e",
   spoonlabs:
     "https://profiles.greetinghr.com/group/127ba263-5d24-4f81-b826-fd6517f60993",
   stradvision:
