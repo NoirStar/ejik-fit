@@ -64,6 +64,75 @@
   color: var(--color-accent-strong);
 }
 
+.applicationTracker {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-subtle);
+}
+
+.applicationTracker[data-active="true"] {
+  border-color: color-mix(in srgb, var(--color-accent) 34%, var(--color-line));
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+}
+
+.trackerHeading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.trackerHeading > svg {
+  margin-top: 0.0625rem;
+  color: var(--color-accent-strong);
+}
+
+.trackerHeading h3,
+.trackerHeading p,
+.stageStatus {
+  margin: 0;
+}
+
+.trackerHeading h3 {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.trackerHeading p,
+.stageStatus {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.trackerHeading p {
+  margin-top: 0.15rem;
+}
+
+.applicationTracker select {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0 2rem 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  outline: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.applicationTracker select:focus-visible {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
 .overlap {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -130,6 +199,7 @@
 
 .apply:focus-visible,
 .save:focus-visible,
+.applicationTracker select:focus-visible,
 .overlap a:focus-visible {
   outline: 3px solid var(--color-info);
   outline-offset: 3px;

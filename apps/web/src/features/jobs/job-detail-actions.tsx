@@ -3,11 +3,21 @@
 import {
   ArrowSquareOut,
   BookmarkSimple,
+  CheckCircle,
   StackSimple,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  APPLICATION_STAGES,
+  applicationStageLabel,
+  readJobApplicationStages,
+  setJobApplicationStage,
+  subscribeJobApplicationStages,
+  type JobApplicationStageValue,
+  type JobApplicationStages,
+} from "@/lib/job-application-stages";
 import {
   readOwnedSkills,
   subscribeOwnedSkills,
@@ -39,16 +49,24 @@ export function JobDetailActions({
 }: JobDetailActionsProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
+  const [applicationStages, setApplicationStages] =
+    useState<JobApplicationStages>({});
+  const [stageAnnouncement, setStageAnnouncement] = useState("");
 
   useEffect(() => {
     setSavedIds(readSavedJobIds());
     setOwnedSkills(readOwnedSkills());
+    setApplicationStages(readJobApplicationStages());
 
     const stopSavedSubscription = subscribeSavedJobs(setSavedIds);
     const stopOwnedSubscription = subscribeOwnedSkills(setOwnedSkills);
+    const stopStageSubscription = subscribeJobApplicationStages(
+      setApplicationStages,
+    );
     return () => {
       stopSavedSubscription();
       stopOwnedSubscription();
+      stopStageSubscription();
     };
   }, []);
 
@@ -57,7 +75,33 @@ export function JobDetailActions({
     [ownedSkills, skills],
   );
   const saved = savedIds.includes(jobId);
+  const applicationStage = applicationStages[jobId] ?? "";
   const acceptsApplications = status === "open";
+
+  function updateApplicationStage(stage: JobApplicationStageValue) {
+    if (stage && !readSavedJobIds().includes(jobId)) {
+      const nextSavedIds = toggleSavedJob(jobId);
+      setSavedIds(nextSavedIds);
+      if (!nextSavedIds.includes(jobId)) {
+        setStageAnnouncement(
+          "브라우저 저장이 허용되지 않아 지원 단계를 기록하지 못했습니다.",
+        );
+        return;
+      }
+    }
+
+    const nextStages = setJobApplicationStage(jobId, stage);
+    setApplicationStages(nextStages);
+    if ((nextStages[jobId] ?? "") !== stage) {
+      setStageAnnouncement("지원 단계를 기록하지 못했습니다.");
+      return;
+    }
+    setStageAnnouncement(
+      stage
+        ? `${applicationStageLabel(stage)}로 기록했습니다.`
+        : "지원 단계 기록을 삭제했습니다.",
+    );
+  }
 
   return (
     <section
@@ -99,6 +143,40 @@ export function JobDetailActions({
           />
           {saved ? "저장됨" : "공고 저장"}
         </button>
+      </div>
+
+      <div
+        className={styles.applicationTracker}
+        data-active={applicationStage ? "true" : undefined}
+      >
+        <div className={styles.trackerHeading}>
+          <CheckCircle aria-hidden="true" size={18} weight="bold" />
+          <div>
+            <h3>지원 단계</h3>
+            <p>공고별 진행 상태를 기록합니다.</p>
+          </div>
+        </div>
+        <select
+          aria-label={`${jobTitle} 지원 단계`}
+          onChange={(event) =>
+            updateApplicationStage(
+              event.target.value as JobApplicationStageValue,
+            )
+          }
+          value={applicationStage}
+        >
+          {APPLICATION_STAGES.map((stage) => (
+            <option key={stage.value || "unset"} value={stage.value}>
+              {stage.label}
+            </option>
+          ))}
+        </select>
+        <p aria-live="polite" className={styles.stageStatus}>
+          {stageAnnouncement ||
+            (applicationStage
+              ? `${applicationStageLabel(applicationStage)} · 로그인 시 계정과 동기화됩니다.`
+              : "선택하면 공고도 보관함에 함께 저장됩니다.")}
+        </p>
       </div>
 
       <div aria-live="polite" className={styles.overlap}>

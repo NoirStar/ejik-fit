@@ -52,6 +52,28 @@ describe("JobDetailActions", () => {
     );
   });
 
+  it("records an application stage and keeps the job in the saved library", async () => {
+    render(<JobDetailActions {...props} />);
+
+    const stage = screen.getByRole("combobox", {
+      name: "Backend Engineer 지원 단계",
+    });
+    fireEvent.change(stage, { target: { value: "applied" } });
+
+    await waitFor(() => {
+      expect(stage).toHaveDisplayValue("지원 완료");
+    });
+    expect(window.localStorage.getItem("ejik-fit:saved-job-ids")).toBe(
+      '["job-1"]',
+    );
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("ejik-fit:job-application-stages")!,
+      ),
+    ).toEqual({ "job-1": "applied" });
+    expect(screen.getByText("지원 완료로 기록했습니다.")).toBeInTheDocument();
+  });
+
   it("shows only exact owned skill overlap", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
