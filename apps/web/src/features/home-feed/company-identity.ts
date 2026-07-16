@@ -99,6 +99,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "콕스웨이브",
   },
   {
+    aliases: ["레브잇", "levit", "주식회사 레브잇"],
+    hosts: ["team.alwayz.co", "alwayz.co", "www.ilevit.com"],
+    src: "/company-logo-assets/levit",
+    displayName: "레브잇",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",

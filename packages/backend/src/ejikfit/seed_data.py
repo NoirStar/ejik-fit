@@ -2078,6 +2078,30 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="레브잇",
+        slug="levit",
+        base_url="https://team.alwayz.co/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.ilevit.com",
+        sector="commerce_ai",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=14,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=16,
+        notes=(
+            "Official Levit careers site and its public Ninehire feed; "
+            "limited to active software, AI, data, product-engineering, "
+            "and hands-on technical-lead roles while excluding talent "
+            "pools, data-assistant work, coffee chats, design, operations, "
+            "and product-management positions."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

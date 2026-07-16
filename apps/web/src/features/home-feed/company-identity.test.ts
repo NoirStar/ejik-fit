@@ -137,6 +137,11 @@ describe("companyIdentity", () => {
       "coxwave",
     ],
     [
+      "레브잇",
+      "https://team.alwayz.co/job_posting/h1igwBcp",
+      "levit",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",
