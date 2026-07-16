@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Mapping
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit
 from zoneinfo import ZoneInfo
 
 from bs4 import BeautifulSoup
@@ -331,7 +331,7 @@ def _kakaobank_refs(
     return refs
 
 
-def _dunamu_refs(raw_html: str) -> list[PublicJsonDetailRef]:
+def _dunamu_legacy_refs(raw_html: str) -> list[PublicJsonDetailRef]:
     data = extract_next_data(raw_html)
     try:
         articles = data["props"]["pageProps"]["articles"]
@@ -384,6 +384,78 @@ def _dunamu_refs(raw_html: str) -> list[PublicJsonDetailRef]:
             )
         )
     return refs
+
+
+def _dunamu_careers_refs(
+    raw_html: str,
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    listing_host = urlsplit(listing_url).hostname
+    if listing_host != "careers.dunamu.com":
+        raise ValueError("Dunamu careers listing must use its official host")
+
+    soup = BeautifulSoup(raw_html, "lxml")
+    listing = soup.select_one(".main_list")
+    cards = listing.select(".main_list_item") if listing is not None else []
+    if not cards:
+        raise ValueError("Dunamu current jobs list is missing")
+
+    refs: list[PublicJsonDetailRef] = []
+    seen: set[str] = set()
+    for card in cards:
+        link = card.select_one("a.main_list_link[href]")
+        title_node = card.select_one(".main_list_name")
+        category_node = card.select_one(".main_list_title")
+        href = _text(link.get("href")) if link is not None else None
+        title = (
+            _text(title_node.get_text(" ", strip=True))
+            if title_node is not None
+            else None
+        )
+        category = (
+            _text(category_node.get_text(" ", strip=True))
+            if category_node is not None
+            else None
+        )
+        if href is None or title is None or category is None:
+            raise ValueError("Dunamu linked job identity is missing")
+
+        detail_url = urljoin(listing_url, href)
+        parsed = urlsplit(detail_url)
+        segments = [segment for segment in parsed.path.split("/") if segment]
+        if (
+            parsed.scheme != "https"
+            or parsed.hostname != "careers.dunamu.com"
+            or len(segments) < 2
+            or segments[-2] != "detail"
+            or re.fullmatch(r"\d{1,12}", segments[-1]) is None
+        ):
+            raise ValueError("Dunamu linked job URL is not an official detail")
+
+        external_id = segments[-1]
+        if external_id in seen:
+            raise ValueError("Dunamu listing contains a duplicate job")
+        seen.add(external_id)
+        refs.append(
+            PublicJsonDetailRef(
+                external_id=external_id,
+                detail_url=detail_url,
+                public_url=detail_url,
+                title=title,
+                category=category,
+            )
+        )
+    return refs
+
+
+def _dunamu_refs(
+    raw_html: str,
+    listing_url: str,
+) -> list[PublicJsonDetailRef]:
+    soup = BeautifulSoup(raw_html, "lxml")
+    if soup.find("script", id="__NEXT_DATA__") is not None:
+        return _dunamu_legacy_refs(raw_html)
+    return _dunamu_careers_refs(raw_html, listing_url)
 
 
 def _ably_refs(raw_html: str) -> list[PublicJsonDetailRef]:
@@ -870,7 +942,7 @@ def discover_public_json_detail_refs(
     connector_family: str,
 ) -> list[PublicJsonDetailRef]:
     if connector_family == "dunamu_server_html_tech":
-        return _dunamu_refs(raw_json)
+        return _dunamu_refs(raw_json, listing_url)
     if connector_family == "ably_next_ninehire_tech":
         return _ably_refs(raw_json)
     payload = _decode_object(raw_json)

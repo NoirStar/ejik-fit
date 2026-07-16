@@ -1372,7 +1372,7 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="두나무",
         slug="dunamu",
-        base_url="https://www.dunamu.com/careers/jobs?lang=ko",
+        base_url="https://careers.dunamu.com/",
         source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.dunamu.com",
         sector="fintech",
@@ -1385,10 +1385,10 @@ INITIAL_SOURCE_CATALOG = (
         policy_risk=0,
         non_tech_noise=0,
         notes=(
-            "Official Dunamu Korean current-jobs list and server-rendered "
-            "detail pages; this reverified locale-specific source supersedes "
-            "the previously blocked unscoped URL and is limited to explicit "
-            "engineering and security roles."
+            "Official Dunamu careers server-rendered job cards and detail "
+            "pages; this dedicated careers host supersedes company-site "
+            "listings blocked from the production runner and is limited to "
+            "explicit engineering and security roles."
         ),
         status=SourceStatus.ALLOWED,
     ),

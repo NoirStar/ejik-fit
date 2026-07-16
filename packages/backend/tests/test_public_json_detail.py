@@ -895,6 +895,49 @@ def test_dunamu_server_html_discovers_current_links_and_parses_detail() -> None:
     assert "TypeScript와 React 기반 서비스 개발" in opening.description_text
 
 
+def test_dunamu_careers_html_discovers_server_rendered_job_cards() -> None:
+    listing = """
+    <html><body>
+      <div class="main_list">
+        <div class="main_list_item">
+          <a class="main_list_link" href="/detail/588">
+            <div class="main_list_title">Engineering</div>
+            <div class="main_list_name">
+              Frontend Engineer_데이터 프로덕트 서비스 개발
+            </div>
+          </a>
+        </div>
+        <div class="main_list_item">
+          <a class="main_list_link" href="/detail/586">
+            <div class="main_list_title">Security</div>
+            <div class="main_list_name">정보보호 AX 운영 담당자</div>
+          </a>
+        </div>
+        <div class="main_list_item">
+          <a class="main_list_link" href="/detail/80">
+            <div class="main_list_title">Talent Pool</div>
+            <div class="main_list_name">개발직군 인재풀</div>
+          </a>
+        </div>
+      </div>
+    </body></html>
+    """
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        "https://careers.dunamu.com/",
+        "dunamu_server_html_tech",
+    )
+
+    assert [ref.external_id for ref in refs] == ["588", "586", "80"]
+    assert refs[0].detail_url == "https://careers.dunamu.com/detail/588"
+    assert refs[0].public_url == refs[0].detail_url
+    assert refs[0].title == (
+        "Frontend Engineer_데이터 프로덕트 서비스 개발"
+    )
+    assert refs[0].category == "Engineering"
+
+
 def test_workable_public_api_discovers_domestic_technical_jobs_and_parses_detail() -> None:
     bootstrap = """
     <html><head>
