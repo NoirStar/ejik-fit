@@ -2425,6 +2425,27 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="미리디",
+        slug="miridih",
+        base_url="https://www.miridih.com/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.miridih.com",
+        sector="design_saas_ai",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=19,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=4,
+        notes=(
+            "Official Miridih Greeting-powered careers listing and detail "
+            "pages; limited to explicit engineering, data, AI, and QA roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="핀다",
         slug="finda",
         base_url="https://finda.career.greetinghr.com/ko/career",

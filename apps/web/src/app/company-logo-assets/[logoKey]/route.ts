@@ -160,6 +160,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/2a79989e-53a7-4c80-8c9f-0af7d8677a38",
   "megazone-cloud": "https://www.megazone.com/favicon_BK_152.png",
   "microsoft-korea": "https://www.microsoft.com/favicon.ico?v2",
+  miridih:
+    "https://profiles.greetinghr.com/group/48adffbe-c337-46cb-9862-3ee7bf25fc84",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
   neubility:

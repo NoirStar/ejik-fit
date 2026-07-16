@@ -191,6 +191,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "모레(Moreh)",
   },
   {
+    aliases: ["미리디", "미리캔버스", "miridih", "miricanvas"],
+    hosts: ["miridih.com", "www.miridih.com"],
+    src: "/company-logo-assets/miridih",
+    displayName: "미리디",
+  },
+  {
     aliases: ["하이퍼엑셀", "hyperaccel", "hyper accel"],
     hosts: ["hyperaccel.career.greetinghr.com", "hyperaccel.ai"],
     src: "/company-logo-assets/hyperaccel",
