@@ -114,6 +114,14 @@ def ingest_opening(
             JobPosting.external_id == opening.external_id,
         )
     )
+    if posting is None:
+        # A provider can expose one canonical posting URL through a group feed
+        # and later split it into company-scoped feeds. The URL is globally
+        # unique, so preserve that posting and move its ownership instead of
+        # attempting a duplicate insert.
+        posting = session.scalar(
+            select(JobPosting).where(JobPosting.url == opening.url)
+        )
     created = posting is None
     if posting is None:
         posting = JobPosting(
@@ -127,6 +135,10 @@ def ingest_opening(
             last_verified_at=now,
         )
         session.add(posting)
+    else:
+        posting.company_id = source.company_id
+        posting.source_id = source.id
+        posting.external_id = opening.external_id
 
     _apply_opening(posting, opening, now)
     session.flush()
