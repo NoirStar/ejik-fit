@@ -103,6 +103,42 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "버즈빌",
   },
   {
+    aliases: ["크라우드웍스", "crowdworks", "crowd works"],
+    hosts: ["crowdworks.career.greetinghr.com", "crowdworks.ai"],
+    src: "/company-logo-assets/crowdworks",
+    displayName: "크라우드웍스",
+  },
+  {
+    aliases: ["데이블", "dable"],
+    hosts: ["dable.career.greetinghr.com", "dable.io"],
+    src: "/company-logo-assets/dable",
+    displayName: "데이블",
+  },
+  {
+    aliases: ["모레(moreh)", "모레", "moreh"],
+    hosts: ["moreh.career.greetinghr.com", "moreh.io"],
+    src: "/company-logo-assets/moreh",
+    displayName: "모레(Moreh)",
+  },
+  {
+    aliases: ["하이퍼엑셀", "hyperaccel", "hyper accel"],
+    hosts: ["hyperaccel.career.greetinghr.com", "hyperaccel.ai"],
+    src: "/company-logo-assets/hyperaccel",
+    displayName: "하이퍼엑셀",
+  },
+  {
+    aliases: ["피처링", "featuring", "featuring corp."],
+    hosts: ["featuring.career.greetinghr.com", "featuring.co"],
+    src: "/company-logo-assets/featuring",
+    displayName: "피처링",
+  },
+  {
+    aliases: ["올거나이즈", "allganize"],
+    hosts: ["allganize.career.greetinghr.com", "allganize.ai"],
+    src: "/company-logo-assets/allganize",
+    displayName: "올거나이즈",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

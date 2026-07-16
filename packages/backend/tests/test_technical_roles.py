@@ -26,6 +26,7 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("[LOST ARK Mobile] 레벨기획 담당") is False
     assert is_technical_role("Account Executive, Startups (AI Solutions)") is False
     assert is_technical_role("[Business] AI 프로젝트 매니저 (PM)") is False
+    assert is_technical_role("Business Developer") is False
 
 
 def test_korea_technical_filter_requires_both_role_and_domestic_location() -> None:
@@ -45,3 +46,7 @@ def test_korea_technical_filter_requires_both_role_and_domestic_location() -> No
         "Digital Marketing Manager, APAC",
         "Seoul, South Korea",
     ) is False
+    assert is_korea_technical_role(
+        "[KR] FDE(SW) - Solutions Architect",
+        None,
+    ) is True

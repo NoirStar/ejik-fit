@@ -41,7 +41,7 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
         "deepnoid",
         "enerzai",
     } <= greeting_slugs
-    assert len(seed_data.INITIAL_GREETING_SOURCES) == 43
+    assert len(seed_data.INITIAL_GREETING_SOURCES) == 49
     assert all(
         item.source_type == SourceType.GREETING
         for item in seed_data.INITIAL_GREETING_SOURCES
@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 120
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 126
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -291,7 +291,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 120
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 126
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -307,6 +307,44 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
 
 def test_initial_sources_include_verified_high_volume_platform_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    for slug, base_url, connector_family in (
+        (
+            "crowdworks",
+            "https://crowdworks.career.greetinghr.com/ko",
+            "greeting_tech",
+        ),
+        (
+            "dable",
+            "https://dable.career.greetinghr.com/ko",
+            "greeting_tech",
+        ),
+        (
+            "moreh",
+            "https://moreh.career.greetinghr.com/ko",
+            "greeting_tech",
+        ),
+        (
+            "hyperaccel",
+            "https://hyperaccel.career.greetinghr.com/ko",
+            "greeting_tech",
+        ),
+        (
+            "featuring",
+            "https://featuring.career.greetinghr.com/ko",
+            "greeting_tech",
+        ),
+        (
+            "allganize",
+            "https://allganize.career.greetinghr.com/ko",
+            "greeting_korea_tech",
+        ),
+    ):
+        source = catalog_by_slug[slug]
+        assert source.base_url == base_url
+        assert source.source_type == SourceType.GREETING
+        assert source.connector_family == connector_family
+        assert source.status == SourceStatus.ALLOWED
 
     banksalad = catalog_by_slug["banksalad"]
     assert banksalad.base_url == (

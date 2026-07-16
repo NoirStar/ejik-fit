@@ -60,6 +60,7 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "account executive",
     "artist",
     "business development",
+    "business developer",
     "civil engineer",
     "counsel",
     "customer service",
@@ -127,6 +128,8 @@ def is_korea_technical_role(
     location: str | None,
 ) -> bool:
     normalized_location = (location or "").casefold()
-    return any(
+    normalized_title = (title or "").strip().casefold()
+    has_domestic_marker = any(
         marker in normalized_location for marker in KOREA_LOCATION_MARKERS
-    ) and is_technical_role(title)
+    ) or normalized_title.startswith(("[kr]", "(kr)", "kr "))
+    return has_domestic_marker and is_technical_role(title)

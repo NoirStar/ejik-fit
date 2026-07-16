@@ -358,6 +358,109 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="크라우드웍스",
+        slug="crowdworks",
+        base_url="https://crowdworks.career.greetinghr.com/ko",
+        homepage_url="https://www.crowdworks.ai",
+        sector="ai_data",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official CrowdWorks Greeting careers listing and detail pages; "
+            "limited to explicit software, data, and AI roles."
+        ),
+    ),
+    SeedSource(
+        name="데이블",
+        slug="dable",
+        base_url="https://dable.career.greetinghr.com/ko",
+        homepage_url="https://dable.io",
+        sector="ai_adtech",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official Dable Greeting careers listing and detail pages; "
+            "limited to explicit software, data, and ML roles."
+        ),
+    ),
+    SeedSource(
+        name="모레(Moreh)",
+        slug="moreh",
+        base_url="https://moreh.career.greetinghr.com/ko",
+        homepage_url="https://moreh.io",
+        sector="ai_infrastructure",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=12,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official Moreh Greeting careers listing and detail pages; "
+            "limited to explicit AI infrastructure and software roles."
+        ),
+    ),
+    SeedSource(
+        name="하이퍼엑셀",
+        slug="hyperaccel",
+        base_url="https://hyperaccel.career.greetinghr.com/ko",
+        homepage_url="https://www.hyperaccel.ai",
+        sector="ai_semiconductor",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=11,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official HyperAccel Greeting careers listing and detail pages; "
+            "limited to explicit compiler, systems, infrastructure, and "
+            "semiconductor engineering roles."
+        ),
+    ),
+    SeedSource(
+        name="피처링",
+        slug="featuring",
+        base_url="https://featuring.career.greetinghr.com/ko",
+        homepage_url="https://featuring.co",
+        sector="ai_marketing",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official Featuring Greeting careers listing and detail pages; "
+            "limited to explicit software, data, AI, and infrastructure roles."
+        ),
+    ),
+    SeedSource(
+        name="올거나이즈",
+        slug="allganize",
+        base_url="https://allganize.career.greetinghr.com/ko",
+        homepage_url="https://www.allganize.ai",
+        sector="ai_saas",
+        connector_family="greeting_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official Allganize Greeting careers listing and detail pages; "
+            "limited to technical roles explicitly based in Korea."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(

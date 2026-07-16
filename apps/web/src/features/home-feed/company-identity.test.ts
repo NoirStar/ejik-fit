@@ -523,6 +523,28 @@ describe("companyIdentity", () => {
       "rlwrld",
     ],
     [
+      "크라우드웍스",
+      "https://crowdworks.career.greetinghr.com/ko/o/1",
+      "crowdworks",
+    ],
+    ["데이블", "https://dable.career.greetinghr.com/ko/o/1", "dable"],
+    ["모레(Moreh)", "https://moreh.career.greetinghr.com/ko/o/1", "moreh"],
+    [
+      "하이퍼엑셀",
+      "https://hyperaccel.career.greetinghr.com/ko/o/1",
+      "hyperaccel",
+    ],
+    [
+      "피처링",
+      "https://featuring.career.greetinghr.com/ko/o/1",
+      "featuring",
+    ],
+    [
+      "올거나이즈",
+      "https://allganize.career.greetinghr.com/ko/o/1",
+      "allganize",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

@@ -12,6 +12,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "amazon-web-services-korea":
     "https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico",
   "apple-korea": "https://www.apple.com/favicon.ico",
+  allganize:
+    "https://profiles.greetinghr.com/group/b2951f01-33fc-45df-a24b-d7ebe8e63cae",
   banksalad:
     "https://corp.banksalad.com/icons/icon-512x512.png?v=69e2d370b28e13a1369b649141c67ed7",
   bithumb:
@@ -32,12 +34,16 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
   cohere: "https://cohere.com/apple-touch-icon.png",
   coupang: "https://www.coupang.jobs/favicon.ico",
+  crowdworks:
+    "https://framerusercontent.com/images/p8rA85A5992NgoBozIv5mHhzWBU.png",
   "carat-ai":
     "https://opening-attachments.greetinghr.com/2024-07-30/287e8035-1f50-46ae-a75a-3e91d208cee3/app_icon.png",
   daangn: "https://careers.daangn.com/apple-touch-icon.png",
   databricks:
     "https://www.databricks.com/en-website-assets/icons/icon-96x96.png?v=c9b9916c3b27dc51866c46b79a6e9b88",
   datadog: "https://corp.dd-static.net/img/favicons/apple-touch-icon.png",
+  dable:
+    "https://profiles.greetinghr.com/group/b3c84141-fa0e-4848-9c1d-5f7294c8f627",
   dnotitia: "https://dnotitia-recruit.com/logo.png",
   "deepauto-ai": "https://deepauto.ai/icon.png?icon.3bd11c4c.png",
   devsisters:
@@ -54,12 +60,16 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/07b16511-6dcd-4732-bb25-d0df0164ddd5",
   fieldguide:
     "https://www.fieldguide.io/hubfs/601010ba543c954d3c14cb44_favicon-32x32.png",
+  featuring:
+    "https://profiles.greetinghr.com/group/2af17e75-ced7-40f4-ab86-91d67391d224",
   "friendli-ai": "https://friendli.ai/favicon/apple-touch-icon.png",
   "furiosa-ai":
     "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
   "gauss-labs":
     "https://cdn.prod.website-files.com/6858a6f343e28528569197fe/686f212ea17026a1afde7187_icon_1.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
+  hyperaccel:
+    "https://profiles.greetinghr.com/group/2ba952e4-4c70-4e1f-9d6f-55195de575e5",
   hutom:
     "https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png",
   hopae:
@@ -108,6 +118,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   mobilint:
     "https://static.wixstatic.com/media/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png",
+  moreh:
+    "https://profiles.greetinghr.com/group/2a79989e-53a7-4c80-8c9f-0af7d8677a38",
   "microsoft-korea": "https://www.microsoft.com/favicon.ico?v2",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
