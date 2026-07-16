@@ -296,6 +296,7 @@ class _FakeNexonPage:
         self.total = total
         self.visited_urls: list[str] = []
         self.waited_for_load_states: list[tuple[str, int]] = []
+        self.expected_response_timeouts: list[int] = []
         self.evaluated_pages: list[int] = []
         self._responses = [
             _FakeNexonApiResponse(
@@ -314,6 +315,7 @@ class _FakeNexonPage:
         self.url = "https://careers.nexon.com/recruit"
 
     def expect_response(self, predicate, *, timeout: int):
+        self.expected_response_timeouts.append(timeout)
         response = self._responses.pop(0)
         assert predicate(response)
         return _FakeNexonExpectedResponse(response)
@@ -423,6 +425,7 @@ def test_nexon_snapshot_uses_headed_chromium_and_combines_pages(
         "https://careers.nexon.com/recruit",
     ]
     assert page.waited_for_load_states == [("networkidle", 5_000)]
+    assert page.expected_response_timeouts == [45_000, 45_000]
     assert page.evaluated_pages == [2]
     assert len(json.loads(snapshot.text)["list"]) == 16
     assert chromium.browser.context.closed is True

@@ -491,12 +491,14 @@ class PlaywrightBrowserRenderer:
         self,
         timeout_ms: int = 20_000,
         settle_timeout_ms: int = 5_000,
+        nexon_response_timeout_ms: int = 45_000,
         nexon_page_delay_seconds: float = 1.0,
     ) -> None:
         if nexon_page_delay_seconds < 0:
             raise ValueError("Nexon page delay must not be negative")
         self.timeout_ms = timeout_ms
         self.settle_timeout_ms = settle_timeout_ms
+        self.nexon_response_timeout_ms = nexon_response_timeout_ms
         self.nexon_page_delay_seconds = nexon_page_delay_seconds
         self._nexon_snapshot: FetchedPage | None = None
         self._nexon_snapshot_error: Exception | None = None
@@ -539,7 +541,7 @@ class PlaywrightBrowserRenderer:
                                 response.url == NEXON_CORPORATIONS_API
                                 and response.request.method == "GET"
                             ),
-                            timeout=self.timeout_ms,
+                            timeout=self.nexon_response_timeout_ms,
                         ) as corporation_response_info:
                             home_response = await page.goto(
                                 NEXON_HOME_URL,
@@ -576,7 +578,7 @@ class PlaywrightBrowserRenderer:
                                 response.url == NEXON_LIST_API
                                 and response.request.method == "POST"
                             ),
-                            timeout=self.timeout_ms,
+                            timeout=self.nexon_response_timeout_ms,
                         ) as listing_response_info:
                             recruit_response = await page.goto(
                                 NEXON_RECRUIT_URL,
