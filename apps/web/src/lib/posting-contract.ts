@@ -94,6 +94,7 @@ export function normalizePostingSummary(value: unknown): PostingSummary {
     location: nullableString(value, "location"),
     status: stringField(value, "status"),
     source_url: validatedHttpUrl(value.source_url, "source_url"),
+    first_seen_at: nullableDate(value, "first_seen_at"),
     last_verified_at: dateField(value, "last_verified_at"),
     opens_at: nullableDate(value, "opens_at"),
     closes_at: nullableDate(value, "closes_at"),

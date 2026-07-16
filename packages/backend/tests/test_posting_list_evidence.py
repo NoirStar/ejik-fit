@@ -90,6 +90,50 @@ def test_database_list_exposes_confirmed_requirement_evidence() -> None:
     assert item["unspecified_skills"] == ["Linux"]
 
 
+def test_database_list_orders_by_first_discovery_not_recrawl_time() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    with factory() as session:
+        company = Company(name="발견 순서 기업", slug="discovery-order")
+        source = CareerSource(
+            company=company,
+            base_url="https://careers.example.com/discovery-order",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+        )
+        old_discovery = JobPosting(
+            company=company,
+            source=source,
+            external_id="old-discovery",
+            url="https://careers.example.com/old-discovery",
+            title="오래전에 발견하고 오늘 재확인한 공고",
+            first_seen_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
+            last_seen_at=datetime(2026, 7, 15, tzinfo=timezone.utc),
+            last_verified_at=datetime(2026, 7, 15, tzinfo=timezone.utc),
+        )
+        new_discovery = JobPosting(
+            company=company,
+            source=source,
+            external_id="new-discovery",
+            url="https://careers.example.com/new-discovery",
+            title="최근 처음 발견한 공고",
+            first_seen_at=datetime(2026, 7, 14, tzinfo=timezone.utc),
+            last_seen_at=datetime(2026, 7, 14, tzinfo=timezone.utc),
+            last_verified_at=datetime(2026, 7, 14, tzinfo=timezone.utc),
+        )
+        session.add_all([old_discovery, new_discovery])
+        session.commit()
+
+    items = DatabasePostingReader(session_factory=factory).list(limit=10)
+
+    assert [item["title"] for item in items] == [
+        "최근 처음 발견한 공고",
+        "오래전에 발견하고 오늘 재확인한 공고",
+    ]
+    assert items[0]["first_seen_at"].date().isoformat() == "2026-07-14"
+
+
 def test_database_detail_restores_plain_text_structure_from_source_html() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -123,6 +167,7 @@ def test_search_document_keeps_the_same_confirmed_evidence_contract() -> None:
         document = posting_document(posting)
 
     assert document["company_slug"] == "verified-company"
+    assert document["first_seen_at"] == "2026-07-14T00:00:00"
     assert document["opens_at"] == "2026-07-01T00:00:00"
     assert document["closes_at"] == "2026-07-31T00:00:00"
     assert document["required_skills"] == ["Python"]

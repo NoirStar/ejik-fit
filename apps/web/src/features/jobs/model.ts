@@ -111,6 +111,11 @@ export function formatVerifiedDate(value: string | null | undefined) {
   return date ? `${formatMonthDay(date)} 확인` : "확인일 미상";
 }
 
+export function formatDiscoveredDate(value: string | null | undefined) {
+  const date = parseDate(value);
+  return date ? `${formatMonthDay(date)} 이직핏 첫 확인` : null;
+}
+
 export function formatClosingDate(value: string | null | undefined) {
   const date = parseDate(value);
   return date ? `${formatMonthDay(date)} 마감` : null;

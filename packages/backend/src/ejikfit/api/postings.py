@@ -55,6 +55,7 @@ def _summary(posting: JobPosting) -> dict:
         "location": posting.location,
         "status": posting.status.value,
         "source_url": posting.url,
+        "first_seen_at": posting.first_seen_at,
         "last_verified_at": posting.last_verified_at,
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,
@@ -195,7 +196,11 @@ class DatabasePostingReader:
                 selectinload(JobPosting.skills),
             )
             .where(JobPosting.status == PostingStatus.OPEN)
-            .order_by(JobPosting.last_verified_at.desc())
+            .order_by(
+                JobPosting.first_seen_at.desc(),
+                JobPosting.last_verified_at.desc(),
+                JobPosting.id.desc(),
+            )
             .offset(offset)
             .limit(limit)
         )

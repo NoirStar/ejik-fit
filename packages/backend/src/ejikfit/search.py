@@ -29,6 +29,7 @@ def posting_document(
         "location": posting.location,
         "status": posting.status.value,
         "source_url": posting.url,
+        "first_seen_at": posting.first_seen_at.isoformat(),
         "last_verified_at": posting.last_verified_at.isoformat(),
         "opens_at": posting.opens_at.isoformat() if posting.opens_at else None,
         "closes_at": posting.closes_at.isoformat() if posting.closes_at else None,
@@ -75,7 +76,9 @@ class MeiliPostingIndex:
                 "status",
             ]
         )
-        self.index.update_sortable_attributes(["last_verified_at"])
+        self.index.update_sortable_attributes(
+            ["first_seen_at", "last_verified_at"]
+        )
         self._configured = True
 
     def upsert(self, posting: JobPosting) -> None:
@@ -105,7 +108,7 @@ class MeiliPostingIndex:
                 "filter": " AND ".join(filters),
                 "limit": limit,
                 "offset": offset,
-                "sort": ["last_verified_at:desc"],
+                "sort": ["first_seen_at:desc"],
             },
         )
         hits = result.get("hits", [])

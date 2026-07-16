@@ -8,6 +8,7 @@ import {
   filterJobPostings,
   formatCareerRange,
   formatClosingDate,
+  formatDiscoveredDate,
   formatVerifiedDate,
 } from "./model";
 
@@ -79,6 +80,10 @@ describe("jobs explorer model", () => {
   });
 
   it("formats verified and closing dates without inventing missing values", () => {
+    expect(formatDiscoveredDate("2026-07-10T03:00:00Z")).toBe(
+      "7월 10일 이직핏 첫 확인",
+    );
+    expect(formatDiscoveredDate("invalid")).toBeNull();
     expect(formatVerifiedDate(posting.last_verified_at)).toBe("7월 14일 확인");
     expect(formatVerifiedDate("invalid")).toBe("확인일 미상");
     expect(formatClosingDate(posting.closes_at)).toBe("7월 31일 마감");

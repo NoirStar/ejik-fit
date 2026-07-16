@@ -43,6 +43,12 @@ class FakePostingReader:
                 "preferred_skills": ["Docker"],
                 "unspecified_skills": ["Linux"],
                 "source_url": "https://example.com/o/1",
+                "first_seen_at": datetime(
+                    2026,
+                    7,
+                    2,
+                    tzinfo=timezone.utc,
+                ),
                 "last_verified_at": datetime(
                     2026,
                     7,
@@ -112,6 +118,7 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
     item = response.json()["items"][0]
     assert item["company_slug"] == "test-company"
     assert item["source_url"] == "https://example.com/o/1"
+    assert item["first_seen_at"] == "2026-07-02T00:00:00Z"
     assert item["last_verified_at"] == "2026-07-03T00:00:00Z"
     assert item["opens_at"] == "2026-07-01T00:00:00Z"
     assert item["closes_at"] == "2026-07-31T00:00:00Z"

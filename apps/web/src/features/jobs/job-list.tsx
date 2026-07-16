@@ -31,6 +31,7 @@ import {
   filterJobPostings,
   formatCareerRange,
   formatClosingDate,
+  formatDiscoveredDate,
   formatVerifiedDate,
   type JobView,
 } from "./model";
@@ -89,6 +90,7 @@ type JobItemProps = {
 function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
   const evidence = buildJobEvidence(job, ownedSkills);
   const closingLabel = formatClosingDate(job.closes_at);
+  const discoveredLabel = formatDiscoveredDate(job.first_seen_at);
 
   return (
     <article className={styles.jobCard}>
@@ -187,7 +189,7 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
       <footer className={styles.jobFooter}>
         <span>
           <CheckCircle aria-hidden="true" size={16} weight="fill" />
-          {formatVerifiedDate(job.last_verified_at)}
+          {discoveredLabel ?? formatVerifiedDate(job.last_verified_at)}
         </span>
         <div>
           <Link href={`/jobs/${encodeURIComponent(job.id)}`}>분석 보기</Link>

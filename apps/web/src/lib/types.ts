@@ -10,6 +10,7 @@ export type PostingSummary = {
   location: string | null;
   status: string;
   source_url: string;
+  first_seen_at?: string | null;
   last_verified_at: string;
   opens_at?: string | null;
   closes_at?: string | null;

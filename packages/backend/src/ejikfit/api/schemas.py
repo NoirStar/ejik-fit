@@ -17,6 +17,7 @@ class PostingSummary(BaseModel):
     location: str | None = None
     status: str = "open"
     source_url: str
+    first_seen_at: datetime | None = None
     last_verified_at: datetime
     opens_at: datetime | None = None
     closes_at: datetime | None = None
