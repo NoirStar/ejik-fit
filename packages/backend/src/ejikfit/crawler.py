@@ -67,12 +67,15 @@ from ejikfit.connectors.microsoft import (
 )
 from ejikfit.connectors.naver import parse_naver_openings
 from ejikfit.connectors.nexon import (
+    NEXON_CONNECTOR_FAMILY,
     NEXON_CORPORATIONS_API,
     NEXON_HOME_URL,
     NEXON_LIST_API,
     NEXON_RECRUIT_URL,
     combine_nexon_pages,
+    filter_nexon_payload,
     nexon_request_body,
+    parse_nexon_openings,
     parse_nexon_page,
 )
 from ejikfit.connectors.next_data import parse_static_next_data_openings
@@ -394,6 +397,9 @@ class SourceRunTarget:
 
 class BrowserRenderer(Protocol):
     async def render(self, url: str) -> FetchedPage:
+        ...
+
+    async def fetch_nexon_snapshot(self) -> FetchedPage:
         ...
 
 
@@ -840,6 +846,8 @@ def _parse_listing_openings(
     url: str,
     connector_family: str | None = None,
 ):
+    if connector_family == NEXON_CONNECTOR_FAMILY:
+        return parse_nexon_openings(text, NEXON_RECRUIT_URL)
     if source_type == SourceType.JSON_LD:
         return parse_jsonld_openings(text, url)
     if source_type in {
@@ -894,6 +902,7 @@ def _listing_is_self_validated(connector_family: str | None) -> bool:
         "hyundai_mobis_html_tech",
         "lablup_next_data_tech",
         "liner_next_data_tech",
+        NEXON_CONNECTOR_FAMILY,
         "sap_public_jobs_korea_tech",
         "shiftup_public_api_tech",
     }
@@ -934,6 +943,27 @@ async def _fetch_listing_page(
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
     source_url = urlparse(source.base_url)
+    if source.connector_family == NEXON_CONNECTOR_FAMILY:
+        if browser_renderer is None:
+            raise ValueError("browser renderer is not configured")
+        request_body = source.request_body
+        corporation_name = (
+            request_body.get("corpName")
+            if isinstance(request_body, dict)
+            else None
+        )
+        if not isinstance(corporation_name, str) or not corporation_name.strip():
+            raise ValueError("Nexon source must configure a corporation name")
+        snapshot = await browser_renderer.fetch_nexon_snapshot()
+        return FetchedPage(
+            url=source.base_url,
+            text=filter_nexon_payload(
+                snapshot.text,
+                corporation_name.strip(),
+            ),
+            status_code=snapshot.status_code,
+            headers=snapshot.headers,
+        )
     if (
         source.connector_family in DUNAMU_CONNECTOR_FAMILIES
         and source_url.hostname == "careers.dunamu.com"
@@ -2328,7 +2358,10 @@ async def crawl_source(
     )
 
 
-def run_source_by_id(source_id: str) -> dict[str, Any]:
+def run_source_by_id(
+    source_id: str,
+    browser_renderer: BrowserRenderer | None = None,
+) -> dict[str, Any]:
     settings = get_settings()
     store = S3SnapshotStore(
         endpoint_url=settings.s3_endpoint_url,
@@ -2351,7 +2384,9 @@ def run_source_by_id(source_id: str) -> dict[str, Any]:
                 store=store,
                 now=datetime.now(timezone.utc),
                 posting_index=posting_index,
-                browser_renderer=PlaywrightBrowserRenderer(),
+                browser_renderer=(
+                    browser_renderer or PlaywrightBrowserRenderer()
+                ),
             )
         )
         report: dict[str, Any] = asdict(result)
@@ -2404,7 +2439,15 @@ def _allowed_sources() -> list[SourceRunTarget]:
                 str(source.id),
                 f"{source.company.name} / {source.source_type.value}",
                 source.base_url,
-                "greeting" if source.source_type == SourceType.GREETING else "",
+                (
+                    "nexon"
+                    if source.connector_family == NEXON_CONNECTOR_FAMILY
+                    else (
+                        "greeting"
+                        if source.source_type == SourceType.GREETING
+                        else ""
+                    )
+                ),
             )
             for source in session.scalars(statement)
         ]
@@ -2463,6 +2506,7 @@ def _crawl_run_target(
     index: int,
     total_sources: int,
     target: SourceRunTarget,
+    browser_renderer: BrowserRenderer | None = None,
 ) -> tuple[int, dict[str, Any]]:
     print(
         f"crawl source {index}/{total_sources} started: {target.label}",
@@ -2470,7 +2514,13 @@ def _crawl_run_target(
     )
     started_at = time.monotonic()
     try:
-        counts = run_source_by_id(target.source_id)
+        if browser_renderer is None:
+            counts = run_source_by_id(target.source_id)
+        else:
+            counts = run_source_by_id(
+                target.source_id,
+                browser_renderer=browser_renderer,
+            )
     except Exception as error:
         logger.exception("Source %s failed unexpectedly", target.source_id)
         counts = {
@@ -2502,8 +2552,18 @@ def _crawl_host_group(
     targets: list[tuple[int, SourceRunTarget]],
     total_sources: int,
 ) -> list[tuple[int, dict[str, Any]]]:
+    browser_renderer = (
+        PlaywrightBrowserRenderer()
+        if targets and targets[0][1].provider_key == "nexon"
+        else None
+    )
     return [
-        _crawl_run_target(index, total_sources, target)
+        _crawl_run_target(
+            index,
+            total_sources,
+            target,
+            browser_renderer=browser_renderer,
+        )
         for index, target in targets
     ]
 

@@ -13,7 +13,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ejikfit import crawler
 from ejikfit.config import Settings
-from ejikfit.connectors.nexon import NEXON_CORPORATIONS_API, NEXON_LIST_API
+from ejikfit.connectors.nexon import (
+    NEXON_CONNECTOR_FAMILY,
+    NEXON_CORPORATIONS_API,
+    NEXON_LIST_API,
+    NEXON_RECRUIT_URL,
+)
 from ejikfit.connectors.types import ParsedOpening
 from ejikfit.crawler import contains_access_challenge, next_missing_state
 from ejikfit.listing_validation import ListingValidationError, validate_listing_response
@@ -468,6 +473,175 @@ def test_nexon_snapshot_reuses_a_blocked_failure(monkeypatch) -> None:
     asyncio.run(collect_twice())
 
     assert calls == 1
+
+
+def _nexon_group_snapshot() -> crawler.FetchedPage:
+    nexon_korea_job = _nexon_job(101)
+    neople_engineer = {
+        **_nexon_job(201),
+        "corpName": "네오플",
+        "title": "Backend Engineer",
+    }
+    neople_nontechnical = {
+        **_nexon_job(202),
+        "corpName": "네오플",
+        "title": "급여 담당자",
+    }
+    return crawler.FetchedPage(
+        url=NEXON_LIST_API,
+        text=json.dumps(
+            {
+                "list": [
+                    nexon_korea_job,
+                    neople_engineer,
+                    neople_nontechnical,
+                ],
+                "pagination": {"page": 1, "size": 3, "total": 3},
+                "corporations": [
+                    {"corpCode": "NX", "corpName": "넥슨코리아"},
+                    {"corpCode": "NO", "corpName": "네오플"},
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        status_code=200,
+        headers={},
+    )
+
+
+class _FakeNexonSnapshotRenderer:
+    def __init__(self, *, blocked: bool = False) -> None:
+        self.blocked = blocked
+        self.calls = 0
+
+    async def fetch_nexon_snapshot(self) -> crawler.FetchedPage:
+        self.calls += 1
+        if self.blocked:
+            raise crawler.BlockedSourceError(
+                "Nexon source denied access with 403"
+            )
+        return _nexon_group_snapshot()
+
+
+def test_nexon_group_route_filters_and_parses_one_affiliate() -> None:
+    source = CareerSource(
+        company=Company(name="네오플", slug="neople"),
+        base_url=f"{NEXON_RECRUIT_URL}#NO",
+        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        connector_family=NEXON_CONNECTOR_FAMILY,
+        request_body={"corpCode": "NO", "corpName": "네오플"},
+    )
+    renderer = _FakeNexonSnapshotRenderer()
+
+    listing = asyncio.run(
+        crawler._fetch_listing_page(
+            source,
+            StaticFetcher("unused"),
+            renderer,
+        )
+    )
+    openings = crawler._parse_listing_openings(
+        source.source_type,
+        listing.text,
+        listing.url,
+        source.connector_family,
+    )
+    technical = crawler._apply_source_opening_filters(source, openings)
+
+    assert renderer.calls == 1
+    assert {row["corpName"] for row in json.loads(listing.text)["list"]} == {
+        "네오플"
+    }
+    assert [opening.external_id for opening in openings] == ["201", "202"]
+    assert [opening.external_id for opening in technical] == ["201"]
+    assert crawler._listing_is_self_validated(source.connector_family) is True
+
+
+def test_nexon_snapshot_failure_never_closes_existing_posting() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="네오플", slug="neople")
+        source = CareerSource(
+            company=company,
+            base_url=f"{NEXON_RECRUIT_URL}#NO",
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            connector_family=NEXON_CONNECTOR_FAMILY,
+            request_body={"corpCode": "NO", "corpName": "네오플"},
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="existing",
+            url=f"{NEXON_RECRUIT_URL}/existing",
+            title="Backend Engineer",
+            missing_runs=2,
+        )
+        session.add(posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher("unused"),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 16, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+                browser_renderer=_FakeNexonSnapshotRenderer(blocked=True),
+            )
+        )
+
+        assert result.failed == 1
+        assert posting.missing_runs == 2
+        assert posting.status == PostingStatus.OPEN
+
+
+def test_nexon_provider_group_shares_one_browser_renderer(monkeypatch) -> None:
+    received_renderers: list[object | None] = []
+
+    def fake_run(
+        source_id: str,
+        browser_renderer=None,
+    ) -> dict[str, int]:
+        received_renderers.append(browser_renderer)
+        return {
+            "discovered": 1,
+            "ingested": 1,
+            "failed": 0,
+            "closed": 0,
+        }
+
+    monkeypatch.setattr(crawler, "run_source_by_id", fake_run)
+    targets = [
+        (
+            1,
+            crawler.SourceRunTarget(
+                "nexon-korea",
+                "넥슨코리아 / browser_public_render",
+                f"{NEXON_RECRUIT_URL}#NX",
+                provider_key="nexon",
+            ),
+        ),
+        (
+            2,
+            crawler.SourceRunTarget(
+                "neople",
+                "네오플 / browser_public_render",
+                f"{NEXON_RECRUIT_URL}#NO",
+                provider_key="nexon",
+            ),
+        ),
+    ]
+
+    crawler._crawl_host_group(targets, total_sources=2)
+
+    assert len(received_renderers) == 2
+    assert received_renderers[0] is not None
+    assert received_renderers[0] is received_renderers[1]
 
 
 def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
