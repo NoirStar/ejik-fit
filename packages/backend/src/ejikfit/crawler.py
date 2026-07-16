@@ -244,6 +244,7 @@ def _discover_greeting_source_refs(source: CareerSource, html: str):
     explicit_role_names = {
         "greeting_hybe_tech": {"기술"},
         "greeting_spoonlabs_tech": {"Development"},
+        "greeting_teamsparta_tech": {"개발"},
     }.get(source.connector_family or "")
     if explicit_role_names is not None:
         return discover_openings(

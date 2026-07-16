@@ -176,6 +176,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   portone:
     "https://profiles.greetinghr.com/group/91c1eb78-3ba1-435b-b883-d3c380594976",
   palantir: "https://www.palantir.com/favicon.ico",
+  payhere:
+    "https://image.ninehire.com/homepage/fe6c82e0-94c0-11ee-bc73-3116195d2df1/e19c4cc0-e779-11ee-985d-0f2bc51083d6.png",
   pfct: "https://pfct.co.kr/assets/seo/favicon/apple-icon-180x180.png",
   "pearl-abyss":
     "https://static.pearlcdn.com/asset/company/global/contents/img/common/favicon64.ico",
@@ -228,6 +230,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   teamblind:
     "https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png",
+  teamsparta:
+    "https://profiles.greetinghr.com/group/f0ad5e82-e83c-40b9-bab2-fda918980db7",
   "tmap-mobility": "https://www.tmapmobility.com/favicon.ico",
   "twelve-labs":
     "https://framerusercontent.com/images/rPgUJ0yBWlnbaATq5j4kUxflLE.png",

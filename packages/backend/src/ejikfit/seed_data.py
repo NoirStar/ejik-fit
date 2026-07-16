@@ -1967,6 +1967,49 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="팀스파르타",
+        slug="teamsparta",
+        base_url="https://career.spartaclub.kr/ko/careers",
+        source_type=SourceType.GREETING,
+        homepage_url="https://teamsparta.co",
+        sector="edtech_ai",
+        connector_family="greeting_teamsparta_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=6,
+        notes=(
+            "Official TeamSparta Greeting-powered careers listing and detail "
+            "pages; limited to the explicit Development job group so that "
+            "Learning & Development roles are not misclassified."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="페이히어",
+        slug="payhere",
+        base_url="https://careers.payhere.in/recruit",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://payhere.in",
+        sector="fintech_pos",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official Payhere careers site and its public Ninehire feed; "
+            "limited to active technical roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="마이리얼트립",
         slug="myrealtrip",
         base_url="https://myrealtrip.career.greetinghr.com/ko",

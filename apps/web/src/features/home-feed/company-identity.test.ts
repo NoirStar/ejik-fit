@@ -711,6 +711,16 @@ describe("companyIdentity", () => {
       "https://www.skcareers.com/Recruit/GetRecruitList#sk-hynix",
       "sk-hynix",
     ],
+    [
+      "팀스파르타",
+      "https://career.spartaclub.kr/ko/o/224860",
+      "teamsparta",
+    ],
+    [
+      "페이히어",
+      "https://careers.payhere.in/job_posting/example",
+      "payhere",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

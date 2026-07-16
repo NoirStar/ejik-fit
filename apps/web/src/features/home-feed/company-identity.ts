@@ -575,6 +575,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "리멤버앤컴퍼니",
   },
   {
+    aliases: ["팀스파르타", "teamsparta", "team sparta"],
+    hosts: ["career.spartaclub.kr", "teamsparta.co"],
+    src: "/company-logo-assets/teamsparta",
+    displayName: "팀스파르타",
+  },
+  {
+    aliases: ["페이히어", "payhere", "pay here"],
+    hosts: ["careers.payhere.in", "payhere.ninehire.site", "payhere.in"],
+    src: "/company-logo-assets/payhere",
+    displayName: "페이히어",
+  },
+  {
     aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
     hosts: ["myrealtrip.career.greetinghr.com"],
     src: "/company-logo-assets/myrealtrip",
