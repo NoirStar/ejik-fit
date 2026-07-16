@@ -468,6 +468,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "케이뱅크",
   },
   {
+    aliases: ["래블업", "lablup"],
+    hosts: ["lablup.com"],
+    src: "/company-logo-assets/lablup",
+    displayName: "래블업",
+  },
+  {
     aliases: ["쏘카", "socar"],
     hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
     src: "/company-logo-assets/socar",

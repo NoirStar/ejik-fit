@@ -2204,6 +2204,28 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="래블업",
+        slug="lablup",
+        base_url="https://www.lablup.com/ko/careers",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://www.lablup.com/ko",
+        sector="ai_infrastructure",
+        connector_family="lablup_next_data_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=7,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=0,
+        notes=(
+            "Official Lablup Korean careers listing and position details; "
+            "collects current backend, solution, and QA engineering roles "
+            "with their full technical requirements."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="숨고",
         slug="soomgo",
         base_url="https://soomgo.team/career",

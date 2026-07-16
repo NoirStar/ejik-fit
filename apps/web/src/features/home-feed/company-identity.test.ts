@@ -831,6 +831,19 @@ describe("companyIdentity", () => {
     });
   });
 
+  it("uses Lablup's official mark for its careers host", () => {
+    expect(
+      companyIdentity(
+        "래블업",
+        "https://www.lablup.com/ko/careers/senior-CORE-software-engineer",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/lablup",
+      alt: "래블업 로고",
+    });
+  });
+
   it("uses compact initials when no verified asset exists", () => {
     expect(
       companyIdentity("Example Robotics", "https://example.com/careers"),
