@@ -130,6 +130,16 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "KB데이타시스템",
   },
   {
+    aliases: ["딥엑스", "DEEPX", "deepx"],
+    hosts: [
+      "deepx.career.greetinghr.com",
+      "deepx.ai",
+      "www.deepx.ai",
+    ],
+    src: "/company-logo-assets/deepx",
+    displayName: "딥엑스",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",

@@ -62,6 +62,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   dunamu: "https://careers.dunamu.com/favicon.png",
   deepnoid:
     "https://profiles.greetinghr.com/group/52e7484b-ffef-47e8-bd66-774309ad01d5",
+  deepx:
+    "https://cdn.deepx.ai/wp-content/uploads/2025/04/09130144/cropped-dx_pavicon02-192x192.png",
   enerzai:
     "https://profiles.greetinghr.com/group/af5e4e1b-d4a3-4bbb-bab2-9c963848f958",
   exem: "https://www.ex-em.com/apple-icon.png",

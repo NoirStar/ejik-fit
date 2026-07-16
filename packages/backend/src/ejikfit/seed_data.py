@@ -2148,6 +2148,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="딥엑스",
+        slug="deepx",
+        base_url="https://deepx.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://deepx.ai",
+        sector="ai_semiconductor",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=7,
+        expected_job_volume=44,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=17,
+        notes=(
+            "Official DEEPX Greeting careers page; limited to active AI, "
+            "NPU, compiler, system software, firmware, DevOps, verification, "
+            "and semiconductor design roles while excluding sales, PM, "
+            "customer FAE, production-yield, safety, HR, and business roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

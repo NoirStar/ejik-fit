@@ -32,6 +32,9 @@ def test_technical_role_filter_keeps_software_roles_and_rejects_title_noise() ->
     assert is_technical_role("AI Data Assistant (1개월 단기계약직)") is False
     assert is_technical_role("커피챗 (Tech Lead)") is False
     assert is_technical_role("Associate Problem Solver (AI Internship)") is False
+    assert is_technical_role("Senior Field Application Engineer – Global") is False
+    assert is_technical_role("Product Yield Enhancement Engineer") is False
+    assert is_technical_role("Safety Manager (ISO-26262)") is False
 
 
 def test_korea_technical_filter_requires_both_role_and_domestic_location() -> None:

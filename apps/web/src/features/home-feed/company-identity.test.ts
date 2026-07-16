@@ -152,6 +152,11 @@ describe("companyIdentity", () => {
       "kbds",
     ],
     [
+      "딥엑스",
+      "https://deepx.career.greetinghr.com/ko/o/160535",
+      "deepx",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",
