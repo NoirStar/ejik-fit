@@ -1424,6 +1424,10 @@
     padding-inline: 0.875rem;
   }
 
+  .filter {
+    min-height: var(--touch-target);
+  }
+
   .dataNotice {
     padding: 0.75rem;
   }

@@ -71,11 +71,17 @@ for (const width of [1440, 820, 390]) {
       await expect(categoryFilters).toHaveCSS("overflow-x", "auto");
     }
 
-    for (const target of [
-      page.getByRole("navigation", { name: "기술 분야" }).getByRole("link", {
+    const categoryFilter = page
+      .getByRole("navigation", { name: "기술 분야" })
+      .getByRole("link", {
         exact: true,
         name: "언어",
-      }),
+      });
+    const categoryFilterBox = await categoryFilter.boundingBox();
+    expect(categoryFilterBox?.width).toBeGreaterThanOrEqual(44);
+    expect(categoryFilterBox?.height).toBe(width <= 575 ? 44 : 32);
+
+    for (const target of [
       demand.getByRole("link", { name: "Python 관련 공고 보기" }),
       page
         .getByLabel("데이터를 읽는 기준")
