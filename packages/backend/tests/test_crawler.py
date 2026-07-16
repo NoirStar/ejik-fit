@@ -295,6 +295,7 @@ class _FakeNexonPage:
     def __init__(self, *, total: int = 16) -> None:
         self.total = total
         self.visited_urls: list[str] = []
+        self.waited_for_load_states: list[tuple[str, int]] = []
         self.evaluated_pages: list[int] = []
         self._responses = [
             _FakeNexonApiResponse(
@@ -320,6 +321,9 @@ class _FakeNexonPage:
     async def goto(self, url: str, *, wait_until: str, timeout: int):
         self.visited_urls.append(url)
         return _FakePlaywrightResponse(200)
+
+    async def wait_for_load_state(self, state: str, *, timeout: int) -> None:
+        self.waited_for_load_states.append((state, timeout))
 
     async def evaluate(self, expression: str, argument: dict[str, object]):
         body = argument["body"]
@@ -418,10 +422,45 @@ def test_nexon_snapshot_uses_headed_chromium_and_combines_pages(
         "https://careers.nexon.com/",
         "https://careers.nexon.com/recruit",
     ]
+    assert page.waited_for_load_states == [("networkidle", 5_000)]
     assert page.evaluated_pages == [2]
     assert len(json.loads(snapshot.text)["list"]) == 16
     assert chromium.browser.context.closed is True
     assert chromium.browser.closed is True
+
+
+def test_nexon_snapshot_times_out_a_stalled_later_page(monkeypatch) -> None:
+    class StalledNexonPage(_FakeNexonPage):
+        async def evaluate(
+            self,
+            expression: str,
+            argument: dict[str, object],
+        ) -> object:
+            await asyncio.Event().wait()
+            raise AssertionError("unreachable")
+
+    page = StalledNexonPage(total=16)
+    chromium = _FakeNexonChromium(page)
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakeNexonPlaywrightManager(chromium)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+    renderer = crawler.PlaywrightBrowserRenderer(
+        timeout_ms=10,
+        nexon_page_delay_seconds=0,
+    )
+
+    async def collect_with_test_guard() -> None:
+        with pytest.raises(
+            crawler.RetryableFetchError,
+            match="job listing page 2 timed out",
+        ):
+            await asyncio.wait_for(
+                renderer.fetch_nexon_snapshot(),
+                timeout=0.1,
+            )
+
+    asyncio.run(collect_with_test_guard())
 
 
 def test_nexon_snapshot_reuses_a_successful_result(monkeypatch) -> None:

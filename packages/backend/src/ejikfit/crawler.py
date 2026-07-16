@@ -563,6 +563,14 @@ class PlaywrightBrowserRenderer:
                             )
                         corporations = await corporation_response.json()
 
+                        try:
+                            await page.wait_for_load_state(
+                                "networkidle",
+                                timeout=self.settle_timeout_ms,
+                            )
+                        except Exception:
+                            pass
+
                         async with page.expect_response(
                             lambda response: (
                                 response.url == NEXON_LIST_API
@@ -616,32 +624,41 @@ class PlaywrightBrowserRenderer:
                                 await asyncio.sleep(
                                     self.nexon_page_delay_seconds
                                 )
-                            result = await page.evaluate(
-                                """
-                                async ({ url, body }) => {
-                                  const response = await fetch(url, {
-                                    method: "POST",
-                                    credentials: "include",
-                                    headers: {
-                                      "Accept": "application/json",
-                                      "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify(body)
-                                  });
-                                  return {
-                                    status: response.status,
-                                    payload: await response.json()
-                                  };
-                                }
-                                """,
-                                {
-                                    "url": NEXON_LIST_API,
-                                    "body": nexon_request_body(
-                                        page_number,
-                                        first_page.size,
+                            try:
+                                result = await asyncio.wait_for(
+                                    page.evaluate(
+                                        """
+                                        async ({ url, body }) => {
+                                          const response = await fetch(url, {
+                                            method: "POST",
+                                            credentials: "include",
+                                            headers: {
+                                              "Accept": "application/json",
+                                              "Content-Type": "application/json"
+                                            },
+                                            body: JSON.stringify(body)
+                                          });
+                                          return {
+                                            status: response.status,
+                                            payload: await response.json()
+                                          };
+                                        }
+                                        """,
+                                        {
+                                            "url": NEXON_LIST_API,
+                                            "body": nexon_request_body(
+                                                page_number,
+                                                first_page.size,
+                                            ),
+                                        },
                                     ),
-                                },
-                            )
+                                    timeout=self.timeout_ms / 1_000,
+                                )
+                            except TimeoutError as error:
+                                raise RetryableFetchError(
+                                    "Nexon job listing page "
+                                    f"{page_number} timed out"
+                                ) from error
                             if not isinstance(result, dict):
                                 raise ValueError(
                                     "Nexon page request returned invalid data"
