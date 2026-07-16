@@ -47,8 +47,8 @@ export async function generateMetadata({
     post.type === "community_post" ? "커뮤니티 글 예시" : "면접 후기 예시";
   const disclaimer =
     post.type === "community_post"
-      ? "화면 검증용 mock 커뮤니티 글이며 실제 사용자가 작성한 경험이 아닙니다."
-      : "화면 검증용 mock 면접 후기이며 특정 기업의 실제 면접 기록이 아닙니다.";
+      ? "커뮤니티 기능을 미리 살펴볼 수 있도록 만든 예시 글이며 실제 사용자가 작성한 경험이 아닙니다."
+      : "커뮤니티 기능을 미리 살펴볼 수 있도록 만든 예시 면접 후기이며 특정 기업의 실제 면접 기록이 아닙니다.";
   const title = `${post.title} (${exampleLabel})`;
   const description = `${disclaimer} ${sourceDescription}`;
 

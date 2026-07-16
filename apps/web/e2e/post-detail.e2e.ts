@@ -27,7 +27,7 @@ for (const width of [1440, 820, 390]) {
     ).toBeVisible();
     await expect(
       page.getByRole("complementary", { name: "이 글 안내" }),
-    ).toContainText("mock 데이터");
+    ).toContainText("예시 콘텐츠");
     await expect(
       page.getByRole("navigation", { name: "관련 글" }),
     ).toBeVisible();
@@ -268,7 +268,7 @@ test("persists a browser-owned post through detail, reload, and deletion", async
   ).toBeVisible();
   await expect(page.getByText("로컬 글", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "댓글" })).toBeVisible();
-  await expect(page.getByText(/mock 데이터/)).toHaveCount(0);
+  await expect(page.getByText(/예시 콘텐츠/)).toHaveCount(0);
 
   await page.getByRole("button", { name: `${title} 공감` }).click();
   await page.getByLabel("댓글 내용").fill("브라우저에 저장되는 댓글");

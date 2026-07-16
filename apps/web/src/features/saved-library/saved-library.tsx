@@ -595,7 +595,7 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>브라우저 글 + 명시적 mock 데이터</p>
+                    <p>이 브라우저의 글 + 예시 콘텐츠</p>
                     <h2 id="saved-community-title">커뮤니티</h2>
                   </div>
                   <span>{communityCount}개 저장</span>

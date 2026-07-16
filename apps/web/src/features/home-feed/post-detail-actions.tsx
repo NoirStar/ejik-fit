@@ -158,7 +158,7 @@ export function PostDetailActions({
             <p>
               {isLocalPost
                 ? "작성한 댓글도 서버로 전송되지 않고 이 브라우저에서만 유지됩니다."
-                : "표시된 예시 댓글은 화면 구성을 위해 만든 mock 데이터이며 실제 사용자가 작성한 댓글이 아닙니다."}
+                : "표시된 댓글은 정식 커뮤니티 연동 전에 제공되는 예시이며 실제 사용자가 작성한 댓글이 아닙니다."}
             </p>
           </div>
           <strong>{sampleComments.length + localComments.length}개 표시</strong>

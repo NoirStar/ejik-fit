@@ -189,6 +189,6 @@ describe("PostDetailActions", () => {
       screen.getByText("반응과 댓글은 이 브라우저에만 저장됩니다."),
     ).toBeInTheDocument();
     expect(screen.queryByText("대표 예시 댓글")).not.toBeInTheDocument();
-    expect(screen.queryByText(/mock 데이터/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();
   });
 });

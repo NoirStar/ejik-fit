@@ -54,7 +54,7 @@ describe("LocalPostDetail", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "글 반응과 댓글" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "댓글" })).toBeInTheDocument();
-    expect(screen.queryByText(/mock 데이터/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /팔로우/ })).not.toBeInTheDocument();
     await waitFor(() =>
       expect(readRecentCommunityTopics()).toEqual([
