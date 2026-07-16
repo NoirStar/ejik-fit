@@ -575,6 +575,26 @@ describe("companyIdentity", () => {
       "teamblind",
     ],
     [
+      "크몽",
+      "https://kmong.career.greetinghr.com/ko/o/1",
+      "kmong",
+    ],
+    [
+      "직방",
+      "https://zigbang.career.greetinghr.com/ko/o/1",
+      "zigbang",
+    ],
+    [
+      "야놀자",
+      "https://yanolja.wd102.myworkdayjobs.com/External_Yanolja/job/1",
+      "yanolja",
+    ],
+    [
+      "카카오엔터프라이즈",
+      "https://careers.kakaoenterprise.com/ko/o/1",
+      "kakao-enterprise",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

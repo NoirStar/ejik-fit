@@ -18,34 +18,63 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+def _is_postgresql() -> bool:
+    return op.get_context().dialect.name == "postgresql"
+
+
+def _json_column(name: str, default: str) -> sa.Column:
+    if _is_postgresql():
+        column_type = postgresql.JSONB(astext_type=sa.Text())
+        server_default = sa.text(f"'{default}'::jsonb")
+    else:
+        column_type = sa.JSON()
+        server_default = sa.text(f"'{default}'")
+    return sa.Column(
+        name,
+        column_type,
+        server_default=server_default,
+        nullable=False,
+    )
+
+
 def upgrade() -> None:
+    postgres_constraints: list[sa.CheckConstraint] = []
+    if _is_postgresql():
+        postgres_constraints = [
+            sa.CheckConstraint(
+                "jsonb_typeof(owned_skills) = 'array' AND "
+                "jsonb_array_length(owned_skills) <= 100",
+                name="ck_user_career_states_owned_skills",
+            ),
+            sa.CheckConstraint(
+                "jsonb_typeof(career_preferences) = 'object'",
+                name="ck_user_career_states_preferences",
+            ),
+            sa.CheckConstraint(
+                "jsonb_typeof(saved_job_ids) = 'array' AND "
+                "jsonb_array_length(saved_job_ids) <= 24",
+                name="ck_user_career_states_saved_jobs",
+            ),
+            sa.CheckConstraint(
+                "jsonb_typeof(application_stages) = 'object'",
+                name="ck_user_career_states_application_stages",
+            ),
+            sa.CheckConstraint(
+                "octet_length(owned_skills::text) <= 32768 AND "
+                "octet_length(career_preferences::text) <= 4096 AND "
+                "octet_length(saved_job_ids::text) <= 8192 AND "
+                "octet_length(application_stages::text) <= 8192",
+                name="ck_user_career_states_payload_size",
+            ),
+        ]
+
     op.create_table(
         "user_career_states",
         sa.Column("user_id", sa.Uuid(), nullable=False),
-        sa.Column(
-            "owned_skills",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'[]'::jsonb"),
-            nullable=False,
-        ),
-        sa.Column(
-            "career_preferences",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'{}'::jsonb"),
-            nullable=False,
-        ),
-        sa.Column(
-            "saved_job_ids",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'[]'::jsonb"),
-            nullable=False,
-        ),
-        sa.Column(
-            "application_stages",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'{}'::jsonb"),
-            nullable=False,
-        ),
+        _json_column("owned_skills", "[]"),
+        _json_column("career_preferences", "{}"),
+        _json_column("saved_job_ids", "[]"),
+        _json_column("application_stages", "{}"),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -58,33 +87,12 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
         ),
-        sa.CheckConstraint(
-            "jsonb_typeof(owned_skills) = 'array' AND "
-            "jsonb_array_length(owned_skills) <= 100",
-            name="ck_user_career_states_owned_skills",
-        ),
-        sa.CheckConstraint(
-            "jsonb_typeof(career_preferences) = 'object'",
-            name="ck_user_career_states_preferences",
-        ),
-        sa.CheckConstraint(
-            "jsonb_typeof(saved_job_ids) = 'array' AND "
-            "jsonb_array_length(saved_job_ids) <= 24",
-            name="ck_user_career_states_saved_jobs",
-        ),
-        sa.CheckConstraint(
-            "jsonb_typeof(application_stages) = 'object'",
-            name="ck_user_career_states_application_stages",
-        ),
-        sa.CheckConstraint(
-            "octet_length(owned_skills::text) <= 32768 AND "
-            "octet_length(career_preferences::text) <= 4096 AND "
-            "octet_length(saved_job_ids::text) <= 8192 AND "
-            "octet_length(application_stages::text) <= 8192",
-            name="ck_user_career_states_payload_size",
-        ),
+        *postgres_constraints,
         sa.PrimaryKeyConstraint("user_id"),
     )
+    if not _is_postgresql():
+        return
+
     op.execute("ALTER TABLE user_career_states ENABLE ROW LEVEL SECURITY")
     op.execute(
         """

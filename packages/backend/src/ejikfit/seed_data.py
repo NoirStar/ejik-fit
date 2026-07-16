@@ -521,6 +521,88 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="크몽",
+        slug="kmong",
+        base_url="https://kmong.career.greetinghr.com/ko/home",
+        homepage_url="https://kmong.com",
+        sector="talent_marketplace",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official Kmong Greeting careers listing and detail pages; "
+            "limited to explicit software, data, infrastructure, and "
+            "security roles."
+        ),
+    ),
+    SeedSource(
+        name="직방",
+        slug="zigbang",
+        base_url="https://zigbang.career.greetinghr.com/ko/home",
+        homepage_url="https://www.zigbang.com",
+        sector="proptech",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=5,
+        notes=(
+            "Official Zigbang Greeting careers listing and detail pages; "
+            "the source remains monitored when no technical role is open."
+        ),
+    ),
+    SeedSource(
+        name="야놀자",
+        slug="yanolja",
+        base_url=(
+            "https://yanolja.wd102.myworkdayjobs.com/wday/cxs/yanolja/"
+            "External_Yanolja/jobs"
+        ),
+        source_type=SourceType.WORKDAY,
+        homepage_url="https://www.yanoljagroup.com",
+        sector="travel_platform",
+        connector_family="workday_public_api_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official Yanolja Workday listing and job details; limited to "
+            "technical roles based in Korea and monitored through empty "
+            "recruiting periods."
+        ),
+        request_method="POST",
+        request_body={
+            "appliedFacets": {},
+            "limit": 20,
+            "offset": 0,
+            "searchText": "",
+        },
+    ),
+    SeedSource(
+        name="카카오엔터프라이즈",
+        slug="kakao-enterprise",
+        base_url="https://careers.kakaoenterprise.com/ko/intro",
+        homepage_url="https://kakaoenterprise.com",
+        sector="cloud_ai",
+        connector_family="greeting_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official Kakao Enterprise Greeting careers listing and detail "
+            "pages; the source remains monitored when no technical role is "
+            "open."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(

@@ -175,6 +175,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "팀블라인드",
   },
   {
+    aliases: ["크몽", "kmong"],
+    hosts: ["kmong.career.greetinghr.com", "kmong.com"],
+    src: "/company-logo-assets/kmong",
+    displayName: "크몽",
+  },
+  {
+    aliases: ["직방", "zigbang"],
+    hosts: ["zigbang.career.greetinghr.com", "zigbang.com"],
+    src: "/company-logo-assets/zigbang",
+    displayName: "직방",
+  },
+  {
+    aliases: ["야놀자", "yanolja"],
+    hosts: ["yanolja.wd102.myworkdayjobs.com", "yanoljagroup.com"],
+    src: "/company-logo-assets/yanolja",
+    displayName: "야놀자",
+  },
+  {
+    aliases: ["카카오엔터프라이즈", "kakao enterprise"],
+    hosts: ["careers.kakaoenterprise.com", "kakaoenterprise.com"],
+    src: "/company-logo-assets/kakao-enterprise",
+    displayName: "카카오엔터프라이즈",
+  },
+  {
     aliases: ["네이버", "naver", "naver corp", "naver corp."],
     hosts: ["navercorp.com"],
     src: "/company-logos/naver.svg",

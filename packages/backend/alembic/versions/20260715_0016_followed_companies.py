@@ -18,16 +18,29 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+def _is_postgresql() -> bool:
+    return op.get_context().dialect.name == "postgresql"
+
+
 def upgrade() -> None:
+    if _is_postgresql():
+        column_type = postgresql.JSONB(astext_type=sa.Text())
+        server_default = sa.text("'[]'::jsonb")
+    else:
+        column_type = sa.JSON()
+        server_default = sa.text("'[]'")
     op.add_column(
         "user_career_states",
         sa.Column(
             "followed_company_slugs",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'[]'::jsonb"),
+            column_type,
+            server_default=server_default,
             nullable=False,
         ),
     )
+    if not _is_postgresql():
+        return
+
     op.create_check_constraint(
         "ck_user_career_states_followed_companies",
         "user_career_states",
@@ -38,9 +51,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "ck_user_career_states_followed_companies",
-        "user_career_states",
-        type_="check",
-    )
+    if _is_postgresql():
+        op.drop_constraint(
+            "ck_user_career_states_followed_companies",
+            "user_career_states",
+            type_="check",
+        )
     op.drop_column("user_career_states", "followed_company_slugs")

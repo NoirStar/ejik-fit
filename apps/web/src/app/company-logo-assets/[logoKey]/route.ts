@@ -85,6 +85,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/site/favicon/1928/1719299110201/%EB%A1%9C%EA%B3%A0.PNG",
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
+  kmong:
+    "https://opening-attachments.greetinghr.com/2025-12-03/330d1a88-4c51-4a8e-bcd0-5b35956b9e5e/kmong__green.png",
   krafton:
     "https://s2-recruiting.cdn.greenhouse.io/external_greenhouse_job_boards/logos/400/963/700/original/KRAFTON_1_Primary_Wordmark_Black_260112.png?1772068780",
   "kakao-mobility":
@@ -92,6 +94,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "kakao-pay":
     "https://profiles.greetinghr.com/group/2725e89d-5ab0-409e-973a-22b9c2e4c492",
   "kakao-games": "https://www.kakaogamescorp.com/favicon.ico",
+  "kakao-enterprise":
+    "https://profiles.greetinghr.com/group/a163f8c5-f9aa-44da-b5a3-1425303180e1",
   kia: "https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico",
   kt: "https://recruit.kt.com/favicon.ico",
   kurly:
@@ -202,6 +206,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://assets.roundhr.com/upload/site/favicon/1146/1724160614927/color.png",
   wadiz:
     "https://profiles.greetinghr.com/group/96f6237b-fdf1-42fe-aa88-1ed92e407dc1",
+  yanolja:
+    "https://profiles.greetinghr.com/group/ffd2b389-294e-4546-88b3-5d35456a156f",
   wemade:
     "https://image.ninehire.com/homepage/83cdd300-13fa-11ee-a096-95051faa2e73/logo/6bfa5820-6af0-11f1-90eb-f327db58c8db.png",
   "wiz-korea": "https://www.wiz.io/favicon.png",
@@ -210,6 +216,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "woowahan-brothers": "https://career.woowahan.com/favicon.ico",
   "hanwha-systems":
     "https://www.hanwhasystems.com/resources/img/pc/com/favicon.ico",
+  zigbang:
+    "https://profiles.greetinghr.com/group/e993711a-5f1c-45e0-b292-4ea939289952",
 };
 
 type LogoRouteContext = {
