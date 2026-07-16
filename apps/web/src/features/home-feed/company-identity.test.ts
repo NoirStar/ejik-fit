@@ -132,6 +132,11 @@ describe("companyIdentity", () => {
       "ridi",
     ],
     [
+      "콕스웨이브",
+      "https://coxwave.recruit.roundhr.com/c/u2CKaMyTaP",
+      "coxwave",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",

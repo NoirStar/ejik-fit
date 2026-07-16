@@ -88,6 +88,17 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "리디",
   },
   {
+    aliases: ["콕스웨이브", "coxwave", "cox wave"],
+    hosts: [
+      "coxwave.recruit.roundhr.com",
+      "careers.coxwave.com",
+      "coxwave.com",
+      "www.coxwave.com",
+    ],
+    src: "/company-logo-assets/coxwave",
+    displayName: "콕스웨이브",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",

@@ -39,6 +39,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
   cohere: "https://cohere.com/apple-touch-icon.png",
   coupang: "https://www.coupang.jobs/favicon.ico",
+  coxwave:
+    "https://assets.roundhr.com/upload/user/organization/1942/temp/1739167556302/Logo_Coxwave.png",
   crowdworks:
     "https://framerusercontent.com/images/p8rA85A5992NgoBozIv5mHhzWBU.png",
   "carat-ai":

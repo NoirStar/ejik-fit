@@ -1337,6 +1337,29 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="콕스웨이브",
+        slug="coxwave",
+        base_url="https://coxwave.recruit.roundhr.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.coxwave.com",
+        sector="generative_ai",
+        connector_family="roundhr_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=1,
+        notes=(
+            "Official Coxwave RoundHR tenant and public job detail pages; "
+            "the tenant redirects to Coxwave's official custom careers "
+            "domain and currently exposes explicit AI, data, and backend "
+            "engineering roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="휴톰",
         slug="hutom",
         base_url="https://hutom.recruit.roundhr.com/",
