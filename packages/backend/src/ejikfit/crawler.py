@@ -66,6 +66,15 @@ from ejikfit.connectors.microsoft import (
     pcsx_detail_api_url,
 )
 from ejikfit.connectors.naver import parse_naver_openings
+from ejikfit.connectors.nexon import (
+    NEXON_CORPORATIONS_API,
+    NEXON_HOME_URL,
+    NEXON_LIST_API,
+    NEXON_RECRUIT_URL,
+    combine_nexon_pages,
+    nexon_request_body,
+    parse_nexon_page,
+)
 from ejikfit.connectors.next_data import parse_static_next_data_openings
 from ejikfit.connectors.public_json_detail import (
     COM2US_LISTING_API,
@@ -476,9 +485,217 @@ class PlaywrightBrowserRenderer:
         self,
         timeout_ms: int = 20_000,
         settle_timeout_ms: int = 5_000,
+        nexon_page_delay_seconds: float = 1.0,
     ) -> None:
+        if nexon_page_delay_seconds < 0:
+            raise ValueError("Nexon page delay must not be negative")
         self.timeout_ms = timeout_ms
         self.settle_timeout_ms = settle_timeout_ms
+        self.nexon_page_delay_seconds = nexon_page_delay_seconds
+        self._nexon_snapshot: FetchedPage | None = None
+        self._nexon_snapshot_error: Exception | None = None
+
+    async def fetch_nexon_snapshot(self) -> FetchedPage:
+        if self._nexon_snapshot is not None:
+            return self._nexon_snapshot
+        if self._nexon_snapshot_error is not None:
+            raise self._nexon_snapshot_error
+
+        try:
+            snapshot = await self._collect_nexon_snapshot()
+        except Exception as error:
+            self._nexon_snapshot_error = error
+            raise
+
+        self._nexon_snapshot = snapshot
+        return snapshot
+
+    async def _collect_nexon_snapshot(self) -> FetchedPage:
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError as error:
+            raise ValueError("browser renderer is not configured") from error
+
+        try:
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(headless=False)
+                try:
+                    context = await browser.new_context(
+                        locale="ko-KR",
+                        timezone_id="Asia/Seoul",
+                        viewport={"width": 1440, "height": 900},
+                    )
+                    try:
+                        page = await context.new_page()
+
+                        async with page.expect_response(
+                            lambda response: (
+                                response.url == NEXON_CORPORATIONS_API
+                                and response.request.method == "GET"
+                            ),
+                            timeout=self.timeout_ms,
+                        ) as corporation_response_info:
+                            home_response = await page.goto(
+                                NEXON_HOME_URL,
+                                wait_until="domcontentloaded",
+                                timeout=self.timeout_ms,
+                            )
+                        corporation_response = (
+                            await corporation_response_info.value
+                        )
+                        self._validate_nexon_response(
+                            home_response,
+                            "home page",
+                        )
+                        self._validate_nexon_response(
+                            corporation_response,
+                            "corporation directory",
+                        )
+                        if contains_access_challenge(await page.content()):
+                            raise BlockedSourceError(
+                                "Nexon returned an access challenge"
+                            )
+                        corporations = await corporation_response.json()
+
+                        async with page.expect_response(
+                            lambda response: (
+                                response.url == NEXON_LIST_API
+                                and response.request.method == "POST"
+                            ),
+                            timeout=self.timeout_ms,
+                        ) as listing_response_info:
+                            recruit_response = await page.goto(
+                                NEXON_RECRUIT_URL,
+                                wait_until="domcontentloaded",
+                                timeout=self.timeout_ms,
+                            )
+                        listing_response = await listing_response_info.value
+                        self._validate_nexon_response(
+                            recruit_response,
+                            "recruit page",
+                        )
+                        self._validate_nexon_response(
+                            listing_response,
+                            "job listing",
+                        )
+                        if contains_access_challenge(await page.content()):
+                            raise BlockedSourceError(
+                                "Nexon returned an access challenge"
+                            )
+
+                        first_page = parse_nexon_page(
+                            await listing_response.json()
+                        )
+                        if first_page.total and first_page.size == 0:
+                            raise ValueError(
+                                "Nexon listing has a zero page size"
+                            )
+                        page_count = max(
+                            1,
+                            (
+                                first_page.total + first_page.size - 1
+                            )
+                            // first_page.size
+                            if first_page.size
+                            else 1,
+                        )
+                        if page_count > 50:
+                            raise ValueError(
+                                "Nexon listing exceeded the page limit"
+                            )
+
+                        pages = [first_page]
+                        for page_number in range(2, page_count + 1):
+                            if self.nexon_page_delay_seconds:
+                                await asyncio.sleep(
+                                    self.nexon_page_delay_seconds
+                                )
+                            result = await page.evaluate(
+                                """
+                                async ({ url, body }) => {
+                                  const response = await fetch(url, {
+                                    method: "POST",
+                                    credentials: "include",
+                                    headers: {
+                                      "Accept": "application/json",
+                                      "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify(body)
+                                  });
+                                  return {
+                                    status: response.status,
+                                    payload: await response.json()
+                                  };
+                                }
+                                """,
+                                {
+                                    "url": NEXON_LIST_API,
+                                    "body": nexon_request_body(
+                                        page_number,
+                                        first_page.size,
+                                    ),
+                                },
+                            )
+                            if not isinstance(result, dict):
+                                raise ValueError(
+                                    "Nexon page request returned invalid data"
+                                )
+                            status = result.get("status")
+                            if not isinstance(status, int):
+                                raise ValueError(
+                                    "Nexon page request omitted its status"
+                                )
+                            self._validate_nexon_status(
+                                status,
+                                f"job listing page {page_number}",
+                            )
+                            pages.append(
+                                parse_nexon_page(result.get("payload"))
+                            )
+
+                        combined = combine_nexon_pages(
+                            pages,
+                            corporations,
+                        )
+                    finally:
+                        await context.close()
+                finally:
+                    await browser.close()
+        except (BlockedSourceError, RetryableFetchError, ValueError):
+            raise
+        except Exception as error:
+            raise RetryableFetchError(
+                f"Nexon browser collection failed: {error}"
+            ) from error
+
+        return FetchedPage(
+            url=NEXON_LIST_API,
+            text=json.dumps(combined, ensure_ascii=False),
+            status_code=200,
+            headers={},
+        )
+
+    @staticmethod
+    def _validate_nexon_response(response: Any, label: str) -> None:
+        status = response.status if response is not None else 200
+        PlaywrightBrowserRenderer._validate_nexon_status(status, label)
+
+    @staticmethod
+    def _validate_nexon_status(status: int, label: str) -> None:
+        if status in {401, 403}:
+            raise BlockedSourceError(
+                f"Nexon {label} denied access with {status}"
+            )
+        if status == 429 or status >= 500:
+            raise RetryableFetchError(
+                f"temporary Nexon {label} status {status}",
+                status_code=status,
+            )
+        if 400 <= status < 500:
+            raise RetryableFetchError(
+                f"Nexon {label} returned status {status}",
+                status_code=status,
+            )
 
     async def render(self, url: str) -> FetchedPage:
         try:

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ejikfit import crawler
 from ejikfit.config import Settings
+from ejikfit.connectors.nexon import NEXON_CORPORATIONS_API, NEXON_LIST_API
 from ejikfit.connectors.types import ParsedOpening
 from ejikfit.crawler import contains_access_challenge, next_missing_state
 from ejikfit.listing_validation import ListingValidationError, validate_listing_response
@@ -233,6 +234,240 @@ def test_playwright_renderer_rejects_any_browser_4xx(monkeypatch) -> None:
                 "https://example.com/missing"
             )
         )
+
+
+class _FakeNexonRequest:
+    def __init__(self, method: str) -> None:
+        self.method = method
+
+
+class _FakeNexonApiResponse:
+    def __init__(
+        self,
+        url: str,
+        payload: object,
+        *,
+        method: str = "GET",
+        status: int = 200,
+    ) -> None:
+        self.url = url
+        self.request = _FakeNexonRequest(method)
+        self.status = status
+        self._payload = payload
+
+    async def json(self) -> object:
+        return self._payload
+
+
+class _FakeNexonExpectedResponse:
+    def __init__(self, response: _FakeNexonApiResponse) -> None:
+        self.response = response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        pass
+
+    @property
+    def value(self):
+        async def resolve() -> _FakeNexonApiResponse:
+            return self.response
+
+        return resolve()
+
+
+def _nexon_job(job_id: int) -> dict[str, object]:
+    return {
+        "corpName": "넥슨코리아",
+        "jobPostNo": job_id,
+        "title": f"Backend Engineer {job_id}",
+        "contents": "<p>Python API</p>",
+    }
+
+
+class _FakeNexonPage:
+    def __init__(self, *, total: int = 16) -> None:
+        self.total = total
+        self.visited_urls: list[str] = []
+        self.evaluated_pages: list[int] = []
+        self._responses = [
+            _FakeNexonApiResponse(
+                NEXON_CORPORATIONS_API,
+                [{"corpCode": "NX", "corpName": "넥슨코리아"}],
+            ),
+            _FakeNexonApiResponse(
+                NEXON_LIST_API,
+                {
+                    "list": [_nexon_job(index) for index in range(1, 16)],
+                    "pagination": {"page": 1, "size": 15, "total": total},
+                },
+                method="POST",
+            ),
+        ]
+        self.url = "https://careers.nexon.com/recruit"
+
+    def expect_response(self, predicate, *, timeout: int):
+        response = self._responses.pop(0)
+        assert predicate(response)
+        return _FakeNexonExpectedResponse(response)
+
+    async def goto(self, url: str, *, wait_until: str, timeout: int):
+        self.visited_urls.append(url)
+        return _FakePlaywrightResponse(200)
+
+    async def evaluate(self, expression: str, argument: dict[str, object]):
+        body = argument["body"]
+        assert isinstance(body, dict)
+        page = int(body["page"])
+        self.evaluated_pages.append(page)
+        return {
+            "status": 200,
+            "payload": {
+                "list": [_nexon_job(16)],
+                "pagination": {"page": page, "size": 15, "total": self.total},
+            },
+        }
+
+    async def content(self) -> str:
+        return "<html><body>NEXON COMPANY Careers</body></html>"
+
+
+class _FakeNexonContext:
+    def __init__(self, page: _FakeNexonPage) -> None:
+        self.page = page
+        self.closed = False
+
+    async def new_page(self) -> _FakeNexonPage:
+        return self.page
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+class _FakeNexonBrowser:
+    def __init__(self, page: _FakeNexonPage) -> None:
+        self.context = _FakeNexonContext(page)
+        self.context_options: dict[str, object] | None = None
+        self.closed = False
+
+    async def new_context(self, **options) -> _FakeNexonContext:
+        self.context_options = options
+        return self.context
+
+    async def close(self) -> None:
+        self.closed = True
+
+
+class _FakeNexonChromium:
+    def __init__(self, page: _FakeNexonPage) -> None:
+        self.browser = _FakeNexonBrowser(page)
+        self.launch_headless: bool | None = None
+        self.launch_count = 0
+
+    async def launch(self, *, headless: bool) -> _FakeNexonBrowser:
+        self.launch_headless = headless
+        self.launch_count += 1
+        return self.browser
+
+
+class _FakeNexonPlaywright:
+    def __init__(self, chromium: _FakeNexonChromium) -> None:
+        self.chromium = chromium
+
+
+class _FakeNexonPlaywrightManager:
+    def __init__(self, chromium: _FakeNexonChromium) -> None:
+        self.playwright = _FakeNexonPlaywright(chromium)
+
+    async def __aenter__(self) -> _FakeNexonPlaywright:
+        return self.playwright
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        pass
+
+
+def test_nexon_snapshot_uses_headed_chromium_and_combines_pages(
+    monkeypatch,
+) -> None:
+    page = _FakeNexonPage(total=16)
+    chromium = _FakeNexonChromium(page)
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakeNexonPlaywrightManager(chromium)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+
+    snapshot = asyncio.run(
+        crawler.PlaywrightBrowserRenderer(
+            nexon_page_delay_seconds=0,
+        ).fetch_nexon_snapshot()
+    )
+
+    assert chromium.launch_headless is False
+    assert chromium.browser.context_options == {
+        "locale": "ko-KR",
+        "timezone_id": "Asia/Seoul",
+        "viewport": {"width": 1440, "height": 900},
+    }
+    assert page.visited_urls == [
+        "https://careers.nexon.com/",
+        "https://careers.nexon.com/recruit",
+    ]
+    assert page.evaluated_pages == [2]
+    assert len(json.loads(snapshot.text)["list"]) == 16
+    assert chromium.browser.context.closed is True
+    assert chromium.browser.closed is True
+
+
+def test_nexon_snapshot_reuses_a_successful_result(monkeypatch) -> None:
+    renderer = crawler.PlaywrightBrowserRenderer()
+    calls = 0
+    expected = crawler.FetchedPage(
+        url=NEXON_LIST_API,
+        text='{"list": []}',
+        status_code=200,
+        headers={},
+    )
+
+    async def fake_collect() -> crawler.FetchedPage:
+        nonlocal calls
+        calls += 1
+        return expected
+
+    monkeypatch.setattr(renderer, "_collect_nexon_snapshot", fake_collect)
+
+    async def collect_twice():
+        return (
+            await renderer.fetch_nexon_snapshot(),
+            await renderer.fetch_nexon_snapshot(),
+        )
+
+    first, second = asyncio.run(collect_twice())
+
+    assert first is expected
+    assert second is expected
+    assert calls == 1
+
+
+def test_nexon_snapshot_reuses_a_blocked_failure(monkeypatch) -> None:
+    renderer = crawler.PlaywrightBrowserRenderer()
+    calls = 0
+
+    async def fake_collect() -> crawler.FetchedPage:
+        nonlocal calls
+        calls += 1
+        raise crawler.BlockedSourceError("source denied access with 403")
+
+    monkeypatch.setattr(renderer, "_collect_nexon_snapshot", fake_collect)
+
+    async def collect_twice() -> None:
+        for _ in range(2):
+            with pytest.raises(crawler.BlockedSourceError, match="403"):
+                await renderer.fetch_nexon_snapshot()
+
+    asyncio.run(collect_twice())
+
+    assert calls == 1
 
 
 def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
