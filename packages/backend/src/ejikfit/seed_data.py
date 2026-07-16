@@ -2294,6 +2294,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="이스트소프트 그룹",
+        slug="estfamily",
+        base_url="https://estfamily.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        homepage_url="https://estsoft.ai",
+        sector="software_ai_security_games",
+        connector_family="greeting_estfamily_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=7,
+        expected_job_volume=15,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=34,
+        notes=(
+            "Official ESTfamily Greeting careers listing and detail pages; "
+            "collects hands-on software, AI, infrastructure, security, and "
+            "game engineering roles while excluding training, translation, "
+            "administrative, and program-operations openings."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="숨고",
         slug="soomgo",
         base_url="https://soomgo.team/career",

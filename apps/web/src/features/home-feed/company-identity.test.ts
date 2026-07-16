@@ -173,6 +173,11 @@ describe("companyIdentity", () => {
       "https://watchateam.career.greetinghr.com/ko/o/214341",
       "watcha",
     ],
+    [
+      "이스트소프트 그룹",
+      "https://estfamily.career.greetinghr.com/ko/o/220483",
+      "estfamily",
+    ],
     ["리벨리온", "https://rebellions.career.greetinghr.com/ko/o/1", "rebellions"],
     ["코빗", "https://korbit.career.greetinghr.com/ko/o/1", "korbit"],
     ["람다256", "https://lambda256.career.greetinghr.com/ko/o/1", "lambda256"],

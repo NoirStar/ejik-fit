@@ -505,6 +505,22 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "왓챠",
   },
   {
+    aliases: [
+      "이스트소프트 그룹",
+      "이스트소프트",
+      "이스트패밀리",
+      "estfamily",
+      "estsoft",
+    ],
+    hosts: [
+      "estfamily.career.greetinghr.com",
+      "estsoft.ai",
+      "www.estsoft.ai",
+    ],
+    src: "/company-logo-assets/estfamily",
+    displayName: "이스트소프트 그룹",
+  },
+  {
     aliases: ["쏘카", "socar"],
     hosts: ["socarcorp.kr", "socar.career.greetinghr.com"],
     src: "/company-logo-assets/socar",

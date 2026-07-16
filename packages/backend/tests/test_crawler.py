@@ -3953,6 +3953,70 @@ def test_greeting_listing_parse_failure_is_persisted() -> None:
         assert source.last_success_at is None
 
 
+def test_estfamily_greeting_discovery_excludes_non_hands_on_tech_titles() -> None:
+    titles = {
+        1: "[ESTsecurity] 리눅스 백엔드 서버 개발자",
+        2: "[ESTgames] DevOps 엔지니어 (클라우드 및 온프레미스)",
+        3: "[ESTsoft] AI 국가사업 운영관리 및 사무보조 (계약직)",
+        4: "[ESTsoft] AI 더빙 중남미 스페인어 번역·검수 (프리랜서)",
+        5: "[ESTsecurity] 국책과제/전략사업 관리 및 운영 담당자",
+        6: "[ESTsoft] 인프라 보안 전문가 양성과정 멘토 (프리랜서)",
+        7: "[ESTsoft] K-디지털트레이닝 백엔드 개발 과정 주강사",
+        8: "[ESTsoft] iOS 개발자 양성과정 멘토 (프리랜서)",
+    }
+    next_data = {
+        "props": {
+            "pageProps": {
+                "dehydratedState": {
+                    "queries": [
+                        {
+                            "queryKey": ["openings"],
+                            "state": {
+                                "data": [
+                                    {
+                                        "openingId": opening_id,
+                                        "title": title,
+                                        "openingJobPosition": {
+                                            "openingJobPositions": [
+                                                {
+                                                    "workspaceJob": {
+                                                        "name": "개발"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                    }
+                                    for opening_id, title in titles.items()
+                                ]
+                            },
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        f"{json.dumps(next_data, ensure_ascii=False)}"
+        "</script>"
+    )
+    source = CareerSource(
+        company=Company(name="이스트소프트 그룹", slug="estfamily"),
+        base_url="https://estfamily.career.greetinghr.com/ko",
+        source_type=SourceType.GREETING,
+        connector_family="greeting_estfamily_tech",
+        status=SourceStatus.ALLOWED,
+        policy_status=PolicyStatus.ALLOWED,
+    )
+
+    refs = crawler._discover_greeting_source_refs(source, html)
+
+    assert [(ref.external_id, ref.title) for ref in refs] == [
+        ("1", titles[1]),
+        ("2", titles[2]),
+    ]
+
+
 class GreetingDetailFetcher:
     def __init__(
         self,

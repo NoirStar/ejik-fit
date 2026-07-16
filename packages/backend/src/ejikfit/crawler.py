@@ -281,11 +281,31 @@ def _discover_greeting_source_refs(source: CareerSource, html: str):
             source.base_url,
             technical_only=source.targets_technical_roles,
         )
-    return discover_openings(
+    refs = discover_openings(
         html,
         source.base_url,
         technical_only=source.targets_technical_roles,
     )
+    if source.connector_family != "greeting_estfamily_tech":
+        return refs
+
+    non_hands_on_markers = (
+        "운영관리 및 사무보조",
+        "번역",
+        "검수",
+        "국책과제/전략사업 관리",
+        "양성과정",
+        "주강사",
+        "멘토",
+    )
+    return [
+        ref
+        for ref in refs
+        if not any(
+            marker in (ref.title or "").casefold()
+            for marker in non_hands_on_markers
+        )
+    ]
 
 
 class RetryableFetchError(RuntimeError):
