@@ -327,11 +327,13 @@ def test_crawl_all_parallelizes_hosts_but_serializes_shared_provider(
                 "greeting-first",
                 "첫 번째 / greeting",
                 "https://first.career.greetinghr.com/ko",
+                provider_key="greeting",
             ),
             crawler.SourceRunTarget(
                 "greeting-second",
                 "두 번째 / greeting",
-                "https://second.career.greetinghr.com/ko",
+                "https://careers.hybecorp.com/ko/home",
+                provider_key="greeting",
             ),
             crawler.SourceRunTarget(
                 "independent",

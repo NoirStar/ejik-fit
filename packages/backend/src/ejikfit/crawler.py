@@ -242,6 +242,16 @@ def _apply_source_opening_filters(
 
 
 def _discover_greeting_source_refs(source: CareerSource, html: str):
+    explicit_role_names = {
+        "greeting_hybe_tech": {"기술"},
+        "greeting_spoonlabs_tech": {"Development"},
+    }.get(source.connector_family or "")
+    if explicit_role_names is not None:
+        return discover_openings(
+            html,
+            source.base_url,
+            allowed_role_names=explicit_role_names,
+        )
     if source.connector_family == "corporate_greeting_links_tech":
         return discover_corporate_greeting_openings(
             html,
@@ -290,6 +300,7 @@ class SourceRunTarget:
     source_id: str
     label: str
     base_url: str = ""
+    provider_key: str = ""
 
 
 class BrowserRenderer(Protocol):
@@ -1982,6 +1993,7 @@ def _allowed_sources() -> list[SourceRunTarget]:
                 str(source.id),
                 f"{source.company.name} / {source.source_type.value}",
                 source.base_url,
+                "greeting" if source.source_type == SourceType.GREETING else "",
             )
             for source in session.scalars(statement)
         ]
@@ -2027,6 +2039,8 @@ PROVIDER_HOST_SUFFIXES = (
 
 
 def _source_concurrency_key(target: SourceRunTarget) -> str:
+    if target.provider_key:
+        return target.provider_key
     hostname = (urlparse(target.base_url).hostname or "").casefold()
     for provider_host in PROVIDER_HOST_SUFFIXES:
         if hostname == provider_host or hostname.endswith(f".{provider_host}"):

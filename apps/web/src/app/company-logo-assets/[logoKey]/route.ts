@@ -70,6 +70,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "gauss-labs":
     "https://cdn.prod.website-files.com/6858a6f343e28528569197fe/686f212ea17026a1afde7187_icon_1.png",
   hyperconnect: "https://career.hyperconnect.com/icons/icon-192x192.png",
+  hybe:
+    "https://profiles.greetinghr.com/group/2af31013-cc31-46d5-be02-53d5c5589149",
   hyperaccel:
     "https://profiles.greetinghr.com/group/2ba952e4-4c70-4e1f-9d6f-55195de575e5",
   hutom:
@@ -208,6 +210,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "snj-lab":
     "https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
+  spoonlabs:
+    "https://profiles.greetinghr.com/group/127ba263-5d24-4f81-b826-fd6517f60993",
   stradvision:
     "https://www.stradvision.com/image/favicon/apple-icon-180x180.png",
   scatterlab:

@@ -163,6 +163,12 @@ describe("companyIdentity", () => {
       "https://jobs.lever.co/matchgroup/4004a95b-ed89-4193-ad1a-a2ed5d4703d5",
       "hyperconnect",
     ],
+    ["하이브", "https://careers.hybecorp.com/ko/o/177425", "hybe"],
+    [
+      "스푼랩스",
+      "https://career.spoonlabs.com/ko/o/220250",
+      "spoonlabs",
+    ],
     [
       "오늘의집",
       "https://bucketplace.career.greetinghr.com/ko/o/167227",

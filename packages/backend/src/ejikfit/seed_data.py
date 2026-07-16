@@ -1817,6 +1817,49 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="하이브",
+        slug="hybe",
+        base_url="https://careers.hybecorp.com/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://hybecorp.com",
+        sector="content_platform",
+        connector_family="greeting_hybe_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=4,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=6,
+        notes=(
+            "Official HYBE Greeting-powered careers listing and detail "
+            "pages; limited to openings classified in HYBE's Technology "
+            "job group, including Weverse and DRIMAGE affiliates."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="스푼랩스",
+        slug="spoonlabs",
+        base_url="https://career.spoonlabs.com/ko/recruiting",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.spoonlabs.com",
+        sector="consumer_content_ai",
+        connector_family="greeting_spoonlabs_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official Spoon Labs Greeting-powered careers listing and "
+            "detail pages; limited to openings in the Development job group."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="마이리얼트립",
         slug="myrealtrip",
         base_url="https://myrealtrip.career.greetinghr.com/ko",

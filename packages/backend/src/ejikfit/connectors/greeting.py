@@ -104,9 +104,19 @@ def discover_openings(
     page_url: str,
     *,
     technical_only: bool = False,
+    allowed_role_names: set[str] | None = None,
 ) -> list[OpeningRef]:
     data = extract_next_data(html)
     openings: list[dict[str, Any]] | None = None
+    normalized_allowed_roles = (
+        {
+            role_name.strip().casefold()
+            for role_name in allowed_role_names
+            if role_name.strip()
+        }
+        if allowed_role_names is not None
+        else None
+    )
 
     for query in _queries(data):
         key = _query_key(query)
@@ -132,10 +142,16 @@ def discover_openings(
             if isinstance(opening.get("title"), str)
             else None
         )
-        if technical_only:
+        role_names = _opening_role_names(opening)
+        if normalized_allowed_roles is not None and not any(
+            role_name.strip().casefold() in normalized_allowed_roles
+            for role_name in role_names
+        ):
+            continue
+        if technical_only and normalized_allowed_roles is None:
             if _is_non_job_directory(title) or not is_technical_role(
                 title,
-                *_opening_role_names(opening),
+                *role_names,
             ):
                 continue
         external_id = str(opening_id)

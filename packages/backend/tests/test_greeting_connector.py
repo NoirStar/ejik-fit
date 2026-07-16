@@ -62,6 +62,73 @@ def test_discovers_only_technical_roles_when_source_requests_it() -> None:
     assert [ref.external_id for ref in refs] == ["209187", "205581"]
 
 
+def test_discovers_only_openings_in_explicit_greeting_role_groups() -> None:
+    next_data = {
+        "props": {
+            "pageProps": {
+                "dehydratedState": {
+                    "queries": [
+                        {
+                            "queryKey": ["openings"],
+                            "state": {
+                                "data": [
+                                    {
+                                        "openingId": 177425,
+                                        "title": "백엔드개발",
+                                        "openingJobPosition": {
+                                            "openingJobPositions": [
+                                                {"workspaceJob": {"name": "기술"}}
+                                            ]
+                                        },
+                                    },
+                                    {
+                                        "openingId": 217640,
+                                        "title": "Training & Development Manager",
+                                        "openingJobPosition": {
+                                            "openingJobPositions": [
+                                                {"workspaceJob": {"name": "Creative"}}
+                                            ]
+                                        },
+                                    },
+                                    {
+                                        "openingId": 219001,
+                                        "title": "DBA",
+                                        "openingJobPosition": {
+                                            "openingJobPositions": [
+                                                {
+                                                    "workspaceOccupation": {
+                                                        "name": "Development"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                    },
+                                ]
+                            },
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    html = (
+        '<script id="__NEXT_DATA__" type="application/json">'
+        f"{json.dumps(next_data, ensure_ascii=False)}"
+        "</script>"
+    )
+
+    refs = discover_openings(
+        html,
+        "https://careers.example.com/ko/home",
+        allowed_role_names={"기술", "Development"},
+    )
+
+    assert [(ref.external_id, ref.title) for ref in refs] == [
+        ("177425", "백엔드개발"),
+        ("219001", "DBA"),
+    ]
+
+
 def test_excludes_people_database_from_technical_greeting_roles() -> None:
     html = (FIXTURES / "list.html").read_text().replace(
         '{"openingId": 205581, "title": "Security Engineer"}',

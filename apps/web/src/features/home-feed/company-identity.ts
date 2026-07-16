@@ -523,6 +523,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "하이퍼커넥트",
   },
   {
+    aliases: ["하이브", "hybe"],
+    hosts: ["careers.hybecorp.com", "hybecorp.com"],
+    src: "/company-logo-assets/hybe",
+    displayName: "하이브",
+  },
+  {
+    aliases: ["스푼랩스", "spoon labs", "spoonlabs"],
+    hosts: ["career.spoonlabs.com", "spoonlabs.com"],
+    src: "/company-logo-assets/spoonlabs",
+    displayName: "스푼랩스",
+  },
+  {
     aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
     hosts: ["myrealtrip.career.greetinghr.com"],
     src: "/company-logo-assets/myrealtrip",
