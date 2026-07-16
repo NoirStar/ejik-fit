@@ -95,7 +95,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   korbit:
     "https://profiles.greetinghr.com/group/e524bcb4-5dff-4400-bd42-7fb6a1cb7069",
   kream:
-    "https://image.ninehire.com/homepage/7541b210-1710-11ef-b315-d7a9afe6c5ae/image/910334f0-5bda-11f0-82e3-997f797881b5.png",
+    "https://recruit.kreamcorp.com/share/tmplat/kream/img/og/kream_favicon.ico",
   kmong:
     "https://opening-attachments.greetinghr.com/2025-12-03/330d1a88-4c51-4a8e-bcd0-5b35956b9e5e/kmong__green.png",
   krafton:
