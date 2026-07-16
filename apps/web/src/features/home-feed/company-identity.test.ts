@@ -721,6 +721,16 @@ describe("companyIdentity", () => {
       "https://careers.payhere.in/job_posting/example",
       "payhere",
     ],
+    [
+      "소크라AI",
+      "https://socraai.career.greetinghr.com/ko/o/135403",
+      "socra-ai",
+    ],
+    [
+      "Normal Computing",
+      "https://jobs.ashbyhq.com/normalcomputing/example",
+      "normal-computing",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

@@ -2010,6 +2010,51 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="소크라AI",
+        slug="socra-ai",
+        base_url="https://socraai.career.greetinghr.com/ko/home",
+        source_type=SourceType.GREETING,
+        homepage_url="https://corp.socra.ai",
+        sector="ai_edtech",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=3,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=4,
+        notes=(
+            "Official Socra AI (formerly Riiid) Greeting careers listing "
+            "and detail pages; limited to explicit engineering and AI "
+            "research roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="Normal Computing",
+        slug="normal-computing",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/normalcomputing"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://normalcomputing.com",
+        sector="ai_semiconductor",
+        connector_family="ashby_public_api_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official public Ashby job board; limited to technical roles "
+            "with a Korean location."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="마이리얼트립",
         slug="myrealtrip",
         base_url="https://myrealtrip.career.greetinghr.com/ko",

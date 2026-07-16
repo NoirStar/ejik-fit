@@ -587,6 +587,22 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "페이히어",
   },
   {
+    aliases: ["소크라ai", "소크라 ai", "socra ai", "riiid", "뤼이드"],
+    hosts: [
+      "socraai.career.greetinghr.com",
+      "careers.riiid.com",
+      "corp.socra.ai",
+    ],
+    src: "/company-logo-assets/socra-ai",
+    displayName: "소크라AI",
+  },
+  {
+    aliases: ["normal computing", "normal computing corporation"],
+    hosts: ["api.ashbyhq.com", "jobs.ashbyhq.com", "normalcomputing.com"],
+    src: "/company-logo-assets/normal-computing",
+    displayName: "Normal Computing",
+  },
+  {
     aliases: ["마이리얼트립", "myrealtrip", "my real trip"],
     hosts: ["myrealtrip.career.greetinghr.com"],
     src: "/company-logo-assets/myrealtrip",

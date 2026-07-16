@@ -149,6 +149,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
   neubility:
     "https://profiles.greetinghr.com/group/91fe8697-42c9-4b65-ab87-903d8ce27d51",
+  "normal-computing":
+    "https://cdn.prod.website-files.com/67ae4a75c083dc1cf3edce9c/6a3e7db02655b1d74f65c1ba_Clip%20path%20group-1.png",
   "nhn-kcp":
     "https://profiles.greetinghr.com/group/135690b4-a80e-4f3a-9589-388082488e7c",
   "nhn-group": "https://careers.nhn.com/images/meta/favicon_32x32.png",
@@ -220,6 +222,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "snj-lab":
     "https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
+  "socra-ai":
+    "https://profiles.greetinghr.com/group/cdfb7cbb-ffba-48dd-9da1-cb11ef0150ed",
   spoonlabs:
     "https://profiles.greetinghr.com/group/127ba263-5d24-4f81-b826-fd6517f60993",
   stradvision:
