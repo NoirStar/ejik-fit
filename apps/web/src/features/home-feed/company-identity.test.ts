@@ -357,6 +357,16 @@ describe("companyIdentity", () => {
       "sk-signet",
     ],
     [
+      "SK인텔릭스",
+      "https://www.skcareers.com/Recruit/Detail/R261530",
+      "sk-intellix",
+    ],
+    [
+      "SK키파운드리",
+      "https://www.skcareers.com/Recruit/Detail/R261542",
+      "sk-keyfoundry",
+    ],
+    [
       "삼성SDS",
       "https://www.samsungcareers.com/hr/?no=1",
       "samsung-sds",

@@ -2553,6 +2553,74 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="SK인텔릭스",
+        slug="sk-intellix",
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-intellix"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.skintellix.com",
+        sector="ai_wellness_robotics",
+        connector_family="skcareers_intellix_tech",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10036",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=3,
+        notes=(
+            "Official SK Careers listing filtered to SK intellix with "
+            "corpCode=10036; only its official IT job group and complete "
+            "text detail pages are ingested."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="SK키파운드리",
+        slug="sk-keyfoundry",
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-keyfoundry"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.skkeyfoundry.com",
+        sector="semiconductor_ai",
+        connector_family="skcareers_keyfoundry_tech",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10164",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=3,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official SK Careers listing filtered to SK keyfoundry with "
+            "corpCode=10164; only explicit DT and information-security "
+            "roles with complete text detail pages are retained."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="KT",
         slug="kt",
         base_url=(

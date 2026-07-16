@@ -198,6 +198,9 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   "sk-hynix":
     "https://mis-prod-koce-skhynixhomepage-cdn-01-ep.azureedge.net/img/favicon.ico",
+  "sk-intellix":
+    "https://www.skintellix.com/assets/img/common/apple-touch-icon.png",
+  "sk-keyfoundry": "https://www.skkeyfoundry.com/img/favicon.ico",
   "sk-signet": "https://www.sksignet.com/favicon.ico",
   "sk-siltron": "https://www.sksiltron.com/ko/imgs/cmm/apple-icon-144x144.png",
   smilegate:

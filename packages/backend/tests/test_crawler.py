@@ -1274,6 +1274,74 @@ def test_mobis_filter_trusts_the_connector_official_sw_job_group() -> None:
     assert crawler._apply_source_opening_filters(source, [opening]) == [opening]
 
 
+def test_sk_company_filters_use_official_digital_job_groups() -> None:
+    def opening(external_id: str, title: str, context: str) -> ParsedOpening:
+        return ParsedOpening(
+            external_id=external_id,
+            url=f"https://www.skcareers.com/Recruit/Detail/{external_id}",
+            title=title,
+            status="open",
+            description_html="",
+            description_text=context,
+            employment_type=None,
+            career_type=None,
+            career_min=None,
+            career_max=None,
+            location="Gyeonggi/Incheon",
+            opens_at=None,
+            closes_at=None,
+        )
+
+    intellix = CareerSource(
+        company=Company(name="SK인텔릭스", slug="sk-intellix"),
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-intellix"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="skcareers_intellix_tech",
+        tech_job_priority=5,
+    )
+    vision = opening(
+        "R1",
+        "[SK인텔릭스] 2D/3D 장면 재구성 엔지니어 신입 인재 채용",
+        "SK intellix IT/IT",
+    )
+    mechanical = opening(
+        "R2",
+        "[SK인텔릭스] 기구 설계 경력 인재 채용",
+        "SK intellix Tech R&D/기술개발",
+    )
+
+    keyfoundry = CareerSource(
+        company=Company(name="SK키파운드리", slug="sk-keyfoundry"),
+        base_url=(
+            "https://www.skcareers.com/Recruit/GetRecruitList#sk-keyfoundry"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="skcareers_keyfoundry_tech",
+        tech_job_priority=5,
+    )
+    ai_platform = opening(
+        "R3",
+        "SK키파운드리 AI Platform 경력 채용",
+        "SK keyfoundry DT",
+    )
+    process_engineer = opening(
+        "R4",
+        "SK키파운드리 Cleaning 장비기술 Engineer 채용",
+        "SK keyfoundry Tech R&D/C&C 공정",
+    )
+
+    assert crawler._apply_source_opening_filters(
+        intellix,
+        [vision, mechanical],
+    ) == [vision]
+    assert crawler._apply_source_opening_filters(
+        keyfoundry,
+        [ai_platform, process_engineer],
+    ) == [ai_platform]
+
+
 def test_fetch_listing_page_collects_every_apple_korea_page() -> None:
     listing_url = (
         "https://jobs.apple.com/en-us/search?location=korea-republic-of-KOR"

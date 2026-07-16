@@ -481,6 +481,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "SK시그넷",
   },
   {
+    aliases: ["SK인텔릭스", "sk intellix", "skintellix"],
+    hosts: ["skcareers.com", "skintellix.com"],
+    src: "/company-logo-assets/sk-intellix",
+    displayName: "SK인텔릭스",
+  },
+  {
+    aliases: ["SK키파운드리", "sk keyfoundry", "skkeyfoundry"],
+    hosts: ["skcareers.com", "skkeyfoundry.com"],
+    src: "/company-logo-assets/sk-keyfoundry",
+    displayName: "SK키파운드리",
+  },
+  {
     aliases: ["삼성SDS", "samsung sds"],
     hosts: ["samsungcareers.com"],
     src: "/company-logo-assets/samsung-sds",

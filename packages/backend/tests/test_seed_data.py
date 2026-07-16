@@ -81,6 +81,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "lg-uplus",
         "sk-hynix",
         "sk-telecom",
+        "sk-intellix",
+        "sk-keyfoundry",
         "kt",
         "posco-dx",
         "cj-olivenetworks",
@@ -99,6 +101,8 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "sk-hynix",
         "posco-dx",
         "sk-telecom",
+        "sk-intellix",
+        "sk-keyfoundry",
         "kt",
         "hyundai-motor",
         "hyundai-mobis",
@@ -154,6 +158,15 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
     assert catalog_by_slug["kt"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["sk-hynix"].source_type == SourceType.ENTERPRISE_JSON
     assert catalog_by_slug["sk-hynix"].status == SourceStatus.ALLOWED
+    assert catalog_by_slug["sk-intellix"].connector_family == (
+        "skcareers_intellix_tech"
+    )
+    assert catalog_by_slug["sk-intellix"].request_body["corpCode"] == "10036"
+    assert catalog_by_slug["sk-keyfoundry"].connector_family == (
+        "skcareers_keyfoundry_tech"
+    )
+    assert catalog_by_slug["sk-keyfoundry"].request_body["corpCode"] == "10164"
+    assert catalog_by_slug["sk-keyfoundry"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["samsung-electronics"].source_type == (
         SourceType.HTML_LISTING_DETAIL
     )
@@ -205,7 +218,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 149
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 151
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -341,7 +354,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 149
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 151
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url

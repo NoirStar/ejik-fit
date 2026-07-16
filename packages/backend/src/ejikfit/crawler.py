@@ -96,6 +96,12 @@ from ejikfit.connectors.shiftup import (
     SHIFTUP_LISTING_FORM,
     parse_shiftup_openings,
 )
+from ejikfit.connectors.sk_careers import (
+    is_sk_careers_listing_url,
+    is_sk_intellix_technical_opening,
+    is_sk_keyfoundry_technical_opening,
+    parse_sk_careers_detail_opening,
+)
 from ejikfit.connectors.successfactors import parse_successfactors_openings
 from ejikfit.connectors.technical_roles import (
     is_korea_technical_role,
@@ -150,6 +156,18 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "hyundai_mobis_html_tech":
         return openings
+    if source.connector_family == "skcareers_intellix_tech":
+        return [
+            opening
+            for opening in openings
+            if is_sk_intellix_technical_opening(opening)
+        ]
+    if source.connector_family == "skcareers_keyfoundry_tech":
+        return [
+            opening
+            for opening in openings
+            if is_sk_keyfoundry_technical_opening(opening)
+        ]
     if source.connector_family == "lg_careers_lguplus_tech":
         return [
             opening
@@ -1810,6 +1828,20 @@ async def crawl_source(
                 if detail_opening.external_id != opening.external_id:
                     raise ValueError(
                         "Hyundai Mobis detail does not match its listing job"
+                    )
+                opening = detail_opening
+                opening_payload = detail.text
+            elif is_sk_careers_listing_url(source.base_url):
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_sk_careers_detail_opening(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError(
+                        "SK Careers detail does not match its listing job"
                     )
                 opening = detail_opening
                 opening_payload = detail.text
