@@ -167,7 +167,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 113
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 114
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -287,7 +287,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 113
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 114
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -439,6 +439,15 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert sap.source_type == SourceType.HTML_LISTING_DETAIL
     assert sap.connector_family == "sap_public_jobs_korea_tech"
     assert sap.status == SourceStatus.ALLOWED
+
+    google = catalog_by_slug["google-korea"]
+    assert google.base_url == (
+        "https://www.google.com/about/careers/applications/jobs/results/"
+        "?distance=50&location=Seoul%2C%20South%20Korea&q=engineer"
+    )
+    assert google.source_type == SourceType.HTML_LISTING_DETAIL
+    assert google.connector_family == "google_careers_korea_tech"
+    assert google.status == SourceStatus.ALLOWED
 
     for slug, source_type, connector_family in (
         (

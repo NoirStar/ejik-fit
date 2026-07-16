@@ -858,6 +858,66 @@ class SapDetailFetcher:
         )
 
 
+class GoogleDetailFetcher:
+    def __init__(self) -> None:
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.urls.append(url)
+        if "q=engineer" in url:
+            text = """
+            <div class="rZt9ff"><span class="SWhIm">1</span> jobs matched</div>
+            <div class="Ln1EL">
+              <h3 class="QJPWVe">Software Engineer III, Camera System Software</h3>
+              <span class="r0wTof">Seoul, South Korea</span>
+              <a aria-label="Learn more about Software Engineer III, Camera System Software"
+                 href="jobs/results/100776713255822022-software-engineer-iii-camera-system-software">
+                Learn more
+              </a>
+            </div>
+            """
+        else:
+            text = """
+            <div class="DkhPwc" data-id="100776713255822022">
+              <h2 class="p1N2lc">Software Engineer III, Camera System Software</h2>
+              <div class="op1BBf">
+                <span class="r0wTof">Seoul, South Korea</span>
+                <span class="wVSTAb">Mid</span>
+              </div>
+              <div class="KwJkGe">
+                <h3>Minimum qualifications:</h3>
+                <ul>
+                  <li>2 years of experience with software development in C++.</li>
+                </ul>
+                <h3>Preferred qualifications:</h3>
+                <ul><li>Experience building camera systems with Python.</li></ul>
+              </div>
+              <div class="aG5W3">
+                <h3>About the job</h3>
+                <p>Build and operate the production camera software stack for Pixel devices.</p>
+              </div>
+              <div class="BDNOWe">
+                <h3>Responsibilities</h3>
+                <ul><li>Design reliable mobile software with partner teams.</li></ul>
+              </div>
+            </div>
+            """
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
 class StaticBrowserRenderer:
     def __init__(self, text: str) -> None:
         self.text = text
@@ -2411,6 +2471,55 @@ def test_crawl_source_fetches_sap_details_before_ingestion() -> None:
             (
                 "https://jobs.sap.com/job/Seoul-HANA-Cloud-Developer-06578/"
                 "1270982501/"
+            ),
+        ]
+
+
+def test_crawl_source_fetches_google_details_before_ingestion() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+    listing_url = (
+        "https://www.google.com/about/careers/applications/jobs/results/"
+        "?distance=50&location=Seoul%2C%20South%20Korea&q=engineer"
+    )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="Google Korea", slug="google-korea"),
+            base_url=listing_url,
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="google_careers_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = GoogleDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "100776713255822022"
+        assert posting.location == "Seoul, South Korea"
+        assert posting.career_min == 2
+        assert posting.career_type == "experienced"
+        assert fetcher.urls == [
+            listing_url,
+            (
+                "https://www.google.com/about/careers/applications/jobs/results/"
+                "100776713255822022-software-engineer-iii-camera-system-software"
             ),
         ]
 

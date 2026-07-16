@@ -533,6 +533,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "SAP Korea",
   },
   {
+    aliases: ["Google Korea", "Google", "구글 코리아", "구글"],
+    hosts: ["google.com", "careers.google.com"],
+    src: "/company-logo-assets/google-korea",
+    displayName: "Google Korea",
+  },
+  {
     aliases: ["NVIDIA Korea", "NVIDIA", "엔비디아 코리아", "엔비디아"],
     hosts: ["nvidia.wd5.myworkdayjobs.com", "nvidia.com"],
     src: "/company-logo-assets/nvidia-korea",

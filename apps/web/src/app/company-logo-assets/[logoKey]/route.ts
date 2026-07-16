@@ -66,6 +66,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png",
   gccompany:
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
+  "google-korea": "https://www.google.com/favicon.ico",
   gear2:
     "https://assets.roundhr.com/upload/site/favicon/1928/1719299110201/%EB%A1%9C%EA%B3%A0.PNG",
   korbit:

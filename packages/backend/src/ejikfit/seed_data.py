@@ -771,6 +771,31 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="Google Korea",
+        slug="google-korea",
+        base_url=(
+            "https://www.google.com/about/careers/applications/jobs/results/"
+            "?distance=50&location=Seoul%2C%20South%20Korea&q=engineer"
+        ),
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url=(
+            "https://www.google.com/about/careers/applications/jobs/results/"
+            "?distance=50&location=Seoul%2C%20South%20Korea&q=engineer"
+        ),
+        sector="consumer_software_cloud",
+        connector_family="google_careers_korea_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=9,
+        connector_reuse_score=4,
+        non_tech_noise=1,
+        notes=(
+            "Official Google Careers Seoul engineer search and public job "
+            "detail pages. The published result total is reconciled before "
+            "technical-title filtering, without using disallowed pagination."
+        ),
+    ),
+    SeedSource(
         name="리디",
         slug="ridi",
         base_url="https://ridi.recruit.roundhr.com/",

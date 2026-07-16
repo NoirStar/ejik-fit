@@ -488,6 +488,11 @@ describe("companyIdentity", () => {
       "sap-korea",
     ],
     [
+      "Google Korea",
+      "https://www.google.com/about/careers/applications/jobs/results/100776713255822022-example",
+      "google-korea",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

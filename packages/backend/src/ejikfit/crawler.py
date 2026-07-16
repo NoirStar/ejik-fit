@@ -33,6 +33,10 @@ from ejikfit.connectors.greeting import (
     discover_openings,
     parse_opening,
 )
+from ejikfit.connectors.google import (
+    parse_google_job_detail,
+    parse_google_korea_listing_openings,
+)
 from ejikfit.connectors.html_listing import parse_html_listing_openings
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.jibe import parse_jibe_korea_technical_openings
@@ -125,6 +129,8 @@ def _apply_source_opening_filters(
     if source.connector_family == "jibe_api_korea_tech":
         return openings
     if source.connector_family == "sap_public_jobs_korea_tech":
+        return openings
+    if source.connector_family == "google_careers_korea_tech":
         return openings
     if source.connector_family == "workday_public_api_korea_tech":
         return [
@@ -466,6 +472,8 @@ def _parse_listing_openings(
             return parse_shiftup_openings(text)
         if connector_family == "sap_public_jobs_korea_tech":
             return parse_sap_korea_listing_openings(text, url)
+        if connector_family == "google_careers_korea_tech":
+            return parse_google_korea_listing_openings(text, url)
         return parse_html_listing_openings(text, url)
     if source_type == SourceType.STATIC_NEXT_DATA:
         if connector_family == "channel_next_data_tech":
@@ -495,6 +503,7 @@ def _parse_listing_openings(
 
 def _listing_is_self_validated(connector_family: str | None) -> bool:
     return connector_family in {
+        "google_careers_korea_tech",
         "sap_public_jobs_korea_tech",
         "shiftup_public_api_tech",
     }
@@ -1642,6 +1651,20 @@ async def crawl_source(
                 detail_opening = parse_sap_job_detail(detail.text, detail.url)
                 if detail_opening.external_id != opening.external_id:
                     raise ValueError("SAP detail does not match its listing job")
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "google_careers_korea_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_google_job_detail(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError(
+                        "Google detail does not match its listing job"
+                    )
                 opening = detail_opening
                 opening_payload = detail.text
             ingest_opening(
