@@ -80,6 +80,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/15ac956f-bf20-4a9d-8327-232c5ddfade8",
   "hyundai-motor":
     "https://www.hyundai.com/static/images/common/favicon/apple-touch-icon.png",
+  "hyundai-mobis":
+    "https://careers.mobis.com/favicon/android-icon-192x192.png",
   gccompany:
     "https://profiles.greetinghr.com/group/84df646b-eb2b-460f-bb7c-82eeba1ab95f",
   "google-korea": "https://www.google.com/favicon.ico",

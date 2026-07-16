@@ -2241,6 +2241,28 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="현대모비스",
+        slug="hyundai-mobis",
+        base_url="https://careers.mobis.com/jobs",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://www.mobis.com",
+        sector="mobility_software",
+        connector_family="hyundai_mobis_html_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=5,
+        expected_job_volume=2,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official Hyundai Mobis careers listing and detail pages; the "
+            "complete declared listing is validated before retaining only "
+            "roles in the official SW/Logic job group."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="기아",
         slug="kia",
         base_url="https://career.kia.com/apply/applyList.kc",

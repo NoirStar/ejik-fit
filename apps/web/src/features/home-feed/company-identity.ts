@@ -445,6 +445,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "현대자동차",
   },
   {
+    aliases: ["현대모비스", "hyundai mobis", "mobis"],
+    hosts: ["careers.mobis.com", "mobis.com", "www.mobis.com"],
+    src: "/company-logo-assets/hyundai-mobis",
+    displayName: "현대모비스",
+  },
+  {
     aliases: ["기아", "kia"],
     hosts: ["career.kia.com"],
     src: "/company-logo-assets/kia",

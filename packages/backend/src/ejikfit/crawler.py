@@ -39,6 +39,10 @@ from ejikfit.connectors.google import (
     parse_google_korea_listing_openings,
 )
 from ejikfit.connectors.html_listing import parse_html_listing_openings
+from ejikfit.connectors.hyundai_mobis import (
+    parse_hyundai_mobis_detail_opening,
+    parse_hyundai_mobis_listing_openings,
+)
 from ejikfit.connectors.jsonld import parse_jsonld_openings
 from ejikfit.connectors.jibe import parse_jibe_korea_technical_openings
 from ejikfit.connectors.kakao import parse_kakao_openings
@@ -143,6 +147,8 @@ def _apply_source_opening_filters(
     if source.connector_family == "amazon_jobs_korea_tech":
         return openings
     if source.connector_family == "lg_ai_research_public_api_tech":
+        return openings
+    if source.connector_family == "hyundai_mobis_html_tech":
         return openings
     if source.connector_family == "lg_careers_lguplus_tech":
         return [
@@ -507,6 +513,8 @@ def _parse_listing_openings(
     }:
         return _parse_list_json_openings(source_type, text, url)
     if source_type == SourceType.HTML_LISTING_DETAIL:
+        if connector_family == "hyundai_mobis_html_tech":
+            return parse_hyundai_mobis_listing_openings(text, url)
         if connector_family == "shiftup_public_api_tech":
             return parse_shiftup_openings(text)
         if connector_family == "sap_public_jobs_korea_tech":
@@ -543,6 +551,7 @@ def _parse_listing_openings(
 def _listing_is_self_validated(connector_family: str | None) -> bool:
     return connector_family in {
         "google_careers_korea_tech",
+        "hyundai_mobis_html_tech",
         "sap_public_jobs_korea_tech",
         "shiftup_public_api_tech",
     }
@@ -1787,6 +1796,20 @@ async def crawl_source(
                 if detail_opening.external_id != opening.external_id:
                     raise ValueError(
                         "Google detail does not match its listing job"
+                    )
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "hyundai_mobis_html_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_hyundai_mobis_detail_opening(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError(
+                        "Hyundai Mobis detail does not match its listing job"
                     )
                 opening = detail_opening
                 opening_payload = detail.text

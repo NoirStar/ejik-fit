@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ejikfit import crawler
 from ejikfit.config import Settings
+from ejikfit.connectors.types import ParsedOpening
 from ejikfit.crawler import contains_access_challenge, next_missing_state
 from ejikfit.listing_validation import ListingValidationError, validate_listing_response
 from ejikfit.models import (
@@ -1244,6 +1245,33 @@ def test_lg_uplus_filter_keeps_security_and_excludes_facilities_engineering() ->
     filtered = crawler._apply_source_opening_filters(source, openings)
 
     assert [opening.external_id for opening in filtered] == ["1001"]
+
+
+def test_mobis_filter_trusts_the_connector_official_sw_job_group() -> None:
+    source = CareerSource(
+        company=Company(name="현대모비스", slug="hyundai-mobis"),
+        base_url="https://careers.mobis.com/jobs",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        connector_family="hyundai_mobis_html_tech",
+        tech_job_priority=5,
+    )
+    opening = ParsedOpening(
+        external_id="3907",
+        url="https://careers.mobis.com/jobs-view?seq=3907",
+        title="로봇 액추에이터 제어기 SW 설계",
+        status="open",
+        description_html="",
+        description_text="SW/로직 SW아키텍쳐",
+        employment_type=None,
+        career_type="experienced",
+        career_min=None,
+        career_max=None,
+        location="의왕연구소",
+        opens_at=None,
+        closes_at=None,
+    )
+
+    assert crawler._apply_source_opening_filters(source, [opening]) == [opening]
 
 
 def test_fetch_listing_page_collects_every_apple_korea_page() -> None:

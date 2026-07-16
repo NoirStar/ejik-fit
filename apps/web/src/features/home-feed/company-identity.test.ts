@@ -330,6 +330,11 @@ describe("companyIdentity", () => {
       "https://talent.hyundai.com/apply/1",
       "hyundai-motor",
     ],
+    [
+      "현대모비스",
+      "https://careers.mobis.com/jobs-view?seq=3904",
+      "hyundai-mobis",
+    ],
     ["기아", "https://career.kia.com/apply/applyView.kc?id=1", "kia"],
     [
       "SK텔레콤",
