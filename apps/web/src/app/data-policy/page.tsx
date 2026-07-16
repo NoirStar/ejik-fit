@@ -13,6 +13,20 @@ export const metadata: Metadata = {
   description: "이직핏이 공식 채용공고를 수집하고 검증하며 마감 상태를 판단하는 원칙입니다.",
 };
 
+const SOURCE_REQUEST_URL =
+  "https://github.com/NoirStar/ejik-fit/issues/new?" +
+  new URLSearchParams({
+    title: "[기업 수집 제안] 기업명",
+    body: [
+      "기업명:",
+      "공식 채용페이지 URL:",
+      "현재 확인한 기술 공고 URL (선택):",
+      "제안 이유 (선택):",
+      "",
+      "※ 구직자 개인정보나 비공개 채용 정보는 작성하지 말아주세요.",
+    ].join("\n"),
+  }).toString();
+
 export default async function DataPolicyPage() {
   let directory: SourceDirectoryResponse | null = null;
   try {
@@ -70,7 +84,12 @@ export default async function DataPolicyPage() {
               데이터가 서비스에 반영된 것으로 계산하지 않습니다.
             </p>
           </div>
-          <Link href="/jobs">수집된 공고 보기</Link>
+          <div className={styles.directoryActions}>
+            <a href={SOURCE_REQUEST_URL} rel="noreferrer" target="_blank">
+              수집 기업 제안
+            </a>
+            <Link href="/jobs">수집된 공고 보기</Link>
+          </div>
         </div>
         {directory ? (
           <SourceDirectory directory={directory} />
