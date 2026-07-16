@@ -2907,6 +2907,77 @@ class PublicJsonDetailFetcher:
         )
 
 
+class BlockedDunamuFetcher:
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+    ) -> crawler.FetchedPage:
+        raise crawler.BlockedSourceError("source denied access with 403")
+
+
+class DunamuJsonBrowserRenderer:
+    def __init__(self, response_html: str) -> None:
+        self.response_html = response_html
+        self.urls: list[str] = []
+
+    async def render(self, url: str) -> crawler.FetchedPage:
+        self.urls.append(url)
+        return crawler.FetchedPage(
+            url=url,
+            text=self.response_html,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_dunamu_api_listing_falls_back_to_browser_json_document() -> None:
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices?lang=ko"
+    )
+    source = CareerSource(
+        company=Company(name="두나무", slug="dunamu"),
+        base_url=listing_url,
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        connector_family="dunamu_server_html_tech",
+        status=SourceStatus.ALLOWED,
+        policy_status=PolicyStatus.ALLOWED,
+    )
+    renderer = DunamuJsonBrowserRenderer(
+        """
+        <html><body><pre>{
+          &quot;content&quot;: {
+            &quot;jobBoardName&quot;: &quot;Dunamu&quot;,
+            &quot;jobNoticeResponses&quot;: [{
+              &quot;id&quot;: 588,
+              &quot;name&quot;: &quot;Frontend Engineer&quot;,
+              &quot;jobGroupCode&quot;: &quot;T_ENGINEERING&quot;,
+              &quot;experienceLevel&quot;: &quot;EXPERIENCED&quot;,
+              &quot;employmentType&quot;: &quot;FULL_TIME&quot;
+            }]
+          },
+          &quot;statusCode&quot;: 200
+        }</pre></body></html>
+        """
+    )
+
+    page = asyncio.run(
+        crawler._fetch_listing_page(
+            source,
+            BlockedDunamuFetcher(),
+            renderer,
+        )
+    )
+
+    assert json.loads(page.text)["content"]["jobBoardName"] == "Dunamu"
+    assert page.url == listing_url
+    assert renderer.urls == [listing_url]
+
+
 def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

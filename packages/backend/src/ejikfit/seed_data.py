@@ -1374,7 +1374,7 @@ INITIAL_SOURCE_CATALOG = (
         slug="dunamu",
         base_url=(
             "https://careers.dunamu.com/api/job-boards/"
-            "jd0wjv/job-notices"
+            "jd0wjv/job-notices?lang=ko"
         ),
         source_type=SourceType.PUBLIC_JSON_DETAIL,
         homepage_url="https://www.dunamu.com",

@@ -9,6 +9,7 @@ from typing import Any, Mapping, Protocol
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
+from bs4 import BeautifulSoup
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 from tenacity import (
@@ -544,6 +545,36 @@ async def _fetch_listing_page(
     fetcher: HttpFetcher,
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
+    source_url = urlparse(source.base_url)
+    if (
+        source.connector_family == "dunamu_server_html_tech"
+        and source_url.hostname == "careers.dunamu.com"
+        and source_url.path == "/api/job-boards/jd0wjv/job-notices"
+    ):
+        try:
+            return await fetcher.fetch(source.base_url)
+        except BlockedSourceError:
+            if browser_renderer is None:
+                raise
+            rendered = await browser_renderer.render(source.base_url)
+            pre = BeautifulSoup(rendered.text, "lxml").select_one("body > pre")
+            if pre is None:
+                raise ValueError("Dunamu browser JSON response is missing")
+            raw_json = pre.get_text()
+            try:
+                payload = json.loads(raw_json)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    "Dunamu browser JSON response is invalid"
+                ) from error
+            if not isinstance(payload, dict):
+                raise ValueError("Dunamu browser JSON response must be an object")
+            return FetchedPage(
+                url=rendered.url,
+                text=raw_json,
+                status_code=rendered.status_code,
+                headers=rendered.headers,
+            )
     if source.connector_family == "amazon_jobs_korea_tech":
         return await _fetch_all_amazon_jobs_pages(source.base_url, fetcher)
     if source.connector_family == "apple_jobs_korea_tech":
