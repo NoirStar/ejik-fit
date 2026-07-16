@@ -115,6 +115,21 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "슈프리마",
   },
   {
+    aliases: [
+      "KB데이타시스템",
+      "kb데이타시스템",
+      "KB Data Systems",
+      "KBDS",
+    ],
+    hosts: [
+      "kbds.career.greetinghr.com",
+      "kbds.co.kr",
+      "www.kbds.co.kr",
+    ],
+    src: "/company-logo-assets/kbds",
+    displayName: "KB데이타시스템",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",

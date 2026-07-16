@@ -2125,6 +2125,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="KB데이타시스템",
+        slug="kbds",
+        base_url="https://kbds.career.greetinghr.com/ko/openposition",
+        source_type=SourceType.GREETING,
+        homepage_url="https://www.kbds.co.kr",
+        sector="financial_it",
+        connector_family="greeting_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=2,
+        notes=(
+            "Official KB Data Systems Greeting openings page; limited to "
+            "active software engineering, cloud, infrastructure, database, "
+            "and hands-on security operations roles while excluding the "
+            "talent pool and management-focused consulting entry."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

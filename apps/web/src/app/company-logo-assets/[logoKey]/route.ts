@@ -117,6 +117,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://image.ninehire.com/homepage/48b8c300-ac2c-11ed-9a7f-25af3e3b8401/bd23e840-ed5a-11ed-bef0-33cdfeb3dfc8.png",
   kia: "https://www.kia.com/content/dam/kwp/kr/ko/common/favicon.ico",
   kt: "https://recruit.kt.com/favicon.ico",
+  kbds:
+    "https://profiles.greetinghr.com/group/c07bd211-094a-404a-817b-d79769903216",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:

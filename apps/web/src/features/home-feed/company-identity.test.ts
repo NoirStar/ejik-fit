@@ -147,6 +147,11 @@ describe("companyIdentity", () => {
       "suprema",
     ],
     [
+      "KB데이타시스템",
+      "https://kbds.career.greetinghr.com/ko/o/222222",
+      "kbds",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",
