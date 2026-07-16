@@ -23,6 +23,19 @@ back to company initials when the official asset is unavailable.
 
 | Key | Company | Official career page | Header asset | Verified |
 | --- | --- | --- | --- | --- |
+| `nexon` | 넥슨코리아 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon.png> | 2026-07-16 |
+| `neople` | 네오플 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-neople.png> | 2026-07-16 |
+| `nexon-games` | 넥슨게임즈 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon-games.png> | 2026-07-16 |
+| `nexon-hq` | 넥슨에이치큐 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/3546431e-8b05-4a03-9de0-07f5727db552.jpg> | 2026-07-16 |
+| `devcat` | 데브캣 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-devcat.png> | 2026-07-16 |
+| `mintrocket` | 민트로켓 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/65e05427-ac18-42ad-8a21-ea4d8172618a.png> | 2026-07-16 |
+| `nexon-universe` | 넥슨유니버스 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon-universe.png> | 2026-07-16 |
+| `nexon-networks` | 넥슨네트웍스 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon-networks.png> | 2026-07-16 |
+| `nexon-communications` | 넥슨커뮤니케이션즈 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nexon-communications.png> | 2026-07-16 |
+| `nmedia-platform` | 엔미디어플랫폼 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/b847cdf1-56d4-472c-bd2e-c1c3cd7c997e.png> | 2026-07-16 |
+| `diloquest` | 딜로퀘스트 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/4d80d2ca-7df3-45f3-a0e3-f62ce0f4f918.jpg> | 2026-07-16 |
+| `nexon-space` | 넥슨스페이스 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/8bcada4e-1aeb-449c-b4ae-e59cba852d6c.png> | 2026-07-16 |
+| `nxc` | 엔엑스씨 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nxc.png> | 2026-07-16 |
 | `airwallex` | Airwallex | <https://careers.airwallex.com/> | <https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png> | 2026-07-15 |
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `amazon-web-services-korea` | Amazon Web Services Korea | <https://www.amazon.jobs/content/en/locations/asia-pacific/south-korea> | <https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico> | 2026-07-15 |

@@ -3,6 +3,30 @@ import { describe, expect, it } from "vitest";
 import { companyIdentity } from "./company-identity";
 
 describe("companyIdentity", () => {
+  it.each([
+    ["넥슨코리아", "nexon"],
+    ["네오플", "neople"],
+    ["넥슨게임즈", "nexon-games"],
+    ["넥슨에이치큐", "nexon-hq"],
+    ["데브캣", "devcat"],
+    ["민트로켓", "mintrocket"],
+    ["넥슨유니버스", "nexon-universe"],
+    ["넥슨네트웍스", "nexon-networks"],
+    ["넥슨커뮤니케이션즈", "nexon-communications"],
+    ["엔미디어플랫폼", "nmedia-platform"],
+    ["딜로퀘스트", "diloquest"],
+    ["넥슨스페이스", "nexon-space"],
+    ["엔엑스씨", "nxc"],
+  ])("returns the official Nexon careers logo for %s", (name, logoKey) => {
+    expect(
+      companyIdentity(name, "https://careers.nexon.com/recruit/100"),
+    ).toMatchObject({
+      kind: "logo",
+      src: `/company-logo-assets/${logoKey}`,
+      alt: `${name} 로고`,
+    });
+  });
+
   it("returns a verified local logo for Naver aliases", () => {
     expect(
       companyIdentity("네이버", "https://recruit.navercorp.com/jobs/1"),

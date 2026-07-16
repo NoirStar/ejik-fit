@@ -36,6 +36,27 @@ describe("company logo asset proxy", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
+  it("proxies the official Nexon Games careers logo", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {
+        headers: { "Content-Type": "image/png" },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/nexon-games"),
+      { params: Promise.resolve({ logoKey: "nexon-games" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://careers.nexon.com/files/logo/company-logo-nexon-games.png",
+      expect.any(Object),
+    );
+  });
+
   it("uses a transparent browser-compatible user agent for official sites that reject bare bot agents", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {

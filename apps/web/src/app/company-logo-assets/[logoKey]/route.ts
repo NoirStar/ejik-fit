@@ -159,7 +159,31 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/f92732f3-3e8d-4714-93ed-57f672c139b5",
   neowiz:
     "https://cdn.neowiz.com/neowiz-site/assets/images/favicons/android-icon-72x72.png",
-  nexon: "https://careers.nexon.com/favicon.ico",
+  nexon:
+    "https://careers.nexon.com/files/logo/company-logo-nexon.png",
+  neople:
+    "https://careers.nexon.com/files/logo/company-logo-neople.png",
+  "nexon-games":
+    "https://careers.nexon.com/files/logo/company-logo-nexon-games.png",
+  "nexon-hq":
+    "https://careers.nexon.com/files/logo/3546431e-8b05-4a03-9de0-07f5727db552.jpg",
+  devcat:
+    "https://careers.nexon.com/files/logo/company-logo-devcat.png",
+  mintrocket:
+    "https://careers.nexon.com/files/logo/65e05427-ac18-42ad-8a21-ea4d8172618a.png",
+  "nexon-universe":
+    "https://careers.nexon.com/files/logo/company-logo-nexon-universe.png",
+  "nexon-networks":
+    "https://careers.nexon.com/files/logo/company-logo-nexon-networks.png",
+  "nexon-communications":
+    "https://careers.nexon.com/files/logo/company-logo-nexon-communications.png",
+  "nmedia-platform":
+    "https://careers.nexon.com/files/logo/b847cdf1-56d4-472c-bd2e-c1c3cd7c997e.png",
+  diloquest:
+    "https://careers.nexon.com/files/logo/4d80d2ca-7df3-45f3-a0e3-f62ce0f4f918.jpg",
+  "nexon-space":
+    "https://careers.nexon.com/files/logo/8bcada4e-1aeb-449c-b4ae-e59cba852d6c.png",
+  nxc: "https://careers.nexon.com/files/logo/company-logo-nxc.png",
   moloco:
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
   mobilint:
