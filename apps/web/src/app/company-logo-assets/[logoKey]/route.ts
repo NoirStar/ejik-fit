@@ -53,6 +53,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/07b16511-6dcd-4732-bb25-d0df0164ddd5",
   fieldguide:
     "https://www.fieldguide.io/hubfs/601010ba543c954d3c14cb44_favicon-32x32.png",
+  "friendli-ai": "https://friendli.ai/favicon/apple-touch-icon.png",
   "furiosa-ai":
     "https://cdn.prod.website-files.com/69289524195a1f9e06ade49b/6980d60ac29ab24693b8aadd_Furiosa_Favicon.png",
   "gauss-labs":

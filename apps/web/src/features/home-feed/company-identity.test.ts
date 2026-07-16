@@ -493,6 +493,11 @@ describe("companyIdentity", () => {
       "google-korea",
     ],
     [
+      "FriendliAI",
+      "https://api.ashbyhq.com/posting-api/job-board/friendliai",
+      "friendli-ai",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

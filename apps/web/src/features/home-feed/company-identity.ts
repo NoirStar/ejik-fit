@@ -398,6 +398,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Fieldguide",
   },
   {
+    aliases: ["FriendliAI", "Friendli AI", "프렌들리AI", "프렌들리에이아이"],
+    hosts: ["api.ashbyhq.com", "friendli.ai", "jobs.ashbyhq.com"],
+    src: "/company-logo-assets/friendli-ai",
+    displayName: "FriendliAI",
+  },
+  {
     aliases: ["Gauss Labs", "가우스랩스", "gausslabs"],
     hosts: ["api.lever.co", "gausslabs.ai", "jobs.lever.co"],
     src: "/company-logo-assets/gauss-labs",

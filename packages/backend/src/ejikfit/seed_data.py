@@ -251,6 +251,44 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="FriendliAI",
+        slug="friendli-ai",
+        base_url=(
+            "https://api.ashbyhq.com/posting-api/job-board/friendliai"
+        ),
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://friendli.ai",
+        sector="ai_infrastructure",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        non_tech_noise=3,
+        notes=(
+            "Official public FriendliAI Ashby feed; only listed technical "
+            "roles based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
+        name="Hopae",
+        slug="hopae",
+        base_url="https://api.ashbyhq.com/posting-api/job-board/hopae",
+        source_type=SourceType.LEVER_GREENHOUSE,
+        homepage_url="https://hopae.com",
+        sector="identity_security",
+        connector_family="ashby_public_api_korea_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official public Hopae Ashby feed; only listed technical roles "
+            "based in Korea are ingested."
+        ),
+    ),
+    SeedSource(
         name="Gauss Labs",
         slug="gauss-labs",
         base_url=(
