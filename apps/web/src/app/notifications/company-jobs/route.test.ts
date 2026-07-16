@@ -37,8 +37,14 @@ describe("company job notification route", () => {
     expect(getPostings).not.toHaveBeenCalled();
   });
 
-  it("deduplicates companies and returns one combined actual API result", async () => {
-    vi.mocked(getPostings).mockResolvedValue({ items: [], total: 0 });
+  it("deduplicates companies and drops an overbroad backend result", async () => {
+    vi.mocked(getPostings).mockResolvedValue({
+      items: [
+        { id: "naver-job", company_slug: "naver" },
+        { id: "unrelated-job", company_slug: "unrelated" },
+      ] as Awaited<ReturnType<typeof getPostings>>["items"],
+      total: 2,
+    });
 
     const response = await POST(
       request({ company_slugs: ["naver", "kakao", "naver"] }),
@@ -50,6 +56,9 @@ describe("company job notification route", () => {
       companies: ["naver", "kakao"],
       limit: 20,
     });
-    expect(await response.json()).toEqual({ items: [], total: 0 });
+    expect(await response.json()).toEqual({
+      items: [{ id: "naver-job", company_slug: "naver" }],
+      total: 1,
+    });
   });
 });

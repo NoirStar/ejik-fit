@@ -59,7 +59,12 @@ export async function POST(request: Request) {
       companies: companySlugs,
       limit: Math.min(100, Math.max(20, companySlugs.length * 5)),
     });
-    return NextResponse.json(postings, {
+    const requestedCompanies = new Set(companySlugs);
+    const items = postings.items.filter((posting) =>
+      typeof posting.company_slug === "string" &&
+      requestedCompanies.has(posting.company_slug),
+    );
+    return NextResponse.json({ items, total: items.length }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
