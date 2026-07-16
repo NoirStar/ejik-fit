@@ -49,6 +49,9 @@ back to company initials when the official asset is unavailable.
 | `lunit` | 루닛 | <https://apply.workable.com/lunit/> | <https://d2y4rc9q318ytb.cloudfront.net/accounts/f89ab03e-534e-40eb-9e02-da5a3ef0432d/192x192/1710763576734-12aa460e.png> | 2026-07-15 |
 | `marqvision` | 마크비전 | <https://www.marqvision.com/> | <https://cdn.prod.website-files.com/5e51f2cd33d368869635e146/68c77f69fc99ad99932476f3_favicon_gradient_small.png> | 2026-07-15 |
 | `naver-webtoon` | 네이버웹툰 | <https://recruit.webtoonscorp.com/> | <https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/og/webtoon_favicon_32_2025.ico> | 2026-07-15 |
+| `naver-cloud` | 네이버클라우드 | <https://www.ncloud.com/> | <https://ssl.pstatic.net/static/ncp/img/ko/msg_logo_thumb.jpg> | 2026-07-15 |
+| `naver-labs` | 네이버랩스 | <https://www.naverlabs.com/> | <https://www.naverlabs.com/img/naver_labs_favicon.ico> | 2026-07-15 |
+| `snow` | SNOW | <https://snowcorp.com/> | <https://snowcorp.com/img/favicon.ico> | 2026-07-15 |
 | `teamblind` | 팀블라인드 | <https://recruit.teamblind.com/> | <https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png> | 2026-07-15 |
 | `seoul-robotics` | 서울로보틱스 | <https://seoulrobotics.org/careers> | <https://images.squarespace-cdn.com/content/v1/64497cc5a1eda67135e1c952/545fe40f-a64c-4216-9acc-c901d761f053/favicon.ico?format=100w> | 2026-07-15 |
 | `hutom` | 휴톰 | <https://hutom.recruit.roundhr.com/> | <https://assets.roundhr.com/upload/user/organization/26964/temp/1736151128465/hutom_logo.png> | 2026-07-15 |

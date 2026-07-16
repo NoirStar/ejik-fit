@@ -156,7 +156,10 @@ def _apply_source_opening_filters(
                 f"{opening.location or ''} {opening.url}",
             )
         ]
-    if source.connector_family == "naver_webtoon_json_tech":
+    if source.connector_family in {
+        "naver_company_json_tech",
+        "naver_webtoon_json_tech",
+    }:
         return [
             opening
             for opening in openings
@@ -164,7 +167,6 @@ def _apply_source_opening_filters(
                 (opening.description_text or "").casefold().split()[:1]
                 == ["tech"]
             )
-            and is_technical_role(opening.title)
             and not _is_talent_pool_title(opening.title)
         ]
     if source.connector_family in {

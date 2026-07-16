@@ -1821,20 +1821,86 @@ INITIAL_SOURCE_CATALOG = (
         "naver",
         (
             "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
-            "&firstIndex=0&recordCountPerPage=500"
+            "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
         ),
         SourceType.NAVER_JSON,
         "https://www.navercorp.com",
         "platform",
-        "naver_json",
+        "naver_company_json_tech",
         PolicyStatus.ALLOWED,
         6,
-        5,
-        5,
-        2,
-        0,
+        6,
         1,
-        "Official Naver recruitment JSON list.",
+        5,
+        0,
+        4,
+        (
+            "Official NAVER recruitment JSON list, scoped to the NAVER "
+            "company and its Tech-classified openings."
+        ),
+    ),
+    SeedSource(
+        name="네이버클라우드",
+        slug="naver-cloud",
+        base_url=(
+            "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+            "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=NB"
+        ),
+        source_type=SourceType.NAVER_JSON,
+        homepage_url="https://www.navercloudcorp.com",
+        sector="cloud_ai",
+        connector_family="naver_company_json_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=4,
+        notes=(
+            "Official NAVER recruitment JSON list scoped to NAVER Cloud; "
+            "only Tech-classified openings are ingested."
+        ),
+    ),
+    SeedSource(
+        name="SNOW",
+        slug="snow",
+        base_url=(
+            "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+            "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=SN"
+        ),
+        source_type=SourceType.NAVER_JSON,
+        homepage_url="https://snowcorp.com",
+        sector="consumer_ai_content",
+        connector_family="naver_company_json_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=2,
+        notes=(
+            "Official NAVER recruitment JSON list scoped to SNOW; only "
+            "Tech-classified openings are ingested."
+        ),
+    ),
+    SeedSource(
+        name="네이버랩스",
+        slug="naver-labs",
+        base_url=(
+            "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+            "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=NL"
+        ),
+        source_type=SourceType.NAVER_JSON,
+        homepage_url="https://www.naverlabs.com",
+        sector="robotics_ai",
+        connector_family="naver_company_json_tech",
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        non_tech_noise=1,
+        notes=(
+            "Official NAVER recruitment JSON list scoped to NAVER LABS; "
+            "only Tech-classified openings are ingested."
+        ),
     ),
     SeedSource(
         "카카오",
@@ -2470,8 +2536,10 @@ INITIAL_GREETING_SOURCES = tuple(
 SOURCE_URL_MIGRATIONS = {
     (
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
-        "&firstIndex=0&recordCountPerPage=500"
+        "&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
     ): (
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko"
+        "&firstIndex=0&recordCountPerPage=500",
         "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko",
     ),
     "https://globalcareers.lge.com/api/job/v1/jobs/?page=1&size=100": (
@@ -2563,6 +2631,16 @@ def _migrate_source_url(
         session.flush()
 
     legacy_source.base_url = item.base_url
+    if item.slug == "naver":
+        # The legacy group-wide feed attributed affiliate and non-technical
+        # openings to NAVER. Close those rows once while the scoped source is
+        # introduced; the following crawl reopens only verified NAVER Tech
+        # openings and the affiliate sources ingest their own jobs.
+        for posting in session.scalars(
+            select(JobPosting).where(JobPosting.source_id == legacy_source.id)
+        ):
+            posting.status = PostingStatus.CLOSED
+            posting.missing_runs = 3
     return legacy_source
 
 

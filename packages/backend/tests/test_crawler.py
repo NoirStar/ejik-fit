@@ -2233,6 +2233,74 @@ def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() 
         assert [posting.external_id for posting in postings] == ["30005124"]
 
 
+def test_naver_company_crawl_requires_the_official_tech_classification() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="네이버", slug="naver"),
+            base_url=(
+                "https://recruit.navercorp.com/rcrt/loadJobList.do?lang=ko&"
+                "firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
+            ),
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_company_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(
+                    json.dumps(
+                        {
+                            "totalSize": 3,
+                            "list": [
+                                {
+                                    "annoId": 30005100,
+                                    "annoSubject": (
+                                        "[NAVER] Efficient World Model Research "
+                                        "(체험형 인턴)"
+                                    ),
+                                    "classCdNm": "Tech",
+                                    "subJobCdNm": "공통",
+                                    "sysCompanyCdNm": "NAVER",
+                                },
+                                {
+                                    "annoId": 30005125,
+                                    "annoSubject": "[NAVER] 쇼핑 신사업 개발 담당 (경력)",
+                                    "classCdNm": "Service & Business",
+                                    "subJobCdNm": "Business Development",
+                                    "sysCompanyCdNm": "NAVER",
+                                },
+                                {
+                                    "annoId": 30005098,
+                                    "annoSubject": "[NAVER] 해외 변호사 (경력)",
+                                    "classCdNm": "Corporate",
+                                    "subJobCdNm": "법무",
+                                    "sysCompanyCdNm": "NAVER",
+                                },
+                            ],
+                        },
+                        ensure_ascii=False,
+                    )
+                ),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert [posting.external_id for posting in postings] == ["30005100"]
+
+
 def test_crawl_source_routes_workday_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

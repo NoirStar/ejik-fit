@@ -555,6 +555,21 @@ describe("companyIdentity", () => {
       "naver-webtoon",
     ],
     [
+      "네이버클라우드",
+      "https://recruit.navercorp.com/rcrt/view.do?annoId=1",
+      "naver-cloud",
+    ],
+    [
+      "네이버랩스",
+      "https://recruit.navercorp.com/rcrt/view.do?annoId=2",
+      "naver-labs",
+    ],
+    [
+      "SNOW",
+      "https://recruit.navercorp.com/rcrt/view.do?annoId=3",
+      "snow",
+    ],
+    [
       "팀블라인드",
       "https://recruit.teamblind.com/job_posting/QmXf5Tqm",
       "teamblind",

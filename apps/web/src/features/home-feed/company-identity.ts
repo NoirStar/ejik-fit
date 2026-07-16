@@ -151,6 +151,24 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "네이버웹툰",
   },
   {
+    aliases: ["네이버클라우드", "naver cloud", "naver cloud platform"],
+    hosts: ["recruit.navercorp.com", "navercloudcorp.com", "ncloud.com"],
+    src: "/company-logo-assets/naver-cloud",
+    displayName: "네이버클라우드",
+  },
+  {
+    aliases: ["네이버랩스", "naver labs"],
+    hosts: ["recruit.navercorp.com", "naverlabs.com"],
+    src: "/company-logo-assets/naver-labs",
+    displayName: "네이버랩스",
+  },
+  {
+    aliases: ["snow", "스노우"],
+    hosts: ["recruit.navercorp.com", "snowcorp.com"],
+    src: "/company-logo-assets/snow",
+    displayName: "SNOW",
+  },
+  {
     aliases: ["팀블라인드", "teamblind", "blind"],
     hosts: ["recruit.teamblind.com", "teamblind.com"],
     src: "/company-logo-assets/teamblind",

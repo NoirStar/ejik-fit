@@ -49,7 +49,10 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
 
     assert catalog_by_slug["naver"].source_type == SourceType.NAVER_JSON
     assert catalog_by_slug["naver"].base_url.endswith(
-        "lang=ko&firstIndex=0&recordCountPerPage=500"
+        "lang=ko&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
+    )
+    assert catalog_by_slug["naver"].connector_family == (
+        "naver_company_json_tech"
     )
     assert catalog_by_slug["kakao"].source_type == SourceType.KAKAO_JSON
     assert catalog_by_slug["line-plus"].source_type == SourceType.LINE_GATSBY
@@ -167,7 +170,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 129
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 132
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -291,7 +294,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 129
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 132
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -761,6 +764,17 @@ def test_initial_sources_include_verified_high_volume_platform_sources() -> None
     assert webtoon.connector_family == "naver_webtoon_json_tech"
     assert webtoon.status == SourceStatus.ALLOWED
 
+    for slug, company_code in {
+        "naver-cloud": "NB",
+        "snow": "SN",
+        "naver-labs": "NL",
+    }.items():
+        source = catalog_by_slug[slug]
+        assert source.base_url.endswith(f"sysCompanyCdArr={company_code}")
+        assert source.source_type == SourceType.NAVER_JSON
+        assert source.connector_family == "naver_company_json_tech"
+        assert source.status == SourceStatus.ALLOWED
+
     teamblind = catalog_by_slug["teamblind"]
     assert teamblind.base_url == "https://recruit.teamblind.com/recruit"
     assert teamblind.source_type == SourceType.PUBLIC_JSON_DETAIL
@@ -788,12 +802,12 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
 
         sources_by_slug = {source.company.slug: source for source in sources}
         naver = sources_by_slug["naver"]
-        assert naver.connector_family == "naver_json"
+        assert naver.connector_family == "naver_company_json_tech"
         assert naver.policy_status == PolicyStatus.ALLOWED
         assert naver.sector == "platform"
         assert naver.brand_tier_weight == 6
-        assert naver.tech_job_priority == 5
-        assert naver.expected_job_volume == 5
+        assert naver.tech_job_priority == 6
+        assert naver.expected_job_volume == 1
         assert naver.priority_score > sources_by_slug["deepauto-ai"].priority_score
 
         samsung = sources_by_slug["samsung-electronics"]
@@ -1010,7 +1024,7 @@ def test_seeding_migrates_lg_source_url_without_losing_existing_postings() -> No
         assert posting.source_id == legacy_source_id
 
 
-def test_seeding_migrates_naver_to_complete_listing_without_losing_postings() -> None:
+def test_seeding_migrates_naver_to_scoped_listing_and_closes_legacy_rows() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -1044,9 +1058,11 @@ def test_seeding_migrates_naver_to_complete_listing_without_losing_postings() ->
         assert len(naver_sources) == 1
         assert naver_sources[0].id == legacy_source_id
         assert naver_sources[0].base_url.endswith(
-            "lang=ko&firstIndex=0&recordCountPerPage=500"
+            "lang=ko&firstIndex=0&recordCountPerPage=500&sysCompanyCdArr=KR"
         )
+        assert naver_sources[0].connector_family == "naver_company_json_tech"
         assert posting.source_id == legacy_source_id
+        assert posting.status == PostingStatus.CLOSED
 
 
 def test_seeding_migrates_hynix_and_retires_obsolete_duplicate() -> None:

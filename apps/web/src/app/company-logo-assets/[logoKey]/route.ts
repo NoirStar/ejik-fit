@@ -131,6 +131,9 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/135690b4-a80e-4f3a-9589-388082488e7c",
   ncsoft:
     "https://careers.ncsoft.com/static/global/favicon/new-apple-icon-180x180.png?ver=20250925",
+  "naver-cloud":
+    "https://ssl.pstatic.net/static/ncp/img/ko/msg_logo_thumb.jpg",
+  "naver-labs": "https://www.naverlabs.com/img/naver_labs_favicon.ico",
   "naver-webtoon":
     "https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/og/webtoon_favicon_32_2025.ico",
   netmarble:
@@ -186,6 +189,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://www.stradvision.com/image/favicon/apple-icon-180x180.png",
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
+  snow: "https://snowcorp.com/img/favicon.ico",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",
   teamblind:
     "https://image.ninehire.com/homepage/06de3c70-c17b-11ee-a4e8-19ace188b0c8/d92dc290-c185-11ee-ba3a-8750bc4cda1d.png",
