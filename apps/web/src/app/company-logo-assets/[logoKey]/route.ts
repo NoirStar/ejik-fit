@@ -232,6 +232,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "snj-lab":
     "https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
+  soomgo: "https://soomgo.team/icon1.png?168b25d5ea5f954c",
   "socra-ai":
     "https://profiles.greetinghr.com/group/cdfb7cbb-ffba-48dd-9da1-cb11ef0150ed",
   suprema:

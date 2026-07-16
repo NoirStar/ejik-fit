@@ -157,6 +157,11 @@ describe("companyIdentity", () => {
       "deepx",
     ],
     [
+      "숨고",
+      "https://soomgo.career.greetinghr.com/o/204087",
+      "soomgo",
+    ],
+    [
       "뱅크샐러드",
       "https://banksalad.career.greetinghr.com/ko/o/160517",
       "banksalad",

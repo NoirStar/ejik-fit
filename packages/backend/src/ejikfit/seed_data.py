@@ -2171,6 +2171,29 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="숨고",
+        slug="soomgo",
+        base_url="https://soomgo.team/career",
+        source_type=SourceType.GREETING,
+        homepage_url="https://soomgo.com",
+        sector="local_services_platform",
+        connector_family="grouped_greeting_links_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=4,
+        policy_risk=0,
+        non_tech_noise=9,
+        notes=(
+            "Official Soomgo corporate careers page linked to its public "
+            "Greeting details; limited to active data-science and hands-on "
+            "security-team IT infrastructure roles while excluding business, "
+            "marketing, design, finance, and talent-pool entries."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="소크라AI",
         slug="socra-ai",
         base_url="https://socraai.career.greetinghr.com/ko/home",

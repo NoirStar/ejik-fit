@@ -140,6 +140,17 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "딥엑스",
   },
   {
+    aliases: ["숨고", "soomgo", "브레이브모바일"],
+    hosts: [
+      "soomgo.team",
+      "soomgo.career.greetinghr.com",
+      "soomgo.com",
+      "www.soomgo.com",
+    ],
+    src: "/company-logo-assets/soomgo",
+    displayName: "숨고",
+  },
+  {
     aliases: ["뱅크샐러드", "banksalad", "bank salad"],
     hosts: [
       "banksalad.career.greetinghr.com",
