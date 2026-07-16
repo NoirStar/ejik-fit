@@ -336,7 +336,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <div className={styles.menuHeader}>
                     <strong>알림</strong>
-                    <span>현재는 저장·지원 현황을 모아 보여드려요.</span>
+                    <span>관심 기업의 새 공고와 저장·지원 현황을 보여드려요.</span>
                   </div>
                   <ActivityNotificationCenter onNavigate={closeUtilityMenus} />
                 </div>
