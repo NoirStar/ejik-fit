@@ -143,6 +143,7 @@ def _apply_source_opening_filters(
         ]
     if source.connector_family in {
         "ashby_public_api_korea_tech",
+        "greeting_korea_tech",
         "lever_greenhouse_korea_tech",
         "channel_next_data_tech",
     }:
@@ -1498,6 +1499,10 @@ async def crawl_source(
             try:
                 detail = await fetcher.fetch(ref.url)
                 opening = parse_opening(detail.text, ref.url)
+                if not _apply_source_opening_filters(source, [opening]):
+                    seen_external_ids.discard(ref.external_id)
+                    discovered -= 1
+                    continue
                 ingest_opening(
                     session,
                     source,

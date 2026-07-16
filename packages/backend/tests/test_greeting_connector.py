@@ -62,6 +62,24 @@ def test_discovers_only_technical_roles_when_source_requests_it() -> None:
     assert [ref.external_id for ref in refs] == ["209187", "205581"]
 
 
+def test_excludes_people_database_from_technical_greeting_roles() -> None:
+    html = (FIXTURES / "list.html").read_text().replace(
+        '{"openingId": 205581, "title": "Security Engineer"}',
+        (
+            '{"openingId": 205581, "title": "Security Engineer"},'
+            '{"openingId": 205582, "title": "[상시인재] People Database"}'
+        ),
+    )
+
+    refs = discover_openings(
+        html,
+        "https://sample.career.greetinghr.com/ko",
+        technical_only=True,
+    )
+
+    assert [ref.external_id for ref in refs] == ["209187", "205581"]
+
+
 def test_discovers_complete_technical_greeting_links_from_corporate_next_data() -> None:
     next_data = {
         "props": {

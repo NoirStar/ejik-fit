@@ -38,6 +38,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   databricks:
     "https://www.databricks.com/en-website-assets/icons/icon-96x96.png?v=c9b9916c3b27dc51866c46b79a6e9b88",
   datadog: "https://corp.dd-static.net/img/favicons/apple-touch-icon.png",
+  dnotitia: "https://dnotitia-recruit.com/logo.png",
   "deepauto-ai": "https://deepauto.ai/icon.png?icon.3bd11c4c.png",
   devsisters:
     "https://profiles.greetinghr.com/group/6c261b05-a17f-4749-93dc-7546246c217f",
@@ -105,6 +106,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   nexon: "https://careers.nexon.com/favicon.ico",
   moloco:
     "https://cdn.prod.website-files.com/6237fca0466ffd9274a1dbdd/6837add3314e91dd48e16dec_Moloco-Webclip.png",
+  mobilint:
+    "https://static.wixstatic.com/media/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png/v1/fill/w_192%2Ch_192%2Clg_1%2Cusm_0.66_1.00_0.01/4ddc53_0c6968a29344412dae160febf8dfa1d2%7Emv2.png",
   "microsoft-korea": "https://www.microsoft.com/favicon.ico?v2",
   myrealtrip:
     "https://profiles.greetinghr.com/group/fa02fbe6-3cef-443f-b7f6-31cef6cb9c8b",
@@ -137,6 +140,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "reflection-ai": "https://reflection.ai/apple-touch-icon.png",
   ridi:
     "https://assets.roundhr.com/upload/user/organization/28759/temp/1772180743140/%EB%A6%AC%EB%94%94%20%EB%A1%9C%EA%B3%A0_%EB%A6%AC%EB%94%94%20%EB%B8%94%EB%A3%A8.png",
+  rlwrld:
+    "https://opening-attachments.greetinghr.com/2025-12-22/c31e70f9-eeed-4ca8-bb92-919bb8eed2cc/favi.png",
   "sap-korea":
     "https://cdn.udex.services.sap.com/dds/design-tokens/assets/logos/sap-logo.svg",
   "sap-korea-mark":
@@ -161,6 +166,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "snj-lab":
     "https://assets.roundhr.com/upload/user/organization/2045/temp/1743028544270/logo_basic.png",
   socar: "https://www.socarcorp.kr/images/favicons/favicon_180x180.png",
+  stradvision:
+    "https://www.stradvision.com/image/favicon/apple-icon-180x180.png",
   scatterlab:
     "https://profiles.greetinghr.com/group/5202e150-b0d5-47e4-a3a1-a3a200e23267",
   toss: "https://static.toss.im/tds/favicon/favicon-196x196.png",

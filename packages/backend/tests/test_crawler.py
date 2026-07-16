@@ -3175,6 +3175,75 @@ def test_greeting_listing_parse_failure_is_persisted() -> None:
         assert source.last_success_at is None
 
 
+class GreetingDetailFetcher:
+    def __init__(
+        self,
+        listing_html: str,
+        details: dict[str, str],
+    ) -> None:
+        self.listing_html = listing_html
+        self.details = details
+
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        text = self.listing_html
+        for external_id, detail in self.details.items():
+            if url.endswith(f"/o/{external_id}"):
+                text = detail
+                break
+        return crawler.FetchedPage(
+            url=url,
+            text=text,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_greeting_korea_crawl_does_not_ingest_foreign_details() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    fixture_dir = (
+        Path(__file__).parents[3] / "tests" / "fixtures" / "greeting"
+    )
+    listing_html = (fixture_dir / "list.html").read_text()
+    domestic_detail = (fixture_dir / "opening.html").read_text()
+    foreign_detail = (
+        domestic_detail.replace('"openingId": 209187', '"openingId": 205581')
+        .replace('"title": "Backend Engineer"', '"title": "Security Engineer"')
+        .replace("서울특별시", "Shanghai, China")
+    )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="테스트 기업", slug="greeting-korea-crawl"),
+            base_url="https://sample.career.greetinghr.com/ko",
+            source_type=SourceType.GREETING,
+            connector_family="greeting_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=GreetingDetailFetcher(
+                    listing_html,
+                    {"209187": domestic_detail, "205581": foreign_detail},
+                ),
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 15, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert [posting.external_id for posting in postings] == ["209187"]
+
+
 class GreetingDetailBlockedFetcher:
     def __init__(self, listing_html: str) -> None:
         self.listing_html = listing_html

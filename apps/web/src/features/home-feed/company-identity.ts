@@ -410,6 +410,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Hopae",
   },
   {
+    aliases: ["디노티시아", "Dnotitia"],
+    hosts: ["dno.career.greetinghr.com", "dnotitia-recruit.com"],
+    src: "/company-logo-assets/dnotitia",
+    displayName: "디노티시아",
+  },
+  {
+    aliases: ["모빌린트", "Mobilint"],
+    hosts: ["mobilinthire.career.greetinghr.com", "mobilint.com"],
+    src: "/company-logo-assets/mobilint",
+    displayName: "모빌린트",
+  },
+  {
+    aliases: ["스트라드비젼", "스트라드비전", "STRADVISION"],
+    hosts: ["stradvision.career.greetinghr.com", "stradvision.com"],
+    src: "/company-logo-assets/stradvision",
+    displayName: "스트라드비젼",
+  },
+  {
+    aliases: ["RLWRLD", "리얼월드"],
+    hosts: ["realworld.career.greetinghr.com", "rlwrld.ai"],
+    src: "/company-logo-assets/rlwrld",
+    displayName: "RLWRLD",
+  },
+  {
     aliases: ["Gauss Labs", "가우스랩스", "gausslabs"],
     hosts: ["api.lever.co", "gausslabs.ai", "jobs.lever.co"],
     src: "/company-logo-assets/gauss-labs",

@@ -503,6 +503,26 @@ describe("companyIdentity", () => {
       "hopae",
     ],
     [
+      "디노티시아",
+      "https://dno.career.greetinghr.com/ko/o/198903",
+      "dnotitia",
+    ],
+    [
+      "모빌린트",
+      "https://mobilinthire.career.greetinghr.com/ko/o/196632",
+      "mobilint",
+    ],
+    [
+      "스트라드비젼",
+      "https://stradvision.career.greetinghr.com/ko/o/200520",
+      "stradvision",
+    ],
+    [
+      "RLWRLD",
+      "https://realworld.career.greetinghr.com/ko/o/195922",
+      "rlwrld",
+    ],
+    [
       "뱅크샐러드",
       "https://www.banksalad.com/proxy/api/greeting/openings",
       "banksalad",

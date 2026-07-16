@@ -175,6 +175,75 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="디노티시아",
+        slug="dnotitia",
+        base_url="https://dno.career.greetinghr.com/ko",
+        homepage_url="https://dnotitia-recruit.com/",
+        sector="ai_infrastructure",
+        connector_family="greeting_tech",
+        brand_tier_weight=4,
+        tech_job_priority=6,
+        expected_job_volume=30,
+        connector_reuse_score=3,
+        non_tech_noise=2,
+        notes=(
+            "Official public Dnotitia Greeting careers listing and detail "
+            "pages; only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="모빌린트",
+        slug="mobilint",
+        base_url="https://mobilinthire.career.greetinghr.com/ko",
+        homepage_url="https://www.mobilint.com/",
+        sector="semiconductor_ai",
+        connector_family="greeting_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=18,
+        connector_reuse_score=3,
+        non_tech_noise=1,
+        notes=(
+            "Official public Mobilint Greeting careers listing and detail "
+            "pages; only technical roles are ingested."
+        ),
+    ),
+    SeedSource(
+        name="스트라드비젼",
+        slug="stradvision",
+        base_url="https://stradvision.career.greetinghr.com/ko",
+        homepage_url="https://www.stradvision.com/",
+        sector="mobility_ai",
+        connector_family="greeting_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=18,
+        connector_reuse_score=3,
+        non_tech_noise=3,
+        notes=(
+            "Official public STRADVISION Greeting careers listing and "
+            "detail pages; only technical roles with a Korean location are "
+            "ingested."
+        ),
+    ),
+    SeedSource(
+        name="RLWRLD",
+        slug="rlwrld",
+        base_url="https://realworld.career.greetinghr.com/ko",
+        homepage_url="https://www.rlwrld.ai/en/careers",
+        sector="robotics_ai",
+        connector_family="greeting_korea_tech",
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=16,
+        connector_reuse_score=3,
+        non_tech_noise=2,
+        notes=(
+            "Official public RLWRLD Greeting careers listing and detail "
+            "pages; only technical roles with a Korean location are ingested."
+        ),
+    ),
+    SeedSource(
         name="루닛",
         slug="lunit",
         base_url="https://apply.workable.com/lunit/",

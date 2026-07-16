@@ -13,6 +13,7 @@ from ejikfit.html_text import structured_plain_text
 NON_JOB_DIRECTORY_TITLES = (
     "external referral program",
     "employee referral program",
+    "people database",
     "talent pool",
     "인재풀",
 )
