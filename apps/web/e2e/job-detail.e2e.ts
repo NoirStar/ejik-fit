@@ -110,8 +110,12 @@ for (const width of [1440, 820, 600, 390]) {
       expect(actionsBox!.y + actionsBox!.height).toBeLessThanOrEqual(
         navigationBox!.y + 1,
       );
-      const mainPaddingBottom = await page
-        .locator("main")
+      const currentMain = page
+        .locator("#main-content")
+        .getByRole("main")
+        .filter({ visible: true });
+      await expect(currentMain).toHaveCount(1);
+      const mainPaddingBottom = await currentMain
         .evaluate((element) => parseFloat(getComputedStyle(element).paddingBottom));
       expect(mainPaddingBottom).toBeGreaterThanOrEqual(
         navigationBox!.height + actionsBox!.height,

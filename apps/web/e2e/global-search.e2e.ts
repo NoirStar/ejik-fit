@@ -7,7 +7,8 @@ for (const width of [1440, 820, 390]) {
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
 
-    const homeTag = page.getByRole("link", {
+    const pageContent = page.locator("#main-content");
+    const homeTag = pageContent.getByRole("link", {
       name: "백엔드 커뮤니티 검색",
     }).first();
     const homeTagBox = await homeTag.boundingBox();
@@ -20,22 +21,24 @@ for (const width of [1440, 820, 390]) {
 
     await expect(page).toHaveURL(/\/search\?q=Python$/);
     await expect(
-      page.getByRole("heading", { name: "“Python” 검색 결과" }),
+      pageContent.getByRole("heading", { name: "“Python” 검색 결과" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
+      pageContent.getByRole("link", { name: "NAVER 기업 채용 현황" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Python Backend Engineer" }),
+      pageContent.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Go Platform Engineer" }),
+      pageContent.getByRole("link", { name: "Go Platform Engineer" }),
     ).not.toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Python 스킬맵 보기" }),
+      pageContent.getByRole("link", { name: "Python 스킬맵 보기" }),
     ).toBeVisible();
-    await expect(page.getByText("공식 공고", { exact: true })).toBeVisible();
-    await expect(page.getByText("공고 통계 표본")).toBeVisible();
+    await expect(
+      pageContent.getByText("공식 공고", { exact: true }),
+    ).toBeVisible();
+    await expect(pageContent.getByText("공고 통계 표본")).toBeVisible();
 
     expect(
       await page.evaluate(
@@ -44,14 +47,16 @@ for (const width of [1440, 820, 390]) {
     ).toBe(false);
 
     const touchTargets = [
-      page.getByRole("button", { name: "검색" }),
-      page.getByRole("link", { name: /기업.*1/ }),
-      page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
-      page.getByRole("link", { name: "Python 스킬맵", exact: true }),
-      page.getByRole("link", { name: "NAVER", exact: true }),
+      pageContent.getByRole("button", { name: "검색" }),
+      pageContent.getByRole("link", { name: /기업.*1/ }),
+      pageContent.getByRole("link", { name: "NAVER 기업 채용 현황" }),
+      pageContent.getByRole("link", { name: "Python 스킬맵", exact: true }),
+      pageContent.getByRole("link", { name: "NAVER", exact: true }),
     ];
     if (width > 600) {
-      touchTargets.push(page.getByRole("link", { name: "범위만 보기" }).first());
+      touchTargets.push(
+        pageContent.getByRole("link", { name: "범위만 보기" }).first(),
+      );
     }
 
     for (const target of touchTargets) {
