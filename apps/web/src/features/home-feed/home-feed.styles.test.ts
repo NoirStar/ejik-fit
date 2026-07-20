@@ -50,4 +50,14 @@ describe("home feed density", () => {
       /\.cardActions button,\s*\.cardActions a,\s*\.jobActions button,\s*\.jobActions a\s*\{[^}]*min-height: var\(--touch-target\);/,
     );
   });
+
+  it("keeps the home job company and title in one compact text stack", () => {
+    expect(css).toMatch(
+      /\.jobIdentity > div\s*\{[^}]*gap: 0\.125rem;/,
+    );
+    expect(rule("jobIdentity p")).toContain("margin: 0;");
+    expect(rule("companyLink")).not.toContain("min-height:");
+    expect(rule("companyLink")).not.toContain("min-width:");
+    expect(rule("companyLink")).toContain("line-height: 1.35;");
+  });
 });
