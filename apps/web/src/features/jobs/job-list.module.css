@@ -426,7 +426,8 @@
 .identity {
   display: grid;
   min-width: 0;
-  gap: 0.25rem;
+  align-content: center;
+  gap: 0.125rem;
 }
 
 .identity p {
@@ -435,6 +436,7 @@
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 500;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -444,25 +446,23 @@
   font-size: var(--type-item-title);
   font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .identity h3 a {
-  display: inline-flex;
-  min-height: var(--touch-target);
-  align-items: center;
+  display: block;
   color: inherit;
+  line-height: 1.35;
   text-decoration: none;
 }
 
 .identity .companyLink {
-  display: inline-flex;
+  display: inline;
   width: fit-content;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  align-items: center;
   color: var(--color-muted);
+  line-height: 1.35;
   text-decoration: none;
 }
 

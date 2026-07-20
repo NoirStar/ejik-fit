@@ -23,9 +23,21 @@ describe("job list service density", () => {
     );
   });
 
-  it("keeps the company profile link at the shared touch target", () => {
+  it("keeps the company and title as a compact text stack", () => {
     expect(css).toMatch(
-      /\.identity \.companyLink\s*\{[^}]*min-width: var\(--touch-target\);[^}]*min-height: var\(--touch-target\);/,
+      /\.identity\s*\{[^}]*gap: 0\.125rem;/,
+    );
+    expect(css).toMatch(
+      /\.identity h3 a\s*\{[^}]*line-height: 1\.35;/,
+    );
+    expect(css).not.toMatch(
+      /\.identity h3 a\s*\{[^}]*min-height:/,
+    );
+    expect(css).not.toMatch(
+      /\.identity \.companyLink\s*\{[^}]*min-height:/,
+    );
+    expect(css).toMatch(
+      /\.saveButton\s*\{[^}]*min-height: var\(--touch-target\);/,
     );
   });
 });
