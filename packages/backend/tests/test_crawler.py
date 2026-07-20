@@ -3,7 +3,7 @@ import json
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
 
@@ -67,6 +67,135 @@ def test_seen_posting_resets_counter() -> None:
         successful_listing=True,
         seen=True,
     ) == (0, PostingStatus.OPEN)
+
+
+def test_delayed_missing_state_stays_delayed_until_verified_or_closed() -> None:
+    assert next_missing_state(
+        0,
+        successful_listing=True,
+        seen=False,
+        current_status=PostingStatus.DELAYED,
+    ) == (1, PostingStatus.DELAYED)
+    assert next_missing_state(
+        2,
+        successful_listing=True,
+        seen=False,
+        current_status=PostingStatus.DELAYED,
+    ) == (3, PostingStatus.CLOSED)
+    assert next_missing_state(
+        2,
+        successful_listing=True,
+        seen=True,
+        current_status=PostingStatus.DELAYED,
+    ) == (0, PostingStatus.OPEN)
+
+
+def test_delay_stale_source_postings_marks_only_unverifiable_open_jobs() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 20, 12, tzinfo=timezone.utc)
+
+    def add_posting(
+        session: Session,
+        *,
+        slug: str,
+        source_status: SourceStatus,
+        policy_status: PolicyStatus,
+        last_success_at: datetime | None,
+        posting_status: PostingStatus = PostingStatus.OPEN,
+    ) -> JobPosting:
+        company = Company(name=slug, slug=slug)
+        source = CareerSource(
+            company=company,
+            base_url=f"https://example.com/{slug}/jobs",
+            source_type=SourceType.KAKAO_JSON,
+            status=source_status,
+            policy_status=policy_status,
+            last_success_at=last_success_at,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id=f"{slug}-1",
+            url=f"https://example.com/{slug}/jobs/1",
+            title=f"{slug} Engineer",
+            status=posting_status,
+        )
+        session.add(posting)
+        return posting
+
+    with Session(engine) as session:
+        stale_posting = add_posting(
+            session,
+            slug="stale",
+            source_status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.REVIEW,
+            last_success_at=now - timedelta(hours=73),
+        )
+        recent_posting = add_posting(
+            session,
+            slug="recent",
+            source_status=SourceStatus.REVIEW,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=now - timedelta(hours=71),
+        )
+        runnable_posting = add_posting(
+            session,
+            slug="runnable",
+            source_status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=now - timedelta(days=30),
+        )
+        closed_posting = add_posting(
+            session,
+            slug="already-closed",
+            source_status=SourceStatus.REVIEW,
+            policy_status=PolicyStatus.REVIEW,
+            last_success_at=now - timedelta(days=30),
+            posting_status=PostingStatus.CLOSED,
+        )
+        session.commit()
+
+        assert crawler.delay_stale_source_postings(session, now) == 1
+        assert stale_posting.status == PostingStatus.DELAYED
+        assert recent_posting.status == PostingStatus.OPEN
+        assert runnable_posting.status == PostingStatus.OPEN
+        assert closed_posting.status == PostingStatus.CLOSED
+
+
+def test_delay_stale_source_postings_delays_never_verified_legacy_job() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        company = Company(name="Legacy", slug="legacy")
+        source = CareerSource(
+            company=company,
+            base_url="https://example.com/legacy/jobs",
+            source_type=SourceType.KAKAO_JSON,
+            status=SourceStatus.REVIEW,
+            policy_status=PolicyStatus.REVIEW,
+            last_success_at=None,
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="legacy-1",
+            url="https://example.com/legacy/jobs/1",
+            title="Legacy Engineer",
+            status=PostingStatus.OPEN,
+        )
+        session.add(posting)
+        session.commit()
+
+        assert (
+            crawler.delay_stale_source_postings(
+                session,
+                datetime(2026, 7, 20, 12, tzinfo=timezone.utc),
+            )
+            == 1
+        )
+        assert posting.status == PostingStatus.DELAYED
 
 
 def test_seen_explicitly_closed_posting_stays_closed() -> None:

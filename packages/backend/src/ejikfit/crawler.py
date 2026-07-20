@@ -6,13 +6,13 @@ import uuid
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Protocol
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import httpx
 from bs4 import BeautifulSoup
-from sqlalchemy import select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, joinedload
 from tenacity import (
     AsyncRetrying,
@@ -164,6 +164,8 @@ DUNAMU_PROXY_URL = (
 
 
 logger = logging.getLogger(__name__)
+
+SOURCE_POSTING_GRACE_PERIOD = timedelta(hours=72)
 
 
 def _is_talent_pool_title(title: str) -> bool:
@@ -773,21 +775,49 @@ class PlaywrightBrowserRenderer:
         )
 
 
+def delay_stale_source_postings(
+    session: Session,
+    now: datetime,
+    grace_period: timedelta = SOURCE_POSTING_GRACE_PERIOD,
+) -> int:
+    cutoff = now - grace_period
+    stale_source_ids = select(CareerSource.id).where(
+        or_(
+            CareerSource.status != SourceStatus.ALLOWED,
+            CareerSource.policy_status != PolicyStatus.ALLOWED,
+        ),
+        or_(
+            CareerSource.last_success_at.is_(None),
+            CareerSource.last_success_at <= cutoff,
+        ),
+    )
+    result = session.execute(
+        update(JobPosting)
+        .where(
+            JobPosting.source_id.in_(stale_source_ids),
+            JobPosting.status == PostingStatus.OPEN,
+        )
+        .values(status=PostingStatus.DELAYED)
+    )
+    session.commit()
+    return int(result.rowcount or 0)
+
+
 def next_missing_state(
     current: int,
     successful_listing: bool,
     seen: bool,
+    current_status: PostingStatus = PostingStatus.OPEN,
 ) -> tuple[int, PostingStatus]:
     if not successful_listing:
-        return current, PostingStatus.OPEN
+        return current, current_status
     if seen:
         return 0, PostingStatus.OPEN
 
     updated = current + 1
-    status = (
-        PostingStatus.CLOSED if updated >= 3 else PostingStatus.OPEN
-    )
-    return updated, status
+    if updated >= 3:
+        return updated, PostingStatus.CLOSED
+    return updated, current_status
 
 
 def reconcile_missing(
@@ -813,6 +843,7 @@ def reconcile_missing(
                 posting.missing_runs,
                 successful_listing=True,
                 seen=False,
+                current_status=posting.status,
             )
         if not was_closed and posting.status == PostingStatus.CLOSED:
             if now is not None:
