@@ -268,6 +268,59 @@ describe("ActivityNotificationCenter", () => {
     );
   });
 
+  it("renders server-created notifications and records their read state", async () => {
+    const markRead = vi.fn(async () => true);
+    const markAllRead = vi.fn(async () => true);
+    const onNavigate = vi.fn();
+
+    render(
+      <ActivityNotificationCenter
+        notifications={{
+          state: {
+            status: "ready",
+            items: [
+              {
+                id: "notification-1",
+                userId: viewer.id,
+                kind: "job",
+                title: "테스트랩 새 공고",
+                body: "Python 백엔드 엔지니어",
+                href: "/jobs/job-1",
+                metadata: {
+                  companySlug: "test-lab",
+                  followedCompany: true,
+                  savedSearchIds: ["search-1"],
+                  savedSearchNames: ["Python 경력"],
+                },
+                readAt: null,
+                createdAt: "2026-07-20T03:00:00.000Z",
+              },
+            ],
+          },
+          unreadCount: 1,
+          reload: vi.fn(async () => undefined),
+          markRead,
+          markAllRead,
+        }}
+        onNavigate={onNavigate}
+        viewer={viewer}
+      />,
+    );
+
+    const notification = await screen.findByText("테스트랩 새 공고");
+    expect(screen.getByText("저장 검색 · Python 경력 · 관심 기업")).toBeInTheDocument();
+    const notificationLink = notification.closest("a")!;
+    notificationLink.addEventListener("click", (event) =>
+      event.preventDefault(),
+    );
+    fireEvent.click(notificationLink);
+    expect(markRead).toHaveBeenCalledWith("notification-1");
+    expect(onNavigate).toHaveBeenCalledOnce();
+
+    fireEvent.click(screen.getByRole("button", { name: "모두 읽음" }));
+    expect(markAllRead).toHaveBeenCalledOnce();
+  });
+
   it("keeps successful saved-search alerts when another search fails", async () => {
     const failedSearch: SavedJobSearch = {
       ...pythonSearch,

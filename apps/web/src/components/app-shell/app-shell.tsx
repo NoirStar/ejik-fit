@@ -24,6 +24,7 @@ import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import { ActivityNotificationCenter } from "@/features/notifications/activity-notification-center";
+import { useActivityNotifications } from "@/features/notifications/use-activity-notifications";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
 import {
   readCareerPreferences,
@@ -172,6 +173,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     signOut,
   } = useAuthViewer();
   const accountSyncStatus = useAccountStateSync(viewer);
+  const activityNotifications = useActivityNotifications(viewer);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const stackButtonRef = useRef<HTMLButtonElement>(null);
   const notificationAnchorRef = useRef<HTMLDivElement>(null);
@@ -323,7 +325,11 @@ export function AppShell({ children }: { children: ReactNode }) {
               <button
                 aria-controls="notification-disclosure"
                 aria-expanded={notificationOpen}
-                aria-label="알림 열기"
+                aria-label={
+                  activityNotifications.unreadCount > 0
+                    ? `알림 열기, 읽지 않은 알림 ${activityNotifications.unreadCount}개`
+                    : "알림 열기"
+                }
                 className={styles.iconButton}
                 disabled={!interactive}
                 onClick={() => {
@@ -334,6 +340,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="button"
               >
                 <Bell aria-hidden="true" size={21} />
+                {activityNotifications.unreadCount > 0 && (
+                  <span className={styles.notificationBadge}>
+                    {activityNotifications.unreadCount > 9
+                      ? "9+"
+                      : activityNotifications.unreadCount}
+                  </span>
+                )}
               </button>
               {notificationOpen && (
                 <div
@@ -346,6 +359,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span>저장 검색과 관심 기업의 새 공고, 지원 현황을 보여드려요.</span>
                   </div>
                   <ActivityNotificationCenter
+                    notifications={activityNotifications}
                     onNavigate={closeUtilityMenus}
                     viewer={viewer}
                   />

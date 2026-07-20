@@ -316,6 +316,14 @@ class UserCareerState(Base):
     career_preferences: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     saved_job_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     application_stages: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)
+    followed_company_slugs: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+    )
+    company_notifications_checked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow
     )
@@ -350,4 +358,40 @@ class UserSavedJobSearch(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class UserNotification(Base):
+    __tablename__ = "user_notifications"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "dedupe_key",
+            name="uq_user_notification_dedupe",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, index=True)
+    kind: Mapped[str] = mapped_column(String(32), default="job")
+    dedupe_key: Mapped[str] = mapped_column(String(120))
+    title: Mapped[str] = mapped_column(String(240))
+    body: Mapped[str] = mapped_column(String(500))
+    href: Mapped[str] = mapped_column(String(500))
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        "metadata",
+        JSON,
+        default=dict,
+    )
+    read_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utcnow,
     )

@@ -29,6 +29,54 @@
   outline-offset: -1px;
 }
 
+.persistentHeader {
+  display: flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.persistentHeader button {
+  padding: 0.25rem 0.375rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-accent-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.persistentHeader button:hover {
+  background: var(--color-brand-subtle);
+}
+
+.persistentHeader button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline-offset: 1px;
+}
+
+.list > .persistedNotification[data-read="false"] {
+  background: color-mix(in srgb, var(--color-accent) 5%, var(--color-surface));
+}
+
+.list > .persistedNotification[data-read="false"] strong {
+  font-weight: 800;
+}
+
+.notificationReason {
+  overflow: hidden;
+  color: var(--color-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .icon {
   display: grid;
   width: 2rem;

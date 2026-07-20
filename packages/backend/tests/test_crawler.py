@@ -867,6 +867,18 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
     monkeypatch.setattr(crawler, "_delay_run_stale_postings", fake_delay)
     monkeypatch.setattr(
         crawler,
+        "_evaluate_run_notifications",
+        lambda: (
+            events.append("notifications")
+            or {
+                "saved_searches_checked": 2,
+                "followed_accounts_checked": 1,
+                "notifications_created": 4,
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        crawler,
         "_capture_run_market_snapshot",
         fake_snapshot,
     )
@@ -877,7 +889,8 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
     assert report["failed"] == 1
     assert report["ingested"] == 2
     assert report["delayed"] == 3
-    assert events == ["delay", "snapshot"]
+    assert report["notifications"]["notifications_created"] == 4
+    assert events == ["delay", "notifications", "snapshot"]
     assert captured and captured[0][1] == 2
     assert [item["source_id"] for item in report["results"]] == [
         "first",
@@ -892,6 +905,7 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
         in crawler.render_crawl_summary(report)
     )
     assert "검증 지연 전환: 3건" in crawler.render_crawl_summary(report)
+    assert "인앱 알림 생성: 4건" in crawler.render_crawl_summary(report)
 
 
 def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
@@ -922,6 +936,15 @@ def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
         },
     )
     monkeypatch.setattr(crawler, "_delay_run_stale_postings", lambda: 0)
+    monkeypatch.setattr(
+        crawler,
+        "_evaluate_run_notifications",
+        lambda: {
+            "saved_searches_checked": 0,
+            "followed_accounts_checked": 0,
+            "notifications_created": 0,
+        },
+    )
 
     report = crawler.run_all_sources()
     output = capsys.readouterr().out
@@ -1005,6 +1028,15 @@ def test_crawl_all_parallelizes_hosts_but_serializes_shared_provider(
         },
     )
     monkeypatch.setattr(crawler, "_delay_run_stale_postings", lambda: 0)
+    monkeypatch.setattr(
+        crawler,
+        "_evaluate_run_notifications",
+        lambda: {
+            "saved_searches_checked": 0,
+            "followed_accounts_checked": 0,
+            "notifications_created": 0,
+        },
+    )
 
     report = crawler.run_all_sources(max_workers=3)
 

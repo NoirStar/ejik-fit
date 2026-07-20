@@ -153,6 +153,7 @@ from ejikfit.models import (
     SourceStatus,
     SourceType,
 )
+from ejikfit.notifications import evaluate_job_notifications
 from ejikfit.search import MeiliPostingIndex, PostingIndex
 from ejikfit.skill_trends import capture_skill_demand_snapshot
 from ejikfit.storage import S3SnapshotStore, SnapshotStore
@@ -2548,6 +2549,18 @@ def _delay_run_stale_postings(now: datetime | None = None) -> int:
         )
 
 
+def _evaluate_run_notifications(
+    now: datetime | None = None,
+) -> dict[str, int]:
+    with SessionLocal() as session:
+        return asdict(
+            evaluate_job_notifications(
+                session,
+                now or datetime.now(timezone.utc),
+            )
+        )
+
+
 PROVIDER_HOST_SUFFIXES = (
     "ashbyhq.com",
     "greenhouse.io",
@@ -2679,6 +2692,16 @@ def run_all_sources(max_workers: int | None = None) -> dict[str, Any]:
     ]
 
     delayed = _delay_run_stale_postings()
+    try:
+        notification_report = _evaluate_run_notifications()
+    except Exception:
+        logger.exception("Post-crawl notification evaluation failed")
+        notification_report = {
+            "saved_searches_checked": 0,
+            "followed_accounts_checked": 0,
+            "notifications_created": 0,
+            "failed": 1,
+        }
     market_snapshot = _capture_run_market_snapshot(results, total_sources)
     print(
         "market snapshot captured: "
@@ -2697,6 +2720,7 @@ def run_all_sources(max_workers: int | None = None) -> dict[str, Any]:
         "failed": sum(item["failed"] for item in results),
         "closed": sum(item["closed"] for item in results),
         "delayed": delayed,
+        "notifications": notification_report,
         "market_snapshot": market_snapshot,
         "results": results,
     }
@@ -2723,4 +2747,9 @@ def render_crawl_summary(report: dict[str, Any]) -> str:
         f"{report['failed']} | {report['closed']} |"
     )
     lines.extend(["", f"검증 지연 전환: {report.get('delayed', 0)}건"])
+    notifications = report.get("notifications") or {}
+    lines.append(
+        "인앱 알림 생성: "
+        f"{notifications.get('notifications_created', 0)}건"
+    )
     return "\n".join(lines) + "\n"

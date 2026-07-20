@@ -31,13 +31,16 @@ import {
   readFollowedCompanySlugs,
   subscribeFollowedCompanies,
 } from "@/lib/followed-companies";
+import { notificationReason } from "@/lib/activity-notifications";
 import { normalizePostingList } from "@/lib/posting-contract";
 import { flattenSavedSearchNotifications } from "@/lib/saved-search-notifications";
 import type { PostingSummary } from "@/lib/types";
 
 import styles from "./activity-notification-center.module.css";
+import type { ActivityNotificationsController } from "./use-activity-notifications";
 
 type ActivityNotificationCenterProps = {
+  notifications?: ActivityNotificationsController;
   onNavigate?: () => void;
   viewer?: AuthViewer | null;
 };
@@ -93,6 +96,7 @@ function applicationSummary(
 }
 
 export function ActivityNotificationCenter({
+  notifications,
   onNavigate,
   viewer = null,
 }: ActivityNotificationCenterProps) {
@@ -189,14 +193,31 @@ export function ActivityNotificationCenter({
     () => applicationSummary(savedJobIds, applicationStages),
     [applicationStages, savedJobIds],
   );
+  const persistedJobIds = useMemo(
+    () =>
+      new Set(
+        (notifications?.state.items ?? [])
+          .map((notification) =>
+            notification.href.match(/^\/jobs\/([^/?#]+)$/)?.[1],
+          )
+          .filter((id): id is string => Boolean(id)),
+      ),
+    [notifications?.state.items],
+  );
   const savedSearchNotifications = useMemo(
     () =>
       flattenSavedSearchNotifications(
         savedSearchEvaluation.state.groups,
         savedSearches.state.items,
         MAX_SAVED_SEARCH_NOTIFICATIONS,
+      ).filter(
+        (notification) => !persistedJobIds.has(notification.job.id),
       ),
-    [savedSearchEvaluation.state.groups, savedSearches.state.items],
+    [
+      persistedJobIds,
+      savedSearchEvaluation.state.groups,
+      savedSearches.state.items,
+    ],
   );
   const savedSearchesLoading =
     savedSearches.state.status === "loading" ||
@@ -207,6 +228,9 @@ export function ActivityNotificationCenter({
     savedSearches.state.status === "loading" ||
     savedSearches.state.status === "error";
   const hasActivity =
+    (notifications?.state.items.length ?? 0) > 0 ||
+    notifications?.state.status === "loading" ||
+    notifications?.state.status === "error" ||
     hasSavedSearchActivity ||
     savedJobIds.length > 0 ||
     applicationCount > 0 ||
@@ -232,6 +256,44 @@ export function ActivityNotificationCenter({
 
   return (
     <div className={styles.list}>
+      {(notifications?.state.items.length ?? 0) > 0 && (
+        <div className={styles.persistentHeader}>
+          <span>수집 후 확인된 새 공고</span>
+          {notifications && notifications.unreadCount > 0 && (
+            <button
+              onClick={() => void notifications.markAllRead()}
+              type="button"
+            >
+              모두 읽음
+            </button>
+          )}
+        </div>
+      )}
+
+      {notifications?.state.items.map((notification) => (
+        <Link
+          className={styles.persistedNotification}
+          data-read={notification.readAt ? "true" : "false"}
+          href={notification.href}
+          key={notification.id}
+          onClick={() => {
+            void notifications.markRead(notification.id);
+            onNavigate?.();
+          }}
+        >
+          <span className={styles.icon} data-tone="new-job">
+            <Briefcase aria-hidden="true" size={18} weight="fill" />
+          </span>
+          <span className={styles.copy}>
+            <span className={styles.notificationReason}>
+              {notificationReason(notification)}
+            </span>
+            <strong>{notification.title}</strong>
+            <small>{notification.body}</small>
+          </span>
+        </Link>
+      ))}
+
       {savedSearchNotifications.map((notification) => {
         const primarySearch = notification.searches[0];
         const additionalSearches = notification.searches.length - 1;
@@ -275,7 +337,9 @@ export function ActivityNotificationCenter({
       )}
 
       {recentCompanyJobs.status === "ready" &&
-        recentCompanyJobs.items.map((job) => (
+        recentCompanyJobs.items
+          .filter((job) => !persistedJobIds.has(job.id))
+          .map((job) => (
           <Link
             href={`/jobs/${encodeURIComponent(job.id)}`}
             key={job.id}
@@ -289,7 +353,7 @@ export function ActivityNotificationCenter({
               <small>{job.title}</small>
             </span>
           </Link>
-        ))}
+          ))}
 
       {applicationCount > 0 && (
         <Link href="/career/saved?scope=applications" onClick={onNavigate}>
@@ -375,6 +439,19 @@ export function ActivityNotificationCenter({
             type="button"
           >
             공고 알림 다시 확인
+          </button>
+        </div>
+      )}
+      {notifications?.state.status === "loading" && (
+        <p className={styles.jobAlertStatus} role="status">
+          계정 알림을 불러오고 있습니다.
+        </p>
+      )}
+      {notifications?.state.status === "error" && (
+        <div className={styles.retryStatus} role="status">
+          <span>계정 알림을 불러오지 못했습니다.</span>
+          <button onClick={() => void notifications.reload()} type="button">
+            다시 확인
           </button>
         </div>
       )}
