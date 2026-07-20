@@ -17,6 +17,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
   createSupabaseSavedJobSearchStore,
+  sanitizeSavedJobSearchIds,
   type SavedJobSearchStore,
 } from "./saved-job-search-store";
 
@@ -72,17 +73,72 @@ function savedName(filters: SavedJobSearchFilters, name?: string) {
   );
 }
 
+type AccountToken = {
+  viewerId: string;
+  generation: number;
+};
+
+type StateChange =
+  | SavedJobSearchesState
+  | ((current: SavedJobSearchesState) => SavedJobSearchesState);
+
 export function useSavedJobSearches(
   viewer: AuthViewer | null,
   injectedStore?: SavedJobSearchStore,
 ): SavedJobSearchesController {
   const viewerId = viewer?.id;
   const [state, setState] = useState<SavedJobSearchesState>(IDLE_STATE);
+  const stateRef = useRef<SavedJobSearchesState>(IDLE_STATE);
+  const stateRevision = useRef(0);
+  const mounted = useRef(false);
+  const account = useRef({ viewerId, generation: 0 });
+  const loadRequest = useRef(0);
+  const createQueue = useRef({
+    generation: 0,
+    tail: Promise.resolve(),
+  });
   const productionStore = useRef<
     SavedJobSearchStore | null | undefined
   >(undefined);
-  const currentViewerId = useRef(viewerId);
-  currentViewerId.current = viewerId;
+
+  if (account.current.viewerId !== viewerId) {
+    const generation = account.current.generation + 1;
+    account.current = { viewerId, generation };
+    loadRequest.current += 1;
+    createQueue.current = {
+      generation,
+      tail: Promise.resolve(),
+    };
+  }
+
+  const commitState = useCallback((change: StateChange) => {
+    const next =
+      typeof change === "function" ? change(stateRef.current) : change;
+    stateRef.current = next;
+    stateRevision.current += 1;
+    setState(next);
+    return stateRevision.current;
+  }, []);
+
+  const tokenFor = useCallback((expectedViewerId: string | undefined) => {
+    const current = account.current;
+    if (!expectedViewerId || current.viewerId !== expectedViewerId) {
+      return null;
+    }
+    return {
+      viewerId: expectedViewerId,
+      generation: current.generation,
+    };
+  }, []);
+
+  const isAccountActive = useCallback((token: AccountToken) => {
+    const current = account.current;
+    return (
+      mounted.current &&
+      current.viewerId === token.viewerId &&
+      current.generation === token.generation
+    );
+  }, []);
 
   const resolveStore = useCallback(() => {
     if (injectedStore) return injectedStore;
@@ -98,16 +154,31 @@ export function useSavedJobSearches(
   }, [injectedStore]);
 
   useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      loadRequest.current += 1;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!viewerId) {
-      setState(IDLE_STATE);
+      commitState(IDLE_STATE);
       return;
     }
 
+    const token = tokenFor(viewerId);
+    if (!token) return;
+
     let active = true;
+    const request = loadRequest.current + 1;
+    loadRequest.current = request;
     const store = resolveStore();
-    setState({ status: "loading", items: [], error: "" });
+    commitState({ status: "loading", items: [], error: "" });
     if (!store) {
-      setState(failed([], LOAD_ERROR));
+      if (isAccountActive(token) && loadRequest.current === request) {
+        commitState(failed([], LOAD_ERROR));
+      }
       return () => {
         active = false;
       };
@@ -116,96 +187,165 @@ export function useSavedJobSearches(
     void store
       .list(viewerId)
       .then((items) => {
-        if (active) setState(ready(items));
+        if (
+          active &&
+          isAccountActive(token) &&
+          loadRequest.current === request
+        ) {
+          commitState(ready(items));
+        }
       })
       .catch(() => {
-        if (active) setState(failed([], LOAD_ERROR));
+        if (
+          active &&
+          isAccountActive(token) &&
+          loadRequest.current === request
+        ) {
+          commitState(failed([], LOAD_ERROR));
+        }
       });
 
     return () => {
       active = false;
     };
-  }, [resolveStore, viewerId]);
+  }, [
+    commitState,
+    isAccountActive,
+    resolveStore,
+    tokenFor,
+    viewerId,
+  ]);
 
   const reload = useCallback(async () => {
     if (!viewerId) {
-      setState(IDLE_STATE);
+      if (account.current.viewerId === undefined) {
+        commitState(IDLE_STATE);
+      }
       return;
     }
 
-    const previousItems = state.items;
+    const token = tokenFor(viewerId);
+    if (!token) return;
+    const request = loadRequest.current + 1;
+    loadRequest.current = request;
+    const previousItems = stateRef.current.items;
     const store = resolveStore();
-    setState({ status: "loading", items: previousItems, error: "" });
+    commitState({ status: "loading", items: previousItems, error: "" });
     if (!store) {
-      setState(failed(previousItems, LOAD_ERROR));
+      if (isAccountActive(token) && loadRequest.current === request) {
+        commitState(failed(previousItems, LOAD_ERROR));
+      }
       return;
     }
 
     try {
       const items = await store.list(viewerId);
-      if (currentViewerId.current === viewerId) setState(ready(items));
+      if (isAccountActive(token) && loadRequest.current === request) {
+        commitState(ready(items));
+      }
     } catch {
-      if (currentViewerId.current === viewerId) {
-        setState(failed(previousItems, LOAD_ERROR));
+      if (isAccountActive(token) && loadRequest.current === request) {
+        commitState(failed(previousItems, LOAD_ERROR));
       }
     }
-  }, [resolveStore, state.items, viewerId]);
+  }, [
+    commitState,
+    isAccountActive,
+    resolveStore,
+    tokenFor,
+    viewerId,
+  ]);
 
   const create = useCallback(
     async (
       filters: SavedJobSearchFilters,
       name?: string,
     ): Promise<CreateSavedJobSearchResult> => {
-      if (!viewerId) return { status: "error" };
-
+      const token = tokenFor(viewerId);
+      if (!token) return { status: "error" };
       const normalized = normalizeSavedJobSearchFilters(filters);
-      if (!hasSavedJobSearchFilter(normalized)) {
-        setState(failed(state.items));
-        return { status: "error" };
-      }
-
       const filterKey = savedJobSearchFilterKey(normalized);
-      const duplicate = state.items.find(
-        (item) => item.filterKey === filterKey,
-      );
-      if (duplicate) return { status: "duplicate", item: duplicate };
-      if (state.items.length >= MAX_SAVED_JOB_SEARCHES) {
-        return { status: "limit" };
-      }
-
       const nameToSave = savedName(normalized, name);
-      if (!nameToSave) {
-        setState(failed(state.items));
+      loadRequest.current += 1;
+
+      const queue = createQueue.current;
+      if (queue.generation !== token.generation) {
         return { status: "error" };
       }
 
-      const store = resolveStore();
-      if (!store) {
-        setState(failed(state.items));
-        return { status: "error" };
-      }
+      const operation = queue.tail.then(
+        async (): Promise<CreateSavedJobSearchResult> => {
+          if (!isAccountActive(token)) return { status: "error" };
 
-      try {
-        const item = await store.insert(
-          viewerId,
-          normalized,
-          nameToSave,
-          new Date().toISOString(),
-        );
-        setState((current) => ready([item, ...current.items]));
-        return { status: "created", item };
-      } catch {
-        setState(failed(state.items));
-        return { status: "error" };
-      }
+          const items = stateRef.current.items;
+          if (!hasSavedJobSearchFilter(normalized) || !nameToSave) {
+            commitState(failed(items));
+            return { status: "error" };
+          }
+
+          const duplicate = items.find(
+            (item) => item.filterKey === filterKey,
+          );
+          if (duplicate) {
+            return { status: "duplicate", item: duplicate };
+          }
+          if (items.length >= MAX_SAVED_JOB_SEARCHES) {
+            return { status: "limit" };
+          }
+
+          const store = resolveStore();
+          if (!store) {
+            commitState(failed(items));
+            return { status: "error" };
+          }
+
+          try {
+            const item = await store.insert(
+              token.viewerId,
+              normalized,
+              nameToSave,
+              new Date().toISOString(),
+            );
+            if (!isAccountActive(token)) return { status: "error" };
+
+            commitState((current) =>
+              ready([
+                item,
+                ...current.items.filter(
+                  (candidate) => candidate.id !== item.id,
+                ),
+              ]),
+            );
+            return { status: "created", item };
+          } catch {
+            if (!isAccountActive(token)) return { status: "error" };
+            commitState((current) => failed(current.items));
+            return { status: "error" };
+          }
+        },
+      );
+      queue.tail = operation.then(
+        () => undefined,
+        () => undefined,
+      );
+      return operation;
     },
-    [resolveStore, state.items, viewerId],
+    [
+      commitState,
+      isAccountActive,
+      resolveStore,
+      tokenFor,
+      viewerId,
+    ],
   );
 
   const rename = useCallback(
     async (id: string, name: string) => {
-      if (!viewerId) return false;
-      const item = state.items.find((candidate) => candidate.id === id);
+      const token = tokenFor(viewerId);
+      if (!token) return false;
+      const item = stateRef.current.items.find(
+        (candidate) => candidate.id === id,
+      );
       if (!item) return false;
 
       const nextName = name
@@ -216,19 +356,27 @@ export function useSavedJobSearches(
 
       const store = resolveStore();
       if (!store) {
-        setState(failed(state.items));
+        commitState((current) => failed(current.items));
         return false;
       }
 
-      const previousItems = state.items;
-      setState(ready(
-        previousItems.map((candidate) =>
-          candidate.id === id ? { ...candidate, name: nextName } : candidate,
+      loadRequest.current += 1;
+      const previousItems = stateRef.current.items;
+      const optimisticRevision = commitState(
+        ready(
+          previousItems.map((candidate) =>
+            candidate.id === id
+              ? { ...candidate, name: nextName }
+              : candidate,
+          ),
         ),
-      ));
+      );
       try {
-        const updated = await store.update(viewerId, id, { name: nextName });
-        setState((current) =>
+        const updated = await store.update(token.viewerId, id, {
+          name: nextName,
+        });
+        if (!isAccountActive(token)) return false;
+        commitState((current) =>
           ready(
             current.items.map((candidate) =>
               candidate.id === id ? updated : candidate,
@@ -237,32 +385,47 @@ export function useSavedJobSearches(
         );
         return true;
       } catch {
-        setState(failed(previousItems));
+        if (!isAccountActive(token)) return false;
+        if (stateRevision.current === optimisticRevision) {
+          commitState(failed(previousItems));
+        } else {
+          commitState((current) => failed(current.items));
+        }
         return false;
       }
     },
-    [resolveStore, state.items, viewerId],
+    [
+      commitState,
+      isAccountActive,
+      resolveStore,
+      tokenFor,
+      viewerId,
+    ],
   );
 
   const setEnabled = useCallback(
     async (id: string, enabled: boolean) => {
-      if (!viewerId) return false;
-      const item = state.items.find((candidate) => candidate.id === id);
+      const token = tokenFor(viewerId);
+      if (!token) return false;
+      const item = stateRef.current.items.find(
+        (candidate) => candidate.id === id,
+      );
       if (!item) return false;
       if (item.enabled === enabled) return true;
 
       const store = resolveStore();
       if (!store) {
-        setState(failed(state.items));
+        commitState((current) => failed(current.items));
         return false;
       }
 
+      loadRequest.current += 1;
       const checkedAt = enabled ? new Date().toISOString() : undefined;
       const patch = checkedAt
         ? { enabled, lastCheckedAt: checkedAt }
         : { enabled };
-      const previousItems = state.items;
-      setState(
+      const previousItems = stateRef.current.items;
+      const optimisticRevision = commitState(
         ready(
           previousItems.map((candidate) =>
             candidate.id === id
@@ -276,8 +439,9 @@ export function useSavedJobSearches(
         ),
       );
       try {
-        const updated = await store.update(viewerId, id, patch);
-        setState((current) =>
+        const updated = await store.update(token.viewerId, id, patch);
+        if (!isAccountActive(token)) return false;
+        commitState((current) =>
           ready(
             current.items.map((candidate) =>
               candidate.id === id ? updated : candidate,
@@ -286,53 +450,87 @@ export function useSavedJobSearches(
         );
         return true;
       } catch {
-        setState(failed(previousItems));
+        if (!isAccountActive(token)) return false;
+        if (stateRevision.current === optimisticRevision) {
+          commitState(failed(previousItems));
+        } else {
+          commitState((current) => failed(current.items));
+        }
         return false;
       }
     },
-    [resolveStore, state.items, viewerId],
+    [
+      commitState,
+      isAccountActive,
+      resolveStore,
+      tokenFor,
+      viewerId,
+    ],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      if (!viewerId) return false;
-      if (!state.items.some((item) => item.id === id)) return false;
+      const token = tokenFor(viewerId);
+      if (!token) return false;
+      if (!stateRef.current.items.some((item) => item.id === id)) return false;
 
       const store = resolveStore();
       if (!store) {
-        setState(failed(state.items));
+        commitState((current) => failed(current.items));
         return false;
       }
 
-      const previousItems = state.items;
-      setState(ready(previousItems.filter((item) => item.id !== id)));
+      loadRequest.current += 1;
+      const previousItems = stateRef.current.items;
+      const optimisticRevision = commitState(
+        ready(previousItems.filter((item) => item.id !== id)),
+      );
       try {
-        await store.remove(viewerId, id);
+        await store.remove(token.viewerId, id);
+        if (!isAccountActive(token)) return false;
         return true;
       } catch {
-        setState(failed(previousItems));
+        if (!isAccountActive(token)) return false;
+        if (stateRevision.current === optimisticRevision) {
+          commitState(failed(previousItems));
+        } else {
+          commitState((current) => failed(current.items));
+        }
         return false;
       }
     },
-    [resolveStore, state.items, viewerId],
+    [
+      commitState,
+      isAccountActive,
+      resolveStore,
+      tokenFor,
+      viewerId,
+    ],
   );
 
   const markChecked = useCallback(
     async (ids: string[], evaluatedAt: string) => {
-      if (!viewerId) return false;
-      if (ids.length === 0) return true;
+      const token = tokenFor(viewerId);
+      if (!token) return false;
+      const checkpointIds = sanitizeSavedJobSearchIds(ids);
+      if (checkpointIds.length === 0) return true;
 
       const store = resolveStore();
       if (!store) {
-        setState(failed(state.items));
+        commitState((current) => failed(current.items));
         return false;
       }
 
-      const previousItems = state.items;
+      loadRequest.current += 1;
       try {
-        await store.markChecked(viewerId, ids, evaluatedAt);
-        const checkedIds = new Set(ids);
-        setState((current) =>
+        await store.markChecked(
+          token.viewerId,
+          checkpointIds,
+          evaluatedAt,
+        );
+        if (!isAccountActive(token)) return false;
+        const checkedIds = new Set(checkpointIds);
+        commitState((current) =>
           ready(
             current.items.map((item) =>
               checkedIds.has(item.id)
@@ -347,11 +545,18 @@ export function useSavedJobSearches(
         );
         return true;
       } catch {
-        setState(failed(previousItems));
+        if (!isAccountActive(token)) return false;
+        commitState((current) => failed(current.items));
         return false;
       }
     },
-    [resolveStore, state.items, viewerId],
+    [
+      commitState,
+      isAccountActive,
+      resolveStore,
+      tokenFor,
+      viewerId,
+    ],
   );
 
   return {

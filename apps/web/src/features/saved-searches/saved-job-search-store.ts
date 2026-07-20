@@ -56,6 +56,12 @@ function parseRow(value: unknown) {
   return item;
 }
 
+export function sanitizeSavedJobSearchIds(ids: string[]) {
+  return Array.from(
+    new Set(ids.map((id) => id.trim()).filter(Boolean)),
+  );
+}
+
 export function createSupabaseSavedJobSearchStore(
   client: SupabaseClient,
 ): SavedJobSearchStore {
@@ -126,7 +132,8 @@ export function createSupabaseSavedJobSearchStore(
     },
 
     async markChecked(userId, ids, evaluatedAt) {
-      if (ids.length === 0) return;
+      const checkpointIds = sanitizeSavedJobSearchIds(ids);
+      if (checkpointIds.length === 0) return;
 
       const { error } = await client
         .from(TABLE)
@@ -135,7 +142,7 @@ export function createSupabaseSavedJobSearchStore(
           updated_at: evaluatedAt,
         })
         .eq("user_id", userId)
-        .in("id", ids);
+        .in("id", checkpointIds);
       if (error) throw error;
     },
   };
