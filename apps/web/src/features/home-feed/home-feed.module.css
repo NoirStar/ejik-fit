@@ -11,7 +11,7 @@
 .layout {
   display: grid;
   width: min(calc(100% - 3rem), var(--content-max));
-  grid-template-columns: 13.5rem minmax(0, 1fr) 17.5rem;
+  grid-template-columns: 12rem minmax(0, 1fr) 15.75rem;
   align-items: start;
   gap: 1rem;
   margin-inline: auto;
@@ -35,8 +35,7 @@
   background: var(--color-surface);
 }
 
-.railCard,
-.trustCard {
+.railCard {
   padding: 1rem;
   border: 0;
   border-bottom: 1px solid var(--color-line-soft);
@@ -49,8 +48,7 @@
   border-bottom: 0;
 }
 
-.railCard h2,
-.trustCard h2 {
+.railCard h2 {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 750;
@@ -155,7 +153,6 @@
 }
 
 .railEmpty,
-.railHint,
 .railFootnote {
   margin: 0.75rem 0 0;
   color: var(--color-muted);
@@ -163,10 +160,25 @@
   line-height: 1.55;
 }
 
-.railHint,
 .railFootnote {
   color: var(--color-faint);
   font-size: 0.71875rem;
+}
+
+.stackStatus {
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.railFootnote a {
+  display: flex;
+  width: fit-content;
+  margin-top: 0.35rem;
+  color: var(--color-accent-strong);
+  font-weight: 750;
+  text-decoration: none;
 }
 
 .textLink {
@@ -347,19 +359,6 @@
   -webkit-line-clamp: 2;
 }
 
-.followingEmpty,
-.followingEmptyState p {
-  margin: 0.75rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  line-height: 1.55;
-}
-
-.followingEmptyState > svg {
-  margin-top: 0.875rem;
-  color: var(--color-faint);
-}
-
 .followingAction {
   display: inline-flex;
   min-height: var(--touch-target);
@@ -382,65 +381,45 @@
 
 .feedHeader {
   display: flex;
-  min-height: 3.5rem;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0 0.25rem 0.75rem;
+  padding: 0 0.25rem 0.5rem;
 }
 
 .feedHeader h1 {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 760;
   letter-spacing: -0.035em;
   line-height: 1.3;
-}
-
-.composeButton {
-  display: inline-flex;
-  min-height: var(--touch-target);
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4375rem;
-  padding: 0 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 35%, var(--color-line));
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  color: var(--color-accent-strong);
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.composeButton:hover {
-  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
 }
 
 .contextBar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 0.375rem 0.75rem;
-  margin-bottom: 0.625rem;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--color-line);
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0 0.75rem;
+  border: 0;
   border-radius: var(--radius-control);
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-brand-subtle) 55%, var(--color-surface));
 }
 
 .contextIdentity {
+  display: flex;
   min-width: 0;
+  align-items: baseline;
+  gap: 0.5rem;
 }
 
 .contextIdentity > span {
-  display: block;
-  margin-bottom: 0.125rem;
-  color: var(--color-faint);
+  flex: 0 0 auto;
+  color: var(--color-accent-strong);
   font-size: 0.6875rem;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .contextIdentity h2 {
@@ -476,14 +455,6 @@
   font-weight: 800;
   text-decoration: none;
   white-space: nowrap;
-}
-
-.contextBar > p {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  line-height: 1.45;
 }
 
 .dataNotice {
@@ -535,7 +506,7 @@
 
 .tabs {
   display: flex;
-  min-height: 3rem;
+  min-height: 2.75rem;
   align-items: center;
   gap: 0.75rem;
   padding: 0 0.875rem;
@@ -548,7 +519,7 @@
 .tabs button {
   position: relative;
   min-width: 3.5rem;
-  min-height: 3rem;
+  min-height: 2.75rem;
   padding: 0 0.25rem;
   border: 0;
   border-radius: 0;
@@ -599,7 +570,7 @@
 .jobCard,
 .marketCard {
   min-width: 0;
-  padding: 1.125rem 1.25rem;
+  padding: 1rem 1.125rem;
   border: 0;
   border-bottom: 1px solid var(--color-line-soft);
   border-radius: 0;
@@ -665,25 +636,12 @@
   white-space: nowrap;
 }
 
-.authorCopy span,
-.postContext span {
+.authorCopy span {
   overflow: hidden;
-  color: var(--color-faint);
+  color: var(--color-muted);
   font-size: 0.71875rem;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.postContext {
-  display: grid;
-  justify-items: end;
-  gap: 0.1875rem;
-}
-
-.postContext strong {
-  color: var(--color-accent-strong);
-  font-size: 0.71875rem;
-  font-weight: 750;
 }
 
 .authorActions {
@@ -750,7 +708,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .reviewMeta span {
@@ -763,7 +721,27 @@
 }
 
 .cardCopy {
-  margin-top: 0.875rem;
+  margin-top: 0.625rem;
+}
+
+.postTitleRow {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem 0.5rem;
+}
+
+.postTitleRow h2 {
+  min-width: min(100%, 16rem);
+  flex: 1;
+}
+
+.categoryLabel {
+  flex: 0 0 auto;
+  color: var(--color-accent-strong);
+  font-size: 0.71875rem;
+  font-weight: 780;
 }
 
 .cardCopy h2,
@@ -797,8 +775,27 @@
   line-height: 1.6;
 }
 
+.cardCopy > p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .tags {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.moreTag {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  padding: 0 0.5rem;
+  border-radius: 0.4375rem;
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.71875rem;
+  font-weight: 750;
 }
 
 .cardActions,
@@ -806,8 +803,8 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-top: 0.875rem;
-  padding-top: 0.625rem;
+  margin-top: 0.625rem;
+  padding-top: 0.5rem;
   border-top: 1px solid color-mix(in srgb, var(--color-line) 75%, transparent);
 }
 
@@ -867,6 +864,19 @@
   gap: 0.5rem;
   color: var(--color-faint);
   font-size: 0.71875rem;
+}
+
+.jobCard {
+  margin: 0.625rem 0.75rem;
+  padding: 0.9375rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 16%, var(--color-line));
+  border-left: 3px solid color-mix(in srgb, var(--color-accent) 72%, #ffffff);
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-brand-subtle) 42%, var(--color-surface));
+}
+
+.jobCard:hover {
+  background: color-mix(in srgb, var(--color-brand-subtle) 62%, var(--color-surface));
 }
 
 .verifiedBadge {
@@ -1080,7 +1090,7 @@
   background: var(--color-brand-subtle);
 }
 
-.popularTopics,
+.curatedTopics,
 .skillDemand {
   display: grid;
   gap: 0;
@@ -1089,47 +1099,47 @@
   list-style: none;
 }
 
-.popularTopics li {
-  display: grid;
-  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
+.curatedTopics li {
   border-bottom: 1px solid color-mix(in srgb, var(--color-line) 65%, transparent);
 }
 
-.popularTopics li:last-child {
+.curatedTopics li:last-child {
   border-bottom: 0;
 }
 
-.popularTopics li > span {
+.curatedTopics a {
   display: grid;
-  width: 1.25rem;
-  height: 1.25rem;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--color-surface-muted);
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  font-weight: 800;
+  min-height: var(--touch-target);
+  align-content: center;
+  gap: 0.125rem;
+  padding: 0.5rem 0;
+  color: var(--color-text);
+  text-decoration: none;
 }
 
-.popularTopics a {
+.curatedTopics span,
+.curatedTopics strong {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--color-text);
-  font-size: 0.75rem;
-  font-weight: 650;
-  line-height: 1.45;
-  text-decoration: none;
   -webkit-box-orient: vertical;
+}
+
+.curatedTopics span {
+  color: var(--color-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 750;
+  -webkit-line-clamp: 1;
+}
+
+.curatedTopics strong {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
   -webkit-line-clamp: 2;
 }
 
-.popularTopics small {
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  font-variant-numeric: tabular-nums;
+.curatedTopics a:hover strong {
+  color: var(--color-accent-strong);
 }
 
 .skillDemand li + li {
@@ -1281,36 +1291,6 @@
   color: var(--color-faint);
   font-size: 0.6875rem;
   line-height: 1.45;
-}
-
-.trustCard {
-  background: transparent;
-}
-
-.trustCard dl {
-  display: grid;
-  gap: 0.625rem;
-  margin: 0.875rem 0 0;
-}
-
-.trustCard dl > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.trustCard dt {
-  color: var(--color-muted);
-  font-size: 0.71875rem;
-}
-
-.trustCard dd {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 0.75rem;
-  font-weight: 750;
-  text-align: right;
 }
 
 .composerBackdrop {
@@ -1601,7 +1581,6 @@
 }
 
 .tabs button:focus-visible,
-.composeButton:focus-visible,
 .contextAction:focus-visible,
 .localDeleteButton:focus-visible,
 .cardActions button:focus-visible,
@@ -1623,7 +1602,7 @@
 @media (max-width: 1180px) {
   .layout {
     width: min(calc(100% - 3rem), 67rem);
-    grid-template-columns: minmax(0, 1fr) 17.5rem;
+    grid-template-columns: minmax(0, 1fr) 15.75rem;
   }
 
   .leftRail {
@@ -1640,10 +1619,6 @@
   .rightRail {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .trustCard {
-    grid-column: 1 / -1;
   }
 
   .careerInsightCard {
@@ -1666,9 +1641,8 @@
   }
 
   .feedHeader {
-    align-items: flex-start;
-    min-height: 3.25rem;
-    padding: 0.375rem 1rem 0.625rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 1rem 0.5rem;
   }
 
   .feedHeader h1 {
@@ -1683,21 +1657,6 @@
 
   .contextSkillCount {
     display: none;
-  }
-
-  .contextBar > p {
-    padding-right: 0.25rem;
-  }
-
-  .composeButton {
-    width: var(--touch-target);
-    padding: 0;
-    font-size: 0;
-  }
-
-  .composeButton svg {
-    width: 20px;
-    height: 20px;
   }
 
   .tabs {
@@ -1735,6 +1694,13 @@
   .emptyFeed {
     padding: 1rem;
     border-radius: 0;
+  }
+
+  .jobCard {
+    margin: 0.5rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-accent) 16%, var(--color-line));
+    border-left: 3px solid color-mix(in srgb, var(--color-accent) 72%, #ffffff);
+    border-radius: 0.625rem;
   }
 
   .socialCard:hover,
@@ -1779,10 +1745,6 @@
     grid-template-columns: 1fr;
     margin: 0 1rem;
     padding: 0;
-  }
-
-  .trustCard {
-    grid-column: auto;
   }
 
   .careerInsightCard {

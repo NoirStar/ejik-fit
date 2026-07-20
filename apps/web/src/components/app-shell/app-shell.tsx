@@ -158,6 +158,29 @@ function HeaderSearchForm({
   );
 }
 
+function HeaderWriteLinkView({ href }: { href: string }) {
+  return (
+    <Link
+      aria-label="글쓰기"
+      className={styles.writeButton}
+      href={href}
+      id="global-write-trigger"
+    >
+      <NotePencil aria-hidden="true" size={19} weight="bold" />
+      <span>글쓰기</span>
+    </Link>
+  );
+}
+
+function HeaderWriteLink({ pathname }: { pathname: string }) {
+  const searchParams = useSearchParams();
+  const writeParams = new URLSearchParams(
+    pathname === "/" ? searchParams.toString() : "",
+  );
+  writeParams.set("compose", "1");
+  return <HeaderWriteLinkView href={`/?${writeParams.toString()}`} />;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -304,10 +327,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className={styles.utilities}>
-            <Link aria-label="글쓰기" className={styles.writeButton} href="/?compose=1">
-              <NotePencil aria-hidden="true" size={19} weight="bold" />
-              <span>글쓰기</span>
-            </Link>
+            <Suspense
+              fallback={<HeaderWriteLinkView href="/?compose=1" />}
+            >
+              <HeaderWriteLink pathname={pathname} />
+            </Suspense>
 
             <button
               aria-label="내 스택 열기"

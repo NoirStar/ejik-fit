@@ -14,7 +14,7 @@ function rule(selector: string) {
 describe("home feed density", () => {
   it("uses the approved compact three-column service canvas", () => {
     expect(rule("layout")).toContain(
-      "grid-template-columns: 13.5rem minmax(0, 1fr) 17.5rem;",
+      "grid-template-columns: 12rem minmax(0, 1fr) 15.75rem;",
     );
     expect(rule("layout")).toContain(
       "width: min(calc(100% - 3rem), var(--content-max));",

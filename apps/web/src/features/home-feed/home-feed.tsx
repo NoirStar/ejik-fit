@@ -10,7 +10,6 @@ import {
   CheckCircle,
   Heart,
   MapPin,
-  NotePencil,
   ShieldCheck,
   Stack,
   Trash,
@@ -79,8 +78,12 @@ type LocalPostDraft = {
 type DraftErrors = Partial<Record<"title" | "body" | "storage", string>>;
 type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
 
-const TABS: Array<{ id: FeedTab; label: string }> = [
-  { id: "recommended", label: "추천" },
+const TABS: Array<{
+  id: FeedTab;
+  label: string;
+  unconfiguredLabel?: string;
+}> = [
+  { id: "recommended", label: "추천", unconfiguredLabel: "둘러보기" },
   { id: "following", label: "팔로잉" },
   { id: "latest", label: "최신" },
   { id: "popular", label: "인기" },
@@ -90,29 +93,6 @@ const EMPTY_DRAFT: LocalPostDraft = { title: "", body: "", tags: "" };
 
 function isSocialItem(item: FeedItem): item is SocialItem {
   return item.type === "community_post" || item.type === "interview_review";
-}
-
-function formatVerificationDate(value: string | null) {
-  if (!value) return "확인 시각 없음";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "확인 시각 없음";
-
-  const parts = new Intl.DateTimeFormat("en-US-u-nu-latn", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-    timeZone: "Asia/Seoul",
-  }).formatToParts(date);
-  const valueByType = new Map(parts.map((part) => [part.type, part.value]));
-  const month = valueByType.get("month");
-  const day = valueByType.get("day");
-  const hour = valueByType.get("hour");
-  const minute = valueByType.get("minute");
-
-  if (!month || !day || !hour || !minute) return "확인 시각 없음";
-  return `${Number(month)}월 ${Number(day)}일 ${hour}:${minute}`;
 }
 
 function SocialCard({
@@ -140,6 +120,8 @@ function SocialCard({
 }) {
   const titleId = `feed-${item.id}-title`;
   const body = item.type === "community_post" ? item.body : item.summary;
+  const visibleTags = item.tags.slice(0, 3);
+  const hiddenTagCount = item.tags.length - visibleTags.length;
 
   return (
     <article aria-labelledby={titleId} className={styles.socialCard}>
@@ -149,13 +131,11 @@ function SocialCard({
         </span>
         <div className={styles.authorCopy}>
           <strong>{item.authorName}</strong>
-          <span>{item.authorHeadline}</span>
+          <span>
+            {item.authorHeadline} · {item.createdLabel}
+          </span>
         </div>
         <div className={styles.authorActions}>
-          <div className={styles.postContext}>
-            <strong>{item.category}</strong>
-            <span>{item.createdLabel}</span>
-          </div>
           {item.source === "local" ? (
             <button
               aria-label={`${item.title} 삭제`}
@@ -187,23 +167,25 @@ function SocialCard({
         </div>
       </header>
 
-      {item.type === "interview_review" && (
-        <div className={styles.reviewMeta}>
-          <span>{item.companyType}</span>
-          <span>{item.role}</span>
-          <span>{item.stage}</span>
-        </div>
-      )}
-
       <div className={styles.cardCopy}>
-        <h2 id={titleId}>
-          <Link href={item.href}>{item.title}</Link>
-        </h2>
+        <div className={styles.postTitleRow}>
+          <span className={styles.categoryLabel}>{item.category}</span>
+          <h2 id={titleId}>
+            <Link href={item.href}>{item.title}</Link>
+          </h2>
+        </div>
+        {item.type === "interview_review" && (
+          <div className={styles.reviewMeta}>
+            <span>{item.companyType}</span>
+            <span>{item.role}</span>
+            <span>{item.stage}</span>
+          </div>
+        )}
         <p>{body}</p>
       </div>
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
-        {item.tags.map((tag) => (
+        {visibleTags.map((tag) => (
           <li key={tag}>
             <Link
               aria-label={`${tag} 커뮤니티 검색`}
@@ -213,6 +195,14 @@ function SocialCard({
             </Link>
           </li>
         ))}
+        {hiddenTagCount > 0 && (
+          <li
+            aria-label={`태그 ${hiddenTagCount}개 더 있음`}
+            className={styles.moreTag}
+          >
+            +{hiddenTagCount}
+          </li>
+        )}
       </ul>
 
       <footer className={styles.cardActions}>
@@ -278,7 +268,7 @@ function JobCard({
       <div className={styles.jobTopline}>
         <span className={styles.verifiedBadge}>
           <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-          공식 공고
+          공식 채용 공고
         </span>
         <span>{item.verifiedLabel} 확인</span>
       </div>
@@ -388,6 +378,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           <strong>{item.sampleLabel}</strong>
           <span>필수 {item.requiredCount}건</span>
           <span>우대 {item.preferredCount}건</span>
+          <span>미분류 {item.unspecifiedCount}건</span>
         </div>
         <Link className={styles.marketLink} href={item.href}>
           스킬맵에서 공고 근거 보기
@@ -474,26 +465,26 @@ function HomeCareerContext({
   context: CareerContextSummary;
   ownedSkillCount: number;
 }) {
+  const skillAction = ownedSkillCount > 0 ? "기술 관리" : "기술 추가";
+  const conditionAction = context.configured ? "조건 수정" : "조건 설정";
+
   return (
     <section aria-label="내 관심 시장" className={styles.contextBar}>
       <div className={styles.contextIdentity}>
-        <span>내 관심 시장</span>
+        <span>내 기준</span>
         <h2>
           {context.careerConditionLabel} · {context.targetDomainLabel}
         </h2>
       </div>
-      <span className={styles.contextSkillCount}>
-        내 기술 {ownedSkillCount.toLocaleString("ko-KR")}개
-      </span>
+      {ownedSkillCount > 0 && (
+        <span className={styles.contextSkillCount}>
+          내 기술 {ownedSkillCount.toLocaleString("ko-KR")}개
+        </span>
+      )}
       <Link className={styles.contextAction} href="/career">
-        {context.configured ? "조건 수정" : "조건 설정"}
+        {skillAction} · {conditionAction}
         <ArrowRight aria-hidden="true" size={14} weight="bold" />
       </Link>
-      <p>
-        {context.configured
-          ? "경력 조건은 홈 공고·기술 수요에, 희망 분야는 내 기술 비교에 적용됩니다."
-          : "현재 전체 공개 공고 기준입니다. 조건을 저장하면 적용 범위를 홈에서 확인할 수 있습니다."}
-      </p>
     </section>
   );
 }
@@ -564,9 +555,10 @@ export function HomeFeed({
   const [draft, setDraft] = useState<LocalPostDraft>(EMPTY_DRAFT);
   const [draftErrors, setDraftErrors] = useState<DraftErrors>({});
   const [announcement, setAnnouncement] = useState("");
-  const composerButtonRef = useRef<HTMLButtonElement>(null);
   const composerTitleRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLElement>(null);
+  const hasPersonalization =
+    snapshot.careerContext.configured || snapshot.ownedSkills.length > 0;
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
@@ -588,8 +580,23 @@ export function HomeFeed({
   const closeComposer = useCallback(() => {
     setComposerOpen(false);
     setDraftErrors({});
-    composerButtonRef.current?.focus();
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has("compose")) {
+        url.searchParams.delete("compose");
+        window.history.replaceState(
+          window.history.state,
+          "",
+          `${url.pathname}${url.search}${url.hash}`,
+        );
+      }
+    }
+    document.getElementById("global-write-trigger")?.focus();
   }, []);
+
+  useEffect(() => {
+    if (composeInitiallyOpen) setComposerOpen(true);
+  }, [composeInitiallyOpen]);
 
   useEffect(() => {
     if (!composerOpen) return;
@@ -640,12 +647,6 @@ export function HomeFeed({
     setAnnouncement(
       `${item.authorName} ${isFollowed ? "팔로우를 시작했습니다." : "팔로우를 해제했습니다."}`,
     );
-  }
-
-  function openComposer() {
-    setDraftErrors({});
-    setAnnouncement("");
-    setComposerOpen(true);
   }
 
   function handleTabKeyDown(
@@ -716,10 +717,8 @@ export function HomeFeed({
 
     setActiveTab("recommended");
     setDraft(EMPTY_DRAFT);
-    setDraftErrors({});
-    setComposerOpen(false);
+    closeComposer();
     setAnnouncement("작성한 글을 이 브라우저에 저장했습니다.");
-    composerButtonRef.current?.focus();
   }
 
   return (
@@ -727,9 +726,12 @@ export function HomeFeed({
       <div className={styles.layout}>
         <aside aria-label="내 커리어 바로가기" className={styles.leftRail}>
           <section className={styles.railCard} id="my-stack">
-            <div className={styles.railIconTitle}>
-              <Stack aria-hidden="true" size={19} weight="bold" />
-              <h2>내 커리어 기준</h2>
+            <div className={styles.railHeadingRow}>
+              <div className={styles.railIconTitle}>
+                <Stack aria-hidden="true" size={19} weight="bold" />
+                <h2>내 기술</h2>
+              </div>
+              <Link href="/career">관리</Link>
             </div>
             {snapshot.ownedSkills.length > 0 ? (
               <ul aria-label="내 기술" className={styles.ownedSkills}>
@@ -738,16 +740,8 @@ export function HomeFeed({
                 ))}
               </ul>
             ) : (
-              <p className={styles.railEmpty}>
-                기술을 고르면 관련 공식 공고의 요구 조건과 비교할 수 있습니다.
-              </p>
+              <p className={styles.stackStatus}>아직 추가한 기술이 없습니다.</p>
             )}
-            <p className={styles.railHint}>
-              로그인 전에는 이 브라우저에 저장되고, 로그인하면 계정과 동기화됩니다.
-            </p>
-            <Link className={styles.textLink} href="/career">
-              설정 방식 보기 <ArrowRight aria-hidden="true" size={14} />
-            </Link>
           </section>
 
           <section className={styles.railCard}>
@@ -781,18 +775,11 @@ export function HomeFeed({
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
           <header className={styles.feedHeader}>
-            <div>
-              <h1 id="home-feed-title">내 커리어와 가까운 이야기</h1>
-            </div>
-            <button
-              className={styles.composeButton}
-              onClick={openComposer}
-              ref={composerButtonRef}
-              type="button"
-            >
-              <NotePencil aria-hidden="true" size={18} weight="bold" />
-              커뮤니티 글쓰기
-            </button>
+            <h1 id="home-feed-title">
+              {hasPersonalization
+                ? "내 커리어와 가까운 이야기"
+                : "커리어 이야기 둘러보기"}
+            </h1>
           </header>
 
           <HomeCareerContext
@@ -811,7 +798,7 @@ export function HomeFeed({
                       ? "현재 표시할 실데이터가 없습니다"
                       : "실데이터를 불러오지 못했습니다"}
                 </strong>
-                <p>커뮤니티 예시 콘텐츠는 계속 볼 수 있으며, 수치를 임의로 채우지 않습니다.</p>
+                <p>커뮤니티 미리보기는 계속 볼 수 있으며, 수치를 임의로 채우지 않습니다.</p>
                 {snapshot.resourceErrors.length > 0 && (
                   <ul aria-label="데이터 오류">
                     {snapshot.resourceErrors.map((error) => (
@@ -840,7 +827,9 @@ export function HomeFeed({
                 tabIndex={activeTab === tab.id ? 0 : -1}
                 type="button"
               >
-                {tab.label}
+                {hasPersonalization
+                  ? tab.label
+                  : tab.unconfiguredLabel ?? tab.label}
               </button>
             ))}
           </div>
@@ -915,7 +904,7 @@ export function HomeFeed({
                 </strong>
                 <p>
                   {activeTab === "following"
-                    ? "추천 글에서 관심 있는 예시 작성자를 직접 팔로우해 보세요."
+                    ? "관심 있는 작성자를 팔로우하면 이 탭에서 모아볼 수 있어요."
                     : "다른 탭을 선택하거나 첫 글을 작성해 보세요."}
                 </p>
                 {activeTab === "following" && (
@@ -934,18 +923,18 @@ export function HomeFeed({
         <aside aria-label="채용 시장 요약" className={styles.rightRail}>
           <section className={styles.railCard}>
             <div className={styles.railHeadingRow}>
-              <h2>오늘의 인기 주제</h2>
-              <span>예시</span>
+              <h2>지금 둘러볼 주제</h2>
             </div>
-            <ol className={styles.popularTopics}>
-              {MOCK_SOCIAL_ITEMS.slice(0, 5).map((item, index) => (
+            <ul className={styles.curatedTopics}>
+              {MOCK_SOCIAL_ITEMS.slice(0, 4).map((item) => (
                 <li key={item.id}>
-                  <span>{index + 1}</span>
-                  <Link href={item.href}>{item.title}</Link>
-                  <small>{item.metrics.comments}</small>
+                  <Link href={item.href}>
+                    <span>{item.category}</span>
+                    <strong>{item.title}</strong>
+                  </Link>
                 </li>
               ))}
-            </ol>
+            </ul>
           </section>
 
           <section className={styles.railCard} id="market-insights">
@@ -961,7 +950,8 @@ export function HomeFeed({
                       <strong>{skill.skillName}</strong>
                       <span>{skill.postingCount}건</span>
                       <small>
-                        필수 {skill.requiredCount} · 우대 {skill.preferredCount}
+                        필수 {skill.requiredCount} · 우대 {skill.preferredCount} ·
+                        미분류 {skill.unspecifiedCount}
                       </small>
                     </Link>
                   </li>
@@ -970,40 +960,20 @@ export function HomeFeed({
             ) : (
               <p className={styles.railEmpty}>확인된 기술 수요가 없습니다.</p>
             )}
-            <p className={styles.railFootnote}>공식 공고 표본의 기술 언급 건수입니다.</p>
+            <p className={styles.railFootnote}>
+              기술 언급 공고를 필수·우대·미분류 중 하나로 집계합니다.
+              <Link href="/data-policy">수집 기준 확인</Link>
+            </p>
           </section>
 
-          <CareerInsightCard insight={snapshot.careerInsight} />
-
-          <section className={styles.trustCard}>
-            <div className={styles.railIconTitle}>
-              <ShieldCheck aria-hidden="true" size={19} weight="fill" />
-              <h2>검증 범위</h2>
-            </div>
-            <dl>
-              <div>
-                <dt>표시 공고</dt>
-                <dd>{snapshot.postingCount}건</dd>
-              </div>
-              <div>
-                <dt>공식 출처</dt>
-                <dd>{snapshot.sourceCount}곳</dd>
-              </div>
-              <div>
-                <dt>마지막 확인</dt>
-                <dd>{formatVerificationDate(snapshot.lastVerifiedAt)}</dd>
-              </div>
-            </dl>
-            <Link className={styles.textLink} href="/data-policy">
-              수집 기준 확인 <ArrowRight aria-hidden="true" size={14} />
-            </Link>
-          </section>
+          {snapshot.careerInsight.status !== "needs_skills" && (
+            <CareerInsightCard insight={snapshot.careerInsight} />
+          )}
 
           <FollowingPostList
             followedAuthorIds={socialInteractions.followedAuthorIds}
             hydrated={socialHydrated}
             onShowFollowing={showFollowingPosts}
-            onShowRecommended={showRecommendedAuthors}
           />
         </aside>
       </div>
@@ -1020,7 +990,7 @@ export function HomeFeed({
           >
             <header className={styles.composerHeader}>
               <div>
-                <p>브라우저에서만 유지되는 예시 글</p>
+                <p>이 브라우저에만 저장되는 글</p>
                 <h2 id="community-composer-title">커뮤니티 글쓰기</h2>
               </div>
               <button aria-label="글쓰기 닫기" onClick={closeComposer} type="button">

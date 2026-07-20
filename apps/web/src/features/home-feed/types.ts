@@ -57,6 +57,7 @@ export type MarketInsightFeedItem = {
   postingCount: number;
   requiredCount: number;
   preferredCount: number;
+  unspecifiedCount: number;
   sampleLabel: string;
   sourceLabel: string;
   href: string;
@@ -87,6 +88,7 @@ export type SkillDemandSummary = {
   postingCount: number;
   requiredCount: number;
   preferredCount: number;
+  unspecifiedCount: number;
 };
 
 export type CareerInsightSummary =

@@ -140,7 +140,10 @@ describe("HomeFeed", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
-    expect(screen.getByText("7월 13일 00:00")).toBeInTheDocument();
+    expect(screen.getByText("미분류 2건")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "수집 기준 확인" }),
+    ).toHaveAttribute("href", "/data-policy");
     expect(
       screen.getByRole("link", { name: "토스 기업 채용 현황" }),
     ).toHaveAttribute("href", "/companies/toss");
@@ -172,19 +175,20 @@ describe("HomeFeed", () => {
       .toBeInTheDocument();
     expect(within(marketContext).getByText("내 기술 2개"))
       .toBeInTheDocument();
-    expect(marketContext).toHaveTextContent(
-      "경력 조건은 홈 공고·기술 수요에, 희망 분야는 내 기술 비교에 적용됩니다.",
-    );
+    expect(within(marketContext).getByRole("link", {
+      name: "기술 관리 · 조건 수정",
+    })).toHaveAttribute("href", "/career");
   });
 
-  it("opens with a concise service heading instead of explanatory marketing copy", () => {
+  it("uses the shell write action without repeating a central write button", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
       screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "커뮤니티 글쓰기" }))
-      .toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "커뮤니티 글쓰기" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText("커뮤니티 예시 + 공식 채용 데이터"),
     ).not.toBeInTheDocument();
@@ -195,7 +199,7 @@ describe("HomeFeed", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("prompts for skills without fabricating personalized counts", () => {
+  it("uses an honest compact discovery state before personalization", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
@@ -206,24 +210,30 @@ describe("HomeFeed", () => {
 
     render(<HomeFeed snapshot={snapshot} />);
 
-    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
-    expect(insight).toHaveTextContent(
-      "내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.",
-    );
-    expect(within(insight).getByRole("link", { name: "기술 추가하기" }))
-      .toHaveAttribute("href", "/career");
-    expect(within(insight).queryByText(/\d+건/)).not.toBeInTheDocument();
-  });
-
-  it("shows an honest empty state instead of invented recent topics", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-
-    const recent = screen.getByRole("region", { name: "최근 본 주제" });
-    expect(recent).toHaveTextContent(
-      "커뮤니티 글을 열면 이 브라우저에 최근 주제가 표시됩니다.",
+    expect(
+      screen.getByRole("heading", { name: "커리어 이야기 둘러보기" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "둘러보기" })).toHaveAttribute(
+      "aria-selected",
+      "true",
     );
     expect(
-      within(recent).queryByRole("link", { name: "# 백엔드" }),
+      screen.queryByRole("region", { name: "내 커리어 인사이트" }),
+    ).not.toBeInTheDocument();
+    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    expect(within(context).queryByText("내 기술 0개")).not.toBeInTheDocument();
+    expect(
+      within(context).getByRole("link", {
+        name: "기술 추가 · 조건 설정",
+      }),
+    ).toHaveAttribute("href", "/career");
+  });
+
+  it("does not spend rail space on an empty recent-topic state", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    expect(
+      screen.queryByRole("region", { name: "최근 본 주제" }),
     ).not.toBeInTheDocument();
   });
 
@@ -280,13 +290,9 @@ describe("HomeFeed", () => {
 
   it("builds the following tab from browser-owned author choices", async () => {
     const firstRender = render(<HomeFeed snapshot={buildSnapshot()} />);
-    const followingRail = screen.getByRole("region", {
-      name: "팔로우 중인 예시 글",
-    });
-
-    expect(followingRail).toHaveTextContent(
-      "아직 팔로우한 예시 작성자가 없습니다.",
-    );
+    expect(
+      screen.queryByRole("region", { name: "팔로우 중인 글" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
 
@@ -310,6 +316,9 @@ describe("HomeFeed", () => {
     expect(localStorage.getItem("ejik-fit:social-interactions")).toContain(
       "server-garden",
     );
+    const followingRail = screen.getByRole("region", {
+      name: "팔로우 중인 글",
+    });
     expect(
       within(followingRail).getByRole("link", {
         name: "서버정원의 글: 3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
@@ -428,9 +437,9 @@ describe("HomeFeed", () => {
   });
 
   it("validates, persists, restores, and deletes a browser-only post", async () => {
-    const { unmount } = render(<HomeFeed snapshot={buildSnapshot()} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
+    const { unmount } = render(
+      <HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
 
     expect(screen.getByText("제목을 입력해 주세요.")).toBeInTheDocument();
@@ -527,12 +536,11 @@ describe("HomeFeed", () => {
   });
 
   it("keeps the composer open when browser post storage is blocked", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
+    render(<HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />);
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new DOMException("blocked", "SecurityError");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
     fireEvent.change(screen.getByLabelText("제목"), {
       target: { value: "저장되지 않을 글" },
     });
@@ -570,8 +578,7 @@ describe("HomeFeed", () => {
   });
 
   it("keeps Tab focus inside the composer dialog", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-    fireEvent.click(screen.getByRole("button", { name: "커뮤니티 글쓰기" }));
+    render(<HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />);
     const close = screen.getByRole("button", { name: "글쓰기 닫기" });
     const submit = screen.getByRole("button", { name: "피드에 올리기" });
 

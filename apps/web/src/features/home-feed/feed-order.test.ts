@@ -67,6 +67,7 @@ const items: FeedItem[] = [
     postingCount: 14,
     requiredCount: 8,
     preferredCount: 4,
+    unspecifiedCount: 2,
     sampleLabel: "14건",
     sourceLabel: "공식 채용페이지",
     href: "/skill-map?skill=Kubernetes",

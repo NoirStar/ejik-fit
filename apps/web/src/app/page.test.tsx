@@ -153,7 +153,9 @@ describe("Home", () => {
     const context = screen.getByRole("region", { name: "내 관심 시장" });
     expect(within(context).getByText("경력 · 백엔드")).toBeInTheDocument();
     expect(within(context).getByText("내 기술 1개")).toBeInTheDocument();
-    expect(within(context).getByRole("link", { name: "조건 수정" }))
+    expect(within(context).getByRole("link", {
+      name: "기술 관리 · 조건 수정",
+    }))
       .toHaveAttribute("href", "/career");
   });
 
@@ -166,11 +168,18 @@ describe("Home", () => {
     });
     expect(analyzeFit).not.toHaveBeenCalled();
     expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
-    expect(screen.getByText("내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요."))
-      .toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "내 커리어 인사이트" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "커리어 이야기 둘러보기" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "둘러보기" })).toBeInTheDocument();
     const context = screen.getByRole("region", { name: "내 관심 시장" });
     expect(context).toHaveTextContent("전체 경력 · 전체 기술 분야");
-    expect(within(context).getByRole("link", { name: "조건 설정" }))
+    expect(within(context).getByRole("link", {
+      name: "기술 추가 · 조건 설정",
+    }))
       .toHaveAttribute("href", "/career");
     expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });

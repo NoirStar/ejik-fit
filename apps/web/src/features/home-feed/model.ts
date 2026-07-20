@@ -226,6 +226,7 @@ function buildSkillDemand(skillStats: SkillStatsResponse | null): SkillDemandSum
     postingCount: skill.count,
     requiredCount: skill.required_count ?? 0,
     preferredCount: skill.preferred_count ?? 0,
+    unspecifiedCount: skill.unspecified_count ?? 0,
   }));
 }
 
@@ -237,10 +238,11 @@ function buildMarketInsights(
     type: "market_insight",
     skillName: skill.skillName,
     title: `${skill.skillName}을 요구하는 공식 공고를 확인했어요`,
-    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건으로 확인됐습니다.`,
+    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건, 미분류 ${skill.unspecifiedCount}건으로 확인됐습니다.`,
     postingCount: skill.postingCount,
     requiredCount: skill.requiredCount,
     preferredCount: skill.preferredCount,
+    unspecifiedCount: skill.unspecifiedCount,
     sampleLabel: `기술 언급 공고 ${skill.postingCount}건`,
     sourceLabel: "공식 채용페이지 수집 데이터",
     href: `/skill-map?skill=${encodeURIComponent(skill.skillName)}`,

@@ -175,6 +175,7 @@ describe("buildHomeFeedSnapshot", () => {
       postingCount: 14,
       requiredCount: 8,
       preferredCount: 4,
+      unspecifiedCount: 2,
     });
     expect(snapshot.skillDemand).toEqual([
       {
@@ -182,6 +183,7 @@ describe("buildHomeFeedSnapshot", () => {
         postingCount: 14,
         requiredCount: 8,
         preferredCount: 4,
+        unspecifiedCount: 2,
       },
     ]);
     expect(snapshot.postingCount).toBe(1);

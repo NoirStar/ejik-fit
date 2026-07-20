@@ -6,42 +6,32 @@ import { FollowingPostList } from "./following-post-list";
 describe("FollowingPostList", () => {
   afterEach(() => cleanup());
 
-  it("does not claim an empty state before browser follow data is hydrated", () => {
+  it("does not reserve rail space before browser follow data is hydrated", () => {
     render(
       <FollowingPostList
         followedAuthorIds={[]}
         hydrated={false}
         onShowFollowing={vi.fn()}
-        onShowRecommended={vi.fn()}
       />,
     );
 
-    const region = screen.getByRole("region", {
-      name: "팔로우 중인 예시 글",
-    });
-    expect(region).toHaveTextContent("팔로우 정보를 확인 중입니다.");
-    expect(region).not.toHaveTextContent("아직 팔로우한 예시 작성자가 없습니다.");
+    expect(
+      screen.queryByRole("region", { name: "팔로우 중인 글" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("shows an honest empty state and returns to recommended authors", () => {
-    const onShowRecommended = vi.fn();
+  it("does not reserve rail space for an empty followed list", () => {
     render(
       <FollowingPostList
         followedAuthorIds={[]}
         hydrated
         onShowFollowing={vi.fn()}
-        onShowRecommended={onShowRecommended}
       />,
     );
 
-    const region = screen.getByRole("region", {
-      name: "팔로우 중인 예시 글",
-    });
-    expect(region).toHaveTextContent("아직 팔로우한 예시 작성자가 없습니다.");
-    fireEvent.click(
-      within(region).getByRole("button", { name: "추천 탭에서 찾기" }),
-    );
-    expect(onShowRecommended).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByRole("region", { name: "팔로우 중인 글" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders only the two newest followed example posts and opens the following tab", () => {
@@ -57,12 +47,11 @@ describe("FollowingPostList", () => {
         ]}
         hydrated
         onShowFollowing={onShowFollowing}
-        onShowRecommended={vi.fn()}
       />,
     );
 
     const region = screen.getByRole("region", {
-      name: "팔로우 중인 예시 글",
+      name: "팔로우 중인 글",
     });
     const links = within(region).getAllByRole("link");
     expect(links).toHaveLength(2);

@@ -322,5 +322,9 @@ describe("AppShell", () => {
       });
     });
     expect(navigation.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
+      "href",
+      "/?career_type=new_comer&target_domain=frontend&compose=1",
+    );
   });
 });
