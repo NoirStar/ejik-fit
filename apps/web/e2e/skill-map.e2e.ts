@@ -106,11 +106,13 @@ for (const width of [1440, 820, 390]) {
       inspector.getByRole("link", { name: /Go Platform Engineer/ }),
     ).toHaveAttribute("href", "/jobs/job-go");
 
-    const graphFrame = page.getByTestId("skill-graph-frame");
+    const graphFrame = page.locator(
+      '[data-testid="skill-graph-frame"]:visible',
+    );
     const graphBox = await graphFrame.boundingBox();
     expect(graphBox?.height).toBeGreaterThanOrEqual(width <= 640 ? 400 : 496);
-    const forceCanvas = graphFrame.locator(".force-canvas");
-    await expect(forceCanvas).toHaveClass(/force-canvas--ready/);
+    const forceCanvas = graphFrame.locator(".force-canvas--ready");
+    await expect(forceCanvas).toBeVisible();
     await expect(forceCanvas.locator("canvas")).toBeVisible();
     await expect(
       graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
@@ -200,9 +202,11 @@ test("supports direct graph panning on a touch device", async ({ browser }) => {
   const session = await context.newCDPSession(page);
   await page.goto("/skills/graph?seed=Kubernetes");
 
-  const graphFrame = page.getByTestId("skill-graph-frame");
-  const forceCanvas = graphFrame.locator(".force-canvas");
-  await expect(forceCanvas).toHaveClass(/force-canvas--ready/);
+  const graphFrame = page.locator(
+    '[data-testid="skill-graph-frame"]:visible',
+  );
+  const forceCanvas = graphFrame.locator(".force-canvas--ready");
+  await expect(forceCanvas).toBeVisible();
   await graphFrame.scrollIntoViewIfNeeded();
   const graphBox = await graphFrame.boundingBox();
   expect(graphBox).not.toBeNull();
