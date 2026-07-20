@@ -34,7 +34,7 @@ for (const width of [1440, 820, 600, 390]) {
     }
 
     for (const target of [
-      page.getByRole("button", { name: "검색" }),
+      page.getByRole("button", { name: "검색", exact: true }),
       page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
       page.getByRole("link", { name: "Python 스킬맵" }),
       page.getByRole("link", { name: "Python Backend Engineer" }),
@@ -104,7 +104,9 @@ test("keeps category filter actions together at tablet width", async ({
   await page.goto("/jobs?category=infra");
 
   await expect(page.getByLabel("기술 분야")).toHaveValue("infra");
-  const searchBox = await page.getByRole("button", { name: "검색" }).boundingBox();
+  const searchBox = await page
+    .getByRole("button", { name: "검색", exact: true })
+    .boundingBox();
   const resetBox = await page.getByRole("link", { name: "필터 초기화" }).boundingBox();
 
   expect(searchBox).not.toBeNull();
