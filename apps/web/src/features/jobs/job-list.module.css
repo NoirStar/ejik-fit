@@ -214,6 +214,10 @@
   color: var(--color-muted);
 }
 
+.savedSearchComposer {
+  padding: 0 1rem 1rem;
+}
+
 .trustNote {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -769,6 +773,10 @@
     grid-template-columns: 1fr 1fr;
     gap: 0.625rem;
     padding: 0.75rem;
+  }
+
+  .savedSearchComposer {
+    padding: 0 0.75rem 0.75rem;
   }
 
   .filters .field:first-child {

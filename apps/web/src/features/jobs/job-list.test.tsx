@@ -202,7 +202,7 @@ describe("JobList", () => {
     expect(
       screen.queryByRole("link", { name: "페이지 공고 21" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("1–20 / 21건")).toBeInTheDocument();
+    expect(screen.getByText("1-20 / 21건")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "2페이지" })).toHaveAttribute(
       "href",
       "/jobs?page=2",
@@ -231,7 +231,7 @@ describe("JobList", () => {
       screen.queryByRole("link", { name: "페이지 공고 1" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "페이지 공고 21" })).toBeInTheDocument();
-    expect(screen.getByText("21–21 / 21건")).toBeInTheDocument();
+    expect(screen.getByText("21-21 / 21건")).toBeInTheDocument();
   });
 
   it("distinguishes empty, missing-stack, and API error states", async () => {

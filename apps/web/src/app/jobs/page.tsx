@@ -47,6 +47,7 @@ export default async function JobsPage({
   const initialView = SUPPORTED_VIEWS.has(requestedView)
     ? requestedView
     : "all";
+  const saveSearchRequested = first(params.save_search) === "1";
 
   try {
     const postings = normalizePostingList(
@@ -65,6 +66,7 @@ export default async function JobsPage({
         initialView={initialView}
         pageSize={JOBS_PER_PAGE}
         postings={postings}
+        saveSearchRequested={saveSearchRequested}
       />
     );
   } catch (error) {
@@ -77,6 +79,7 @@ export default async function JobsPage({
         initialView={initialView}
         pageSize={JOBS_PER_PAGE}
         postings={null}
+        saveSearchRequested={saveSearchRequested}
       />
     );
   }

@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
+import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
 import {
   readOwnedSkills,
   subscribeOwnedSkills,
@@ -50,6 +51,7 @@ type JobListProps = {
   error?: boolean;
   initialView?: JobView;
   pageSize?: number;
+  saveSearchRequested?: boolean;
 };
 
 type SkillGroupProps = {
@@ -271,6 +273,7 @@ export function JobList({
   error = false,
   initialView = "all",
   pageSize = 20,
+  saveSearchRequested = false,
 }: JobListProps) {
   const [hydrated, setHydrated] = useState(false);
   const [view, setView] = useState<JobView>(initialView);
@@ -299,7 +302,7 @@ export function JobList({
   const pageEnd = pageStart + items.length;
   const resultRangeLabel = view === "all"
     ? items.length
-      ? `${pageStart + 1}–${pageEnd} / ${total}건`
+      ? `${pageStart + 1}-${pageEnd} / ${total}건`
       : `0 / ${total}건`
     : `${visibleJobs.length}건 · 현재 페이지`;
 
@@ -466,11 +469,17 @@ export function JobList({
               )}
             </div>
           </form>
+          <div className={styles.savedSearchComposer}>
+            <SavedSearchComposer
+              filters={filters}
+              openOnReady={saveSearchRequested}
+            />
+          </div>
           <div className={styles.trustNote}>
             <ShieldCheck aria-hidden="true" size={19} weight="fill" />
             <p>
-              지원 전 공식 원문에서 최신 조건을 확인해 주세요. 저장과 내 기술은 이
-              브라우저에만 남습니다.
+              지원 전 공식 원문에서 최신 조건을 확인해 주세요. 저장 공고와 내
+              기술은 브라우저에, 저장 검색은 로그인 계정에 남습니다.
             </p>
             <Link href="/data-policy">데이터 정책</Link>
           </div>

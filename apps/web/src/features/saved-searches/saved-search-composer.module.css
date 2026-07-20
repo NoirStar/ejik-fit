@@ -1,0 +1,157 @@
+.composer {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+
+.trigger {
+  display: inline-flex;
+  width: 100%;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.trigger:disabled {
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.form {
+  display: grid;
+  min-width: 0;
+  gap: 0.625rem;
+}
+
+.field {
+  display: grid;
+  min-width: 0;
+  gap: 0.4375rem;
+}
+
+.field label {
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.field input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  outline: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.field input:focus-visible {
+  border-color: var(--color-accent-strong);
+  outline: 3px solid color-mix(in srgb, var(--color-accent-strong) 16%, transparent);
+  outline-offset: 1px;
+}
+
+.formActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.formActions button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.formActions button:first-child {
+  border-color: var(--color-accent-strong);
+  background: var(--color-accent-strong);
+  color: #ffffff;
+}
+
+.formActions button:disabled {
+  border-color: var(--color-line);
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.trigger:focus-visible,
+.formActions button:focus-visible,
+.success a:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.hint,
+.result,
+.success p {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+.result {
+  color: var(--color-accent-strong);
+}
+
+.result[data-tone="error"] {
+  color: var(--color-danger);
+}
+
+.success {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  border-left: 3px solid var(--color-accent-strong);
+  background: var(--color-brand-subtle);
+  color: var(--color-text);
+}
+
+.success a {
+  display: inline-flex;
+  width: fit-content;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+@media (max-width: 720px) {
+  .formActions {
+    grid-template-columns: 1fr;
+  }
+}

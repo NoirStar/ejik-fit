@@ -78,7 +78,7 @@ describe("JobsPage", () => {
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 20, offset: 40 });
     expect(screen.getByText("전체 공식 공고 61건")).toBeInTheDocument();
-    expect(screen.getByText("41–41 / 61건")).toBeInTheDocument();
+    expect(screen.getByText("41-41 / 61건")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "2페이지" })).toHaveAttribute(
       "href",
       "/jobs?page=2",
