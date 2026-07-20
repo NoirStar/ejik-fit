@@ -1,8 +1,10 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
   screen,
+  within,
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -73,6 +75,16 @@ const setEnabled = vi.fn<SavedJobSearchesController["setEnabled"]>();
 const remove = vi.fn<SavedJobSearchesController["remove"]>();
 const markChecked = vi.fn<SavedJobSearchesController["markChecked"]>();
 const refresh = vi.fn<() => void>();
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
 
 function posting(id: string): PostingSummary {
   return {
@@ -180,7 +192,9 @@ describe("SavedSearchManager", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "이름 수정" }));
-    fireEvent.change(screen.getByLabelText("저장 검색 이름"), {
+    const nameInput = screen.getByLabelText("저장 검색 이름");
+    expect(nameInput).toHaveFocus();
+    fireEvent.change(nameInput, {
       target: { value: "Python 서버 개발" },
     });
     fireEvent.click(screen.getByRole("button", { name: "이름 저장" }));
@@ -195,13 +209,79 @@ describe("SavedSearchManager", () => {
         screen.queryByLabelText("저장 검색 이름"),
       ).not.toBeInTheDocument(),
     );
+    expect(
+      screen.getByRole("button", { name: "이름 수정" }),
+    ).toHaveFocus();
 
-    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    const deleteButton = screen.getByRole("button", { name: "삭제" });
+    fireEvent.click(deleteButton);
     expect(remove).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "삭제 확인" }));
+    const deleteConfirm = screen.getByRole("button", { name: "삭제 확인" });
+    expect(deleteConfirm).toHaveFocus();
+    fireEvent.click(deleteConfirm);
     await waitFor(() =>
       expect(remove).toHaveBeenCalledWith(pythonSearch.id),
     );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "삭제" }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it("keeps each row pending until that row's own mutation settles", async () => {
+    const firstToggle = deferred<boolean>();
+    const secondToggle = deferred<boolean>();
+    const secondSearch = { ...pausedSearch, enabled: true };
+    mockSearches({
+      status: "ready",
+      items: [pythonSearch, secondSearch],
+      error: "",
+    });
+    mockEvaluation({
+      status: "ready",
+      groups: [
+        readyGroup(pythonSearch.id, 23),
+        readyGroup(secondSearch.id, 12),
+      ],
+      error: "",
+    });
+    setEnabled.mockImplementation((id) =>
+      id === pythonSearch.id ? firstToggle.promise : secondToggle.promise,
+    );
+
+    render(<SavedSearchManager />);
+
+    const firstActions = screen.getByRole("group", {
+      name: `${pythonSearch.name} 관리`,
+    });
+    const secondActions = screen.getByRole("group", {
+      name: `${secondSearch.name} 관리`,
+    });
+    fireEvent.click(
+      within(firstActions).getByRole("button", { name: "일시 중지" }),
+    );
+    fireEvent.click(
+      within(secondActions).getByRole("button", { name: "일시 중지" }),
+    );
+
+    const secondRename = within(secondActions).getByRole("button", {
+      name: "이름 수정",
+    });
+    expect(secondRename).toBeDisabled();
+
+    await act(async () => {
+      firstToggle.resolve(true);
+      await firstToggle.promise;
+    });
+
+    expect(secondRename).toBeDisabled();
+
+    await act(async () => {
+      secondToggle.resolve(true);
+      await secondToggle.promise;
+    });
+    await waitFor(() => expect(secondRename).toBeEnabled());
   });
 
   it("keeps current totals but never shows an active new count for a paused rule", async () => {
@@ -249,6 +329,39 @@ describe("SavedSearchManager", () => {
     expect(screen.getByLabelText("저장 검색 이름")).toHaveAttribute(
       "aria-describedby",
       alert.id,
+    );
+    expect(screen.getByLabelText("저장 검색 이름")).toHaveFocus();
+  });
+
+  it("restores delete-button focus after cancellation and a failed deletion", async () => {
+    remove.mockResolvedValue(false);
+
+    render(<SavedSearchManager />);
+
+    const deleteButton = screen.getByRole("button", { name: "삭제" });
+    fireEvent.click(deleteButton);
+    expect(
+      screen.getByRole("button", { name: "삭제 확인" }),
+    ).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "삭제" }),
+      ).toHaveFocus(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "삭제 확인" }));
+
+    expect(
+      await screen.findByText(
+        "저장 검색을 삭제하지 못했습니다. 다시 시도해 주세요.",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "삭제" }),
+      ).toHaveFocus(),
     );
   });
 

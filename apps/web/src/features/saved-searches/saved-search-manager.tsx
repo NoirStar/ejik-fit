@@ -13,7 +13,9 @@ import {
 import Link from "next/link";
 import {
   type FormEvent,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -44,10 +46,9 @@ type PendingAction =
   | "toggle"
   | "remove";
 
-type RowActionState = {
-  id: string;
-  action: PendingAction;
-} | null;
+type RowActionState = Readonly<
+  Record<string, PendingAction | undefined>
+>;
 
 function jobsHref(search: SavedJobSearch) {
   const params = new URLSearchParams();
@@ -105,10 +106,10 @@ function LoadingState({
 type SavedSearchRowProps = {
   evaluation: SavedSearchEvaluationGroup | undefined;
   mutationError: string;
-  onRemove(id: string): Promise<void>;
+  onRemove(id: string): Promise<boolean>;
   onRename(id: string, name: string): Promise<boolean>;
   onToggle(search: SavedJobSearch): Promise<void>;
-  pending: RowActionState;
+  pendingAction: PendingAction | undefined;
   search: SavedJobSearch;
 };
 
@@ -118,23 +119,59 @@ function SavedSearchRow({
   onRemove,
   onRename,
   onToggle,
-  pending,
+  pendingAction,
   search,
 }: SavedSearchRowProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(search.name);
   const [renameFailed, setRenameFailed] = useState(false);
+  const [renameFocusRequest, setRenameFocusRequest] = useState(0);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const renameButtonRef = useRef<HTMLButtonElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const restoreRenameFocus = useRef(false);
+  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const deleteConfirmRef = useRef<HTMLButtonElement>(null);
+  const restoreDeleteFocus = useRef(false);
   const labels = filterLabels(search);
-  const isPending = pending?.id === search.id;
+  const isPending = pendingAction !== undefined;
   const readyEvaluation =
     evaluation?.status === "ready" ? evaluation : null;
+
+  useEffect(() => {
+    if (editing) {
+      renameInputRef.current?.focus();
+      return;
+    }
+    if (restoreRenameFocus.current) {
+      restoreRenameFocus.current = false;
+      renameButtonRef.current?.focus();
+    }
+  }, [editing, renameFocusRequest]);
+
+  useEffect(() => {
+    if (confirmingDelete) {
+      deleteConfirmRef.current?.focus();
+      return;
+    }
+    if (restoreDeleteFocus.current) {
+      restoreDeleteFocus.current = false;
+      deleteButtonRef.current?.focus();
+    }
+  }, [confirmingDelete]);
 
   function beginRename() {
     setName(search.name);
     setRenameFailed(false);
+    restoreDeleteFocus.current = false;
     setEditing(true);
     setConfirmingDelete(false);
+  }
+
+  function cancelRename() {
+    restoreRenameFocus.current = true;
+    setRenameFailed(false);
+    setEditing(false);
   }
 
   async function submitRename(event: FormEvent<HTMLFormElement>) {
@@ -142,11 +179,37 @@ function SavedSearchRow({
     if (!name.trim() || isPending) return;
     const saved = await onRename(search.id, name);
     setRenameFailed(!saved);
-    if (saved) setEditing(false);
+    if (saved) {
+      restoreRenameFocus.current = true;
+      setEditing(false);
+    } else {
+      setRenameFocusRequest((request) => request + 1);
+    }
+  }
+
+  function beginDelete() {
+    restoreRenameFocus.current = false;
+    setEditing(false);
+    setConfirmingDelete(true);
+  }
+
+  function cancelDelete() {
+    restoreDeleteFocus.current = true;
+    setConfirmingDelete(false);
+  }
+
+  async function confirmDelete() {
+    if (isPending) return;
+    await onRemove(search.id);
+    restoreDeleteFocus.current = true;
+    setConfirmingDelete(false);
   }
 
   return (
-    <li className={styles.searchRow}>
+    <li
+      aria-busy={isPending ? "true" : undefined}
+      className={styles.searchRow}
+    >
       <div className={styles.rowMain}>
         <div className={styles.nameLine}>
           <h3 title={search.name}>{search.name}</h3>
@@ -208,10 +271,10 @@ function SavedSearchRow({
                     : undefined
                 }
                 aria-invalid={renameFailed ? "true" : undefined}
-                autoFocus
                 id={`saved-search-name-${search.id}`}
                 maxLength={MAX_SAVED_JOB_SEARCH_NAME_LENGTH}
                 onChange={(event) => setName(event.target.value)}
+                ref={renameInputRef}
                 value={name}
               />
               <button
@@ -222,7 +285,7 @@ function SavedSearchRow({
               </button>
               <button
                 disabled={isPending}
-                onClick={() => setEditing(false)}
+                onClick={cancelRename}
                 type="button"
               >
                 취소
@@ -254,6 +317,7 @@ function SavedSearchRow({
         <button
           disabled={isPending}
           onClick={beginRename}
+          ref={renameButtonRef}
           type="button"
         >
           <PencilSimple aria-hidden="true" size={15} />
@@ -279,14 +343,15 @@ function SavedSearchRow({
           >
             <button
               disabled={isPending}
-              onClick={() => void onRemove(search.id)}
+              onClick={() => void confirmDelete()}
+              ref={deleteConfirmRef}
               type="button"
             >
               삭제 확인
             </button>
             <button
               disabled={isPending}
-              onClick={() => setConfirmingDelete(false)}
+              onClick={cancelDelete}
               type="button"
             >
               취소
@@ -296,10 +361,8 @@ function SavedSearchRow({
           <button
             className={styles.deleteButton}
             disabled={isPending}
-            onClick={() => {
-              setEditing(false);
-              setConfirmingDelete(true);
-            }}
+            onClick={beginDelete}
+            ref={deleteButtonRef}
             type="button"
           >
             <Trash aria-hidden="true" size={15} />
@@ -320,7 +383,7 @@ export function SavedSearchManager() {
     savedSearches.markChecked,
     { includePaused: true },
   );
-  const [pending, setPending] = useState<RowActionState>(null);
+  const [pending, setPending] = useState<RowActionState>({});
   const [mutationErrors, setMutationErrors] = useState<
     Record<string, string>
   >({});
@@ -338,16 +401,29 @@ export function SavedSearchManager() {
     });
   }
 
+  function beginRowAction(id: string, action: PendingAction) {
+    setPending((current) => ({ ...current, [id]: action }));
+  }
+
+  function finishRowAction(id: string, action: PendingAction) {
+    setPending((current) => {
+      if (current[id] !== action) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+
   async function renameSearch(id: string, name: string) {
     clearMutationError(id);
-    setPending({ id, action: "rename" });
+    beginRowAction(id, "rename");
     let saved = false;
     try {
       saved = await savedSearches.rename(id, name);
     } catch {
       saved = false;
     } finally {
-      setPending(null);
+      finishRowAction(id, "rename");
     }
     if (!saved) {
       setMutationErrors((current) => ({
@@ -360,7 +436,7 @@ export function SavedSearchManager() {
 
   async function toggleSearch(search: SavedJobSearch) {
     clearMutationError(search.id);
-    setPending({ id: search.id, action: "toggle" });
+    beginRowAction(search.id, "toggle");
     let saved = false;
     try {
       saved = await savedSearches.setEnabled(
@@ -370,7 +446,7 @@ export function SavedSearchManager() {
     } catch {
       saved = false;
     } finally {
-      setPending(null);
+      finishRowAction(search.id, "toggle");
     }
     if (!saved) {
       setMutationErrors((current) => ({
@@ -384,14 +460,14 @@ export function SavedSearchManager() {
 
   async function removeSearch(id: string) {
     clearMutationError(id);
-    setPending({ id, action: "remove" });
+    beginRowAction(id, "remove");
     let removed = false;
     try {
       removed = await savedSearches.remove(id);
     } catch {
       removed = false;
     } finally {
-      setPending(null);
+      finishRowAction(id, "remove");
     }
     if (!removed) {
       setMutationErrors((current) => ({
@@ -399,6 +475,7 @@ export function SavedSearchManager() {
         [id]: "저장 검색을 삭제하지 못했습니다. 다시 시도해 주세요.",
       }));
     }
+    return removed;
   }
 
   if (!authReady) {
@@ -552,7 +629,7 @@ export function SavedSearchManager() {
               onRemove={removeSearch}
               onRename={renameSearch}
               onToggle={toggleSearch}
-              pending={pending}
+              pendingAction={pending[search.id]}
               search={search}
             />
           ))}

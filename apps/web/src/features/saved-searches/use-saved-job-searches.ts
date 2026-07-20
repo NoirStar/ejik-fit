@@ -82,6 +82,12 @@ type StateChange =
   | SavedJobSearchesState
   | ((current: SavedJobSearchesState) => SavedJobSearchesState);
 
+type AccountOwnedState = {
+  viewerId: string | undefined;
+  generation: number;
+  value: SavedJobSearchesState;
+};
+
 type VersionedField = "name" | "enabled" | "lastCheckedAt" | "remove";
 
 function mutationFieldKey(id: string, field: VersionedField) {
@@ -93,10 +99,14 @@ export function useSavedJobSearches(
   injectedStore?: SavedJobSearchStore,
 ): SavedJobSearchesController {
   const viewerId = viewer?.id;
-  const [state, setState] = useState<SavedJobSearchesState>(IDLE_STATE);
+  const account = useRef({ viewerId, generation: 0 });
+  const [committedState, setCommittedState] =
+    useState<AccountOwnedState>(() => ({
+      ...account.current,
+      value: IDLE_STATE,
+    }));
   const stateRef = useRef<SavedJobSearchesState>(IDLE_STATE);
   const mounted = useRef(false);
-  const account = useRef({ viewerId, generation: 0 });
   const loadRequest = useRef(0);
   const mutationSequence = useRef(0);
   const mutationVersions = useRef(new Map<string, number>());
@@ -117,13 +127,19 @@ export function useSavedJobSearches(
       generation,
       tail: Promise.resolve(),
     };
+    stateRef.current = IDLE_STATE;
   }
 
   const commitState = useCallback((change: StateChange) => {
     const next =
       typeof change === "function" ? change(stateRef.current) : change;
+    const owner = account.current;
     stateRef.current = next;
-    setState(next);
+    setCommittedState({
+      viewerId: owner.viewerId,
+      generation: owner.generation,
+      value: next,
+    });
   }, []);
 
   const beginMutation = useCallback((keys: string[]) => {
@@ -692,8 +708,15 @@ export function useSavedJobSearches(
     ],
   );
 
+  const currentAccount = account.current;
+  const exposedState =
+    committedState.viewerId === currentAccount.viewerId &&
+    committedState.generation === currentAccount.generation
+      ? committedState.value
+      : IDLE_STATE;
+
   return {
-    state,
+    state: exposedState,
     reload,
     create,
     rename,

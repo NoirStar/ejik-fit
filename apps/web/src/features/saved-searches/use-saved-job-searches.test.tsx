@@ -182,6 +182,64 @@ describe("useSavedJobSearches", () => {
     });
   });
 
+  it("never exposes or mutates the previous viewer's rows during an account switch", async () => {
+    const nextViewer = { id: "user-2", email: "next@example.com" };
+    const nextItem = savedSearch("search-2", "Go", {
+      userId: nextViewer.id,
+    });
+    const nextList = deferred<SavedJobSearch[]>();
+    const store = fakeStore({
+      list: vi.fn().mockImplementation((userId: string) =>
+        userId === viewer.id
+          ? Promise.resolve([existing])
+          : nextList.promise,
+      ),
+      update: vi.fn(),
+    });
+    const observedRenders: Array<{
+      viewerId: string | null;
+      itemIds: string[];
+    }> = [];
+    type Props = { activeViewer: typeof viewer | null };
+    const { result, rerender } = renderHook(
+      ({ activeViewer }: Props) => {
+        const controller = useSavedJobSearches(activeViewer, store);
+        observedRenders.push({
+          viewerId: activeViewer?.id ?? null,
+          itemIds: controller.state.items.map((item) => item.id),
+        });
+        return controller;
+      },
+      { initialProps: { activeViewer: viewer } as Props },
+    );
+    await waitFor(() =>
+      expect(result.current.state.items).toEqual([existing]),
+    );
+
+    rerender({ activeViewer: nextViewer });
+
+    const firstNextViewerRender = observedRenders.find(
+      (render) => render.viewerId === nextViewer.id,
+    );
+    expect(firstNextViewerRender?.itemIds).toEqual([]);
+    expect(result.current.state.items).toEqual([]);
+
+    let renamed;
+    await act(async () => {
+      renamed = await result.current.rename(existing.id, "노출되면 안 됨");
+    });
+    expect(renamed).toBe(false);
+    expect(store.update).not.toHaveBeenCalled();
+
+    await act(async () => {
+      nextList.resolve([nextItem]);
+      await nextList.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.state.items).toEqual([nextItem]),
+    );
+  });
+
   it("does not let an older failed mutation erase a later success", async () => {
     const older = deferred<SavedJobSearch>();
     const later = deferred<SavedJobSearch>();
