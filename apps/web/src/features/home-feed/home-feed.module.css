@@ -1368,6 +1368,66 @@
   font-weight: 750;
 }
 
+.composerKinds {
+  min-width: 0;
+  margin: 0.5rem 0 0.25rem;
+  padding: 0;
+  border: 0;
+}
+
+.composerKinds legend {
+  margin-bottom: 0.45rem;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 750;
+}
+
+.composerKinds > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.composerKinds label {
+  display: grid;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0 0.625rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.625rem;
+  background: var(--color-surface);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  place-items: center;
+}
+
+.composerKinds label[data-selected="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.composerKinds label:focus-within {
+  outline: 2px solid var(--color-accent-strong);
+  outline-offset: 2px;
+}
+
+.composerKinds .composerKindInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  clip-path: inset(50%);
+}
+
+.composerKinds .composerKindInput:focus {
+  box-shadow: none;
+}
+
 .composerForm input,
 .composerForm textarea {
   width: 100%;

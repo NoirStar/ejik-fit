@@ -445,6 +445,10 @@ describe("HomeFeed", () => {
     expect(screen.getByText("제목을 입력해 주세요.")).toBeInTheDocument();
     expect(screen.getByText("내용을 입력해 주세요.")).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("radio", { name: "면접 후기" }));
+    expect(
+      screen.getByRole("radio", { name: "면접 후기" }),
+    ).toBeChecked();
     fireEvent.change(screen.getByLabelText("제목"), {
       target: { value: "첫 이직 준비에서 배운 점" },
     });
@@ -467,6 +471,7 @@ describe("HomeFeed", () => {
     expect(stored).toEqual([
       expect.objectContaining({
         id: expect.stringMatching(/^local-/),
+        category: "면접 후기",
         title: "첫 이직 준비에서 배운 점",
         body: "공고의 요구 기술을 먼저 비교하니 준비할 순서가 훨씬 선명해졌습니다.",
         tags: ["이직 준비", "Java", "백엔드"],
@@ -477,6 +482,7 @@ describe("HomeFeed", () => {
         name: "첫 이직 준비에서 배운 점",
       }),
     ).toHaveAttribute("href", `/posts/${stored[0].id}`);
+    expect(within(firstArticle).getByText("면접 후기")).toBeInTheDocument();
     expect(
       screen.getByText("작성한 글을 이 브라우저에 저장했습니다."),
     ).toBeInTheDocument();

@@ -26,10 +26,12 @@ import { CompanyMark } from "./company-mark";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
   createLocalCommunityPost,
+  DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   deleteLocalCommunityPost,
   readLocalCommunityPosts,
   subscribeLocalCommunityPosts,
   type LocalCommunityPost,
+  type LocalCommunityPostCategory,
 } from "@/lib/local-community-posts";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
@@ -71,6 +73,7 @@ export type HomeFeedProps = {
 };
 
 type LocalPostDraft = {
+  category: LocalCommunityPostCategory;
   title: string;
   body: string;
   tags: string;
@@ -89,7 +92,21 @@ const TABS: Array<{
   { id: "popular", label: "인기" },
 ];
 
-const EMPTY_DRAFT: LocalPostDraft = { title: "", body: "", tags: "" };
+const POST_KIND_OPTIONS: ReadonlyArray<{
+  label: string;
+  value: LocalCommunityPostCategory;
+}> = [
+  { label: "질문", value: "커리어 질문" },
+  { label: "커리어 고민", value: "커리어 고민" },
+  { label: "면접 후기", value: "면접 후기" },
+];
+
+const EMPTY_DRAFT: LocalPostDraft = {
+  category: DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
+  title: "",
+  body: "",
+  tags: "",
+};
 
 function isSocialItem(item: FeedItem): item is SocialItem {
   return item.type === "community_post" || item.type === "interview_review";
@@ -705,6 +722,7 @@ export function HomeFeed({
     }
 
     const result = createLocalCommunityPost({
+      category: draft.category,
       title,
       body,
       tags: draft.tags.split(","),
@@ -999,6 +1017,35 @@ export function HomeFeed({
             </header>
 
             <form className={styles.composerForm} onSubmit={submitPost}>
+              <fieldset className={styles.composerKinds}>
+                <legend>글 종류</legend>
+                <div>
+                  {POST_KIND_OPTIONS.map((option) => (
+                    <label
+                      data-selected={
+                        draft.category === option.value ? "true" : undefined
+                      }
+                      key={option.value}
+                    >
+                      <input
+                        checked={draft.category === option.value}
+                        className={styles.composerKindInput}
+                        name="community-post-kind"
+                        onChange={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            category: option.value,
+                          }))
+                        }
+                        type="radio"
+                        value={option.value}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
               <label htmlFor="community-post-title">제목</label>
               <input
                 aria-describedby={draftErrors.title ? "community-post-title-error" : undefined}

@@ -12,7 +12,12 @@ export type AuthorTone = "violet" | "blue" | "green" | "orange";
 export type CommunityPostFeedItem = {
   id: string;
   type: "community_post";
-  category: "이직 고민" | "커리어 질문" | "업무 이야기";
+  category:
+    | "이직 고민"
+    | "커리어 질문"
+    | "커리어 고민"
+    | "업무 이야기"
+    | "면접 후기";
   authorId: string;
   authorName: string;
   authorHeadline: string;

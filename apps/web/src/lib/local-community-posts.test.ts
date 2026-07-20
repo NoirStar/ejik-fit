@@ -111,6 +111,7 @@ describe("local community post storage", () => {
     const fake = storage();
     const result = createLocalCommunityPost(
       {
+        category: "면접 후기",
         title: " 첫 이직 질문 ",
         body: " 준비 순서가 궁금합니다. ",
         tags: [" Java ", "java", "백엔드"],
@@ -124,6 +125,7 @@ describe("local community post storage", () => {
 
     expect(result.post).toEqual({
       id: "local-first-post",
+      category: "면접 후기",
       title: "첫 이직 질문",
       body: "준비 순서가 궁금합니다.",
       tags: ["Java", "백엔드"],

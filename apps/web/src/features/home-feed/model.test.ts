@@ -92,6 +92,7 @@ describe("buildHomeFeedSnapshot", () => {
       localCommunityPostToFeedItem(
         {
           id: "local-first-post",
+          category: "커리어 고민",
           title: "첫 이직 질문",
           body: "준비 순서가 궁금합니다.",
           tags: ["Java", "백엔드"],
@@ -102,7 +103,7 @@ describe("buildHomeFeedSnapshot", () => {
     ).toEqual({
       id: "local-first-post",
       type: "community_post",
-      category: "업무 이야기",
+      category: "커리어 고민",
       authorId: "local-browser-user",
       authorName: "나",
       authorHeadline: "이 브라우저에서 작성",

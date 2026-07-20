@@ -8,7 +8,10 @@ import {
   type CareerPreferences,
 } from "@/lib/career-preferences";
 import { formatCareer, formatEmployment } from "@/lib/labels";
-import type { LocalCommunityPost } from "@/lib/local-community-posts";
+import {
+  DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
+  type LocalCommunityPost,
+} from "@/lib/local-community-posts";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
@@ -59,7 +62,7 @@ export function localCommunityPostToFeedItem(
   return {
     id: post.id,
     type: "community_post",
-    category: "업무 이야기",
+    category: post.category ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
     authorId: "local-browser-user",
     authorName: "나",
     authorHeadline: "이 브라우저에서 작성",

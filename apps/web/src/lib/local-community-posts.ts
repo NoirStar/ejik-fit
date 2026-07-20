@@ -12,8 +12,19 @@ export const MAX_LOCAL_COMMUNITY_POST_BODY_LENGTH = 1200;
 export const MAX_LOCAL_COMMUNITY_POST_TAGS = 4;
 const MAX_TAG_LENGTH = 40;
 
+export const LOCAL_COMMUNITY_POST_CATEGORIES = [
+  "커리어 질문",
+  "커리어 고민",
+  "면접 후기",
+] as const;
+export type LocalCommunityPostCategory =
+  (typeof LOCAL_COMMUNITY_POST_CATEGORIES)[number];
+export const DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY: LocalCommunityPostCategory =
+  "커리어 질문";
+
 export type LocalCommunityPost = {
   id: string;
+  category?: LocalCommunityPostCategory;
   title: string;
   body: string;
   tags: string[];
@@ -21,6 +32,7 @@ export type LocalCommunityPost = {
 };
 
 export type LocalCommunityPostDraft = {
+  category?: LocalCommunityPostCategory;
   title: string;
   body: string;
   tags: string[];
@@ -62,6 +74,12 @@ function normalizeTags(value: unknown) {
   return tags;
 }
 
+function normalizeCategory(
+  value: unknown,
+): LocalCommunityPostCategory | undefined {
+  return LOCAL_COMMUNITY_POST_CATEGORIES.find((category) => category === value);
+}
+
 function normalizePost(value: unknown): LocalCommunityPost | null {
   if (!isRecord(value) || !isLocalCommunityPostId(value.id)) return null;
   const title = typeof value.title === "string" ? value.title.trim() : "";
@@ -78,8 +96,10 @@ function normalizePost(value: unknown): LocalCommunityPost | null {
   ) {
     return null;
   }
+  const category = normalizeCategory(value.category);
   return {
     id: value.id,
+    ...(category ? { category } : {}),
     title,
     body,
     tags: normalizeTags(value.tags),
