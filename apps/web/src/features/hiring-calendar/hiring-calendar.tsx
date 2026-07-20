@@ -6,6 +6,7 @@ import {
   BookmarkSimple,
   Buildings,
   CalendarBlank,
+  CaretDown,
   CaretLeft,
   CaretRight,
   Clock,
@@ -50,6 +51,7 @@ const FILTERS: ReadonlyArray<{
 ];
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+const UPCOMING_PAGE_SIZE = 8;
 
 const DATE_LABEL_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   month: "long",
@@ -249,6 +251,9 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
   const [filter, setFilter] = useState<CalendarFilter>("all");
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [followedCompanySlugs, setFollowedCompanySlugs] = useState<string[]>([]);
+  const [visibleDeadlineCount, setVisibleDeadlineCount] = useState(
+    UPCOMING_PAGE_SIZE,
+  );
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
@@ -260,6 +265,10 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
       stopFollowed();
     };
   }, []);
+
+  useEffect(() => {
+    setVisibleDeadlineCount(UPCOMING_PAGE_SIZE);
+  }, [filter, model?.monthKey]);
 
   const savedIds = useMemo(() => new Set(savedJobIds), [savedJobIds]);
   const followedSlugs = useMemo(
@@ -307,6 +316,19 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
   const filterLabel =
     FILTERS.find((item) => item.id === filter)?.label ?? "전체";
   const hasFilteredDeadlines = filteredModel.deadlines.length > 0;
+  const todayKey = model.days.find((day) => day.isToday)?.dateKey;
+  const panelDeadlines = todayKey
+    ? filteredModel.deadlines.filter(
+        (deadline) => deadline.deadlineDateKey >= todayKey,
+      )
+    : filteredModel.deadlines;
+  const visibleDeadlines = panelDeadlines.slice(0, visibleDeadlineCount);
+  const hiddenDeadlineCount =
+    panelDeadlines.length - visibleDeadlines.length;
+  const nextDeadlineCount = Math.min(
+    UPCOMING_PAGE_SIZE,
+    hiddenDeadlineCount,
+  );
 
   return (
     <main className={styles.page}>
@@ -452,30 +474,56 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
           >
             <header className={styles.sideHeader}>
               <div>
-                <h2 id="upcoming-deadlines-title">이번 달 마감 공고</h2>
+                <h2 id="upcoming-deadlines-title">
+                  {todayKey ? "가까운 마감 공고" : `${model.label} 마감 공고`}
+                </h2>
                 <span>{filterLabel} 기준</span>
               </div>
               <CalendarBlank aria-hidden="true" size={19} />
             </header>
 
-            {hasFilteredDeadlines ? (
-              <ol className={styles.upcomingList}>
-                {filteredModel.deadlines.map((deadline) => (
-                  <UpcomingDeadline
-                    deadline={deadline}
-                    followed={Boolean(
-                      deadline.company_slug &&
-                        followedSlugs.has(deadline.company_slug),
-                    )}
-                    key={deadline.id}
-                    saved={savedIds.has(deadline.id)}
-                  />
-                ))}
-              </ol>
+            {panelDeadlines.length > 0 ? (
+              <>
+                <ol className={styles.upcomingList}>
+                  {visibleDeadlines.map((deadline) => (
+                    <UpcomingDeadline
+                      deadline={deadline}
+                      followed={Boolean(
+                        deadline.company_slug &&
+                          followedSlugs.has(deadline.company_slug),
+                      )}
+                      key={deadline.id}
+                      saved={savedIds.has(deadline.id)}
+                    />
+                  ))}
+                </ol>
+                {hiddenDeadlineCount > 0 && (
+                  <button
+                    aria-label={`${nextDeadlineCount}건 더 보기`}
+                    className={styles.showMore}
+                    onClick={() =>
+                      setVisibleDeadlineCount((current) =>
+                        Math.min(
+                          panelDeadlines.length,
+                          current + UPCOMING_PAGE_SIZE,
+                        ),
+                      )
+                    }
+                    type="button"
+                  >
+                    {nextDeadlineCount}건 더 보기
+                    <CaretDown aria-hidden="true" size={13} weight="bold" />
+                  </button>
+                )}
+              </>
             ) : (
               <div className={styles.compactState}>
-                <strong>표시할 마감 공고가 없습니다.</strong>
-                <p>다른 필터를 선택하거나 전체 공고를 확인해 보세요.</p>
+                <strong>
+                  {todayKey
+                    ? "이달에 남은 명시 마감 공고가 없습니다."
+                    : "표시할 명시 마감 공고가 없습니다."}
+                </strong>
+                <p>다른 필터를 선택하거나 달력에서 이전 일정을 확인해 보세요.</p>
               </div>
             )}
           </section>

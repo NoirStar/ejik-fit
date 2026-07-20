@@ -168,4 +168,47 @@ describe("HiringCalendar", () => {
       }),
     ).not.toBeInTheDocument();
   });
+
+  it("keeps the upcoming panel compact and expands only on request", () => {
+    const manyDeadlines: HiringOverviewResponse = {
+      ...overview,
+      deadline_total: 12,
+      deadlines: Array.from({ length: 12 }, (_, index) => ({
+        ...overview.deadlines[0],
+        id: `job-${index + 1}`,
+        title: `마감 예정 공고 ${index + 1}`,
+        closes_at: `2026-07-${String(
+          21 + Math.floor(index / 2),
+        ).padStart(2, "0")}T14:59:00Z`,
+      })),
+    };
+
+    render(
+      <HiringCalendar
+        model={buildHiringCalendarModel(
+          manyDeadlines,
+          "2026-07",
+          "2026-07-20",
+        )}
+      />,
+    );
+
+    const upcoming = screen.getByRole("region", {
+      name: "가까운 마감 공고",
+    });
+    expect(
+      within(upcoming).getAllByRole("link", { name: /상세 보기/ }),
+    ).toHaveLength(8);
+
+    fireEvent.click(
+      within(upcoming).getByRole("button", { name: "4건 더 보기" }),
+    );
+
+    expect(
+      within(upcoming).getAllByRole("link", { name: /상세 보기/ }),
+    ).toHaveLength(12);
+    expect(
+      within(upcoming).queryByRole("button", { name: /더 보기/ }),
+    ).not.toBeInTheDocument();
+  });
 });
