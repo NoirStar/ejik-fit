@@ -427,6 +427,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link href="/career/alerts" onClick={closeUtilityMenus}>
                     공고 알림
                   </Link>
+                  <Link href="/career/calendar" onClick={closeUtilityMenus}>
+                    채용 일정
+                  </Link>
                   <Link href="/career/companies" onClick={closeUtilityMenus}>
                     관심 기업
                   </Link>

@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookmarkSimple,
   Buildings,
+  CalendarBlank,
   Database,
   Plus,
   ShieldCheck,
@@ -528,6 +529,10 @@ export function CareerOverview({
           <Link className={styles.savedLibraryLink} href="/career/companies">
             <Buildings aria-hidden="true" size={16} weight="fill" />
             관심 기업
+          </Link>
+          <Link className={styles.savedLibraryLink} href="/career/calendar">
+            <CalendarBlank aria-hidden="true" size={16} weight="fill" />
+            채용 일정
           </Link>
         </div>
       </header>

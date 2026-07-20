@@ -49,6 +49,26 @@ class PostingListResponse(BaseModel):
     total: int
 
 
+class HiringCompanyActivity(BaseModel):
+    company_name: str
+    company_slug: str
+    new_postings: int
+    latest_first_seen_at: datetime
+    nearest_deadline_at: datetime | None = None
+
+
+class HiringOverviewResponse(BaseModel):
+    range_start: date
+    range_end: date
+    activity_since: datetime
+    deadline_total: int
+    closing_next_7_days: int
+    undated_open_postings: int
+    activity_company_total: int
+    deadlines: list[PostingSummary]
+    activities: list[HiringCompanyActivity]
+
+
 class SkillStat(BaseModel):
     skill: str
     category: str

@@ -85,6 +85,10 @@ describe("CareerOverview", () => {
       "href",
       "/career/saved",
     );
+    expect(screen.getByRole("link", { name: "채용 일정" })).toHaveAttribute(
+      "href",
+      "/career/calendar",
+    );
     expect(
       await screen.findByRole("heading", {
         level: 2,

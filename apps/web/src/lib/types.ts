@@ -42,6 +42,26 @@ export type PostingListResponse = {
   total: number;
 };
 
+export type HiringCompanyActivity = {
+  company_name: string;
+  company_slug: string;
+  new_postings: number;
+  latest_first_seen_at: string;
+  nearest_deadline_at: string | null;
+};
+
+export type HiringOverviewResponse = {
+  range_start: string;
+  range_end: string;
+  activity_since: string;
+  deadline_total: number;
+  closing_next_7_days: number;
+  undated_open_postings: number;
+  activity_company_total: number;
+  deadlines: PostingSummary[];
+  activities: HiringCompanyActivity[];
+};
+
 export type SkillStat = {
   skill: string;
   category: string;

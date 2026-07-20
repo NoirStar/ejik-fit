@@ -10,6 +10,11 @@ from ejikfit.api.graph import (
     SkillGraphReader,
     create_graph_router,
 )
+from ejikfit.api.hiring import (
+    DatabaseHiringOverviewReader,
+    HiringOverviewReader,
+    create_hiring_router,
+)
 from ejikfit.api.postings import (
     DatabasePostingReader,
     PostingReader,
@@ -53,6 +58,7 @@ def create_app(
     fit_analysis_reader: FitAnalysisReader | None = None,
     source_directory_reader: SourceDirectoryReader | None = None,
     dunamu_jobs_reader: DunamuJobsReader | None = None,
+    hiring_overview_reader: HiringOverviewReader | None = None,
 ) -> FastAPI:
     application = FastAPI(title="이직핏 API", version="0.1.0")
 
@@ -86,6 +92,10 @@ def create_app(
     application.include_router(
         create_sources_router(source_directory_reader, dunamu_jobs_reader)
     )
+
+    if hiring_overview_reader is None:
+        hiring_overview_reader = DatabaseHiringOverviewReader()
+    application.include_router(create_hiring_router(hiring_overview_reader))
 
     return application
 

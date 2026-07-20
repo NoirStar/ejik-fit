@@ -1,6 +1,7 @@
 import type {
   FitAnalyzeRequest,
   FitAnalyzeResponse,
+  HiringOverviewResponse,
   PostingDetail,
   PostingListResponse,
   SkillGraphResponse,
@@ -8,15 +9,14 @@ import type {
   SkillTrendResponse,
   SourceDirectoryResponse,
 } from "./types";
+import { normalizeHiringOverview } from "./hiring-contract";
 import {
   normalizePostingDetail,
   normalizePostingList,
 } from "./posting-contract";
 
-
 const API_BASE_URL =
   process.env.API_BASE_URL ?? "http://localhost:8000";
-
 
 export class ApiError extends Error {
   constructor(
@@ -26,7 +26,6 @@ export class ApiError extends Error {
     super(`API request failed: ${url} (${status})`);
   }
 }
-
 
 async function request<T>(
   path: string,
@@ -46,7 +45,6 @@ async function request<T>(
   }
   return response.json() as Promise<T>;
 }
-
 
 export async function getPostings(filters: {
   q?: string;
@@ -85,7 +83,6 @@ export async function getPostings(filters: {
   );
 }
 
-
 export async function getPosting(
   id: string,
   signal?: AbortSignal,
@@ -97,6 +94,26 @@ export async function getPosting(
   );
 }
 
+export async function getHiringOverview(filters: {
+  start: string;
+  end: string;
+  activityDays?: number;
+  limit?: number;
+}): Promise<HiringOverviewResponse> {
+  const params = new URLSearchParams({
+    start: filters.start,
+    end: filters.end,
+  });
+  if (filters.activityDays) {
+    params.set("activity_days", String(filters.activityDays));
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
+  }
+  return normalizeHiringOverview(
+    await request<unknown>(`/api/hiring/overview?${params.toString()}`),
+  );
+}
 
 export function getSkillStats(filters: {
   career_type?: string;
@@ -117,7 +134,6 @@ export function getSkillStats(filters: {
   return request<SkillStatsResponse>(`/api/skills/stats${query}`);
 }
 
-
 export function getSkillTrends(
   skills: string[],
   weeks = 12,
@@ -129,11 +145,9 @@ export function getSkillTrends(
   return request<SkillTrendResponse>(`/api/skills/trends?${params.toString()}`);
 }
 
-
 export function getSourceDirectory(): Promise<SourceDirectoryResponse> {
   return request<SourceDirectoryResponse>("/api/sources");
 }
-
 
 export function getSkillGraph(filters: {
   seed?: string;
@@ -157,7 +171,6 @@ export function getSkillGraph(filters: {
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<SkillGraphResponse>(`/api/graph/skills${query}`);
 }
-
 
 export function analyzeFit(
   payload: FitAnalyzeRequest,
