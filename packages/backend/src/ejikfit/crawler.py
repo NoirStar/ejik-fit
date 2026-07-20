@@ -1831,12 +1831,23 @@ async def crawl_source(
     try:
         listing = await _fetch_listing_page(source, fetcher, browser_renderer)
     except BlockedSourceError as error:
+        browser_access_limited = (
+            source.source_type == SourceType.BROWSER_PUBLIC_RENDER
+        )
         _mark_source_error(
             source,
             "blocked",
             str(error),
-            status=SourceStatus.REVIEW,
-            policy_status=PolicyStatus.REVIEW,
+            status=(
+                SourceStatus.NEEDS_BROWSER
+                if browser_access_limited
+                else SourceStatus.REVIEW
+            ),
+            policy_status=(
+                PolicyStatus.ALLOWED
+                if browser_access_limited
+                else PolicyStatus.REVIEW
+            ),
         )
         session.commit()
         return CrawlResult(failed=1)

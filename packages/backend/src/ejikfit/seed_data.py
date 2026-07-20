@@ -3718,11 +3718,18 @@ def _apply_source_metadata(source: CareerSource, item: SeedSource) -> None:
     reverify_nexon_browser_access = (
         item.connector_family == NEXON_CONNECTOR_FAMILY
         and source.connector_family == NEXON_CONNECTOR_FAMILY
-        and source.status == SourceStatus.BLOCKED
-        and source.policy_status == PolicyStatus.BLOCKED
+        and (
+            (
+                source.status == SourceStatus.BLOCKED
+                and source.policy_status == PolicyStatus.BLOCKED
+            )
+            or (
+                source.status == SourceStatus.REVIEW
+                and source.policy_status == PolicyStatus.REVIEW
+            )
+        )
         and source.last_error_code == "blocked"
         and (source.last_error_reason or "").startswith("Nexon ")
-        and source.last_success_at is None
     )
     source.source_type = item.source_type
     source.request_method = item.request_method

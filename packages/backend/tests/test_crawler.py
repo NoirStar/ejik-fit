@@ -638,6 +638,9 @@ def test_nexon_snapshot_failure_never_closes_existing_posting() -> None:
         )
 
         assert result.failed == 1
+        assert source.status == SourceStatus.NEEDS_BROWSER
+        assert source.policy_status == PolicyStatus.ALLOWED
+        assert source.last_error_code == "blocked"
         assert posting.missing_runs == 2
         assert posting.status == PostingStatus.OPEN
 

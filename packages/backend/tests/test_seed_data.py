@@ -1,3 +1,6 @@
+from datetime import datetime, timezone
+
+import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
@@ -1517,7 +1520,18 @@ def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
         assert source.last_error_code == "blocked"
 
 
-def test_seeding_reverifies_new_nexon_source_after_automatic_access_block() -> None:
+@pytest.mark.parametrize(
+    ("source_status", "policy_status", "has_prior_success"),
+    [
+        (SourceStatus.BLOCKED, PolicyStatus.BLOCKED, False),
+        (SourceStatus.REVIEW, PolicyStatus.REVIEW, True),
+    ],
+)
+def test_seeding_reverifies_new_nexon_source_after_automatic_access_block(
+    source_status: SourceStatus,
+    policy_status: PolicyStatus,
+    has_prior_success: bool,
+) -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
 
@@ -1527,9 +1541,14 @@ def test_seeding_reverifies_new_nexon_source_after_automatic_access_block() -> N
             select(CareerSource).join(Company).where(Company.slug == "neople")
         )
         assert source is not None
-        assert source.last_success_at is None
-        source.status = SourceStatus.BLOCKED
-        source.policy_status = PolicyStatus.BLOCKED
+        previous_success = (
+            datetime(2026, 7, 16, tzinfo=timezone.utc)
+            if has_prior_success
+            else None
+        )
+        source.last_success_at = previous_success
+        source.status = source_status
+        source.policy_status = policy_status
         source.last_error_code = "blocked"
         source.last_error_reason = "Nexon home page denied access with 403"
         session.commit()
@@ -1540,6 +1559,12 @@ def test_seeding_reverifies_new_nexon_source_after_automatic_access_block() -> N
         assert source.policy_status == PolicyStatus.ALLOWED
         assert source.last_error_code is None
         assert source.last_error_reason is None
+        expected_success = (
+            previous_success.replace(tzinfo=None)
+            if previous_success is not None
+            else None
+        )
+        assert source.last_success_at == expected_success
 
 
 def test_seeding_reverifies_dunamu_after_transport_connector_upgrade() -> None:
