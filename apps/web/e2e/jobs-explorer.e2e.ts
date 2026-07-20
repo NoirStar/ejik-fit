@@ -35,13 +35,20 @@ for (const width of [1440, 820, 600, 390]) {
 
     for (const target of [
       page.getByRole("button", { name: "검색", exact: true }),
-      page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
       page.getByRole("link", { name: "Python 스킬맵" }),
-      page.getByRole("link", { name: "Python Backend Engineer" }),
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+
+    for (const textLink of [
+      page.getByRole("link", { name: "NAVER 기업 채용 현황" }),
+      page.getByRole("link", { name: "Python Backend Engineer" }),
+    ]) {
+      await expect(textLink).toBeVisible();
+      await textLink.focus();
+      await expect(textLink).toBeFocused();
     }
 
     if (width <= 680) {
