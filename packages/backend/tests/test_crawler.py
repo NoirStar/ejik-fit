@@ -421,8 +421,14 @@ def _nexon_job(job_id: int) -> dict[str, object]:
 
 
 class _FakeNexonPage:
-    def __init__(self, *, total: int = 16) -> None:
+    def __init__(
+        self,
+        *,
+        total: int = 16,
+        navigation_status: int = 200,
+    ) -> None:
         self.total = total
+        self.navigation_status = navigation_status
         self.visited_urls: list[str] = []
         self.waited_for_load_states: list[tuple[str, int]] = []
         self.expected_response_timeouts: list[int] = []
@@ -451,7 +457,7 @@ class _FakeNexonPage:
 
     async def goto(self, url: str, *, wait_until: str, timeout: int):
         self.visited_urls.append(url)
-        return _FakePlaywrightResponse(200)
+        return _FakePlaywrightResponse(self.navigation_status)
 
     async def wait_for_load_state(self, state: str, *, timeout: int) -> None:
         self.waited_for_load_states.append((state, timeout))
@@ -559,6 +565,25 @@ def test_nexon_snapshot_uses_headed_chromium_and_combines_pages(
     assert len(json.loads(snapshot.text)["list"]) == 16
     assert chromium.browser.context.closed is True
     assert chromium.browser.closed is True
+
+
+def test_nexon_snapshot_accepts_a_completed_browser_security_check(
+    monkeypatch,
+) -> None:
+    page = _FakeNexonPage(total=16, navigation_status=403)
+    chromium = _FakeNexonChromium(page)
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakeNexonPlaywrightManager(chromium)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+
+    snapshot = asyncio.run(
+        crawler.PlaywrightBrowserRenderer(
+            nexon_page_delay_seconds=0,
+        ).fetch_nexon_snapshot()
+    )
+
+    assert len(json.loads(snapshot.text)["list"]) == 16
 
 
 def test_nexon_snapshot_times_out_a_stalled_later_page(monkeypatch) -> None:

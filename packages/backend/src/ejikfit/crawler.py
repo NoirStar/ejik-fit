@@ -547,7 +547,7 @@ class PlaywrightBrowserRenderer:
                             ),
                             timeout=self.nexon_response_timeout_ms,
                         ) as corporation_response_info:
-                            home_response = await page.goto(
+                            await page.goto(
                                 NEXON_HOME_URL,
                                 wait_until="domcontentloaded",
                                 timeout=self.timeout_ms,
@@ -555,10 +555,10 @@ class PlaywrightBrowserRenderer:
                         corporation_response = (
                             await corporation_response_info.value
                         )
-                        self._validate_nexon_response(
-                            home_response,
-                            "home page",
-                        )
+                        # Cloudflare can return an initial 403 challenge document
+                        # before the normal browser completes its managed check.
+                        # A successful application API response is the stronger
+                        # signal that the public page became usable.
                         self._validate_nexon_response(
                             corporation_response,
                             "corporation directory",
@@ -584,16 +584,12 @@ class PlaywrightBrowserRenderer:
                             ),
                             timeout=self.nexon_response_timeout_ms,
                         ) as listing_response_info:
-                            recruit_response = await page.goto(
+                            await page.goto(
                                 NEXON_RECRUIT_URL,
                                 wait_until="domcontentloaded",
                                 timeout=self.timeout_ms,
                             )
                         listing_response = await listing_response_info.value
-                        self._validate_nexon_response(
-                            recruit_response,
-                            "recruit page",
-                        )
                         self._validate_nexon_response(
                             listing_response,
                             "job listing",
