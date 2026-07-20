@@ -360,14 +360,36 @@ main,
 }
 
 .not-found p {
+  max-width: 32rem;
+  margin: 0.75rem 0 0;
   color: var(--muted);
+  line-height: 1.6;
 }
 
-.not-found a {
-  display: inline-block;
-  margin-top: 24px;
+.not-found__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.not-found__actions a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  padding: 0 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface);
   color: var(--accent);
   font-weight: 700;
+  text-decoration: none;
+}
+
+.not-found__actions .not-found__primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
 @media (max-width: 767px) {
