@@ -56,7 +56,7 @@ function QuestionCard({
     <article aria-labelledby={titleId} className={styles.questionCard}>
       <div className={styles.cardTopline}>
         <div>
-          <span>이 브라우저에서 작성</span>
+          <span>{item.category} · 이 브라우저에서 작성</span>
           <time dateTime={post.createdAt}>{item.createdLabel}</time>
         </div>
         <button

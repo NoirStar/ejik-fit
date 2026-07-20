@@ -25,6 +25,7 @@ function storePosts() {
       },
       {
         id: "local-newer-question",
+        category: "면접 후기",
         title: "최근 작성한 기술 질문",
         body: "실제 공고의 필수 기술을 어떻게 준비할지 궁금합니다.",
         tags: ["Kubernetes", "백엔드"],
@@ -87,6 +88,7 @@ describe("AuthoredQuestions", () => {
       newest.getByRole("link", { name: "최근 작성한 기술 질문" }),
     ).toHaveAttribute("href", "/posts/local-newer-question");
     expect(newest.getByText("Kubernetes")).toBeInTheDocument();
+    expect(newest.getByText("면접 후기 · 이 브라우저에서 작성")).toBeInTheDocument();
     expect(newest.getByText("공감 1")).toBeInTheDocument();
     expect(newest.getByText("댓글 1")).toBeInTheDocument();
     expect(newest.getByText("저장됨")).toBeInTheDocument();
