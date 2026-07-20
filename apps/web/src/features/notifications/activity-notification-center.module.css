@@ -1,6 +1,10 @@
 .list {
   display: grid;
+  max-height: min(34rem, calc(100dvh - var(--header-height-desktop) - 8rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.375rem;
+  scrollbar-gutter: stable;
 }
 
 .list > a {
@@ -78,6 +82,54 @@
   white-space: nowrap;
 }
 
+.savedSearchJob {
+  grid-template-columns: 2rem minmax(0, 1fr);
+}
+
+.savedSearchCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.125rem;
+}
+
+.savedSearchName {
+  overflow: hidden;
+  color: var(--color-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.savedSearchCopy strong,
+.savedSearchCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.savedSearchCopy strong {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 750;
+}
+
+.savedSearchCopy small {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+}
+
+.list > .savedSearchMore {
+  min-height: 2.5rem;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
 .state {
   display: grid;
   gap: 0.375rem;
@@ -98,6 +150,48 @@
   color: var(--color-muted);
   font-size: 0.75rem;
   line-height: 1.45;
+}
+
+.retryStatus {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.retryStatus button {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.4rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.retryStatus button:hover {
+  background: var(--color-brand-subtle);
+}
+
+.retryStatus button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 980px) {
+  .list {
+    max-height: calc(
+      100dvh - var(--header-height-mobile) - var(--mobile-nav-height) -
+        var(--mobile-safe-area-bottom) - 6.5rem
+    );
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

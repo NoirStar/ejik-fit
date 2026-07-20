@@ -78,6 +78,13 @@ describe("AccountOverview", () => {
     expect(screen.getByText("저장 공고").closest("a")).toHaveTextContent("2건");
     expect(screen.getByText("지원 기록").closest("a")).toHaveTextContent("1건");
     expect(screen.getByText("관심 기업").closest("a")).toHaveTextContent("1곳");
+    expect(screen.getByText("공고 알림").closest("a")).toHaveAttribute(
+      "href",
+      "/career/alerts",
+    );
+    expect(screen.getByText("공고 알림").closest("a")).toHaveTextContent(
+      "계정 저장",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
     expect(signOut).toHaveBeenCalledOnce();

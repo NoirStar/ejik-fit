@@ -343,9 +343,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <div className={styles.menuHeader}>
                     <strong>알림</strong>
-                    <span>관심 기업의 새 공고와 저장·지원 현황을 보여드려요.</span>
+                    <span>저장 검색과 관심 기업의 새 공고, 지원 현황을 보여드려요.</span>
                   </div>
-                  <ActivityNotificationCenter onNavigate={closeUtilityMenus} />
+                  <ActivityNotificationCenter
+                    onNavigate={closeUtilityMenus}
+                    viewer={viewer}
+                  />
                 </div>
               )}
             </div>
@@ -406,6 +409,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   </Link>
                   <Link href="/career/saved" onClick={closeUtilityMenus}>
                     저장 보관함
+                  </Link>
+                  <Link href="/career/alerts" onClick={closeUtilityMenus}>
+                    공고 알림
                   </Link>
                   <Link href="/career/companies" onClick={closeUtilityMenus}>
                     관심 기업

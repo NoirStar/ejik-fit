@@ -223,6 +223,10 @@ describe("AppShell", () => {
       "href",
       "/career/saved",
     );
+    expect(screen.getByRole("link", { name: "공고 알림" })).toHaveAttribute(
+      "href",
+      "/career/alerts",
+    );
     expect(screen.getByRole("link", { name: "내 질문" })).toHaveAttribute(
       "href",
       "/career/questions",

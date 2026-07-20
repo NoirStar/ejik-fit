@@ -1,12 +1,119 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AuthViewer } from "@/features/auth/use-auth-viewer";
+import type { SavedJobSearch } from "@/lib/saved-job-searches";
+import type {
+  SavedSearchEvaluationGroup,
+  SavedSearchEvaluationState,
+} from "@/lib/saved-search-notifications";
+import type { PostingSummary } from "@/lib/types";
+
+import { useSavedJobSearches } from "../saved-searches/use-saved-job-searches";
+import { useSavedSearchEvaluation } from "../saved-searches/use-saved-search-evaluation";
 import { ActivityNotificationCenter } from "./activity-notification-center";
+
+vi.mock("../saved-searches/use-saved-job-searches", () => ({
+  useSavedJobSearches: vi.fn(),
+}));
+
+vi.mock("../saved-searches/use-saved-search-evaluation", () => ({
+  useSavedSearchEvaluation: vi.fn(),
+}));
+
+const viewer: AuthViewer = {
+  id: "viewer-1",
+  email: "developer@example.com",
+};
+
+const pythonSearch: SavedJobSearch = {
+  id: "search-1",
+  userId: viewer.id,
+  name: "Python 백엔드",
+  query: "Python",
+  category: "backend",
+  careerType: "",
+  filterKey: "python|backend|",
+  enabled: true,
+  lastCheckedAt: "2026-07-20T00:00:00.000Z",
+  createdAt: "2026-07-19T00:00:00.000Z",
+  updatedAt: "2026-07-20T00:00:00.000Z",
+};
+
+const reloadSavedSearches = vi.fn();
+const createSavedSearch = vi.fn();
+const renameSavedSearch = vi.fn();
+const setSavedSearchEnabled = vi.fn();
+const removeSavedSearch = vi.fn();
+const markSavedSearchChecked = vi.fn();
+const refreshSavedSearchEvaluation = vi.fn();
+
+function savedSearchJob(id = "new-job"): PostingSummary {
+  return {
+    id,
+    title: "Backend Engineer",
+    company_name: "NAVER",
+    company_slug: "naver",
+    career_type: "experienced",
+    employment_type: "정규직",
+    career_min: 3,
+    career_max: null,
+    location: "성남",
+    status: "open",
+    source_url: `https://recruit.navercorp.com/${id}`,
+    first_seen_at: "2026-07-20T01:00:00.000Z",
+    last_verified_at: "2026-07-20T02:00:00.000Z",
+  };
+}
+
+function readyGroup(
+  searchId: string,
+  items: PostingSummary[],
+): SavedSearchEvaluationGroup {
+  return {
+    searchId,
+    status: "ready",
+    total: items.length,
+    items,
+  };
+}
+
+function mockSavedSearches(items: SavedJobSearch[] = []) {
+  vi.mocked(useSavedJobSearches).mockReturnValue({
+    state: { status: "ready", items, error: "" },
+    reload: reloadSavedSearches,
+    create: createSavedSearch,
+    rename: renameSavedSearch,
+    setEnabled: setSavedSearchEnabled,
+    remove: removeSavedSearch,
+    markChecked: markSavedSearchChecked,
+  });
+}
+
+function mockSavedSearchEvaluation(
+  state: SavedSearchEvaluationState = {
+    status: "ready",
+    groups: [],
+    error: "",
+  },
+) {
+  vi.mocked(useSavedSearchEvaluation).mockReturnValue({
+    state,
+    refresh: refreshSavedSearchEvaluation,
+  });
+}
 
 describe("ActivityNotificationCenter", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    vi.clearAllMocks();
     localStorage.clear();
     fetchMock.mockReset();
     fetchMock.mockResolvedValue(
@@ -16,6 +123,8 @@ describe("ActivityNotificationCenter", () => {
       }),
     );
     vi.stubGlobal("fetch", fetchMock);
+    mockSavedSearches();
+    mockSavedSearchEvaluation();
   });
   afterEach(() => {
     cleanup();
@@ -127,5 +236,73 @@ describe("ActivityNotificationCenter", () => {
         ) ?? "",
       ),
     ).toBeGreaterThan(Date.parse("2026-07-14T00:00:00.000Z"));
+  });
+
+  it("shows real saved-search jobs before existing activity", async () => {
+    mockSavedSearches([pythonSearch]);
+    mockSavedSearchEvaluation({
+      status: "ready",
+      groups: [readyGroup(pythonSearch.id, [savedSearchJob()])],
+      error: "",
+    });
+
+    render(
+      <ActivityNotificationCenter viewer={viewer} />,
+    );
+
+    expect(
+      await screen.findByText("저장 검색 · Python 백엔드"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("NAVER · Backend Engineer").closest("a"),
+    ).toHaveAttribute("href", "/jobs/new-job");
+    expect(screen.getByText("이직핏이 새로 확인")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "공고 알림에서 더 보기" }),
+    ).toHaveAttribute("href", "/career/alerts");
+    expect(useSavedJobSearches).toHaveBeenCalledWith(viewer);
+    expect(useSavedSearchEvaluation).toHaveBeenCalledWith(
+      [pythonSearch],
+      "ready",
+      markSavedSearchChecked,
+    );
+  });
+
+  it("keeps successful saved-search alerts when another search fails", async () => {
+    const failedSearch: SavedJobSearch = {
+      ...pythonSearch,
+      id: "search-2",
+      name: "데이터 엔지니어",
+      filterKey: "data|data|",
+      query: "data",
+      category: "data",
+    };
+    mockSavedSearches([pythonSearch, failedSearch]);
+    mockSavedSearchEvaluation({
+      status: "partial",
+      groups: [
+        readyGroup(pythonSearch.id, [savedSearchJob()]),
+        {
+          searchId: failedSearch.id,
+          status: "error",
+          total: null,
+          items: [],
+        },
+      ],
+      error: "일부 저장 검색 공고를 확인하지 못했습니다.",
+    });
+
+    render(
+      <ActivityNotificationCenter viewer={viewer} />,
+    );
+
+    expect(
+      await screen.findByText("NAVER · Backend Engineer"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("일부 공고 알림을 확인하지 못했습니다."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "공고 알림 다시 확인" }));
+    expect(refreshSavedSearchEvaluation).toHaveBeenCalledOnce();
   });
 });

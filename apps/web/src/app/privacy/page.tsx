@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <TrustPageLayout
-      intro="로그인하지 않으면 선택한 기술, 관심 기업과 저장 공고가 이 브라우저에만 남습니다. 이메일로 로그인하면 내 스택, 비교 조건, 관심 기업, 저장 공고와 지원 단계를 계정에 동기화합니다."
+      intro="로그인하지 않으면 선택한 기술, 관심 기업과 저장 공고가 이 브라우저에만 남습니다. 이메일로 로그인하면 내 스택, 비교 조건, 관심 기업, 저장 공고, 지원 단계와 저장한 공고 검색을 비공개 계정 데이터로 관리합니다."
       title="개인정보와 계정 저장"
     >
       <section>
@@ -39,6 +39,16 @@ export default function PrivacyPage() {
           <code>ejik-fit:job-application-stages</code> 키에 저장됩니다. 실제 지원
           여부를 기업 시스템에서 확인하거나 자동으로 추정하지 않습니다. 로그인
           상태에서는 사용자가 선택한 단계만 계정에 동기화합니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>저장한 공고 검색</h2>
+        <p>
+          로그인한 사용자가 저장한 검색어, 기술 분야와 경력 조건, 알림 사용 여부,
+          마지막으로 공고 확인에 성공한 시각은 비공개 Supabase 계정 테이블에
+          저장됩니다. 공고 알림 화면에서 저장 검색을 삭제하면 해당 계정
+          테이블에서도 제거됩니다.
         </p>
       </section>
 

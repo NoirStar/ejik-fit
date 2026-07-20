@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bell,
   BookmarkSimple,
   Briefcase,
   Buildings,
@@ -65,6 +66,13 @@ export function AccountOverview() {
       label: "지원 기록",
       value: `${applicationCount}건`,
       description: "직접 기록한 지원 단계",
+    },
+    {
+      href: "/career/alerts",
+      icon: Bell,
+      label: "공고 알림",
+      value: viewer ? "계정 저장" : "로그인 필요",
+      description: "저장 검색과 새 공고",
     },
     {
       href: "/career/companies",

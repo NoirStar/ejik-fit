@@ -9,6 +9,10 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import type { AuthViewer } from "@/features/auth/use-auth-viewer";
+import { CompanyMark } from "@/features/home-feed/company-mark";
+import { useSavedJobSearches } from "@/features/saved-searches/use-saved-job-searches";
+import { useSavedSearchEvaluation } from "@/features/saved-searches/use-saved-search-evaluation";
 import {
   applicationStageLabel,
   readJobApplicationStages,
@@ -28,12 +32,14 @@ import {
   subscribeFollowedCompanies,
 } from "@/lib/followed-companies";
 import { normalizePostingList } from "@/lib/posting-contract";
+import { flattenSavedSearchNotifications } from "@/lib/saved-search-notifications";
 import type { PostingSummary } from "@/lib/types";
 
 import styles from "./activity-notification-center.module.css";
 
 type ActivityNotificationCenterProps = {
   onNavigate?: () => void;
+  viewer?: AuthViewer | null;
 };
 
 type RecentCompanyJobsState =
@@ -44,6 +50,7 @@ type RecentCompanyJobsState =
 const COMPANY_JOBS_CHECKED_AT_KEY =
   "ejik-fit:company-job-notifications-checked-at";
 const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1_000;
+const MAX_SAVED_SEARCH_NOTIFICATIONS = 5;
 
 function notificationCheckpoint(now: number) {
   try {
@@ -87,7 +94,14 @@ function applicationSummary(
 
 export function ActivityNotificationCenter({
   onNavigate,
+  viewer = null,
 }: ActivityNotificationCenterProps) {
+  const savedSearches = useSavedJobSearches(viewer);
+  const savedSearchEvaluation = useSavedSearchEvaluation(
+    savedSearches.state.items,
+    savedSearches.state.status,
+    savedSearches.markChecked,
+  );
   const [hydrated, setHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [applicationStages, setApplicationStages] =
@@ -175,7 +189,25 @@ export function ActivityNotificationCenter({
     () => applicationSummary(savedJobIds, applicationStages),
     [applicationStages, savedJobIds],
   );
+  const savedSearchNotifications = useMemo(
+    () =>
+      flattenSavedSearchNotifications(
+        savedSearchEvaluation.state.groups,
+        savedSearches.state.items,
+        MAX_SAVED_SEARCH_NOTIFICATIONS,
+      ),
+    [savedSearchEvaluation.state.groups, savedSearches.state.items],
+  );
+  const savedSearchesLoading =
+    savedSearches.state.status === "loading" ||
+    (savedSearches.state.items.length > 0 &&
+      savedSearchEvaluation.state.status === "loading");
+  const hasSavedSearchActivity =
+    savedSearches.state.items.length > 0 ||
+    savedSearches.state.status === "loading" ||
+    savedSearches.state.status === "error";
   const hasActivity =
+    hasSavedSearchActivity ||
     savedJobIds.length > 0 ||
     applicationCount > 0 ||
     ownedSkills.length > 0 ||
@@ -200,6 +232,48 @@ export function ActivityNotificationCenter({
 
   return (
     <div className={styles.list}>
+      {savedSearchNotifications.map((notification) => {
+        const primarySearch = notification.searches[0];
+        const additionalSearches = notification.searches.length - 1;
+        const searchName = additionalSearches
+          ? `${primarySearch.name} 외 ${additionalSearches}개`
+          : primarySearch.name;
+
+        return (
+          <Link
+            className={styles.savedSearchJob}
+            href={`/jobs/${encodeURIComponent(notification.job.id)}`}
+            key={notification.job.id}
+            onClick={onNavigate}
+          >
+            <CompanyMark
+              companyName={notification.job.company_name}
+              size={32}
+              sourceUrl={notification.job.source_url}
+            />
+            <span className={styles.savedSearchCopy}>
+              <span className={styles.savedSearchName}>
+                저장 검색 · {searchName}
+              </span>
+              <strong>
+                {notification.job.company_name} · {notification.job.title}
+              </strong>
+              <small>이직핏이 새로 확인</small>
+            </span>
+          </Link>
+        );
+      })}
+
+      {savedSearches.state.items.length > 0 && (
+        <Link
+          className={styles.savedSearchMore}
+          href="/career/alerts"
+          onClick={onNavigate}
+        >
+          공고 알림에서 더 보기
+        </Link>
+      )}
+
       {recentCompanyJobs.status === "ready" &&
         recentCompanyJobs.items.map((job) => (
           <Link
@@ -274,6 +348,35 @@ export function ActivityNotificationCenter({
         <p className={styles.jobAlertStatus} role="status">
           관심 기업의 최근 공고를 지금은 확인하지 못했습니다.
         </p>
+      )}
+      {savedSearchesLoading && (
+        <p className={styles.jobAlertStatus} role="status">
+          저장 검색의 새 공고를 확인하고 있습니다.
+        </p>
+      )}
+      {savedSearches.state.status === "error" && (
+        <div className={styles.retryStatus} role="status">
+          <span>공고 알림을 불러오지 못했습니다.</span>
+          <button onClick={() => void savedSearches.reload()} type="button">
+            다시 확인
+          </button>
+        </div>
+      )}
+      {(savedSearchEvaluation.state.status === "partial" ||
+        savedSearchEvaluation.state.status === "error") && (
+        <div className={styles.retryStatus} role="status">
+          <span>
+            {savedSearchEvaluation.state.status === "partial"
+              ? "일부 공고 알림을 확인하지 못했습니다."
+              : "공고 알림을 확인하지 못했습니다."}
+          </span>
+          <button
+            onClick={savedSearchEvaluation.refresh}
+            type="button"
+          >
+            공고 알림 다시 확인
+          </button>
+        </div>
       )}
     </div>
   );
