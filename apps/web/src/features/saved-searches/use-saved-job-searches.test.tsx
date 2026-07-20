@@ -423,4 +423,30 @@ describe("useSavedJobSearches", () => {
     );
     expect(store.markChecked).not.toHaveBeenCalled();
   });
+
+  it("keeps loaded searches ready when checkpoint storage fails", async () => {
+    const store = fakeStore({
+      list: vi.fn().mockResolvedValue([existing]),
+      markChecked: vi.fn().mockRejectedValue(new Error("offline")),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.markChecked(
+        [existing.id],
+        "2026-07-20T01:00:00.000Z",
+      );
+    });
+
+    expect(outcome).toBe(false);
+    expect(result.current.state).toEqual({
+      status: "ready",
+      items: [existing],
+      error: "",
+    });
+  });
 });

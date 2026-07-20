@@ -636,7 +636,6 @@ export function useSavedJobSearches(
 
       const store = resolveStore();
       if (!store) {
-        commitState((current) => failed(current.items));
         return false;
       }
 
@@ -678,7 +677,6 @@ export function useSavedJobSearches(
       } catch {
         if (!isAccountActive(token)) return false;
         releaseMutation(fieldKeys, mutationVersion);
-        commitState((current) => failed(current.items));
         return false;
       }
     },

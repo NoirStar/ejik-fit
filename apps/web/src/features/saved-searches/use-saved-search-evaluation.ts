@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { normalizePostingSummary } from "@/lib/posting-contract";
 import type { SavedJobSearch } from "@/lib/saved-job-searches";
 import {
   type SavedSearchEvaluationGroup,
@@ -16,6 +17,13 @@ import type {
 
 const LOAD_ERROR = "저장 검색 공고를 확인하지 못했습니다.";
 const PARTIAL_ERROR = "일부 저장 검색 공고를 확인하지 못했습니다.";
+const CHECKPOINT_ERROR =
+  "새 공고 결과는 유지했지만 확인 시각을 저장하지 못했습니다.";
+const MAX_RESPONSE_GROUPS = 10;
+const MAX_GROUP_ITEMS = 5;
+const MAX_FUTURE_EVALUATION_MS = 5 * 60 * 1_000;
+const ISO_DATE =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/;
 const IDLE_STATE: SavedSearchEvaluationState = {
   status: "idle",
   groups: [],
@@ -37,34 +45,133 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isEvaluationGroup(value: unknown): value is SavedSearchEvaluationGroup {
-  if (
-    !isRecord(value) ||
-    typeof value.searchId !== "string" ||
-    !Array.isArray(value.items)
-  ) {
-    return false;
-  }
-  if (value.status === "error") {
-    return value.total === null && value.items.length === 0;
-  }
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: string[],
+) {
+  const actual = Object.keys(value).sort();
+  const sortedExpected = [...expected].sort();
   return (
-    value.status === "ready" &&
-    Number.isSafeInteger(value.total) &&
-    Number(value.total) >= 0
+    actual.length === sortedExpected.length &&
+    actual.every((key, index) => key === sortedExpected[index])
   );
 }
 
-function isEvaluationResponse(
+function daysInMonth(year: number, month: number) {
+  if (month === 2) {
+    const leapYear =
+      year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    return leapYear ? 29 : 28;
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
+function parseEvaluationTime(value: unknown) {
+  if (typeof value !== "string") return null;
+  const match = ISO_DATE.exec(value);
+  if (!match) return null;
+  const [, yearValue, monthValue, dayValue, hourValue, minuteValue, secondValue] =
+    match;
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+  const hour = Number(hourValue);
+  const minute = Number(minuteValue);
+  const second = Number(secondValue);
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth(year, month) ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) &&
+    parsed <= Date.now() + MAX_FUTURE_EVALUATION_MS
+    ? parsed
+    : null;
+}
+
+function normalizeEvaluationResponse(
   value: unknown,
-): value is SavedSearchEvaluationResponse {
-  return (
-    isRecord(value) &&
-    typeof value.evaluatedAt === "string" &&
-    Number.isFinite(Date.parse(value.evaluatedAt)) &&
-    Array.isArray(value.groups) &&
-    value.groups.every(isEvaluationGroup)
-  );
+  requestedSearchIds: string[],
+): SavedSearchEvaluationResponse | null {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["evaluatedAt", "groups"]) ||
+    typeof value.evaluatedAt !== "string" ||
+    parseEvaluationTime(value.evaluatedAt) === null ||
+    !Array.isArray(value.groups) ||
+    value.groups.length > MAX_RESPONSE_GROUPS ||
+    value.groups.length !== requestedSearchIds.length
+  ) {
+    return null;
+  }
+  const requestedIds = new Set(requestedSearchIds);
+  if (
+    requestedIds.size !== requestedSearchIds.length ||
+    requestedIds.size > MAX_RESPONSE_GROUPS
+  ) {
+    return null;
+  }
+
+  const seenIds = new Set<string>();
+  const groups: SavedSearchEvaluationGroup[] = [];
+  try {
+    for (const candidate of value.groups) {
+      if (
+        !isRecord(candidate) ||
+        !hasExactKeys(candidate, [
+          "searchId",
+          "status",
+          "total",
+          "items",
+        ]) ||
+        typeof candidate.searchId !== "string" ||
+        !requestedIds.has(candidate.searchId) ||
+        seenIds.has(candidate.searchId) ||
+        !Array.isArray(candidate.items)
+      ) {
+        return null;
+      }
+      seenIds.add(candidate.searchId);
+      if (candidate.status === "error") {
+        if (candidate.total !== null || candidate.items.length !== 0) {
+          return null;
+        }
+        groups.push({
+          searchId: candidate.searchId,
+          status: "error",
+          total: null,
+          items: [],
+        });
+        continue;
+      }
+      if (
+        candidate.status !== "ready" ||
+        !Number.isSafeInteger(candidate.total) ||
+        Number(candidate.total) < 0 ||
+        candidate.items.length > MAX_GROUP_ITEMS
+      ) {
+        return null;
+      }
+      groups.push({
+        searchId: candidate.searchId,
+        status: "ready",
+        total: Number(candidate.total),
+        items: candidate.items.map(normalizePostingSummary),
+      });
+    }
+  } catch {
+    return null;
+  }
+  return seenIds.size === requestedIds.size
+    ? { evaluatedAt: value.evaluatedAt, groups }
+    : null;
 }
 
 function searchSignature(
@@ -159,8 +266,11 @@ export function useSavedSearchEvaluation(
           },
         );
         if (!response.ok) throw new Error("Saved search evaluation failed");
-        const body: unknown = await response.json();
-        if (!isEvaluationResponse(body)) {
+        const body = normalizeEvaluationResponse(
+          await response.json(),
+          evaluationSearches.map((search) => search.id),
+        );
+        if (!body) {
           throw new Error("Invalid saved search evaluation response");
         }
         if (
@@ -219,7 +329,16 @@ export function useSavedSearchEvaluation(
       }
     }
 
-    void evaluate();
+    queueMicrotask(() => {
+      if (
+        cancelled ||
+        controller.signal.aborted ||
+        activeRequest.current !== requestId
+      ) {
+        return;
+      }
+      void evaluate();
+    });
     return () => {
       cancelled = true;
       controller.abort();
@@ -243,13 +362,41 @@ export function useSavedSearchEvaluation(
       ) {
         return;
       }
-      try {
-        void markCheckedRef
-          .current(checkpoint.ids, checkpoint.evaluatedAt)
-          .catch(() => undefined);
-      } catch {
-        // The saved-search controller owns mutation error state.
+      async function saveCheckpoint(currentCheckpoint: PendingCheckpoint) {
+        let saved = false;
+        try {
+          saved = await markCheckedRef.current(
+            currentCheckpoint.ids,
+            currentCheckpoint.evaluatedAt,
+          );
+        } catch {
+          saved = false;
+        }
+        if (
+          saved ||
+          !mounted.current ||
+          currentCheckpoint.requestId !== activeRequest.current
+        ) {
+          return;
+        }
+        setState((current) => {
+          if (
+            current.status !== "ready" &&
+            current.status !== "partial"
+          ) {
+            return current;
+          }
+          return {
+            status: "partial",
+            groups: current.groups,
+            error:
+              current.status === "partial"
+                ? `${current.error} ${CHECKPOINT_ERROR}`
+                : CHECKPOINT_ERROR,
+          };
+        });
       }
+      void saveCheckpoint(checkpoint);
     });
   }, [state]);
 
