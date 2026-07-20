@@ -133,10 +133,7 @@ test("builds recent topics only from details viewed in this browser", async ({
   await page.goto("/");
 
   let recent = page.getByRole("region", { name: "최근 본 주제" });
-  await expect(recent).toContainText(
-    "커뮤니티 글을 열면 이 브라우저에 최근 주제가 표시됩니다.",
-  );
-  await expect(recent.getByRole("link")).toHaveCount(0);
+  await expect(recent).toHaveCount(0);
 
   await page
     .getByRole("tabpanel")

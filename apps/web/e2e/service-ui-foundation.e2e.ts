@@ -15,7 +15,7 @@ for (const viewport of [
     await page.goto("/");
 
     const heading = page.getByRole("heading", {
-      name: "내 커리어와 가까운 이야기",
+      name: "커리어 이야기 둘러보기",
     });
     const firstArticle = page.getByRole("article").first();
     await expect(heading).toBeVisible();

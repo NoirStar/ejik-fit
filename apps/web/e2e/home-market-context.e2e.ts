@@ -41,9 +41,9 @@ for (const width of [1440, 390]) {
 
     const context = page.getByRole("region", { name: "내 관심 시장" });
     await expect(context).toContainText("경력 · 백엔드");
-    await expect(context).toContainText(
-      "경력 조건은 홈 공고·기술 수요에, 희망 분야는 내 기술 비교에 적용됩니다.",
-    );
+    await expect(context).toContainText("내 기술 1개");
+    const contextBox = await context.boundingBox();
+    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 80 : 130);
     await expect(
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).toBeVisible();
@@ -51,7 +51,9 @@ for (const width of [1440, 390]) {
       page.getByRole("article", { name: "Go Platform Engineer" }),
     ).toHaveCount(0);
 
-    const edit = context.getByRole("link", { name: "조건 수정" });
+    const edit = context.getByRole("link", {
+      name: "기술 관리 · 조건 수정",
+    });
     const editBox = await edit.boundingBox();
     expect(editBox?.width).toBeGreaterThanOrEqual(44);
     expect(editBox?.height).toBeGreaterThanOrEqual(44);

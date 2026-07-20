@@ -13,16 +13,20 @@ test("keeps a browser-authored question findable through detail and safe deletio
   await page.setViewportSize({ height: 900, width: 390 });
   await page.goto("/career/questions");
   await expect(
-    page.getByText("이 브라우저에서 작성한 질문이 없습니다."),
+    page.getByText("이 브라우저에서 작성한 글이 없습니다."),
   ).toBeVisible();
 
-  const emptyCta = page.getByRole("link", { name: "첫 질문 작성" });
+  const emptyCta = page.getByRole("link", { name: "첫 글 작성" });
   const emptyCtaBox = await emptyCta.boundingBox();
   expect(emptyCtaBox?.width).toBeGreaterThanOrEqual(44);
   expect(emptyCtaBox?.height).toBeGreaterThanOrEqual(44);
   await emptyCta.click();
 
   await expect(page).toHaveURL(/\/?\?compose=1$/);
+  await page
+    .getByRole("dialog")
+    .getByText("커리어 고민", { exact: true })
+    .click();
   await page.getByLabel("제목").fill(title);
   await page
     .getByLabel("내용")
@@ -32,12 +36,15 @@ test("keeps a browser-authored question findable through detail and safe deletio
   await expect(page.getByRole("article", { name: title })).toBeVisible();
 
   await page.getByRole("button", { name: "사용자 메뉴 열기" }).click();
-  await page.getByLabel("사용자 메뉴").getByRole("link", { name: "내 질문" }).click();
+  await page.getByLabel("사용자 메뉴").getByRole("link", { name: "내 글" }).click();
   await expect(page).toHaveURL(/\/career\/questions$/);
 
   let question = page.getByRole("article", { name: title });
   await expect(question).toBeVisible();
   await expect(page.getByText("이 브라우저에 1개 저장")).toBeVisible();
+  await expect(
+    question.getByText("커리어 고민 · 이 브라우저에서 작성"),
+  ).toBeVisible();
   await expect(question.getByText("Kubernetes")).toBeVisible();
   await page.reload();
   question = page.getByRole("article", { name: title });
@@ -66,7 +73,7 @@ test("keeps a browser-authored question findable through detail and safe deletio
 
   await expect(question).not.toBeVisible();
   await expect(
-    page.getByText("이 브라우저에서 작성한 질문이 없습니다."),
+    page.getByText("이 브라우저에서 작성한 글이 없습니다."),
   ).toBeVisible();
   expect(
     await page.evaluate(() =>

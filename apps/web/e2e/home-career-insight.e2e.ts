@@ -13,10 +13,14 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
 
-    let insight = page.getByRole("region", { name: "내 커리어 인사이트" });
-    await expect(insight).toContainText(
-      "내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.",
-    );
+    const context = page.getByRole("region", { name: "내 관심 시장" });
+    await expect(context).toContainText("전체 경력 · 전체 기술 분야");
+    await expect(
+      context.getByRole("link", { name: "기술 추가 · 조건 설정" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "내 커리어 인사이트" }),
+    ).toHaveCount(0);
 
     if (width > 820) {
       await page.getByRole("button", { name: "내 스택 열기" }).click();
@@ -25,14 +29,16 @@ for (const width of [1440, 390]) {
       await stack.getByRole("button", { name: "기술 추가" }).click();
       await stack.getByRole("button", { name: "내 스택 닫기" }).click();
     } else {
-      await insight.getByRole("link", { name: "기술 추가하기" }).click();
+      await context
+        .getByRole("link", { name: "기술 추가 · 조건 설정" })
+        .click();
       await page.getByLabel("추가할 기술").fill("Java");
       await page.getByRole("button", { name: "기술 추가" }).click();
       await page.goto("/");
     }
 
     await expect(page).toHaveURL(/owned_skills=Java/);
-    insight = page.getByRole("region", { name: "내 커리어 인사이트" });
+    const insight = page.getByRole("region", { name: "내 커리어 인사이트" });
     await expect(insight.getByText("17건", { exact: true })).toBeVisible();
     await expect(insight).toContainText("필수 기술 절반 이상 6건");
     const skillLink = insight.getByRole("link", {
