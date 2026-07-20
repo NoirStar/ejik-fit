@@ -23,6 +23,7 @@ import {
   type AccountCareerState,
 } from "@/lib/account-state";
 
+import { AccountControls } from "./account-controls";
 import styles from "./account-overview.module.css";
 
 type AccountSummaryItem = {
@@ -164,6 +165,8 @@ export function AccountOverview() {
           })}
         </div>
       </section>
+
+      {viewer && <AccountControls viewer={viewer} />}
 
       <aside className={styles.privacyNotice}>
         <LockKey aria-hidden="true" size={20} />

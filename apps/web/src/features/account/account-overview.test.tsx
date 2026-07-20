@@ -12,8 +12,33 @@ import { writeOwnedSkills } from "@/lib/owned-skills";
 
 import { AccountOverview } from "./account-overview";
 
+const accountActionMocks = vi.hoisted(() => ({
+  createArchive: vi.fn(),
+  deleteAccount: vi.fn(),
+  downloadArchive: vi.fn(),
+  loadPreference: vi.fn(),
+  savePreference: vi.fn(),
+  replace: vi.fn(),
+  refresh: vi.fn(),
+}));
+
 vi.mock("@/features/auth/use-auth-viewer", () => ({
   useAuthViewer: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: accountActionMocks.replace,
+    refresh: accountActionMocks.refresh,
+  }),
+}));
+
+vi.mock("./account-actions", () => ({
+  createAccountDataArchive: accountActionMocks.createArchive,
+  deleteCurrentAccount: accountActionMocks.deleteAccount,
+  downloadAccountDataArchive: accountActionMocks.downloadArchive,
+  loadNotificationPreference: accountActionMocks.loadPreference,
+  saveNotificationPreference: accountActionMocks.savePreference,
 }));
 
 const signOut = vi.fn<() => Promise<boolean>>();
@@ -25,6 +50,24 @@ describe("AccountOverview", () => {
     window.localStorage.clear();
     signOut.mockReset();
     signOut.mockResolvedValue(true);
+    accountActionMocks.createArchive.mockReset();
+    accountActionMocks.createArchive.mockResolvedValue({
+      format: "ejikfit-account-export",
+      version: 1,
+      exportedAt: "2026-07-20T00:00:00.000Z",
+    });
+    accountActionMocks.deleteAccount.mockReset();
+    accountActionMocks.deleteAccount.mockResolvedValue(undefined);
+    accountActionMocks.downloadArchive.mockReset();
+    accountActionMocks.loadPreference.mockReset();
+    accountActionMocks.loadPreference.mockResolvedValue({
+      enabled: true,
+      supported: true,
+    });
+    accountActionMocks.savePreference.mockReset();
+    accountActionMocks.savePreference.mockResolvedValue(undefined);
+    accountActionMocks.replace.mockReset();
+    accountActionMocks.refresh.mockReset();
   });
 
   it("guides a guest to email login without implying cloud sync", () => {
@@ -107,5 +150,52 @@ describe("AccountOverview", () => {
     await waitFor(() =>
       expect(screen.getByText("내 기술").closest("a")).toHaveTextContent("2개"),
     );
+  });
+
+  it("manages account notifications, export, and confirmed deletion", async () => {
+    window.localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(["Python"]),
+    );
+    vi.mocked(useAuthViewer).mockReturnValue({
+      viewer: { id: "viewer-1", email: "dev@example.com" },
+      ready: true,
+      signingOut: false,
+      error: "",
+      signOut,
+    });
+
+    render(<AccountOverview />);
+
+    const notificationSwitch = await screen.findByRole("switch", {
+      name: "새 공고 알림",
+    });
+    expect(notificationSwitch).toHaveAttribute("aria-checked", "true");
+
+    fireEvent.click(notificationSwitch);
+    await waitFor(() =>
+      expect(accountActionMocks.savePreference).toHaveBeenCalledWith(
+        "viewer-1",
+        false,
+      ),
+    );
+    expect(notificationSwitch).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "내보내기" }));
+    await waitFor(() =>
+      expect(accountActionMocks.downloadArchive).toHaveBeenCalledOnce(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "계정 삭제" }));
+    const confirmation = screen.getByRole("textbox", { name: "확인 문구" });
+    fireEvent.change(confirmation, { target: { value: "탈퇴" } });
+    fireEvent.click(screen.getByRole("button", { name: "영구 삭제" }));
+
+    await waitFor(() =>
+      expect(accountActionMocks.deleteAccount).toHaveBeenCalledOnce(),
+    );
+    expect(window.localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
+    expect(accountActionMocks.replace).toHaveBeenCalledWith("/");
+    expect(accountActionMocks.refresh).toHaveBeenCalledOnce();
   });
 });

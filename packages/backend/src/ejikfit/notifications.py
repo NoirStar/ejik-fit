@@ -112,7 +112,15 @@ def evaluate_job_notifications(
     now: datetime,
 ) -> NotificationEvaluationReport:
     observed_at = _as_utc(now)
-    searches = _bounded_saved_searches(
+    career_states = list(
+        session.scalars(select(UserCareerState)).all()
+    )
+    disabled_user_ids = {
+        state.user_id
+        for state in career_states
+        if not state.job_notifications_enabled
+    }
+    all_searches = _bounded_saved_searches(
         list(
             session.scalars(
                 select(UserSavedJobSearch)
@@ -125,16 +133,31 @@ def evaluate_job_notifications(
             ).all()
         )
     )
-    career_states = [
+    for search in all_searches:
+        if search.user_id in disabled_user_ids:
+            search.last_checked_at = observed_at
+    for state in career_states:
+        if not state.job_notifications_enabled:
+            state.company_notifications_checked_at = observed_at
+
+    searches = [
+        search
+        for search in all_searches
+        if search.user_id not in disabled_user_ids
+    ]
+    followed_career_states = [
         state
-        for state in session.scalars(select(UserCareerState)).all()
-        if state.followed_company_slugs
+        for state in career_states
+        if (
+            state.job_notifications_enabled
+            and state.followed_company_slugs
+        )
     ]
     checkpoints = [
         _as_utc(search.last_checked_at) for search in searches
     ] + [
         _as_utc(state.company_notifications_checked_at)
-        for state in career_states
+        for state in followed_career_states
     ]
     if not checkpoints:
         session.execute(
@@ -192,7 +215,7 @@ def evaluate_job_notifications(
                 candidate.saved_search_names.append(search.name)
         search.last_checked_at = observed_at
 
-    for state in career_states:
+    for state in followed_career_states:
         checkpoint = max(
             _as_utc(state.company_notifications_checked_at),
             observed_at - NOTIFICATION_LOOKBACK,
@@ -293,6 +316,6 @@ def evaluate_job_notifications(
     session.commit()
     return NotificationEvaluationReport(
         saved_searches_checked=len(searches),
-        followed_accounts_checked=len(career_states),
+        followed_accounts_checked=len(followed_career_states),
         notifications_created=created,
     )
