@@ -92,6 +92,7 @@ from ejikfit.connectors.public_json_detail import (
     NCSOFT_DETAIL_API,
     NCSOFT_LISTING_API,
     NCSOFT_LISTING_FORM,
+    RECRUITER_LEGACY_CONNECTOR_FAMILIES,
     ROUNDHR_LISTING_API,
     WORKABLE_LISTING_API_TEMPLATE,
     PublicJsonDetailRef,
@@ -1224,7 +1225,7 @@ async def _fetch_listing_page(
             if (
                 source.source_type == SourceType.HTML_LISTING_DETAIL
                 or source.connector_family
-                == "recruiter_legacy_public_api_tech"
+                in RECRUITER_LEGACY_CONNECTOR_FAMILIES
             ):
                 return await fetcher.fetch(
                     source.base_url,

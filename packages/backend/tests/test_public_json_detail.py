@@ -9,6 +9,7 @@ from ejikfit.connectors.public_json_detail import (
     parse_public_json_detail,
     parse_elice_listing_page,
     parse_ninehire_listing_page,
+    public_detail_listing_is_self_validated,
     roundhr_site_code,
     workable_account_slug,
 )
@@ -1090,6 +1091,115 @@ def test_recruiter_legacy_api_discovers_and_parses_open_technical_jobs() -> None
     assert opening.location == "서울 중구 을지로 170"
     assert opening.opens_at is not None
     assert opening.closes_at is not None
+
+
+def test_ahnlab_recruiter_filters_current_technical_and_security_roles() -> None:
+    rows = [
+        {
+            "jobnoticeSn": 244200,
+            "jobnoticeName": "ML/MLOps",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244201,
+            "jobnoticeName": "Web 개발",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244202,
+            "jobnoticeName": "보안 분석",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244203,
+            "jobnoticeName": "디지털 포렌식",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244204,
+            "jobnoticeName": "IT Product Manager",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244205,
+            "jobnoticeName": "인재Pool",
+            "receiptState": "접수중",
+            "recruitClassName": "상시채용",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 244206,
+            "jobnoticeName": "회계 담당자",
+            "receiptState": "접수중",
+            "recruitClassName": "수시채용",
+            "systemKindCode": "MRS2",
+        },
+    ]
+    listing = json.dumps(
+        {
+            "pageUtil": {
+                "currentPage": 1,
+                "lastPage": 1,
+                "maxRows": 100,
+                "recordCount": len(rows),
+            },
+            "list": rows,
+        },
+        ensure_ascii=False,
+    )
+
+    all_refs = discover_public_json_detail_refs(
+        listing,
+        "https://ahnlab.recruiter.co.kr/app/jobnotice/list.json",
+        "ahnlab_recruiter_public_api_tech",
+    )
+    refs = filter_public_detail_refs(
+        all_refs,
+        "ahnlab_recruiter_public_api_tech",
+    )
+
+    assert [ref.title for ref in refs] == [
+        "ML/MLOps",
+        "Web 개발",
+        "보안 분석",
+        "디지털 포렌식",
+    ]
+    assert public_detail_listing_is_self_validated(
+        "ahnlab_recruiter_public_api_tech"
+    )
+
+    detail = """
+    <html><body>
+      <input id="jobnoticeSn" value="244200">
+      <input id="writeButtonState" value="WRITEABLE">
+      <span class="view-bbs-title">ML/MLOps</span>
+      <div id="viewSmartEditorContent">
+        <p>머신러닝 서비스 개발 경력 3년 이상</p>
+        <p>근무형태 : 정규직</p>
+        <p>근무지 : 경기도 성남시 분당구</p>
+      </div>
+    </body></html>
+    """
+    opening = parse_public_json_detail(
+        detail,
+        refs[0],
+        "ahnlab_recruiter_public_api_tech",
+    )
+
+    assert opening.status == "open"
+    assert opening.career_type == "experienced"
+    assert opening.career_min == 3
+    assert opening.location == "경기도 성남시 분당구"
 
 
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:

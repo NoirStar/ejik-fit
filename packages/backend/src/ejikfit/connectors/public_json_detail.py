@@ -58,6 +58,12 @@ RECRUITER_LEGACY_TECH_CLASSIFICATIONS = {
     "개발",
     "기술",
 }
+RECRUITER_LEGACY_CONNECTOR_FAMILIES = frozenset(
+    {
+        "recruiter_legacy_public_api_tech",
+        "ahnlab_recruiter_public_api_tech",
+    }
+)
 NETMARBLE_LISTING_API = (
     "https://career.netmarble.com/api/v1/apply/announces?page=1&size=1000"
 )
@@ -1577,7 +1583,7 @@ def discover_public_json_detail_refs(
         return _ncsoft_refs(payload)
     if connector_family == "com2us_jobflex_tech":
         return _com2us_refs(payload)
-    if connector_family == "recruiter_legacy_public_api_tech":
+    if connector_family in RECRUITER_LEGACY_CONNECTOR_FAMILIES:
         return _recruiter_legacy_refs(payload, listing_url)
     if connector_family == "banksalad_greeting_api_tech":
         return _banksalad_refs(payload)
@@ -1633,6 +1639,16 @@ def filter_public_detail_refs(
             if ref.category in RECRUITER_LEGACY_TECH_CLASSIFICATIONS
             and "인재풀" not in ref.title
         ]
+    if connector_family == "ahnlab_recruiter_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if "인재풀" not in ref.title
+            and (
+                is_technical_role(ref.title, ref.category)
+                or "디지털 포렌식" in ref.title
+            )
+        ]
     if connector_family == "banksalad_greeting_api_tech":
         return refs
     if connector_family == "elice_softr_public_api_tech":
@@ -1686,12 +1702,11 @@ def public_detail_listing_is_self_validated(connector_family: str) -> bool:
         "ncsoft_session_html_tech",
         "com2us_jobflex_tech",
         "elice_softr_public_api_tech",
-        "recruiter_legacy_public_api_tech",
         "banksalad_greeting_api_tech",
         "roundhr_public_api_tech",
         "workable_public_api_tech",
         "ninehire_public_api_tech",
-    }
+    } | RECRUITER_LEGACY_CONNECTOR_FAMILIES
 
 
 def _nested_code(payload: dict[str, Any], key: str) -> str | None:
@@ -2818,7 +2833,7 @@ def parse_public_json_detail(
         return _ninehire_opening(raw_json, ref)
     if connector_family == "ncsoft_session_html_tech":
         return _ncsoft_opening(raw_json, ref)
-    if connector_family == "recruiter_legacy_public_api_tech":
+    if connector_family in RECRUITER_LEGACY_CONNECTOR_FAMILIES:
         return _recruiter_legacy_opening(raw_json, ref)
     if connector_family == "banksalad_greeting_api_tech":
         opening = parse_greeting_opening(raw_json, ref.detail_url)

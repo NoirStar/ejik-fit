@@ -2149,14 +2149,24 @@ def test_fetch_listing_page_uses_form_body_for_html_post_sources() -> None:
     ]
 
 
-def test_fetch_listing_page_uses_form_body_for_legacy_recruiter_api() -> None:
+@pytest.mark.parametrize(
+    "connector_family",
+    [
+        "recruiter_legacy_public_api_tech",
+        "ahnlab_recruiter_public_api_tech",
+    ],
+)
+def test_fetch_listing_page_uses_form_body_for_recruiter_api(
+    connector_family: str,
+) -> None:
     source = CareerSource(
-        company=Company(name="케이뱅크", slug="kbank"),
+        company=Company(name="Recruiter 기업", slug="recruiter-company"),
         base_url=(
-            "https://kbank.recruiter.co.kr/app/jobnotice/list.json"
+            "https://recruiter-company.recruiter.co.kr/"
+            "app/jobnotice/list.json"
         ),
         source_type=SourceType.PUBLIC_JSON_DETAIL,
-        connector_family="recruiter_legacy_public_api_tech",
+        connector_family=connector_family,
         request_method="POST",
         request_body={"jobnoticeStateCode": "10", "pageSize": "100"},
     )
