@@ -1835,6 +1835,59 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="코인원",
+        slug="coinone",
+        base_url="https://recruit.coinonecorp.com/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://coinone.co.kr",
+        sector="fintech",
+        connector_family="ninehire_public_api_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=7,
+        expected_job_volume=5,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=9,
+        notes=(
+            "Official Coinone careers site and public Ninehire feed; "
+            "limited to current technical roles with verified detail pages."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="안랩",
+        slug="ahnlab",
+        base_url=(
+            "https://ahnlab.recruiter.co.kr/app/jobnotice/list.json"
+        ),
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.ahnlab.com",
+        sector="cybersecurity",
+        connector_family="ahnlab_recruiter_public_api_tech",
+        request_method="POST",
+        request_body={
+            "recruitClassSn": "",
+            "recruitClassName": "",
+            "jobnoticeStateCode": "10",
+            "pageSize": "100",
+            "searchByNameOnly": True,
+            "currentPage": "1",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=7,
+        expected_job_volume=7,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=7,
+        notes=(
+            "Official AhnLab Recruiter listing and detail pages; limited "
+            "to current software, ML, security, and digital-forensics roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="쏘카",
         slug="socar",
         base_url="https://www.socarcorp.kr/careers/jobs",

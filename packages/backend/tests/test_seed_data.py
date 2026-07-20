@@ -142,6 +142,33 @@ def test_initial_sources_include_existing_greeting_pages_and_official_json_sourc
     )
 
 
+def test_initial_sources_include_coinone_and_ahnlab_official_sources() -> None:
+    sources = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    coinone = sources["coinone"]
+    assert coinone.base_url == "https://recruit.coinonecorp.com/"
+    assert coinone.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert coinone.connector_family == "ninehire_public_api_tech"
+    assert coinone.status == SourceStatus.ALLOWED
+
+    ahnlab = sources["ahnlab"]
+    assert ahnlab.base_url == (
+        "https://ahnlab.recruiter.co.kr/app/jobnotice/list.json"
+    )
+    assert ahnlab.source_type == SourceType.PUBLIC_JSON_DETAIL
+    assert ahnlab.connector_family == "ahnlab_recruiter_public_api_tech"
+    assert ahnlab.request_method == "POST"
+    assert ahnlab.request_body == {
+        "recruitClassSn": "",
+        "recruitClassName": "",
+        "jobnoticeStateCode": "10",
+        "pageSize": "100",
+        "searchByNameOnly": True,
+        "currentPage": "1",
+    }
+    assert ahnlab.status == SourceStatus.ALLOWED
+
+
 def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enabled() -> None:
     enterprise_slugs = {
         "samsung-electronics",
@@ -292,7 +319,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 189
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 191
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -472,7 +499,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 189
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 191
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
