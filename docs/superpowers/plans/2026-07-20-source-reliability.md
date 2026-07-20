@@ -43,7 +43,7 @@ Add this case to the existing `test_seeding_reverifies_new_nexon_source_after_au
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_seed_data.py::test_seeding_reverifies_new_nexon_source_after_automatic_access_block -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_seed_data.py::test_seeding_reverifies_new_nexon_source_after_automatic_access_block -q
 ```
 
 Expected: the `ALLOWED/REVIEW` case fails because `policy_status` remains `REVIEW`.
@@ -66,7 +66,7 @@ Keep the connector-family checks and the existing clearing of automatic error fi
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_seed_data.py -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_seed_data.py -q
 ```
 
 Expected: all seed tests pass.
@@ -114,7 +114,7 @@ then assert the return value is `1` and the posting status is `DELAYED`.
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawler.py -k "delay_stale_source_postings" -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawler.py -k "delay_stale_source_postings" -q
 ```
 
 Expected: collection fails because `delay_stale_source_postings` does not exist.
@@ -162,7 +162,7 @@ Import `or_`, `update`, and `timedelta` using the existing import style.
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawler.py -k "delay_stale_source_postings" -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawler.py -k "delay_stale_source_postings" -q
 ```
 
 Expected: both tests pass.
@@ -216,7 +216,7 @@ assert next_missing_state(
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawler.py -k "delayed_missing_state" -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawler.py -k "delayed_missing_state" -q
 ```
 
 Expected: failure because `next_missing_state` does not accept `current_status`.
@@ -249,7 +249,7 @@ Pass `posting.status` from `reconcile_missing`.
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawler.py -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawler.py -q
 ```
 
 Expected: all crawler tests pass.
@@ -296,7 +296,7 @@ Patch `_delay_run_stale_postings` to return `0` in the other
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawler.py -k "run_all_sources" -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawler.py -k "run_all_sources" -q
 ```
 
 Expected: failure because the report has no `delayed` key.
@@ -328,7 +328,7 @@ lines.extend(["", f"검증 지연 전환: {report.get('delayed', 0)}건"])
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_crawl_workflow.py packages/backend/tests/test_crawler.py -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_crawl_workflow.py packages/backend/tests/test_crawler.py -q
 ```
 
 Expected: all selected tests pass.
@@ -451,8 +451,8 @@ Document:
 Run:
 
 ```bash
-.venv/bin/pytest packages/backend/tests/test_seed_data.py packages/backend/tests/test_crawler.py packages/backend/tests/test_crawl_workflow.py -q
-.venv/bin/pytest packages/backend/tests -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_seed_data.py packages/backend/tests/test_crawler.py packages/backend/tests/test_crawl_workflow.py -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests -q
 cd apps/web
 npm test -- --run
 npm run lint

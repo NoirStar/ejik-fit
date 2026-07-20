@@ -1525,6 +1525,7 @@ def test_seeding_sources_does_not_clear_blocked_policy_state() -> None:
     [
         (SourceStatus.BLOCKED, PolicyStatus.BLOCKED, False),
         (SourceStatus.REVIEW, PolicyStatus.REVIEW, True),
+        (SourceStatus.ALLOWED, PolicyStatus.REVIEW, True),
     ],
 )
 def test_seeding_reverifies_new_nexon_source_after_automatic_access_block(
