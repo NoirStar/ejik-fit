@@ -39,6 +39,7 @@ jobs:
       S3_SECRET_KEY: ${{ secrets.SUPABASE_S3_SECRET_KEY }}
       S3_BUCKET: raw-snapshots
       CRAWLER_MAX_WORKERS: "4"
+      NEXON_BROWSER_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

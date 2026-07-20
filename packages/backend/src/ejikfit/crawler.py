@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from collections import defaultdict
@@ -496,14 +497,32 @@ class PlaywrightBrowserRenderer:
         timeout_ms: int = 20_000,
         settle_timeout_ms: int = 5_000,
         nexon_response_timeout_ms: int = 45_000,
+        nexon_navigation_attempts: int = 3,
+        nexon_navigation_retry_delay_seconds: float = 1.0,
         nexon_page_delay_seconds: float = 1.0,
+        nexon_browser_channel: str | None = None,
     ) -> None:
+        if nexon_navigation_attempts < 1:
+            raise ValueError("Nexon navigation attempts must be positive")
+        if nexon_navigation_retry_delay_seconds < 0:
+            raise ValueError(
+                "Nexon navigation retry delay must not be negative"
+            )
         if nexon_page_delay_seconds < 0:
             raise ValueError("Nexon page delay must not be negative")
         self.timeout_ms = timeout_ms
         self.settle_timeout_ms = settle_timeout_ms
         self.nexon_response_timeout_ms = nexon_response_timeout_ms
+        self.nexon_navigation_attempts = nexon_navigation_attempts
+        self.nexon_navigation_retry_delay_seconds = (
+            nexon_navigation_retry_delay_seconds
+        )
         self.nexon_page_delay_seconds = nexon_page_delay_seconds
+        self.nexon_browser_channel = (
+            nexon_browser_channel
+            if nexon_browser_channel is not None
+            else os.getenv("NEXON_BROWSER_CHANNEL", "").strip() or None
+        )
         self._nexon_snapshot: FetchedPage | None = None
         self._nexon_snapshot_error: Exception | None = None
 
@@ -522,6 +541,86 @@ class PlaywrightBrowserRenderer:
         self._nexon_snapshot = snapshot
         return snapshot
 
+    async def _launch_nexon_browser(self, playwright: Any) -> Any:
+        launch_options: dict[str, Any] = {"headless": False}
+        if self.nexon_browser_channel:
+            launch_options["channel"] = self.nexon_browser_channel
+        try:
+            return await playwright.chromium.launch(**launch_options)
+        except Exception:
+            if not self.nexon_browser_channel:
+                raise
+            logger.warning(
+                "Nexon browser channel %s could not launch; "
+                "falling back to bundled Chromium",
+                self.nexon_browser_channel,
+                exc_info=True,
+            )
+            return await playwright.chromium.launch(headless=False)
+
+    async def _navigate_for_nexon_response(
+        self,
+        page: Any,
+        *,
+        page_url: str,
+        api_url: str,
+        method: str,
+        label: str,
+    ) -> Any:
+        last_error: Exception | None = None
+        for attempt_number in range(1, self.nexon_navigation_attempts + 1):
+            try:
+                async with page.expect_response(
+                    lambda response: (
+                        response.url == api_url
+                        and response.request.method == method
+                    ),
+                    timeout=self.nexon_response_timeout_ms,
+                ) as response_info:
+                    await page.goto(
+                        page_url,
+                        wait_until="domcontentloaded",
+                        timeout=self.timeout_ms,
+                    )
+                response = await response_info.value
+                self._validate_nexon_response(response, label)
+                return response
+            except Exception as error:
+                last_error = error
+                if attempt_number == self.nexon_navigation_attempts:
+                    break
+                logger.info(
+                    "Nexon %s did not become available on browser "
+                    "attempt %s/%s; retrying in the same session",
+                    label,
+                    attempt_number,
+                    self.nexon_navigation_attempts,
+                )
+                if self.nexon_navigation_retry_delay_seconds:
+                    await asyncio.sleep(
+                        self.nexon_navigation_retry_delay_seconds
+                    )
+
+        try:
+            content = await page.content()
+        except Exception:
+            content = ""
+        attempts_label = (
+            f"{self.nexon_navigation_attempts} browser attempts"
+        )
+        if (
+            contains_access_challenge(content)
+            or isinstance(last_error, BlockedSourceError)
+        ):
+            raise BlockedSourceError(
+                f"Nexon {label} automatic browser check did not "
+                f"complete after {attempts_label}"
+            ) from last_error
+        raise RetryableFetchError(
+            f"Nexon {label} did not load after {attempts_label}: "
+            f"{last_error or 'no application response'}"
+        ) from last_error
+
     async def _collect_nexon_snapshot(self) -> FetchedPage:
         try:
             from playwright.async_api import async_playwright
@@ -530,7 +629,7 @@ class PlaywrightBrowserRenderer:
 
         try:
             async with async_playwright() as playwright:
-                browser = await playwright.chromium.launch(headless=False)
+                browser = await self._launch_nexon_browser(playwright)
                 try:
                     context = await browser.new_context(
                         locale="ko-KR",
@@ -540,20 +639,14 @@ class PlaywrightBrowserRenderer:
                     try:
                         page = await context.new_page()
 
-                        async with page.expect_response(
-                            lambda response: (
-                                response.url == NEXON_CORPORATIONS_API
-                                and response.request.method == "GET"
-                            ),
-                            timeout=self.nexon_response_timeout_ms,
-                        ) as corporation_response_info:
-                            await page.goto(
-                                NEXON_HOME_URL,
-                                wait_until="domcontentloaded",
-                                timeout=self.timeout_ms,
-                            )
                         corporation_response = (
-                            await corporation_response_info.value
+                            await self._navigate_for_nexon_response(
+                                page,
+                                page_url=NEXON_HOME_URL,
+                                api_url=NEXON_CORPORATIONS_API,
+                                method="GET",
+                                label="corporation directory",
+                            )
                         )
                         # Cloudflare can return an initial 403 challenge document
                         # before the normal browser completes its managed check.
@@ -577,22 +670,14 @@ class PlaywrightBrowserRenderer:
                         except Exception:
                             pass
 
-                        async with page.expect_response(
-                            lambda response: (
-                                response.url == NEXON_LIST_API
-                                and response.request.method == "POST"
-                            ),
-                            timeout=self.nexon_response_timeout_ms,
-                        ) as listing_response_info:
-                            await page.goto(
-                                NEXON_RECRUIT_URL,
-                                wait_until="domcontentloaded",
-                                timeout=self.timeout_ms,
+                        listing_response = (
+                            await self._navigate_for_nexon_response(
+                                page,
+                                page_url=NEXON_RECRUIT_URL,
+                                api_url=NEXON_LIST_API,
+                                method="POST",
+                                label="job listing",
                             )
-                        listing_response = await listing_response_info.value
-                        self._validate_nexon_response(
-                            listing_response,
-                            "job listing",
                         )
                         if contains_access_challenge(await page.content()):
                             raise BlockedSourceError(

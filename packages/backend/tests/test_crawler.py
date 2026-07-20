@@ -509,10 +509,12 @@ class _FakeNexonChromium:
     def __init__(self, page: _FakeNexonPage) -> None:
         self.browser = _FakeNexonBrowser(page)
         self.launch_headless: bool | None = None
+        self.launch_options: dict[str, object] | None = None
         self.launch_count = 0
 
-    async def launch(self, *, headless: bool) -> _FakeNexonBrowser:
-        self.launch_headless = headless
+    async def launch(self, **options) -> _FakeNexonBrowser:
+        self.launch_options = options
+        self.launch_headless = bool(options["headless"])
         self.launch_count += 1
         return self.browser
 
@@ -565,6 +567,77 @@ def test_nexon_snapshot_uses_headed_chromium_and_combines_pages(
     assert len(json.loads(snapshot.text)["list"]) == 16
     assert chromium.browser.context.closed is True
     assert chromium.browser.closed is True
+
+
+def test_nexon_snapshot_uses_configured_system_chrome_channel(
+    monkeypatch,
+) -> None:
+    page = _FakeNexonPage(total=15)
+    chromium = _FakeNexonChromium(page)
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakeNexonPlaywrightManager(chromium)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+    monkeypatch.setenv("NEXON_BROWSER_CHANNEL", "chrome")
+
+    asyncio.run(
+        crawler.PlaywrightBrowserRenderer(
+            nexon_page_delay_seconds=0,
+        ).fetch_nexon_snapshot()
+    )
+
+    assert chromium.launch_options == {
+        "headless": False,
+        "channel": "chrome",
+    }
+
+
+def test_nexon_snapshot_retries_the_automatic_browser_check(
+    monkeypatch,
+) -> None:
+    class TimedOutExpectedResponse:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb) -> None:
+            raise TimeoutError("automatic browser check still running")
+
+    class RetryingNexonPage(_FakeNexonPage):
+        def __init__(self) -> None:
+            super().__init__(total=15)
+            self.remaining_timeouts = 1
+
+        def expect_response(self, predicate, *, timeout: int):
+            self.expected_response_timeouts.append(timeout)
+            if self.remaining_timeouts:
+                self.remaining_timeouts -= 1
+                return TimedOutExpectedResponse()
+            response = self._responses.pop(0)
+            assert predicate(response)
+            return _FakeNexonExpectedResponse(response)
+
+    page = RetryingNexonPage()
+    chromium = _FakeNexonChromium(page)
+    fake_module = ModuleType("playwright.async_api")
+    fake_module.async_playwright = lambda: _FakeNexonPlaywrightManager(chromium)
+    monkeypatch.setitem(sys.modules, "playwright", ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", fake_module)
+
+    snapshot = asyncio.run(
+        crawler.PlaywrightBrowserRenderer(
+            nexon_navigation_attempts=2,
+            nexon_navigation_retry_delay_seconds=0,
+            nexon_page_delay_seconds=0,
+        ).fetch_nexon_snapshot()
+    )
+
+    assert len(json.loads(snapshot.text)["list"]) == 15
+    assert page.visited_urls == [
+        "https://careers.nexon.com/",
+        "https://careers.nexon.com/",
+        "https://careers.nexon.com/recruit",
+    ]
+    assert page.expected_response_timeouts == [45_000, 45_000, 45_000]
 
 
 def test_nexon_snapshot_accepts_a_completed_browser_security_check(
