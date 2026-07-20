@@ -82,6 +82,12 @@ type StateChange =
   | SavedJobSearchesState
   | ((current: SavedJobSearchesState) => SavedJobSearchesState);
 
+type VersionedField = "name" | "enabled" | "lastCheckedAt" | "remove";
+
+function mutationFieldKey(id: string, field: VersionedField) {
+  return `${id}:${field}`;
+}
+
 export function useSavedJobSearches(
   viewer: AuthViewer | null,
   injectedStore?: SavedJobSearchStore,
@@ -89,10 +95,11 @@ export function useSavedJobSearches(
   const viewerId = viewer?.id;
   const [state, setState] = useState<SavedJobSearchesState>(IDLE_STATE);
   const stateRef = useRef<SavedJobSearchesState>(IDLE_STATE);
-  const stateRevision = useRef(0);
   const mounted = useRef(false);
   const account = useRef({ viewerId, generation: 0 });
   const loadRequest = useRef(0);
+  const mutationSequence = useRef(0);
+  const mutationVersions = useRef(new Map<string, number>());
   const createQueue = useRef({
     generation: 0,
     tail: Promise.resolve(),
@@ -105,6 +112,7 @@ export function useSavedJobSearches(
     const generation = account.current.generation + 1;
     account.current = { viewerId, generation };
     loadRequest.current += 1;
+    mutationVersions.current.clear();
     createQueue.current = {
       generation,
       tail: Promise.resolve(),
@@ -115,10 +123,30 @@ export function useSavedJobSearches(
     const next =
       typeof change === "function" ? change(stateRef.current) : change;
     stateRef.current = next;
-    stateRevision.current += 1;
     setState(next);
-    return stateRevision.current;
   }, []);
+
+  const beginMutation = useCallback((keys: string[]) => {
+    const version = mutationSequence.current + 1;
+    mutationSequence.current = version;
+    keys.forEach((key) => mutationVersions.current.set(key, version));
+    return version;
+  }, []);
+
+  const ownsMutation = useCallback((key: string, version: number) => {
+    return mutationVersions.current.get(key) === version;
+  }, []);
+
+  const releaseMutation = useCallback(
+    (keys: string[], version: number) => {
+      keys.forEach((key) => {
+        if (mutationVersions.current.get(key) === version) {
+          mutationVersions.current.delete(key);
+        }
+      });
+    },
+    [],
+  );
 
   const tokenFor = useCallback((expectedViewerId: string | undefined) => {
     const current = account.current;
@@ -263,10 +291,12 @@ export function useSavedJobSearches(
     ): Promise<CreateSavedJobSearchResult> => {
       const token = tokenFor(viewerId);
       if (!token) return { status: "error" };
+      if (stateRef.current.status !== "ready") {
+        return { status: "error" };
+      }
       const normalized = normalizeSavedJobSearchFilters(filters);
       const filterKey = savedJobSearchFilterKey(normalized);
       const nameToSave = savedName(normalized, name);
-      loadRequest.current += 1;
 
       const queue = createQueue.current;
       if (queue.generation !== token.generation) {
@@ -276,6 +306,9 @@ export function useSavedJobSearches(
       const operation = queue.tail.then(
         async (): Promise<CreateSavedJobSearchResult> => {
           if (!isAccountActive(token)) return { status: "error" };
+          if (stateRef.current.status !== "ready") {
+            return { status: "error" };
+          }
 
           const items = stateRef.current.items;
           if (!hasSavedJobSearchFilter(normalized) || !nameToSave) {
@@ -299,6 +332,7 @@ export function useSavedJobSearches(
             return { status: "error" };
           }
 
+          loadRequest.current += 1;
           try {
             const item = await store.insert(
               token.viewerId,
@@ -361,10 +395,12 @@ export function useSavedJobSearches(
       }
 
       loadRequest.current += 1;
-      const previousItems = stateRef.current.items;
-      const optimisticRevision = commitState(
+      const previousName = item.name;
+      const fieldKey = mutationFieldKey(id, "name");
+      const mutationVersion = beginMutation([fieldKey]);
+      commitState(
         ready(
-          previousItems.map((candidate) =>
+          stateRef.current.items.map((candidate) =>
             candidate.id === id
               ? { ...candidate, name: nextName }
               : candidate,
@@ -376,27 +412,48 @@ export function useSavedJobSearches(
           name: nextName,
         });
         if (!isAccountActive(token)) return false;
-        commitState((current) =>
-          ready(
-            current.items.map((candidate) =>
-              candidate.id === id ? updated : candidate,
+        if (ownsMutation(fieldKey, mutationVersion)) {
+          commitState((current) =>
+            ready(
+              current.items.map((candidate) =>
+                candidate.id === id
+                  ? {
+                      ...candidate,
+                      name: updated.name,
+                      updatedAt: updated.updatedAt,
+                    }
+                  : candidate,
+              ),
             ),
-          ),
-        );
+          );
+        }
+        releaseMutation([fieldKey], mutationVersion);
         return true;
       } catch {
         if (!isAccountActive(token)) return false;
-        if (stateRevision.current === optimisticRevision) {
-          commitState(failed(previousItems));
+        if (ownsMutation(fieldKey, mutationVersion)) {
+          commitState((current) =>
+            failed(
+              current.items.map((candidate) =>
+                candidate.id === id
+                  ? { ...candidate, name: previousName }
+                  : candidate,
+              ),
+            ),
+          );
         } else {
           commitState((current) => failed(current.items));
         }
+        releaseMutation([fieldKey], mutationVersion);
         return false;
       }
     },
     [
+      beginMutation,
       commitState,
       isAccountActive,
+      ownsMutation,
+      releaseMutation,
       resolveStore,
       tokenFor,
       viewerId,
@@ -424,10 +481,15 @@ export function useSavedJobSearches(
       const patch = checkedAt
         ? { enabled, lastCheckedAt: checkedAt }
         : { enabled };
-      const previousItems = stateRef.current.items;
-      const optimisticRevision = commitState(
+      const enabledKey = mutationFieldKey(id, "enabled");
+      const checkpointKey = mutationFieldKey(id, "lastCheckedAt");
+      const fieldKeys = checkedAt
+        ? [enabledKey, checkpointKey]
+        : [enabledKey];
+      const mutationVersion = beginMutation(fieldKeys);
+      commitState(
         ready(
-          previousItems.map((candidate) =>
+          stateRef.current.items.map((candidate) =>
             candidate.id === id
               ? {
                   ...candidate,
@@ -441,27 +503,63 @@ export function useSavedJobSearches(
       try {
         const updated = await store.update(token.viewerId, id, patch);
         if (!isAccountActive(token)) return false;
-        commitState((current) =>
-          ready(
-            current.items.map((candidate) =>
-              candidate.id === id ? updated : candidate,
+        const ownsEnabled = ownsMutation(enabledKey, mutationVersion);
+        const ownsCheckpoint =
+          checkedAt !== undefined &&
+          ownsMutation(checkpointKey, mutationVersion);
+        if (ownsEnabled || ownsCheckpoint) {
+          commitState((current) =>
+            ready(
+              current.items.map((candidate) => {
+                if (candidate.id !== id) return candidate;
+                return {
+                  ...candidate,
+                  ...(ownsEnabled ? { enabled: updated.enabled } : {}),
+                  ...(ownsCheckpoint
+                    ? { lastCheckedAt: updated.lastCheckedAt }
+                    : {}),
+                  updatedAt: updated.updatedAt,
+                };
+              }),
             ),
-          ),
-        );
+          );
+        }
+        releaseMutation(fieldKeys, mutationVersion);
         return true;
       } catch {
         if (!isAccountActive(token)) return false;
-        if (stateRevision.current === optimisticRevision) {
-          commitState(failed(previousItems));
+        const ownsEnabled = ownsMutation(enabledKey, mutationVersion);
+        const ownsCheckpoint =
+          checkedAt !== undefined &&
+          ownsMutation(checkpointKey, mutationVersion);
+        if (ownsEnabled || ownsCheckpoint) {
+          commitState((current) =>
+            failed(
+              current.items.map((candidate) => {
+                if (candidate.id !== id) return candidate;
+                return {
+                  ...candidate,
+                  ...(ownsEnabled ? { enabled: item.enabled } : {}),
+                  ...(ownsCheckpoint
+                    ? { lastCheckedAt: item.lastCheckedAt }
+                    : {}),
+                };
+              }),
+            ),
+          );
         } else {
           commitState((current) => failed(current.items));
         }
+        releaseMutation(fieldKeys, mutationVersion);
         return false;
       }
     },
     [
+      beginMutation,
       commitState,
       isAccountActive,
+      ownsMutation,
+      releaseMutation,
       resolveStore,
       tokenFor,
       viewerId,
@@ -482,26 +580,47 @@ export function useSavedJobSearches(
 
       loadRequest.current += 1;
       const previousItems = stateRef.current.items;
-      const optimisticRevision = commitState(
+      const removedItem = previousItems.find((item) => item.id === id);
+      if (!removedItem) return false;
+      const removedIndex = previousItems.indexOf(removedItem);
+      const fieldKey = mutationFieldKey(id, "remove");
+      const mutationVersion = beginMutation([fieldKey]);
+      commitState(
         ready(previousItems.filter((item) => item.id !== id)),
       );
       try {
         await store.remove(token.viewerId, id);
         if (!isAccountActive(token)) return false;
+        releaseMutation([fieldKey], mutationVersion);
         return true;
       } catch {
         if (!isAccountActive(token)) return false;
-        if (stateRevision.current === optimisticRevision) {
-          commitState(failed(previousItems));
+        if (ownsMutation(fieldKey, mutationVersion)) {
+          commitState((current) => {
+            if (current.items.some((item) => item.id === id)) {
+              return failed(current.items);
+            }
+            const items = [...current.items];
+            items.splice(
+              Math.min(removedIndex, items.length),
+              0,
+              removedItem,
+            );
+            return failed(items);
+          });
         } else {
           commitState((current) => failed(current.items));
         }
+        releaseMutation([fieldKey], mutationVersion);
         return false;
       }
     },
     [
+      beginMutation,
       commitState,
       isAccountActive,
+      ownsMutation,
+      releaseMutation,
       resolveStore,
       tokenFor,
       viewerId,
@@ -522,6 +641,10 @@ export function useSavedJobSearches(
       }
 
       loadRequest.current += 1;
+      const fieldKeys = checkpointIds.map((id) =>
+        mutationFieldKey(id, "lastCheckedAt"),
+      );
+      const mutationVersion = beginMutation(fieldKeys);
       try {
         await store.markChecked(
           token.viewerId,
@@ -529,7 +652,14 @@ export function useSavedJobSearches(
           evaluatedAt,
         );
         if (!isAccountActive(token)) return false;
-        const checkedIds = new Set(checkpointIds);
+        const checkedIds = new Set(
+          checkpointIds.filter((id) =>
+            ownsMutation(
+              mutationFieldKey(id, "lastCheckedAt"),
+              mutationVersion,
+            ),
+          ),
+        );
         commitState((current) =>
           ready(
             current.items.map((item) =>
@@ -543,16 +673,21 @@ export function useSavedJobSearches(
             ),
           ),
         );
+        releaseMutation(fieldKeys, mutationVersion);
         return true;
       } catch {
         if (!isAccountActive(token)) return false;
+        releaseMutation(fieldKeys, mutationVersion);
         commitState((current) => failed(current.items));
         return false;
       }
     },
     [
+      beginMutation,
       commitState,
       isAccountActive,
+      ownsMutation,
+      releaseMutation,
       resolveStore,
       tokenFor,
       viewerId,

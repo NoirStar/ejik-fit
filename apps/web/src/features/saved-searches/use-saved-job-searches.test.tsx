@@ -183,15 +183,21 @@ describe("useSavedJobSearches", () => {
   });
 
   it("does not let an older failed mutation erase a later success", async () => {
-    const other = savedSearch("search-2", "Go");
     const older = deferred<SavedJobSearch>();
     const later = deferred<SavedJobSearch>();
-    const renamed = { ...other, name: "Go 서비스" };
+    const renamed = {
+      ...existing,
+      name: "Python 서비스",
+      enabled: false,
+    };
     const store = fakeStore({
-      list: vi.fn().mockResolvedValue([existing, other]),
+      list: vi.fn().mockResolvedValue([existing]),
       update: vi.fn().mockImplementation(
-        (_userId: string, id: string) =>
-          id === existing.id ? older.promise : later.promise,
+        (
+          _userId: string,
+          _id: string,
+          patch: Partial<SavedJobSearch>,
+        ) => patch.enabled === false ? older.promise : later.promise,
       ),
     });
     const { result } = renderHook(() =>
@@ -205,7 +211,7 @@ describe("useSavedJobSearches", () => {
     });
     let laterMutation!: Promise<boolean>;
     act(() => {
-      laterMutation = result.current.rename(other.id, renamed.name);
+      laterMutation = result.current.rename(existing.id, renamed.name);
     });
 
     await act(async () => {
@@ -217,9 +223,86 @@ describe("useSavedJobSearches", () => {
       await olderMutation;
     });
 
-    expect(
-      result.current.state.items.find((item) => item.id === other.id)?.name,
-    ).toBe(renamed.name);
+    expect(result.current.state.items[0]).toMatchObject({
+      name: renamed.name,
+      enabled: true,
+    });
+  });
+
+  it("ignores an older same-field success after a newer intent succeeds", async () => {
+    const older = deferred<SavedJobSearch>();
+    const newer = deferred<SavedJobSearch>();
+    const olderName = "이전 요청";
+    const newerName = "최종 요청";
+    const store = fakeStore({
+      list: vi.fn().mockResolvedValue([existing]),
+      update: vi.fn().mockImplementation(
+        (
+          _userId: string,
+          _id: string,
+          patch: Partial<SavedJobSearch>,
+        ) => patch.name === olderName ? older.promise : newer.promise,
+      ),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    let olderMutation!: Promise<boolean>;
+    act(() => {
+      olderMutation = result.current.rename(existing.id, olderName);
+    });
+    let newerMutation!: Promise<boolean>;
+    act(() => {
+      newerMutation = result.current.rename(existing.id, newerName);
+    });
+
+    await act(async () => {
+      newer.resolve({ ...existing, name: newerName });
+      await newerMutation;
+    });
+    await act(async () => {
+      older.resolve({ ...existing, name: olderName });
+      await olderMutation;
+    });
+
+    expect(result.current.state.items[0]?.name).toBe(newerName);
+  });
+
+  it("does not create before the authoritative list is ready", async () => {
+    const list = deferred<SavedJobSearch[]>();
+    const persisted = Array.from({ length: 10 }, (_, index) =>
+      savedSearch(`search-${index}`, `Skill ${index}`),
+    );
+    const store = fakeStore({
+      list: vi.fn().mockReturnValue(list.promise),
+      insert: vi.fn().mockResolvedValue(savedSearch("search-11", "Rust")),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("loading"));
+
+    let outcome;
+    await act(async () => {
+      outcome = await result.current.create({
+        query: "Rust",
+        category: "backend",
+        careerType: "",
+      });
+    });
+
+    expect(outcome).toEqual({ status: "error" });
+    expect(store.insert).not.toHaveBeenCalled();
+
+    await act(async () => {
+      list.resolve(persisted);
+      await list.promise;
+    });
+    await waitFor(() =>
+      expect(result.current.state.items).toEqual(persisted),
+    );
   });
 
   it("reserves a duplicate filter across concurrent creates", async () => {
