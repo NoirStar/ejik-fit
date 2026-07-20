@@ -901,6 +901,31 @@ describe("companyIdentity", () => {
     });
   });
 
+  it.each([
+    [
+      "코인원",
+      "https://recruit.coinonecorp.com/job_posting/example",
+      "/company-logo-assets/coinone",
+    ],
+    [
+      "안랩",
+      "https://ahnlab.recruiter.co.kr/app/jobnotice/view?jobnoticeSn=244200",
+      "/company-logo-assets/ahnlab",
+    ],
+  ])(
+    "uses %s's official mark only for its trusted careers host",
+    (companyName, sourceUrl, logoUrl) => {
+      expect(companyIdentity(companyName, sourceUrl)).toMatchObject({
+        kind: "logo",
+        src: logoUrl,
+        alt: `${companyName} 로고`,
+      });
+      expect(
+        companyIdentity(companyName, "https://untrusted.example/jobs/1"),
+      ).toMatchObject({ kind: "initials" });
+    },
+  );
+
   it("uses Lablup's official mark for its careers host", () => {
     expect(
       companyIdentity(

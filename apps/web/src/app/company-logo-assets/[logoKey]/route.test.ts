@@ -97,6 +97,38 @@ describe("company logo asset proxy", () => {
     );
   });
 
+  it.each([
+    {
+      body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+      key: "coinone",
+      upstreamUrl:
+        "https://image.ninehire.com/brand/b2baa5f0-1f40-11f0-8c6c-596fcda513ba/f2e49d60-2414-11f0-8c6c-596fcda513ba.png",
+    },
+    {
+      body: new TextEncoder().encode(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"></svg>',
+      ),
+      key: "ahnlab",
+      upstreamUrl:
+        "https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg",
+    },
+  ])("proxies the official $key company mark", async ({ body, key, upstreamUrl }) => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(body, {
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request(`http://localhost/company-logo-assets/${key}`),
+      { params: Promise.resolve({ logoKey: key }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(upstreamUrl, expect.any(Object));
+  });
+
   it("uses a transparent browser-compatible user agent for official sites that reject bare bot agents", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {

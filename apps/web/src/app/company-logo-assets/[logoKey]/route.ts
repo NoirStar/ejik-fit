@@ -7,6 +7,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://image.ninehire.com/homepage/dab31690-f51a-11f0-82d7-69b90bd91b4e/image/5bb38750-21dc-11f1-ace3-df9fba100c30.png",
   airwallex:
     "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
+  ahnlab:
+    "https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg",
   "amd-korea":
     "https://cms.jibecdn.com/prod/amd/assets/FAVICON-en-us-1666203559098.ico",
   "applied-intuition":
@@ -35,6 +37,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "cj-olivenetworks":
     "https://www.cjolivenetworks.co.kr/images/common/favicon_196.png",
   cognite: "https://www.cognite.com/icon.png?icon.08484x9h5icrf.png",
+  coinone:
+    "https://image.ninehire.com/brand/b2baa5f0-1f40-11f0-8c6c-596fcda513ba/f2e49d60-2414-11f0-8c6c-596fcda513ba.png",
   com2us:
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
   cohere: "https://cohere.com/apple-touch-icon.png",

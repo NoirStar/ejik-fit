@@ -482,6 +482,18 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "케이뱅크",
   },
   {
+    aliases: ["코인원", "coinone"],
+    hosts: ["recruit.coinonecorp.com", "coinonecorp.com", "coinone.co.kr"],
+    src: "/company-logo-assets/coinone",
+    displayName: "코인원",
+  },
+  {
+    aliases: ["안랩", "ahnlab"],
+    hosts: ["ahnlab.recruiter.co.kr", "ahnlab.com", "www.ahnlab.com"],
+    src: "/company-logo-assets/ahnlab",
+    displayName: "안랩",
+  },
+  {
     aliases: ["엘리스그룹", "엘리스", "elice group", "elice"],
     hosts: ["elice.careers", "elice.io"],
     src: "/company-logo-assets/elice",
