@@ -162,7 +162,7 @@ describe("PostPage", () => {
         expect.objectContaining({
           postId: "local-page-route",
           title: "로컬 상세 라우트",
-          topicLabel: "업무 이야기",
+          topicLabel: "커리어 질문",
           source: "local",
         }),
       ]),
