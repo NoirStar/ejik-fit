@@ -30,7 +30,10 @@ export async function generateMetadata({ params }: JobDetailProps): Promise<Meta
 
   return {
     title: `${job.title} - ${job.company_name}`,
-    description: `${job.company_name} ${job.title}. ${location}, ${career} 공식 채용공고입니다.`,
+    description:
+      job.status === "open"
+        ? `${job.company_name} ${job.title}. ${location}, ${career} 공식 채용공고입니다.`
+        : `${job.company_name} ${job.title}. ${location}, ${career}. 공식 출처의 현재 공개 상태를 확인 중입니다.`,
     alternates: { canonical: `/jobs/${encodeURIComponent(id)}` },
   };
 }
@@ -65,11 +68,19 @@ function jobPostingJsonLd(job: PostingDetail) {
 export default async function JobDetail({ params }: JobDetailProps) {
   const { id } = await params;
   const job = await postingOrNotFound(id);
-  const jsonLd = JSON.stringify(jobPostingJsonLd(job)).replace(/</g, "\\u003c");
+  const jsonLd =
+    job.status === "open"
+      ? JSON.stringify(jobPostingJsonLd(job)).replace(/</g, "\\u003c")
+      : null;
 
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: jsonLd }} type="application/ld+json" />
+      {jsonLd ? (
+        <script
+          dangerouslySetInnerHTML={{ __html: jsonLd }}
+          type="application/ld+json"
+        />
+      ) : null}
       <JobDetailView job={job} />
     </>
   );

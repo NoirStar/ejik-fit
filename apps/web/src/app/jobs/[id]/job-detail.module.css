@@ -81,6 +81,41 @@
   color: var(--color-muted);
 }
 
+.status[data-state="delayed"] {
+  border-color: color-mix(in srgb, var(--color-warning) 28%, var(--color-line));
+  background: color-mix(in srgb, var(--color-warning) 7%, var(--color-surface));
+  color: var(--color-warning);
+}
+
+.verificationNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 24%, var(--color-line));
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-surface));
+}
+
+.verificationNotice > svg {
+  margin-top: 0.0625rem;
+  color: var(--color-warning);
+}
+
+.verificationNotice strong {
+  display: block;
+  font-size: 0.8125rem;
+}
+
+.verificationNotice p {
+  margin-top: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
 .factsSection {
   margin-top: 1.5rem;
 }

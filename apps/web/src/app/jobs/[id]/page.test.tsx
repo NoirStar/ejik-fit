@@ -144,6 +144,25 @@ describe("JobDetail", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("marks delayed postings as unverified and omits active JobPosting JSON-LD", async () => {
+    vi.mocked(getPosting).mockResolvedValue({
+      ...job,
+      status: "delayed",
+    });
+
+    const { container } = render(
+      await JobDetail({ params: Promise.resolve({ id: "job-1" }) }),
+    );
+
+    expect(screen.getByText("확인 지연")).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "공고 검증 지연 안내" }),
+    ).toHaveTextContent("현재 모집 여부를 공식 원문에서 다시 확인해 주세요.");
+    expect(
+      container.querySelector('script[type="application/ld+json"]'),
+    ).not.toBeInTheDocument();
+  });
+
   it("states when the API provides no body or confirmed skill evidence", async () => {
     vi.mocked(getPosting).mockResolvedValue({
       ...job,

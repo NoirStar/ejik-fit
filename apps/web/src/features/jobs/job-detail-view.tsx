@@ -3,6 +3,7 @@ import {
   ArrowSquareOut,
   CheckCircle,
   ShieldCheck,
+  WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 
@@ -39,6 +40,7 @@ function formatPostingPeriod(
 function statusLabel(status: string) {
   if (status === "open") return "공개 중";
   if (status === "closed") return "마감";
+  if (status === "delayed") return "확인 지연";
   return "상태 확인 필요";
 }
 
@@ -79,6 +81,7 @@ function SkillGroup({
 export function JobDetailView({ job }: { job: PostingDetail }) {
   const skillDetails = job.skill_details ?? [];
   const groups = groupJobSkills(skillDetails);
+  const isDelayed = job.status === "delayed";
 
   return (
     <main className={styles.main}>
@@ -111,10 +114,31 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             <h1>{job.title}</h1>
           </div>
           <span className={styles.status} data-state={job.status}>
-            <CheckCircle aria-hidden="true" size={16} weight="fill" />
+            {isDelayed ? (
+              <WarningCircle aria-hidden="true" size={16} weight="fill" />
+            ) : (
+              <CheckCircle aria-hidden="true" size={16} weight="fill" />
+            )}
             {statusLabel(job.status)}
           </span>
         </header>
+
+        {isDelayed ? (
+          <section
+            aria-label="공고 검증 지연 안내"
+            className={styles.verificationNotice}
+            role="status"
+          >
+            <WarningCircle aria-hidden="true" size={20} weight="fill" />
+            <div>
+              <strong>공식 출처 확인이 지연되고 있습니다.</strong>
+              <p>
+                최근 자동 수집에서 이 공고를 재확인하지 못했습니다. 현재 모집
+                여부를 공식 원문에서 다시 확인해 주세요.
+              </p>
+            </div>
+          </section>
+        ) : null}
 
         <section
           aria-labelledby="job-facts-title"
