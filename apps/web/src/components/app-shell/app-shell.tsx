@@ -181,6 +181,29 @@ function HeaderWriteLink({ pathname }: { pathname: string }) {
   return <HeaderWriteLinkView href={`/?${writeParams.toString()}`} />;
 }
 
+function UserMenuLoginLink({
+  onClick,
+  pathname,
+}: {
+  onClick: () => void;
+  pathname: string;
+}) {
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const nextPath = `${pathname}${search ? `?${search}` : ""}`;
+
+  return (
+    <Link
+      className={styles.loginAction}
+      href={`/login?next=${encodeURIComponent(nextPath)}`}
+      onClick={onClick}
+    >
+      <SignIn aria-hidden="true" size={18} weight="bold" />
+      로그인
+    </Link>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -282,7 +305,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     setSheetOpen(true);
   }
 
-  const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
   const viewerLabel = viewer?.email.split("@")[0] || "로그인";
 
   const shell = (
@@ -430,14 +452,23 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </span>
                   </div>
                   {!viewer && (
-                    <Link
-                      className={styles.loginAction}
-                      href={loginHref}
-                      onClick={closeUtilityMenus}
+                    <Suspense
+                      fallback={
+                        <Link
+                          className={styles.loginAction}
+                          href={`/login?next=${encodeURIComponent(pathname)}`}
+                          onClick={closeUtilityMenus}
+                        >
+                          <SignIn aria-hidden="true" size={18} weight="bold" />
+                          로그인
+                        </Link>
+                      }
                     >
-                      <SignIn aria-hidden="true" size={18} weight="bold" />
-                      로그인
-                    </Link>
+                      <UserMenuLoginLink
+                        onClick={closeUtilityMenus}
+                        pathname={pathname}
+                      />
+                    </Suspense>
                   )}
                   <Link href="/career/account" onClick={closeUtilityMenus}>
                     계정 및 동기화

@@ -247,6 +247,26 @@ describe("AppShell", () => {
     expect(screen.queryByLabelText("사용자 메뉴")).not.toBeInTheDocument();
   });
 
+  it("keeps the current filters in the guest login return path", () => {
+    navigation.pathname = "/jobs";
+    navigation.search = "q=Python&category=backend";
+
+    render(
+      <AppShell>
+        <main>필터된 공고</main>
+      </AppShell>,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "사용자 메뉴 열기" }),
+    );
+
+    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fjobs%3Fq%3DPython%26category%3Dbackend",
+    );
+  });
+
   it("focuses global search when slash is pressed outside an editor", () => {
     render(
       <AppShell>

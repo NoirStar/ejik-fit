@@ -7,6 +7,7 @@ const ROUTES = [
   "/market",
   "/skill-map",
   "/career",
+  "/career/calendar",
   "/jobs",
   "/skills/graph",
   "/data-policy",
