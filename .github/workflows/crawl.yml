@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "packages/backend/src/ejikfit/seed_data.py"
+      - "packages/backend/alembic/**"
   schedule:
     - cron: "17 */6 * * *"
   workflow_dispatch:
