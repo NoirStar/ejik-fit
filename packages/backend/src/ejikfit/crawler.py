@@ -2540,6 +2540,14 @@ def _capture_run_market_snapshot(
         }
 
 
+def _delay_run_stale_postings(now: datetime | None = None) -> int:
+    with SessionLocal() as session:
+        return delay_stale_source_postings(
+            session,
+            now or datetime.now(timezone.utc),
+        )
+
+
 PROVIDER_HOST_SUFFIXES = (
     "ashbyhq.com",
     "greenhouse.io",
@@ -2670,6 +2678,7 @@ def run_all_sources(max_workers: int | None = None) -> dict[str, Any]:
         for _, result in sorted(indexed_results, key=lambda item: item[0])
     ]
 
+    delayed = _delay_run_stale_postings()
     market_snapshot = _capture_run_market_snapshot(results, total_sources)
     print(
         "market snapshot captured: "
@@ -2687,6 +2696,7 @@ def run_all_sources(max_workers: int | None = None) -> dict[str, Any]:
         "ingested": sum(item["ingested"] for item in results),
         "failed": sum(item["failed"] for item in results),
         "closed": sum(item["closed"] for item in results),
+        "delayed": delayed,
         "market_snapshot": market_snapshot,
         "results": results,
     }
@@ -2712,4 +2722,5 @@ def render_crawl_summary(report: dict[str, Any]) -> str:
         f"| 합계 | {report['discovered']} | {report['ingested']} | "
         f"{report['failed']} | {report['closed']} |"
     )
+    lines.extend(["", f"검증 지연 전환: {report.get('delayed', 0)}건"])
     return "\n".join(lines) + "\n"

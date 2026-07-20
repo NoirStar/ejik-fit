@@ -847,19 +847,28 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
 
     monkeypatch.setattr(crawler, "run_source_by_id", fake_run)
     captured: list[tuple[list[dict], int]] = []
+    events: list[str] = []
+
+    def fake_delay() -> int:
+        events.append("delay")
+        return 3
+
+    def fake_snapshot(results: list[dict], total: int) -> dict[str, object]:
+        events.append("snapshot")
+        captured.append((results, total))
+        return {
+            "observed_on": "2026-07-15",
+            "open_postings": 2,
+            "verified_sources": 1,
+            "total_sources": total,
+            "skill_count": 1,
+        }
+
+    monkeypatch.setattr(crawler, "_delay_run_stale_postings", fake_delay)
     monkeypatch.setattr(
         crawler,
         "_capture_run_market_snapshot",
-        lambda results, total: (
-            captured.append((results, total))
-            or {
-                "observed_on": "2026-07-15",
-                "open_postings": 2,
-                "verified_sources": 1,
-                "total_sources": total,
-                "skill_count": 1,
-            }
-        ),
+        fake_snapshot,
     )
 
     report = crawler.run_all_sources()
@@ -867,6 +876,8 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
     assert report["sources"] == 2
     assert report["failed"] == 1
     assert report["ingested"] == 2
+    assert report["delayed"] == 3
+    assert events == ["delay", "snapshot"]
     assert captured and captured[0][1] == 2
     assert [item["source_id"] for item in report["results"]] == [
         "first",
@@ -880,6 +891,7 @@ def test_crawl_all_continues_after_one_source_failure_and_preserves_labels(
         "| 네이버 / naver_json | 0 | 0 | 1 | 0 |"
         in crawler.render_crawl_summary(report)
     )
+    assert "검증 지연 전환: 3건" in crawler.render_crawl_summary(report)
 
 
 def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
@@ -909,6 +921,7 @@ def test_crawl_all_prints_source_progress(monkeypatch, capsys) -> None:
             "skill_count": 1,
         },
     )
+    monkeypatch.setattr(crawler, "_delay_run_stale_postings", lambda: 0)
 
     report = crawler.run_all_sources()
     output = capsys.readouterr().out
@@ -991,6 +1004,7 @@ def test_crawl_all_parallelizes_hosts_but_serializes_shared_provider(
             "skill_count": 1,
         },
     )
+    monkeypatch.setattr(crawler, "_delay_run_stale_postings", lambda: 0)
 
     report = crawler.run_all_sources(max_workers=3)
 
