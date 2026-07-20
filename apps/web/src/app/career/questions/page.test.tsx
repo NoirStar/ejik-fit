@@ -11,13 +11,13 @@ describe("QuestionsPage", () => {
     render(<QuestionsPage />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "내 질문" }),
+      screen.getByRole("heading", { level: 1, name: "내 글" }),
     ).toBeInTheDocument();
   });
 
   it("keeps the personalized local page out of search indexes", () => {
     expect(metadata).toMatchObject({
-      title: "내 질문",
+      title: "내 글",
       robots: { index: false, follow: false },
     });
   });

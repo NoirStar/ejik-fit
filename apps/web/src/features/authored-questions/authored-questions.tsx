@@ -158,7 +158,7 @@ export function AuthoredQuestions() {
       setError(
         result.status === "interactions_failed"
           ? "댓글과 반응을 정리하지 못해 삭제를 중단했습니다."
-          : "질문을 브라우저에서 삭제하지 못했습니다.",
+          : "글을 브라우저에서 삭제하지 못했습니다.",
       );
       return;
     }
@@ -174,9 +174,9 @@ export function AuthoredQuestions() {
       <header className={styles.intro}>
         <div>
           <p className={styles.eyebrow}>내 커리어 · 브라우저 커뮤니티</p>
-          <h1>내 질문</h1>
+          <h1>내 글</h1>
           <p className={styles.description}>
-            이 브라우저에서 직접 작성한 커리어 질문을 다시 확인합니다.
+            이 브라우저에서 직접 작성한 질문, 커리어 고민과 면접 후기를 다시 확인합니다.
             서버 계정과 동기화되지 않습니다.
           </p>
         </div>
@@ -184,7 +184,7 @@ export function AuthoredQuestions() {
           {hydrated && <span>이 브라우저에 {posts.length}개 저장</span>}
           <Link href="/?compose=1">
             <NotePencil aria-hidden="true" size={17} weight="bold" />
-            새 질문 작성
+            새 글 작성
           </Link>
         </div>
       </header>
@@ -212,7 +212,7 @@ export function AuthoredQuestions() {
 
         {!hydrated ? (
           <div className={styles.loading} role="status">
-            <p>질문을 불러오는 중입니다.</p>
+            <p>작성한 글을 불러오는 중입니다.</p>
           </div>
         ) : posts.length > 0 ? (
           <div className={styles.questionList}>
@@ -237,10 +237,10 @@ export function AuthoredQuestions() {
             <div>
               <NotePencil aria-hidden="true" size={24} weight="bold" />
             </div>
-            <h2>이 브라우저에서 작성한 질문이 없습니다.</h2>
-            <p>커리어 고민이나 공고를 보며 생긴 질문을 홈 피드에 남겨보세요.</p>
+            <h2>이 브라우저에서 작성한 글이 없습니다.</h2>
+            <p>질문이나 커리어 고민, 면접에서 배운 점을 홈 피드에 남겨보세요.</p>
             <Link href="/?compose=1">
-              첫 질문 작성
+              첫 글 작성
               <ArrowRight aria-hidden="true" size={16} weight="bold" />
             </Link>
           </div>

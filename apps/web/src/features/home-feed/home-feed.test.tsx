@@ -159,7 +159,7 @@ describe("HomeFeed", () => {
       "href",
       "/career/saved",
     );
-    expect(screen.getByRole("link", { name: "내 질문" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "내 글" })).toHaveAttribute(
       "href",
       "/career/questions",
     );

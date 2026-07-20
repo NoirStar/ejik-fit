@@ -62,13 +62,13 @@ describe("AuthoredQuestions", () => {
     render(<AuthoredQuestions />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "내 질문" }),
+      screen.getByRole("heading", { level: 1, name: "내 글" }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText("이 브라우저에서 작성한 질문이 없습니다."),
+      await screen.findByText("이 브라우저에서 작성한 글이 없습니다."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "첫 질문 작성" }),
+      screen.getByRole("link", { name: "첫 글 작성" }),
     ).toHaveAttribute("href", "/?compose=1");
     expect(screen.getByText(/서버 계정과 동기화되지 않습니다/)).toBeInTheDocument();
   });
@@ -95,7 +95,7 @@ describe("AuthoredQuestions", () => {
 
   it("reacts to a question created elsewhere in the same browser tab", async () => {
     render(<AuthoredQuestions />);
-    await screen.findByText("이 브라우저에서 작성한 질문이 없습니다.");
+    await screen.findByText("이 브라우저에서 작성한 글이 없습니다.");
 
     createLocalCommunityPost(
       {

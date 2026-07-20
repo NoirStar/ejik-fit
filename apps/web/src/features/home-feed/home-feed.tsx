@@ -775,7 +775,7 @@ export function HomeFeed({
               </Link>
               <Link href="/career/questions">
                 <ChatCircle aria-hidden="true" size={18} />
-                내 질문
+                내 글
               </Link>
               <Link href="/skill-map">
                 <ChartLineUp aria-hidden="true" size={18} />

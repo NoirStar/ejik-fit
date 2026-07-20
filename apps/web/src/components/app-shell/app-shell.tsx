@@ -489,7 +489,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     관심 기업
                   </Link>
                   <Link href="/career/questions" onClick={closeUtilityMenus}>
-                    내 질문
+                    내 글
                   </Link>
                   <Link href="/data-policy" onClick={closeUtilityMenus}>
                     데이터 정책
