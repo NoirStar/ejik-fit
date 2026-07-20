@@ -108,6 +108,50 @@ describe("public trust pages", () => {
     expect(screen.getByText(/0.80/)).toBeInTheDocument();
   });
 
+  it("reveals a large source directory in compact increments", async () => {
+    const items = Array.from({ length: 30 }, (_, index) => {
+      const number = String(index + 1).padStart(2, "0");
+      return {
+        company_name: `테스트기업 ${number}`,
+        company_slug: `test-company-${number}`,
+        homepage_url: `https://company-${number}.example.com`,
+        careers_url: `https://company-${number}.example.com/careers`,
+        collection_status: "collecting" as const,
+        preparation_reason: null,
+        open_postings: index + 1,
+        last_success_at: "2026-07-20T03:20:00Z",
+      };
+    });
+    vi.mocked(getSourceDirectory).mockResolvedValue({
+      items,
+      total: items.length,
+      collecting_count: items.length,
+      preparing_count: 0,
+      open_postings: 465,
+    });
+
+    render(await DataPolicyPage());
+
+    expect(
+      screen.getByRole("link", { name: "테스트기업 24 공고 보기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "테스트기업 25 공고 보기" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("24 / 30개 기업")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "6개 기업 더 보기" }),
+    );
+
+    expect(
+      screen.getByRole("link", { name: "테스트기업 30 공고 보기" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /기업 더 보기/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("explains browser storage and provides a clear-data action", () => {
     localStorage.setItem("ejik-fit:owned-skills", '["Java"]');
     localStorage.setItem("ejik-fit:saved-job-ids", '["job-1"]');
