@@ -1,6 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
+import { useSavedJobSearches } from "@/features/saved-searches/use-saved-job-searches";
+
 import { AppShell } from "./app-shell";
 
 const navigation = vi.hoisted(() => ({
@@ -8,6 +11,18 @@ const navigation = vi.hoisted(() => ({
   search: "",
   replace: vi.fn(),
   refresh: vi.fn(),
+}));
+
+const authViewer = vi.hoisted(() => ({
+  state: {
+    viewer: null as { id: string; email: string } | null,
+    ready: true,
+    signingOut: false,
+    error: "",
+    signOut: vi.fn(async () => true),
+  },
+  subscribe: vi.fn(),
+  unsubscribe: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -19,15 +34,47 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("@/features/auth/use-auth-viewer", async () => {
+  const { useEffect } = await import("react");
+
+  return {
+    useAuthViewer: vi.fn(() => {
+      useEffect(() => {
+        authViewer.subscribe();
+        return () => authViewer.unsubscribe();
+      }, []);
+      return authViewer.state;
+    }),
+  };
+});
+
+vi.mock("@/features/saved-searches/use-saved-job-searches", () => ({
+  useSavedJobSearches: vi.fn(),
+}));
+
 describe("AppShell", () => {
   afterEach(() => cleanup());
 
   beforeEach(() => {
+    vi.clearAllMocks();
     navigation.pathname = "/";
     navigation.search = "";
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
     localStorage.clear();
+    authViewer.state.viewer = null;
+    authViewer.state.ready = true;
+    authViewer.state.signingOut = false;
+    authViewer.state.error = "";
+    vi.mocked(useSavedJobSearches).mockReturnValue({
+      state: { status: "ready", items: [], error: "" },
+      create: vi.fn(),
+      reload: vi.fn(),
+      rename: vi.fn(),
+      setEnabled: vi.fn(),
+      remove: vi.fn(),
+      markChecked: vi.fn(),
+    });
   });
 
   it("exposes desktop and mobile access to five product destinations", () => {
@@ -117,6 +164,26 @@ describe("AppShell", () => {
     for (const link of screen.getAllByRole("link", { name: "공고" })) {
       expect(link).toHaveAttribute("aria-current", "page");
     }
+  });
+
+  it("shares its auth viewer with a saved-search composer", () => {
+    authViewer.state.viewer = {
+      id: "viewer-1",
+      email: "developer@example.com",
+    };
+
+    render(
+      <AppShell>
+        <SavedSearchComposer
+          filters={{ query: "Python", category: "", careerType: "" }}
+        />
+      </AppShell>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "이 검색 저장" }),
+    ).toBeEnabled();
+    expect(authViewer.subscribe).toHaveBeenCalledTimes(1);
   });
 
   it("marks the desktop skill graph as an immersive route", () => {

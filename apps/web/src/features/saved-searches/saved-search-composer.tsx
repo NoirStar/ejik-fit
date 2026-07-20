@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-import { useAuthViewer } from "@/features/auth/use-auth-viewer";
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 import type { JobListFilters } from "@/features/jobs/job-list";
 import {
   defaultSavedJobSearchName,
@@ -35,7 +35,7 @@ type SavedSearchComposerProps = {
   openOnReady?: boolean;
 };
 
-function loginHref(filters: ReturnType<typeof normalizeSavedJobSearchFilters>) {
+function loginHref(filters: JobListFilters) {
   const nextParams = new URLSearchParams();
   if (filters.query) nextParams.set("q", filters.query);
   if (filters.category) nextParams.set("category", filters.category);
@@ -54,7 +54,7 @@ export function SavedSearchComposer({
   filters,
   openOnReady = false,
 }: SavedSearchComposerProps) {
-  const { ready, viewer } = useAuthViewer();
+  const { ready, viewer } = useAuthViewerContext();
   const savedSearches = useSavedJobSearches(viewer);
   const normalizedFilters = useMemo(
     () => normalizeSavedJobSearchFilters(filters),
@@ -208,7 +208,7 @@ export function SavedSearchComposer({
           )}
         </form>
       ) : ready && !viewer && hasFilter ? (
-        <Link className={styles.trigger} href={loginHref(normalizedFilters)}>
+        <Link className={styles.trigger} href={loginHref(filters)}>
           이 검색 저장
         </Link>
       ) : (

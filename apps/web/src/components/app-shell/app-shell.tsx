@@ -20,6 +20,7 @@ import type { ReactNode, RefObject } from "react";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import { ActivityNotificationCenter } from "@/features/notifications/activity-notification-center";
@@ -163,7 +164,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { viewer, signingOut, error: authError, signOut } = useAuthViewer();
+  const {
+    viewer,
+    ready,
+    signingOut,
+    error: authError,
+    signOut,
+  } = useAuthViewer();
   const accountSyncStatus = useAccountStateSync(viewer);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const stackButtonRef = useRef<HTMLButtonElement>(null);
@@ -253,7 +260,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const loginHref = `/login?next=${encodeURIComponent(pathname)}`;
   const viewerLabel = viewer?.email.split("@")[0] || "로그인";
 
-  return (
+  const shell = (
     <div className={styles.shell}>
       <Suspense fallback={null}>
         <StoredHomeContextSync />
@@ -479,5 +486,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         openerRef={stackButtonRef}
       />
     </div>
+  );
+
+  return (
+    <AuthViewerProvider ready={ready} viewer={viewer}>
+      {shell}
+    </AuthViewerProvider>
   );
 }

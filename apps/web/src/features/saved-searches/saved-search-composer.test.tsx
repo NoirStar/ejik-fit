@@ -1,16 +1,15 @@
 import {
   cleanup,
   fireEvent,
-  render,
+  render as testingRender,
   screen,
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement, ReactNode } from "react";
 
-import {
-  type AuthViewer,
-  useAuthViewer,
-} from "@/features/auth/use-auth-viewer";
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { AuthViewer } from "@/features/auth/use-auth-viewer";
 import type { SavedJobSearch } from "@/lib/saved-job-searches";
 
 import {
@@ -20,10 +19,6 @@ import {
   useSavedJobSearches,
 } from "./use-saved-job-searches";
 import { SavedSearchComposer } from "./saved-search-composer";
-
-vi.mock("@/features/auth/use-auth-viewer", () => ({
-  useAuthViewer: vi.fn(),
-}));
 
 vi.mock("./use-saved-job-searches", () => ({
   useSavedJobSearches: vi.fn(),
@@ -54,7 +49,10 @@ const rename = vi.fn<SavedJobSearchesController["rename"]>();
 const setEnabled = vi.fn<SavedJobSearchesController["setEnabled"]>();
 const remove = vi.fn<SavedJobSearchesController["remove"]>();
 const markChecked = vi.fn<SavedJobSearchesController["markChecked"]>();
-const signOut = vi.fn<() => Promise<boolean>>();
+let authState: { viewer: AuthViewer | null; ready: boolean } = {
+  viewer: null,
+  ready: true,
+};
 
 const readyState: SavedJobSearchesState = {
   status: "ready",
@@ -63,13 +61,19 @@ const readyState: SavedJobSearchesState = {
 };
 
 function mockAuth(activeViewer: AuthViewer | null, ready = true) {
-  vi.mocked(useAuthViewer).mockReturnValue({
-    viewer: activeViewer,
-    ready,
-    signingOut: false,
-    error: "",
-    signOut,
-  });
+  authState = { viewer: activeViewer, ready };
+}
+
+function TestAuthViewerProvider({ children }: { children: ReactNode }) {
+  return (
+    <AuthViewerProvider ready={authState.ready} viewer={authState.viewer}>
+      {children}
+    </AuthViewerProvider>
+  );
+}
+
+function render(element: ReactElement) {
+  return testingRender(element, { wrapper: TestAuthViewerProvider });
 }
 
 function mockSavedSearches(state: SavedJobSearchesState = readyState) {
@@ -82,6 +86,18 @@ function mockSavedSearches(state: SavedJobSearchesState = readyState) {
     remove,
     markChecked,
   });
+}
+
+function loginContinuationParams() {
+  const href = screen
+    .getByRole("link", { name: "이 검색 저장" })
+    .getAttribute("href");
+  if (!href) throw new Error("Expected a login continuation href");
+
+  const next = new URL(href, "https://ejik.fit").searchParams.get("next");
+  if (!next) throw new Error("Expected a next parameter");
+
+  return new URL(next, "https://ejik.fit").searchParams;
 }
 
 describe("SavedSearchComposer", () => {
@@ -121,6 +137,28 @@ describe("SavedSearchComposer", () => {
       "href",
       "/login?next=%2Fjobs%3Fcareer_type%3Dexperienced%26save_search%3D1",
     );
+  });
+
+  it("round-trips internal query whitespace through the login continuation", () => {
+    render(
+      <SavedSearchComposer
+        filters={{ query: "Go  Rust", category: "", careerType: "" }}
+      />,
+    );
+
+    expect(loginContinuationParams().get("q")).toBe("Go  Rust");
+  });
+
+  it("round-trips queries longer than the saved-search limit through login", () => {
+    const query = "x".repeat(240);
+
+    render(
+      <SavedSearchComposer
+        filters={{ query, category: "", careerType: "" }}
+      />,
+    );
+
+    expect(loginContinuationParams().get("q")).toBe(query);
   });
 
   it("opens a bounded default name and saves the signed-in search", async () => {
