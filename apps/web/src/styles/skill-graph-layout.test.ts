@@ -26,6 +26,13 @@ describe("skill graph layout CSS", () => {
     expect(graphCss).not.toContain("background: #07111d;");
     expect(graphCss).toContain("@media (max-width: 640px)");
     expect(css).toContain(".force-canvas__surface");
+    expect(css).toMatch(
+      /\.graph-empty-state__constellation\s*\{[\s\S]*?background: var\(--color-graph\);/,
+    );
+    expect(css).toMatch(
+      /\.graph-empty-state strong\s*\{[\s\S]*?color: var\(--color-text\);/,
+    );
+    expect(css).not.toContain("#080b12");
     expect(css).not.toContain("filter: saturate(1.05) contrast(1.04);");
     expect(css).toMatch(
       /@media \(pointer: coarse\)[\s\S]*?touch-action: none;/,

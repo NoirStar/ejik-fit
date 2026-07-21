@@ -822,12 +822,10 @@ main[aria-busy="true"] {
 .graph-node {
   min-width: 44px;
   min-height: 44px;
-  border-color: color-mix(in srgb, var(--node-color) 72%, transparent);
-  background:
-    radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.32), transparent 38%),
-    color-mix(in srgb, var(--node-color) 42%, #0b101a 58%);
-  color: #f8fbff;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.05), 0 14px 34px rgb(0 0 0 / 0.22);
+  border-color: color-mix(in srgb, var(--node-color) 48%, var(--color-line));
+  background: color-mix(in srgb, var(--node-color) 16%, var(--color-surface));
+  color: var(--color-text);
+  box-shadow: 0 0.5rem 1.25rem rgb(35 31 49 / 0.1);
 }
 
 .graph-node--seed {
@@ -848,7 +846,7 @@ main[aria-busy="true"] {
   align-content: center;
   gap: 14px;
   padding: clamp(32px, 6vw, 72px);
-  color: #edf4ff;
+  color: var(--color-text);
   text-align: center;
   transform: none;
 }
@@ -856,14 +854,13 @@ main[aria-busy="true"] {
 .graph-empty-state strong {
   position: relative;
   z-index: 2;
-  color: #f7fbff;
-  text-shadow: 0 18px 60px rgb(0 0 0 / 0.5);
+  color: var(--color-text);
 }
 
 .graph-empty-state p {
   position: relative;
   z-index: 2;
-  color: rgb(220 228 243 / 0.72);
+  color: var(--color-muted);
 }
 
 .graph-empty-state__constellation {
@@ -875,11 +872,7 @@ main[aria-busy="true"] {
   overflow: hidden;
   border: 0;
   border-radius: 0;
-  background:
-    radial-gradient(circle at 48% 52%, rgb(122 162 255 / 0.13), transparent 19rem),
-    radial-gradient(circle at 70% 50%, rgb(54 211 153 / 0.1), transparent 16rem),
-    #080b12;
-  box-shadow: inset 0 0 120px rgb(0 0 0 / 0.48);
+  background: var(--color-graph);
 }
 
 .graph-empty-state__constellation svg {
@@ -890,7 +883,7 @@ main[aria-busy="true"] {
 }
 
 .graph-empty-state__constellation line {
-  stroke: rgb(175 185 205 / 0.18);
+  stroke: color-mix(in srgb, var(--color-accent) 16%, transparent);
   stroke-width: 0.18;
 }
 
@@ -910,8 +903,8 @@ main[aria-busy="true"] {
 
 .graph-empty-state__constellation b {
   background: inherit;
-  border: 1px solid rgb(255 255 255 / 0.36);
-  box-shadow: 0 0 26px currentColor;
+  border: 1px solid color-mix(in srgb, var(--dot-color) 42%, var(--color-line));
+  box-shadow: 0 0 1rem color-mix(in srgb, var(--dot-color) 18%, transparent);
 }
 
 @media (prefers-reduced-motion: no-preference) {

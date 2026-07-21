@@ -13,13 +13,22 @@ describe("design system foundation", () => {
     const globals = read("src/app/globals.css");
 
     for (const token of [
-      "--color-bg: #f7f7fa",
-      "--color-surface: #ffffff",
-      "--color-text: #17171c",
-      "--color-muted: #62626d",
-      "--color-faint: #71717b",
-      "--color-line: #e7e7ec",
-      "--color-accent: #6d4be8",
+      "--color-bg",
+      "--color-surface",
+      "--color-text",
+      "--color-muted",
+      "--color-faint",
+      "--color-line",
+      "--color-accent",
+      "--color-focus",
+      "--color-demand-required",
+      "--color-demand-preferred",
+      "--color-demand-unspecified",
+    ]) {
+      expect(tokens).toMatch(new RegExp(`${token}:\\s*(?:oklch\\(|var\\()`));
+    }
+
+    for (const token of [
       "--header-height-desktop: 4rem",
       "--header-height-mobile: 3.5rem",
       "--content-max: 80rem",
