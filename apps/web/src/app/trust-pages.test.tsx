@@ -141,7 +141,9 @@ describe("public trust pages", () => {
     expect(screen.getByText("24 / 30개 기업")).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "6개 기업 더 보기" }),
+      screen.getByRole("button", {
+        name: "6개 기업 더 보기, 모두 표시하면 남은 기업 0개",
+      }),
     );
 
     expect(

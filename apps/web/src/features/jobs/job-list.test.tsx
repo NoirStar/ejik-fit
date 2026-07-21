@@ -133,8 +133,19 @@ describe("JobList", () => {
       <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
 
-    fireEvent.click(
+    expect(screen.getByRole("button", { name: "전체 공고 2" })).toHaveTextContent(
+      /^전체\s*2$/,
+    );
+    expect(
       await screen.findByRole("button", { name: "내 기술 겹침 1" }),
+    ).toHaveTextContent(/^기술 일치\s*1$/);
+    expect(screen.getByRole("button", { name: "저장한 공고 0" })).toHaveTextContent(
+      /^저장\s*0$/,
+    );
+    expect(screen.queryByText("이 페이지")).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "내 기술 겹침 1" }),
     );
     expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
     expect(

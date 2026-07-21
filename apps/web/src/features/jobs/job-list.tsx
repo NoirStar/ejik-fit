@@ -511,7 +511,7 @@ export function JobList({
                 onClick={() => selectView("all")}
                 type="button"
               >
-                전체 공고 <span>{total}</span>
+                전체 <span>{total}</span>
               </button>
               <button
                 aria-label={`내 기술 겹침 ${matchingCount}`}
@@ -519,7 +519,7 @@ export function JobList({
                 onClick={() => selectView("matched")}
                 type="button"
               >
-                내 기술 겹침 <span>{matchingCount} · 이 페이지</span>
+                기술 일치 <span>{matchingCount}</span>
               </button>
               <button
                 aria-label={`저장한 공고 ${savedCount}`}
@@ -527,7 +527,7 @@ export function JobList({
                 onClick={() => selectView("saved")}
                 type="button"
               >
-                저장한 공고 <span>{savedCount} · 이 페이지</span>
+                저장 <span>{savedCount}</span>
               </button>
             </div>
           )}

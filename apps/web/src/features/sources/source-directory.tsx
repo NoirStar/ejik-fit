@@ -141,13 +141,12 @@ function SourceGroup({
       </ul>
       {remainingCount > 0 && (
         <button
-          aria-label={`${nextCount}개 기업 더 보기`}
+          aria-label={`${nextCount}개 기업 더 보기, 모두 표시하면 남은 기업 ${Math.max(0, remainingCount - nextCount)}개`}
           className={styles.sourceMoreButton}
           onClick={onShowMore}
           type="button"
         >
-          {nextCount}개 기업 더 보기
-          <span>{remainingCount}개 남음</span>
+          {nextCount}개 더 보기
         </button>
       )}
     </div>

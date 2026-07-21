@@ -315,7 +315,7 @@
 
 .sourceMoreButton {
   display: inline-flex;
-  min-height: 2.5rem;
+  min-height: var(--touch-target);
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
@@ -328,12 +328,7 @@
   font: inherit;
   font-size: 0.75rem;
   font-weight: 750;
-}
-
-.sourceMoreButton span {
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  white-space: nowrap;
 }
 
 .sourceMoreButton:hover {
@@ -519,6 +514,11 @@
 
   .sourceSearch {
     grid-column: 1 / -1;
+  }
+
+  .sourceSearch input,
+  .sourceStatusFilters button {
+    min-height: var(--touch-target);
   }
 
   .sourceList {
