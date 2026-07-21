@@ -3914,6 +3914,101 @@ def test_crawl_source_fetches_asml_details_after_browser_listing() -> None:
         assert browser.rendered_urls == [listing_url]
 
 
+def test_crawl_source_fetches_synopsys_jobposting_details() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 22, tzinfo=timezone.utc)
+    listing_url = (
+        "https://careers.synopsys.com/location/"
+        "south-korea-jobs/44408/1835841/2"
+    )
+    detail_url = (
+        "https://careers.synopsys.com/job/seongnam-si/"
+        "r-and-d-engineer-agentic-ai/44408/95110591648"
+    )
+    listing_html = f"""
+    <section id="search-results" data-total-job-results="1">
+      <section id="search-results-list">
+        <a class="sr-job-link" data-job-id="95110591648" href="{detail_url}">
+          <h2>R&amp;D Engineer - Agentic AI</h2>
+          <div class="sr-wrapper">
+            <span class="job-location">Seongnam-si, South Korea</span>
+            <span class="job-date-posted">Posted: 05. 14. 2026</span>
+          </div>
+        </a>
+      </section>
+    </section>
+    """
+    detail_html = f"""
+    <script type="application/ld+json">
+    {{
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "identifier": "17451",
+      "title": "R&D Engineer - Agentic AI",
+      "url": "{detail_url}",
+      "datePosted": "2026-5-15",
+      "description": "<h2>What You’ll Need</h2><ul><li>3+ years developing applications</li><li>Strong Python, C++, LLM and RAG experience</li></ul>",
+      "jobLocation": {{"@type": "Place", "address": {{"@type": "PostalAddress", "addressLocality": "Seongnam-si", "addressCountry": "Korea, Republic of"}}}}
+    }}
+    </script>
+    """
+
+    class SynopsysFetcher:
+        def __init__(self) -> None:
+            self.urls: list[str] = []
+
+        async def fetch(
+            self,
+            url: str,
+            *,
+            method: str = "GET",
+            json_body: object | None = None,
+            form_body: object | None = None,
+            headers: object | None = None,
+        ) -> crawler.FetchedPage:
+            self.urls.append(url)
+            return crawler.FetchedPage(
+                url=url,
+                text=listing_html if url == listing_url else detail_html,
+                status_code=200,
+                headers={},
+            )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="Synopsys Korea", slug="synopsys-korea"),
+            base_url=listing_url,
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="synopsys_talentbrew_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = SynopsysFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "95110591648"
+        assert posting.location == "Seongnam-si"
+        assert posting.career_min == 3
+        assert "Strong Python, C++, LLM and RAG" in posting.description_text
+        assert fetcher.urls == [listing_url, detail_url]
+
+
 def test_crawl_source_routes_successfactors_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

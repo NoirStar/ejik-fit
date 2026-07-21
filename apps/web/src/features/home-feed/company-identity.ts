@@ -52,6 +52,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "ASML Korea",
   },
   {
+    aliases: ["synopsys korea", "synopsys", "시놉시스코리아", "시놉시스"],
+    hosts: ["careers.synopsys.com", "synopsys.com", "www.synopsys.com"],
+    src: "/company-logo-assets/synopsys-korea",
+    displayName: "Synopsys Korea",
+  },
+  {
     aliases: ["번개장터", "bunjang", "bunjang inc.", "주식회사 번개장터"],
     hosts: ["team.bgzt.co.kr", "bgzt.co.kr"],
     src: "/company-logo-assets/bunjang",

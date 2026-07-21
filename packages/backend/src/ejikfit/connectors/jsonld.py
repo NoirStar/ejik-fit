@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from typing import Any, Iterator
 
@@ -46,7 +47,20 @@ def _parse_datetime(value: Any) -> datetime | None:
     if not isinstance(value, str) or not value:
         return None
 
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        loose_date = re.fullmatch(r"(20\d{2})-(\d{1,2})-(\d{1,2})", value)
+        if loose_date is None:
+            return None
+        try:
+            parsed = datetime(
+                int(loose_date.group(1)),
+                int(loose_date.group(2)),
+                int(loose_date.group(3)),
+            )
+        except ValueError:
+            return None
     if parsed.tzinfo is None and "T" not in value:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed

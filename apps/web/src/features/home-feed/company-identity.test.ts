@@ -828,6 +828,11 @@ describe("companyIdentity", () => {
       "asml-korea",
     ],
     [
+      "Synopsys Korea",
+      "https://careers.synopsys.com/job/seongnam-si/example/44408/95110591648",
+      "synopsys-korea",
+    ],
+    [
       "번개장터",
       "https://team.bgzt.co.kr/job_posting/7epQM1jj",
       "bunjang",

@@ -12,6 +12,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   atlassian:
     "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
   "asml-korea": "https://www.asml.com/favicon.ico",
+  "synopsys-korea":
+    "https://tbcdn.talentbrew.com/company/44408/gst_v1/synopsys-logo-square.jpg",
   bunjang:
     "https://image.ninehire.com/homepage/7541b210-1710-11ef-b315-d7a9afe6c5ae/image/910334f0-5bda-11f0-82e3-997f797881b5.png",
   "amd-korea":

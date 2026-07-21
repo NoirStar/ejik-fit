@@ -130,6 +130,12 @@ describe("company logo asset proxy", () => {
       upstreamUrl: "https://www.asml.com/favicon.ico",
     },
     {
+      body: new Uint8Array([255, 216, 255, 224]),
+      key: "synopsys-korea",
+      upstreamUrl:
+        "https://tbcdn.talentbrew.com/company/44408/gst_v1/synopsys-logo-square.jpg",
+    },
+    {
       body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
       key: "bunjang",
       upstreamUrl:

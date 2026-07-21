@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from ejikfit.connectors.asml import ASML_CONNECTOR_FAMILY
 from ejikfit.connectors.nexon import NEXON_CONNECTOR_FAMILY
+from ejikfit.connectors.synopsys import SYNOPSYS_CONNECTOR_FAMILY
 from ejikfit.models import (
     CareerSource,
     Company,
@@ -3730,6 +3731,31 @@ INITIAL_SOURCE_CATALOG = (
             "Official ASML Sitecore careers search rendered with ordinary "
             "Playwright Chromium, limited to South Korea; technical roles "
             "are enriched from each official Next.js job detail page."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="Synopsys Korea",
+        slug="synopsys-korea",
+        base_url=(
+            "https://careers.synopsys.com/location/"
+            "south-korea-jobs/44408/1835841/2"
+        ),
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://www.synopsys.com/",
+        sector="semiconductor_software",
+        connector_family=SYNOPSYS_CONNECTOR_FAMILY,
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=8,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=1,
+        notes=(
+            "Official Synopsys TalentBrew careers listing scoped to South "
+            "Korea; complete result rows are filtered to technical roles "
+            "and enriched from official JobPosting detail metadata."
         ),
         status=SourceStatus.ALLOWED,
     ),
