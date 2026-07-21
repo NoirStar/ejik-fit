@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "packages/backend/src/ejikfit/seed_data.py"
+      - "packages/backend/src/ejikfit/skill_catalog.py"
+      - "packages/backend/src/ejikfit/skill_extraction.py"
       - "packages/backend/alembic/**"
   schedule:
     - cron: "17 */6 * * *"
@@ -64,6 +66,9 @@ jobs:
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
+      - name: Rebuild posting skills after extraction changes
+        if: ${{ github.event_name == 'push' }}
+        run: ejikfit backfill-skills
       - name: Crawl selected sources
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.company_slug != '' }}
         env:

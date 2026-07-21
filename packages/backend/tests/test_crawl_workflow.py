@@ -11,6 +11,8 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
 
     assert 'cron: "17 */6 * * *"' in workflow
     assert '"packages/backend/src/ejikfit/seed_data.py"' in workflow
+    assert '"packages/backend/src/ejikfit/skill_catalog.py"' in workflow
+    assert '"packages/backend/src/ejikfit/skill_extraction.py"' in workflow
     assert "workflow_dispatch:" in workflow
     assert "company_slug:" in workflow
     assert "IFS=',' read -r -a slugs" in workflow
@@ -19,6 +21,7 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
     assert "cancel-in-progress: false" in workflow
     assert "timeout-minutes: 120" in workflow
     assert "ejikfit seed-sources" in workflow
+    assert "ejikfit backfill-skills" in workflow
     assert "ejikfit crawl-all" in workflow
     assert "github.event_name == 'schedule'" in workflow
     assert "pip install './packages/backend'" in workflow

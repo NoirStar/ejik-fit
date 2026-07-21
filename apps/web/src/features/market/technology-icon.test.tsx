@@ -10,6 +10,10 @@ describe("TechnologyIcon", () => {
     ["Python", "language", "python"],
     ["Kubernetes", "infra", "kubernetes"],
     ["Docker", "infra", "docker"],
+    ["Grafana", "infra", "grafana"],
+    ["Apache Airflow", "data", "apacheairflow"],
+    ["React Native", "mobile", "react"],
+    [".NET", "backend", "dotnet"],
   ])("uses a bundled brand mark for %s", (name, category, iconName) => {
     const { container } = render(
       <TechnologyIcon category={category} name={name} />,

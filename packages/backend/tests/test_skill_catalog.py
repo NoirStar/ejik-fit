@@ -10,6 +10,7 @@ from ejikfit.skill_catalog import (
 
 
 RISKY_ALIASES = {
+    ("Bash", "bash"),
     ("Java", "java"),
     ("Swift", "swift"),
     ("Go", "Go"),
@@ -33,6 +34,14 @@ RISKY_ALIASES = {
     ("CAN", "CAN"),
     ("Android", "android"),
     ("Flutter", "flutter"),
+    (".NET", ".net"),
+    ("Prometheus", "prometheus"),
+    ("Helm", "helm"),
+    ("Apache Airflow", "airflow"),
+    ("Apache Spark", "spark"),
+    ("Apache Hive", "hive"),
+    ("Snowflake", "snowflake"),
+    ("Oracle", "oracle"),
 }
 
 
@@ -85,6 +94,14 @@ def test_seed_pack_contains_professional_tools_and_cross_domain_skills() -> None
         "CAN": ("protocol", {"embedded", "automotive", "robotics"}),
         "OAuth": ("standard", {"security", "web"}),
         "Playwright": ("tool", {"qa", "frontend", "web"}),
+        "Grafana": ("platform", {"devops", "observability"}),
+        "Apache Airflow": ("platform", {"data", "devops"}),
+        "Databricks": ("platform", {"data", "ai"}),
+        "MLflow": ("platform", {"ai", "mlops"}),
+        "vLLM": ("platform", {"ai", "mlops"}),
+        "React Native": ("framework", {"mobile", "frontend"}),
+        "FPGA": ("platform", {"embedded", "hardware"}),
+        "Verilog": ("language", {"embedded", "hardware"}),
     }
 
     actual_names = {skill.canonical for skill in SKILLS}
@@ -92,6 +109,52 @@ def test_seed_pack_contains_professional_tools_and_cross_domain_skills() -> None
         assert canonical in actual_names
         assert skill_kind(canonical) == kind
         assert domains.issubset(set(skill_domains(canonical)))
+
+
+def test_reviewed_market_expansion_uses_stable_categories() -> None:
+    expected_categories = {
+        "Bash": "language",
+        "React Native": "mobile",
+        "Vite": "frontend",
+        "Webpack": "frontend",
+        ".NET": "backend",
+        "gRPC": "backend",
+        "RabbitMQ": "backend",
+        "Grafana": "infra",
+        "Prometheus": "infra",
+        "Datadog": "infra",
+        "Argo CD": "infra",
+        "GitHub Actions": "infra",
+        "GitLab CI": "infra",
+        "Jenkins": "infra",
+        "Ansible": "infra",
+        "Helm": "infra",
+        "Istio": "infra",
+        "Apache Airflow": "data",
+        "Databricks": "data",
+        "BigQuery": "data",
+        "Apache Spark": "data",
+        "Apache Flink": "data",
+        "Apache Hive": "data",
+        "dbt": "data",
+        "Snowflake": "data",
+        "Oracle": "data",
+        "OpenSearch": "data",
+        "ClickHouse": "data",
+        "MLflow": "ai",
+        "Kubeflow": "ai",
+        "vLLM": "ai",
+        "Hugging Face": "ai",
+        "ONNX": "ai",
+        "FPGA": "embedded",
+        "Verilog": "embedded",
+    }
+
+    assert {
+        skill.canonical: skill.category
+        for skill in SKILLS
+        if skill.canonical in expected_categories
+    } == expected_categories
 
 
 def test_graph_metadata_preserves_existing_category_contract() -> None:

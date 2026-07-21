@@ -8,6 +8,7 @@ from ejikfit.skill_extraction import (
 
 
 RISKY_GOLDENS = {
+    ("Bash", "bash"): ("Linux Bash 셸 스크립트 개발", "bash the command repeatedly"),
     ("Java", "java"): ("Java 백엔드 개발", "인도네시아 Java 섬 여행"),
     ("Swift", "swift"): ("Swift iOS 앱 개발", "SWIFT 해외 송금 전문"),
     ("Go", "Go"): ("Go 기반 서버 개발", "Go-to-Market 전략"),
@@ -31,6 +32,32 @@ RISKY_GOLDENS = {
     ("CAN", "CAN"): ("임베디드 CAN 통신 개발", "You can join the event"),
     ("Android", "android"): ("Android 앱 개발", "android character"),
     ("Flutter", "flutter"): ("Flutter 모바일 앱 개발", "butterflies flutter"),
+    (".NET", ".net"): ("C# .NET 백엔드 개발", "example.net domain migration"),
+    ("Prometheus", "prometheus"): (
+        "Prometheus 메트릭 모니터링 운영",
+        "Prometheus is a figure in Greek mythology",
+    ),
+    ("Helm", "helm"): ("Kubernetes Helm chart 운영", "at the helm of the company"),
+    ("Apache Airflow", "airflow"): (
+        "Apache Airflow 데이터 파이프라인 개발",
+        "improve office airflow and ventilation",
+    ),
+    ("Apache Spark", "spark"): (
+        "Apache Spark 데이터 처리 파이프라인",
+        "spark customer curiosity",
+    ),
+    ("Apache Hive", "hive"): (
+        "Apache Hive 데이터 웨어하우스 SQL",
+        "beehive maintenance experience",
+    ),
+    ("Snowflake", "snowflake"): (
+        "Snowflake 데이터 웨어하우스와 SQL 운영",
+        "snowflake-shaped holiday design",
+    ),
+    ("Oracle", "oracle"): (
+        "Oracle 데이터베이스와 SQL 튜닝",
+        "Oracle corporate account manager",
+    ),
 }
 
 
@@ -69,6 +96,30 @@ def by_skill(html: str) -> dict:
         ("임베디드 Linux 환경에서 CAN, UART, SPI, I2C 통신 개발", ["CAN", "I2C", "Linux", "SPI", "UART"]),
         ("웹 보안을 위한 OAuth, JWT, SSO, IAM 이해", ["IAM", "JWT", "OAuth", "SSO"]),
         ("QA 자동화: Playwright와 Selenium 경험", ["Playwright", "Selenium"]),
+        (
+            "Grafana, Datadog, Argo CD, GitHub Actions 기반 운영",
+            ["Argo CD", "Datadog", "GitHub Actions", "Grafana"],
+        ),
+        (
+            "Airflow, Databricks, BigQuery, dbt 데이터 파이프라인",
+            ["Apache Airflow", "BigQuery", "Databricks", "dbt"],
+        ),
+        (
+            "MLflow, Kubeflow, vLLM, Hugging Face, ONNX 모델 서빙",
+            ["Hugging Face", "Kubeflow", "MLflow", "Model Serving", "ONNX", "vLLM"],
+        ),
+        (
+            "React Native, Vite, Webpack을 사용하는 모바일 프론트엔드",
+            ["React Native", "Vite", "Webpack"],
+        ),
+        (
+            "FPGA와 SystemVerilog 기반 임베디드 하드웨어 개발",
+            ["FPGA", "Verilog"],
+        ),
+        (
+            "gRPC 서비스와 RabbitMQ, OpenSearch, ClickHouse 운영",
+            ["ClickHouse", "OpenSearch", "RabbitMQ", "gRPC"],
+        ),
     ],
 )
 def test_confirms_seed_pack_skills_in_technical_context(
