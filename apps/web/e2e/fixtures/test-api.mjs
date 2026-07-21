@@ -144,6 +144,16 @@ if (marketSkillStats.length !== 69) {
   throw new Error(`market fixture must contain 69 skills, got ${marketSkillStats.length}`);
 }
 
+const skillCatalog = {
+  total: marketSkillStats.length,
+  items: marketSkillStats.map(({ category, skill }) => ({
+    name: skill,
+    category,
+    kind: "tool",
+    domains: [category],
+  })),
+};
+
 const postingDetails = {
   "job-python": {
     ...postings.items[0],
@@ -537,6 +547,8 @@ const server = createServer((request, response) => {
       ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
         ? skillStatsForRequest(requestUrl)
+        : pathname === "/api/skills/catalog"
+          ? skillCatalog
         : pathname === "/api/skills/trends"
           ? skillTrends
         : pathname === "/api/fit/analyze" && request.method === "POST"
