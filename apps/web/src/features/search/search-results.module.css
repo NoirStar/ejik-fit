@@ -757,7 +757,7 @@
 .startState a:focus-visible,
 .dataNotice a:focus-visible,
 .noResults a:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent) 35%, transparent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 

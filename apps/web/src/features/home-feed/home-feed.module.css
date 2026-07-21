@@ -1689,7 +1689,7 @@
 .followingAction:focus-visible,
 .careerNextSkill:focus-visible,
 .textLink:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 

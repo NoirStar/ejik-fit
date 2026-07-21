@@ -64,7 +64,7 @@
 
 .field input:focus-visible {
   border-color: var(--color-accent-strong);
-  outline: 3px solid color-mix(in srgb, var(--color-accent-strong) 16%, transparent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 1px;
 }
 

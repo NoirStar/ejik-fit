@@ -199,7 +199,7 @@
 .navItem:focus-visible,
 .mobileNavItem:focus-visible,
 .menu a:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -589,7 +589,8 @@
     position: fixed;
     top: calc(var(--header-height-mobile) + 0.5rem);
     right: 1rem;
-    width: calc(100vw - 2rem);
+    left: 1rem;
+    width: auto;
   }
 }
 
@@ -617,7 +618,8 @@
     position: fixed;
     top: calc(var(--header-height-mobile) + 0.5rem);
     right: 1rem;
-    width: calc(100vw - 2rem);
+    left: 1rem;
+    width: auto;
   }
 
   .footer {

@@ -7,7 +7,7 @@
   --line: var(--color-line);
   --accent: var(--color-accent);
   --accent-strong: var(--color-accent-strong);
-  --accent-contrast: #ffffff;
+  --accent-contrast: var(--color-on-accent);
   --surface-soft: var(--color-surface-muted);
   --surface-raised: var(--color-surface);
   --line-strong: color-mix(in srgb, var(--color-line) 72%, var(--color-text));
@@ -15,8 +15,8 @@
   --orange: var(--color-warning);
   --blue: var(--color-info);
   --danger: var(--color-danger);
-  --button-text: #ffffff;
-  --focus: var(--color-accent);
+  --button-text: var(--color-on-accent);
+  --focus: var(--color-focus);
   --shadow-panel: var(--shadow-overlay);
   --ease-spring: var(--ease-standard);
   --surface-glass: color-mix(in srgb, var(--color-surface) 94%, transparent);

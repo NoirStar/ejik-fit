@@ -130,7 +130,7 @@
 .confirmDelete:focus-visible,
 .deleteConfirmation input:focus-visible,
 .privacyNotice a:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-accent) 28%, transparent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
