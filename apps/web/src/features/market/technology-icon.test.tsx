@@ -14,6 +14,10 @@ describe("TechnologyIcon", () => {
     ["Apache Airflow", "data", "apacheairflow"],
     ["React Native", "mobile", "react"],
     [".NET", "backend", "dotnet"],
+    ["GraphQL", "backend", "graphql"],
+    ["TanStack Query", "frontend", "reactquery"],
+    ["TensorRT", "ai", "nvidia"],
+    ["OpenTelemetry", "infra", "opentelemetry"],
   ])("uses a bundled brand mark for %s", (name, category, iconName) => {
     const { container } = render(
       <TechnologyIcon category={category} name={name} />,

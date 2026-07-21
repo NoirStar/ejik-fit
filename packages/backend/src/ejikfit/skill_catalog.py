@@ -223,6 +223,7 @@ SKILLS: tuple[SkillDef, ...] = (
             ),
         ),
     ),
+    SkillDef("MATLAB", "language", (distinct("matlab"),)),
     # frontend
     SkillDef(
         "React",
@@ -250,6 +251,59 @@ SKILLS: tuple[SkillDef, ...] = (
     SkillDef("Svelte", "frontend", (distinct("svelte"),)),
     SkillDef("Vite", "frontend", (distinct("vite"),)),
     SkillDef("Webpack", "frontend", (distinct("webpack"),)),
+    SkillDef(
+        "TanStack Query",
+        "frontend",
+        (
+            distinct("tanstack query"),
+            distinct("tanstack-query"),
+            distinct("@tanstack/react-query"),
+            distinct("tanstack/react-query"),
+            distinct("react query"),
+            distinct("react-query"),
+        ),
+    ),
+    SkillDef("Redux", "frontend", (distinct("redux"),)),
+    SkillDef(
+        "Tailwind CSS",
+        "frontend",
+        (
+            distinct("tailwind css"),
+            distinct("tailwindcss"),
+            contextual(
+                "tailwind",
+                context_terms=(
+                    "css",
+                    "frontend",
+                    "프론트엔드",
+                    "web",
+                    "웹",
+                    "react",
+                    "vue",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
+        "Storybook",
+        "frontend",
+        (
+            contextual(
+                "storybook",
+                context_terms=(
+                    "ui",
+                    "component",
+                    "컴포넌트",
+                    "frontend",
+                    "프론트엔드",
+                    "design system",
+                    "디자인 시스템",
+                    "react",
+                    "vue",
+                ),
+            ),
+        ),
+    ),
     # backend
     SkillDef("Node.js", "backend", (distinct("node.js"), distinct("nodejs"))),
     SkillDef(
@@ -307,6 +361,35 @@ SKILLS: tuple[SkillDef, ...] = (
     ),
     SkillDef("gRPC", "backend", (distinct("grpc"),)),
     SkillDef("RabbitMQ", "backend", (distinct("rabbitmq"),)),
+    SkillDef("GraphQL", "backend", (distinct("graphql"),)),
+    SkillDef(
+        "WebSocket",
+        "backend",
+        (distinct("websocket"), distinct("websockets"), distinct("web socket")),
+    ),
+    SkillDef("WebRTC", "backend", (distinct("webrtc"),)),
+    SkillDef("Gradle", "backend", (distinct("gradle"),)),
+    SkillDef(
+        "Celery",
+        "backend",
+        (
+            contextual(
+                "celery",
+                context_terms=(
+                    "python",
+                    "django",
+                    "backend",
+                    "백엔드",
+                    "task",
+                    "queue",
+                    "worker",
+                    "async",
+                    "비동기",
+                    "작업 큐",
+                ),
+            ),
+        ),
+    ),
     # infra
     SkillDef("Docker", "infra", (distinct("docker"), distinct("도커"))),
     SkillDef(
@@ -389,9 +472,68 @@ SKILLS: tuple[SkillDef, ...] = (
         ),
     ),
     SkillDef("Istio", "infra", (distinct("istio"),)),
+    SkillDef(
+        "OpenTelemetry",
+        "infra",
+        (
+            distinct("opentelemetry"),
+            distinct("open telemetry"),
+            contextual(
+                "otel",
+                context_terms=(
+                    "tracing",
+                    "trace",
+                    "telemetry",
+                    "observability",
+                    "metric",
+                    "관측",
+                    "추적",
+                    "메트릭",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
+        "Sentry",
+        "infra",
+        (
+            contextual(
+                "sentry",
+                context_terms=(
+                    "error",
+                    "오류",
+                    "에러",
+                    "monitoring",
+                    "모니터링",
+                    "observability",
+                    "frontend",
+                    "backend",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
+        "Loki",
+        "infra",
+        (
+            distinct("grafana loki"),
+            contextual(
+                "loki",
+                context_terms=(
+                    "grafana",
+                    "log",
+                    "로그",
+                    "monitoring",
+                    "모니터링",
+                    "observability",
+                ),
+            ),
+        ),
+    ),
     # data
     SkillDef("PostgreSQL", "data", (distinct("postgresql"), distinct("postgres"))),
     SkillDef("MySQL", "data", (distinct("mysql"),)),
+    SkillDef("MariaDB", "data", (distinct("mariadb"),)),
     SkillDef("MongoDB", "data", (distinct("mongodb"),)),
     SkillDef("Redis", "data", (distinct("redis"),)),
     SkillDef("Elasticsearch", "data", (distinct("elasticsearch"),)),
@@ -496,6 +638,66 @@ SKILLS: tuple[SkillDef, ...] = (
     ),
     SkillDef("OpenSearch", "data", (distinct("opensearch"),)),
     SkillDef("ClickHouse", "data", (distinct("clickhouse"),)),
+    SkillDef(
+        "Pandas",
+        "data",
+        (
+            contextual(
+                "pandas",
+                context_terms=(
+                    "python",
+                    "data",
+                    "데이터",
+                    "analysis",
+                    "분석",
+                    "dataframe",
+                    "머신러닝",
+                ),
+            ),
+        ),
+    ),
+    SkillDef("NumPy", "data", (distinct("numpy"),)),
+    SkillDef("Milvus", "data", (distinct("milvus"),)),
+    SkillDef("DynamoDB", "data", (distinct("dynamodb"), distinct("dynamo db"))),
+    SkillDef(
+        "Redshift",
+        "data",
+        (
+            distinct("amazon redshift"),
+            distinct("aws redshift"),
+            contextual(
+                "redshift",
+                context_terms=(
+                    "aws",
+                    "amazon",
+                    "data",
+                    "데이터",
+                    "warehouse",
+                    "웨어하우스",
+                    "sql",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
+        "Cassandra",
+        "data",
+        (
+            distinct("apache cassandra"),
+            contextual(
+                "cassandra",
+                context_terms=(
+                    "database",
+                    "데이터베이스",
+                    "nosql",
+                    "data",
+                    "데이터",
+                    "distributed",
+                    "분산",
+                ),
+            ),
+        ),
+    ),
     # ai
     SkillDef("TensorFlow", "ai", (distinct("tensorflow"),)),
     SkillDef("PyTorch", "ai", (distinct("pytorch"),)),
@@ -532,6 +734,53 @@ SKILLS: tuple[SkillDef, ...] = (
         (distinct("hugging face"), distinct("huggingface")),
     ),
     SkillDef("ONNX", "ai", (distinct("onnx"),)),
+    SkillDef(
+        "JAX",
+        "ai",
+        (
+            contextual(
+                "jax",
+                context_terms=(
+                    "ai",
+                    "ml",
+                    "model",
+                    "모델",
+                    "python",
+                    "training",
+                    "학습",
+                    "gpu",
+                    "tpu",
+                ),
+            ),
+        ),
+    ),
+    SkillDef("TensorRT", "ai", (distinct("tensorrt"),)),
+    SkillDef(
+        "Triton",
+        "ai",
+        (
+            distinct("nvidia triton"),
+            contextual(
+                "triton",
+                context_terms=(
+                    "inference",
+                    "추론",
+                    "model",
+                    "모델",
+                    "nvidia",
+                    "gpu",
+                    "cuda",
+                    "kernel",
+                    "커널",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
+        "LlamaIndex",
+        "ai",
+        (distinct("llamaindex"), distinct("llama index")),
+    ),
     # security
     SkillDef("OWASP", "security", (distinct("owasp"),)),
     SkillDef("SIEM", "security", (distinct("siem"),)),
@@ -587,6 +836,26 @@ SKILLS: tuple[SkillDef, ...] = (
             ),
         ),
     ),
+    SkillDef(
+        "Vulkan",
+        "game",
+        (
+            contextual(
+                "vulkan",
+                context_terms=(
+                    "gpu",
+                    "graphics",
+                    "그래픽",
+                    "rendering",
+                    "렌더링",
+                    "game",
+                    "게임",
+                    "engine",
+                    "엔진",
+                ),
+            ),
+        ),
+    ),
     # robotics
     SkillDef(
         "ROS",
@@ -627,6 +896,11 @@ SKILLS: tuple[SkillDef, ...] = (
             ),
         ),
     ),
+    SkillDef(
+        "Isaac Sim",
+        "robotics",
+        (distinct("isaac sim"), distinct("nvidia isaac sim")),
+    ),
     # embedded
     SkillDef(
         "CAN",
@@ -644,6 +918,29 @@ SKILLS: tuple[SkillDef, ...] = (
     SkillDef("SPI", "embedded", (distinct("spi"),)),
     SkillDef("I2C", "embedded", (distinct("i2c"),)),
     SkillDef("FPGA", "embedded", (distinct("fpga"),)),
+    SkillDef("CMake", "embedded", (distinct("cmake"),)),
+    SkillDef("QNX", "embedded", (distinct("qnx"),)),
+    SkillDef("AUTOSAR", "embedded", (distinct("autosar"),)),
+    SkillDef(
+        "Yocto",
+        "embedded",
+        (
+            distinct("yocto project"),
+            contextual(
+                "yocto",
+                context_terms=(
+                    "linux",
+                    "embedded",
+                    "임베디드",
+                    "bitbake",
+                    "build",
+                    "빌드",
+                ),
+            ),
+        ),
+    ),
+    SkillDef("Simulink", "embedded", (distinct("simulink"),)),
+    SkillDef("MQTT", "embedded", (distinct("mqtt"),)),
     SkillDef(
         "Verilog",
         "embedded",
@@ -677,6 +974,13 @@ SKILLS: tuple[SkillDef, ...] = (
     SkillDef("Figma", "design", (distinct("figma"),)),
     SkillDef("Selenium", "qa", (distinct("selenium"),)),
     SkillDef("Playwright", "qa", (distinct("playwright"),)),
+    SkillDef(
+        "JUnit",
+        "qa",
+        (distinct("junit"), distinct("junit5"), distinct("junit 5")),
+    ),
+    SkillDef("Pytest", "qa", (distinct("pytest"),)),
+    SkillDef("SonarQube", "qa", (distinct("sonarqube"),)),
 )
 
 
@@ -837,6 +1141,45 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "Figma": SkillMetadata("professional_tool", ("design", "frontend", "product")),
     "Selenium": SkillMetadata("tool", ("qa", "web")),
     "Playwright": SkillMetadata("tool", ("qa", "frontend", "web")),
+    "GraphQL": SkillMetadata("query_language", ("backend", "frontend", "web", "api")),
+    "TanStack Query": SkillMetadata("library", ("frontend", "web")),
+    "Redux": SkillMetadata("library", ("frontend", "web")),
+    "Tailwind CSS": SkillMetadata("framework", ("frontend", "design", "web")),
+    "Storybook": SkillMetadata("tool", ("frontend", "design", "qa")),
+    "WebSocket": SkillMetadata("protocol", ("backend", "frontend", "web")),
+    "WebRTC": SkillMetadata("standard", ("frontend", "backend", "web")),
+    "Gradle": SkillMetadata("build_tool", ("backend", "mobile", "devops")),
+    "CMake": SkillMetadata("build_tool", ("embedded", "robotics", "game")),
+    "Celery": SkillMetadata("framework", ("backend", "data")),
+    "JUnit": SkillMetadata("test_framework", ("qa", "backend")),
+    "Pytest": SkillMetadata("test_framework", ("qa", "backend", "data", "ai")),
+    "Pandas": SkillMetadata("library", ("data", "ai")),
+    "NumPy": SkillMetadata("library", ("data", "ai")),
+    "JAX": SkillMetadata("library", ("ai", "high_performance")),
+    "TensorRT": SkillMetadata("platform", ("ai", "mlops", "high_performance")),
+    "Triton": SkillMetadata("platform", ("ai", "mlops", "high_performance")),
+    "LlamaIndex": SkillMetadata("framework", ("ai", "data")),
+    "Milvus": SkillMetadata("database", ("ai", "data")),
+    "DynamoDB": SkillMetadata("database", ("data", "cloud", "backend")),
+    "Redshift": SkillMetadata("database", ("data", "cloud")),
+    "Cassandra": SkillMetadata("database", ("data", "backend")),
+    "MariaDB": SkillMetadata("database", ("data", "backend")),
+    "OpenTelemetry": SkillMetadata(
+        "standard", ("observability", "devops", "backend")
+    ),
+    "Sentry": SkillMetadata("platform", ("observability", "frontend", "backend")),
+    "Loki": SkillMetadata("platform", ("observability", "devops")),
+    "SonarQube": SkillMetadata("tool", ("qa", "security", "devops")),
+    "QNX": SkillMetadata("platform", ("embedded", "automotive")),
+    "AUTOSAR": SkillMetadata("standard", ("embedded", "automotive")),
+    "Yocto": SkillMetadata("platform", ("embedded",)),
+    "MATLAB": SkillMetadata("language", ("embedded", "data", "robotics")),
+    "Simulink": SkillMetadata(
+        "professional_tool", ("embedded", "automotive", "robotics")
+    ),
+    "MQTT": SkillMetadata("protocol", ("embedded", "iot", "backend")),
+    "Vulkan": SkillMetadata("api", ("graphics", "game", "embedded")),
+    "Isaac Sim": SkillMetadata("tool", ("robotics", "ai", "simulation")),
 }
 
 

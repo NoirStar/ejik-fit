@@ -58,6 +58,58 @@ RISKY_GOLDENS = {
         "Oracle 데이터베이스와 SQL 튜닝",
         "Oracle corporate account manager",
     ),
+    ("Tailwind CSS", "tailwind"): (
+        "React 프론트엔드에서 Tailwind CSS 사용",
+        "a strong tailwind helped the aircraft",
+    ),
+    ("Storybook", "storybook"): (
+        "React Storybook UI 컴포넌트 개발",
+        "children's storybook editor",
+    ),
+    ("Celery", "celery"): (
+        "Python Celery 비동기 작업 큐 개발",
+        "celery salad recipe",
+    ),
+    ("Pandas", "pandas"): (
+        "Python Pandas 데이터 분석",
+        "giant pandas conservation program",
+    ),
+    ("JAX", "jax"): (
+        "JAX 기반 AI 모델 학습",
+        "Jax joined the marketing team",
+    ),
+    ("Triton", "triton"): (
+        "NVIDIA Triton 모델 추론 최적화",
+        "Triton is a moon of Neptune",
+    ),
+    ("Redshift", "redshift"): (
+        "AWS Redshift 데이터 웨어하우스 운영",
+        "astronomers measured the galaxy redshift",
+    ),
+    ("Cassandra", "cassandra"): (
+        "Apache Cassandra NoSQL 데이터베이스 운영",
+        "Cassandra joined the sales team",
+    ),
+    ("OpenTelemetry", "otel"): (
+        "OTel tracing 기반 observability 구축",
+        "the hotel lobby was renovated",
+    ),
+    ("Sentry", "sentry"): (
+        "Sentry 오류 모니터링 운영",
+        "a sentry guards the entrance",
+    ),
+    ("Loki", "loki"): (
+        "Grafana Loki 로그 모니터링 운영",
+        "Loki is a Marvel character",
+    ),
+    ("Yocto", "yocto"): (
+        "Yocto Linux 임베디드 빌드 환경",
+        "the yocto prefix denotes a tiny unit",
+    ),
+    ("Vulkan", "vulkan"): (
+        "Vulkan GPU graphics 렌더링 개발",
+        "Vulkan was used as a fictional name",
+    ),
 }
 
 
@@ -119,6 +171,58 @@ def by_skill(html: str) -> dict:
         (
             "gRPC 서비스와 RabbitMQ, OpenSearch, ClickHouse 운영",
             ["ClickHouse", "OpenSearch", "RabbitMQ", "gRPC"],
+        ),
+        (
+            "GraphQL API와 TanStack Query, Redux, Tailwind CSS, Storybook UI 컴포넌트, WebSocket, WebRTC 개발",
+            [
+                "GraphQL",
+                "Redux",
+                "Storybook",
+                "Tailwind CSS",
+                "TanStack Query",
+                "WebRTC",
+                "WebSocket",
+            ],
+        ),
+        (
+            "Gradle과 CMake 빌드, Python Celery 작업 큐, JUnit, Pytest, SonarQube 테스트",
+            ["CMake", "Celery", "Gradle", "JUnit", "Pytest", "Python", "SonarQube"],
+        ),
+        (
+            "Python Pandas, NumPy, JAX AI 학습, TensorRT, NVIDIA Triton 추론, LlamaIndex, Milvus, DynamoDB, AWS Redshift, Apache Cassandra, MariaDB",
+            [
+                "AWS",
+                "Cassandra",
+                "DynamoDB",
+                "JAX",
+                "LlamaIndex",
+                "MariaDB",
+                "Milvus",
+                "NumPy",
+                "Pandas",
+                "Python",
+                "Redshift",
+                "TensorRT",
+                "Triton",
+            ],
+        ),
+        (
+            "OpenTelemetry와 OTel tracing, Sentry 오류 모니터링, Grafana Loki 로그, QNX, AUTOSAR, Yocto Linux, MATLAB, Simulink, MQTT, Vulkan graphics, Isaac Sim 로봇 시뮬레이션",
+            [
+                "AUTOSAR",
+                "Grafana",
+                "Isaac Sim",
+                "Linux",
+                "Loki",
+                "MATLAB",
+                "MQTT",
+                "OpenTelemetry",
+                "QNX",
+                "Sentry",
+                "Simulink",
+                "Vulkan",
+                "Yocto",
+            ],
         ),
     ],
 )

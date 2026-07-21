@@ -42,6 +42,19 @@ RISKY_ALIASES = {
     ("Apache Hive", "hive"),
     ("Snowflake", "snowflake"),
     ("Oracle", "oracle"),
+    ("Tailwind CSS", "tailwind"),
+    ("Storybook", "storybook"),
+    ("Celery", "celery"),
+    ("Pandas", "pandas"),
+    ("JAX", "jax"),
+    ("Triton", "triton"),
+    ("Redshift", "redshift"),
+    ("Cassandra", "cassandra"),
+    ("OpenTelemetry", "otel"),
+    ("Sentry", "sentry"),
+    ("Loki", "loki"),
+    ("Yocto", "yocto"),
+    ("Vulkan", "vulkan"),
 }
 
 
@@ -157,6 +170,52 @@ def test_reviewed_market_expansion_uses_stable_categories() -> None:
     } == expected_categories
 
 
+def test_production_posting_gap_expansion_uses_stable_categories() -> None:
+    expected_categories = {
+        "GraphQL": "backend",
+        "TanStack Query": "frontend",
+        "Redux": "frontend",
+        "Tailwind CSS": "frontend",
+        "Storybook": "frontend",
+        "WebSocket": "backend",
+        "WebRTC": "backend",
+        "Gradle": "backend",
+        "CMake": "embedded",
+        "Celery": "backend",
+        "JUnit": "qa",
+        "Pytest": "qa",
+        "Pandas": "data",
+        "NumPy": "data",
+        "JAX": "ai",
+        "TensorRT": "ai",
+        "Triton": "ai",
+        "LlamaIndex": "ai",
+        "Milvus": "data",
+        "DynamoDB": "data",
+        "Redshift": "data",
+        "Cassandra": "data",
+        "MariaDB": "data",
+        "OpenTelemetry": "infra",
+        "Sentry": "infra",
+        "Loki": "infra",
+        "SonarQube": "qa",
+        "QNX": "embedded",
+        "AUTOSAR": "embedded",
+        "Yocto": "embedded",
+        "MATLAB": "language",
+        "Simulink": "embedded",
+        "MQTT": "embedded",
+        "Vulkan": "game",
+        "Isaac Sim": "robotics",
+    }
+
+    assert {
+        skill.canonical: skill.category
+        for skill in SKILLS
+        if skill.canonical in expected_categories
+    } == expected_categories
+
+
 def test_graph_metadata_preserves_existing_category_contract() -> None:
     assert skill_category("C++") == "language"
     assert skill_category("Unity") == "game"
@@ -167,6 +226,7 @@ def test_explicit_skill_inputs_are_canonicalized_and_deduplicated() -> None:
     assert canonicalize_skill_input(" python ") == "Python"
     assert canonicalize_skill_input("K8S") == "Kubernetes"
     assert canonicalize_skill_input("feature   store") == "Feature Store"
+    assert canonicalize_skill_input("react-query") == "TanStack Query"
     assert canonicalize_skill_input("Custom Tool") == "Custom Tool"
     assert canonicalize_skill_inputs(
         ["python", "PYTHON", " k8s ", "Custom Tool", "custom tool"]
