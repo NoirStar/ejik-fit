@@ -1,0 +1,281 @@
+.root {
+  display: grid;
+  gap: 1.125rem;
+}
+
+.modeTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+}
+
+.modeTabs a {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.modeTabs a:hover {
+  color: var(--color-text);
+}
+
+.modeTabs a[data-active="true"] {
+  border-color: var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+}
+
+.form {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.formHeader {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.formHeader h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+}
+
+.formHeader p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.field label {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.inputWrap {
+  display: grid;
+  min-height: 3rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-faint);
+}
+
+.inputWrap:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-brand-subtle);
+}
+
+.inputWrap:has(input[aria-invalid="true"]) {
+  border-color: color-mix(in srgb, var(--color-danger) 58%, var(--color-line));
+}
+
+.inputWrap input {
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.inputWrap input::placeholder {
+  color: var(--color-faint);
+}
+
+.helper,
+.fieldError,
+.formError,
+.privacyHelper {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.helper,
+.privacyHelper {
+  color: var(--color-muted);
+}
+
+.fieldError,
+.formError {
+  color: var(--color-danger);
+  font-weight: 650;
+}
+
+.formError {
+  padding: 0.75rem 0.8125rem;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 24%, var(--color-line));
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-danger) 5%, var(--color-surface));
+}
+
+.primaryButton,
+.fullLink,
+.sentActions button {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton {
+  padding: 0 1rem;
+  border: 1px solid var(--color-accent-strong);
+  background: var(--color-accent-strong);
+  color: var(--color-surface);
+}
+
+.primaryButton:hover {
+  background: color-mix(in srgb, var(--color-accent-strong) 86%, var(--color-text));
+}
+
+.primaryButton:disabled,
+.sentActions button:disabled,
+.formLinks button:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.formLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.formLinks a,
+.formLinks button {
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sentState,
+.missingState {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius-panel);
+}
+
+.sentState {
+  border: 1px solid color-mix(in srgb, var(--color-success) 24%, var(--color-line));
+  background: color-mix(in srgb, var(--color-success) 6%, var(--color-surface));
+  color: var(--color-success);
+}
+
+.sentState h2,
+.missingState h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+}
+
+.sentState p,
+.missingState p {
+  margin: 0.3rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.sentState strong {
+  color: var(--color-text);
+}
+
+.sentActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.sentActions button {
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-muted);
+}
+
+.sentActions button:first-child {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-line));
+  color: var(--color-accent-strong);
+}
+
+.fullLink {
+  padding: 0 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-line));
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+}
+
+.missingState {
+  border: 1px solid color-mix(in srgb, var(--color-warning) 24%, var(--color-line));
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-surface));
+  color: var(--color-warning);
+}
+
+.checkingState {
+  margin: 0;
+  padding: 1rem;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.modeTabs a:focus-visible,
+.primaryButton:focus-visible,
+.formLinks a:focus-visible,
+.formLinks button:focus-visible,
+.sentActions button:focus-visible,
+.fullLink:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+  .sentActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

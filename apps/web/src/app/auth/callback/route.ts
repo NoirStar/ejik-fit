@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
 
   const loginUrl = new URL("/login", request.nextUrl.origin);
   loginUrl.searchParams.set("error", "callback");
+  loginUrl.searchParams.set("mode", "signin");
   loginUrl.searchParams.set("next", nextPath);
   return privateRedirect(loginUrl);
 }

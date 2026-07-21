@@ -425,7 +425,7 @@ The push-path migration workflow applies the profile table before the web UI dep
 - Consumes: Task 2 validation, `createBrowserSupabaseClient`, `safeAuthNextPath`, and Task 3's signup metadata trigger.
 - Produces: `<AuthPanel initialMode nextPath />` supporting signin, signup, reset request, verification resend, and password update.
 
-- [ ] **Step 1: Write the critical Supabase call tests**
+- [x] **Step 1: Write the critical Supabase call tests**
 
 Mock these auth methods: `signUp`, `signInWithPassword`, `resend`,
 `resetPasswordForEmail`, `updateUser`, and `getUser`. Cover:
@@ -456,13 +456,13 @@ expect(updateUser).toHaveBeenCalledWith({ password: "career2026" });
 Also assert invalid signup values do not call Supabase, auth failures use generic Korean copy,
 and submitting buttons re-enable after failure.
 
-- [ ] **Step 2: Run the auth-panel test and verify the component is absent**
+- [x] **Step 2: Run the auth-panel test and verify the component is absent**
 
 Run: `cd apps/web && npm test -- --run src/features/auth/auth-panel.test.tsx`
 
 Expected: FAIL because `auth-panel.tsx` does not exist.
 
-- [ ] **Step 3: Implement `AuthPanel` as a bounded state machine**
+- [x] **Step 3: Implement `AuthPanel` as a bounded state machine**
 
 Use this public contract:
 
@@ -487,7 +487,7 @@ Requirements:
 - every button has at least `var(--touch-target)` height;
 - never display `authError.message`.
 
-- [ ] **Step 4: Connect server-parsed mode and safe next path**
+- [x] **Step 4: Connect server-parsed mode and safe next path**
 
 Extend `LoginPageProps.searchParams` with `mode`. Compute:
 
@@ -500,7 +500,7 @@ Render `<AuthPanel initialMode={initialMode} nextPath={nextPath} />`. Update met
 
 The callback continues exchanging the PKCE code and preserving private no-store headers. Its error redirect must preserve `next` and set `mode=signin`.
 
-- [ ] **Step 5: Remove the old login form only after proving no references remain**
+- [x] **Step 5: Remove the old login form only after proving no references remain**
 
 Run:
 
@@ -510,7 +510,7 @@ rg -n 'LoginForm|login-form' apps/web/src
 
 Expected before deletion: only the old files and the now-replaced page/test. Delete the three old files after the replacement imports are clean.
 
-- [ ] **Step 6: Verify focused auth behavior and commit**
+- [x] **Step 6: Verify focused auth behavior and commit**
 
 Run:
 
