@@ -152,6 +152,12 @@ describe("AccountOverview", () => {
     expect(screen.getByText("공고 알림").closest("a")).toHaveTextContent(
       "계정 저장",
     );
+    expect(
+      screen.getByText("계정 커뮤니티 활동도 함께 보관합니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/글과 댓글, 공감·저장·팔로우는 서버에 저장/),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
     expect(signOut).toHaveBeenCalledOnce();
@@ -189,7 +195,7 @@ describe("AccountOverview", () => {
 
     const nickname = await screen.findByRole("textbox", { name: "닉네임" });
     const saveButton = screen.getByRole("button", { name: "저장" });
-    expect(nickname).toHaveValue("커리어곰");
+    await waitFor(() => expect(nickname).toHaveValue("커리어곰"));
     expect(saveButton).toBeDisabled();
 
     fireEvent.change(nickname, { target: { value: "x" } });
@@ -226,8 +232,10 @@ describe("AccountOverview", () => {
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
 
-    expect(await screen.findByRole("textbox", { name: "닉네임" })).toHaveValue(
-      "커리어곰",
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "닉네임" })).toHaveValue(
+        "커리어곰",
+      ),
     );
     expect(accountActionMocks.loadProfile).toHaveBeenCalledTimes(2);
   });

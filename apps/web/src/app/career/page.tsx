@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "내 커리어",
-  description: "브라우저에 저장한 내 기술과 현재 공식 채용공고의 요구사항을 비교합니다.",
+  description: "내 스택에 저장한 기술과 현재 공식 채용공고의 요구사항을 비교합니다.",
 };
 
 function buildCareerSkillSuggestions(value: unknown): CareerSkillSuggestion[] {

@@ -7,12 +7,14 @@ import styles from "./company-mark.module.css";
 
 type CompanyMarkProps = {
   companyName: string;
+  priority?: boolean;
   sourceUrl?: string;
   size?: number;
 };
 
 export function CompanyMark({
   companyName,
+  priority = false,
   sourceUrl,
   size = 44,
 }: CompanyMarkProps) {
@@ -47,7 +49,7 @@ export function CompanyMark({
           alt=""
           className={styles.logo}
           decoding="async"
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
           onError={() => setFailedSrc(identity.src ?? null)}
           ref={imageRef}
           src={identity.src}

@@ -281,7 +281,9 @@ describe("CareerOverview", () => {
       career_type: "experienced",
       domains: ["robotics"],
     });
-    expect(screen.getByText(/비교 조건은 이 브라우저에 저장/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/비교 조건은 이 브라우저에 우선 저장되며/),
+    ).toBeInTheDocument();
   });
 
   it("reacts to career preference changes elsewhere in the same tab", async () => {

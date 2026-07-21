@@ -326,7 +326,12 @@ function JobCard({
       </div>
 
       <div className={styles.jobIdentity}>
-        <CompanyMark companyName={item.companyName} sourceUrl={item.sourceUrl} size={52} />
+        <CompanyMark
+          companyName={item.companyName}
+          priority
+          size={52}
+          sourceUrl={item.sourceUrl}
+        />
         <div>
           <p>
             {item.companyHref ? (

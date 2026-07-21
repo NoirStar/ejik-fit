@@ -655,8 +655,8 @@ export function CareerOverview({
               <p>비교 범위</p>
               <h2 id="career-condition-title">비교 조건</h2>
               <span>
-                비교 조건은 이 브라우저에 저장되며 현재 공고 비교 요청에만
-                사용됩니다. 서버 계정에는 저장되지 않습니다.
+                비교 조건은 이 브라우저에 우선 저장되며, 로그인하면 계정과
+                동기화됩니다. 공고 비교 요청에는 선택한 조건만 사용합니다.
               </span>
               {preferenceStatus && (
                 <span className={styles.conditionStatus} role="status">
@@ -732,7 +732,7 @@ export function CareerOverview({
               <span className={styles.loadingMark} aria-hidden="true" />
               <div>
                 <h2>저장한 기술을 확인하고 있습니다.</h2>
-                <p>브라우저에 저장된 기술만 읽습니다.</p>
+                <p>이 기기에 저장하고 계정과 동기화한 기술을 불러옵니다.</p>
               </div>
             </section>
           ) : ownedSkills.length === 0 ? (

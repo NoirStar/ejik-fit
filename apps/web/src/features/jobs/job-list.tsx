@@ -215,7 +215,7 @@ function ViewEmptyState({ view, hasOwnedSkills }: {
         <StackSimple aria-hidden="true" size={24} />
         <div>
           <h3>먼저 내 기술을 저장해 주세요.</h3>
-          <p>브라우저에 저장한 기술과 확정된 공고 기술을 직접 비교합니다.</p>
+          <p>내 스택에 저장한 기술과 확정된 공고 기술을 직접 비교합니다.</p>
         </div>
         <Link href="/career">내 커리어에서 기술 추가</Link>
       </div>

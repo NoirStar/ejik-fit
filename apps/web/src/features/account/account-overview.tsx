@@ -174,10 +174,15 @@ export function AccountOverview() {
       <aside className={styles.privacyNotice}>
         <LockKey aria-hidden="true" size={20} />
         <div>
-          <strong>커뮤니티 활동은 별도입니다.</strong>
+          <strong>
+            {viewer
+              ? "계정 커뮤니티 활동도 함께 보관합니다."
+              : "비로그인 커뮤니티 활동은 브라우저에 먼저 보관합니다."}
+          </strong>
           <p>
-            직접 작성한 커뮤니티 글, 반응과 팔로우 기록은 로그인 여부와 관계없이 이
-            브라우저에만 남습니다. 실제 사용자 활동처럼 서버에 전송하지 않습니다.
+            {viewer
+              ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 서버에 저장됩니다. 화면용 예시 글의 체험 활동과 최근 본 주제만 이 브라우저에 남습니다."
+              : "직접 작성한 로컬 글과 그 글의 댓글·공감·저장은 로그인 후 계정으로 안전하게 옮깁니다. 화면용 예시 글의 체험 활동은 서버로 전송하지 않습니다."}
           </p>
         </div>
         <Link href="/privacy">저장 범위 자세히 보기</Link>
