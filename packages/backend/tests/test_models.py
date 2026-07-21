@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+import ejikfit.models as models
 from ejikfit.models import (
     Base,
     CareerSource,
@@ -107,3 +108,72 @@ def test_user_profile_stores_only_a_public_nickname() -> None:
         profile = session.get(UserProfile, user_id)
         assert profile is not None
         assert profile.nickname == "커리어곰"
+
+
+def test_server_community_models_store_public_content_and_private_membership() -> None:
+    for model_name in (
+        "CommunityPost",
+        "CommunityComment",
+        "CommunityPostReaction",
+        "CommunityPostSave",
+        "CommunityAuthorFollow",
+        "CommunityReport",
+    ):
+        assert hasattr(models, model_name), f"missing {model_name}"
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    author_id = uuid.uuid4()
+    reader_id = uuid.uuid4()
+    post_id = uuid.uuid4()
+    comment_id = uuid.uuid4()
+
+    with Session(engine) as session:
+        session.add_all(
+            [
+                UserProfile(user_id=author_id, nickname="작성자"),
+                UserProfile(user_id=reader_id, nickname="독자"),
+            ]
+        )
+        session.add(
+            models.CommunityPost(
+                id=post_id,
+                author_id=author_id,
+                category="커리어 질문",
+                title="서버 커뮤니티 질문",
+                body="실제 계정에 저장되는 질문 본문입니다.",
+                tags=["Python"],
+            )
+        )
+        session.add_all(
+            [
+                models.CommunityComment(
+                    id=comment_id,
+                    post_id=post_id,
+                    author_id=reader_id,
+                    body="계정에 저장되는 댓글입니다.",
+                ),
+                models.CommunityPostReaction(post_id=post_id, user_id=reader_id),
+                models.CommunityPostSave(post_id=post_id, user_id=reader_id),
+                models.CommunityAuthorFollow(
+                    id=uuid.uuid4(),
+                    follower_id=reader_id,
+                    followed_id=author_id,
+                ),
+                models.CommunityReport(
+                    id=uuid.uuid4(),
+                    reporter_id=reader_id,
+                    target_type="post",
+                    target_id=post_id,
+                    reason="other",
+                ),
+            ]
+        )
+        session.commit()
+
+        post = session.get(models.CommunityPost, post_id)
+        assert post is not None
+        assert post.tags == ["Python"]
+        assert post.reaction_count == 0
+        assert post.comment_count == 0
+        assert post.save_count == 0

@@ -19,12 +19,12 @@ use strict TypeScript stores to connect authenticated UI.
 
 ### Task 1: Database contract and notification kind
 
-- [ ] Add focused migration security and SQLAlchemy model tests.
-- [ ] Add community models without PostgreSQL-only SQLAlchemy types.
-- [ ] Create migration `20260721_0021_server_community.py` with tables, indexes,
+- [x] Add focused migration security and SQLAlchemy model tests.
+- [x] Add community models without PostgreSQL-only SQLAlchemy types.
+- [x] Create migration `20260721_0021_server_community.py` with tables, indexes,
   validation, column grants, RLS, counter triggers, and notification triggers.
-- [ ] Extend `user_notifications.kind` to `job | community`.
-- [ ] Verify focused backend tests and offline SQL; commit and push.
+- [x] Extend `user_notifications.kind` to `job | community`.
+- [x] Verify focused backend tests and offline SQL; commit and push.
 
 ### Task 2: Typed Supabase community store
 

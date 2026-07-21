@@ -357,6 +357,210 @@ class UserProfile(Base):
     )
 
 
+class CommunityPost(Base):
+    __tablename__ = "community_posts"
+    __table_args__ = (
+        UniqueConstraint(
+            "author_id",
+            "client_origin_id",
+            name="uq_community_posts_author_origin",
+        ),
+        CheckConstraint(
+            "category IN ('커리어 질문', '커리어 고민', '면접 후기')",
+            name="ck_community_posts_category",
+        ),
+        CheckConstraint(
+            "title = trim(title) AND length(title) BETWEEN 1 AND 80",
+            name="ck_community_posts_title",
+        ),
+        CheckConstraint(
+            "body = trim(body) AND length(body) BETWEEN 1 AND 1200",
+            name="ck_community_posts_body",
+        ),
+        CheckConstraint(
+            "client_origin_id IS NULL OR (client_origin_id = trim(client_origin_id) "
+            "AND length(client_origin_id) BETWEEN 1 AND 200)",
+            name="ck_community_posts_origin",
+        ),
+        CheckConstraint(
+            "reaction_count >= 0 AND comment_count >= 0 AND save_count >= 0",
+            name="ck_community_posts_counts",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        index=True,
+    )
+    category: Mapped[str] = mapped_column(String(32))
+    title: Mapped[str] = mapped_column(String(80))
+    body: Mapped[str] = mapped_column(Text)
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    reaction_count: Mapped[int] = mapped_column(Integer, default=0)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0)
+    save_count: Mapped[int] = mapped_column(Integer, default=0)
+    client_origin_id: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class CommunityComment(Base):
+    __tablename__ = "community_comments"
+    __table_args__ = (
+        UniqueConstraint(
+            "author_id",
+            "client_origin_id",
+            name="uq_community_comments_author_origin",
+        ),
+        CheckConstraint(
+            "body = trim(body) AND length(body) BETWEEN 1 AND 600",
+            name="ck_community_comments_body",
+        ),
+        CheckConstraint(
+            "client_origin_id IS NULL OR (client_origin_id = trim(client_origin_id) "
+            "AND length(client_origin_id) BETWEEN 1 AND 200)",
+            name="ck_community_comments_origin",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("community_posts.id", ondelete="CASCADE"),
+        index=True,
+    )
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        index=True,
+    )
+    body: Mapped[str] = mapped_column(Text)
+    client_origin_id: Mapped[str | None] = mapped_column(
+        String(200),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class CommunityPostReaction(Base):
+    __tablename__ = "community_post_reactions"
+
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("community_posts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+
+class CommunityPostSave(Base):
+    __tablename__ = "community_post_saves"
+
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("community_posts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+
+class CommunityAuthorFollow(Base):
+    __tablename__ = "community_author_follows"
+    __table_args__ = (
+        UniqueConstraint(
+            "follower_id",
+            "followed_id",
+            name="uq_community_author_follows_pair",
+        ),
+        CheckConstraint(
+            "follower_id <> followed_id",
+            name="ck_community_author_follows_not_self",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    follower_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        index=True,
+    )
+    followed_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+
+class CommunityReport(Base):
+    __tablename__ = "community_reports"
+    __table_args__ = (
+        UniqueConstraint(
+            "reporter_id",
+            "target_type",
+            "target_id",
+            name="uq_community_reports_reporter_target",
+        ),
+        CheckConstraint(
+            "target_type IN ('post', 'comment')",
+            name="ck_community_reports_target_type",
+        ),
+        CheckConstraint(
+            "reason IN ('spam', 'harassment', 'privacy', 'misinformation', 'other')",
+            name="ck_community_reports_reason",
+        ),
+        CheckConstraint(
+            "details IS NULL OR (details = trim(details) "
+            "AND length(details) BETWEEN 1 AND 500)",
+            name="ck_community_reports_details",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'reviewed', 'dismissed', 'actioned')",
+            name="ck_community_reports_status",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    reporter_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user_profiles.user_id", ondelete="CASCADE"),
+        index=True,
+    )
+    target_type: Mapped[str] = mapped_column(String(16))
+    target_id: Mapped[uuid.UUID] = mapped_column(Uuid, index=True)
+    reason: Mapped[str] = mapped_column(String(32))
+    details: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), default="pending")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
 class UserSavedJobSearch(Base):
     __tablename__ = "user_saved_job_searches"
     __table_args__ = (
@@ -393,6 +597,14 @@ class UserNotification(Base):
             "user_id",
             "dedupe_key",
             name="uq_user_notification_dedupe",
+        ),
+        CheckConstraint(
+            "kind IN ('job', 'community')",
+            name="ck_user_notifications_kind",
+        ),
+        CheckConstraint(
+            "href LIKE '/%' AND href NOT LIKE '//%'",
+            name="ck_user_notifications_internal_href",
         ),
     )
 
