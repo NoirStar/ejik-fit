@@ -195,6 +195,8 @@ export function CompanyProfile({
   const snapshot = buildCompanyHiringSnapshot(postings.items);
   const companyName = snapshot.companyName ?? postings.items[0].company_name;
   const primarySource = postings.items[0].source_url;
+  const totalPostingCount = Math.max(postings.total, snapshot.postingCount);
+  const hasMorePostings = totalPostingCount > snapshot.postingCount;
 
   return (
     <main className={styles.page}>
@@ -240,7 +242,7 @@ export function CompanyProfile({
         <dl className={styles.metrics}>
           <div>
             <dt>공고 범위</dt>
-            <dd>현재 공개 공고 {snapshot.postingCount}건</dd>
+            <dd>현재 공개 공고 {totalPostingCount.toLocaleString("ko-KR")}건</dd>
           </div>
           <div>
             <dt>기술 근거</dt>
@@ -264,10 +266,14 @@ export function CompanyProfile({
         >
           <header className={styles.sectionHeader}>
             <div>
-              <p>현재 API 응답 범위</p>
+              <p>{hasMorePostings ? "최근 확인 공고 분석 범위" : "현재 확인 공고"}</p>
               <h2>공개 공고</h2>
             </div>
-            <span>{snapshot.postingCount}건</span>
+            <span>
+              {hasMorePostings
+                ? `${snapshot.postingCount.toLocaleString("ko-KR")} / ${totalPostingCount.toLocaleString("ko-KR")}건 표시`
+                : `${snapshot.postingCount.toLocaleString("ko-KR")}건`}
+            </span>
           </header>
           <ul className={styles.jobs} role="list">
             {postings.items.map((job, index) => (
@@ -320,8 +326,10 @@ export function CompanyProfile({
             <div>
               <h2>이 수치를 읽는 기준</h2>
               <p>
-                현재 공식 채용 API가 반환한 최대 100개 공고만 집계합니다. 기술은
-                공고별로 한 번만 세며 시장 전체나 기업 규모를 뜻하지 않습니다.
+                {hasMorePostings
+                  ? `공개 공고 총수는 API의 전체 결과이며, 기술과 채용 조건은 최근 ${snapshot.postingCount.toLocaleString("ko-KR")}개 공고를 기준으로 집계합니다. `
+                  : "공개 공고와 기술·채용 조건은 현재 확인된 공고를 기준으로 집계합니다. "}
+                기술은 공고별로 한 번만 세며 시장 전체나 기업 규모를 뜻하지 않습니다.
               </p>
               <nav aria-label="기업 채용 데이터 안내">
                 <Link href="/methodology">분석 방법</Link>

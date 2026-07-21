@@ -25,7 +25,7 @@ async function loadCompanyPostings(companySlug: string) {
     (posting) =>
       posting.company_slug === undefined || posting.company_slug === companySlug,
   );
-  return { items, total: items.length } satisfies PostingListResponse;
+  return { items, total: response.total } satisfies PostingListResponse;
 }
 
 export async function generateMetadata({
@@ -41,7 +41,7 @@ export async function generateMetadata({
     return {
       title: companyName ? `${companyName} 채용 현황` : "기업 채용 현황",
       description: companyName
-        ? `${companyName}의 공식 채용페이지에서 현재 확인된 공개 공고 ${postings.items.length}건과 요구 기술을 확인합니다.`
+        ? `${companyName}의 공식 채용페이지에서 현재 확인된 공개 공고 ${postings.total}건과 요구 기술을 확인합니다.`
         : "공식 채용페이지에서 현재 확인되는 기업 공개 공고를 살펴봅니다.",
       alternates: { canonical },
     };

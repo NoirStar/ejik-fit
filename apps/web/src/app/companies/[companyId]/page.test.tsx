@@ -65,6 +65,23 @@ describe("CompanyPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("preserves the API total when the company list is capped", async () => {
+    vi.mocked(getPostings).mockResolvedValue({
+      ...postings,
+      total: 145,
+    });
+
+    render(
+      await CompanyPage({
+        params: Promise.resolve({ companyId: "verified-company" }),
+      }),
+    );
+
+    expect(screen.getByText("현재 공개 공고 145건")).toBeInTheDocument();
+    expect(screen.getByText("1 / 145건 표시")).toBeInTheDocument();
+    expect(screen.getByText(/최근 1개 공고를 기준으로 집계/)).toBeInTheDocument();
+  });
+
   it("renders an honest error state instead of claiming zero jobs", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.mocked(getPostings).mockRejectedValue(new Error("offline"));
