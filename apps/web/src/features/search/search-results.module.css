@@ -108,7 +108,7 @@
   border: 0;
   border-radius: var(--radius-control);
   background: var(--color-text);
-  color: #ffffff;
+  color: var(--color-on-accent);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 800;
@@ -456,12 +456,12 @@
 }
 
 .officialBadge {
-  background: #eaf8f1;
+  background: var(--color-status-green-surface);
   color: var(--color-success);
 }
 
 .sampleBadge {
-  background: #eef2ff;
+  background: var(--color-brand-subtle);
   color: var(--color-info);
 }
 
@@ -476,7 +476,7 @@
 }
 
 .exampleBadge[data-source="server"] {
-  background: #eaf8f1;
+  background: var(--color-status-green-surface);
   color: var(--color-success);
 }
 
@@ -532,12 +532,12 @@
 }
 
 .evidenceSkills li[data-kind="required"] {
-  background: #eaf8f1;
+  background: var(--color-status-green-surface);
   color: var(--color-success);
 }
 
 .evidenceSkills li[data-kind="preferred"] {
-  background: #fff6e7;
+  background: var(--color-status-warm-surface);
   color: var(--color-warning);
 }
 

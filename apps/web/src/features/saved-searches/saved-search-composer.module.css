@@ -92,7 +92,7 @@
 .formActions button:first-child {
   border-color: var(--color-accent-strong);
   background: var(--color-accent-strong);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .formActions button:disabled {
@@ -106,7 +106,7 @@
 .trigger:focus-visible,
 .formActions button:focus-visible,
 .success a:focus-visible {
-  outline: 3px solid var(--color-info);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -134,7 +134,8 @@
   display: grid;
   gap: 0.25rem;
   padding: 0.625rem 0.75rem;
-  border-left: 3px solid var(--color-accent-strong);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-line));
+  border-radius: var(--radius-control);
   background: var(--color-brand-subtle);
   color: var(--color-text);
 }

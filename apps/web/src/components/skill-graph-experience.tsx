@@ -17,6 +17,7 @@ import type {
   SkillGraphNode,
   SkillGraphResponse,
 } from "@/lib/types";
+import { GRAPH_PREVIEW_COLORS } from "@/styles/design-tokens";
 
 import { SkillGraphForceCanvas } from "./skill-graph-force-canvas";
 import type {
@@ -64,11 +65,11 @@ const DOMAIN_LABELS: Record<string, string> = {
 
 
 const PREVIEW_NODES = [
-  { label: "C++", x: 47, y: 48, size: 7, color: "#5d8cff" },
-  { label: "ROS2", x: 66, y: 38, size: 5.5, color: "#f2994a" },
-  { label: "Linux", x: 56, y: 63, size: 5.2, color: "#23c979" },
-  { label: "Python", x: 34, y: 36, size: 5, color: "#8aa8ff" },
-  { label: "Security", x: 72, y: 60, size: 4.6, color: "#ff6f61" },
+  { label: "C++", x: 47, y: 48, size: 7, color: GRAPH_PREVIEW_COLORS.cpp },
+  { label: "ROS2", x: 66, y: 38, size: 5.5, color: GRAPH_PREVIEW_COLORS.ros },
+  { label: "Linux", x: 56, y: 63, size: 5.2, color: GRAPH_PREVIEW_COLORS.linux },
+  { label: "Python", x: 34, y: 36, size: 5, color: GRAPH_PREVIEW_COLORS.python },
+  { label: "Security", x: 72, y: 60, size: 4.6, color: GRAPH_PREVIEW_COLORS.security },
 ];
 
 
@@ -130,7 +131,7 @@ const PREVIEW_DOTS = Array.from({ length: 168 }, (_, index) => {
       Math.max(6, Math.min(94, cluster.y + Math.sin(angle) * orbit * 0.52)),
     ),
     size: index % 17 === 0 ? 2.6 : index % 9 === 0 ? 2 : 1.15,
-    color: index % 13 === 0 ? cluster.color : "rgba(201, 212, 232, 0.68)",
+    color: index % 13 === 0 ? cluster.color : GRAPH_PREVIEW_COLORS.ambient,
   };
 });
 

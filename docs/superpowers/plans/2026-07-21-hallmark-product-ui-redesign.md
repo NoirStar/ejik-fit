@@ -1,6 +1,6 @@
 # 이직핏 Hallmark 제품 UI 정돈 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 기존 기능과 정보구조를 보존하면서 포커스 대비, 모바일 터치 규격, 두 줄 제어, 홈 공고 중첩 카드와 반복 eyebrow를 정돈한다.
 
@@ -44,7 +44,7 @@
 - Produces: `--color-focus`, `--color-on-accent`, `--color-demand-*`, `--font-display`, `--font-body`, `--space-*`, `--ease-*`, `--dur-*`
 - Consumes: existing `--color-*`, `--font-korean`, `--touch-target`
 
-- [ ] **Step 1: Record the failing focus audit**
+- [x] **Step 1: Record the failing focus audit**
 
 Run:
 
@@ -54,7 +54,7 @@ rg -n 'outline:.*color-mix' apps/web/src --glob '*.css' --glob '*.module.css'
 
 Expected: module-specific focus rules using 16–35% alpha are reported.
 
-- [ ] **Step 2: Extend the canonical tokens**
+- [x] **Step 2: Extend the canonical tokens**
 
 At the top of `tokens.css`, preserve the current visual values as OKLCH and add semantic roles:
 
@@ -84,7 +84,7 @@ At the top of `tokens.css`, preserve the current visual values as OKLCH and add 
 }
 ```
 
-- [ ] **Step 3: Make typography roles intentional without adding a font**
+- [x] **Step 3: Make typography roles intentional without adding a font**
 
 Add to `typography.css`:
 
@@ -98,7 +98,7 @@ Add to `typography.css`:
 
 Use `--font-body` for controls/body and `--font-numeric` for `[data-numeric]`.
 
-- [ ] **Step 4: Replace weak module focus rings**
+- [x] **Step 4: Replace weak module focus rings**
 
 Replace every alpha-mixed outline in the listed CSS modules with:
 
@@ -109,7 +109,7 @@ outline-offset: 2px;
 
 Keep focus appearance out of transition declarations. Set the global alias in `globals.css` to `--focus: var(--color-focus)`.
 
-- [ ] **Step 5: Remove mobile 100vw overlay sizing**
+- [x] **Step 5: Remove mobile 100vw overlay sizing**
 
 In `app-shell.module.css`, replace fixed menu widths with logical insets:
 
@@ -121,7 +121,7 @@ In `app-shell.module.css`, replace fixed menu widths with logical insets:
 }
 ```
 
-- [ ] **Step 6: Verify the focus contract**
+- [x] **Step 6: Verify the focus contract**
 
 Run:
 
@@ -132,7 +132,7 @@ npm --prefix apps/web run lint
 
 Expected: no alpha-mixed focus outline remains; TypeScript exits 0.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add apps/web/src/styles/tokens.css apps/web/src/styles/typography.css apps/web/src/app/globals.css apps/web/src/components/app-shell/app-shell.module.css apps/web/src/components/skill-graph-experience.module.css apps/web/src/features/notifications/activity-notification-center.module.css apps/web/src/features/saved-searches/saved-search-composer.module.css apps/web/src/features/companies/company-profile.module.css apps/web/src/features/companies/followed-companies.module.css apps/web/src/features/companies/company-follow-button.module.css apps/web/src/features/career/career-overview.module.css apps/web/src/features/search/search-results.module.css apps/web/src/features/home-feed/home-feed.module.css apps/web/src/features/auth/auth-panel.module.css apps/web/src/features/account/account-overview.module.css
@@ -149,7 +149,7 @@ git commit -m "fix: unify accessible product focus styles"
 - Consumes: existing `JobFeedCard` markup and `--color-brand-subtle`
 - Produces: flat official-job band, readable stack prompt, unchanged job actions
 
-- [ ] **Step 1: Add a focused style-contract test**
+- [x] **Step 1: Add a focused style-contract test**
 
 Extend `home-feed.styles.test.ts`:
 
@@ -162,7 +162,7 @@ it("separates official jobs without a side stripe or nested card frame", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails**
+- [x] **Step 2: Run the test and confirm it fails**
 
 Run:
 
@@ -172,7 +172,7 @@ npm --prefix apps/web test -- --run src/features/home-feed/home-feed.styles.test
 
 Expected: FAIL because `.jobCard` still has a 3px side stripe, radius and margin.
 
-- [ ] **Step 3: Flatten the job band**
+- [x] **Step 3: Flatten the job band**
 
 Change the relevant rules to:
 
@@ -199,7 +199,7 @@ Change the relevant rules to:
 
 Keep `.jobActions > a:first-child` as the solid primary action using `--color-accent-strong` and `--color-on-accent`.
 
-- [ ] **Step 4: Run targeted tests**
+- [x] **Step 4: Run targeted tests**
 
 Run:
 
@@ -209,7 +209,7 @@ npm --prefix apps/web test -- --run src/features/home-feed/home-feed.styles.test
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/features/home-feed/home-feed.module.css apps/web/src/features/home-feed/home-feed.styles.test.ts
@@ -230,7 +230,7 @@ git commit -m "fix: simplify official job presentation in home feed"
 - Produces: visible tab labels `전체`, `기술 일치`, `저장`; accessible names retain counts and page scope
 - Produces: visible more label `${nextCount}개 더 보기`; accessible name retains remaining count
 
-- [ ] **Step 1: Update behavior expectations first**
+- [x] **Step 1: Update behavior expectations first**
 
 In `job-list.test.tsx`, keep role queries stable through explicit aria labels and assert compact visible copy:
 
@@ -249,7 +249,7 @@ screen.getByRole("button", {
 });
 ```
 
-- [ ] **Step 2: Run targeted tests and confirm the new contract fails**
+- [x] **Step 2: Run targeted tests and confirm the new contract fails**
 
 Run:
 
@@ -259,7 +259,7 @@ npm --prefix apps/web test -- --run src/features/jobs/job-list.test.tsx src/app/
 
 Expected: FAIL on the old visible labels and source-directory accessible name.
 
-- [ ] **Step 3: Implement compact labels**
+- [x] **Step 3: Implement compact labels**
 
 Use the following visible copy while keeping detailed `aria-label` values:
 
@@ -285,7 +285,7 @@ For the directory button:
 </button>
 ```
 
-- [ ] **Step 4: Lock one-line affordances and 44px controls**
+- [x] **Step 4: Lock one-line affordances and 44px controls**
 
 In the relevant CSS modules:
 
@@ -302,7 +302,7 @@ In the relevant CSS modules:
 }
 ```
 
-- [ ] **Step 5: Run targeted tests**
+- [x] **Step 5: Run targeted tests**
 
 Run:
 
@@ -312,7 +312,7 @@ npm --prefix apps/web test -- --run src/features/jobs/job-list.test.tsx src/feat
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/web/src/features/jobs/job-list.tsx apps/web/src/features/jobs/job-list.module.css apps/web/src/features/jobs/job-list.test.tsx apps/web/src/features/sources/source-directory.tsx apps/web/src/app/trust-pages.module.css apps/web/src/app/trust-pages.test.tsx
@@ -329,7 +329,7 @@ git commit -m "fix: keep mobile discovery controls compact"
 - Consumes: `--color-demand-required`, `--color-demand-preferred`, `--color-demand-unspecified`, `--color-demand-highlight`
 - Produces: unchanged data semantics with canonical shared palette and 44px touch controls
 
-- [ ] **Step 1: Update the existing palette contract test**
+- [x] **Step 1: Update the existing palette contract test**
 
 Replace literal palette assertions with token assertions and add control height checks:
 
@@ -342,7 +342,7 @@ expect(rule(".sortControl select")).toContain("min-height: var(--touch-target);"
 expect(rule(".trendAddControl select")).toContain("min-height: var(--touch-target);");
 ```
 
-- [ ] **Step 2: Run the style test and confirm it fails**
+- [x] **Step 2: Run the style test and confirm it fails**
 
 Run:
 
@@ -352,7 +352,7 @@ npm --prefix apps/web test -- --run src/features/market/market-overview.styles.t
 
 Expected: FAIL on literal colors and 30–32px select heights.
 
-- [ ] **Step 3: Connect shared tokens and touch sizes**
+- [x] **Step 3: Connect shared tokens and touch sizes**
 
 Update `.page` aliases and both select controls:
 
@@ -372,7 +372,7 @@ Update `.page` aliases and both select controls:
 
 Keep required/preferred/unspecified labels and segment text; do not encode meaning with color alone.
 
-- [ ] **Step 4: Run market tests**
+- [x] **Step 4: Run market tests**
 
 Run:
 
@@ -382,7 +382,7 @@ npm --prefix apps/web test -- --run src/features/market/market-overview.styles.t
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/web/src/features/market/market-overview.module.css apps/web/src/features/market/market-overview.styles.test.ts
@@ -405,7 +405,7 @@ git commit -m "fix: align market controls with shared design tokens"
 - Consumes: existing H1, descriptions, summary/trust lines
 - Produces: same accessible page headings and trust information without decorative pre-heading copy
 
-- [ ] **Step 1: Remove only intro-level eyebrow markup**
+- [x] **Step 1: Remove only intro-level eyebrow markup**
 
 Delete these four decorative paragraphs:
 
@@ -418,11 +418,11 @@ Delete these four decorative paragraphs:
 
 Do not remove panel labels such as `분석 기준`, source status, or error-state provenance.
 
-- [ ] **Step 2: Remove unused intro eyebrow selectors**
+- [x] **Step 2: Remove unused intro eyebrow selectors**
 
 Delete `.eyebrow` from intro selector groups only when no remaining element uses it; keep selectors required by empty/error states.
 
-- [ ] **Step 3: Run affected component tests**
+- [x] **Step 3: Run affected component tests**
 
 Run:
 
@@ -432,7 +432,7 @@ npm --prefix apps/web test -- --run src/features/jobs/job-list.test.tsx src/feat
 
 Expected: PASS; H1 names and trust links remain available.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/features/jobs/job-list.tsx apps/web/src/features/jobs/job-list.module.css apps/web/src/features/career/career-overview.tsx apps/web/src/features/career/career-overview.module.css apps/web/src/features/companies/company-profile.tsx apps/web/src/features/companies/company-profile.module.css apps/web/src/components/skill-graph-experience.tsx apps/web/src/components/skill-graph-experience.module.css
@@ -449,7 +449,7 @@ git commit -m "fix: remove repetitive page intro kickers"
 - Consumes: completed UI changes
 - Produces: verified responsive build and Hallmark app-run record
 
-- [ ] **Step 1: Run targeted and project checks**
+- [x] **Step 1: Run targeted and project checks**
 
 Run:
 
@@ -461,7 +461,7 @@ npm --prefix apps/web run build
 
 Expected: all tests pass; TypeScript exits 0; production build completes.
 
-- [ ] **Step 2: Run responsive browser verification**
+- [x] **Step 2: Run responsive browser verification**
 
 Use Playwright against `/`, `/market`, `/jobs`, `/skills/graph?skill=Kubernetes`, `/career`, `/companies/nexon`, `/data-policy`, and `/login` at 320, 375, 414, 768 and 1440px. For each route verify:
 
@@ -473,7 +473,7 @@ expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
 
 Also measure visible buttons/selects/inputs on touch widths and require `height >= 44`; ensure the jobs tabs and source-more button each have one rendered text line.
 
-- [ ] **Step 3: Inspect actual screenshots**
+- [x] **Step 3: Inspect actual screenshots**
 
 Capture desktop and 375px screenshots of home, market, jobs, career and data policy. Confirm:
 
@@ -483,7 +483,7 @@ Capture desktop and 375px screenshots of home, market, jobs, career and data pol
 - market colors remain blue, mint, cream and coral;
 - no fixed bottom navigation overlaps the last actionable content.
 
-- [ ] **Step 4: Run Hallmark slop test and record the app redesign**
+- [x] **Step 4: Run Hallmark slop test and record the app redesign**
 
 Create `.hallmark/log.json` with:
 
@@ -502,7 +502,7 @@ Create `.hallmark/log.json` with:
 
 Load and run `references/slop-test.md`; fix any failing universal gate before handoff.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add .hallmark/log.json docs/superpowers/plans/2026-07-21-hallmark-product-ui-redesign.md

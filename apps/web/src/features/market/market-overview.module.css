@@ -256,7 +256,7 @@
 .methodNote a:focus-visible,
 .completeFailure a:focus-visible,
 .largeState a:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -510,7 +510,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--color-on-accent);
   font-size: 0.5625rem;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -655,15 +655,15 @@
   gap: 0.25rem;
   padding: 0 0.5rem;
   border-radius: 999px;
-  background: #fff6df;
-  color: #9b6714;
+  background: var(--color-status-warm-surface);
+  color: var(--color-status-warm-ink);
   font-size: 0.625rem;
   font-weight: 700;
 }
 
 .collectingBadge[data-ready="true"] {
-  background: color-mix(in srgb, var(--market-preferred) 26%, white);
-  color: #356b60;
+  background: color-mix(in srgb, var(--market-preferred) 26%, var(--color-surface));
+  color: var(--color-demand-preferred-ink);
 }
 
 .trendControls {
@@ -729,7 +729,7 @@
 
 .trendSkillChip button:focus-visible,
 .trendAddControl select:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 

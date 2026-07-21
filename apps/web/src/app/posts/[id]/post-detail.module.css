@@ -110,17 +110,17 @@
 }
 
 .authorAvatar[data-tone="blue"] {
-  background: #eaf1ff;
-  color: #315daf;
+  background: var(--color-status-blue-surface);
+  color: var(--color-status-blue-ink);
 }
 
 .authorAvatar[data-tone="green"] {
-  background: #e8f7ef;
+  background: var(--color-status-green-surface);
   color: var(--color-success);
 }
 
 .authorAvatar[data-tone="orange"] {
-  background: #fff2df;
+  background: var(--color-status-warm-surface);
   color: var(--color-warning);
 }
 
@@ -430,14 +430,14 @@
 .reportPanel form button {
   border-color: transparent;
   background: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .localState button {
   margin-top: 1rem;
   border-color: transparent;
   background: var(--color-accent);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .localState {

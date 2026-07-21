@@ -381,7 +381,8 @@
 .descriptionEmpty {
   margin-top: 1.75rem;
   padding: 1rem;
-  border-left: 3px solid color-mix(in srgb, var(--color-text) 24%, var(--color-line));
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
   background: var(--color-surface-subtle);
 }
 
@@ -401,7 +402,7 @@
 .skillGroup a:focus-visible,
 .trust a:focus-visible,
 .continueLink:focus-visible {
-  outline: 3px solid var(--color-info);
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 

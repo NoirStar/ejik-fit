@@ -4,7 +4,7 @@
   z-index: 40;
   display: flex;
   justify-content: flex-end;
-  background: rgb(7 17 13 / 0.48);
+  background: color-mix(in srgb, var(--color-text) 48%, transparent);
 }
 
 .sheet {
@@ -106,8 +106,8 @@
   padding: 0 1rem;
   border: 0;
   border-radius: var(--radius-control);
-  background: #087b52;
-  color: #f3fff9;
+  background: var(--color-success-strong);
+  color: var(--color-on-success);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;

@@ -101,7 +101,7 @@
   border: 1px solid var(--color-accent-strong);
   border-radius: var(--radius-control);
   background: var(--color-accent-strong);
-  color: #ffffff !important;
+  color: var(--color-on-accent) !important;
   font-weight: 750;
   text-decoration: none;
 }
@@ -378,7 +378,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: #2f7666;
+  color: var(--color-source-ready-ink);
   font-size: 0.6875rem;
   font-weight: 750;
 }
@@ -387,16 +387,16 @@
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
-  background: #70b6a7;
+  background: var(--color-source-ready);
   content: "";
 }
 
 .collectionStatus[data-status="preparing"] {
-  color: #8b6a3f;
+  color: var(--color-source-review-ink);
 }
 
 .collectionStatus[data-status="preparing"]::before {
-  background: #e9b982;
+  background: var(--color-source-review);
 }
 
 .openCount,
@@ -417,7 +417,7 @@
 .sourceIdentity a:focus-visible,
 .directoryActions a:focus-visible {
   border-radius: 0.2rem;
-  outline: 2px solid var(--color-accent-strong);
+  outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }
 
@@ -474,7 +474,7 @@
 .sourceStatusFilters button:focus-visible,
 .sourceMoreButton:focus-visible,
 .sourceEmpty button:focus-visible {
-  outline: 2px solid var(--color-accent-strong);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 

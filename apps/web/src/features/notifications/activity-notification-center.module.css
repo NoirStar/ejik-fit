@@ -88,33 +88,33 @@
 }
 
 .icon[data-tone="saved"] {
-  background: color-mix(in srgb, #67a2c5 16%, var(--color-surface));
-  color: #3f789b;
+  background: color-mix(in srgb, var(--color-demand-required) 16%, var(--color-surface));
+  color: var(--color-demand-required-ink);
 }
 
 .icon[data-tone="skills"] {
-  background: color-mix(in srgb, #9bcec1 22%, var(--color-surface));
-  color: #397d6d;
+  background: color-mix(in srgb, var(--color-demand-preferred) 22%, var(--color-surface));
+  color: var(--color-demand-preferred-ink);
 }
 
 .icon[data-tone="companies"] {
-  background: color-mix(in srgb, #ffb6a6 21%, var(--color-surface));
-  color: #a95849;
+  background: color-mix(in srgb, var(--color-demand-highlight) 21%, var(--color-surface));
+  color: var(--color-demand-highlight-ink);
 }
 
 .icon[data-tone="new-job"] {
-  background: color-mix(in srgb, #ffebd3 72%, var(--color-surface));
-  color: #8b673c;
+  background: color-mix(in srgb, var(--color-demand-unspecified) 72%, var(--color-surface));
+  color: var(--color-demand-unspecified-ink);
 }
 
 .icon[data-tone="community-comment"] {
-  background: color-mix(in srgb, #9bcec1 22%, var(--color-surface));
-  color: #397d6d;
+  background: color-mix(in srgb, var(--color-demand-preferred) 22%, var(--color-surface));
+  color: var(--color-demand-preferred-ink);
 }
 
 .icon[data-tone="community-follow"] {
-  background: color-mix(in srgb, #ffb6a6 21%, var(--color-surface));
-  color: #a95849;
+  background: color-mix(in srgb, var(--color-demand-highlight) 21%, var(--color-surface));
+  color: var(--color-demand-highlight-ink);
 }
 
 .copy {

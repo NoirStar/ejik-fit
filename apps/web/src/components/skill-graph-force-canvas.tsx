@@ -21,6 +21,7 @@ import type {
   GraphRendererForceSettings,
   GraphRendererProps,
 } from "@/lib/graph-renderer";
+import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
 export {
   FORCE_CANVAS_RENDERER as SKILL_GRAPH_FORCE_CANVAS_RENDERER,
 } from "@/lib/graph-renderer";
@@ -169,15 +170,17 @@ function drawNode(
 
   ctx.beginPath();
   ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);
-  ctx.fillStyle = node.kind === "posting" ? "rgba(113, 116, 130, 0.58)" : node.color;
+  ctx.fillStyle = node.kind === "posting" ? GRAPH_CANVAS_COLORS.postingNode : node.color;
   ctx.shadowBlur = node.kind === "posting" ? 3 : isSelected || isHovered ? 20 : 9;
-  ctx.shadowColor = node.kind === "posting" ? "rgba(61, 57, 77, 0.14)" : rgba(node.color, 0.28);
+  ctx.shadowColor = node.kind === "posting"
+    ? GRAPH_CANVAS_COLORS.postingShadow
+    : rgba(node.color, 0.28);
   ctx.fill();
 
   if (node.kind === "skill") {
     ctx.beginPath();
     ctx.arc(node.x ?? 0, node.y ?? 0, Math.max(1.2, radius * 0.28), 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.44)";
+    ctx.fillStyle = GRAPH_CANVAS_COLORS.nodeHighlight;
     ctx.shadowBlur = 0;
     ctx.fill();
   }
@@ -191,10 +194,12 @@ function drawNode(
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 2.8;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
     ctx.shadowBlur = 0;
     ctx.strokeText(text, textX, textY);
-    ctx.fillStyle = node.kind === "posting" ? "#62626d" : "#25252c";
+    ctx.fillStyle = node.kind === "posting"
+      ? GRAPH_CANVAS_COLORS.postingLabel
+      : GRAPH_CANVAS_COLORS.skillLabel;
     ctx.fillText(text, textX, textY);
   }
 
@@ -406,7 +411,7 @@ export function SkillGraphForceCanvas({
       )
         .width(size.width)
         .height(size.height)
-        .backgroundColor("rgba(0, 0, 0, 0)")
+        .backgroundColor(GRAPH_CANVAS_COLORS.transparent)
         .nodeId("id")
         .linkSource("source")
         .linkTarget("target")
@@ -568,16 +573,16 @@ export function SkillGraphForceCanvas({
         const focused =
           highlightRef.current.links.size === 0 || highlightRef.current.links.has(link.id);
         if (!focused) {
-          return "rgba(86, 56, 198, 0.06)";
+          return GRAPH_CANVAS_COLORS.dimmedLink;
         }
         return link.kind === "evidence"
-          ? "rgba(98, 98, 112, 0.2)"
-          : "rgba(86, 56, 198, 0.28)";
+          ? GRAPH_CANVAS_COLORS.evidenceLink
+          : GRAPH_CANVAS_COLORS.skillLink;
       })
       .linkDirectionalArrowLength((link) =>
         display.arrows && link.kind === "skill" ? Math.max(2, display.linkThickness * 3.4) : 0,
       )
-      .linkDirectionalArrowColor(() => "rgba(86, 56, 198, 0.28)")
+      .linkDirectionalArrowColor(() => GRAPH_CANVAS_COLORS.skillLink)
       .linkDirectionalArrowRelPos(0.94)
       .linkCurvature((link) => (link.kind === "evidence" ? 0.08 : 0.02));
 

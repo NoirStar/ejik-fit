@@ -85,7 +85,8 @@
   gap: 0.75rem;
   margin-top: 2rem;
   padding: 1.25rem;
-  border-left: 3px solid var(--color-accent);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
   background: var(--color-surface-muted);
   color: var(--color-muted);
   font-size: 0.9375rem;
@@ -135,7 +136,7 @@
   padding: 0 1rem;
   border-radius: 0.6875rem;
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
   font-size: 0.875rem;
   font-weight: 750;
 }

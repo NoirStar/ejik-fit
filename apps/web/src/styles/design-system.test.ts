@@ -45,7 +45,7 @@ describe("design system foundation", () => {
 
     expect(tokens).toContain("--touch-target: 2.75rem");
     expect(tokens).toContain(
-      "--mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);",
+      "--mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);",
     );
     expect(tokens).not.toContain("@media (prefers-color-scheme: dark)");
     expect(typography).toContain("/fonts/PretendardVariable.woff2");
@@ -87,6 +87,9 @@ describe("design system foundation", () => {
 
     expect(shell).not.toContain(".searchForm,\n  .desktopNav {\n    display: none;");
     expect(shell).toContain(".searchForm:focus-within {\n    position: absolute;");
+    expect(shell).toMatch(
+      /@media \(max-width: 980px\)[\s\S]*?\.searchForm\s*\{[\s\S]*?width: calc\(var\(--touch-target\) \+ 2px\);[\s\S]*?height: calc\(var\(--touch-target\) \+ 2px\);/,
+    );
     expect(shell).not.toContain("width: 2.625rem;");
   });
 

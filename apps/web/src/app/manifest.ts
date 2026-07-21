@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { MANIFEST_COLORS } from "@/styles/design-tokens";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -7,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "공식 채용공고 기반 기술 스택 인텔리전스",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f6fc",
-    theme_color: "#6d4be8",
+    background_color: MANIFEST_COLORS.background,
+    theme_color: MANIFEST_COLORS.theme,
     lang: "ko",
     icons: [
       {

@@ -8,7 +8,7 @@
   ],
   "palette_source": "apps/web/src/styles/tokens.css",
   "motion": "GSAP installed; product UI uses restrained CSS transitions",
-  "spacing": "4px-compatible rem scale without semantic space tokens",
+  "spacing": "4px-compatible named rem scale in apps/web/src/styles/tokens.css",
   "design_contract": "design.md",
   "scope": "multi-page product app"
 }

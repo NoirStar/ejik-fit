@@ -102,7 +102,7 @@
 .identityAction a {
   border-color: var(--color-accent);
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .identityAction button:disabled {
@@ -262,7 +262,7 @@
 .profileSave {
   border: 1px solid var(--color-accent-strong);
   background: var(--color-accent-strong);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .profileSave:hover:not(:disabled) {
@@ -469,8 +469,8 @@
   width: 1rem;
   height: 1rem;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 18%);
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text) 18%, transparent);
   content: "";
   transition: transform 180ms ease-out;
 }

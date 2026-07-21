@@ -19,6 +19,6 @@
 }
 
 .mark[data-surface="dark"] {
-  border-color: #20232b;
-  background: #111318;
+  border-color: var(--color-company-logo-dark-border);
+  background: var(--color-company-logo-dark);
 }

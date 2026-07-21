@@ -352,7 +352,7 @@
   border: 0;
   border-radius: 0.625rem;
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 750;
@@ -427,7 +427,7 @@
 .segmented button[data-active="true"] {
   background: var(--color-surface);
   color: var(--color-accent-strong);
-  box-shadow: 0 1px 3px rgb(29 41 57 / 0.1);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
 .range {
@@ -582,8 +582,8 @@
   inset: 0;
   z-index: 0;
   background-image:
-    linear-gradient(rgb(86 56 198 / 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(86 56 198 / 0.045) 1px, transparent 1px);
+    linear-gradient(color-mix(in srgb, var(--color-accent) 4.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-accent) 4.5%, transparent) 1px, transparent 1px);
   background-size: 3rem 3rem;
   content: "";
   pointer-events: none;
@@ -599,18 +599,18 @@
   z-index: 6;
   box-shadow:
     0 0 0 8px color-mix(in srgb, var(--node-color) 18%, transparent),
-    0 0.875rem 2.25rem rgb(35 31 49 / 0.14);
+    0 0.875rem 2.25rem color-mix(in srgb, var(--color-text) 14%, transparent);
 }
 
 .graphFrame :global(.graph-node) {
   border-color: color-mix(in srgb, var(--node-color) 48%, var(--color-line));
-  background: color-mix(in srgb, var(--node-color) 14%, #ffffff);
+  background: color-mix(in srgb, var(--node-color) 14%, var(--color-surface));
   color: var(--color-text);
-  box-shadow: 0 0.5rem 1.25rem rgb(35 31 49 / 0.1);
+  box-shadow: 0 0.5rem 1.25rem color-mix(in srgb, var(--color-text) 10%, transparent);
 }
 
 .graphFrame :global(.graph-node--seed) {
-  background: color-mix(in srgb, var(--node-color) 22%, #ffffff);
+  background: color-mix(in srgb, var(--node-color) 22%, var(--color-surface));
   color: var(--color-text);
 }
 
@@ -630,7 +630,7 @@
   padding: 0 0.625rem;
   border: 1px solid var(--color-line);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.9);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
   color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 700;
@@ -1058,6 +1058,23 @@
   .inspector,
   .controlsContent {
     grid-template-columns: 1fr;
+  }
+
+  .controlsContent {
+    gap: 0;
+  }
+
+  .controlsContent > .controlSection {
+    padding: 0.875rem 0.125rem;
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .controlsContent > .layoutControl {
+    padding-right: 0.125rem;
+    padding-left: 0.125rem;
   }
 
   .selectedSkill,

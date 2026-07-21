@@ -130,7 +130,7 @@
   gap: 0.4375rem;
   padding: 0 0.875rem;
   background: var(--color-accent);
-  color: #ffffff;
+  color: var(--color-on-accent);
 }
 
 .writeButton:hover {
@@ -167,7 +167,7 @@
   border: 2px solid var(--color-surface);
   border-radius: 999px;
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-accent);
   font-size: 0.5625rem;
   font-weight: 800;
   line-height: 1;
@@ -473,8 +473,9 @@
   }
 
   .searchForm {
-    width: var(--touch-target);
-    flex: 0 0 var(--touch-target);
+    width: calc(var(--touch-target) + 2px);
+    height: calc(var(--touch-target) + 2px);
+    flex: 0 0 calc(var(--touch-target) + 2px);
     background: transparent;
   }
 

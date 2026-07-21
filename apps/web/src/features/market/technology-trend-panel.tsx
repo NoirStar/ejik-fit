@@ -9,11 +9,10 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import type { SkillTrendResponse, SkillTrendSeries } from "@/lib/types";
+import { MARKET_TREND_COLORS } from "@/styles/design-tokens";
 
 import styles from "./market-overview.module.css";
 import { TechnologyIcon } from "./technology-icon";
-
-const TREND_COLORS = ["#67a2c5", "#9bcec1", "#ff9f8b"] as const;
 
 type TrendSkillOption = {
   category: string;
@@ -86,7 +85,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
           0
         </text>
         {series.map((item, seriesIndex) => {
-          const color = TREND_COLORS[seriesIndex] ?? TREND_COLORS[0];
+          const color = MARKET_TREND_COLORS[seriesIndex] ?? MARKET_TREND_COLORS[0];
           const path = item.points
             .map((point, index) => {
               const command = index === 0 ? "M" : "L";
@@ -145,7 +144,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
         {series.map((item, index) => (
           <li key={item.skill}>
             <span>
-              <i style={{ backgroundColor: TREND_COLORS[index] }} />
+              <i style={{ backgroundColor: MARKET_TREND_COLORS[index] }} />
               {item.skill}
             </span>
             <strong>{item.points.at(-1)?.count ?? 0}건</strong>
@@ -249,7 +248,7 @@ export function TechnologyTrendPanel({
         <div className={styles.trendSkills}>
           {comparedSkills.map((skill, index) => (
             <span className={styles.trendSkillChip} key={skill}>
-              <i style={{ backgroundColor: TREND_COLORS[index] }} />
+              <i style={{ backgroundColor: MARKET_TREND_COLORS[index] }} />
               <TechnologyIcon
                 category={categories.get(skill) ?? "other"}
                 name={skill}

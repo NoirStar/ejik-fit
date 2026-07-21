@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "audited_at": "2026-07-21",
+  "scope": "multi-page production app",
+  "genre": "modern-minimal",
+  "tone": "Korean product workbench",
+  "anchor_hue": 286,
+  "macrostructures": [
+    "Ecosystem Index",
+    "Workbench",
+    "Map / Diagram",
+    "Long Document"
+  ],
+  "navigation": "N1b product shell with visible search spine",
+  "footer": "Ft2 inline rule",
+  "pre_emit_critique": {
+    "purpose": 5,
+    "hierarchy": 4,
+    "emphasis": 4,
+    "specificity": 5,
+    "responsiveness": 4,
+    "visual_quality": 4
+  },
+  "gates": {
+    "contrast_40_41": "pass",
+    "honest_ui_46": "pass",
+    "chrome_47": "pass",
+    "token_discipline_48": "pass",
+    "responsive_34_49_57": "pass",
+    "iconography_30": "pass"
+  },
+  "verified_routes": [
+    "/",
+    "/market",
+    "/jobs",
+    "/career",
+    "/skills/graph?skill=Kubernetes",
+    "/posts/1",
+    "/data-policy",
+    "/login"
+  ],
+  "verified_widths": [320, 375, 414, 768, 1280, 1440, 1920],
+  "intentional_exception": "Market demand segments animate width to explain filter-driven data changes; prefers-reduced-motion reduces the transition to 0.01ms."
+}

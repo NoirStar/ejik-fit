@@ -1,3 +1,5 @@
+import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
+
 import { domainColor } from "./skill-graph";
 import type {
   SkillGraphEvidence,
@@ -291,7 +293,7 @@ export function buildSkillGraphView(
         category: "posting",
         domain: "posting",
         domains: ["posting"],
-        color: "rgba(218, 224, 236, 0.76)",
+        color: GRAPH_CANVAS_COLORS.evidenceNode,
         val: Math.max(1.8, Math.min(4.4, 1.8 + linkedSkills.length * 0.36)),
         demandCount: linkedSkills.length,
         owned: false,

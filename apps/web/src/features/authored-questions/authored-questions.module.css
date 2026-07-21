@@ -329,7 +329,7 @@
 .deleteConfirm button:last-child {
   border-color: var(--color-danger);
   background: var(--color-danger);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .loading,
@@ -393,7 +393,7 @@
 
 .introActions a:hover {
   background: var(--color-accent-strong);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 @media (max-width: 700px) {

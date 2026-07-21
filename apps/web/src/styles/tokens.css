@@ -1,4 +1,4 @@
-/* Hallmark · genre: modern-minimal · macrostructure: Workbench · design-system: design.md · designed-as-app */
+/* Hallmark · critique: P5 H4 E4 S5 R4 V4 · genre: modern-minimal · tone: Korean product workbench · anchor: violet 286 · macrostructure: Workbench / Ecosystem Index / Map · contrast: pass · nav: N1b · footer: Ft2 · honest/chrome/tokens/responsive/icons: pass */
 :root {
   color-scheme: light;
   --color-bg: oklch(97.7% 0.004 286.33);
@@ -27,6 +27,29 @@
   --color-demand-unspecified: oklch(94.99% 0.0384 72.37);
   --color-demand-unspecified-ink: oklch(40.31% 0.0418 57.69);
   --color-demand-highlight: oklch(84.07% 0.0886 32.76);
+  --color-demand-highlight-ink: oklch(55.37% 0.1095 31.74);
+  --color-status-blue-surface: oklch(95.7% 0.0203 264.47);
+  --color-status-blue-ink: oklch(49.17% 0.1398 261.54);
+  --color-status-green-surface: oklch(96.28% 0.019 162.94);
+  --color-status-green-ink: oklch(50.33% 0.1047 160.02);
+  --color-status-warm-surface: oklch(96.63% 0.0287 77.55);
+  --color-status-warm-ink: oklch(54.95% 0.127 55.58);
+  --color-avatar-violet-surface: oklch(94.33% 0.0284 294.59);
+  --color-avatar-violet-ink: oklch(49.07% 0.2412 292.58);
+  --color-avatar-blue-surface: oklch(93.19% 0.0316 255.59);
+  --color-avatar-blue-ink: oklch(48.82% 0.2172 264.38);
+  --color-avatar-green-surface: oklch(96.24% 0.0434 156.74);
+  --color-avatar-green-ink: oklch(52.73% 0.1371 150.07);
+  --color-avatar-warm-surface: oklch(95.42% 0.0372 75.16);
+  --color-avatar-warm-ink: oklch(55.34% 0.1739 38.4);
+  --color-success-strong: oklch(51.57% 0.1127 161.02);
+  --color-on-success: oklch(98.94% 0.0148 164.74);
+  --color-source-ready: oklch(72.55% 0.0745 178.91);
+  --color-source-ready-ink: oklch(51.61% 0.0757 175.91);
+  --color-source-review: oklch(81.64% 0.0902 69.83);
+  --color-source-review-ink: oklch(54.75% 0.0728 72.65);
+  --color-company-logo-dark: oklch(18.69% 0.0107 268.11);
+  --color-company-logo-dark-border: oklch(25.66% 0.0157 269.06);
   --space-3xs: 0.25rem;
   --space-2xs: 0.5rem;
   --space-xs: 0.75rem;
@@ -43,7 +66,7 @@
   --header-height-desktop: 4rem;
   --header-height-mobile: 3.5rem;
   --mobile-nav-height: 4.25rem;
-  --mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+  --mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
   --content-max: 80rem;
   --type-page-title: 1.75rem;
   --type-detail-title: 1.875rem;

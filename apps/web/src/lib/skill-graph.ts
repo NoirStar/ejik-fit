@@ -1,31 +1,17 @@
+import {
+  GRAPH_DEFAULT_COLOR,
+  GRAPH_DOMAIN_COLORS,
+} from "@/styles/design-tokens";
+
 import type { SkillGraphResponse } from "./types";
 
 
-const DOMAIN_COLORS: Record<string, string> = {
-  ai: "#9b51e0",
-  autonomy: "#2d9cdb",
-  backend: "#27ae60",
-  cloud: "#56ccf2",
-  computer_vision: "#00a99d",
-  data: "#f2c94c",
-  design: "#bb6bd9",
-  devops: "#6fcf97",
-  embedded: "#f2994a",
-  frontend: "#eb5757",
-  game: "#f65a83",
-  graphics: "#f2994a",
-  high_performance: "#d35400",
-  mlops: "#8e44ad",
-  product: "#7f8c8d",
-  qa: "#34495e",
-  robotics: "#2f80ed",
-  security: "#c0392b",
-  web: "#219653",
-};
-
-
 export function domainColor(domain: string | undefined): string {
-  return domain ? (DOMAIN_COLORS[domain] ?? "#7b8187") : "#7b8187";
+  if (!domain) return GRAPH_DEFAULT_COLOR;
+  return (
+    GRAPH_DOMAIN_COLORS[domain as keyof typeof GRAPH_DOMAIN_COLORS] ??
+    GRAPH_DEFAULT_COLOR
+  );
 }
 
 
