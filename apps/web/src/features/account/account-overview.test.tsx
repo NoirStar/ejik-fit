@@ -17,7 +17,9 @@ const accountActionMocks = vi.hoisted(() => ({
   deleteAccount: vi.fn(),
   downloadArchive: vi.fn(),
   loadPreference: vi.fn(),
+  loadProfile: vi.fn(),
   savePreference: vi.fn(),
+  saveNickname: vi.fn(),
   replace: vi.fn(),
   refresh: vi.fn(),
 }));
@@ -30,6 +32,17 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: accountActionMocks.replace,
     refresh: accountActionMocks.refresh,
+  }),
+}));
+
+vi.mock("@/lib/supabase/client", () => ({
+  createBrowserSupabaseClient: () => ({}),
+}));
+
+vi.mock("./user-profile-store", () => ({
+  createSupabaseUserProfileStore: () => ({
+    load: accountActionMocks.loadProfile,
+    updateNickname: accountActionMocks.saveNickname,
   }),
 }));
 
@@ -64,8 +77,15 @@ describe("AccountOverview", () => {
       enabled: true,
       supported: true,
     });
+    accountActionMocks.loadProfile.mockReset();
+    accountActionMocks.loadProfile.mockResolvedValue({
+      userId: "viewer-1",
+      nickname: "커리어곰",
+    });
     accountActionMocks.savePreference.mockReset();
     accountActionMocks.savePreference.mockResolvedValue(undefined);
+    accountActionMocks.saveNickname.mockReset();
+    accountActionMocks.saveNickname.mockResolvedValue(undefined);
     accountActionMocks.replace.mockReset();
     accountActionMocks.refresh.mockReset();
   });
@@ -82,7 +102,9 @@ describe("AccountOverview", () => {
     render(<AccountOverview />);
 
     expect(screen.getByRole("heading", { name: "계정 및 동기화" })).toBeInTheDocument();
-    expect(screen.getByText(/현재 이 브라우저에만 저장/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합/),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "이메일로 로그인" })).toHaveAttribute(
       "href",
       "/login?next=%2Fcareer%2Faccount",
@@ -116,7 +138,9 @@ describe("AccountOverview", () => {
 
     render(<AccountOverview />);
 
-    expect(screen.getByText("dev@example.com")).toBeInTheDocument();
+    expect(await screen.findByDisplayValue("dev@example.com")).toHaveAttribute(
+      "readonly",
+    );
     expect(screen.getByText("내 기술").closest("a")).toHaveTextContent("2개");
     expect(screen.getByText("저장 공고").closest("a")).toHaveTextContent("2건");
     expect(screen.getByText("지원 기록").closest("a")).toHaveTextContent("1건");
@@ -152,6 +176,62 @@ describe("AccountOverview", () => {
     );
   });
 
+  it("validates and updates the public nickname without exposing the email", async () => {
+    vi.mocked(useAuthViewer).mockReturnValue({
+      viewer: { id: "viewer-1", email: "dev@example.com" },
+      ready: true,
+      signingOut: false,
+      error: "",
+      signOut,
+    });
+
+    render(<AccountOverview />);
+
+    const nickname = await screen.findByRole("textbox", { name: "닉네임" });
+    const saveButton = screen.getByRole("button", { name: "저장" });
+    expect(nickname).toHaveValue("커리어곰");
+    expect(saveButton).toBeDisabled();
+
+    fireEvent.change(nickname, { target: { value: "x" } });
+    fireEvent.click(saveButton);
+    expect(await screen.findByText(/닉네임은 2자 이상/)).toBeInTheDocument();
+    expect(accountActionMocks.saveNickname).not.toHaveBeenCalled();
+
+    fireEvent.change(nickname, { target: { value: " 새닉네임 " } });
+    fireEvent.click(saveButton);
+
+    await waitFor(() =>
+      expect(accountActionMocks.saveNickname).toHaveBeenCalledWith(
+        "viewer-1",
+        "새닉네임",
+      ),
+    );
+    expect(await screen.findByText("닉네임을 저장했습니다.")).toBeInTheDocument();
+  });
+
+  it("offers a retry when the profile cannot be loaded", async () => {
+    accountActionMocks.loadProfile.mockRejectedValueOnce(new Error("missing"));
+    vi.mocked(useAuthViewer).mockReturnValue({
+      viewer: { id: "viewer-1", email: "dev@example.com" },
+      ready: true,
+      signingOut: false,
+      error: "",
+      signOut,
+    });
+
+    render(<AccountOverview />);
+
+    expect(
+      await screen.findByText("프로필 설정을 아직 불러오지 못했습니다."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+
+    expect(await screen.findByRole("textbox", { name: "닉네임" })).toHaveValue(
+      "커리어곰",
+    );
+    expect(accountActionMocks.loadProfile).toHaveBeenCalledTimes(2);
+  });
+
   it("manages account notifications, export, and confirmed deletion", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
@@ -170,6 +250,7 @@ describe("AccountOverview", () => {
     const notificationSwitch = await screen.findByRole("switch", {
       name: "새 공고 알림",
     });
+    await waitFor(() => expect(notificationSwitch).toBeEnabled());
     expect(notificationSwitch).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(notificationSwitch);

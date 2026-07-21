@@ -548,7 +548,7 @@ git commit -m "feat: add verified credential authentication"
 - Consumes: Task 2 `validateNickname`, Task 3 `user_profiles`, existing `AuthViewer`, and Supabase browser client.
 - Produces: `loadUserProfile(userId)`, `saveUserNickname(userId, nickname)`, `<ProfileEditor viewer />`, and account export profile data.
 
-- [ ] **Step 1: Test the profile store boundary**
+- [x] **Step 1: Test the profile store boundary**
 
 Mock a Supabase client and assert:
 
@@ -567,7 +567,7 @@ expect(eq).toHaveBeenCalledWith("user_id", "user-1");
 
 Malformed rows and Supabase errors must reject. The store must never select or return an email.
 
-- [ ] **Step 2: Implement the profile store**
+- [x] **Step 2: Implement the profile store**
 
 Use exact types:
 
@@ -586,7 +586,7 @@ export function createSupabaseUserProfileStore(
 
 Select only `user_id,nickname`; update only `nickname,updated_at`; scope both operations with `.eq("user_id", userId)`.
 
-- [ ] **Step 3: Add the profile editor to the account page**
+- [x] **Step 3: Add the profile editor to the account page**
 
 `ProfileEditor` loads the profile once per `viewer.id`, shows the verified account email read-only, and provides a labeled nickname field. On save:
 
@@ -599,11 +599,11 @@ If the profile table is not migrated, show `프로필 설정을 아직 불러오
 
 Place the editor between the identity panel and career data summary. Change guest copy to `로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합합니다.` and authenticated copy to describe the real server-backed fields.
 
-- [ ] **Step 4: Include profile data in account export and privacy copy**
+- [x] **Step 4: Include profile data in account export and privacy copy**
 
 Add `profile: unknown` to `AccountDataArchive`. Query `user_profiles` by `viewer.id` alongside the existing three account tables, include its error in the combined error, and serialize the row. Update privacy copy to mention public nickname and private email/password handling, while keeping community local-only disclosure until the next phase.
 
-- [ ] **Step 5: Verify focused account behavior and commit**
+- [x] **Step 5: Verify focused account behavior and commit**
 
 Run:
 

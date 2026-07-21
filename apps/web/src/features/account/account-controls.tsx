@@ -167,7 +167,8 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           <span className={styles.controlCopy}>
             <strong>내 데이터 내보내기</strong>
             <small>
-              기술, 저장 공고, 지원 기록, 저장 검색과 알림을 JSON 파일로 받습니다.
+              프로필, 기술, 저장 공고, 지원 기록, 저장 검색과 알림을 JSON 파일로
+              받습니다.
             </small>
           </span>
           <button

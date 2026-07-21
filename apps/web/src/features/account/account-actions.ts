@@ -23,6 +23,7 @@ export type AccountDataArchive = {
     id: string;
     email: string;
   };
+  profile: unknown;
   browserCareerState: AccountCareerState;
   serverCareerState: unknown;
   savedJobSearches: unknown[];
@@ -90,26 +91,35 @@ export async function createAccountDataArchive(
   viewer: AuthViewer,
 ): Promise<AccountDataArchive> {
   const client = clientOrThrow();
-  const [careerState, savedSearches, notifications] = await Promise.all([
-    client
-      .from("user_career_states")
-      .select("*")
-      .eq("user_id", viewer.id)
-      .maybeSingle(),
-    client
-      .from("user_saved_job_searches")
-      .select("*")
-      .eq("user_id", viewer.id)
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_notifications")
-      .select("*")
-      .eq("user_id", viewer.id)
-      .order("created_at", { ascending: true }),
-  ]);
+  const [profile, careerState, savedSearches, notifications] =
+    await Promise.all([
+      client
+        .from("user_profiles")
+        .select("user_id,nickname")
+        .eq("user_id", viewer.id)
+        .maybeSingle(),
+      client
+        .from("user_career_states")
+        .select("*")
+        .eq("user_id", viewer.id)
+        .maybeSingle(),
+      client
+        .from("user_saved_job_searches")
+        .select("*")
+        .eq("user_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("user_notifications")
+        .select("*")
+        .eq("user_id", viewer.id)
+        .order("created_at", { ascending: true }),
+    ]);
 
   const error =
-    careerState.error ?? savedSearches.error ?? notifications.error;
+    profile.error ??
+    careerState.error ??
+    savedSearches.error ??
+    notifications.error;
   if (error) throw error;
 
   return {
@@ -120,6 +130,7 @@ export async function createAccountDataArchive(
       id: viewer.id,
       email: viewer.email,
     },
+    profile: profile.data,
     browserCareerState: readBrowserAccountState(),
     serverCareerState: careerState.data,
     savedJobSearches: savedSearches.data ?? [],

@@ -25,6 +25,7 @@ import {
 
 import { AccountControls } from "./account-controls";
 import styles from "./account-overview.module.css";
+import { ProfileEditor } from "./profile-editor";
 
 type AccountSummaryItem = {
   href: string;
@@ -101,13 +102,13 @@ export function AccountOverview() {
             {!ready
               ? "로그인 상태를 확인하고 있어요"
               : viewer
-                ? viewer.email
+                ? "계정 동기화 사용 중"
                 : "로그인 없이 이용 중"}
           </h2>
           <p>
             {viewer
-              ? "내 스택, 저장 공고, 지원 단계와 관심 기업을 계정에 자동으로 병합합니다."
-              : "내 스택과 저장 공고는 현재 이 브라우저에만 저장됩니다."}
+              ? "내 스택, 저장 공고, 지원 단계와 관심 기업을 비공개 계정 데이터로 관리합니다."
+              : "로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합합니다."}
           </p>
         </div>
         <div className={styles.identityAction}>
@@ -130,6 +131,8 @@ export function AccountOverview() {
       </section>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
+
+      {viewer && <ProfileEditor viewer={viewer} />}
 
       <section aria-labelledby="account-data-title" className={styles.dataSection}>
         <div className={styles.sectionHeader}>
