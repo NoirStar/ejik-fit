@@ -71,6 +71,7 @@ export type CommunityStore = {
     limit?: number;
   }): Promise<CommunityPost[]>;
   getPost(postId: string): Promise<CommunityPost | null>;
+  getComment(commentId: string): Promise<CommunityComment | null>;
   listComments(postId: string, limit?: number): Promise<CommunityComment[]>;
   loadViewerState(
     viewerId: string,
@@ -276,6 +277,16 @@ export function createSupabaseCommunityStore(
         .maybeSingle();
       if (error) databaseFailure(error);
       return data === null ? null : mapCommunityPostRow(data);
+    },
+
+    async getComment(commentId) {
+      const { data, error } = await client
+        .from(COMMENT_TABLE)
+        .select(COMMENT_COLUMNS)
+        .eq("id", requiredUuid(commentId))
+        .maybeSingle();
+      if (error) databaseFailure(error);
+      return data === null ? null : mapCommunityCommentRow(data);
     },
 
     async listComments(postId, requestedLimit) {

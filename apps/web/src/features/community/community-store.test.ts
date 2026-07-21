@@ -115,6 +115,32 @@ describe("Supabase community store", () => {
     expect(inserted).not.toHaveProperty("updated_at");
   });
 
+  it("gets one comment by its explicit public id", async () => {
+    const comments = createQuery({
+      data: {
+        id: COMMENT_ID,
+        post_id: POST_ID,
+        author_id: VIEWER_ID,
+        body: "계정에 저장된 댓글입니다.",
+        created_at: "2026-07-21T03:04:05.000Z",
+        updated_at: "2026-07-21T03:04:05.000Z",
+        author: { user_id: VIEWER_ID, nickname: "댓글러" },
+      },
+      error: null,
+    });
+    const store = createSupabaseCommunityStore(
+      createClient({ community_comments: comments }).client,
+    );
+
+    await expect(store.getComment(COMMENT_ID)).resolves.toMatchObject({
+      id: COMMENT_ID,
+      postId: POST_ID,
+      author: { id: VIEWER_ID },
+    });
+    expect(comments.select.mock.calls[0]?.[0]).not.toContain("client_origin_id");
+    expect(comments.eq).toHaveBeenCalledWith("id", COMMENT_ID);
+  });
+
   it("loads only viewer-owned private interaction rows", async () => {
     const reactions = createQuery({
       data: [{ post_id: POST_ID, user_id: VIEWER_ID }],
