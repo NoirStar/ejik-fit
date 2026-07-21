@@ -422,6 +422,34 @@ SKILLS: tuple[SkillDef, ...] = (
     ),
     SkillDef("Nginx", "infra", (distinct("nginx"),)),
     SkillDef("Linux", "infra", (distinct("linux"),)),
+    SkillDef(
+        "HPC",
+        "infra",
+        (
+            distinct("high performance computing"),
+            distinct("high-performance computing"),
+            contextual(
+                "hpc",
+                context_terms=(
+                    "high performance",
+                    "high-performance",
+                    "computing",
+                    "compute",
+                    "cluster",
+                    "workload",
+                    "simulation",
+                    "parallel",
+                    "slurm",
+                    "gpu",
+                    "cuda",
+                    "고성능",
+                    "컴퓨팅",
+                    "클러스터",
+                    "시뮬레이션",
+                ),
+            ),
+        ),
+    ),
     SkillDef("Grafana", "infra", (distinct("grafana"),)),
     SkillDef(
         "Prometheus",
@@ -712,6 +740,35 @@ SKILLS: tuple[SkillDef, ...] = (
     ),
     SkillDef("LLM", "ai", (distinct("llm"),)),
     SkillDef(
+        "MCP",
+        "ai",
+        (
+            distinct("model context protocol"),
+            contextual(
+                "mcp",
+                context_terms=(
+                    "llm",
+                    "agent",
+                    "server",
+                    "client",
+                    "tool",
+                    "protocol",
+                    "sdk",
+                    "에이전트",
+                    "서버",
+                    "클라이언트",
+                    "도구",
+                    "프로토콜",
+                ),
+                negative_patterns=(
+                    r"\bmicrosoft certified professional\s*\(mcp\)",
+                    r"\bmonocyte chemoattractant protein\s*\(mcp\)",
+                    r"\bmaster control program\s*\(mcp\)",
+                ),
+            ),
+        ),
+    ),
+    SkillDef(
         "RAG",
         "ai",
         (
@@ -780,6 +837,15 @@ SKILLS: tuple[SkillDef, ...] = (
         "LlamaIndex",
         "ai",
         (distinct("llamaindex"), distinct("llama index")),
+    ),
+    SkillDef(
+        "NVIDIA PhysicsNeMo",
+        "ai",
+        (
+            distinct("nvidia physicsnemo"),
+            distinct("physicsnemo"),
+            distinct("physics nemo"),
+        ),
     ),
     # security
     SkillDef("OWASP", "security", (distinct("owasp"),)),
@@ -900,6 +966,27 @@ SKILLS: tuple[SkillDef, ...] = (
         "Isaac Sim",
         "robotics",
         (distinct("isaac sim"), distinct("nvidia isaac sim")),
+    ),
+    SkillDef(
+        "NVIDIA Omniverse",
+        "robotics",
+        (
+            distinct("nvidia omniverse"),
+            contextual(
+                "omniverse",
+                context_terms=(
+                    "nvidia",
+                    "simulation",
+                    "robotics",
+                    "3d",
+                    "usd",
+                    "digital twin",
+                    "시뮬레이션",
+                    "로봇",
+                    "디지털 트윈",
+                ),
+            ),
+        ),
     ),
     # embedded
     SkillDef(
@@ -1069,6 +1156,9 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "Kafka": SkillMetadata("platform", ("backend", "data", "devops")),
     "Nginx": SkillMetadata("platform", ("backend", "web", "devops")),
     "Linux": SkillMetadata("platform", ("devops", "embedded", "robotics", "security", "backend")),
+    "HPC": SkillMetadata(
+        "practice", ("high_performance", "infra", "ai", "simulation")
+    ),
     "Grafana": SkillMetadata("platform", ("devops", "observability")),
     "Prometheus": SkillMetadata("platform", ("devops", "observability")),
     "Datadog": SkillMetadata("platform", ("devops", "observability", "cloud")),
@@ -1100,6 +1190,7 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "CUDA": SkillMetadata("platform", ("ai", "graphics", "high_performance")),
     "OpenCV": SkillMetadata("library", ("ai", "computer_vision", "robotics", "graphics")),
     "LLM": SkillMetadata("practice", ("ai",)),
+    "MCP": SkillMetadata("protocol", ("ai", "backend")),
     "RAG": SkillMetadata("practice", ("ai", "data")),
     "LangChain": SkillMetadata("framework", ("ai",)),
     "MLOps": SkillMetadata("practice", ("ai", "mlops", "devops")),
@@ -1159,6 +1250,9 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "TensorRT": SkillMetadata("platform", ("ai", "mlops", "high_performance")),
     "Triton": SkillMetadata("platform", ("ai", "mlops", "high_performance")),
     "LlamaIndex": SkillMetadata("framework", ("ai", "data")),
+    "NVIDIA PhysicsNeMo": SkillMetadata(
+        "library", ("ai", "simulation", "high_performance")
+    ),
     "Milvus": SkillMetadata("database", ("ai", "data")),
     "DynamoDB": SkillMetadata("database", ("data", "cloud", "backend")),
     "Redshift": SkillMetadata("database", ("data", "cloud")),
@@ -1180,6 +1274,9 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "MQTT": SkillMetadata("protocol", ("embedded", "iot", "backend")),
     "Vulkan": SkillMetadata("api", ("graphics", "game", "embedded")),
     "Isaac Sim": SkillMetadata("tool", ("robotics", "ai", "simulation")),
+    "NVIDIA Omniverse": SkillMetadata(
+        "platform", ("robotics", "simulation", "graphics", "ai")
+    ),
 }
 
 

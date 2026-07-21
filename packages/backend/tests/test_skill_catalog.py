@@ -55,6 +55,9 @@ RISKY_ALIASES = {
     ("Loki", "loki"),
     ("Yocto", "yocto"),
     ("Vulkan", "vulkan"),
+    ("HPC", "hpc"),
+    ("MCP", "mcp"),
+    ("NVIDIA Omniverse", "omniverse"),
 }
 
 
@@ -207,6 +210,10 @@ def test_production_posting_gap_expansion_uses_stable_categories() -> None:
         "MQTT": "embedded",
         "Vulkan": "game",
         "Isaac Sim": "robotics",
+        "HPC": "infra",
+        "MCP": "ai",
+        "NVIDIA Omniverse": "robotics",
+        "NVIDIA PhysicsNeMo": "ai",
     }
 
     assert {

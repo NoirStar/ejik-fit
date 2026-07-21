@@ -110,6 +110,18 @@ RISKY_GOLDENS = {
         "Vulkan GPU graphics 렌더링 개발",
         "Vulkan was used as a fictional name",
     ),
+    ("HPC", "hpc"): (
+        "HPC 클러스터에서 고성능 컴퓨팅 워크로드 운영",
+        "HPC라는 임의의 사내 프로젝트 코드",
+    ),
+    ("MCP", "mcp"): (
+        "LLM 도구 연동을 위한 MCP 서버 개발",
+        "Microsoft Certified Professional (MCP) 자격증",
+    ),
+    ("NVIDIA Omniverse", "omniverse"): (
+        "NVIDIA Omniverse 기반 3D 시뮬레이션 개발",
+        "an omniverse story collection",
+    ),
 }
 
 
@@ -223,6 +235,10 @@ def by_skill(html: str) -> dict:
                 "Vulkan",
                 "Yocto",
             ],
+        ),
+        (
+            "High-performance computing과 Model Context Protocol, NVIDIA Omniverse, PhysicsNeMo 기반 시뮬레이션",
+            ["HPC", "MCP", "NVIDIA Omniverse", "NVIDIA PhysicsNeMo"],
         ),
     ],
 )
