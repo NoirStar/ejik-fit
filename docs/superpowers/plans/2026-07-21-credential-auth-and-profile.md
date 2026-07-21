@@ -182,7 +182,7 @@ git push origin main
 - Produces: `CredentialAuthMode`, `normalizeCredentialAuthMode`, `validateEmail`, `validatePassword`, `validateNickname`, `validateSignUp`, and `validatePasswordUpdate`.
 - Consumes: no React or Supabase dependency; this is the shared pure validation boundary for Tasks 4 and 5.
 
-- [ ] **Step 1: Write the validation contract tests**
+- [x] **Step 1: Write the validation contract tests**
 
 Create tests covering exact accepted and rejected values:
 
@@ -233,13 +233,13 @@ describe("credential auth validation", () => {
 });
 ```
 
-- [ ] **Step 2: Run the new test and verify the module is missing**
+- [x] **Step 2: Run the new test and verify the module is missing**
 
 Run: `cd apps/web && npm test -- --run src/features/auth/auth-credentials.test.ts`
 
 Expected: FAIL because `auth-credentials.ts` does not exist.
 
-- [ ] **Step 3: Implement the pure validation module**
+- [x] **Step 3: Implement the pure validation module**
 
 Use these stable types and signatures:
 
@@ -272,7 +272,7 @@ export function validatePasswordUpdate(
 
 Use a bounded email check (`<=254`, one `@`, non-whitespace local/domain), Unicode-aware letter matching with `/\p{L}/u`, digit matching with `/\d/`, and reject nickname control characters with `/[\p{Cc}\p{Cf}]/u`.
 
-- [ ] **Step 4: Run and commit**
+- [x] **Step 4: Run and commit**
 
 Run:
 
