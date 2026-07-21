@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
+from functools import cache
 
 from bs4 import BeautifulSoup, Tag
 
@@ -239,6 +240,7 @@ def _evidence_blocks(
     return blocks
 
 
+@cache
 def _alias_pattern(skill: SkillDef, alias: AliasDef) -> re.Pattern[str]:
     if skill.canonical == "C++" and alias.value.lower() == "c++":
         source = rf"(?<![{_TOKEN_CHARS}])C\+\+(?:11|14|17|20|23)?(?![{_TOKEN_CHARS}])"
@@ -287,18 +289,6 @@ def _looks_like_parallel_list(text: str) -> bool:
     )
 
 
-def _distinct_skills_in_block(block: EvidenceBlock) -> set[str]:
-    found: set[str] = set()
-    for skill in SKILLS:
-        for alias in skill.aliases:
-            if alias.policy is not AliasPolicy.DISTINCT:
-                continue
-            if _alias_pattern(skill, alias).search(block.text):
-                found.add(skill.canonical)
-                break
-    return found
-
-
 def _score_alias(
     skill: SkillDef,
     alias: AliasDef,
@@ -340,11 +330,14 @@ def _score_alias(
 
 
 def _block_matches(block: EvidenceBlock) -> list[SkillMatch]:
-    other_skills = _distinct_skills_in_block(block)
-    matches: list[SkillMatch] = []
+    occurrences: list[tuple[SkillDef, AliasDef]] = []
+    distinct_skills: set[str] = set()
+    folded_text = block.text.casefold()
 
     for skill in SKILLS:
         for alias in skill.aliases:
+            if alias.value.casefold() not in folded_text:
+                continue
             pattern = _alias_pattern(skill, alias)
             for occurrence in pattern.finditer(block.text):
                 if _negative_overlap(
@@ -354,21 +347,30 @@ def _block_matches(block: EvidenceBlock) -> list[SkillMatch]:
                     occurrence.end(),
                 ):
                     continue
-                confidence, reason = _score_alias(
-                    skill, alias, block, other_skills
-                )
-                matches.append(
-                    SkillMatch(
-                        skill=skill.canonical,
-                        category=skill.category,
-                        requirement_type=block.requirement_type,
-                        evidence_text=block.text,
-                        confidence=confidence,
-                        match_reason=reason,
-                        position=block.position,
-                    )
-                )
+                occurrences.append((skill, alias))
+                if alias.policy is AliasPolicy.DISTINCT:
+                    distinct_skills.add(skill.canonical)
                 break
+
+    matches: list[SkillMatch] = []
+    for skill, alias in occurrences:
+        confidence, reason = _score_alias(
+            skill,
+            alias,
+            block,
+            distinct_skills,
+        )
+        matches.append(
+            SkillMatch(
+                skill=skill.canonical,
+                category=skill.category,
+                requirement_type=block.requirement_type,
+                evidence_text=block.text,
+                confidence=confidence,
+                match_reason=reason,
+                position=block.position,
+            )
+        )
     return matches
 
 
