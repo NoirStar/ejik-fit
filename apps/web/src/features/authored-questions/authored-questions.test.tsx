@@ -77,7 +77,13 @@ describe("AuthoredQuestions", () => {
     expect(
       screen.getByRole("link", { name: "첫 글 작성" }),
     ).toHaveAttribute("href", "/?compose=1");
-    expect(screen.getByText(/서버 계정과 동기화되지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/로그인하면 계정으로 안전하게 옮겨집니다/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/로그인하면 계정으로 옮겨지며/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/커뮤니티 새 글을 불러오지 못했습니다/),
+    ).not.toBeInTheDocument();
   });
 
   it("lists newest questions with browser-owned interaction facts", async () => {

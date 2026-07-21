@@ -491,7 +491,13 @@ export function JobList({
         >
           <header className={styles.resultHeader}>
             <div>
-              <p>{error ? "공식 원문 데이터" : "공식 원문 확인순"}</p>
+              <p>
+                {error
+                  ? "공식 원문 데이터"
+                  : filtering
+                    ? "검색 조건에 맞는 공고"
+                    : "여러 기업의 최근 공고"}
+              </p>
               <h2 id="job-results-title">검색 결과</h2>
             </div>
             <span>{error ? "표시 불가" : resultRangeLabel}</span>

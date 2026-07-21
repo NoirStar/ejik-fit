@@ -161,6 +161,7 @@ export function AuthoredQuestions({
   const community = useCommunityFeed({
     authReady,
     authorId: viewer?.id,
+    enabled: Boolean(viewer),
     limit: 50,
     store: communityStore,
     viewer,
@@ -251,7 +252,7 @@ export function AuthoredQuestions({
           <p className={styles.description}>
             {viewer
               ? "내 계정으로 작성한 질문, 커리어 고민과 면접 후기를 모든 기기에서 다시 확인합니다."
-              : "이 브라우저에서 직접 작성한 질문, 커리어 고민과 면접 후기를 다시 확인합니다. 서버 계정과 동기화되지 않습니다."}
+              : "지금 작성한 질문, 커리어 고민과 면접 후기는 이 브라우저에 보관되며, 로그인하면 계정으로 안전하게 옮겨집니다."}
           </p>
         </div>
         <div className={styles.introActions}>
@@ -334,7 +335,7 @@ export function AuthoredQuestions({
         <p className={styles.storageNote}>
           {viewer
             ? "계정 글과 반응은 이직핏 서버에 저장됩니다. 삭제한 글은 복구할 수 없습니다."
-            : "글과 반응은 현재 브라우저의 로컬 저장소에만 남습니다. 브라우저 데이터를 지우면 복구할 수 없습니다."}
+            : "로그인 전에는 글과 반응이 현재 브라우저에 보관됩니다. 로그인하면 계정으로 옮겨지며, 옮기기 전 브라우저 데이터를 지우면 복구할 수 없습니다."}
         </p>
       </section>
     </main>

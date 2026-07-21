@@ -22,6 +22,7 @@ from .schemas import PostingDetail, PostingListResponse
 logger = logging.getLogger(__name__)
 COMPANY_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,119}$")
 MAX_COMPANY_FILTERS = 20
+COMPANY_DIVERSITY_BATCH_SIZE = 5
 
 
 def _company_slugs(value: str | None) -> list[str]:
@@ -209,6 +210,17 @@ class DatabasePostingReader:
         limit: int,
         offset: int,
     ) -> list[dict]:
+        company_position = func.row_number().over(
+            partition_by=JobPosting.company_id,
+            order_by=(
+                JobPosting.first_seen_at.desc(),
+                JobPosting.last_verified_at.desc(),
+                JobPosting.id.desc(),
+            ),
+        )
+        company_round = (company_position - 1).self_group().op("/")(
+            COMPANY_DIVERSITY_BATCH_SIZE
+        )
         statement = (
             select(JobPosting)
             .join(JobPosting.company)
@@ -218,6 +230,7 @@ class DatabasePostingReader:
             )
             .where(JobPosting.status == PostingStatus.OPEN)
             .order_by(
+                company_round,
                 JobPosting.first_seen_at.desc(),
                 JobPosting.last_verified_at.desc(),
                 JobPosting.id.desc(),

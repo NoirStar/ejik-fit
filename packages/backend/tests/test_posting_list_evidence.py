@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -132,6 +132,61 @@ def test_database_list_orders_by_first_discovery_not_recrawl_time() -> None:
         "오래전에 발견하고 오늘 재확인한 공고",
     ]
     assert items[0]["first_seen_at"].date().isoformat() == "2026-07-14"
+
+
+def test_database_list_keeps_one_company_from_monopolizing_the_first_page() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    now = datetime(2026, 7, 21, tzinfo=timezone.utc)
+    with factory() as session:
+        crowded_company = Company(name="공고 많은 기업", slug="crowded-company")
+        crowded_source = CareerSource(
+            company=crowded_company,
+            base_url="https://careers.example.com/crowded",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+        )
+        for index in range(6):
+            discovered_at = now - timedelta(minutes=index)
+            session.add(
+                JobPosting(
+                    company=crowded_company,
+                    source=crowded_source,
+                    external_id=f"crowded-{index}",
+                    url=f"https://careers.example.com/crowded/{index}",
+                    title=f"공고 많은 기업 {index + 1}",
+                    first_seen_at=discovered_at,
+                    last_seen_at=discovered_at,
+                    last_verified_at=discovered_at,
+                )
+            )
+
+        other_company = Company(name="다른 기업", slug="another-company")
+        other_source = CareerSource(
+            company=other_company,
+            base_url="https://careers.example.com/another",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+        )
+        session.add(
+            JobPosting(
+                company=other_company,
+                source=other_source,
+                external_id="another-1",
+                url="https://careers.example.com/another/1",
+                title="다른 기업 공고",
+                first_seen_at=now - timedelta(hours=1),
+                last_seen_at=now - timedelta(hours=1),
+                last_verified_at=now - timedelta(hours=1),
+            )
+        )
+        session.commit()
+
+    items = DatabasePostingReader(session_factory=factory).list(limit=6)
+
+    assert "다른 기업 공고" in [item["title"] for item in items]
+    assert "공고 많은 기업 6" not in [item["title"] for item in items]
 
 
 def test_database_detail_restores_plain_text_structure_from_source_html() -> None:
