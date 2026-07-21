@@ -8,7 +8,9 @@ for (const width of [1440, 820, 600, 390]) {
     await page.setViewportSize({ height: viewportHeight, width });
     await page.goto("/jobs");
 
-    await expect(page.getByText("전체 공식 공고 2건")).toBeVisible();
+    await expect(
+      page.locator("#main-content").getByText("전체 공식 공고 2건"),
+    ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeVisible();
@@ -97,7 +99,9 @@ test("combines query and career filters like the production API", async ({
 }) => {
   await page.goto("/jobs?q=Go&career_type=experienced");
 
-  await expect(page.getByText("전체 공식 공고 0건")).toBeVisible();
+  await expect(
+    page.locator("#main-content").getByText("전체 공식 공고 0건"),
+  ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
   ).not.toBeVisible();

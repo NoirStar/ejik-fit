@@ -173,7 +173,9 @@ test("carries selected market evidence into the jobs explorer", async ({
   await expect(page.getByLabel("공고 검색")).toHaveValue("Docker");
   await expect(page.getByLabel("기술 분야")).toHaveValue("infra");
   await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
-  await expect(page.getByText("전체 공식 공고 1건")).toBeVisible();
+  await expect(
+    page.locator("#main-content").getByText("전체 공식 공고 1건"),
+  ).toBeVisible();
 });
 
 test("applies career filters to the fixture with production API semantics", async ({
