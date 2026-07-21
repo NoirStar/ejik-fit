@@ -38,6 +38,7 @@ function storeWith(
 ) {
   return {
     listPosts: vi.fn(async () => posts),
+    listSavedPosts: vi.fn(async () => posts),
     getPost: vi.fn(async () => null),
     getComment: vi.fn(async () => null),
     listComments: vi.fn(async () => []),
@@ -73,6 +74,55 @@ describe("useCommunityFeed", () => {
     expect(result.current.state.posts).toEqual([post()]);
     expect(store.listPosts).toHaveBeenCalledWith({ limit: 20 });
     expect(store.loadViewerState).not.toHaveBeenCalled();
+  });
+
+  it("loads the signed-in viewer saved collection without falling back to the public feed", async () => {
+    const store = storeWith([post()], {
+      reactedPostIds: [],
+      savedPostIds: [POST_ID],
+      followedAuthorIds: [],
+    });
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        limit: 50,
+        savedOnly: true,
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    expect(store.listSavedPosts).toHaveBeenCalledWith(USER_ID, 50);
+    expect(store.listPosts).not.toHaveBeenCalled();
+    expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
+  });
+
+  it("keeps visible posts and viewer membership when a manual reload fails", async () => {
+    const store = storeWith([post()], {
+      reactedPostIds: [],
+      savedPostIds: [POST_ID],
+      followedAuthorIds: [],
+    });
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        savedOnly: true,
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    store.listSavedPosts.mockRejectedValueOnce(new Error("offline"));
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(result.current.state.status).toBe("error");
+    expect(result.current.state.posts).toEqual([post()]);
+    expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
   });
 
   it("updates server membership and already-inclusive counters together", async () => {

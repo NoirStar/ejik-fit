@@ -50,7 +50,9 @@ export type CommunityFeedController = {
 type UseCommunityFeedOptions = {
   authReady: boolean;
   authorId?: string;
+  enabled?: boolean;
   limit?: number;
+  savedOnly?: boolean;
   viewer: AuthViewer | null;
   store?: CommunityStore;
 };
@@ -99,7 +101,9 @@ function metricWith(
 export function useCommunityFeed({
   authReady,
   authorId,
+  enabled = true,
   limit = 20,
+  savedOnly = false,
   store: injectedStore,
   viewer,
 }: UseCommunityFeedOptions): CommunityFeedController {
@@ -140,16 +144,30 @@ export function useCommunityFeed({
     async (keepPosts: boolean) => {
       const request = requestRef.current + 1;
       requestRef.current = request;
-      if (!authReady) {
+      if (!authReady || !enabled) {
         commit(INITIAL_STATE);
         return;
       }
 
-      const previousPosts = keepPosts ? stateRef.current.posts : [];
+      if (savedOnly && !viewerId) {
+        commit({ ...INITIAL_STATE, status: "ready" });
+        return;
+      }
+
+      const previousState = stateRef.current;
+      const previousPosts = keepPosts ? previousState.posts : [];
+      const previousViewerState = keepPosts
+        ? previousState.viewerState
+        : EMPTY_VIEWER_STATE;
+      const previousMigrationFailures = keepPosts
+        ? previousState.migrationFailedPostIds
+        : [];
       commit({
         ...INITIAL_STATE,
         status: "loading",
         posts: previousPosts,
+        viewerState: previousViewerState,
+        migrationFailedPostIds: previousMigrationFailures,
       });
       const resolvedStore = resolveStore();
       if (!resolvedStore) {
@@ -158,6 +176,8 @@ export function useCommunityFeed({
             ...INITIAL_STATE,
             status: "error",
             posts: previousPosts,
+            viewerState: previousViewerState,
+            migrationFailedPostIds: previousMigrationFailures,
             error: LOAD_ERROR,
           });
         }
@@ -169,10 +189,12 @@ export function useCommunityFeed({
         const migration = activeViewerId
           ? await migrateLocalCommunityContent(resolvedStore, activeViewerId)
           : { migratedPostIds: [], failedPostIds: [] };
-        const posts = await resolvedStore.listPosts({
-          ...(authorId ? { authorId } : {}),
-          limit,
-        });
+        const posts = savedOnly && activeViewerId
+          ? await resolvedStore.listSavedPosts(activeViewerId, limit)
+          : await resolvedStore.listPosts({
+              ...(authorId ? { authorId } : {}),
+              limit,
+            });
         const viewerState = activeViewerId
           ? await resolvedStore.loadViewerState(activeViewerId, {
               postIds: posts.map((post) => post.id),
@@ -201,12 +223,23 @@ export function useCommunityFeed({
             ...INITIAL_STATE,
             status: "error",
             posts: previousPosts,
+            viewerState: previousViewerState,
+            migrationFailedPostIds: previousMigrationFailures,
             error: LOAD_ERROR,
           });
         }
       }
     },
-    [authReady, authorId, commit, limit, resolveStore, viewerId],
+    [
+      authReady,
+      authorId,
+      commit,
+      enabled,
+      limit,
+      resolveStore,
+      savedOnly,
+      viewerId,
+    ],
   );
 
   useEffect(() => {

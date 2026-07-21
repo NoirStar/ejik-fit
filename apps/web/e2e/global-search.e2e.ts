@@ -84,7 +84,7 @@ test("moves between actual result scopes and explicitly marked mock community", 
   ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠", { exact: true })).toBeVisible();
   await expect(
-    page.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
+    page.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
   ).toBeVisible();
   const communityTag = page.getByRole("link", {
     name: "Kubernetes 커뮤니티 검색",
@@ -151,7 +151,7 @@ test("finds a browser-owned post after reload and opens its local detail", async
   await expect(page.getByRole("link", { name: /커뮤니티.*1/ })).toBeVisible();
   await expect(page.getByText("검색 결과가 없습니다.")).toHaveCount(0);
   await expect(
-    page.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
+    page.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
   ).toBeVisible();
 
   const resultLink = localResult.getByRole("link", { exact: true, name: title });

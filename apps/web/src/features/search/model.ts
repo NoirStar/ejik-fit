@@ -314,23 +314,19 @@ function buildCommunity(items: CommunityItem[], query: string) {
     );
 }
 
-export function mergeLocalCommunitySearchResults(
+export function mergeCommunitySearchResults(
   snapshot: SearchSnapshot,
-  localPosts: LocalCommunityPost[],
-  now = new Date(),
+  communityItems: CommunityItem[],
 ): SearchSnapshot {
-  if (!snapshot.query || localPosts.length === 0) return snapshot;
+  if (!snapshot.query || communityItems.length === 0) return snapshot;
 
-  const localResults = buildCommunity(
-    localPosts.map((post) => localCommunityPostToFeedItem(post, now)),
-    snapshot.query,
-  );
-  if (localResults.length === 0) return snapshot;
+  const incomingResults = buildCommunity(communityItems, snapshot.query);
+  if (incomingResults.length === 0) return snapshot;
 
-  const localIds = new Set(localResults.map((item) => item.id));
+  const incomingIds = new Set(incomingResults.map((item) => item.id));
   const community = [
-    ...localResults,
-    ...snapshot.community.filter((item) => !localIds.has(item.id)),
+    ...incomingResults,
+    ...snapshot.community.filter((item) => !incomingIds.has(item.id)),
   ];
 
   return {
@@ -344,6 +340,17 @@ export function mergeLocalCommunitySearchResults(
         community.length >
       0,
   };
+}
+
+export function mergeLocalCommunitySearchResults(
+  snapshot: SearchSnapshot,
+  localPosts: LocalCommunityPost[],
+  now = new Date(),
+): SearchSnapshot {
+  return mergeCommunitySearchResults(
+    snapshot,
+    localPosts.map((post) => localCommunityPostToFeedItem(post, now)),
+  );
 }
 
 export function buildSearchSnapshot(input: {

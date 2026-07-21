@@ -14,9 +14,15 @@ import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
-import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
+import {
+  localCommunityPostToFeedItem,
+  serverCommunityPostToFeedItem,
+} from "@/features/home-feed/model";
 import {
   APPLICATION_STAGES,
   applicationStageLabel,
@@ -48,6 +54,7 @@ import {
 import {
   normalizeSavedJobDataResponse,
   selectSavedCommunityItems,
+  type SavedCommunityItem,
   type SavedJobData,
   type SavedJobItem,
 } from "./model";
@@ -190,10 +197,21 @@ function SavedJobCard({
 }
 
 export function SavedLibrary({
+  communityStore,
   initialScope = "all",
 }: {
+  communityStore?: CommunityStore;
   initialScope?: SavedScope;
 }) {
+  const { ready: authReady, viewer } = useAuthViewerContext();
+  const accountCommunity = useCommunityFeed({
+    authReady,
+    enabled: Boolean(viewer),
+    limit: 50,
+    savedOnly: true,
+    store: communityStore,
+    viewer,
+  });
   const [hydrated, setHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [applicationStages, setApplicationStages] =
@@ -269,7 +287,7 @@ export function SavedLibrary({
     };
   }, [hydrated, retryVersion, savedJobKey]);
 
-  const savedCommunity = useMemo(
+  const browserSavedCommunity = useMemo(
     () =>
       selectSavedCommunityItems(
         socialInteractions.savedPostIds,
@@ -280,6 +298,33 @@ export function SavedLibrary({
       ),
     [localPosts, socialInteractions.savedPostIds],
   );
+  const serverSavedCommunity = useMemo(() => {
+    const savedIds = new Set(accountCommunity.state.viewerState.savedPostIds);
+    const items = accountCommunity.state.posts
+      .filter((post) => savedIds.has(post.id))
+      .map((post) => serverCommunityPostToFeedItem(post));
+    return selectSavedCommunityItems(
+      items.map((item) => item.id),
+      items,
+    );
+  }, [accountCommunity.state.posts, accountCommunity.state.viewerState.savedPostIds]);
+  const savedCommunity = useMemo(() => {
+    const seen = new Set<string>();
+    const items = [
+      ...serverSavedCommunity.items,
+      ...browserSavedCommunity.items,
+    ].filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+    return {
+      items,
+      unavailableIds: browserSavedCommunity.unavailableIds.filter(
+        (id) => !seen.has(id),
+      ),
+    };
+  }, [browserSavedCommunity, serverSavedCommunity.items]);
   const visibleSavedJobs = useMemo(() => {
     if (jobState.status !== "ready") return [];
     if (activeScope !== "applications") return jobState.data.items;
@@ -290,15 +335,26 @@ export function SavedLibrary({
   const applicationCount = savedJobIds.filter(
     (id) => applicationStages[id],
   ).length;
-  const communityCount = socialInteractions.savedPostIds.length;
+  const communityCount = new Set([
+    ...socialInteractions.savedPostIds,
+    ...serverSavedCommunity.items.map((item) => item.id),
+  ]).size;
   const totalCount = jobCount + communityCount;
+  const accountCommunityLoading = Boolean(
+    viewer && accountCommunity.state.status === "loading",
+  );
+  const accountCommunityUnavailable = Boolean(
+    viewer && accountCommunity.state.status === "error",
+  );
+  const hasCommunityCollectionState =
+    accountCommunityLoading || accountCommunityUnavailable;
   const showJobs =
     activeScope === "jobs" ||
     activeScope === "applications" ||
     (activeScope === "all" && jobCount > 0);
   const showCommunity =
     activeScope === "community" ||
-    (activeScope === "all" && communityCount > 0);
+    (activeScope === "all" && (communityCount > 0 || hasCommunityCollectionState));
   const singleCollection = Number(showJobs) + Number(showCommunity) <= 1;
 
   function countForScope(scope: SavedScope) {
@@ -335,15 +391,25 @@ export function SavedLibrary({
     );
   }
 
-  function removeCommunity(id: string, title: string) {
-    const wasSaved = socialInteractions.savedPostIds.includes(id);
-    const next = togglePostSave(id);
-    setSocialInteractions(next);
-    if (next.savedPostIds.includes(id) === wasSaved) {
-      setAnnouncement(`${title}의 저장 상태를 변경하지 못했습니다.`);
+  async function removeCommunity(item: SavedCommunityItem) {
+    if (item.source === "server") {
+      const removed = await accountCommunity.toggleSaved(item.id);
+      setAnnouncement(
+        removed
+          ? `${item.title}을 계정 저장 보관함에서 제거했습니다.`
+          : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
+      );
       return;
     }
-    setAnnouncement(`${title}을 저장 보관함에서 제거했습니다.`);
+
+    const wasSaved = socialInteractions.savedPostIds.includes(item.id);
+    const next = togglePostSave(item.id);
+    setSocialInteractions(next);
+    if (next.savedPostIds.includes(item.id) === wasSaved) {
+      setAnnouncement(`${item.title}의 저장 상태를 변경하지 못했습니다.`);
+      return;
+    }
+    setAnnouncement(`${item.title}을 저장 보관함에서 제거했습니다.`);
   }
 
   function removeUnavailableJobs() {
@@ -399,15 +465,16 @@ export function SavedLibrary({
           <h1>저장 보관함</h1>
           <p className={styles.description}>
             공고 저장과 지원 단계는 로그인 전에는 이 브라우저에
-            남고, 로그인하면 계정과 동기화됩니다. 직접 작성한 커뮤니티
-            글은 현재 브라우저에만 남으며, 공고 내용은 열 때마다 공식
-            API에서 다시 확인합니다.
+            남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의
+            저장은 로그인 계정에 보관하고, 로컬 글과 예시 콘텐츠의 저장은
+            현재 브라우저에만 남깁니다. 공고 내용은 열 때마다 공식 API에서
+            다시 확인합니다.
           </p>
         </div>
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            계정 연동 지원
+            {viewer ? "계정 저장 연결됨" : "로그인 시 계정 연동"}
           </span>
           <Link href="/career">
             내 기술 비교
@@ -445,7 +512,7 @@ export function SavedLibrary({
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          현재 기기에 병합된 저장·지원 기준
+          계정과 현재 기기에 병합된 저장·지원 기준
         </p>
       </section>
 
@@ -456,11 +523,11 @@ export function SavedLibrary({
         id="saved-library-panel"
         role="tabpanel"
       >
-        {!hydrated ? (
+        {!hydrated || (accountCommunityLoading && totalCount === 0) ? (
           <div className={styles.loadingState} role="status">
             저장한 항목을 확인하고 있습니다.
           </div>
-        ) : totalCount === 0 ? (
+        ) : totalCount === 0 && !accountCommunityUnavailable ? (
           <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
             <h2>아직 저장한 항목이 없습니다.</h2>
@@ -595,15 +662,38 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>이 브라우저의 글 + 예시 콘텐츠</p>
+                    <p>계정 커뮤니티 + 브라우저 글·예시</p>
                     <h2 id="saved-community-title">커뮤니티</h2>
                   </div>
                   <span>{communityCount}개 저장</span>
                 </header>
                 <div className={styles.mockNotice}>
                   <WarningCircle aria-hidden="true" size={18} weight="fill" />
-                  <p>내 로컬 글은 이 브라우저에서만 복원합니다. 예시 콘텐츠는 실제 사용자가 작성한 글이 아닙니다.</p>
+                  <p>
+                    실제 커뮤니티 저장은 계정에서 복원합니다. 로컬 글은 이
+                    브라우저에서만 복원하며, 예시 콘텐츠는 실제 사용자가 작성한
+                    글이 아닙니다.
+                  </p>
                 </div>
+
+                {accountCommunityLoading && (
+                  <div className={styles.loadingState} role="status">
+                    계정에 저장한 커뮤니티 글을 확인하고 있습니다.
+                  </div>
+                )}
+
+                {accountCommunityUnavailable && (
+                  <div className={styles.errorState} role="alert">
+                    <WarningCircle aria-hidden="true" size={22} weight="fill" />
+                    <div>
+                      <strong>계정에 저장한 커뮤니티 글을 불러오지 못했습니다.</strong>
+                      <p>브라우저 저장 항목은 계속 볼 수 있으며 계정 저장 상태는 유지했습니다.</p>
+                    </div>
+                    <button onClick={() => void accountCommunity.reload()} type="button">
+                      커뮤니티 다시 확인
+                    </button>
+                  </div>
+                )}
 
                 {savedCommunity.unavailableIds.length > 0 && (
                   <div className={styles.dataNotice} role="status">
@@ -658,7 +748,10 @@ export function SavedLibrary({
                           </Link>
                           <button
                             aria-label={`${item.title} 저장 해제`}
-                            onClick={() => removeCommunity(item.id, item.title)}
+                            disabled={accountCommunity.state.pendingKeys.includes(
+                              `save:${item.id}`,
+                            )}
+                            onClick={() => void removeCommunity(item)}
                             type="button"
                           >
                             <Trash aria-hidden="true" size={16} />
@@ -673,7 +766,7 @@ export function SavedLibrary({
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
                       <strong>현재 표시할 커뮤니티 글이 없습니다.</strong>
-                      <p>홈에서 내 글이나 예시 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
+                      <p>홈에서 실제 커뮤니티 글, 내 로컬 글이나 예시 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>

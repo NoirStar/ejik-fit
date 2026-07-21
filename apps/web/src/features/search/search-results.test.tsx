@@ -1,16 +1,60 @@
 import {
+  act,
   cleanup,
   render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import type { CommunityPost } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 
 import type { SearchSnapshot } from "./model";
 import { SearchResults } from "./search-results";
+
+const serverSearchPost: CommunityPost = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  author: {
+    id: "22222222-2222-4222-8222-222222222222",
+    nickname: "파이썬정원",
+  },
+  category: "커리어 질문",
+  title: "실제 Python 커뮤니티 검색 질문",
+  body: "Python 백엔드 이직을 준비하며 계정에 작성한 공개 글입니다.",
+  tags: ["Python", "백엔드"],
+  metrics: { reactions: 2, comments: 1, saves: 0 },
+  createdAt: "2026-07-21T05:00:00.000Z",
+  updatedAt: "2026-07-21T05:00:00.000Z",
+};
+
+function serverSearchStore() {
+  return {
+    listPosts: vi.fn(async () => [serverSearchPost]),
+    listSavedPosts: vi.fn(async () => []),
+    getPost: vi.fn(async () => serverSearchPost),
+    getComment: vi.fn(async () => null),
+    listComments: vi.fn(async () => []),
+    loadViewerState: vi.fn(async () => ({
+      reactedPostIds: [],
+      savedPostIds: [],
+      followedAuthorIds: [],
+    })),
+    createPost: vi.fn(async () => serverSearchPost),
+    deletePost: vi.fn(async () => undefined),
+    createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    deleteComment: vi.fn(async () => undefined),
+    setPostReaction: vi.fn(async () => undefined),
+    setPostSaved: vi.fn(async () => undefined),
+    setAuthorFollowed: vi.fn(async () => undefined),
+    createReport: vi.fn(async () => undefined),
+  } satisfies CommunityStore;
+}
 
 function snapshot(
   overrides: Partial<SearchSnapshot> = {},
@@ -190,8 +234,8 @@ describe("SearchResults", () => {
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
     expect(
-      screen.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
-    ).toHaveTextContent("예시 콘텐츠는 실제 사용자가 작성한 글이 아니며");
+      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+    ).toHaveTextContent("예시 콘텐츠는 실제 사용자가 작성한 글이 아닙니다");
   });
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
@@ -219,7 +263,7 @@ describe("SearchResults", () => {
       }),
     ).toHaveTextContent("예시 콘텐츠");
     expect(
-      screen.getByText(/내 로컬 글은 현재 브라우저에서만 검색됩니다/),
+      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
     ).toBeInTheDocument();
 
     deleteLocalCommunityPost("local-python-search");
@@ -232,6 +276,73 @@ describe("SearchResults", () => {
       ).not.toBeInTheDocument();
     });
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
+  });
+
+  it("merges recent public account community posts into the community search scope", async () => {
+    const store = serverSearchStore();
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <SearchResults communityStore={store} snapshot={snapshot()} />
+      </AuthViewerProvider>,
+    );
+
+    const serverResult = await screen.findByRole("article", {
+      name: serverSearchPost.title,
+    });
+    expect(store.listPosts).toHaveBeenCalledWith({ limit: 50 });
+    expect(within(serverResult).getByText("커뮤니티")).toBeInTheDocument();
+    expect(
+      within(serverResult).getByRole("link", { name: serverSearchPost.title }),
+    ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
+    expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
+    expect(
+      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+    ).toBeInTheDocument();
+  });
+
+  it("does not announce an empty search while recent public community posts are loading", async () => {
+    const store = serverSearchStore();
+    let resolvePosts: ((posts: CommunityPost[]) => void) | undefined;
+    store.listPosts.mockImplementationOnce(
+      () =>
+        new Promise<CommunityPost[]>((resolve) => {
+          resolvePosts = resolve;
+        }),
+    );
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <SearchResults
+          communityStore={store}
+          snapshot={snapshot({
+            companies: [],
+            jobs: [],
+            skills: [],
+            community: [],
+            counts: { companies: 0, jobs: 0, skills: 0, community: 0 },
+            hasAnyResults: false,
+          })}
+        />
+      </AuthViewerProvider>,
+    );
+
+    const loadingHeading = await screen.findByRole("heading", {
+      name: "최근 공개 커뮤니티 글까지 검색하고 있습니다.",
+    });
+    expect(loadingHeading.closest('[role="status"]')).not.toBeNull();
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolvePosts?.([serverSearchPost]);
+    });
+    expect(
+      await screen.findByRole("article", { name: serverSearchPost.title }),
+    ).toBeInTheDocument();
   });
 
   it("replaces the completed empty state when only a local post matches", async () => {

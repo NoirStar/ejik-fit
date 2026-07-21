@@ -690,6 +690,10 @@ export function HomeFeed({
     () => community.state.posts.map((post) => serverCommunityPostToFeedItem(post)),
     [community.state.posts],
   );
+  const followingRailItems = useMemo(
+    () => [...serverFeedItems, ...snapshot.communityItems],
+    [serverFeedItems, snapshot.communityItems],
+  );
   const followedAuthorIds = useMemo(
     () =>
       Array.from(
@@ -1194,6 +1198,7 @@ export function HomeFeed({
           <FollowingPostList
             followedAuthorIds={followedAuthorIds}
             hydrated={socialHydrated}
+            items={followingRailItems}
             onShowFollowing={showFollowingPosts}
           />
         </aside>

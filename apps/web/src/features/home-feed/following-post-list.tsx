@@ -3,22 +3,28 @@ import Link from "next/link";
 
 import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import styles from "./home-feed.module.css";
+import type {
+  CommunityPostFeedItem,
+  InterviewReviewFeedItem,
+} from "./types";
 
 const VISIBLE_FOLLOWING_POSTS = 2;
 
 type FollowingPostListProps = {
   followedAuthorIds: string[];
   hydrated: boolean;
+  items?: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
   onShowFollowing(): void;
 };
 
 export function FollowingPostList({
   followedAuthorIds,
   hydrated,
+  items = MOCK_SOCIAL_ITEMS,
   onShowFollowing,
 }: FollowingPostListProps) {
   const followed = new Set(followedAuthorIds);
-  const posts = MOCK_SOCIAL_ITEMS.filter((item) => followed.has(item.authorId))
+  const posts = items.filter((item) => followed.has(item.authorId))
     .sort(
       (left, right) =>
         Date.parse(right.createdAt) - Date.parse(left.createdAt),

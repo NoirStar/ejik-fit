@@ -122,6 +122,7 @@ function buildSnapshot() {
 function serverCommunityStore(post: CommunityPost) {
   return {
     listPosts: vi.fn(async () => [post]),
+    listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
     getComment: vi.fn(async () => null),
     listComments: vi.fn(async () => []),
@@ -462,6 +463,23 @@ describe("HomeFeed", () => {
       ),
     );
     expect(reaction).toHaveTextContent("3");
+
+    fireEvent.click(
+      within(article).getByRole("button", { name: "실제작성자 팔로우" }),
+    );
+    await waitFor(() =>
+      expect(store.setAuthorFollowed).toHaveBeenCalledWith(
+        "11111111-1111-4111-8111-111111111111",
+        post.author.id,
+        true,
+      ),
+    );
+    expect(
+      within(screen.getByRole("region", { name: "팔로우 중인 글" })).getByRole(
+        "link",
+        { name: `실제작성자의 글: ${post.title}` },
+      ),
+    ).toHaveAttribute("href", `/posts/${post.id}`);
   });
 
   it("publishes signed-in composer drafts to the account instead of local storage", async () => {

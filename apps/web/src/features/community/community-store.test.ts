@@ -86,6 +86,33 @@ describe("Supabase community store", () => {
     expect(posts.limit).toHaveBeenCalledWith(50);
   });
 
+  it("loads viewer-owned saved posts in save order without exposing other memberships", async () => {
+    const saves = createQuery({
+      data: [{ post_id: POST_ID, user_id: VIEWER_ID }],
+      error: null,
+    });
+    const posts = createQuery({ data: [postRow], error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({
+        community_post_saves: saves,
+        community_posts: posts,
+      }).client,
+    );
+
+    await expect(store.listSavedPosts(VIEWER_ID, 999)).resolves.toEqual([
+      expect.objectContaining({ id: POST_ID }),
+    ]);
+
+    expect(saves.select).toHaveBeenCalledWith("post_id,user_id");
+    expect(saves.eq).toHaveBeenCalledWith("user_id", VIEWER_ID);
+    expect(saves.order).toHaveBeenCalledWith("created_at", {
+      ascending: false,
+    });
+    expect(saves.limit).toHaveBeenCalledWith(50);
+    expect(posts.in).toHaveBeenCalledWith("id", [POST_ID]);
+    expect(posts.select.mock.calls[0]?.[0]).not.toContain("client_origin_id");
+  });
+
   it("creates posts with writable fields only", async () => {
     const posts = createQuery({ data: postRow, error: null });
     const query = createClient({ community_posts: posts });

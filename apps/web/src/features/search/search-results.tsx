@@ -15,7 +15,11 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { CompanyMark } from "@/features/home-feed/company-mark";
+import { serverCommunityPostToFeedItem } from "@/features/home-feed/model";
 import { formatCareer, formatEmployment } from "@/lib/labels";
 import {
   readLocalCommunityPosts,
@@ -26,6 +30,7 @@ import {
 import {
   SEARCH_SCOPES,
   buildSearchScopeHref,
+  mergeCommunitySearchResults,
   mergeLocalCommunitySearchResults,
   type CommunitySearchResult,
   type CompanySearchResult,
@@ -298,10 +303,20 @@ function CommunityResult({
 }
 
 export function SearchResults({
+  communityStore,
   snapshot: serverSnapshot,
 }: {
+  communityStore?: CommunityStore;
   snapshot: SearchSnapshot;
 }) {
+  const { ready: authReady, viewer } = useAuthViewerContext();
+  const accountCommunity = useCommunityFeed({
+    authReady,
+    enabled: Boolean(serverSnapshot.query),
+    limit: 50,
+    store: communityStore,
+    viewer,
+  });
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
 
   useEffect(() => {
@@ -311,10 +326,23 @@ export function SearchResults({
   }, []);
 
   const snapshot = useMemo(
-    () => mergeLocalCommunitySearchResults(serverSnapshot, localPosts),
-    [localPosts, serverSnapshot],
+    () => {
+      const withServerCommunity = mergeCommunitySearchResults(
+        serverSnapshot,
+        accountCommunity.state.posts.map((post) =>
+          serverCommunityPostToFeedItem(post),
+        ),
+      );
+      return mergeLocalCommunitySearchResults(withServerCommunity, localPosts);
+    }, [accountCommunity.state.posts, localPosts, serverSnapshot],
   );
   const { query, scope } = snapshot;
+  const waitingForCommunity =
+    !snapshot.hasAnyResults &&
+    shows(scope, "community") &&
+    accountCommunity.state.status === "loading";
+  const communityUnavailable =
+    shows(scope, "community") && accountCommunity.state.status === "error";
 
   return (
     <main className={styles.page}>
@@ -331,7 +359,7 @@ export function SearchResults({
           )}
         </h1>
         <p className={styles.description}>
-          공식 채용 데이터와 내 로컬 글·커뮤니티 예시를 출처별로 나눠 확인하세요.
+          공식 채용 데이터와 최근 공개·브라우저 커뮤니티 글을 출처별로 나눠 확인하세요.
         </p>
         <form action="/search" className={styles.searchForm} method="get" role="search">
           <MagnifyingGlass aria-hidden="true" size={20} />
@@ -355,8 +383,8 @@ export function SearchResults({
           <div>
             <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
             <p>
-              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 이 브라우저의
-              내 글과 화면용 예시에서 찾습니다.
+              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 최근 공개
+              계정 글과 이 브라우저의 내 글, 화면용 예시에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -415,7 +443,15 @@ export function SearchResults({
               </section>
             )}
 
-            {snapshot.dataStatus === "ready" && !snapshot.hasAnyResults ? (
+            {waitingForCommunity ? (
+              <section className={styles.noResults} role="status">
+                <MagnifyingGlass aria-hidden="true" size={27} />
+                <h2>최근 공개 커뮤니티 글까지 검색하고 있습니다.</h2>
+                <p>공식 데이터 검색 결과는 유지한 채 커뮤니티 결과를 합치는 중입니다.</p>
+              </section>
+            ) : snapshot.dataStatus === "ready" &&
+              !snapshot.hasAnyResults &&
+              !communityUnavailable ? (
               <section className={styles.noResults}>
                 <MagnifyingGlass aria-hidden="true" size={27} />
                 <h2>검색 결과가 없습니다.</h2>
@@ -507,16 +543,29 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="현재 브라우저의 내 글과 화면 흐름용 예시 결과입니다."
+                      description="최근 공개 계정 글, 현재 브라우저의 내 글과 화면 흐름용 예시 결과입니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
-                      내 로컬 글은 현재 브라우저에서만 검색됩니다. 예시 콘텐츠는 실제
-                      사용자가 작성한 글이 아니며, 공고·기술 수치와 혼합해 사실처럼
-                      표시하지 않습니다.
+                      실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다. 내 로컬 글은
+                      현재 브라우저에서만 검색되며, 예시 콘텐츠는 실제 사용자가 작성한
+                      글이 아닙니다.
                     </p>
+                    {accountCommunity.state.status === "loading" && (
+                      <p className={styles.communityLoadNote} role="status">
+                        최근 공개 커뮤니티 글을 함께 검색하고 있습니다.
+                      </p>
+                    )}
+                    {accountCommunity.state.status === "error" && (
+                      <div className={styles.communityLoadNote} data-error="true" role="alert">
+                        <span>최근 공개 커뮤니티 글을 불러오지 못했습니다. 브라우저 글과 예시 결과는 계속 표시합니다.</span>
+                        <button onClick={() => void accountCommunity.reload()} type="button">
+                          다시 확인
+                        </button>
+                      </div>
+                    )}
                     {snapshot.community.length === 0 ? (
                       <SectionState>일치하는 커뮤니티 글이 없습니다.</SectionState>
                     ) : (

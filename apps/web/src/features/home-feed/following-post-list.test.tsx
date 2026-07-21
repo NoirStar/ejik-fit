@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FollowingPostList } from "./following-post-list";
+import type { CommunityPostFeedItem } from "./types";
 
 describe("FollowingPostList", () => {
   afterEach(() => cleanup());
@@ -70,5 +71,40 @@ describe("FollowingPostList", () => {
       within(region).getByRole("button", { name: "팔로잉 탭 보기" }),
     );
     expect(onShowFollowing).toHaveBeenCalledOnce();
+  });
+
+  it("renders a real server post from a followed account", () => {
+    const serverPost: CommunityPostFeedItem = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      type: "community_post",
+      category: "커리어 질문",
+      authorId: "22222222-2222-4222-8222-222222222222",
+      authorName: "서버정원",
+      authorHeadline: "이직핏 커뮤니티 사용자",
+      authorTone: "green",
+      createdAt: "2026-07-21T05:00:00.000Z",
+      createdLabel: "방금 전",
+      title: "계정에서 팔로우한 작성자의 실제 글",
+      body: "실제 계정 커뮤니티 본문입니다.",
+      tags: ["백엔드"],
+      href: "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      metrics: { reactions: 1, comments: 0, saves: 0 },
+      source: "server",
+    };
+
+    render(
+      <FollowingPostList
+        followedAuthorIds={[serverPost.authorId]}
+        hydrated
+        items={[serverPost]}
+        onShowFollowing={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", {
+        name: "서버정원의 글: 계정에서 팔로우한 작성자의 실제 글",
+      }),
+    ).toHaveAttribute("href", serverPost.href);
   });
 });

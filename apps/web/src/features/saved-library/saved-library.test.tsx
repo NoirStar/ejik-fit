@@ -8,6 +8,9 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import type { CommunityPost } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 import type { PostingDetail } from "@/lib/types";
 
@@ -42,6 +45,46 @@ const savedJobResponse = {
   unavailable_ids: [],
   failed_ids: [],
 };
+
+const accountCommunityPost: CommunityPost = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  author: {
+    id: "22222222-2222-4222-8222-222222222222",
+    nickname: "서버정원",
+  },
+  category: "커리어 질문",
+  title: "계정에 저장한 Python 커뮤니티 글",
+  body: "실제 사용자가 작성하고 내 계정에 저장한 글입니다.",
+  tags: ["Python"],
+  metrics: { reactions: 4, comments: 2, saves: 1 },
+  createdAt: "2026-07-21T04:00:00.000Z",
+  updatedAt: "2026-07-21T04:00:00.000Z",
+};
+
+function accountCommunityStore() {
+  return {
+    listPosts: vi.fn(async () => []),
+    listSavedPosts: vi.fn(async () => [accountCommunityPost]),
+    getPost: vi.fn(async () => accountCommunityPost),
+    getComment: vi.fn(async () => null),
+    listComments: vi.fn(async () => []),
+    loadViewerState: vi.fn(async () => ({
+      reactedPostIds: [],
+      savedPostIds: [accountCommunityPost.id],
+      followedAuthorIds: [],
+    })),
+    createPost: vi.fn(async () => accountCommunityPost),
+    deletePost: vi.fn(async () => undefined),
+    createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    deleteComment: vi.fn(async () => undefined),
+    setPostReaction: vi.fn(async () => undefined),
+    setPostSaved: vi.fn(async () => undefined),
+    setAuthorFollowed: vi.fn(async () => undefined),
+    createReport: vi.fn(async () => undefined),
+  } satisfies CommunityStore;
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -182,6 +225,44 @@ describe("SavedLibrary", () => {
     });
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
     expect(screen.queryByText(/찾지 못한 저장 글/)).not.toBeInTheDocument();
+  });
+
+  it("loads and removes a signed-in account community save from the server store", async () => {
+    const viewerId = "11111111-1111-4111-8111-111111111111";
+    const store = accountCommunityStore();
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: viewerId, email: "viewer@example.com" }}
+      >
+        <SavedLibrary communityStore={store} initialScope="community" />
+      </AuthViewerProvider>,
+    );
+
+    const savedPost = await screen.findByRole("article", {
+      name: accountCommunityPost.title,
+    });
+    expect(store.listSavedPosts).toHaveBeenCalledWith(viewerId, 50);
+    expect(within(savedPost).getByText("커뮤니티")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
+
+    fireEvent.click(
+      within(savedPost).getByRole("button", {
+        name: `${accountCommunityPost.title} 저장 해제`,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(store.setPostSaved).toHaveBeenCalledWith(
+        viewerId,
+        accountCommunityPost.id,
+        false,
+      );
+      expect(
+        screen.queryByRole("article", { name: accountCommunityPost.title }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByText(/계정 저장 보관함에서 제거했습니다/)).toBeInTheDocument();
   });
 
   it("does not announce success when a community save removal is blocked", async () => {

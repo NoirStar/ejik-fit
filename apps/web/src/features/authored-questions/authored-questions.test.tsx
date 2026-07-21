@@ -232,6 +232,7 @@ describe("AuthoredQuestions", () => {
     };
     const store = {
       listPosts: vi.fn(async () => [post]),
+      listSavedPosts: vi.fn(async () => [post]),
       getPost: vi.fn(async () => post),
       getComment: vi.fn(async () => null),
       listComments: vi.fn(async () => []),

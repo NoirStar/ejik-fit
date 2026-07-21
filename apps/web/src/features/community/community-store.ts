@@ -70,6 +70,7 @@ export type CommunityStore = {
     authorId?: string;
     limit?: number;
   }): Promise<CommunityPost[]>;
+  listSavedPosts(viewerId: string, limit?: number): Promise<CommunityPost[]>;
   getPost(postId: string): Promise<CommunityPost | null>;
   getComment(commentId: string): Promise<CommunityComment | null>;
   listComments(postId: string, limit?: number): Promise<CommunityComment[]>;
@@ -267,6 +268,43 @@ export function createSupabaseCommunityStore(
         .limit(limit);
       if (error) databaseFailure(error);
       return mappedRows(data, mapCommunityPostRow);
+    },
+
+    async listSavedPosts(viewerId, requestedLimit) {
+      const scopedViewerId = requiredUuid(viewerId);
+      const limit = boundedLimit(
+        requestedLimit,
+        DEFAULT_POST_LIMIT,
+        MAX_POST_LIMIT,
+      );
+      const { data: membershipData, error: membershipError } = await client
+        .from(SAVE_TABLE)
+        .select("post_id,user_id")
+        .eq("user_id", scopedViewerId)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (membershipError) databaseFailure(membershipError);
+
+      const savedPostIds = mapCommunityPostMembershipRows(
+        membershipData,
+        scopedViewerId,
+      );
+      if (savedPostIds.length === 0) return [];
+
+      const { data, error } = await client
+        .from(POST_TABLE)
+        .select(POST_COLUMNS)
+        .in("id", savedPostIds)
+        .limit(limit);
+      if (error) databaseFailure(error);
+
+      const byId = new Map(
+        mappedRows(data, mapCommunityPostRow).map((post) => [post.id, post]),
+      );
+      return savedPostIds.flatMap((id) => {
+        const post = byId.get(id);
+        return post ? [post] : [];
+      });
     },
 
     async getPost(postId) {
