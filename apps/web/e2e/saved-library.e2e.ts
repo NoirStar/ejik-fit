@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 for (const width of [1440, 820, 390]) {
-  test(`keeps actual and mock saved evidence usable at ${width}px`, async ({
+  test(`keeps official jobs and starting posts usable at ${width}px`, async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -53,8 +53,10 @@ for (const width of [1440, 820, 390]) {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     });
     await expect(community).toBeVisible();
-    await expect(community.getByText("예시 콘텐츠")).toBeVisible();
-    await expect(page.getByText(/실제 사용자가 작성한 글이 아닙니다/)).toBeVisible();
+    await expect(community.getByText("시작 글", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(/이직핏 시작 글의 저장은 현재 브라우저에만 남깁니다/),
+    ).toBeVisible();
 
     expect(
       await page.evaluate(
