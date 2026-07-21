@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "scanned_at": "2026-07-21",
+  "framework": "Next.js 16.2.10 App Router with React 19.2",
+  "font_stack": [
+    "Pretendard Variable",
+    "Geist variable for isolated monospace metadata"
+  ],
+  "palette_source": "apps/web/src/styles/tokens.css",
+  "motion": "GSAP installed; product UI uses restrained CSS transitions",
+  "spacing": "4px-compatible rem scale without semantic space tokens",
+  "design_contract": "design.md",
+  "scope": "multi-page product app"
+}
