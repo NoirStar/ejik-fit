@@ -30,12 +30,24 @@ describe("market overview styles", () => {
   });
 
   it("uses the coordinated blue, mint, cream and coral market palette", () => {
-    expect(rule(".page")).toContain("--market-required: #67a2c5;");
-    expect(rule(".page")).toContain("--market-required-text: #102f42;");
-    expect(rule(".page")).toContain("--market-preferred: #9bcec1;");
-    expect(rule(".page")).toContain("--market-preferred-text: #173b33;");
-    expect(rule(".page")).toContain("--market-unspecified: #ffebd3;");
-    expect(rule(".page")).toContain("--market-relative: #ffb6a6;");
+    expect(rule(".page")).toContain(
+      "--market-required: var(--color-demand-required);",
+    );
+    expect(rule(".page")).toContain(
+      "--market-required-text: var(--color-demand-required-ink);",
+    );
+    expect(rule(".page")).toContain(
+      "--market-preferred: var(--color-demand-preferred);",
+    );
+    expect(rule(".page")).toContain(
+      "--market-preferred-text: var(--color-demand-preferred-ink);",
+    );
+    expect(rule(".page")).toContain(
+      "--market-unspecified: var(--color-demand-unspecified);",
+    );
+    expect(rule(".page")).toContain(
+      "--market-relative: var(--color-demand-highlight);",
+    );
     expect(rule('.stackedSegment[data-segment="required"]')).toContain(
       "background: var(--market-required);",
     );
@@ -62,6 +74,9 @@ describe("market overview styles", () => {
     );
     expect(css).toMatch(
       /@media \(max-width: 52\.4375rem\)[\s\S]*?\.filters\s*\{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 52\.4375rem\)[\s\S]*?\.sortControl select,[\s\S]*?\.trendAddControl select\s*\{[^}]*min-height: var\(--touch-target\);/,
     );
   });
 

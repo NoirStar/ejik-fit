@@ -11,13 +11,13 @@
 }
 
 .page {
-  --market-required: #67a2c5;
-  --market-required-text: #102f42;
-  --market-preferred: #9bcec1;
-  --market-preferred-text: #173b33;
-  --market-unspecified: #ffebd3;
-  --market-unspecified-text: #5a4332;
-  --market-relative: #ffb6a6;
+  --market-required: var(--color-demand-required);
+  --market-required-text: var(--color-demand-required-ink);
+  --market-preferred: var(--color-demand-preferred);
+  --market-preferred-text: var(--color-demand-preferred-ink);
+  --market-unspecified: var(--color-demand-unspecified);
+  --market-unspecified-text: var(--color-demand-unspecified-ink);
+  --market-relative: var(--color-demand-highlight);
 
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -1372,6 +1372,11 @@
     justify-content: flex-end;
   }
 
+  .sortControl select,
+  .trendAddControl select {
+    min-height: var(--touch-target);
+  }
+
   .sideColumn {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1426,6 +1431,7 @@
 
   .filter {
     min-height: var(--touch-target);
+    padding-inline: 1rem;
   }
 
   .dataNotice {

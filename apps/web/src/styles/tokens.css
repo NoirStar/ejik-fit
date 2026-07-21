@@ -21,8 +21,11 @@
   --color-focus: var(--color-text);
   --color-on-accent: var(--color-surface);
   --color-demand-required: oklch(68.53% 0.0803 235.68);
+  --color-demand-required-ink: oklch(29.19% 0.0503 238.79);
   --color-demand-preferred: oklch(81.2% 0.0562 177.39);
+  --color-demand-preferred-ink: oklch(32.31% 0.0441 176.73);
   --color-demand-unspecified: oklch(94.99% 0.0384 72.37);
+  --color-demand-unspecified-ink: oklch(40.31% 0.0418 57.69);
   --color-demand-highlight: oklch(84.07% 0.0886 32.76);
   --space-3xs: 0.25rem;
   --space-2xs: 0.5rem;
