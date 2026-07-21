@@ -8,6 +8,7 @@ on:
       - "packages/backend/src/ejikfit/seed_data.py"
       - "packages/backend/src/ejikfit/skill_catalog.py"
       - "packages/backend/src/ejikfit/skill_extraction.py"
+      - "packages/backend/src/ejikfit/skills.py"
       - "packages/backend/alembic/**"
   schedule:
     - cron: "17 */6 * * *"
@@ -44,6 +45,8 @@ jobs:
       NEXON_BROWSER_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -66,8 +69,28 @@ jobs:
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
       - run: alembic -c packages/backend/alembic.ini upgrade head
       - run: ejikfit seed-sources
-      - name: Rebuild posting skills after extraction changes
+      - name: Detect skill extraction changes
+        id: skill-changes
         if: ${{ github.event_name == 'push' }}
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        shell: bash
+        run: |
+          if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif ! git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null && \
+            ! git fetch --no-tags --depth=1 origin "$BEFORE_SHA"; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "$BEFORE_SHA" "$GITHUB_SHA" -- \
+            packages/backend/src/ejikfit/skill_catalog.py \
+            packages/backend/src/ejikfit/skill_extraction.py \
+            packages/backend/src/ejikfit/skills.py; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Rebuild posting skills after extraction changes
+        if: ${{ github.event_name == 'push' && steps.skill-changes.outputs.required == 'true' }}
         run: ejikfit backfill-skills
       - name: Crawl selected sources
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.company_slug != '' }}
