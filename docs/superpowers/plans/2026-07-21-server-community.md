@@ -28,10 +28,10 @@ use strict TypeScript stores to connect authenticated UI.
 
 ### Task 2: Typed Supabase community store
 
-- [ ] Add strict public post/comment and private viewer-state row mappers.
-- [ ] Implement explicit-list/get/create/delete/toggle/report store methods.
-- [ ] Add focused tests for mapper rejection, owner scoping, and private columns.
-- [ ] Commit and push.
+- [x] Add strict public post/comment and private viewer-state row mappers.
+- [x] Implement explicit-list/get/create/delete/toggle/report store methods.
+- [x] Add focused tests for mapper rejection, owner scoping, and private columns.
+- [x] Commit and push.
 
 ### Task 3: Guest-to-account migration and feed composer
 
