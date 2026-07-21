@@ -125,6 +125,11 @@ describe("company logo asset proxy", () => {
         "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
     },
     {
+      body: new Uint8Array([0, 0, 1, 0, 1, 0, 48, 48]),
+      key: "asml-korea",
+      upstreamUrl: "https://www.asml.com/favicon.ico",
+    },
+    {
       body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
       key: "bunjang",
       upstreamUrl:

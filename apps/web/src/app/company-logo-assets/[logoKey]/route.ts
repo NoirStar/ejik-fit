@@ -11,6 +11,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg",
   atlassian:
     "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
+  "asml-korea": "https://www.asml.com/favicon.ico",
   bunjang:
     "https://image.ninehire.com/homepage/7541b210-1710-11ef-b315-d7a9afe6c5ae/image/910334f0-5bda-11f0-82e3-997f797881b5.png",
   "amd-korea":

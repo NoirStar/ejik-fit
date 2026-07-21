@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ejikfit.connectors.asml import ASML_CONNECTOR_FAMILY
 from ejikfit.connectors.nexon import NEXON_CONNECTOR_FAMILY
 from ejikfit.models import (
     CareerSource,
@@ -3704,6 +3705,31 @@ INITIAL_SOURCE_CATALOG = (
             "Official Bear Robotics Breezy careers listing and public "
             "JobPosting detail metadata; limited to technical roles based "
             "in Korea."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="ASML Korea",
+        slug="asml-korea",
+        base_url=(
+            "https://www.asml.com/en/careers/find-your-job?"
+            "job_country=Korea%2C+Republic+of&job_type=Fix"
+        ),
+        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        homepage_url="https://www.asml.com/en/",
+        sector="semiconductor_software",
+        connector_family=ASML_CONNECTOR_FAMILY,
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=5,
+        expected_job_volume=4,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official ASML Sitecore careers search rendered with ordinary "
+            "Playwright Chromium, limited to South Korea; technical roles "
+            "are enriched from each official Next.js job detail page."
         ),
         status=SourceStatus.ALLOWED,
     ),

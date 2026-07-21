@@ -22,6 +22,11 @@ from tenacity import (
 )
 
 from ejikfit.connectors.atlassian import parse_atlassian_korea_technical_openings
+from ejikfit.connectors.asml import (
+    ASML_CONNECTOR_FAMILY,
+    parse_asml_detail_opening,
+    parse_asml_korea_listing_openings,
+)
 from ejikfit.connectors.apple import (
     parse_apple_detail_opening,
     parse_apple_listing_openings,
@@ -1048,6 +1053,8 @@ def _parse_listing_openings(
     if source_type == SourceType.SAP_SUCCESSFACTORS:
         return parse_successfactors_openings(text, url)
     if source_type == SourceType.BROWSER_PUBLIC_RENDER:
+        if connector_family == ASML_CONNECTOR_FAMILY:
+            return parse_asml_korea_listing_openings(text, url)
         return parse_browser_public_render_openings(text, url)
     raise ValueError(f"connector is not implemented: {source_type.value}")
 
@@ -2425,6 +2432,20 @@ async def crawl_source(
                 if detail_opening.external_id != opening.external_id:
                     raise ValueError(
                         "Google detail does not match its listing job"
+                    )
+                opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == ASML_CONNECTOR_FAMILY:
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                detail_opening = parse_asml_detail_opening(
+                    detail.text,
+                    detail.url,
+                )
+                if detail_opening.external_id != opening.external_id:
+                    raise ValueError(
+                        "ASML detail does not match its listing job"
                     )
                 opening = detail_opening
                 opening_payload = detail.text

@@ -3835,6 +3835,85 @@ def test_crawl_source_fetches_google_details_before_ingestion() -> None:
         ]
 
 
+def test_crawl_source_fetches_asml_details_after_browser_listing() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 22, tzinfo=timezone.utc)
+    listing_url = (
+        "https://www.asml.com/en/careers/find-your-job?"
+        "job_country=Korea%2C+Republic+of&job_type=Fix"
+    )
+    detail_url = (
+        "https://www.asml.com/en/careers/find-your-job/"
+        "de-rd-software-engineer-metrology-scanner-sw-j00347056"
+    )
+    listing_html = f"""
+    <a class="search-results__item" href="{detail_url}">
+      <div class="search-results__title">
+        <h2 class="search-results-title-text">
+          D&amp;E(R&amp;D) Software engineer - Metrology, Scanner SW
+        </h2>
+        <button data-job-id="J-00347056">Save</button>
+      </div>
+      <ul class="search-results__fields">
+        <li>Hwasung, Korea</li>
+        <li>Design Engineering and Architecture</li>
+      </ul>
+    </a>
+    """
+    detail_html = """
+    <script id="__NEXT_DATA__" type="application/json">
+    {"props":{"pageProps":{"jobData":{
+      "id":"J-00347056",
+      "displayJobTitle":"D&amp;E(R&amp;D) Software engineer - Metrology, Scanner SW",
+      "status":"Open",
+      "datePosted":"2026-07-08T00:00:00",
+      "postingExpirationDate":"2026-07-31T00:00:00",
+      "location":"Hwasung, Korea",
+      "experienceLevel":["4-9 years"],
+      "programmingLanguages":["C++","Python"],
+      "timeType":"Full time",
+      "jobType":"Fix",
+      "descriptionExternal":"<p>Develop scanner software with C++ and Python.</p>"
+    }}}}
+    </script>
+    """
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="ASML Korea", slug="asml-korea"),
+            base_url=listing_url,
+            source_type=SourceType.BROWSER_PUBLIC_RENDER,
+            connector_family="asml_sitecore_browser_korea_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        browser = StaticBrowserRenderer(listing_html)
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=StaticFetcher(detail_html),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+                browser_renderer=browser,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "J-00347056"
+        assert posting.location == "Hwasung, Korea"
+        assert posting.career_min == 4
+        assert "Develop scanner software" in posting.description_text
+        assert browser.rendered_urls == [listing_url]
+
+
 def test_crawl_source_routes_successfactors_into_ingestion() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

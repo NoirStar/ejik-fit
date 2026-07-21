@@ -823,6 +823,11 @@ describe("companyIdentity", () => {
       "atlassian",
     ],
     [
+      "ASML Korea",
+      "https://www.asml.com/en/careers/find-your-job/example-j00347056",
+      "asml-korea",
+    ],
+    [
       "번개장터",
       "https://team.bgzt.co.kr/job_posting/7epQM1jj",
       "bunjang",

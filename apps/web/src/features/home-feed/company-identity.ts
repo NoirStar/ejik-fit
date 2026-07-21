@@ -46,6 +46,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Atlassian",
   },
   {
+    aliases: ["asml korea", "asml", "에이에스엠엘코리아", "에이에스엠엘"],
+    hosts: ["asml.com", "www.asml.com"],
+    src: "/company-logo-assets/asml-korea",
+    displayName: "ASML Korea",
+  },
+  {
     aliases: ["번개장터", "bunjang", "bunjang inc.", "주식회사 번개장터"],
     hosts: ["team.bgzt.co.kr", "bgzt.co.kr"],
     src: "/company-logo-assets/bunjang",

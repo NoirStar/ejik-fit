@@ -192,6 +192,20 @@ def test_initial_sources_include_bear_robotics_and_atlassian_official_sources() 
     assert atlassian.policy_status == PolicyStatus.ALLOWED
 
 
+def test_initial_sources_include_asml_korea_official_browser_source() -> None:
+    sources = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    asml = sources["asml-korea"]
+    assert asml.base_url == (
+        "https://www.asml.com/en/careers/find-your-job?"
+        "job_country=Korea%2C+Republic+of&job_type=Fix"
+    )
+    assert asml.source_type == SourceType.BROWSER_PUBLIC_RENDER
+    assert asml.connector_family == "asml_sitecore_browser_korea_tech"
+    assert asml.status == SourceStatus.ALLOWED
+    assert asml.policy_status == PolicyStatus.ALLOWED
+
+
 def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enabled() -> None:
     enterprise_slugs = {
         "samsung-electronics",
@@ -342,7 +356,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 194
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 195
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -522,7 +536,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 194
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 195
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
