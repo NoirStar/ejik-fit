@@ -22,6 +22,7 @@ from ejikfit.skill_catalog import SKILLS
 class FakeSkillStatsReader:
     def __init__(self) -> None:
         self.calls: list[dict] = []
+        self.total_calls: list[dict] = []
 
     def stats(
         self,
@@ -46,6 +47,19 @@ class FakeSkillStatsReader:
                 "unspecified_count": 2,
             }
         ]
+
+    def total(
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int:
+        self.total_calls.append(
+            {
+                "career_type": career_type,
+                "category": category,
+            }
+        )
+        return 137
 
 
 class FakeSkillTrendReader:
@@ -93,9 +107,12 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
         "preferred_count": 3,
         "unspecified_count": 2,
     }
-    assert body["total"] == 1
+    assert body["total"] == 137
     assert reader.calls == [
         {"career_type": "new_comer", "category": "infra", "limit": 5}
+    ]
+    assert reader.total_calls == [
+        {"career_type": "new_comer", "category": "infra"}
     ]
 
 
@@ -250,6 +267,8 @@ def test_database_reader_counts_and_filters() -> None:
         "unspecified_count": 1,
     } in everything
     assert not any(item["skill"] == "Go" for item in everything)
+    assert len(reader.stats(limit=1)) == 1
+    assert reader.total() == 2
 
     # career_type filter narrows to the single new_comer open posting.
     newcomer = reader.stats(career_type="new_comer")
@@ -290,4 +309,6 @@ def test_database_reader_counts_and_filters() -> None:
         "unspecified_count": 1,
     } in infra_market
     assert not any(item["count"] == 2 for item in infra_market)
+    assert reader.total(category="infra") == 2
     assert reader.stats(category="ai") == []
+    assert reader.total(category="ai") == 0

@@ -29,6 +29,12 @@ class SkillStatsReader(Protocol):
         limit: int = 30,
     ) -> list[dict]: ...
 
+    def total(
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int: ...
+
 
 class SkillTrendReader(Protocol):
     def trends(
@@ -82,7 +88,7 @@ class DatabaseSkillStatsReader:
             )
         )
         with self.session_factory() as session:
-            statement = (
+            statement = self._apply_scope(
                 select(
                     PostingSkill.skill,
                     PostingSkill.category,
@@ -90,26 +96,10 @@ class DatabaseSkillStatsReader:
                     required_count.label("required_count"),
                     preferred_count.label("preferred_count"),
                     unspecified_count.label("unspecified_count"),
-                )
-                .join(JobPosting, JobPosting.id == PostingSkill.posting_id)
-                .where(
-                    JobPosting.status == PostingStatus.OPEN,
-                    PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
-                )
+                ),
+                career_type=career_type,
+                category=category,
             )
-            if career_type:
-                statement = statement.where(
-                    JobPosting.career_type == career_type
-                )
-            if category:
-                statement = statement.where(
-                    JobPosting.skills.any(
-                        and_(
-                            PostingSkill.category == category,
-                            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
-                        )
-                    )
-                )
             statement = (
                 statement.group_by(PostingSkill.skill, PostingSkill.category)
                 .order_by(count_expr.desc(), PostingSkill.skill)
@@ -133,6 +123,46 @@ class DatabaseSkillStatsReader:
                     unspecified,
                 ) in session.execute(statement)
             ]
+
+    def total(
+        self,
+        career_type: str | None = None,
+        category: str | None = None,
+    ) -> int:
+        with self.session_factory() as session:
+            grouped_skills = self._apply_scope(
+                select(PostingSkill.skill, PostingSkill.category),
+                career_type=career_type,
+                category=category,
+            ).group_by(PostingSkill.skill, PostingSkill.category)
+            return int(
+                session.scalar(
+                    select(func.count()).select_from(grouped_skills.subquery())
+                )
+                or 0
+            )
+
+    @staticmethod
+    def _apply_scope(statement, *, career_type: str | None, category: str | None):
+        statement = statement.join(
+            JobPosting,
+            JobPosting.id == PostingSkill.posting_id,
+        ).where(
+            JobPosting.status == PostingStatus.OPEN,
+            PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+        )
+        if career_type:
+            statement = statement.where(JobPosting.career_type == career_type)
+        if category:
+            statement = statement.where(
+                JobPosting.skills.any(
+                    and_(
+                        PostingSkill.category == category,
+                        PostingSkill.confidence >= CONFIRMED_CONFIDENCE,
+                    )
+                )
+            )
+        return statement
 
 
 def create_skills_router(
@@ -165,7 +195,11 @@ def create_skills_router(
             category=category,
             limit=limit,
         )
-        return {"items": items, "total": len(items)}
+        total = reader.total(
+            career_type=career_type,
+            category=category,
+        )
+        return {"items": items, "total": total}
 
     @router.get("/trends", response_model=SkillTrendResponse)
     def skill_trends(
