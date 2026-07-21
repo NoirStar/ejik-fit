@@ -421,6 +421,15 @@ def contains_access_challenge(html: str) -> bool:
     return any(marker in lowered for marker in challenge_markers)
 
 
+def _is_gone_detail_error(error: Exception) -> bool:
+    """Return whether a listing detail was explicitly removed upstream."""
+
+    return (
+        isinstance(error, httpx.HTTPStatusError)
+        and error.response.status_code in {404, 410}
+    )
+
+
 class HttpFetcher:
     def __init__(self, user_agent: str) -> None:
         self.user_agent = user_agent
@@ -2252,6 +2261,15 @@ async def crawl_source(
                 )
             except Exception as error:
                 session.rollback()
+                if _is_gone_detail_error(error):
+                    # Greeting can briefly retain a listing link after its
+                    # detail page has closed. Treat an explicit 404/410 as an
+                    # absent posting so the normal three-run reconciliation
+                    # can close it without turning a successful batch red.
+                    seen_external_ids.discard(ref.external_id)
+                    discovered -= 1
+                    logger.info("Greeting detail was removed: %s", ref.url)
+                    continue
                 logger.exception("Greeting detail ingestion failed for %s", ref.url)
                 failed += 1
                 _mark_source_error(

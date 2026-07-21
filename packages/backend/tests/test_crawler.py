@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
 
+import httpx
 import pytest
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -4891,6 +4892,95 @@ class GreetingDetailBlockedFetcher:
                 headers={},
             )
         raise crawler.BlockedSourceError("source denied access with 403")
+
+
+class GreetingGoneDetailFetcher:
+    def __init__(self, listing_html: str, available_detail: str) -> None:
+        self.listing_html = listing_html
+        self.available_detail = available_detail
+
+    async def fetch(self, url: str) -> crawler.FetchedPage:
+        if "/o/" not in url:
+            return crawler.FetchedPage(
+                url=url,
+                text=self.listing_html,
+                status_code=200,
+                headers={},
+            )
+        if url.endswith("/o/209187"):
+            return crawler.FetchedPage(
+                url=url,
+                text=self.available_detail,
+                status_code=200,
+                headers={},
+            )
+        request = httpx.Request("GET", url)
+        response = httpx.Response(404, request=request)
+        raise httpx.HTTPStatusError(
+            "detail was removed",
+            request=request,
+            response=response,
+        )
+
+
+def test_greeting_gone_detail_is_reconciled_without_failing_run() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    fixture_dir = (
+        Path(__file__).parents[3]
+        / "tests"
+        / "fixtures"
+        / "greeting"
+    )
+    listing_html = (fixture_dir / "list.html").read_text()
+    available_detail = (fixture_dir / "opening.html").read_text()
+    previous_success = datetime(2026, 7, 1, tzinfo=timezone.utc)
+    now = datetime(2026, 7, 15, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="그리팅 부분 종료", slug="greeting-gone-detail")
+        source = CareerSource(
+            company=company,
+            base_url="https://sample.career.greetinghr.com/ko",
+            source_type=SourceType.GREETING,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=previous_success,
+            last_error_code="partial_detail_failure",
+        )
+        gone_posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="205581",
+            url="https://sample.career.greetinghr.com/ko/o/205581",
+            title="종료된 Security Engineer",
+            missing_runs=2,
+        )
+        session.add(gone_posting)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=GreetingGoneDetailFetcher(
+                    listing_html,
+                    available_detail,
+                ),
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        assert result.discovered == 1
+        assert result.ingested == 1
+        assert result.failed == 0
+        assert result.closed == 1
+        assert gone_posting.status == PostingStatus.CLOSED
+        assert gone_posting.missing_runs == 3
+        assert source.last_error_code is None
+        assert _as_utc(source.last_success_at) == now
 
 
 def test_greeting_blocked_detail_stays_in_review_without_false_success() -> None:

@@ -199,7 +199,7 @@ describe("SearchPage", () => {
     ).resolves.toMatchObject({
       title: "“Python” 검색",
       description:
-        "“Python”와 관련된 공식 채용공고, 기업, 기술 수요와 현재 브라우저의 커뮤니티 글·화면용 예시를 구분해 확인합니다.",
+        "“Python”와 관련된 공식 채용공고, 기업, 기술 수요와 최근 공개·브라우저 커뮤니티 글을 구분해 확인합니다.",
       alternates: { canonical: "/search" },
       robots: { index: false, follow: true },
     });
