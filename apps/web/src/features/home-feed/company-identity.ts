@@ -29,6 +29,23 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "42dot",
   },
   {
+    aliases: ["bear robotics", "베어로보틱스"],
+    hosts: ["bear-robotics.breezy.hr", "bearrobotics.ai"],
+    src: "/company-logo-assets/bear-robotics",
+    displayName: "Bear Robotics",
+  },
+  {
+    aliases: ["atlassian", "아틀라시안"],
+    hosts: [
+      "atlassian.com",
+      "careers-apac-atlassian.icims.com",
+      "careers-atlassian.icims.com",
+      "globalcareers-atlassian.icims.com",
+    ],
+    src: "/company-logo-assets/atlassian",
+    displayName: "Atlassian",
+  },
+  {
     aliases: ["트웰브랩스", "twelve labs", "twelvelabs"],
     hosts: ["api.ashbyhq.com", "jobs.ashbyhq.com", "twelvelabs.io"],
     src: "/company-logo-assets/twelve-labs",

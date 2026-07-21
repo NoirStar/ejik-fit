@@ -21,6 +21,7 @@ from tenacity import (
     stop_after_attempt,
 )
 
+from ejikfit.connectors.atlassian import parse_atlassian_korea_technical_openings
 from ejikfit.connectors.apple import (
     parse_apple_detail_opening,
     parse_apple_listing_openings,
@@ -28,6 +29,10 @@ from ejikfit.connectors.apple import (
 )
 from ejikfit.config import Settings, get_settings
 from ejikfit.connectors.browser_public import parse_browser_public_render_openings
+from ejikfit.connectors.breezy import (
+    parse_breezy_detail_opening,
+    parse_breezy_listing_openings,
+)
 from ejikfit.connectors.channel import parse_channel_openings
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import (
@@ -211,6 +216,11 @@ def _apply_source_opening_filters(
     if source.connector_family == "lablup_next_data_tech":
         return openings
     if source.connector_family == "liner_next_data_tech":
+        return openings
+    if source.connector_family in {
+        "atlassian_public_jobs_korea_tech",
+        "breezy_public_html_korea_tech",
+    }:
         return openings
     if source.connector_family == "sap_public_jobs_korea_tech":
         return openings
@@ -999,6 +1009,8 @@ def _parse_listing_openings(
     }:
         return _parse_list_json_openings(source_type, text, url)
     if source_type == SourceType.HTML_LISTING_DETAIL:
+        if connector_family == "breezy_public_html_korea_tech":
+            return parse_breezy_listing_openings(text, url)
         if connector_family == "lablup_next_data_tech":
             return parse_lablup_listing_openings(text, url)
         if connector_family == "liner_next_data_tech":
@@ -1017,6 +1029,8 @@ def _parse_listing_openings(
             return parse_channel_openings(text, url)
         return parse_static_next_data_openings(text, url)
     if source_type == SourceType.ENTERPRISE_JSON:
+        if connector_family == "atlassian_public_jobs_korea_tech":
+            return parse_atlassian_korea_technical_openings(text, url)
         if connector_family == "apple_jobs_korea_tech":
             return parse_apple_listing_openings(text, url)
         if connector_family == "jibe_api_korea_tech":
@@ -1040,6 +1054,8 @@ def _parse_listing_openings(
 
 def _listing_is_self_validated(connector_family: str | None) -> bool:
     return connector_family in {
+        "atlassian_public_jobs_korea_tech",
+        "breezy_public_html_korea_tech",
         "google_careers_korea_tech",
         "hyundai_mobis_html_tech",
         "lablup_next_data_tech",
@@ -2447,6 +2463,16 @@ async def crawl_source(
                     opening,
                 )
                 opening = detail_opening
+                opening_payload = detail.text
+            elif source.connector_family == "breezy_public_html_korea_tech":
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(opening.url)
+                opening = parse_breezy_detail_opening(
+                    detail.text,
+                    detail.url,
+                    opening,
+                )
                 opening_payload = detail.text
             elif is_sk_careers_listing_url(source.base_url):
                 if index > 0 and request_delay_seconds > 0:

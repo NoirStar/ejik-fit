@@ -9,6 +9,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png",
   ahnlab:
     "https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg",
+  atlassian:
+    "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
   "amd-korea":
     "https://cms.jibecdn.com/prod/amd/assets/FAVICON-en-us-1666203559098.ico",
   "applied-intuition":
@@ -28,6 +30,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   bucketplace:
     "https://profiles.greetinghr.com/group/45034abc-f3db-430a-9361-d6fe581ba406",
   "channel-corporation": "https://channel.io/logo.webp",
+  "bear-robotics":
+    "https://images.squarespace-cdn.com/content/v1/652cbb3fb1f91809d4610dc0/74b951f7-549f-47a7-bc65-a55df6f78687/favicon.ico?format=100w",
   class101:
     "https://image.ninehire.com/homepage/f20ace90-8932-11f0-8815-d9c0c4c32872/image/d5c43c50-d5c0-11f0-be5c-cf61d3aa942b.png",
   cheiron: "https://www.cheiron.bio/apple-touch-icon.png",

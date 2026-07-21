@@ -3934,6 +3934,103 @@ def test_crawl_source_routes_html_listing_detail_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def test_crawl_source_fetches_breezy_detail_before_ingestion() -> None:
+    class BreezyFetcher:
+        def __init__(self) -> None:
+            self.urls: list[str] = []
+
+        async def fetch(self, url: str, **_kwargs) -> crawler.FetchedPage:
+            self.urls.append(url)
+            if url.rstrip("/") == "https://bear-robotics.breezy.hr":
+                text = """
+                <div class="positions-container">
+                  <li class="position"><a href="/p/22f14e37ff59-robotics-software-engineer-machine-learning">
+                    <h2>Robotics Software Engineer, Machine Learning</h2>
+                    <ul class="meta">
+                      <li class="location"><span>Seoul, KR</span></li>
+                      <li class="type"><span>풀타임</span></li>
+                      <li class="department"><span>Robotics Engineering</span></li>
+                    </ul>
+                  </a></li>
+                </div>
+                """
+            else:
+                payload = {
+                    "@context": "https://schema.org/",
+                    "@type": "JobPosting",
+                    "url": url,
+                    "title": "Robotics Software Engineer, Machine Learning",
+                    "description": (
+                        "<h2>Required Experience &amp; Qualifications</h2>"
+                        "<ul><li>Python과 C++ 개발 경험</li></ul>"
+                        "<h3>Preferred Experience and Qualifications</h3>"
+                        "<ul><li>ROS 사용 경험</li></ul>"
+                    ),
+                    "employmentType": "FULL_TIME",
+                    "jobLocation": {
+                        "@type": "Place",
+                        "address": {
+                            "@type": "PostalAddress",
+                            "addressCountry": "KR",
+                            "addressLocality": "Seoul",
+                        },
+                    },
+                }
+                text = (
+                    '<script type="application/ld+json">'
+                    f"{json.dumps(payload, ensure_ascii=False)}</script>"
+                )
+            return crawler.FetchedPage(
+                url=url,
+                text=text,
+                status_code=200,
+                headers={},
+            )
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 22, tzinfo=timezone.utc)
+    fetcher = BreezyFetcher()
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="Bear Robotics", slug="bear-robotics"),
+            base_url="https://bear-robotics.breezy.hr/",
+            source_type=SourceType.HTML_LISTING_DETAIL,
+            connector_family="breezy_public_html_korea_tech",
+            tech_job_priority=5,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert posting.external_id == "22f14e37ff59"
+        assert posting.url.endswith("robotics-software-engineer-machine-learning")
+        assert "Python과 C++" in posting.description_text
+        assert fetcher.urls == [
+            "https://bear-robotics.breezy.hr/",
+            (
+                "https://bear-robotics.breezy.hr/p/22f14e37ff59-"
+                "robotics-software-engineer-machine-learning"
+            ),
+        ]
+
+
 def test_crawl_source_fetches_shiftup_public_form_and_ingests_technical_jobs() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

@@ -3667,6 +3667,50 @@ INITIAL_SOURCE_CATALOG = (
         ),
         status=SourceStatus.ALLOWED,
     ),
+    SeedSource(
+        name="Bear Robotics",
+        slug="bear-robotics",
+        base_url="https://bear-robotics.breezy.hr/",
+        source_type=SourceType.HTML_LISTING_DETAIL,
+        homepage_url="https://www.bearrobotics.ai/",
+        sector="robotics_ai",
+        connector_family="breezy_public_html_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=4,
+        tech_job_priority=5,
+        expected_job_volume=5,
+        connector_reuse_score=3,
+        policy_risk=0,
+        non_tech_noise=3,
+        notes=(
+            "Official Bear Robotics Breezy careers listing and public "
+            "JobPosting detail metadata; limited to technical roles based "
+            "in Korea."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="Atlassian",
+        slug="atlassian",
+        base_url="https://www.atlassian.com/endpoint/careers/listings",
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.atlassian.com/",
+        sector="global_software",
+        connector_family="atlassian_public_jobs_korea_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=4,
+        expected_job_volume=1,
+        connector_reuse_score=2,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official Atlassian public careers JSON; limited to technical "
+            "roles explicitly based in South Korea with full public job "
+            "descriptions."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
 )
 
 INITIAL_GREETING_SOURCES = tuple(

@@ -172,6 +172,26 @@ def test_initial_sources_include_coinone_and_ahnlab_official_sources() -> None:
     assert ahnlab.status == SourceStatus.ALLOWED
 
 
+def test_initial_sources_include_bear_robotics_and_atlassian_official_sources() -> None:
+    sources = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    bear = sources["bear-robotics"]
+    assert bear.base_url == "https://bear-robotics.breezy.hr/"
+    assert bear.source_type == SourceType.HTML_LISTING_DETAIL
+    assert bear.connector_family == "breezy_public_html_korea_tech"
+    assert bear.status == SourceStatus.ALLOWED
+    assert bear.policy_status == PolicyStatus.ALLOWED
+
+    atlassian = sources["atlassian"]
+    assert atlassian.base_url == (
+        "https://www.atlassian.com/endpoint/careers/listings"
+    )
+    assert atlassian.source_type == SourceType.ENTERPRISE_JSON
+    assert atlassian.connector_family == "atlassian_public_jobs_korea_tech"
+    assert atlassian.status == SourceStatus.ALLOWED
+    assert atlassian.policy_status == PolicyStatus.ALLOWED
+
+
 def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enabled() -> None:
     enterprise_slugs = {
         "samsung-electronics",
@@ -322,7 +342,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 191
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 193
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -502,7 +522,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 191
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 193
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url

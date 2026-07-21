@@ -812,6 +812,16 @@ describe("companyIdentity", () => {
       "https://jobs.ashbyhq.com/normalcomputing/example",
       "normal-computing",
     ],
+    [
+      "Bear Robotics",
+      "https://bear-robotics.breezy.hr/p/example-platform-engineer",
+      "bear-robotics",
+    ],
+    [
+      "Atlassian",
+      "https://careers-apac-atlassian.icims.com/jobs/25402/example/job",
+      "atlassian",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

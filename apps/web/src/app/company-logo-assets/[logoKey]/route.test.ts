@@ -112,6 +112,18 @@ describe("company logo asset proxy", () => {
       upstreamUrl:
         "https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg",
     },
+    {
+      body: new Uint8Array([0, 0, 1, 0, 1, 0, 64, 64]),
+      key: "bear-robotics",
+      upstreamUrl:
+        "https://images.squarespace-cdn.com/content/v1/652cbb3fb1f91809d4610dc0/74b951f7-549f-47a7-bc65-a55df6f78687/favicon.ico?format=100w",
+    },
+    {
+      body: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+      key: "atlassian",
+      upstreamUrl:
+        "https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png",
+    },
   ])("proxies the official $key company mark", async ({ body, key, upstreamUrl }) => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(body, {
