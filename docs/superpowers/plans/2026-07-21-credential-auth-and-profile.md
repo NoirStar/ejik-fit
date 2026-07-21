@@ -635,11 +635,11 @@ git push origin main
 - Consumes: all completed task outputs.
 - Produces: a production-deployed, verified first authentication increment and a clean handoff into server community persistence.
 
-- [ ] **Step 1: Update deprecated action runtimes in the migration workflow**
+- [x] **Step 1: Update deprecated action runtimes in the migration workflow**
 
 The crawler workflow still uses `actions/checkout@v4` and `actions/setup-python@v5`. Change both to stable Node-24-backed `@v6`, matching CI. Run `git diff --check` and commit this maintenance change with the database or final verification commit.
 
-- [ ] **Step 2: Run proportional local verification**
+- [x] **Step 2: Run proportional local verification**
 
 Run backend security/migration coverage:
 
@@ -659,7 +659,7 @@ npx playwright test
 
 Expected: all commands exit zero. If `next dev` rewrites `apps/web/next-env.d.ts`, restore its production import to `./.next/types/routes.d.ts` with `apply_patch` before committing.
 
-- [ ] **Step 3: Inspect actual desktop and mobile auth/detail screens**
+- [x] **Step 3: Inspect actual desktop and mobile auth/detail screens**
 
 At 1440×900 and 390×844 verify:
 
@@ -669,7 +669,7 @@ At 1440×900 and 390×844 verify:
 - field labels, error links, password-manager autocomplete, focus-visible, and 44px targets work;
 - no browser console or page errors occur.
 
-- [ ] **Step 4: Review, commit, and push only intended files**
+- [x] **Step 4: Review, commit, and push only intended files**
 
 Run:
 

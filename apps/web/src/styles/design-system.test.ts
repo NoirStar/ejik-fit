@@ -24,7 +24,7 @@ describe("design system foundation", () => {
       "--header-height-mobile: 3.5rem",
       "--content-max: 80rem",
       "--type-page-title: 1.75rem",
-      "--type-detail-title: 2.125rem",
+      "--type-detail-title: 1.875rem",
       "--type-item-title: 1.0625rem",
       "--type-body: 0.9375rem",
       "--type-meta: 0.8125rem",

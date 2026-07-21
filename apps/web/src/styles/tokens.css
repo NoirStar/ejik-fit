@@ -28,7 +28,7 @@
   --mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
   --content-max: 80rem;
   --type-page-title: 1.75rem;
-  --type-detail-title: 2.125rem;
+  --type-detail-title: 1.875rem;
   --type-section-title: 1.25rem;
   --type-item-title: 1.0625rem;
   --type-body: 0.9375rem;

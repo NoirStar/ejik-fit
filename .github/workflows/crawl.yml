@@ -41,8 +41,8 @@ jobs:
       CRAWLER_MAX_WORKERS: "4"
       NEXON_BROWSER_CHANNEL: chrome
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
