@@ -1,12 +1,13 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getPostings } from "@/lib/api";
+import { getPostings, getSourceDirectory } from "@/lib/api";
 
 import CompanyPage, { generateMetadata } from "./page";
 
 vi.mock("@/lib/api", () => ({
   getPostings: vi.fn(),
+  getSourceDirectory: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -42,6 +43,25 @@ describe("CompanyPage", () => {
   beforeEach(() => {
     vi.mocked(getPostings).mockReset();
     vi.mocked(getPostings).mockResolvedValue(postings);
+    vi.mocked(getSourceDirectory).mockReset();
+    vi.mocked(getSourceDirectory).mockResolvedValue({
+      items: [
+        {
+          company_name: "검증 기업",
+          company_slug: "verified-company",
+          homepage_url: "https://example.com",
+          careers_url: "https://careers.example.com",
+          collection_status: "collecting",
+          preparation_reason: null,
+          open_postings: 1,
+          last_success_at: "2026-07-14T03:00:00Z",
+        },
+      ],
+      total: 1,
+      collecting_count: 1,
+      preparing_count: 0,
+      open_postings: 1,
+    });
   });
 
   afterEach(() => {
@@ -80,6 +100,26 @@ describe("CompanyPage", () => {
     expect(screen.getByText("현재 공개 공고 145건")).toBeInTheDocument();
     expect(screen.getByText("1 / 145건 표시")).toBeInTheDocument();
     expect(screen.getByText(/최근 1개 공고를 기준으로 집계/)).toBeInTheDocument();
+  });
+
+  it("keeps the company identity and official source when there are no open jobs", async () => {
+    vi.mocked(getPostings).mockResolvedValue({ items: [], total: 0 });
+
+    render(
+      await CompanyPage({
+        params: Promise.resolve({ companyId: "verified-company" }),
+      }),
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "검증 기업의 현재 공개 공고가 없습니다.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "검증 기업 공식 채용페이지" })).toHaveAttribute(
+      "href",
+      "https://careers.example.com",
+    );
   });
 
   it("renders an honest error state instead of claiming zero jobs", async () => {

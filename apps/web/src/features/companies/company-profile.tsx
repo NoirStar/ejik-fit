@@ -9,7 +9,11 @@ import Link from "next/link";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { buildJobEvidence, formatCareerRange, formatClosingDate, formatVerifiedDate } from "@/features/jobs/model";
 import { formatEmployment } from "@/lib/labels";
-import type { PostingListResponse, PostingSummary } from "@/lib/types";
+import type {
+  PostingListResponse,
+  PostingSummary,
+  SourceDirectoryItem,
+} from "@/lib/types";
 
 import styles from "./company-profile.module.css";
 import { CompanyFollowButton } from "./company-follow-button";
@@ -22,16 +26,21 @@ import {
 type CompanyProfileProps = {
   companySlug: string;
   postings: PostingListResponse | null;
+  source?: SourceDirectoryItem | null;
   error?: boolean;
 };
 
 function CompanyState({
   companySlug,
   error,
+  source,
 }: {
   companySlug: string;
   error: boolean;
+  source?: SourceDirectoryItem | null;
 }) {
+  const companyName = source?.company_name;
+
   return (
     <main className={styles.page}>
       <Link className={styles.backLink} href="/jobs">
@@ -43,18 +52,31 @@ function CompanyState({
         <h1>
           {error
             ? "기업 공고 데이터를 불러오지 못했습니다."
-            : "현재 확인되는 공개 공고가 없습니다."}
+            : companyName
+              ? `${companyName}의 현재 공개 공고가 없습니다.`
+              : "현재 확인되는 공개 공고가 없습니다."}
         </h1>
         <p>
           {error
-            ? "현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요."
-            : "공식 채용페이지에서 이 기업의 공개 상태 공고가 확인되지 않았습니다."}
+            ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
+            : "최근 수집 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다."}
         </p>
         <nav aria-label="기업 공고 상태 안내">
           {error && (
             <Link href={`/companies/${encodeURIComponent(companySlug)}`}>
               다시 시도
             </Link>
+          )}
+          {source && (
+            <a
+              aria-label={`${source.company_name} 공식 채용페이지`}
+              href={source.careers_url}
+              rel="noreferrer"
+              target="_blank"
+            >
+              공식 채용페이지
+              <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
+            </a>
           )}
           <Link href="/jobs">전체 공고 보기</Link>
           <Link href="/data-policy">데이터 정책</Link>
@@ -183,19 +205,27 @@ function CompanyJob({ job, index }: { job: PostingSummary; index: number }) {
 export function CompanyProfile({
   companySlug,
   postings,
+  source,
   error = false,
 }: CompanyProfileProps) {
   if (error || !postings) {
-    return <CompanyState companySlug={companySlug} error />;
+    return <CompanyState companySlug={companySlug} error source={source} />;
   }
   if (postings.items.length === 0) {
-    return <CompanyState companySlug={companySlug} error={false} />;
+    return (
+      <CompanyState companySlug={companySlug} error={false} source={source} />
+    );
   }
 
   const snapshot = buildCompanyHiringSnapshot(postings.items);
-  const companyName = snapshot.companyName ?? postings.items[0].company_name;
-  const primarySource = postings.items[0].source_url;
-  const totalPostingCount = Math.max(postings.total, snapshot.postingCount);
+  const companyName =
+    source?.company_name ?? snapshot.companyName ?? postings.items[0].company_name;
+  const primarySource = source?.careers_url ?? postings.items[0].source_url;
+  const totalPostingCount = Math.max(
+    postings.total,
+    source?.open_postings ?? 0,
+    snapshot.postingCount,
+  );
   const hasMorePostings = totalPostingCount > snapshot.postingCount;
 
   return (
