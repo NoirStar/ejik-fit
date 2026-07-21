@@ -322,7 +322,10 @@ function JobCard({
       </div>
 
       {ownedSkills.length === 0 ? (
-        <p className={styles.stackPrompt}>내 스택을 추가하면 일치 공고를 계산합니다.</p>
+        <div className={styles.stackPrompt}>
+          <span>내 스택을 추가하면 일치 공고를 계산합니다.</span>
+          <Link href="/career">내 기술 추가</Link>
+        </div>
       ) : hasEvidence ? (
         <div className={styles.skillEvidence}>
           {item.matchedRequiredSkills.map((skill) => (

@@ -227,6 +227,9 @@ describe("HomeFeed", () => {
         name: "기술 추가 · 조건 설정",
       }),
     ).toHaveAttribute("href", "/career");
+    expect(
+      screen.getByRole("link", { name: "내 기술 추가" }),
+    ).toHaveAttribute("href", "/career");
   });
 
   it("does not spend rail space on an empty recent-topic state", () => {

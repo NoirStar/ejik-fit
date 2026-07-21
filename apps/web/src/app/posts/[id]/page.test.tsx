@@ -90,6 +90,16 @@ describe("PostPage", () => {
       screen.getByRole("navigation", { name: "관련 글" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /읽기/ })).toHaveLength(2);
+    expect(
+      screen.queryByText(
+        "지금 회사가 나쁘지는 않지만 비슷한 업무만 반복하고 있어 성장 속도가 느린 것 같습니다. 제안을 받은 팀은 기술적으로 매력적이지만 규모가 작아 고민이에요.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "현재 팀에서는 익숙한 서비스의 유지보수 비중이 커졌습니다. 문제를 안정적으로 처리하는 법은 배웠지만, 설계 선택의 폭을 넓힐 기회가 줄었다고 느낍니다.",
+      ),
+    ).toBeInTheDocument();
     await waitFor(() =>
       expect(readRecentCommunityTopics()).toEqual([
         expect.objectContaining({

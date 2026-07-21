@@ -114,9 +114,6 @@ export function LocalPostDetail({ postId }: { postId: string }) {
             </div>
 
             <h1>{item.title}</h1>
-            <p className={styles.lead}>
-              이 브라우저에서 직접 작성하고 저장한 커뮤니티 글입니다.
-            </p>
 
             <div className={styles.author}>
               <span

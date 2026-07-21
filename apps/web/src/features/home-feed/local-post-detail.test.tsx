@@ -52,6 +52,9 @@ describe("LocalPostDetail", () => {
     expect(
       screen.getByText("실제 공고를 비교한 다음 준비 순서가 궁금합니다."),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("이 브라우저에서 직접 작성하고 저장한 커뮤니티 글입니다."),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "글 반응과 댓글" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "댓글" })).toBeInTheDocument();
     expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();

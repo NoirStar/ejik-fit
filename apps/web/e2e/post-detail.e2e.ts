@@ -22,6 +22,18 @@ for (const width of [1440, 820, 390]) {
     await expect(
       page.getByRole("heading", { exact: true, level: 1, name: postTitle }),
     ).toBeVisible();
+    if (width === 1440) {
+      const title = page.getByRole("heading", {
+        exact: true,
+        level: 1,
+        name: postTitle,
+      });
+      const titleBox = await title.boundingBox();
+      const lineHeight = await title.evaluate((element) =>
+        parseFloat(getComputedStyle(element).lineHeight),
+      );
+      expect(titleBox?.height).toBeLessThanOrEqual(lineHeight * 1.1);
+    }
     await expect(
       page.getByText("커뮤니티 예시 콘텐츠", { exact: true }),
     ).toBeVisible();
@@ -75,6 +87,8 @@ for (const width of [1440, 820, 390]) {
     await expect(page.getByText("브라우저 회귀 댓글")).toBeVisible();
 
     await page.getByRole("link", { name: "홈 피드로 돌아가기" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("tabpanel")).toBeVisible();
     const homeCard = page.getByRole("article", { name: new RegExp(postTitle) });
     await expect(
       homeCard.getByRole("button", { name: `${postTitle} 공감 취소` }),

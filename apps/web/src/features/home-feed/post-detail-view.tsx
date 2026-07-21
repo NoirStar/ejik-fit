@@ -68,8 +68,6 @@ export function PostDetailView({
   post,
   relatedPosts,
 }: PostDetailViewProps) {
-  const lead = post.type === "community_post" ? post.body : post.summary;
-
   return (
     <main className={styles.main}>
       <RecentTopicTracker
@@ -92,7 +90,6 @@ export function PostDetailView({
             </div>
 
             <h1>{post.title}</h1>
-            <p className={styles.lead}>{lead}</p>
 
             <div className={styles.author}>
               <AuthorAvatar post={post} />

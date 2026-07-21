@@ -38,7 +38,7 @@
 - Consumes: `MockPostDetail.paragraphs`, `CommunityPostFeedItem.title`, and `LocalCommunityPost.body`.
 - Produces: a detail article whose header contains category, title, and author only; actual content remains in the `aria-label="글 본문"` region.
 
-- [ ] **Step 1: Add focused regression assertions**
+- [x] **Step 1: Add focused regression assertions**
 
 In `page.test.tsx`, extend the mock detail test with the known feed preview and first real paragraph:
 
@@ -63,7 +63,7 @@ expect(
 ).not.toBeInTheDocument();
 ```
 
-- [ ] **Step 2: Run the focused tests and observe the duplicate-copy failure**
+- [x] **Step 2: Run the focused tests and observe the duplicate-copy failure**
 
 Run:
 
@@ -74,7 +74,7 @@ npm test -- --run 'src/app/posts/[id]/page.test.tsx' src/features/home-feed/loca
 
 Expected: both new absence assertions fail against the current lead paragraphs.
 
-- [ ] **Step 3: Remove the feed-only lead from both detail headers**
+- [x] **Step 3: Remove the feed-only lead from both detail headers**
 
 Delete `const lead = ...` and this element from `PostDetailView`:
 
@@ -92,7 +92,7 @@ Delete this element from `LocalPostDetail`:
 
 Do not remove the article body, transparency badge, or sidebar disclosure.
 
-- [ ] **Step 4: Widen the reading column and make title wrapping content-driven**
+- [x] **Step 4: Widen the reading column and make title wrapping content-driven**
 
 Change the desktop grid and title rules in `post-detail.module.css` to:
 
@@ -120,7 +120,7 @@ Change the desktop grid and title rules in `post-detail.module.css` to:
 
 Remove the now-unused `.lead` rule. Preserve the existing responsive media rules unless browser inspection shows a verified collision.
 
-- [ ] **Step 5: Add one desktop title geometry assertion to the existing E2E**
+- [x] **Step 5: Add one desktop title geometry assertion to the existing E2E**
 
 Inside the existing viewport loop, after the title becomes visible, add:
 
@@ -136,7 +136,7 @@ if (width === 1440) {
 }
 ```
 
-- [ ] **Step 6: Clarify the related-job prompt and primary action**
+- [x] **Step 6: Clarify the related-job prompt and primary action**
 
 For the no-skills job-card state, keep the explanatory sentence but add a visible
 `내 기술 추가` link to `/career`. Use a compact flex row so the action remains available
@@ -148,7 +148,7 @@ Add one focused assertion to the existing no-personalization HomeFeed test that 
 `내 기술 추가` link resolves to `/career`. Use browser inspection rather than a CSS
 snapshot for color and spacing.
 
-- [ ] **Step 7: Verify and commit the visual correction**
+- [x] **Step 7: Verify and commit the visual correction**
 
 Run:
 
