@@ -144,6 +144,12 @@ ELICE_NON_SOFTWARE_TITLE_MARKERS = (
 NINEHIRE_EXPLICIT_NON_TECH_GROUPS = frozenset(
     {"business", "design", "finance", "legal", "marketing", "people", "sales"}
 )
+NINEHIRE_STRONG_TECH_TITLES_IN_NON_TECH_GROUPS = (
+    "data analyst",
+    "data analysis",
+    "데이터 분석가",
+    "데이터 애널리스트",
+)
 DUNAMU_JOB_GROUP_LABELS = {
     "T_ENGINEERING": "Engineering",
     "T_SECURITY": "Security",
@@ -1671,6 +1677,10 @@ def filter_public_detail_refs(
                 ref.category is None
                 or ref.category.split(" · ", 1)[0].casefold()
                 not in NINEHIRE_EXPLICIT_NON_TECH_GROUPS
+                or any(
+                    marker in ref.title.casefold()
+                    for marker in NINEHIRE_STRONG_TECH_TITLES_IN_NON_TECH_GROUPS
+                )
             )
             and is_technical_role(ref.title, ref.category)
         ]

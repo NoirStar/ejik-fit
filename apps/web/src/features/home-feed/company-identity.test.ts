@@ -822,6 +822,11 @@ describe("companyIdentity", () => {
       "https://careers-apac-atlassian.icims.com/jobs/25402/example/job",
       "atlassian",
     ],
+    [
+      "번개장터",
+      "https://team.bgzt.co.kr/job_posting/7epQM1jj",
+      "bunjang",
+    ],
   ])("uses the verified cached logo endpoint for %s", (name, source, key) => {
     expect(companyIdentity(name, source)).toMatchObject({
       kind: "logo",

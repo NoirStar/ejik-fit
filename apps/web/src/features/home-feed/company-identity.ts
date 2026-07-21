@@ -46,6 +46,12 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
     displayName: "Atlassian",
   },
   {
+    aliases: ["번개장터", "bunjang", "bunjang inc.", "주식회사 번개장터"],
+    hosts: ["team.bgzt.co.kr", "bgzt.co.kr"],
+    src: "/company-logo-assets/bunjang",
+    displayName: "번개장터",
+  },
+  {
     aliases: ["트웰브랩스", "twelve labs", "twelvelabs"],
     hosts: ["api.ashbyhq.com", "jobs.ashbyhq.com", "twelvelabs.io"],
     src: "/company-logo-assets/twelve-labs",

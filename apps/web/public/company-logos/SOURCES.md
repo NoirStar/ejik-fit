@@ -37,6 +37,11 @@ back to company initials when the official asset is unavailable.
 | `nexon-space` | 넥슨스페이스 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/8bcada4e-1aeb-449c-b4ae-e59cba852d6c.png> | 2026-07-16 |
 | `nxc` | 엔엑스씨 | <https://careers.nexon.com/recruit> | <https://careers.nexon.com/files/logo/company-logo-nxc.png> | 2026-07-16 |
 | `kakao` | 카카오 | <https://careers.kakao.com/> | <https://t1.daumcdn.net/comis/common/images/favicon_64x64.ico> | 2026-07-16 |
+| `coinone` | 코인원 | <https://recruit.coinonecorp.com/> | <https://image.ninehire.com/brand/b2baa5f0-1f40-11f0-8c6c-596fcda513ba/f2e49d60-2414-11f0-8c6c-596fcda513ba.png> | 2026-07-20 |
+| `ahnlab` | 안랩 | <https://ahnlab.recruiter.co.kr/> | <https://cloudimg.ccs.ahnlab.com/img_upload/assets/images/ko/logo-ahnlab-black2.svg> | 2026-07-20 |
+| `bear-robotics` | Bear Robotics | <https://bear-robotics.breezy.hr/> | <https://images.squarespace-cdn.com/content/v1/652cbb3fb1f91809d4610dc0/74b951f7-549f-47a7-bc65-a55df6f78687/favicon.ico?format=100w> | 2026-07-21 |
+| `atlassian` | Atlassian | <https://www.atlassian.com/company/careers> | <https://wac-cdn.atlassian.com/assets/img/favicons/atlassian/favicon.png> | 2026-07-21 |
+| `bunjang` | 번개장터 | <https://team.bgzt.co.kr/> | <https://image.ninehire.com/homepage/7541b210-1710-11ef-b315-d7a9afe6c5ae/image/910334f0-5bda-11f0-82e3-997f797881b5.png> | 2026-07-22 |
 | `airwallex` | Airwallex | <https://careers.airwallex.com/> | <https://careers.airwallex.com/wp-content/uploads/2024/03/cropped-airwallex-favicon-192x192.png> | 2026-07-15 |
 | `applied-intuition` | Applied Intuition | <https://www.appliedintuition.com/careers> | <https://www.appliedintuition.com/icon1.png?icon1.488d774c.png> | 2026-07-15 |
 | `amazon-web-services-korea` | Amazon Web Services Korea | <https://www.amazon.jobs/content/en/locations/asia-pacific/south-korea> | <https://static.amazon.jobs/assets/favicon-933ee4605ae64f3181e0fcd88f9205be7b5f8a15643c342e53a9f03bb673732c.ico> | 2026-07-15 |

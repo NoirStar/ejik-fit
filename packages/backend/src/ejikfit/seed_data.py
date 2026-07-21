@@ -599,6 +599,24 @@ INITIAL_SOURCE_CATALOG = (
         ),
     ),
     SeedSource(
+        name="번개장터",
+        slug="bunjang",
+        base_url="https://team.bgzt.co.kr/",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://bgzt.co.kr",
+        sector="commerce_platform",
+        connector_family="ninehire_public_api_tech",
+        brand_tier_weight=6,
+        tech_job_priority=5,
+        expected_job_volume=1,
+        connector_reuse_score=5,
+        non_tech_noise=8,
+        notes=(
+            "Official Bunjang careers site and public Ninehire feed; limited "
+            "to active technical and data roles with verified detail pages."
+        ),
+    ),
+    SeedSource(
         name="팀블라인드",
         slug="teamblind",
         base_url="https://recruit.teamblind.com/recruit",

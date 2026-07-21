@@ -613,6 +613,47 @@ def test_ninehire_public_api_discovers_and_parses_only_open_technical_jobs() -> 
     assert "AI 제품과 플랫폼" in opening.description_text
 
 
+def test_ninehire_keeps_explicit_data_analyst_roles_in_business_groups() -> None:
+    listing_url = "https://team.bgzt.co.kr/"
+    company_id = "7541b210-1710-11ef-b315-d7a9afe6c5ae"
+    listing = json.dumps(
+        {
+            "count": 2,
+            "results": [
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "data-analyst",
+                    "addressKey": "7epQM1jj",
+                    "externalTitle": "Data Analyst",
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "Business"},
+                    "jobTask": None,
+                },
+                {
+                    "companyId": company_id,
+                    "recruitmentId": "sales-role",
+                    "addressKey": "jt0OlOhs",
+                    "externalTitle": "Sales & BD Manager",
+                    "status": "in_progress",
+                    "isPrivate": False,
+                    "jobGroup": {"title": "Business"},
+                    "jobTask": None,
+                },
+            ],
+        }
+    )
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        listing_url,
+        "ninehire_public_api_tech",
+    )
+    filtered = filter_public_detail_refs(refs, "ninehire_public_api_tech")
+
+    assert [ref.title for ref in filtered] == ["Data Analyst"]
+
+
 def test_netmarble_public_api_discovers_and_parses_technical_jobs() -> None:
     listing = json.dumps(
         {
