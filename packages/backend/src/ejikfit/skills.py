@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from sqlalchemy import select
 
@@ -77,6 +78,22 @@ def sync_posting_skills(session: "Session", posting: "JobPosting") -> list[str]:
     """
     from ejikfit.models import PostingSkill
 
+    existing = {
+        row.skill: row
+        for row in session.scalars(
+            select(PostingSkill).where(PostingSkill.posting_id == posting.id)
+        )
+    }
+    return _sync_posting_skills_from_rows(session, posting, existing)
+
+
+def _sync_posting_skills_from_rows(
+    session: "Session",
+    posting: "JobPosting",
+    existing: dict[str, "PostingSkill"],
+) -> list[str]:
+    from ejikfit.models import PostingSkill
+
     matches = extract_skill_matches(
         title=posting.title,
         description_html=posting.description_html or "",
@@ -84,12 +101,6 @@ def sync_posting_skills(session: "Session", posting: "JobPosting") -> list[str]:
     )
     desired = {match.skill: match for match in matches}
 
-    existing = {
-        row.skill: row
-        for row in session.scalars(
-            select(PostingSkill).where(PostingSkill.posting_id == posting.id)
-        )
-    }
     for skill, row in existing.items():
         if skill not in desired:
             session.delete(row)
@@ -117,10 +128,18 @@ def sync_posting_skills(session: "Session", posting: "JobPosting") -> list[str]:
 
 def backfill_all_skills(session: "Session") -> int:
     """Re-extract skills for every stored posting. Commits. Returns count."""
-    from ejikfit.models import JobPosting
+    from ejikfit.models import JobPosting, PostingSkill
 
     postings = list(session.scalars(select(JobPosting)))
+    existing_by_posting: dict[UUID, dict[str, PostingSkill]] = {}
+    for row in session.scalars(select(PostingSkill)):
+        existing_by_posting.setdefault(row.posting_id, {})[row.skill] = row
+
     for posting in postings:
-        sync_posting_skills(session, posting)
+        _sync_posting_skills_from_rows(
+            session,
+            posting,
+            existing_by_posting.get(posting.id, {}),
+        )
     session.commit()
     return len(postings)
