@@ -867,16 +867,17 @@
 }
 
 .jobCard {
-  margin: 0.625rem 0.75rem;
-  padding: 0.9375rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 16%, var(--color-line));
-  border-left: 3px solid color-mix(in srgb, var(--color-accent) 72%, #ffffff);
-  border-radius: 0.625rem;
-  background: color-mix(in srgb, var(--color-brand-subtle) 42%, var(--color-surface));
+  margin: 0;
+  padding: 1rem 1.125rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-line-soft);
+  border-left: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--color-brand-subtle) 34%, var(--color-surface));
 }
 
 .jobCard:hover {
-  background: color-mix(in srgb, var(--color-brand-subtle) 62%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-brand-subtle) 48%, var(--color-surface));
 }
 
 .verifiedBadge {
@@ -951,11 +952,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 1rem 0 0;
-  padding: 0.75rem 0.875rem;
-  border-radius: 0.625rem;
-  background: color-mix(in srgb, var(--color-brand-subtle) 42%, var(--color-surface-muted));
-  color: var(--color-text);
+  margin: 0.875rem 0 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-muted);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.5;
@@ -1791,10 +1793,11 @@
   }
 
   .jobCard {
-    margin: 0.5rem 1rem;
-    border: 1px solid color-mix(in srgb, var(--color-accent) 16%, var(--color-line));
-    border-left: 3px solid color-mix(in srgb, var(--color-accent) 72%, #ffffff);
-    border-radius: 0.625rem;
+    margin: 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-line-soft);
+    border-left: 0;
+    border-radius: 0;
   }
 
   .socialCard:hover,

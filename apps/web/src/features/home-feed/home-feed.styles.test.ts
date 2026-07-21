@@ -60,4 +60,11 @@ describe("home feed density", () => {
     expect(rule("companyLink")).not.toContain("min-width:");
     expect(rule("companyLink")).toContain("line-height: 1.35;");
   });
+
+  it("separates official jobs without a side stripe or nested card frame", () => {
+    expect(rule("jobCard")).toContain("border-left: 0;");
+    expect(rule("jobCard")).toContain("border-radius: 0;");
+    expect(rule("jobCard")).toContain("margin: 0;");
+    expect(rule("stackPrompt")).toContain("background: transparent;");
+  });
 });
