@@ -83,6 +83,18 @@ class SkillStatsResponse(BaseModel):
     total: int
 
 
+class SkillCatalogItem(BaseModel):
+    name: str
+    category: str
+    kind: str
+    domains: list[str]
+
+
+class SkillCatalogResponse(BaseModel):
+    items: list[SkillCatalogItem]
+    total: int
+
+
 class SkillTrendPoint(BaseModel):
     week_start: date
     count: int

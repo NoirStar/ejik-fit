@@ -1,11 +1,12 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getSkillGraph, getSkillStats } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph, getSkillStats } from "@/lib/api";
 
 import CareerPage from "./page";
 
 vi.mock("@/lib/api", () => ({
+  getSkillCatalog: vi.fn(),
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
@@ -35,8 +36,26 @@ const graphResponse = {
 describe("CareerPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
+    vi.mocked(getSkillCatalog).mockReset();
     vi.mocked(getSkillGraph).mockReset();
     vi.mocked(getSkillStats).mockReset();
+    vi.mocked(getSkillCatalog).mockResolvedValue({
+      total: 2,
+      items: [
+        {
+          name: "Kubernetes",
+          category: "infra",
+          kind: "platform",
+          domains: ["devops", "cloud", "mlops"],
+        },
+        {
+          name: "React Native",
+          category: "mobile",
+          kind: "framework",
+          domains: ["mobile", "frontend"],
+        },
+      ],
+    });
     vi.mocked(getSkillGraph).mockResolvedValue(graphResponse);
   });
 
@@ -54,11 +73,19 @@ describe("CareerPage", () => {
     render(await CareerPage());
 
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 12 });
+    expect(getSkillCatalog).toHaveBeenCalledOnce();
     expect(getSkillGraph).toHaveBeenCalledWith({ limit: 60 });
     expect(
       screen.getByRole("button", { name: "Kubernetes 빠르게 추가, 공개 공고 12건" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
+    expect(screen.getByLabelText("추가할 기술")).toHaveAttribute(
+      "list",
+      expect.stringContaining("career-skill-catalog"),
+    );
+    expect(
+      document.querySelector('datalist option[value="React Native"]'),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("희망 기술 분야")).toHaveDisplayValue(
       "전체 기술 분야",
     );

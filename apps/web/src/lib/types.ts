@@ -76,6 +76,18 @@ export type SkillStatsResponse = {
   total: number;
 };
 
+export type SkillCatalogItem = {
+  name: string;
+  category: string;
+  kind: string;
+  domains: string[];
+};
+
+export type SkillCatalogResponse = {
+  items: SkillCatalogItem[];
+  total: number;
+};
+
 export type SkillTrendPoint = {
   week_start: string;
   count: number;

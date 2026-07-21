@@ -28,7 +28,12 @@ import {
   removeOwnedSkill,
   subscribeOwnedSkills,
 } from "@/lib/owned-skills";
-import type { FitAnalyzeResponse } from "@/lib/types";
+import {
+  normalizeSkillCategory,
+  skillCategoryLabel,
+} from "@/lib/skill-categories";
+import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
+import type { FitAnalyzeResponse, SkillCatalogItem } from "@/lib/types";
 
 import {
   buildCareerAnalyzePayload,
@@ -48,6 +53,8 @@ export type CareerSkillSuggestion = {
 };
 
 type CareerOverviewProps = {
+  catalog?: SkillCatalogItem[];
+  catalogUnavailable?: boolean;
   suggestions: CareerSkillSuggestion[];
   suggestionsUnavailable: boolean;
   domainSuggestions?: CareerDomainSuggestion[];
@@ -288,6 +295,8 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
 }
 
 export function CareerOverview({
+  catalog = [],
+  catalogUnavailable = false,
   suggestions,
   suggestionsUnavailable,
   domainSuggestions = [],
@@ -295,6 +304,9 @@ export function CareerOverview({
 }: CareerOverviewProps) {
   const inputId = useId();
   const inputErrorId = useId();
+  const catalogHintId = useId();
+  const catalogSuffix = useId().replace(/:/g, "");
+  const catalogId = `career-skill-catalog-${catalogSuffix}`;
   const conditionId = useId();
   const targetDomainId = useId();
   const [hydrated, setHydrated] = useState(false);
@@ -312,15 +324,19 @@ export function CareerOverview({
   const ownedSkillsSignature = ownedSkills.join("\u0000");
   const availableSuggestions = useMemo(() => {
     const owned = new Set(
-      ownedSkills.map((skill) => skill.toLocaleLowerCase("en-US")),
+      ownedSkills.map(skillNameKey),
     );
     return suggestions
       .filter(
         (suggestion) =>
-          !owned.has(suggestion.name.toLocaleLowerCase("en-US")),
+          !owned.has(skillNameKey(suggestion.name)),
       )
       .slice(0, 8);
   }, [ownedSkills, suggestions]);
+  const availableCatalog = useMemo(() => {
+    const owned = new Set(ownedSkills.map(skillNameKey));
+    return catalog.filter((skill) => !owned.has(skillNameKey(skill.name)));
+  }, [catalog, ownedSkills]);
   const targetDomainIsAvailable =
     Boolean(targetDomain) &&
     domainSuggestions.some((domain) => domain.value === targetDomain);
@@ -445,17 +461,17 @@ export function CareerOverview({
       setInputError("기술 이름을 입력해 주세요.");
       return;
     }
-    const normalized =
+    const normalized = canonicalSkillName(
       suggestions.find(
         (suggestion) =>
-          suggestion.name.toLocaleLowerCase("en-US") ===
-          trimmed.toLocaleLowerCase("en-US"),
-      )?.name ?? trimmed;
+          skillNameKey(suggestion.name) === skillNameKey(trimmed),
+      )?.name ?? trimmed,
+      catalog,
+    );
     if (
       ownedSkills.some(
         (ownedSkill) =>
-          ownedSkill.toLocaleLowerCase("en-US") ===
-          normalized.toLocaleLowerCase("en-US"),
+          skillNameKey(ownedSkill) === skillNameKey(normalized),
       )
     ) {
       setInputError("이미 저장한 기술입니다.");
@@ -561,14 +577,35 @@ export function CareerOverview({
             <label htmlFor={inputId}>추가할 기술</label>
             <div className={styles.inputRow}>
               <input
-                aria-describedby={inputError ? inputErrorId : undefined}
+                aria-describedby={
+                  [
+                    inputError ? inputErrorId : "",
+                    catalogUnavailable ? catalogHintId : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
                 autoComplete="off"
                 id={inputId}
+                list={availableCatalog.length > 0 ? catalogId : undefined}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="예: Spring, React"
                 type="text"
                 value={draft}
               />
+              {availableCatalog.length > 0 && (
+                <datalist id={catalogId}>
+                  {availableCatalog.map((skill) => (
+                    <option
+                      key={skill.name}
+                      label={skillCategoryLabel(
+                        normalizeSkillCategory(skill.category),
+                      )}
+                      value={skill.name}
+                    />
+                  ))}
+                </datalist>
+              )}
               <button className={styles.addButton} type="submit">
                 <Plus aria-hidden="true" size={17} weight="bold" />
                 기술 추가
@@ -577,6 +614,11 @@ export function CareerOverview({
             {inputError && (
               <p className={styles.inputError} id={inputErrorId} role="alert">
                 {inputError}
+              </p>
+            )}
+            {!inputError && catalogUnavailable && (
+              <p className={styles.catalogHint} id={catalogHintId}>
+                표준 기술명 목록을 불러오지 못했지만 직접 입력할 수 있습니다.
               </p>
             )}
           </form>

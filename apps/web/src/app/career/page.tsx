@@ -6,7 +6,8 @@ import {
 } from "@/features/career/career-overview";
 import { buildCareerDomainSuggestions } from "@/features/career/model";
 import { settledResource } from "@/features/home-feed/resource-state";
-import { getSkillGraph, getSkillStats } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph, getSkillStats } from "@/lib/api";
+import { parseSkillCatalogResponse } from "@/lib/skill-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -48,10 +49,16 @@ function buildCareerSkillSuggestions(value: unknown): CareerSkillSuggestion[] {
 }
 
 export default async function CareerPage() {
-  const [skillSuggestions, domainSuggestions] = await Promise.all([
+  const [skillSuggestions, skillCatalog, domainSuggestions] = await Promise.all([
     settledResource(
       getSkillStats({ limit: 12 }).then(buildCareerSkillSuggestions),
       "상위 기술 제안을 불러오지 못했습니다.",
+    ),
+    settledResource(
+      getSkillCatalog().then(
+        (response) => parseSkillCatalogResponse(response).items,
+      ),
+      "표준 기술명 목록을 불러오지 못했습니다.",
     ),
     settledResource(
       getSkillGraph({ limit: 60 }).then(buildCareerDomainSuggestions),
@@ -61,6 +68,8 @@ export default async function CareerPage() {
 
   return (
     <CareerOverview
+      catalog={skillCatalog.status === "ready" ? skillCatalog.data : []}
+      catalogUnavailable={skillCatalog.status === "error"}
       domainSuggestions={
         domainSuggestions.status === "ready" ? domainSuggestions.data : []
       }

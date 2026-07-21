@@ -4,6 +4,7 @@ import type {
   HiringOverviewResponse,
   PostingDetail,
   PostingListResponse,
+  SkillCatalogResponse,
   SkillGraphResponse,
   SkillStatsResponse,
   SkillTrendResponse,
@@ -132,6 +133,10 @@ export function getSkillStats(filters: {
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<SkillStatsResponse>(`/api/skills/stats${query}`);
+}
+
+export function getSkillCatalog(): Promise<SkillCatalogResponse> {
+  return request<SkillCatalogResponse>("/api/skills/catalog");
 }
 
 export function getSkillTrends(

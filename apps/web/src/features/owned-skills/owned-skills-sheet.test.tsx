@@ -22,6 +22,7 @@ vi.mock("next/navigation", () => ({
 describe("OwnedSkillsSheet", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
@@ -29,6 +30,29 @@ describe("OwnedSkillsSheet", () => {
     navigation.search = "";
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              name: "Kubernetes",
+              category: "infra",
+              kind: "platform",
+              domains: ["devops", "cloud", "mlops"],
+            },
+            {
+              name: "React Native",
+              category: "mobile",
+              kind: "framework",
+              domains: ["mobile", "frontend"],
+            },
+          ],
+          total: 2,
+        }),
+      }),
+    );
   });
 
   it("starts empty on first visit and persists an added skill", () => {
@@ -74,6 +98,29 @@ describe("OwnedSkillsSheet", () => {
 
     expect(screen.queryByRole("dialog", { name: "내 스택" })).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
+  });
+
+  it("suggests canonical skills and supports keyboard selection", async () => {
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    const input = screen.getByRole("combobox", { name: "추가할 기술" });
+    fireEvent.change(input, { target: { value: "kube" } });
+
+    expect(
+      await screen.findByRole("option", { name: "Kubernetes 인프라" }),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.getByText("Kubernetes")).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
+      "Kubernetes",
+    ]);
   });
 
   it("keeps Tab focus inside the modal sheet", () => {

@@ -8,9 +8,14 @@ from sqlalchemy.orm import Session
 
 from ejikfit.db import SessionLocal
 from ejikfit.models import JobPosting, PostingSkill, PostingStatus
+from ejikfit.skill_catalog import SKILLS, skill_domains, skill_kind
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
-from .schemas import SkillStatsResponse, SkillTrendResponse
+from .schemas import (
+    SkillCatalogResponse,
+    SkillStatsResponse,
+    SkillTrendResponse,
+)
 
 
 MINIMUM_TREND_WEEKS = 4
@@ -135,6 +140,19 @@ def create_skills_router(
     trend_reader: SkillTrendReader,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/skills", tags=["skills"])
+
+    @router.get("/catalog", response_model=SkillCatalogResponse)
+    def skill_catalog() -> dict:
+        items = [
+            {
+                "name": skill.canonical,
+                "category": skill.category,
+                "kind": skill_kind(skill.canonical),
+                "domains": list(skill_domains(skill.canonical)),
+            }
+            for skill in sorted(SKILLS, key=lambda item: item.canonical.casefold())
+        ]
+        return {"items": items, "total": len(items)}
 
     @router.get("/stats", response_model=SkillStatsResponse)
     def skill_stats(

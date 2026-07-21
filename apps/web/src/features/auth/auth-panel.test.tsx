@@ -143,7 +143,7 @@ describe("AuthPanel", () => {
     expect(callback.searchParams.get("next")).toBe(
       "/login?mode=update-password&next=%2Fcareer%2Fsaved",
     );
-    expect(screen.getByRole("status")).toHaveTextContent(
+    expect(await screen.findByRole("status")).toHaveTextContent(
       "재설정 안내 메일을 보냈습니다.",
     );
   });

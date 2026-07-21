@@ -162,6 +162,35 @@ describe("CareerOverview", () => {
     expect(window.localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
   });
 
+  it("canonicalizes direct entry with the full reviewed skill catalog", async () => {
+    render(
+      <CareerOverview
+        catalog={[
+          {
+            name: "React Native",
+            category: "mobile",
+            kind: "framework",
+            domains: ["mobile", "frontend"],
+          },
+        ]}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+
+    fireEvent.change(screen.getByLabelText("추가할 기술"), {
+      target: { value: " react native " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+
+    expect(
+      within(screen.getByRole("list", { name: "저장한 기술 목록" })).getByText(
+        "React Native",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("reacts to same-tab stack changes and requests an updated comparison", async () => {
     render(
       <CareerOverview

@@ -16,6 +16,7 @@ from ejikfit.models import (
     SourceStatus,
     SourceType,
 )
+from ejikfit.skill_catalog import SKILLS
 
 
 class FakeSkillStatsReader:
@@ -96,6 +97,32 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
     assert reader.calls == [
         {"career_type": "new_comer", "category": "infra", "limit": 5}
     ]
+
+
+def test_skill_catalog_endpoint_returns_canonical_metadata() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/api/skills/catalog")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == len(SKILLS)
+    assert len(body["items"]) == len(SKILLS)
+    assert len({item["name"] for item in body["items"]}) == len(SKILLS)
+
+    items = {item["name"]: item for item in body["items"]}
+    assert items["Kubernetes"] == {
+        "name": "Kubernetes",
+        "category": "infra",
+        "kind": "platform",
+        "domains": ["devops", "cloud", "mlops"],
+    }
+    assert items["React Native"] == {
+        "name": "React Native",
+        "category": "mobile",
+        "kind": "framework",
+        "domains": ["mobile", "frontend"],
+    }
 
 
 def test_skill_trends_endpoint_exposes_collection_progress_without_fake_data() -> None:
