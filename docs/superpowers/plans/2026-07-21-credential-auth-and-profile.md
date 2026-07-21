@@ -681,7 +681,7 @@ git diff --stat
 
 Do not stage the protected untracked files. Commit any verified final correction, then push `main`.
 
-- [ ] **Step 5: Verify remote migration, CI, and Vercel**
+- [x] **Step 5: Verify remote migration, CI, and Vercel**
 
 Confirm the latest commit has:
 
@@ -690,7 +690,7 @@ Confirm the latest commit has:
 - successful push-triggered crawler migration job for `20260721_0020`;
 - no Node 20 action deprecation annotation.
 
-- [ ] **Step 6: Exercise production-safe auth states**
+- [x] **Step 6: Exercise production-safe auth states**
 
 Without creating disposable personal data in logs, verify:
 
@@ -701,6 +701,6 @@ Without creating disposable personal data in logs, verify:
 - an existing magic-link account can enter the reset path;
 - guest career data remains present through the login redirect and is merged by the existing sync hook after a real authenticated session.
 
-- [ ] **Step 7: Mark the plan complete and continue to server community design**
+- [x] **Step 7: Mark the plan complete and continue to server community design**
 
 Update this plan's checkboxes as tasks land. Once all verification is green, start the separate server-community spec for posts, comments, reactions, saves, follows, migration of existing local content, reporting, and community notifications. Keep profile-based job matching excluded.
