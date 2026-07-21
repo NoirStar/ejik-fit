@@ -47,7 +47,7 @@ const POST_COLUMNS = [
   "save_count",
   "created_at",
   "updated_at",
-  "author:user_profiles(user_id,nickname)",
+  "author:user_profiles!community_posts_author_id_fkey(user_id,nickname)",
 ].join(",");
 
 const COMMENT_COLUMNS = [
@@ -57,7 +57,7 @@ const COMMENT_COLUMNS = [
   "body",
   "created_at",
   "updated_at",
-  "author:user_profiles(user_id,nickname)",
+  "author:user_profiles!community_comments_author_id_fkey(user_id,nickname)",
 ].join(",");
 
 const DEFAULT_POST_LIMIT = 20;

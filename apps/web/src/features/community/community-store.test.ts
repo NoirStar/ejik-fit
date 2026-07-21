@@ -76,7 +76,9 @@ describe("Supabase community store", () => {
     ).resolves.toHaveLength(1);
 
     const selected = posts.select.mock.calls[0]?.[0] as string;
-    expect(selected).toContain("author:user_profiles(user_id,nickname)");
+    expect(selected).toContain(
+      "author:user_profiles!community_posts_author_id_fkey(user_id,nickname)",
+    );
     expect(selected).not.toContain("client_origin_id");
     expect(selected).not.toContain("*");
     expect(posts.eq).toHaveBeenCalledWith("author_id", AUTHOR_ID);
@@ -164,7 +166,11 @@ describe("Supabase community store", () => {
       postId: POST_ID,
       author: { id: VIEWER_ID },
     });
-    expect(comments.select.mock.calls[0]?.[0]).not.toContain("client_origin_id");
+    const selected = comments.select.mock.calls[0]?.[0] as string;
+    expect(selected).toContain(
+      "author:user_profiles!community_comments_author_id_fkey(user_id,nickname)",
+    );
+    expect(selected).not.toContain("client_origin_id");
     expect(comments.eq).toHaveBeenCalledWith("id", COMMENT_ID);
   });
 
