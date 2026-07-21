@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -9,6 +11,7 @@ from ejikfit.models import (
     PolicyStatus,
     SourceStatus,
     SourceType,
+    UserProfile,
 )
 
 
@@ -90,3 +93,17 @@ def test_career_source_registry_defaults_and_priority_score() -> None:
         source_type=SourceType.JSON_LD,
     )
     assert unscoped.targets_technical_roles is False
+
+
+def test_user_profile_stores_only_a_public_nickname() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    user_id = uuid.uuid4()
+
+    with Session(engine) as session:
+        session.add(UserProfile(user_id=user_id, nickname="커리어곰"))
+        session.commit()
+
+        profile = session.get(UserProfile, user_id)
+        assert profile is not None
+        assert profile.nickname == "커리어곰"

@@ -305,7 +305,7 @@ git commit -m "feat: define credential auth validation"
 - Produces: SQLAlchemy `UserProfile`, PostgreSQL table `user_profiles`, new-user trigger `public.create_user_profile()`, and owner-update RLS.
 - Consumes: Supabase `auth.users`, `auth.uid()`, PostgreSQL roles `anon` and `authenticated`; remains SQLite-compatible for model tests.
 
-- [ ] **Step 1: Add the migration security contract test**
+- [x] **Step 1: Add the migration security contract test**
 
 Create `test_user_profile_security.py` with assertions for every security boundary:
 
@@ -341,7 +341,7 @@ def test_user_profile_migration_exposes_only_public_name_and_owner_updates() -> 
 
 Extend `test_models.py` to instantiate `UserProfile(user_id=uuid.uuid4(), nickname="커리어곰")` after `Base.metadata.create_all` and assert the nickname.
 
-- [ ] **Step 2: Run the tests and verify the model and migration are absent**
+- [x] **Step 2: Run the tests and verify the model and migration are absent**
 
 Run:
 
@@ -351,7 +351,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/pytest packages/backend/tests/test_us
 
 Expected: collection fails because the migration and `UserProfile` do not exist.
 
-- [ ] **Step 3: Add the SQLAlchemy model**
+- [x] **Step 3: Add the SQLAlchemy model**
 
 Append after `UserCareerState`:
 
@@ -369,7 +369,7 @@ class UserProfile(Base):
     )
 ```
 
-- [ ] **Step 4: Implement migration `20260721_0020`**
+- [x] **Step 4: Implement migration `20260721_0020`**
 
 The migration must:
 
@@ -385,7 +385,7 @@ The migration must:
 
 Do not grant client insert or delete permissions.
 
-- [ ] **Step 5: Verify the migration contract and offline chain**
+- [x] **Step 5: Verify the migration contract and offline chain**
 
 Run:
 
@@ -396,7 +396,7 @@ alembic -c packages/backend/alembic.ini upgrade head --sql >/tmp/ejikfit-profile
 
 Expected: tests pass and offline SQL generation exits zero.
 
-- [ ] **Step 6: Commit and push the database contract**
+- [x] **Step 6: Commit and push the database contract**
 
 ```bash
 git add packages/backend/src/ejikfit/models.py packages/backend/alembic/versions/20260721_0020_user_profiles.py packages/backend/tests/test_user_profile_security.py packages/backend/tests/test_models.py
