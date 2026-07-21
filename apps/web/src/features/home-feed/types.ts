@@ -29,7 +29,7 @@ export type CommunityPostFeedItem = {
   tags: string[];
   href: string;
   metrics: SocialMetrics;
-  source: "mock" | "local";
+  source: "mock" | "local" | "server";
 };
 
 export type InterviewReviewFeedItem = {

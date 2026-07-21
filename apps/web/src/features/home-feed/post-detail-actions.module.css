@@ -187,6 +187,38 @@
   color: var(--color-accent-strong);
 }
 
+.commentDelete {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.commentDelete:hover {
+  background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.emptyComments {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-control);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 .form {
   display: grid;
   gap: 0.625rem;
@@ -272,6 +304,19 @@
 
 .form > p[role="status"] {
   color: var(--color-success);
+}
+
+.form > p[role="status"] {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.actionBar button:disabled,
+.commentDelete:disabled,
+.form button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .actionBar button:focus-visible,

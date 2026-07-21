@@ -626,7 +626,11 @@ export function SavedLibrary({
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
                           <small data-source={item.source}>
-                            {item.source === "local" ? "내 로컬 글" : "예시 콘텐츠"}
+                            {item.source === "local"
+                              ? "내 로컬 글"
+                              : item.source === "server"
+                                ? "커뮤니티"
+                                : "예시 콘텐츠"}
                           </small>
                         </div>
                         <h3>

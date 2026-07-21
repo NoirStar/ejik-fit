@@ -11,9 +11,16 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import { useCommunityFeed } from "@/features/community/use-community-feed";
+import {
+  localCommunityPostToFeedItem,
+  serverCommunityPostToFeedItem,
+} from "@/features/home-feed/model";
+import type { CommunityPostFeedItem } from "@/features/home-feed/types";
 import { buildSearchScopeHref } from "@/features/search/model";
 import {
   deleteLocalCommunityPost,
@@ -38,30 +45,39 @@ function QuestionCard({
   onRequestDelete,
   pendingDelete,
   post,
+  serverSaved,
 }: {
   interactions: SocialInteractions;
   onCancelDelete(): void;
   onConfirmDelete(): void;
   onRequestDelete(): void;
   pendingDelete: boolean;
-  post: LocalCommunityPost;
+  post: CommunityPostFeedItem;
+  serverSaved: boolean;
 }) {
-  const item = localCommunityPostToFeedItem(post);
-  const titleId = `authored-question-${item.id}-title`;
-  const reacted = interactions.reactedPostIds.includes(item.id);
-  const saved = interactions.savedPostIds.includes(item.id);
-  const commentCount = interactions.commentsByPostId[item.id]?.length ?? 0;
+  const titleId = `authored-question-${post.id}-title`;
+  const local = post.source === "local";
+  const reacted = local && interactions.reactedPostIds.includes(post.id);
+  const saved = local
+    ? interactions.savedPostIds.includes(post.id)
+    : serverSaved;
+  const commentCount = local
+    ? interactions.commentsByPostId[post.id]?.length ?? 0
+    : post.metrics.comments;
+  const reactionCount = local ? (reacted ? 1 : 0) : post.metrics.reactions;
 
   return (
     <article aria-labelledby={titleId} className={styles.questionCard}>
       <div className={styles.cardTopline}>
         <div>
-          <span>{item.category} · 이 브라우저에서 작성</span>
-          <time dateTime={post.createdAt}>{item.createdLabel}</time>
+          <span>
+            {post.category} · {local ? "이 브라우저에서 작성" : "계정에 작성"}
+          </span>
+          <time dateTime={post.createdAt}>{post.createdLabel}</time>
         </div>
         <button
           aria-expanded={pendingDelete}
-          aria-label={`${item.title} 삭제`}
+          aria-label={`${post.title} 삭제`}
           className={styles.deleteButton}
           onClick={onRequestDelete}
           type="button"
@@ -73,14 +89,14 @@ function QuestionCard({
 
       <div className={styles.cardCopy}>
         <h2 id={titleId}>
-          <Link href={item.href}>{item.title}</Link>
+          <Link href={post.href}>{post.title}</Link>
         </h2>
-        <p>{item.body}</p>
+        <p>{post.body}</p>
       </div>
 
-      {item.tags.length > 0 && (
-        <ul aria-label={`${item.title} 태그`} className={styles.tags}>
-          {item.tags.map((tag) => (
+      {post.tags.length > 0 && (
+        <ul aria-label={`${post.title} 태그`} className={styles.tags}>
+          {post.tags.map((tag) => (
             <li key={tag}>
               <Link href={buildSearchScopeHref(tag, "community")}>{tag}</Link>
             </li>
@@ -88,10 +104,14 @@ function QuestionCard({
         </ul>
       )}
 
-      <div aria-label={`${item.title} 브라우저 반응`} className={styles.facts}>
-        <span data-active={reacted ? "true" : undefined}>
-          <Heart aria-hidden="true" size={16} weight={reacted ? "fill" : "regular"} />
-          공감 {reacted ? 1 : 0}
+      <div aria-label={`${post.title} 반응`} className={styles.facts}>
+        <span data-active={reactionCount > 0 ? "true" : undefined}>
+          <Heart
+            aria-hidden="true"
+            size={16}
+            weight={reactionCount > 0 ? "fill" : "regular"}
+          />
+          공감 {reactionCount}
         </span>
         <span>
           <ChatCircle aria-hidden="true" size={16} />
@@ -105,14 +125,18 @@ function QuestionCard({
           />
           {saved ? "저장됨" : "저장 안 함"}
         </span>
-        <Link href={item.href}>
+        <Link href={post.href}>
           상세 보기
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
       </div>
 
       {pendingDelete && (
-        <div className={styles.deleteConfirm} role="group" aria-label={`${item.title} 삭제 확인`}>
+        <div
+          aria-label={`${post.title} 삭제 확인`}
+          className={styles.deleteConfirm}
+          role="group"
+        >
           <p>삭제하면 댓글과 반응도 함께 지워집니다.</p>
           <div>
             <button onClick={onCancelDelete} type="button">
@@ -128,9 +152,21 @@ function QuestionCard({
   );
 }
 
-export function AuthoredQuestions() {
+export function AuthoredQuestions({
+  communityStore,
+}: {
+  communityStore?: CommunityStore;
+} = {}) {
+  const { ready: authReady, viewer } = useAuthViewerContext();
+  const community = useCommunityFeed({
+    authReady,
+    authorId: viewer?.id,
+    limit: 50,
+    store: communityStore,
+    viewer,
+  });
   const [hydrated, setHydrated] = useState(false);
-  const [posts, setPosts] = useState<LocalCommunityPost[]>([]);
+  const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [interactions, setInteractions] = useState<SocialInteractions>(
     EMPTY_SOCIAL_INTERACTIONS,
   );
@@ -139,10 +175,10 @@ export function AuthoredQuestions() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setPosts(readLocalCommunityPosts());
+    setLocalPosts(readLocalCommunityPosts());
     setInteractions(readSocialInteractions());
     setHydrated(true);
-    const unsubscribePosts = subscribeLocalCommunityPosts(setPosts);
+    const unsubscribePosts = subscribeLocalCommunityPosts(setLocalPosts);
     const unsubscribeInteractions = subscribeSocialInteractions(setInteractions);
     return () => {
       unsubscribePosts();
@@ -150,9 +186,38 @@ export function AuthoredQuestions() {
     };
   }, []);
 
-  function deleteQuestion(post: LocalCommunityPost) {
+  const posts = useMemo(
+    () =>
+      [
+        ...localPosts.map((post) => localCommunityPostToFeedItem(post)),
+        ...community.state.posts.map((post) =>
+          serverCommunityPostToFeedItem(post),
+        ),
+      ].sort(
+        (left, right) =>
+          Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
+          left.id.localeCompare(right.id),
+      ),
+    [community.state.posts, localPosts],
+  );
+
+  async function deleteQuestion(post: CommunityPostFeedItem) {
+    if (post.source === "server") {
+      const deleted = await community.deletePost(post.id);
+      if (!deleted) {
+        setAnnouncement("");
+        setError("글을 계정에서 삭제하지 못했습니다. 다시 시도해주세요.");
+        return;
+      }
+      removeRecentCommunityTopic(post.id);
+      setPendingDeleteId(null);
+      setError("");
+      setAnnouncement(`${post.title}을 계정에서 삭제했습니다.`);
+      return;
+    }
+
     const result = deleteLocalCommunityPost(post.id);
-    setPosts(result.posts);
+    setLocalPosts(result.posts);
     if (result.status !== "removed") {
       setAnnouncement("");
       setError(
@@ -169,19 +234,32 @@ export function AuthoredQuestions() {
     setAnnouncement(`${post.title}을 이 브라우저에서 삭제했습니다.`);
   }
 
+  const loading =
+    !hydrated ||
+    Boolean(viewer && community.state.status === "loading" && posts.length === 0);
+  const visibleError = error ||
+    (community.state.status === "error" ? community.state.error : "");
+
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>내 커리어 · 브라우저 커뮤니티</p>
+          <p className={styles.eyebrow}>
+            내 커리어 · {viewer ? "계정 커뮤니티" : "브라우저 커뮤니티"}
+          </p>
           <h1>내 글</h1>
           <p className={styles.description}>
-            이 브라우저에서 직접 작성한 질문, 커리어 고민과 면접 후기를 다시 확인합니다.
-            서버 계정과 동기화되지 않습니다.
+            {viewer
+              ? "내 계정으로 작성한 질문, 커리어 고민과 면접 후기를 모든 기기에서 다시 확인합니다."
+              : "이 브라우저에서 직접 작성한 질문, 커리어 고민과 면접 후기를 다시 확인합니다. 서버 계정과 동기화되지 않습니다."}
           </p>
         </div>
         <div className={styles.introActions}>
-          {hydrated && <span>이 브라우저에 {posts.length}개 저장</span>}
+          {hydrated && (
+            <span>
+              {viewer ? `계정에 ${posts.length}개 작성` : `이 브라우저에 ${posts.length}개 저장`}
+            </span>
+          )}
           <Link href="/?compose=1">
             <NotePencil aria-hidden="true" size={17} weight="bold" />
             새 글 작성
@@ -204,13 +282,13 @@ export function AuthoredQuestions() {
             {announcement}
           </p>
         )}
-        {error && (
+        {visibleError && (
           <p className={styles.error} role="alert">
-            {error}
+            {visibleError}
           </p>
         )}
 
-        {!hydrated ? (
+        {loading ? (
           <div className={styles.loading} role="status">
             <p>작성한 글을 불러오는 중입니다.</p>
           </div>
@@ -221,7 +299,7 @@ export function AuthoredQuestions() {
                 interactions={interactions}
                 key={post.id}
                 onCancelDelete={() => setPendingDeleteId(null)}
-                onConfirmDelete={() => deleteQuestion(post)}
+                onConfirmDelete={() => void deleteQuestion(post)}
                 onRequestDelete={() => {
                   setAnnouncement("");
                   setError("");
@@ -229,6 +307,9 @@ export function AuthoredQuestions() {
                 }}
                 pendingDelete={pendingDeleteId === post.id}
                 post={post}
+                serverSaved={community.state.viewerState.savedPostIds.includes(
+                  post.id,
+                )}
               />
             ))}
           </div>
@@ -237,7 +318,11 @@ export function AuthoredQuestions() {
             <div>
               <NotePencil aria-hidden="true" size={24} weight="bold" />
             </div>
-            <h2>이 브라우저에서 작성한 글이 없습니다.</h2>
+            <h2>
+              {viewer
+                ? "계정에 작성한 글이 없습니다."
+                : "이 브라우저에서 작성한 글이 없습니다."}
+            </h2>
             <p>질문이나 커리어 고민, 면접에서 배운 점을 홈 피드에 남겨보세요.</p>
             <Link href="/?compose=1">
               첫 글 작성
@@ -247,8 +332,9 @@ export function AuthoredQuestions() {
         )}
 
         <p className={styles.storageNote}>
-          글과 반응은 현재 브라우저의 로컬 저장소에만 남습니다. 브라우저 데이터를
-          지우면 복구할 수 없습니다.
+          {viewer
+            ? "계정 글과 반응은 이직핏 서버에 저장됩니다. 삭제한 글은 복구할 수 없습니다."
+            : "글과 반응은 현재 브라우저의 로컬 저장소에만 남습니다. 브라우저 데이터를 지우면 복구할 수 없습니다."}
         </p>
       </section>
     </main>

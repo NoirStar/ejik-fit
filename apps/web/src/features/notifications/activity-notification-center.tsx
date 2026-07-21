@@ -5,6 +5,8 @@ import {
   Briefcase,
   Buildings,
   ChartLineUp,
+  ChatCircle,
+  UserPlus,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -258,7 +260,7 @@ export function ActivityNotificationCenter({
     <div className={styles.list}>
       {(notifications?.state.items.length ?? 0) > 0 && (
         <div className={styles.persistentHeader}>
-          <span>수집 후 확인된 새 공고</span>
+          <span>계정 새 소식</span>
           {notifications && notifications.unreadCount > 0 && (
             <button
               onClick={() => void notifications.markAllRead()}
@@ -281,8 +283,23 @@ export function ActivityNotificationCenter({
             onNavigate?.();
           }}
         >
-          <span className={styles.icon} data-tone="new-job">
-            <Briefcase aria-hidden="true" size={18} weight="fill" />
+          <span
+            className={styles.icon}
+            data-tone={
+              notification.kind === "job"
+                ? "new-job"
+                : notification.metadata.action === "comment"
+                  ? "community-comment"
+                  : "community-follow"
+            }
+          >
+            {notification.kind === "job" ? (
+              <Briefcase aria-hidden="true" size={18} weight="fill" />
+            ) : notification.metadata.action === "comment" ? (
+              <ChatCircle aria-hidden="true" size={18} weight="fill" />
+            ) : (
+              <UserPlus aria-hidden="true" size={18} weight="fill" />
+            )}
           </span>
           <span className={styles.copy}>
             <span className={styles.notificationReason}>

@@ -11,7 +11,7 @@ export type RecentCommunityTopic = {
   postId: string;
   title: string;
   topicLabel: string;
-  source: "mock" | "local";
+  source: "mock" | "local" | "server";
   viewedAt: string;
 };
 
@@ -52,7 +52,9 @@ function normalizeTopic(value: unknown): RecentCommunityTopic | null {
     title.length > MAX_TITLE_LENGTH ||
     !topicLabel ||
     topicLabel.length > MAX_TOPIC_LABEL_LENGTH ||
-    (value.source !== "mock" && value.source !== "local") ||
+    (value.source !== "mock" &&
+      value.source !== "local" &&
+      value.source !== "server") ||
     !viewedAt ||
     Number.isNaN(Date.parse(viewedAt))
   ) {

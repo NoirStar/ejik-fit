@@ -10,6 +10,7 @@ import type {
 import {
   buildHomeFeedSnapshot,
   localCommunityPostToFeedItem,
+  serverCommunityPostToFeedItem,
 } from "./model";
 import type { ResourceState } from "./resource-state";
 
@@ -87,6 +88,37 @@ function ready<T>(data: T): ResourceState<T> {
 }
 
 describe("buildHomeFeedSnapshot", () => {
+  it("maps a server post without inventing or adjusting persisted metrics", () => {
+    expect(
+      serverCommunityPostToFeedItem(
+        {
+          id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          author: {
+            id: "11111111-1111-4111-8111-111111111111",
+            nickname: "서버정원",
+          },
+          category: "커리어 질문",
+          title: "서버 커뮤니티 질문",
+          body: "실제 계정에 저장된 본문입니다.",
+          tags: ["백엔드"],
+          metrics: { reactions: 4, comments: 2, saves: 1 },
+          createdAt: "2026-07-14T01:00:00.000Z",
+          updatedAt: "2026-07-14T01:00:00.000Z",
+        },
+        new Date("2026-07-14T01:12:00.000Z"),
+      ),
+    ).toMatchObject({
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      authorId: "11111111-1111-4111-8111-111111111111",
+      authorName: "서버정원",
+      authorHeadline: "커뮤니티 회원",
+      createdLabel: "12분 전",
+      href: "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      metrics: { reactions: 4, comments: 2, saves: 1 },
+      source: "server",
+    });
+  });
+
   it("maps a browser-owned post without inventing engagement", () => {
     expect(
       localCommunityPostToFeedItem(

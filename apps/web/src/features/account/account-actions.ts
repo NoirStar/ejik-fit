@@ -17,7 +17,7 @@ export type NotificationPreference = {
 
 export type AccountDataArchive = {
   format: "ejikfit-account-export";
-  version: 1;
+  version: 2;
   exportedAt: string;
   account: {
     id: string;
@@ -28,6 +28,14 @@ export type AccountDataArchive = {
   serverCareerState: unknown;
   savedJobSearches: unknown[];
   notifications: unknown[];
+  community: {
+    posts: unknown[];
+    comments: unknown[];
+    reactions: unknown[];
+    saves: unknown[];
+    followedAuthors: unknown[];
+    reports: unknown[];
+  };
 };
 
 function clientOrThrow() {
@@ -91,7 +99,18 @@ export async function createAccountDataArchive(
   viewer: AuthViewer,
 ): Promise<AccountDataArchive> {
   const client = clientOrThrow();
-  const [profile, careerState, savedSearches, notifications] =
+  const [
+    profile,
+    careerState,
+    savedSearches,
+    notifications,
+    communityPosts,
+    communityComments,
+    communityReactions,
+    communitySaves,
+    communityFollows,
+    communityReports,
+  ] =
     await Promise.all([
       client
         .from("user_profiles")
@@ -113,18 +132,58 @@ export async function createAccountDataArchive(
         .select("*")
         .eq("user_id", viewer.id)
         .order("created_at", { ascending: true }),
+      client
+        .from("community_posts")
+        .select(
+          "id,author_id,category,title,body,tags,reaction_count,comment_count,save_count,created_at,updated_at",
+        )
+        .eq("author_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("community_comments")
+        .select("id,post_id,author_id,body,created_at,updated_at")
+        .eq("author_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("community_post_reactions")
+        .select("post_id,user_id,created_at")
+        .eq("user_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("community_post_saves")
+        .select("post_id,user_id,created_at")
+        .eq("user_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("community_author_follows")
+        .select("id,follower_id,followed_id,created_at")
+        .eq("follower_id", viewer.id)
+        .order("created_at", { ascending: true }),
+      client
+        .from("community_reports")
+        .select(
+          "id,reporter_id,target_type,target_id,reason,details,status,created_at,updated_at",
+        )
+        .eq("reporter_id", viewer.id)
+        .order("created_at", { ascending: true }),
     ]);
 
   const error =
     profile.error ??
     careerState.error ??
     savedSearches.error ??
-    notifications.error;
+    notifications.error ??
+    communityPosts.error ??
+    communityComments.error ??
+    communityReactions.error ??
+    communitySaves.error ??
+    communityFollows.error ??
+    communityReports.error;
   if (error) throw error;
 
   return {
     format: "ejikfit-account-export",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     account: {
       id: viewer.id,
@@ -135,6 +194,14 @@ export async function createAccountDataArchive(
     serverCareerState: careerState.data,
     savedJobSearches: savedSearches.data ?? [],
     notifications: notifications.data ?? [],
+    community: {
+      posts: communityPosts.data ?? [],
+      comments: communityComments.data ?? [],
+      reactions: communityReactions.data ?? [],
+      saves: communitySaves.data ?? [],
+      followedAuthors: communityFollows.data ?? [],
+      reports: communityReports.data ?? [],
+    },
   };
 }
 

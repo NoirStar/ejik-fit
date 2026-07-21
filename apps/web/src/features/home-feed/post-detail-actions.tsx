@@ -26,7 +26,7 @@ import type { SocialMetrics } from "./types";
 import styles from "./post-detail-actions.module.css";
 
 type PostDetailActionsProps = {
-  contentKind?: "mock" | "local";
+  contentKind?: "mock" | "local" | "server";
   postId: string;
   postTitle: string;
   metrics: SocialMetrics;

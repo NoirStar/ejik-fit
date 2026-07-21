@@ -22,7 +22,10 @@ import Link from "next/link";
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CompanyMark } from "./company-mark";
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import { useCommunityFeed } from "@/features/community/use-community-feed";
+import { buildSearchScopeHref } from "@/features/search/model";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
   createLocalCommunityPost,
@@ -48,10 +51,14 @@ import {
   toggleSavedJob,
 } from "@/lib/saved-jobs";
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
-import { buildSearchScopeHref } from "@/features/search/model";
+
+import { CompanyMark } from "./company-mark";
 import { itemsForTab } from "./feed-order";
 import { FollowingPostList } from "./following-post-list";
-import { localCommunityPostToFeedItem } from "./model";
+import {
+  localCommunityPostToFeedItem,
+  serverCommunityPostToFeedItem,
+} from "./model";
 import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
@@ -70,6 +77,7 @@ import type {
 export type HomeFeedProps = {
   snapshot: HomeFeedSnapshot;
   composeInitiallyOpen?: boolean;
+  communityStore?: CommunityStore;
 };
 
 type LocalPostDraft = {
@@ -108,11 +116,27 @@ const EMPTY_DRAFT: LocalPostDraft = {
   tags: "",
 };
 
+function draftTags(value: string) {
+  const tags: string[] = [];
+  const seen = new Set<string>();
+  for (const candidate of value.split(",")) {
+    const tag = candidate.trim();
+    const key = tag.toLocaleLowerCase("ko-KR");
+    if (!tag || seen.has(key)) continue;
+    tags.push(tag);
+    seen.add(key);
+    if (tags.length === 4) break;
+  }
+  return tags;
+}
+
 function isSocialItem(item: FeedItem): item is SocialItem {
   return item.type === "community_post" || item.type === "interview_review";
 }
 
 function SocialCard({
+  actionDisabled,
+  canDelete,
   item,
   followDisabled,
   followed,
@@ -124,6 +148,8 @@ function SocialCard({
   reacted,
   saved,
 }: {
+  actionDisabled: boolean;
+  canDelete: boolean;
   item: SocialItem;
   followDisabled: boolean;
   followed: boolean;
@@ -139,6 +165,12 @@ function SocialCard({
   const body = item.type === "community_post" ? item.body : item.summary;
   const visibleTags = item.tags.slice(0, 3);
   const hiddenTagCount = item.tags.length - visibleTags.length;
+  const persistedMetrics = item.source === "server";
+  const reactionCount =
+    item.metrics.reactions + (persistedMetrics ? 0 : reacted ? 1 : 0);
+  const commentCount =
+    item.metrics.comments + (persistedMetrics ? 0 : localCommentCount);
+  const saveCount = item.metrics.saves + (persistedMetrics ? 0 : saved ? 1 : 0);
 
   return (
     <article aria-labelledby={titleId} className={styles.socialCard}>
@@ -153,10 +185,11 @@ function SocialCard({
           </span>
         </div>
         <div className={styles.authorActions}>
-          {item.source === "local" ? (
+          {item.source === "local" || canDelete ? (
             <button
               aria-label={`${item.title} 삭제`}
               className={styles.localDeleteButton}
+              disabled={actionDisabled}
               onClick={onDelete}
               type="button"
             >
@@ -227,26 +260,28 @@ function SocialCard({
           aria-label={`${item.title} ${reacted ? "공감 취소" : "공감"}`}
           aria-pressed={reacted}
           data-active={reacted ? "true" : undefined}
+          disabled={actionDisabled}
           onClick={onReact}
           type="button"
         >
           <Heart aria-hidden="true" size={19} weight={reacted ? "fill" : "regular"} />
           <span>공감</span>
-          <strong>{item.metrics.reactions + (reacted ? 1 : 0)}</strong>
+          <strong>{reactionCount}</strong>
         </button>
         <Link
-          aria-label={`${item.title} 댓글 ${item.metrics.comments + localCommentCount}개`}
+          aria-label={`${item.title} 댓글 ${commentCount}개`}
           href={item.href}
         >
           <ChatCircle aria-hidden="true" size={19} />
           <span>댓글</span>
-          <strong>{item.metrics.comments + localCommentCount}</strong>
+          <strong>{commentCount}</strong>
         </Link>
         <button
           aria-label={`${item.title} ${saved ? "저장 해제" : "저장"}`}
           aria-pressed={saved}
           className={styles.saveAction}
           data-active={saved ? "true" : undefined}
+          disabled={actionDisabled}
           onClick={onSave}
           type="button"
         >
@@ -256,7 +291,7 @@ function SocialCard({
             weight={saved ? "fill" : "regular"}
           />
           <span>저장</span>
-          <strong>{item.metrics.saves + (saved ? 1 : 0)}</strong>
+          <strong>{saveCount}</strong>
         </button>
       </footer>
     </article>
@@ -510,6 +545,8 @@ function HomeCareerContext({
 }
 
 function FeedCard({
+  actionDisabled,
+  canDelete,
   item,
   followDisabled,
   followed,
@@ -522,6 +559,8 @@ function FeedCard({
   reacted,
   saved,
 }: {
+  actionDisabled: boolean;
+  canDelete: boolean;
   item: FeedItem;
   followDisabled: boolean;
   followed: boolean;
@@ -537,6 +576,8 @@ function FeedCard({
   if (isSocialItem(item)) {
     return (
       <SocialCard
+        actionDisabled={actionDisabled}
+        canDelete={canDelete}
         item={item}
         followDisabled={followDisabled}
         followed={followed}
@@ -562,8 +603,15 @@ function FeedCard({
 
 export function HomeFeed({
   composeInitiallyOpen = false,
+  communityStore,
   snapshot,
 }: HomeFeedProps) {
+  const { ready: authReady, viewer } = useAuthViewerContext();
+  const community = useCommunityFeed({
+    authReady,
+    store: communityStore,
+    viewer,
+  });
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const [socialInteractions, setSocialInteractions] =
     useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
@@ -638,22 +686,60 @@ export function HomeFeed({
     () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
     [localPosts],
   );
+  const serverFeedItems = useMemo(
+    () => community.state.posts.map((post) => serverCommunityPostToFeedItem(post)),
+    [community.state.posts],
+  );
+  const followedAuthorIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...socialInteractions.followedAuthorIds,
+          ...community.state.viewerState.followedAuthorIds,
+        ]),
+      ),
+    [
+      community.state.viewerState.followedAuthorIds,
+      socialInteractions.followedAuthorIds,
+    ],
+  );
   const visibleItems = useMemo(
     () =>
       itemsForTab(
-        [...localFeedItems, ...snapshot.feedItems],
+        [...localFeedItems, ...serverFeedItems, ...snapshot.feedItems],
         activeTab,
-        socialInteractions.followedAuthorIds,
+        followedAuthorIds,
       ),
     [
       activeTab,
       localFeedItems,
+      serverFeedItems,
       snapshot.feedItems,
-      socialInteractions.followedAuthorIds,
+      followedAuthorIds,
     ],
   );
 
-  function handleAuthorFollow(item: SocialItem) {
+  function requestLoginForCommunity() {
+    setAnnouncement("로그인하면 공감·저장·팔로우를 계정에 보관할 수 있습니다.");
+  }
+
+  async function handleAuthorFollow(item: SocialItem) {
+    if (item.source === "server") {
+      if (!viewer) {
+        requestLoginForCommunity();
+        return;
+      }
+      const wasFollowed =
+        community.state.viewerState.followedAuthorIds.includes(item.authorId);
+      const changed = await community.toggleFollowed(item.authorId);
+      setAnnouncement(
+        changed
+          ? `${item.authorName} ${wasFollowed ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`
+          : "팔로우 상태를 변경하지 못했습니다. 다시 시도해주세요.",
+      );
+      return;
+    }
+
     const wasFollowed = socialInteractions.followedAuthorIds.includes(
       item.authorId,
     );
@@ -711,7 +797,42 @@ export function HomeFeed({
     setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
   }
 
-  function submitPost(event: FormEvent<HTMLFormElement>) {
+  async function deleteServerPost(post: CommunityPostFeedItem) {
+    const deleted = await community.deletePost(post.id);
+    setAnnouncement(
+      deleted
+        ? "작성한 글을 계정에서 삭제했습니다."
+        : "작성한 글을 삭제하지 못했습니다. 다시 시도해주세요.",
+    );
+  }
+
+  async function handleReaction(item: SocialItem) {
+    if (item.source !== "server") {
+      setSocialInteractions(togglePostReaction(item.id));
+      return;
+    }
+    if (!viewer) {
+      requestLoginForCommunity();
+      return;
+    }
+    const changed = await community.toggleReaction(item.id);
+    if (!changed) setAnnouncement("공감을 반영하지 못했습니다. 다시 시도해주세요.");
+  }
+
+  async function handleSocialSave(item: SocialItem) {
+    if (item.source !== "server") {
+      setSocialInteractions(togglePostSave(item.id));
+      return;
+    }
+    if (!viewer) {
+      requestLoginForCommunity();
+      return;
+    }
+    const changed = await community.toggleSaved(item.id);
+    if (!changed) setAnnouncement("저장 상태를 반영하지 못했습니다. 다시 시도해주세요.");
+  }
+
+  async function submitPost(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = draft.title.trim();
     const body = draft.body.trim();
@@ -724,11 +845,33 @@ export function HomeFeed({
       return;
     }
 
+    const tags = draftTags(draft.tags);
+
+    if (viewer) {
+      const post = await community.createPost({
+        category: draft.category,
+        title,
+        body,
+        tags,
+      });
+      if (!post) {
+        setDraftErrors({
+          storage: "글을 계정에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        });
+        return;
+      }
+      setActiveTab("recommended");
+      setDraft(EMPTY_DRAFT);
+      closeComposer();
+      setAnnouncement("작성한 글을 계정에 저장했습니다.");
+      return;
+    }
+
     const result = createLocalCommunityPost({
       category: draft.category,
       title,
       body,
-      tags: draft.tags.split(","),
+      tags,
     });
     setLocalPosts(result.posts);
     if (!result.post) {
@@ -834,6 +977,32 @@ export function HomeFeed({
             </section>
           )}
 
+          {community.state.status === "error" && (
+            <section className={styles.dataNotice} role="status">
+              <WarningCircle aria-hidden="true" size={20} weight="fill" />
+              <div>
+                <strong>새 커뮤니티 글을 불러오지 못했습니다</strong>
+                <p>{community.state.error}</p>
+                <button onClick={() => void community.reload()} type="button">
+                  커뮤니티 다시 불러오기
+                </button>
+              </div>
+            </section>
+          )}
+
+          {community.state.migrationFailedPostIds.length > 0 && (
+            <section className={styles.dataNotice} role="status">
+              <WarningCircle aria-hidden="true" size={20} weight="fill" />
+              <div>
+                <strong>브라우저 글 일부를 계정으로 옮기지 못했습니다</strong>
+                <p>원본은 그대로 보관했습니다. 연결이 안정되면 다시 시도할 수 있어요.</p>
+                <button onClick={() => void community.reload()} type="button">
+                  다시 옮기기
+                </button>
+              </div>
+            </section>
+          )}
+
           <div aria-label="피드 정렬" className={styles.tabs} role="tablist">
             {TABS.map((tab, index) => (
               <button
@@ -874,44 +1043,75 @@ export function HomeFeed({
             {visibleItems.length > 0 ? (
               visibleItems.map((item) => {
                 const recommendedJob = item.type === "recommended_job";
+                const serverItem =
+                  item.type === "community_post" && item.source === "server";
+                const serverPending =
+                  serverItem &&
+                  community.state.pendingKeys.some(
+                    (key) => key.endsWith(`:${item.id}`) || key.endsWith(`:${item.authorId}`),
+                  );
                 return (
                   <FeedCard
-                    followDisabled={!socialHydrated}
+                    actionDisabled={Boolean(serverPending)}
+                    canDelete={Boolean(serverItem && viewer?.id === item.authorId)}
+                    followDisabled={
+                      serverItem
+                        ? Boolean(serverPending || viewer?.id === item.authorId)
+                        : !socialHydrated
+                    }
                     followed={
                       isSocialItem(item) &&
-                      socialInteractions.followedAuthorIds.includes(
-                        item.authorId,
-                      )
+                      (item.source === "server"
+                        ? community.state.viewerState.followedAuthorIds.includes(
+                            item.authorId,
+                          )
+                        : socialInteractions.followedAuthorIds.includes(
+                            item.authorId,
+                          ))
                     }
                     item={item}
                     key={item.id}
                     localCommentCount={
-                      socialInteractions.commentsByPostId[item.id]?.length ?? 0
+                      serverItem
+                        ? 0
+                        : socialInteractions.commentsByPostId[item.id]?.length ?? 0
                     }
                     onDelete={() => {
                       if (item.type === "community_post" && item.source === "local") {
                         deleteLocalPost(item);
+                      } else if (
+                        item.type === "community_post" &&
+                        item.source === "server" &&
+                        viewer?.id === item.authorId
+                      ) {
+                        void deleteServerPost(item);
                       }
                     }}
-                    onReact={() =>
-                      setSocialInteractions(togglePostReaction(item.id))
-                    }
+                    onReact={() => {
+                      if (isSocialItem(item)) void handleReaction(item);
+                    }}
                     onFollow={() => {
-                      if (isSocialItem(item)) handleAuthorFollow(item);
+                      if (isSocialItem(item)) void handleAuthorFollow(item);
                     }}
                     onSave={() => {
                       if (recommendedJob) {
                         setSavedJobIds(toggleSavedJob(item.postingId));
-                      } else {
-                        setSocialInteractions(togglePostSave(item.id));
+                      } else if (isSocialItem(item)) {
+                        void handleSocialSave(item);
                       }
                     }}
                     ownedSkills={snapshot.ownedSkills}
-                    reacted={socialInteractions.reactedPostIds.includes(item.id)}
+                    reacted={
+                      serverItem
+                        ? community.state.viewerState.reactedPostIds.includes(item.id)
+                        : socialInteractions.reactedPostIds.includes(item.id)
+                    }
                     saved={
                       recommendedJob
                         ? savedJobIds.includes(item.postingId)
-                        : socialInteractions.savedPostIds.includes(item.id)
+                        : serverItem
+                          ? community.state.viewerState.savedPostIds.includes(item.id)
+                          : socialInteractions.savedPostIds.includes(item.id)
                     }
                   />
                 );
@@ -992,7 +1192,7 @@ export function HomeFeed({
           )}
 
           <FollowingPostList
-            followedAuthorIds={socialInteractions.followedAuthorIds}
+            followedAuthorIds={followedAuthorIds}
             hydrated={socialHydrated}
             onShowFollowing={showFollowingPosts}
           />
@@ -1011,7 +1211,13 @@ export function HomeFeed({
           >
             <header className={styles.composerHeader}>
               <div>
-                <p>이 브라우저에만 저장되는 글</p>
+                <p>
+                  {viewer
+                    ? "계정에 저장되는 글"
+                    : authReady
+                      ? "이 브라우저에만 저장되는 글"
+                      : "로그인 상태 확인 중"}
+                </p>
                 <h2 id="community-composer-title">커뮤니티 글쓰기</h2>
               </div>
               <button aria-label="글쓰기 닫기" onClick={closeComposer} type="button">
@@ -1099,10 +1305,17 @@ export function HomeFeed({
 
               <div className={styles.composerNote}>
                 <ShieldCheck aria-hidden="true" size={18} />
-                <p>
-                  이 글은 서버에 게시되지 않고 이 브라우저에만 저장됩니다.
-                  개인정보 화면에서 한 번에 지울 수 있습니다.
-                </p>
+                {viewer ? (
+                  <p>
+                    게시한 글은 계정에 안전하게 저장되며 다른 사용자가 볼 수
+                    있습니다. 개인정보가 포함되지 않았는지 확인해주세요.
+                  </p>
+                ) : (
+                  <p>
+                    로그인 전에는 이 브라우저에 보관됩니다. 이후 로그인하면
+                    작성한 글과 반응을 계정으로 안전하게 옮깁니다.
+                  </p>
+                )}
               </div>
 
               {draftErrors.storage && (
@@ -1115,8 +1328,17 @@ export function HomeFeed({
                 <button onClick={closeComposer} type="button">
                   취소
                 </button>
-                <button disabled={!localPostsHydrated} type="submit">
-                  피드에 올리기
+                <button
+                  disabled={
+                    !localPostsHydrated ||
+                    Boolean(viewer && community.state.status !== "ready") ||
+                    community.state.pendingKeys.includes("create:post")
+                  }
+                  type="submit"
+                >
+                  {community.state.pendingKeys.includes("create:post")
+                    ? "게시 중..."
+                    : "피드에 올리기"}
                 </button>
               </div>
             </form>

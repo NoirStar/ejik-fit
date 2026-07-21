@@ -9,6 +9,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import type {
+  CommunityPost,
+  CreateCommunityPostInput,
+} from "@/lib/community-contract";
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
 import {
   readRecentCommunityTopics,
@@ -111,6 +117,32 @@ function buildSnapshot() {
     },
     ownedSkills: ["Java", "Kafka"],
   });
+}
+
+function serverCommunityStore(post: CommunityPost) {
+  return {
+    listPosts: vi.fn(async () => [post]),
+    getPost: vi.fn(async () => post),
+    getComment: vi.fn(async () => null),
+    listComments: vi.fn(async () => []),
+    loadViewerState: vi.fn(async () => ({
+      reactedPostIds: [post.id],
+      savedPostIds: [],
+      followedAuthorIds: [],
+    })),
+    createPost: vi.fn(
+      async (_authorId: string, _input: CreateCommunityPostInput) => post,
+    ),
+    deletePost: vi.fn(async () => undefined),
+    createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    deleteComment: vi.fn(async () => undefined),
+    setPostReaction: vi.fn(async () => undefined),
+    setPostSaved: vi.fn(async () => undefined),
+    setAuthorFollowed: vi.fn(async () => undefined),
+    createReport: vi.fn(async () => undefined),
+  } satisfies CommunityStore;
 }
 
 describe("HomeFeed", () => {
@@ -383,6 +415,130 @@ describe("HomeFeed", () => {
     fireEvent.click(save);
     expect(save).toHaveAttribute("aria-pressed", "true");
     expect(save).toHaveTextContent("19");
+  });
+
+  it("renders account community posts before fixtures without double-counting reactions", async () => {
+    const post: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "22222222-2222-4222-8222-222222222222",
+        nickname: "실제작성자",
+      },
+      category: "커리어 질문",
+      title: "계정에 저장된 커뮤니티 질문",
+      body: "서버에 저장된 실제 커뮤니티 본문입니다.",
+      tags: ["백엔드"],
+      metrics: { reactions: 4, comments: 2, saves: 1 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(post);
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+
+    const article = await screen.findByRole("article", {
+      name: "계정에 저장된 커뮤니티 질문",
+    });
+    expect(screen.getAllByRole("article")[0]).toBe(article);
+    const reaction = within(article).getByRole("button", { name: /공감 취소/ });
+    expect(reaction).toHaveTextContent("4");
+
+    fireEvent.click(reaction);
+    await waitFor(() =>
+      expect(store.setPostReaction).toHaveBeenCalledWith(
+        "11111111-1111-4111-8111-111111111111",
+        post.id,
+        false,
+      ),
+    );
+    expect(reaction).toHaveTextContent("3");
+  });
+
+  it("publishes signed-in composer drafts to the account instead of local storage", async () => {
+    const existing: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "나",
+      },
+      category: "커리어 질문",
+      title: "기존 글",
+      body: "기존 본문",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(existing);
+    store.createPost.mockImplementationOnce(async (_authorId, input) => ({
+      ...existing,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      category: input.category,
+      title: input.title,
+      body: input.body,
+      tags: input.tags,
+    }));
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed
+          communityStore={store}
+          composeInitiallyOpen
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    expect(screen.getByText("계정에 저장되는 글")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "계정으로 올릴 글" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "브라우저가 아닌 계정에 저장할 본문입니다." },
+    });
+    fireEvent.change(screen.getByLabelText("태그 (선택)"), {
+      target: { value: "백엔드, 백엔드, Java" },
+    });
+    const submit = screen.getByRole("button", { name: "피드에 올리기" });
+    await waitFor(() => expect(submit).toBeEnabled());
+    fireEvent.click(submit);
+
+    await waitFor(() =>
+      expect(store.createPost).toHaveBeenCalledWith(
+        "11111111-1111-4111-8111-111111111111",
+        {
+          category: "커리어 질문",
+          title: "계정으로 올릴 글",
+          body: "브라우저가 아닌 계정에 저장할 본문입니다.",
+          tags: ["백엔드", "Java"],
+        },
+      ),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "커뮤니티 글쓰기" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("article", { name: "계정으로 올릴 글" }),
+    ).toBeInTheDocument();
+    expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
   });
 
   it("restores shared post reactions, saves, and browser comment counts", async () => {

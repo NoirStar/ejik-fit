@@ -77,7 +77,7 @@ export type CommunitySearchResult = {
   authorName: string;
   authorHeadline: string;
   createdLabel: string;
-  source: "mock" | "local";
+  source: "mock" | "local" | "server";
 };
 
 export type SearchSnapshot = {

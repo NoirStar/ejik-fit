@@ -107,6 +107,16 @@
   color: #8b673c;
 }
 
+.icon[data-tone="community-comment"] {
+  background: color-mix(in srgb, #9bcec1 22%, var(--color-surface));
+  color: #397d6d;
+}
+
+.icon[data-tone="community-follow"] {
+  background: color-mix(in srgb, #ffb6a6 21%, var(--color-surface));
+  color: #a95849;
+}
+
 .copy {
   display: grid;
   min-width: 0;

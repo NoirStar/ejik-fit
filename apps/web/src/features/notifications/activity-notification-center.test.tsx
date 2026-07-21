@@ -295,6 +295,22 @@ describe("ActivityNotificationCenter", () => {
                 readAt: null,
                 createdAt: "2026-07-20T03:00:00.000Z",
               },
+              {
+                id: "notification-2",
+                userId: viewer.id,
+                kind: "community",
+                title: "새 댓글이 달렸어요",
+                body: "서버정원님이 댓글을 남겼습니다.",
+                href: "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                metadata: {
+                  action: "comment",
+                  actorId: "22222222-2222-4222-8222-222222222222",
+                  postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                  commentId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+                },
+                readAt: null,
+                createdAt: "2026-07-20T04:00:00.000Z",
+              },
             ],
           },
           unreadCount: 1,
@@ -309,6 +325,11 @@ describe("ActivityNotificationCenter", () => {
 
     const notification = await screen.findByText("테스트랩 새 공고");
     expect(screen.getByText("저장 검색 · Python 경력 · 관심 기업")).toBeInTheDocument();
+    expect(screen.getByText("커뮤니티 · 새 댓글")).toBeInTheDocument();
+    expect(screen.getByText("새 댓글이 달렸어요").closest("a")).toHaveAttribute(
+      "href",
+      "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    );
     const notificationLink = notification.closest("a")!;
     notificationLink.addEventListener("click", (event) =>
       event.preventDefault(),

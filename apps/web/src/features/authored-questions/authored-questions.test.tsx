@@ -8,6 +8,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { CommunityStore } from "@/features/community/community-store";
+import type {
+  CommunityPost,
+  CreateCommunityPostInput,
+} from "@/lib/community-contract";
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
 
 import { AuthoredQuestions } from "./authored-questions";
@@ -208,6 +214,77 @@ describe("AuthoredQuestions", () => {
     expect(newest).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "댓글과 반응을 정리하지 못해 삭제를 중단했습니다.",
+    );
+  });
+
+  it("lists and deletes signed-in account posts from the server store", async () => {
+    const userId = "11111111-1111-4111-8111-111111111111";
+    const post: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: { id: userId, nickname: "나" },
+      category: "커리어 질문",
+      title: "계정에 작성한 질문",
+      body: "어느 기기에서도 확인할 수 있는 본문입니다.",
+      tags: ["백엔드"],
+      metrics: { reactions: 3, comments: 2, saves: 1 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = {
+      listPosts: vi.fn(async () => [post]),
+      getPost: vi.fn(async () => post),
+      getComment: vi.fn(async () => null),
+      listComments: vi.fn(async () => []),
+      loadViewerState: vi.fn(async () => ({
+        reactedPostIds: [],
+        savedPostIds: [post.id],
+        followedAuthorIds: [],
+      })),
+      createPost: vi.fn(
+        async (_authorId: string, _input: CreateCommunityPostInput) => post,
+      ),
+      deletePost: vi.fn(async () => undefined),
+      createComment: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      deleteComment: vi.fn(async () => undefined),
+      setPostReaction: vi.fn(async () => undefined),
+      setPostSaved: vi.fn(async () => undefined),
+      setAuthorFollowed: vi.fn(async () => undefined),
+      createReport: vi.fn(async () => undefined),
+    } satisfies CommunityStore;
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: userId, email: "viewer@example.com" }}
+      >
+        <AuthoredQuestions communityStore={store} />
+      </AuthViewerProvider>,
+    );
+
+    const article = await screen.findByRole("article", {
+      name: post.title,
+    });
+    expect(store.listPosts).toHaveBeenCalledWith({ authorId: userId, limit: 50 });
+    expect(within(article).getByText("공감 3")).toBeInTheDocument();
+    expect(within(article).getByText("댓글 2")).toBeInTheDocument();
+    expect(within(article).getByText("저장됨")).toBeInTheDocument();
+    expect(screen.getByText("계정에 1개 작성")).toBeInTheDocument();
+
+    fireEvent.click(
+      within(article).getByRole("button", { name: `${post.title} 삭제` }),
+    );
+    fireEvent.click(within(article).getByRole("button", { name: "정말 삭제" }));
+
+    await waitFor(() => {
+      expect(store.deletePost).toHaveBeenCalledWith(userId, post.id);
+      expect(
+        screen.queryByRole("article", { name: post.title }),
+      ).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `${post.title}을 계정에서 삭제했습니다.`,
     );
   });
 });

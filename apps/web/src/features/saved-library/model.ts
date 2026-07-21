@@ -49,7 +49,7 @@ export type SavedCommunityItem = {
   createdLabel: string;
   tags: string[];
   href: string;
-  source: "mock" | "local";
+  source: "mock" | "local" | "server";
 };
 
 export type SavedJobData = {

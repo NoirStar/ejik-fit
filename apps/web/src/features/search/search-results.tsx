@@ -265,7 +265,11 @@ function CommunityResult({
     <article aria-label={item.title} className={styles.communityResult}>
       <div className={styles.resultTopline}>
         <span className={styles.exampleBadge} data-source={item.source}>
-          {item.source === "local" ? "내 로컬 글" : "예시 콘텐츠"}
+          {item.source === "local"
+            ? "내 로컬 글"
+            : item.source === "server"
+              ? "커뮤니티"
+              : "예시 콘텐츠"}
         </span>
         <span>{item.createdLabel}</span>
       </div>

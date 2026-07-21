@@ -66,7 +66,7 @@ describe("AccountOverview", () => {
     accountActionMocks.createArchive.mockReset();
     accountActionMocks.createArchive.mockResolvedValue({
       format: "ejikfit-account-export",
-      version: 1,
+      version: 2,
       exportedAt: "2026-07-20T00:00:00.000Z",
     });
     accountActionMocks.deleteAccount.mockReset();

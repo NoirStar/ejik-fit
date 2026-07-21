@@ -12,6 +12,7 @@ import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
+import type { CommunityPost } from "@/lib/community-contract";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
@@ -38,7 +39,7 @@ import type {
   SkillDemandSummary,
 } from "./types";
 
-function formatLocalPostCreatedLabel(createdAt: string, now: Date) {
+function formatCommunityCreatedLabel(createdAt: string, now: Date) {
   const created = new Date(createdAt);
   if (Number.isNaN(created.getTime())) return "이 브라우저에서 작성";
   const elapsed = Math.max(0, now.getTime() - created.getTime());
@@ -68,13 +69,50 @@ export function localCommunityPostToFeedItem(
     authorHeadline: "이 브라우저에서 작성",
     authorTone: "violet",
     createdAt: post.createdAt,
-    createdLabel: formatLocalPostCreatedLabel(post.createdAt, now),
+    createdLabel: formatCommunityCreatedLabel(post.createdAt, now),
     title: post.title,
     body: post.body,
     tags: post.tags,
     href: `/posts/${encodeURIComponent(post.id)}`,
     metrics: { reactions: 0, comments: 0, saves: 0 },
     source: "local",
+  };
+}
+
+function serverAuthorTone(authorId: string): CommunityPostFeedItem["authorTone"] {
+  const tones: CommunityPostFeedItem["authorTone"][] = [
+    "violet",
+    "blue",
+    "green",
+    "orange",
+  ];
+  const index = Array.from(authorId).reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+  return tones[index % tones.length];
+}
+
+export function serverCommunityPostToFeedItem(
+  post: CommunityPost,
+  now = new Date(),
+): CommunityPostFeedItem {
+  return {
+    id: post.id,
+    type: "community_post",
+    category: post.category,
+    authorId: post.author.id,
+    authorName: post.author.nickname?.trim() || "이직핏 사용자",
+    authorHeadline: "커뮤니티 회원",
+    authorTone: serverAuthorTone(post.author.id),
+    createdAt: post.createdAt,
+    createdLabel: formatCommunityCreatedLabel(post.createdAt, now),
+    title: post.title,
+    body: post.body,
+    tags: post.tags,
+    href: `/posts/${encodeURIComponent(post.id)}`,
+    metrics: post.metrics,
+    source: "server",
   };
 }
 
