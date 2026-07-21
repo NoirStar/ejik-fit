@@ -142,7 +142,7 @@ describe("SavedLibrary", () => {
     vi.unstubAllGlobals();
   });
 
-  it("separates revalidated actual jobs from explicitly mock community saves", async () => {
+  it("separates revalidated jobs from built-in starting community saves", async () => {
     saveBrowserItems();
     render(<SavedLibrary />);
 
@@ -178,8 +178,8 @@ describe("SavedLibrary", () => {
     const community = screen.getByRole("article", {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     });
-    expect(within(community).getByText("예시 콘텐츠")).toBeInTheDocument();
-    expect(screen.getByText(/실제 사용자가 작성한 글이 아닙니다/)).toBeInTheDocument();
+    expect(within(community).getByText("시작 글")).toBeInTheDocument();
+    expect(screen.getByText(/이직핏 시작 글은 현재 브라우저에 저장됩니다/)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "전체 2" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -209,7 +209,7 @@ describe("SavedLibrary", () => {
       screen.getByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
-    ).toHaveTextContent("예시 콘텐츠");
+    ).toHaveTextContent("시작 글");
     expect(screen.getByRole("tab", { name: "커뮤니티 2" })).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: "공식 공고" }),

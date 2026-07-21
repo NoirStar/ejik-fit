@@ -162,13 +162,14 @@ describe("PostDetailActions", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("labels all built-in discussion as sample content", () => {
+  it("labels built-in discussion as an Ejikfit starting conversation", () => {
     render(<PostDetailActions {...props} />);
 
-    expect(screen.getByText("대표 예시 댓글")).toBeInTheDocument();
+    expect(screen.getByText("댓글")).toBeInTheDocument();
     expect(
-      screen.getByText(/실제 사용자가 작성한 댓글이 아닙니다/),
+      screen.getByText(/이직핏이 구성한 시작 댓글/),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/예시/)).not.toBeInTheDocument();
   });
 
   it("labels browser-owned post discussion without mock metrics", () => {
@@ -188,7 +189,7 @@ describe("PostDetailActions", () => {
     expect(
       screen.getByText("반응과 댓글은 이 브라우저에만 저장됩니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("대표 예시 댓글")).not.toBeInTheDocument();
+    expect(screen.getByText("댓글")).toBeInTheDocument();
     expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();
   });
 });

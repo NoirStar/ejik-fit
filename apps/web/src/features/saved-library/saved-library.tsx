@@ -466,7 +466,7 @@ export function SavedLibrary({
           <p className={styles.description}>
             공고 저장과 지원 단계는 로그인 전에는 이 브라우저에
             남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의
-            저장은 로그인 계정에 보관하고, 로컬 글과 예시 콘텐츠의 저장은
+            저장은 로그인 계정에 보관하고, 로컬 글과 이직핏 시작 글의 저장은
             현재 브라우저에만 남깁니다. 공고 내용은 열 때마다 공식 API에서
             다시 확인합니다.
           </p>
@@ -579,7 +579,7 @@ export function SavedLibrary({
                     <WarningCircle aria-hidden="true" size={22} weight="fill" />
                     <div>
                       <strong>저장한 공식 공고를 불러오지 못했습니다.</strong>
-                      <p>커뮤니티 예시는 계속 볼 수 있으며 공고 내용을 임의로 채우지 않습니다.</p>
+                      <p>커뮤니티 시작 글은 계속 볼 수 있으며 공고 내용을 임의로 채우지 않습니다.</p>
                     </div>
                     <button onClick={() => setRetryVersion((value) => value + 1)} type="button">
                       공고 다시 확인
@@ -662,7 +662,7 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>계정 커뮤니티 + 브라우저 글·예시</p>
+                    <p>계정 커뮤니티 + 브라우저 글</p>
                     <h2 id="saved-community-title">커뮤니티</h2>
                   </div>
                   <span>{communityCount}개 저장</span>
@@ -671,8 +671,8 @@ export function SavedLibrary({
                   <WarningCircle aria-hidden="true" size={18} weight="fill" />
                   <p>
                     실제 커뮤니티 저장은 계정에서 복원합니다. 로컬 글은 이
-                    브라우저에서만 복원하며, 예시 콘텐츠는 실제 사용자가 작성한
-                    글이 아닙니다.
+                    브라우저에서만 복원하며, 이직핏 시작 글은 현재 브라우저에
+                    저장됩니다.
                   </p>
                 </div>
 
@@ -699,7 +699,7 @@ export function SavedLibrary({
                   <div className={styles.dataNotice} role="status">
                     <div>
                       <strong>
-                        현재 브라우저 글 또는 예시 목록에서 찾지 못한 저장 글 {savedCommunity.unavailableIds.length}개
+                        현재 브라우저 글 또는 시작 글에서 찾지 못한 저장 글 {savedCommunity.unavailableIds.length}개
                       </strong>
                       <p>내용을 만들지 않고 저장 ID만 유지했습니다.</p>
                     </div>
@@ -720,7 +720,7 @@ export function SavedLibrary({
                               ? "내 로컬 글"
                               : item.source === "server"
                                 ? "커뮤니티"
-                                : "예시 콘텐츠"}
+                                : "시작 글"}
                           </small>
                         </div>
                         <h3>
@@ -766,7 +766,7 @@ export function SavedLibrary({
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
                       <strong>현재 표시할 커뮤니티 글이 없습니다.</strong>
-                      <p>홈에서 실제 커뮤니티 글, 내 로컬 글이나 예시 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
+                      <p>홈에서 실제 커뮤니티 글, 내 로컬 글이나 이직핏 시작 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>

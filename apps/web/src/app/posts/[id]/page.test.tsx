@@ -24,10 +24,9 @@ describe("PostPage", () => {
     });
 
     expect(metadata.title).toBe(
-      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? (커뮤니티 글 예시)",
+      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? (이직핏 시작 글)",
     );
-    expect(metadata.description).toContain("만든 예시 글");
-    expect(metadata.description).toContain("실제 사용자가 작성한 경험이 아닙니다");
+    expect(metadata.description).toContain("이직핏이 구성한 시작 글");
     expect(metadata.description).toContain("성장 속도가 느린 것 같습니다");
     expect(metadata.alternates?.canonical).toBe(
       "/posts/career-move-3y-backend",
@@ -43,9 +42,9 @@ describe("PostPage", () => {
     });
 
     expect(metadata.title).toBe(
-      "플랫폼 기업 백엔드 1차 기술 면접 후기 (면접 후기 예시)",
+      "플랫폼 기업 백엔드 1차 기술 면접 후기 (이직핏 시작 글)",
     );
-    expect(metadata.description).toContain("만든 예시 면접 후기");
+    expect(metadata.description).toContain("이직핏이 구성한 면접 이야기");
     expect(metadata.description).toContain(
       "특정 기업의 실제 면접 기록이 아닙니다",
     );
@@ -63,7 +62,7 @@ describe("PostPage", () => {
     expect(metadata.robots).toMatchObject({ follow: false, index: false });
   });
 
-  it("renders a transparent mock community reading experience", async () => {
+  it("renders built-in community content as a polished starting conversation", async () => {
     render(
       await PostPage({
         params: Promise.resolve({ id: "career-move-3y-backend" }),
@@ -77,9 +76,9 @@ describe("PostPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("커뮤니티 예시 콘텐츠", { exact: true }),
+      screen.getByText("이직핏 시작 글", { exact: true }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/예시 콘텐츠/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/예시/)).not.toBeInTheDocument();
     expect(
       screen.getByRole("region", { name: "글 반응과 댓글" }),
     ).toBeInTheDocument();

@@ -274,7 +274,7 @@ function CommunityResult({
             ? "내 로컬 글"
             : item.source === "server"
               ? "커뮤니티"
-              : "예시 콘텐츠"}
+              : "시작 글"}
         </span>
         <span>{item.createdLabel}</span>
       </div>
@@ -384,7 +384,7 @@ export function SearchResults({
             <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
             <p>
               기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 최근 공개
-              계정 글과 이 브라우저의 내 글, 화면용 예시에서 찾습니다.
+              계정 글과 이 브라우저의 내 글, 이직핏 시작 글에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -543,15 +543,15 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="최근 공개 계정 글, 현재 브라우저의 내 글과 화면 흐름용 예시 결과입니다."
+                      description="최근 공개 계정 글, 현재 브라우저의 내 글과 이직핏 시작 글입니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
                       실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다. 내 로컬 글은
-                      현재 브라우저에서만 검색되며, 예시 콘텐츠는 실제 사용자가 작성한
-                      글이 아닙니다.
+                      현재 브라우저에서만 검색됩니다. 이직핏 시작 글은 커뮤니티 탐색을
+                      돕기 위해 이직핏이 구성했습니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
@@ -560,7 +560,7 @@ export function SearchResults({
                     )}
                     {accountCommunity.state.status === "error" && (
                       <div className={styles.communityLoadNote} data-error="true" role="alert">
-                        <span>최근 공개 커뮤니티 글을 불러오지 못했습니다. 브라우저 글과 예시 결과는 계속 표시합니다.</span>
+                        <span>최근 공개 커뮤니티 글을 불러오지 못했습니다. 브라우저 글과 시작 글은 계속 표시합니다.</span>
                         <button onClick={() => void accountCommunity.reload()} type="button">
                           다시 확인
                         </button>

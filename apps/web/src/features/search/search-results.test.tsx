@@ -108,7 +108,7 @@ function snapshot(
         id: "python-career",
         category: "커리어 질문",
         title: "Python에서 Go로 옮긴 경험이 궁금해요",
-        summary: "언어 전환을 준비하는 예시 질문입니다.",
+        summary: "언어 전환을 준비하는 질문입니다.",
         tags: ["Python", "커리어 전환"],
         href: "/posts/python-career",
         authorName: "코드산책",
@@ -187,7 +187,7 @@ describe("SearchResults", () => {
     expect(screen.queryByText(/전체 결과 \d+건/)).not.toBeInTheDocument();
   });
 
-  it("separates actual company, job, skill evidence from mock community results", () => {
+  it("separates official evidence from Ejikfit starting community posts", () => {
     render(<SearchResults snapshot={snapshot()} />);
 
     expect(
@@ -229,13 +229,13 @@ describe("SearchResults", () => {
     const community = screen
       .getByRole("link", { name: "Python에서 Go로 옮긴 경험이 궁금해요" })
       .closest("article")!;
-    expect(within(community).getByText("예시 콘텐츠")).toBeInTheDocument();
+    expect(within(community).getByText("시작 글")).toBeInTheDocument();
     expect(
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
     expect(
       screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
-    ).toHaveTextContent("예시 콘텐츠는 실제 사용자가 작성한 글이 아닙니다");
+    ).toHaveTextContent("이직핏 시작 글은 커뮤니티 탐색을 돕기 위해 이직핏이 구성했습니다");
   });
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
@@ -261,7 +261,7 @@ describe("SearchResults", () => {
       screen.getByRole("article", {
         name: "Python에서 Go로 옮긴 경험이 궁금해요",
       }),
-    ).toHaveTextContent("예시 콘텐츠");
+    ).toHaveTextContent("시작 글");
     expect(
       screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
     ).toBeInTheDocument();

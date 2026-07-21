@@ -55,13 +55,12 @@ export async function generateMetadata({
   const { post } = postOrNotFound(id);
   const sourceDescription =
     post.type === "community_post" ? post.body : post.summary;
-  const exampleLabel =
-    post.type === "community_post" ? "커뮤니티 글 예시" : "면접 후기 예시";
+  const startingPostLabel = "이직핏 시작 글";
   const disclaimer =
     post.type === "community_post"
-      ? "커뮤니티 기능을 미리 살펴볼 수 있도록 만든 예시 글이며 실제 사용자가 작성한 경험이 아닙니다."
-      : "커뮤니티 기능을 미리 살펴볼 수 있도록 만든 예시 면접 후기이며 특정 기업의 실제 면접 기록이 아닙니다.";
-  const title = `${post.title} (${exampleLabel})`;
+      ? "커뮤니티 탐색을 돕기 위해 이직핏이 구성한 시작 글입니다."
+      : "커뮤니티 탐색을 돕기 위해 이직핏이 구성한 면접 이야기이며 특정 기업의 실제 면접 기록이 아닙니다.";
+  const title = `${post.title} (${startingPostLabel})`;
   const description = `${disclaimer} ${sourceDescription}`;
 
   return {

@@ -146,19 +146,19 @@ export function PostDetailActions({
       <p className={styles.metricNote}>
         {isLocalPost
           ? "반응과 댓글은 이 브라우저에만 저장됩니다."
-          : "예시 반응 수에 이 브라우저에서 누른 반응만 더해 표시합니다."}
+          : "표시된 반응 수에 이 브라우저에서 누른 반응을 더합니다."}
       </p>
 
       <section aria-labelledby="post-comments-title" className={styles.discussion}>
         <header className={styles.discussionHeader}>
           <div>
             <h2 id="post-comments-title">
-              {isLocalPost ? "댓글" : "대표 예시 댓글"}
+              댓글
             </h2>
             <p>
               {isLocalPost
                 ? "작성한 댓글도 서버로 전송되지 않고 이 브라우저에서만 유지됩니다."
-                : "표시된 댓글은 정식 커뮤니티 연동 전에 제공되는 예시이며 실제 사용자가 작성한 댓글이 아닙니다."}
+                : "이직핏이 구성한 시작 댓글과 이 브라우저에서 작성한 댓글을 함께 표시합니다."}
             </p>
           </div>
           <strong>{sampleComments.length + localComments.length}개 표시</strong>

@@ -58,7 +58,7 @@ function InterviewContext({ post }: { post: InterviewReviewFeedItem }) {
         <span>전형</span>
         <strong>{post.stage}</strong>
       </div>
-      <p>화면 검증을 위한 예시이며 특정 기업의 실제 면접 기록이 아닙니다.</p>
+      <p>이직핏이 구성한 면접 이야기이며 특정 기업의 실제 면접 기록이 아닙니다.</p>
     </section>
   );
 }
@@ -86,7 +86,7 @@ export function PostDetailView({
           <header className={styles.hero}>
             <div className={styles.contextRow}>
               <span className={styles.category}>{post.category}</span>
-              <span className={styles.mockBadge}>커뮤니티 예시 콘텐츠</span>
+              <span className={styles.mockBadge}>이직핏 시작 글</span>
             </div>
 
             <h1>{post.title}</h1>
@@ -135,15 +135,13 @@ export function PostDetailView({
           <section className={styles.dataNotice}>
             <Info aria-hidden="true" size={21} weight="fill" />
             <div>
-              <p>데이터 안내</p>
-              <h2>커뮤니티 화면용 예시</h2>
+              <p>커뮤니티 안내</p>
+              <h2>이직핏이 구성한 시작 글</h2>
               <p>
-                글, 작성자, 댓글, 반응 수는 모두 정식 커뮤니티 연동 전에 화면을
-                살펴볼 수 있도록 만든 예시 콘텐츠입니다.
+                커리어 고민과 답변 흐름을 둘러볼 수 있도록 이직핏이 구성했습니다.
               </p>
               <p>
-                이 페이지에는 실제 채용공고나 스킬 시장 수치를 섞어 표시하지
-                않습니다.
+                직접 작성한 글과 계정 커뮤니티 글은 저장 위치를 구분해 표시합니다.
               </p>
             </div>
           </section>
@@ -151,7 +149,7 @@ export function PostDetailView({
           <nav aria-label="관련 글" className={styles.related}>
             <header>
               <ChatCenteredText aria-hidden="true" size={19} weight="duotone" />
-              <h2>함께 읽을 예시 글</h2>
+              <h2>함께 읽을 글</h2>
             </header>
             <ul>
               {relatedPosts.map((related) => (
