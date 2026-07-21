@@ -358,7 +358,6 @@ export function JobList({
   return (
     <main className={styles.main}>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>검증된 공식 채용 데이터</p>
         <h1>공고 탐색</h1>
         <p className={styles.description}>
           기업 채용페이지의 공개 공고를 검색하고, 확정된 기술 요구사항과 내 기술의

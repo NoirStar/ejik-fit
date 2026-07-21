@@ -242,7 +242,6 @@ export function CompanyProfile({
           sourceUrl={primarySource}
         />
         <div className={styles.heroIdentity}>
-          <p className={styles.eyebrow}>공식 채용 공고 기준 기업 보기</p>
           <h1>{companyName}</h1>
           <p>
             현재 공개 상태로 확인된 채용 공고에서 기술과 채용 조건을 모았습니다.

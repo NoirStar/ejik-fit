@@ -35,13 +35,6 @@
   margin: 0;
 }
 
-.eyebrow {
-  grid-column: 1;
-  color: var(--color-accent-strong);
-  font-size: 0.6875rem;
-  font-weight: 750;
-}
-
 .intro h1 {
   grid-column: 1;
   color: var(--color-text);

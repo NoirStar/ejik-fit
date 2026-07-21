@@ -37,7 +37,7 @@
 }
 
 .intro h1 {
-  margin: 0.35rem 0 0;
+  margin: 0;
   font-size: var(--type-page-title);
   font-weight: 760;
   letter-spacing: -0.04em;

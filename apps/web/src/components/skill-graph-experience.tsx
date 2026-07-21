@@ -433,7 +433,6 @@ export function SkillGraphExperience({
       <section aria-label="이직핏 기술 맵" className={styles.experience}>
         <header className={styles.intro}>
           <div className={styles.introCopy}>
-            <p className={styles.eyebrow}>공식 채용 공고 관계 데이터</p>
             <h1>이직핏 기술 맵</h1>
             <p className={styles.description}>
               한 공고에서 함께 확인된 기술을 탐색하고, 선택한 기술의 실제 채용

@@ -512,7 +512,6 @@ export function CareerOverview({
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>공식 공고와 내 기술 비교</p>
         <h1>내 커리어</h1>
         <p className={styles.description}>
           직접 저장한 기술과 현재 공개 공고의 확정된 요구사항을 비교해 다음 탐색 근거를 확인하세요.
