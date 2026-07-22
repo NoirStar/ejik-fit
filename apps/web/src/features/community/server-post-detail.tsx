@@ -8,11 +8,10 @@ import {
   Flag,
   Heart,
   Info,
-  PaperPlaneTilt,
+  PencilSimple,
   Trash,
   UserCheck,
   UserPlus,
-  WarningCircle,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import type { FormEvent } from "react";
@@ -20,23 +19,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import detailStyles from "@/app/posts/[id]/post-detail.module.css";
 import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
-import { RecentTopicTracker } from "@/features/home-feed/recent-topic-tracker";
+import actionStyles from "@/features/home-feed/post-detail-actions.module.css";
 import { serverCommunityPostToFeedItem } from "@/features/home-feed/model";
+import { RecentTopicTracker } from "@/features/home-feed/recent-topic-tracker";
 import { buildSearchScopeHref } from "@/features/search/model";
 import {
-  MAX_COMMUNITY_COMMENT_LENGTH,
-  type CommunityComment,
+  MAX_COMMUNITY_REPORT_DETAILS_LENGTH,
   type CommunityPost,
   type CommunityReportReason,
   type CommunityViewerState,
 } from "@/lib/community-contract";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-import actionStyles from "@/features/home-feed/post-detail-actions.module.css";
 import {
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
+import { ServerCommentList } from "./server-comment-list";
+import { ServerPostEditor } from "./server-post-editor";
 
 const EMPTY_VIEWER_STATE: CommunityViewerState = {
   reactedPostIds: [],
@@ -87,7 +87,7 @@ function DetailState({
       ? {
           eyebrow: "커뮤니티",
           title: "글을 불러오고 있습니다.",
-          body: "계정에 저장된 글과 댓글을 확인하고 있어요.",
+          body: "계정에 저장된 공개 글을 확인하고 있어요.",
         }
       : status === "removed"
         ? {
@@ -104,7 +104,7 @@ function DetailState({
           : {
               eyebrow: "연결 오류",
               title: "커뮤니티 글을 불러오지 못했습니다.",
-              body: "잠시 후 다시 시도해주세요.",
+              body: "잠시 후 다시 시도해 주세요.",
             };
 
   return (
@@ -127,17 +127,19 @@ function DetailState({
   );
 }
 
-export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDetailProps) {
+export function ServerPostDetail({
+  postId,
+  store: injectedStore,
+}: ServerPostDetailProps) {
   const { ready: authReady, viewer } = useAuthViewerContext();
   const [status, setStatus] = useState<DetailStatus>("loading");
   const [post, setPost] = useState<CommunityPost | null>(null);
-  const [comments, setComments] = useState<CommunityComment[]>([]);
   const [viewerState, setViewerState] =
     useState<CommunityViewerState>(EMPTY_VIEWER_STATE);
   const [pending, setPending] = useState("");
-  const [draft, setDraft] = useState("");
-  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [announcement, setAnnouncement] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] =
@@ -168,12 +170,11 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
       setStatus("error");
       return;
     }
+
     setStatus("loading");
+    setActionError("");
     try {
-      const [loadedPost, loadedComments] = await Promise.all([
-        store.getPost(postId),
-        store.listComments(postId),
-      ]);
+      const loadedPost = await store.getPost(postId);
       if (request.current !== currentRequest) return;
       if (!loadedPost) {
         setStatus("missing");
@@ -186,9 +187,11 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
           })
         : EMPTY_VIEWER_STATE;
       if (request.current !== currentRequest) return;
+
       setPost(loadedPost);
-      setComments(loadedComments);
       setViewerState(loadedViewerState);
+      setEditorOpen(false);
+      setDeleteConfirm(false);
       setStatus("ready");
     } catch {
       if (request.current === currentRequest) setStatus("error");
@@ -219,7 +222,8 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
     if (!store || !viewer) return;
     const active = viewerState.reactedPostIds.includes(post.id);
     setPending("reaction");
-    setError("");
+    setActionError("");
+    setAnnouncement("");
     try {
       await store.setPostReaction(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -232,13 +236,17 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
               ...current,
               metrics: {
                 ...current.metrics,
-                reactions: Math.max(0, current.metrics.reactions + (active ? -1 : 1)),
+                reactions: Math.max(
+                  0,
+                  current.metrics.reactions + (active ? -1 : 1),
+                ),
               },
             }
           : current,
       );
+      setAnnouncement(active ? "공감을 취소했습니다." : "이 글에 공감했습니다.");
     } catch {
-      setError("공감을 반영하지 못했습니다. 다시 시도해주세요.");
+      setActionError("공감을 반영하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
@@ -250,7 +258,8 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
     if (!store || !viewer) return;
     const active = viewerState.savedPostIds.includes(post.id);
     setPending("save");
-    setError("");
+    setActionError("");
+    setAnnouncement("");
     try {
       await store.setPostSaved(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -268,8 +277,9 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
             }
           : current,
       );
+      setAnnouncement(active ? "저장을 해제했습니다." : "내 저장 목록에 추가했습니다.");
     } catch {
-      setError("저장 상태를 반영하지 못했습니다. 다시 시도해주세요.");
+      setActionError("저장 상태를 반영하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
@@ -282,7 +292,8 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
     if (!store) return;
     const active = viewerState.followedAuthorIds.includes(post.author.id);
     setPending("follow");
-    setError("");
+    setActionError("");
+    setAnnouncement("");
     try {
       await store.setAuthorFollowed(viewer.id, post.author.id, !active);
       setViewerState((current) => ({
@@ -293,75 +304,7 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
         `${item?.authorName ?? "작성자"} ${active ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`,
       );
     } catch {
-      setError("팔로우 상태를 반영하지 못했습니다. 다시 시도해주세요.");
-    } finally {
-      setPending("");
-    }
-  }
-
-  async function submitComment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const body = draft.trim();
-    setAnnouncement("");
-    if (!body) {
-      setError("댓글 내용을 입력해 주세요.");
-      return;
-    }
-    if (body.length > MAX_COMMUNITY_COMMENT_LENGTH) {
-      setError(`댓글은 ${MAX_COMMUNITY_COMMENT_LENGTH}자까지 입력할 수 있습니다.`);
-      return;
-    }
-    if (!post || !requireViewer() || !viewer || pending) return;
-    const store = resolveStore();
-    if (!store) return;
-    setPending("comment");
-    setError("");
-    try {
-      const comment = await store.createComment(viewer.id, post.id, { body });
-      setComments((current) => [...current, comment]);
-      setPost((current) =>
-        current
-          ? {
-              ...current,
-              metrics: {
-                ...current.metrics,
-                comments: current.metrics.comments + 1,
-              },
-            }
-          : current,
-      );
-      setDraft("");
-      setAnnouncement("댓글을 계정에 등록했습니다.");
-    } catch {
-      setError("댓글을 등록하지 못했습니다. 다시 시도해주세요.");
-    } finally {
-      setPending("");
-    }
-  }
-
-  async function deleteComment(comment: CommunityComment) {
-    if (!viewer || pending || comment.author.id !== viewer.id) return;
-    const store = resolveStore();
-    if (!store) return;
-    setPending(`comment:${comment.id}`);
-    setError("");
-    try {
-      await store.deleteComment(viewer.id, comment.id);
-      setComments((current) => current.filter((item) => item.id !== comment.id));
-      setPost((current) =>
-        current
-          ? {
-              ...current,
-              metrics: {
-                ...current.metrics,
-                comments: Math.max(0, current.metrics.comments - 1),
-              },
-            }
-          : current,
-      );
-      setAnnouncement("댓글을 삭제했습니다.");
-    } catch {
-      setError("댓글을 삭제하지 못했습니다. 다시 시도해주세요.");
+      setActionError("팔로우 상태를 반영하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
@@ -372,12 +315,12 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
     const store = resolveStore();
     if (!store) return;
     setPending("delete");
-    setError("");
+    setActionError("");
     try {
       await store.deletePost(viewer.id, post.id);
       setStatus("removed");
     } catch {
-      setError("글을 삭제하지 못했습니다. 다시 시도해주세요.");
+      setActionError("글을 삭제하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
@@ -389,7 +332,8 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
     const store = resolveStore();
     if (!store) return;
     setPending("report");
-    setError("");
+    setActionError("");
+    setAnnouncement("");
     try {
       await store.createReport(viewer.id, {
         targetType: "post",
@@ -401,21 +345,33 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
       setReportDetails("");
       setAnnouncement("신고를 접수했습니다. 검토 후 필요한 조치를 진행합니다.");
     } catch {
-      setError("신고를 접수하지 못했습니다. 다시 시도해주세요.");
+      setActionError("신고를 접수하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
   }
 
   if (status !== "ready" || !post || !item) {
-    return <DetailState onRetry={() => void load()} status={status === "ready" ? "error" : status} />;
+    return (
+      <DetailState
+        onRetry={() => void load()}
+        status={status === "ready" ? "error" : status}
+      />
+    );
+  }
+
+  const store = resolveStore();
+  if (!store) {
+    return <DetailState onRetry={() => void load()} status="error" />;
   }
 
   const reacted = viewerState.reactedPostIds.includes(post.id);
   const saved = viewerState.savedPostIds.includes(post.id);
   const followed = viewerState.followedAuthorIds.includes(post.author.id);
   const owner = viewer?.id === post.author.id;
-  const paragraphs = post.body.split(/\n+/).filter((paragraph) => paragraph.trim());
+  const paragraphs = post.body
+    .split(/\n+/)
+    .filter((paragraph) => paragraph.trim());
 
   return (
     <main className={detailStyles.main}>
@@ -451,7 +407,10 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
                 <span>{item.authorHeadline}</span>
               </div>
               <div className={detailStyles.authorMeta}>
-                <time dateTime={post.createdAt}>{formatDate(post.createdAt)}</time>
+                <time dateTime={post.createdAt}>
+                  {formatDate(post.createdAt)}
+                  {post.updatedAt !== post.createdAt ? " · 수정됨" : ""}
+                </time>
                 {!owner && (
                   <button
                     aria-label={`${item.authorName} ${followed ? "팔로우 해제" : "팔로우"}`}
@@ -474,20 +433,39 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
             </div>
           </header>
 
-          <section aria-label="글 본문" className={detailStyles.body}>
-            {paragraphs.map((paragraph, index) => (
-              <p key={`${index}-${paragraph}`}>{paragraph}</p>
-            ))}
-          </section>
+          {editorOpen && owner ? (
+            <ServerPostEditor
+              onCancel={() => setEditorOpen(false)}
+              onSaved={(updated) => {
+                setPost(updated);
+                setEditorOpen(false);
+                setActionError("");
+                setAnnouncement("글 수정 내용을 서버에 저장했습니다.");
+              }}
+              post={post}
+              store={store}
+              viewerId={viewer.id}
+            />
+          ) : (
+            <>
+              <section aria-label="글 본문" className={detailStyles.body}>
+                {paragraphs.map((paragraph, index) => (
+                  <p key={`${index}-${paragraph}`}>{paragraph}</p>
+                ))}
+              </section>
 
-          {post.tags.length > 0 && (
-            <ul aria-label="글 태그" className={detailStyles.tags}>
-              {post.tags.map((tag) => (
-                <li key={tag}>
-                  <Link href={buildSearchScopeHref(tag, "community")}>#{tag}</Link>
-                </li>
-              ))}
-            </ul>
+              {post.tags.length > 0 && (
+                <ul aria-label="글 태그" className={detailStyles.tags}>
+                  {post.tags.map((tag) => (
+                    <li key={tag}>
+                      <Link href={buildSearchScopeHref(tag, "community")}>
+                        #{tag}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
 
           <section aria-label="글 반응과 댓글" className={actionStyles.root}>
@@ -500,7 +478,11 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
                 onClick={() => void toggleReaction()}
                 type="button"
               >
-                <Heart aria-hidden="true" size={20} weight={reacted ? "fill" : "regular"} />
+                <Heart
+                  aria-hidden="true"
+                  size={20}
+                  weight={reacted ? "fill" : "regular"}
+                />
                 <span>공감 {post.metrics.reactions}</span>
               </button>
               <a href="#post-comment-form">
@@ -515,94 +497,49 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
                 onClick={() => void toggleSaved()}
                 type="button"
               >
-                <BookmarkSimple aria-hidden="true" size={20} weight={saved ? "fill" : "regular"} />
+                <BookmarkSimple
+                  aria-hidden="true"
+                  size={20}
+                  weight={saved ? "fill" : "regular"}
+                />
                 <span>저장 {post.metrics.saves}</span>
               </button>
             </div>
             <p className={actionStyles.metricNote}>
-              반응과 댓글은 로그인 계정에 저장되며 모든 사용자에게 같은 수치로 표시됩니다.
+              반응과 댓글은 로그인 계정에 저장되며 모든 사용자에게 같은 수치로
+              표시됩니다.
             </p>
+            {actionError && (
+              <p className={actionStyles.commentActionError} role="alert">
+                {actionError}
+              </p>
+            )}
+            {announcement && (
+              <p className={actionStyles.commentAnnouncement} role="status">
+                <CheckCircle aria-hidden="true" size={15} weight="fill" />
+                {announcement}
+              </p>
+            )}
 
-            <section aria-labelledby="post-comments-title" className={actionStyles.discussion}>
-              <header className={actionStyles.discussionHeader}>
-                <div>
-                  <h2 id="post-comments-title">댓글</h2>
-                  <p>경험과 의견을 나누되 개인정보와 회사 기밀은 포함하지 마세요.</p>
-                </div>
-                <strong>{comments.length}개 표시</strong>
-              </header>
-
-              {comments.length > 0 ? (
-                <ul aria-label="댓글 목록" className={actionStyles.comments}>
-                  {comments.map((comment) => (
-                    <li className={actionStyles.comment} key={comment.id}>
-                      <span aria-hidden="true" className={actionStyles.avatar} data-tone="violet">
-                        {(comment.author.nickname?.trim() || "이").slice(0, 1)}
-                      </span>
-                      <div>
-                        <header>
-                          <strong>{comment.author.nickname?.trim() || "이직핏 사용자"}</strong>
-                          <span>{formatDate(comment.createdAt)}</span>
-                        </header>
-                        <p>{comment.body}</p>
-                        {comment.author.id === viewer?.id && (
-                          <button
-                            aria-label={`${comment.body} 댓글 삭제`}
-                            className={actionStyles.commentDelete}
-                            disabled={Boolean(pending)}
-                            onClick={() => void deleteComment(comment)}
-                            type="button"
-                          >
-                            <Trash aria-hidden="true" size={14} />
-                            삭제
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={actionStyles.emptyComments}>아직 댓글이 없습니다. 첫 의견을 남겨보세요.</p>
-              )}
-
-              <form className={actionStyles.form} id="post-comment-form" onSubmit={submitComment}>
-                <label htmlFor="post-comment-body">댓글 내용</label>
-                <textarea
-                  aria-describedby={error ? "post-comment-error" : "post-comment-storage-note"}
-                  id="post-comment-body"
-                  maxLength={MAX_COMMUNITY_COMMENT_LENGTH}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    if (error) setError("");
-                  }}
-                  placeholder="이 글에 대한 생각이나 경험을 남겨보세요."
-                  rows={4}
-                  value={draft}
-                />
-                <div className={actionStyles.formFooter}>
-                  <div>
-                    <span>{draft.length}/{MAX_COMMUNITY_COMMENT_LENGTH}</span>
-                    <small id="post-comment-storage-note">
-                      {viewer ? "댓글은 내 계정으로 등록됩니다." : "댓글을 등록하려면 로그인이 필요합니다."}
-                    </small>
-                  </div>
-                  <button disabled={pending === "comment"} type="submit">
-                    <PaperPlaneTilt aria-hidden="true" size={18} weight="bold" />
-                    {pending === "comment" ? "등록 중..." : "댓글 등록"}
-                  </button>
-                </div>
-                {error && (
-                  <p id="post-comment-error" role="alert">
-                    {error}
-                  </p>
-                )}
-                {announcement && (
-                  <p role="status">
-                    <CheckCircle aria-hidden="true" size={15} weight="fill" /> {announcement}
-                  </p>
-                )}
-              </form>
-            </section>
+            <ServerCommentList
+              onCountChange={(delta) =>
+                setPost((current) =>
+                  current
+                    ? {
+                        ...current,
+                        metrics: {
+                          ...current.metrics,
+                          comments: Math.max(0, current.metrics.comments + delta),
+                        },
+                      }
+                    : current,
+                )
+              }
+              postId={post.id}
+              store={store}
+              totalCount={post.metrics.comments}
+              viewerId={viewer?.id ?? null}
+            />
           </section>
         </article>
 
@@ -620,16 +557,48 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
           {owner ? (
             <section className={detailStyles.localManagement}>
               <h2>내 글 관리</h2>
-              <p>삭제하면 글에 연결된 댓글과 반응도 함께 삭제되며 되돌릴 수 없습니다.</p>
-              {!deleteConfirm ? (
-                <button onClick={() => setDeleteConfirm(true)} type="button">
-                  <Trash aria-hidden="true" size={17} />
-                  이 글 삭제
+              <p>
+                내용을 수정하거나, 글과 연결된 댓글·반응을 함께 삭제할 수
+                있습니다.
+              </p>
+              <div className={detailStyles.ownerActions}>
+                <button
+                  className={detailStyles.ownerEdit}
+                  onClick={() => {
+                    setEditorOpen((current) => !current);
+                    setDeleteConfirm(false);
+                  }}
+                  type="button"
+                >
+                  <PencilSimple aria-hidden="true" size={17} />
+                  {editorOpen ? "수정 닫기" : "이 글 수정"}
                 </button>
-              ) : (
+                {!deleteConfirm && (
+                  <button
+                    onClick={() => {
+                      setDeleteConfirm(true);
+                      setEditorOpen(false);
+                    }}
+                    type="button"
+                  >
+                    <Trash aria-hidden="true" size={17} />
+                    이 글 삭제
+                  </button>
+                )}
+              </div>
+              {deleteConfirm && (
                 <div className={detailStyles.deleteActions}>
-                  <button onClick={() => setDeleteConfirm(false)} type="button">취소</button>
-                  <button disabled={pending === "delete"} onClick={() => void deletePost()} type="button">
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    type="button"
+                  >
+                    취소
+                  </button>
+                  <button
+                    disabled={pending === "delete"}
+                    onClick={() => void deletePost()}
+                    type="button"
+                  >
                     {pending === "delete" ? "삭제 중..." : "정말 삭제"}
                   </button>
                 </div>
@@ -651,17 +620,21 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
                   <label htmlFor="community-report-reason">신고 사유</label>
                   <select
                     id="community-report-reason"
-                    onChange={(event) => setReportReason(event.target.value as CommunityReportReason)}
+                    onChange={(event) =>
+                      setReportReason(event.target.value as CommunityReportReason)
+                    }
                     value={reportReason}
                   >
                     {REPORT_REASONS.map((reason) => (
-                      <option key={reason.value} value={reason.value}>{reason.label}</option>
+                      <option key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </option>
                     ))}
                   </select>
                   <label htmlFor="community-report-details">설명 (선택)</label>
                   <textarea
                     id="community-report-details"
-                    maxLength={500}
+                    maxLength={MAX_COMMUNITY_REPORT_DETAILS_LENGTH}
                     onChange={(event) => setReportDetails(event.target.value)}
                     rows={3}
                     value={reportDetails}
@@ -671,16 +644,6 @@ export function ServerPostDetail({ postId, store: injectedStore }: ServerPostDet
                   </button>
                 </form>
               )}
-            </section>
-          )}
-
-          {error && (
-            <section className={detailStyles.dataNotice} role="alert">
-              <WarningCircle aria-hidden="true" size={20} weight="fill" />
-              <div>
-                <p>작업 오류</p>
-                <h2>{error}</h2>
-              </div>
             </section>
           )}
         </aside>

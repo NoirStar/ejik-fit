@@ -143,4 +143,84 @@ describe("ServerPostDetail", () => {
       "댓글을 계정에 등록했습니다.",
     );
   });
+
+  it("updates an author's rendered post immediately from the saved server record", async () => {
+    const updated: CommunityPost = {
+      ...post,
+      category: "커리어 고민",
+      title: "서버에서 돌아온 수정 제목",
+      body: "서버에서 돌아온 수정 본문",
+      tags: ["이직 준비"],
+      updatedAt: "2026-07-22T04:00:00.000Z",
+    };
+    const store = createStore();
+    store.updatePost.mockResolvedValue(updated);
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: AUTHOR_ID, email: "author@example.com" }}
+      >
+        <ServerPostDetail postId={POST_ID} store={store} />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: post.title });
+
+    fireEvent.click(screen.getByRole("button", { name: "이 글 수정" }));
+    fireEvent.change(screen.getByLabelText("카테고리"), {
+      target: { value: "커리어 고민" },
+    });
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "보낸 수정 제목" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "보낸 수정 본문" },
+    });
+    fireEvent.change(screen.getByLabelText("태그 (선택)"), {
+      target: { value: "이직 준비" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정 내용 저장" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "서버에서 돌아온 수정 제목",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("서버에서 돌아온 수정 본문")).toBeInTheDocument();
+    expect(screen.getByText("#이직 준비")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "글 수정" }))
+      .not.toBeInTheDocument();
+    expect(store.updatePost).toHaveBeenCalledWith(AUTHOR_ID, POST_ID, {
+      category: "커리어 고민",
+      title: "보낸 수정 제목",
+      body: "보낸 수정 본문",
+      tags: ["이직 준비"],
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "글 수정 내용을 서버에 저장했습니다.",
+    );
+  });
+
+  it("keeps the home-feed route available after an author deletes a post", async () => {
+    const store = createStore();
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: AUTHOR_ID, email: "author@example.com" }}
+      >
+        <ServerPostDetail postId={POST_ID} store={store} />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: post.title });
+
+    fireEvent.click(screen.getByRole("button", { name: "이 글 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "정말 삭제" }));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
+    ).toBeInTheDocument();
+    expect(store.deletePost).toHaveBeenCalledWith(AUTHOR_ID, POST_ID);
+    expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" }))
+      .toHaveAttribute("href", "/");
+  });
 });
