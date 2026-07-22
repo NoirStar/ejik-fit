@@ -95,6 +95,7 @@ export function MarketFilters({
                   buildMarketFilterHref(careerType, filter.value),
                 )
               }
+              prefetch={false}
               scroll={false}
             >
               {filter.value ? filter.label : "전체"}
@@ -120,6 +121,7 @@ export function MarketFilters({
                   buildMarketFilterHref(filter.value, category),
                 )
               }
+              prefetch={false}
               scroll={false}
             >
               {filter.label}

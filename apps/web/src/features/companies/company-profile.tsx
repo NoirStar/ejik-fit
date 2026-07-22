@@ -157,7 +157,12 @@ function CompanyJob({ job, index }: { job: PostingSummary; index: number }) {
           </span>
           <div>
             <h3>
-              <Link href={`/jobs/${encodeURIComponent(job.id)}`}>{job.title}</Link>
+              <Link
+                href={`/jobs/${encodeURIComponent(job.id)}`}
+                prefetch={false}
+              >
+                {job.title}
+              </Link>
             </h3>
             <span className={styles.openStatus}>
               <CheckCircle aria-hidden="true" size={14} weight="fill" />
@@ -190,7 +195,12 @@ function CompanyJob({ job, index }: { job: PostingSummary; index: number }) {
         <footer className={styles.jobFooter}>
           <span>{formatVerifiedDate(job.last_verified_at)}</span>
           <div>
-            <Link href={`/jobs/${encodeURIComponent(job.id)}`}>공고 분석</Link>
+            <Link
+              href={`/jobs/${encodeURIComponent(job.id)}`}
+              prefetch={false}
+            >
+              공고 분석
+            </Link>
             <a href={job.source_url} rel="noreferrer" target="_blank">
               공식 원문
               <ArrowSquareOut aria-hidden="true" size={15} weight="bold" />
@@ -328,6 +338,7 @@ export function CompanyProfile({
                       <Link
                         aria-label={`${skill.name} 스킬맵`}
                         href={`/skill-map?skill=${encodeURIComponent(skill.name)}`}
+                        prefetch={false}
                       >
                         {skill.name}
                       </Link>
@@ -361,9 +372,15 @@ export function CompanyProfile({
                 기술은 공고별로 한 번만 세며 시장 전체나 기업 규모를 뜻하지 않습니다.
               </p>
               <nav aria-label="기업 채용 데이터 안내">
-                <Link href="/methodology">분석 방법</Link>
-                <Link href="/data-policy">데이터 정책</Link>
-                <Link href="/corrections">정보 정정</Link>
+                <Link href="/methodology" prefetch={false}>
+                  분석 방법
+                </Link>
+                <Link href="/data-policy" prefetch={false}>
+                  데이터 정책
+                </Link>
+                <Link href="/corrections" prefetch={false}>
+                  정보 정정
+                </Link>
               </nav>
             </div>
           </section>

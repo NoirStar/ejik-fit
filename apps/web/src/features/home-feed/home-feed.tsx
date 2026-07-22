@@ -221,7 +221,9 @@ function SocialCard({
         <div className={styles.postTitleRow}>
           <span className={styles.categoryLabel}>{item.category}</span>
           <h2 id={titleId}>
-            <Link href={item.href}>{item.title}</Link>
+            <Link href={item.href} prefetch={false}>
+              {item.title}
+            </Link>
           </h2>
         </div>
         {item.type === "interview_review" && (
@@ -240,6 +242,7 @@ function SocialCard({
             <Link
               aria-label={`${tag} 커뮤니티 검색`}
               href={buildSearchScopeHref(tag, "community")}
+              prefetch={false}
             >
               {tag}
             </Link>
@@ -271,6 +274,7 @@ function SocialCard({
         <Link
           aria-label={`${item.title} 댓글 ${commentCount}개`}
           href={item.href}
+          prefetch={false}
         >
           <ChatCircle aria-hidden="true" size={19} />
           <span>댓글</span>
@@ -339,6 +343,7 @@ function JobCard({
                 aria-label={`${item.companyName} 기업 채용 현황`}
                 className={styles.companyLink}
                 href={item.companyHref}
+                prefetch={false}
               >
                 {item.companyName}
               </Link>
@@ -347,7 +352,9 @@ function JobCard({
             )}
           </p>
           <h2 id={titleId}>
-            <Link href={item.href}>{item.title}</Link>
+            <Link href={item.href} prefetch={false}>
+              {item.title}
+            </Link>
           </h2>
         </div>
       </div>
@@ -390,7 +397,7 @@ function JobCard({
       )}
 
       <footer className={styles.jobActions}>
-        <Link href={item.href}>
+        <Link href={item.href} prefetch={false}>
           공고 상세
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
@@ -431,7 +438,9 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           <small>{item.sourceLabel}</small>
         </div>
         <h2 id={titleId}>
-          <Link href={item.href}>{item.title}</Link>
+          <Link href={item.href} prefetch={false}>
+            {item.title}
+          </Link>
         </h2>
         <p>{item.summary}</p>
         <div aria-label={`${item.skillName} 채용 수요`} className={styles.marketCounts}>
@@ -440,7 +449,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           <span>우대 {item.preferredCount}건</span>
           <span>미분류 {item.unspecifiedCount}건</span>
         </div>
-        <Link className={styles.marketLink} href={item.href}>
+        <Link className={styles.marketLink} href={item.href} prefetch={false}>
           스킬맵에서 공고 근거 보기
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
@@ -459,7 +468,9 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
     >
       <div className={styles.railHeadingRow}>
         <h2 id={titleId}>내 커리어 인사이트</h2>
-        <Link href="/career">자세히</Link>
+        <Link href="/career" prefetch={false}>
+          자세히
+        </Link>
       </div>
 
       {insight.status === "needs_skills" ? (
@@ -492,6 +503,7 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
               aria-label={`${insight.nextSkill.skillName} 근거 보기`}
               className={styles.careerNextSkill}
               href={`/skill-map?skill=${encodeURIComponent(insight.nextSkill.skillName)}`}
+              prefetch={false}
             >
               <span>다음 준비 기술</span>
               <strong>{insight.nextSkill.skillName}</strong>
@@ -541,7 +553,7 @@ function HomeCareerContext({
           내 기술 {ownedSkillCount.toLocaleString("ko-KR")}개
         </span>
       )}
-      <Link className={styles.contextAction} href="/career">
+      <Link className={styles.contextAction} href="/career" prefetch={false}>
         {skillAction} · {conditionAction}
         <ArrowRight aria-hidden="true" size={14} weight="bold" />
       </Link>
@@ -904,7 +916,9 @@ export function HomeFeed({
                 <Stack aria-hidden="true" size={19} weight="bold" />
                 <h2>내 기술</h2>
               </div>
-              <Link href="/career">관리</Link>
+              <Link href="/career" prefetch={false}>
+                관리
+              </Link>
             </div>
             {snapshot.ownedSkills.length > 0 ? (
               <ul aria-label="내 기술" className={styles.ownedSkills}>
@@ -920,23 +934,23 @@ export function HomeFeed({
           <section className={styles.railCard}>
             <h2>바로가기</h2>
             <nav aria-label="커리어 도구" className={styles.shortcutList}>
-              <Link href="/jobs">
+              <Link href="/jobs" prefetch={false}>
                 <Briefcase aria-hidden="true" size={18} />
                 공식 공고 찾기
               </Link>
-              <Link href="/career/saved">
+              <Link href="/career/saved" prefetch={false}>
                 <BookmarkSimple aria-hidden="true" size={18} />
                 저장 보관함
               </Link>
-              <Link href="/career/questions">
+              <Link href="/career/questions" prefetch={false}>
                 <ChatCircle aria-hidden="true" size={18} />
                 내 글
               </Link>
-              <Link href="/skill-map">
+              <Link href="/skill-map" prefetch={false}>
                 <ChartLineUp aria-hidden="true" size={18} />
                 스킬 연결 보기
               </Link>
-              <Link href="/data-policy">
+              <Link href="/data-policy" prefetch={false}>
                 <ShieldCheck aria-hidden="true" size={18} />
                 데이터 기준
               </Link>
@@ -1158,7 +1172,7 @@ export function HomeFeed({
             <ul className={styles.curatedTopics}>
               {MOCK_SOCIAL_ITEMS.slice(0, 4).map((item) => (
                 <li key={item.id}>
-                  <Link href={item.href}>
+                  <Link href={item.href} prefetch={false}>
                     <span>{item.category}</span>
                     <strong>{item.title}</strong>
                   </Link>
@@ -1170,13 +1184,18 @@ export function HomeFeed({
           <section className={styles.railCard} id="market-insights">
             <div className={styles.railHeadingRow}>
               <h2>주목할 기술 수요</h2>
-              <Link href="/market">더보기</Link>
+              <Link href="/market" prefetch={false}>
+                더보기
+              </Link>
             </div>
             {snapshot.skillDemand.length > 0 ? (
               <ol className={styles.skillDemand}>
                 {snapshot.skillDemand.map((skill) => (
                   <li key={skill.skillName}>
-                    <Link href={`/skill-map?skill=${encodeURIComponent(skill.skillName)}`}>
+                    <Link
+                      href={`/skill-map?skill=${encodeURIComponent(skill.skillName)}`}
+                      prefetch={false}
+                    >
                       <strong>{skill.skillName}</strong>
                       <span>{skill.postingCount}건</span>
                       <small>
@@ -1192,7 +1211,9 @@ export function HomeFeed({
             )}
             <p className={styles.railFootnote}>
               기술 언급 공고를 필수·우대·미분류 중 하나로 집계합니다.
-              <Link href="/data-policy">수집 기준 확인</Link>
+              <Link href="/data-policy" prefetch={false}>
+                수집 기준 확인
+              </Link>
             </p>
           </section>
 

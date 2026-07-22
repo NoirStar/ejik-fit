@@ -67,6 +67,7 @@ function SkillGroup({
             <Link
               aria-label={`${skill.skill} 스킬맵`}
               href={`/skill-map?skill=${encodeURIComponent(skill.skill)}`}
+              prefetch={false}
             >
               {skill.skill}
             </Link>
@@ -104,6 +105,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
                   aria-label={`${job.company_name} 기업 채용 현황`}
                   className={styles.companyLink}
                   href={`/companies/${encodeURIComponent(job.company_slug)}`}
+                  prefetch={false}
                 >
                   {job.company_name}
                 </Link>
@@ -218,9 +220,15 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
                   sourceUrl={job.source_url}
                 />
                 <nav aria-label="공고 정보 안내">
-                  <Link href="/methodology">분석 방법</Link>
-                  <Link href="/corrections">정보 정정 요청</Link>
-                  <Link href="/data-policy">데이터 정책</Link>
+                  <Link href="/methodology" prefetch={false}>
+                    분석 방법
+                  </Link>
+                  <Link href="/corrections" prefetch={false}>
+                    정보 정정 요청
+                  </Link>
+                  <Link href="/data-policy" prefetch={false}>
+                    데이터 정책
+                  </Link>
                 </nav>
               </div>
             </section>

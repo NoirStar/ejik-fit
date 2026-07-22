@@ -39,6 +39,7 @@ export function RecentTopicList() {
             <Link
               aria-label={`${topic.topicLabel}: ${topic.title} 다시 보기`}
               href={`/posts/${encodeURIComponent(topic.postId)}`}
+              prefetch={false}
             >
               <span># {topic.topicLabel}</span>
               <small>{topic.title}</small>

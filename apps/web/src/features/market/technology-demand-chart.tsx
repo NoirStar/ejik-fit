@@ -104,6 +104,7 @@ export function TechnologyDemandChart({
               aria-label={`${skill.name} 관련 공고 보기`}
               className={styles.rowAction}
               href={skill.jobsHref}
+              prefetch={false}
             >
               <ArrowRight aria-hidden="true" size={16} />
             </Link>

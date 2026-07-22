@@ -72,4 +72,22 @@ for (const route of ["/", "/market"]) {
       ),
     ).toBe(true);
   });
+
+  test(`${route} limits speculative RSC requests`, async ({ page }) => {
+    const rscRequests: string[] = [];
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (url.searchParams.has("_rsc")) {
+        rscRequests.push(`${url.pathname}${url.search}`);
+      }
+    });
+
+    await page.goto(route);
+    await page.waitForLoadState("networkidle");
+
+    expect(
+      rscRequests.length,
+      `Speculative RSC requests:\n${rscRequests.join("\n")}`,
+    ).toBeLessThanOrEqual(15);
+  });
 }

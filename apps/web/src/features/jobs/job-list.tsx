@@ -72,6 +72,7 @@ function SkillGroup({ label, skills, tone }: SkillGroupProps) {
             <Link
               aria-label={`${skill} 스킬맵`}
               href={`/skill-map?skill=${encodeURIComponent(skill)}`}
+              prefetch={false}
             >
               {skill}
             </Link>
@@ -109,6 +110,7 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
                 aria-label={`${job.company_name} 기업 채용 현황`}
                 className={styles.companyLink}
                 href={`/companies/${encodeURIComponent(job.company_slug)}`}
+                prefetch={false}
               >
                 {job.company_name}
               </Link>
@@ -117,7 +119,12 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
             )}
           </p>
           <h3>
-            <Link href={`/jobs/${encodeURIComponent(job.id)}`}>{job.title}</Link>
+            <Link
+              href={`/jobs/${encodeURIComponent(job.id)}`}
+              prefetch={false}
+            >
+              {job.title}
+            </Link>
           </h3>
         </div>
         <button
@@ -194,7 +201,12 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
           {discoveredLabel ?? formatVerifiedDate(job.last_verified_at)}
         </span>
         <div>
-          <Link href={`/jobs/${encodeURIComponent(job.id)}`}>분석 보기</Link>
+          <Link
+            href={`/jobs/${encodeURIComponent(job.id)}`}
+            prefetch={false}
+          >
+            분석 보기
+          </Link>
           <a href={job.source_url} rel="noreferrer" target="_blank">
             공식 원문
             <ArrowSquareOut aria-hidden="true" size={15} weight="bold" />
@@ -462,7 +474,11 @@ export function JobList({
                 검색
               </button>
               {filtering && (
-                <Link className={styles.resetLink} href="/jobs">
+                <Link
+                  className={styles.resetLink}
+                  href="/jobs"
+                  prefetch={false}
+                >
                   필터 초기화
                 </Link>
               )}
@@ -480,7 +496,9 @@ export function JobList({
               지원 전 공식 원문에서 최신 조건을 확인해 주세요. 저장 공고와 내
               기술은 브라우저에, 저장 검색은 로그인 계정에 남습니다.
             </p>
-            <Link href="/data-policy">데이터 정책</Link>
+            <Link href="/data-policy" prefetch={false}>
+              데이터 정책
+            </Link>
           </div>
         </aside>
 
@@ -576,7 +594,11 @@ export function JobList({
                   {currentPage === 1 ? (
                     <span aria-disabled="true">이전</span>
                   ) : (
-                    <Link aria-label="이전 페이지" href={pageHref(currentPage - 1)}>
+                    <Link
+                      aria-label="이전 페이지"
+                      href={pageHref(currentPage - 1)}
+                      prefetch={false}
+                    >
                       이전
                     </Link>
                   )}
@@ -603,6 +625,7 @@ export function JobList({
                           aria-label={`${token}페이지`}
                           href={pageHref(token)}
                           key={token}
+                          prefetch={false}
                         >
                           {token}
                         </Link>
@@ -612,7 +635,11 @@ export function JobList({
                   {currentPage === pageCount ? (
                     <span aria-disabled="true">다음</span>
                   ) : (
-                    <Link aria-label="다음 페이지" href={pageHref(currentPage + 1)}>
+                    <Link
+                      aria-label="다음 페이지"
+                      href={pageHref(currentPage + 1)}
+                      prefetch={false}
+                    >
                       다음
                     </Link>
                   )}

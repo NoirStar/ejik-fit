@@ -16,7 +16,11 @@ export function JobCard({ job }: { job: PostingSummary }) {
         </span>
       </div>
       <div className="job-row__main">
-        <Link href={`/jobs/${job.id}`} className="job-row__title">
+        <Link
+          className="job-row__title"
+          href={`/jobs/${job.id}`}
+          prefetch={false}
+        >
           {job.title}
         </Link>
         <div className="job-row__facts" aria-label="채용 조건">

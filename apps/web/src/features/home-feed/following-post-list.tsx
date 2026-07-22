@@ -49,6 +49,7 @@ export function FollowingPostList({
             <Link
               aria-label={`${post.authorName}의 글: ${post.title}`}
               href={post.href}
+              prefetch={false}
             >
               <span
                 aria-hidden="true"

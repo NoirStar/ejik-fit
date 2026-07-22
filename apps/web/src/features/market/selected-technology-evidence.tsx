@@ -93,6 +93,7 @@ export function SelectedTechnologyEvidence({
                     <Link
                       aria-label={`${job.companyName} ${job.title}`}
                       href={job.href}
+                      prefetch={false}
                     >
                       <CompanyMark
                         companyName={job.companyName}
@@ -119,8 +120,12 @@ export function SelectedTechnologyEvidence({
       )}
 
       <div className={styles.evidenceActions}>
-        <Link href={selected.jobsHref}>관련 공고 전체 보기</Link>
-        <Link href={selected.skillHref}>내 스킬맵에서 보기</Link>
+        <Link href={selected.jobsHref} prefetch={false}>
+          관련 공고 전체 보기
+        </Link>
+        <Link href={selected.skillHref} prefetch={false}>
+          내 스킬맵에서 보기
+        </Link>
       </div>
       <p className={styles.panelFootnote}>
         함께 확인된 기술과 공고 예시는 현재 불러온 최대 100개 공식 공고
