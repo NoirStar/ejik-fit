@@ -69,6 +69,36 @@ const skillStats: SkillStatsResponse = {
   ],
 };
 
+const explicitLeader: SkillStatsResponse = {
+  total: 3,
+  items: [
+    {
+      skill: "Python",
+      category: "language",
+      count: 20,
+      required_count: 3,
+      preferred_count: 2,
+      unspecified_count: 15,
+    },
+    {
+      skill: "AWS",
+      category: "infra",
+      count: 15,
+      required_count: 7,
+      preferred_count: 3,
+      unspecified_count: 5,
+    },
+    {
+      skill: "Go",
+      category: "language",
+      count: 10,
+      required_count: 0,
+      preferred_count: 0,
+      unspecified_count: 10,
+    },
+  ],
+};
+
 describe("market overview model", () => {
   it("normalizes only supported career filters", () => {
     expect(normalizeMarketCareerType("new_comer")).toBe("new_comer");
@@ -119,10 +149,11 @@ describe("market overview model", () => {
       id: "infra:kubernetes",
       name: "Kubernetes",
       postingCount: 12,
+      explicitCount: 9,
       requiredCount: 5,
       preferredCount: 4,
       unspecifiedCount: 3,
-      relativeDemand: 100,
+      relativeExplicitDemand: 100,
       jobsHref:
         "/jobs?q=Kubernetes&category=infra&career_type=experienced",
     });
@@ -132,10 +163,11 @@ describe("market overview model", () => {
     );
     expect(snapshot.skills[1]).toMatchObject({
       name: "Go",
+      explicitCount: 0,
       requiredCount: 0,
       preferredCount: 0,
       unspecifiedCount: 0,
-      relativeDemand: 67,
+      relativeExplicitDemand: 0,
     });
     expect(snapshot.jobs).toEqual([
       expect.objectContaining({
@@ -179,6 +211,40 @@ describe("market overview model", () => {
       "Kubernetes",
     ]);
     expect(snapshot.skills.map((skill) => skill.name)).toEqual(original);
+  });
+
+  it("derives and sorts explicit demand independently from total appearances", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: explicitLeader },
+    });
+
+    expect(snapshot.skills).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "AWS",
+          explicitCount: 10,
+          relativeExplicitDemand: 100,
+        }),
+        expect.objectContaining({
+          name: "Python",
+          explicitCount: 5,
+          relativeExplicitDemand: 50,
+        }),
+        expect.objectContaining({
+          name: "Go",
+          explicitCount: 0,
+          relativeExplicitDemand: 0,
+        }),
+      ]),
+    );
+    expect(
+      sortMarketSkills(snapshot.skills, "explicit").map((skill) => skill.name),
+    ).toEqual(["AWS", "Python", "Go"]);
+    expect(
+      sortMarketSkills(snapshot.skills, "demand").map((skill) => skill.name),
+    ).toEqual(["Python", "AWS", "Go"]);
   });
 
   it("filters recent jobs by the selected technology", () => {

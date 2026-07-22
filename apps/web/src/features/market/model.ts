@@ -9,7 +9,12 @@ import {
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 export type MarketCareerType = "" | "new_comer" | "experienced" | "mixed";
-export type MarketSort = "demand" | "required" | "preferred" | "name";
+export type MarketSort =
+  | "explicit"
+  | "demand"
+  | "required"
+  | "preferred"
+  | "name";
 
 export type MarketSkill = {
   id: string;
@@ -17,10 +22,11 @@ export type MarketSkill = {
   category: string;
   categoryLabel: string;
   postingCount: number;
+  explicitCount: number;
   requiredCount: number;
   preferredCount: number;
   unspecifiedCount: number;
-  relativeDemand: number;
+  relativeExplicitDemand: number;
   skillHref: string;
   jobsHref: string;
 };
@@ -157,6 +163,13 @@ export function sortMarketSkills(
     if (sort === "name") {
       return compareName(left, right);
     }
+    if (sort === "explicit") {
+      return (
+        right.explicitCount - left.explicitCount ||
+        right.postingCount - left.postingCount ||
+        compareName(left, right)
+      );
+    }
     if (sort === "required") {
       return right.requiredCount - left.requiredCount || compareName(left, right);
     }
@@ -239,7 +252,12 @@ export function buildMarketOverviewSnapshot(input: {
     (left, right) =>
       right.count - left.count || left.skill.localeCompare(right.skill),
   );
-  const maxDemand = Math.max(1, ...orderedSkills.map((item) => item.count));
+  const maxExplicitDemand = Math.max(
+    1,
+    ...orderedSkills.map(
+      (item) => (item.required_count ?? 0) + (item.preferred_count ?? 0),
+    ),
+  );
 
   return {
     careerType: input.careerType,
@@ -259,23 +277,31 @@ export function buildMarketOverviewSnapshot(input: {
       input.postings.status === "error" ? input.postings.message : null,
     skillError:
       input.skillStats.status === "error" ? input.skillStats.message : null,
-    skills: orderedSkills.map((item): MarketSkill => ({
-      id: skillIdentity(item.category, item.skill),
-      name: item.skill,
-      category: item.category,
-      categoryLabel: skillCategoryLabel(normalizeSkillCategory(item.category)),
-      postingCount: item.count,
-      requiredCount: item.required_count ?? 0,
-      preferredCount: item.preferred_count ?? 0,
-      unspecifiedCount: item.unspecified_count ?? 0,
-      relativeDemand: Math.round((item.count / maxDemand) * 100),
-      skillHref: `/skill-map?skill=${encodeURIComponent(item.skill)}`,
-      jobsHref: buildMarketJobsHref(
-        item.skill,
-        input.careerType,
-        category,
-      ),
-    })),
+    skills: orderedSkills.map((item): MarketSkill => {
+      const requiredCount = item.required_count ?? 0;
+      const preferredCount = item.preferred_count ?? 0;
+      const explicitCount = requiredCount + preferredCount;
+      return {
+        id: skillIdentity(item.category, item.skill),
+        name: item.skill,
+        category: item.category,
+        categoryLabel: skillCategoryLabel(normalizeSkillCategory(item.category)),
+        postingCount: item.count,
+        explicitCount,
+        requiredCount,
+        preferredCount,
+        unspecifiedCount: item.unspecified_count ?? 0,
+        relativeExplicitDemand: Math.round(
+          (explicitCount / maxExplicitDemand) * 100,
+        ),
+        skillHref: `/skill-map?skill=${encodeURIComponent(item.skill)}`,
+        jobsHref: buildMarketJobsHref(
+          item.skill,
+          input.careerType,
+          category,
+        ),
+      };
+    }),
     jobs: (postings?.items ?? []).map((item): MarketJob => ({
       id: item.id,
       companyName: item.company_name,
