@@ -10,6 +10,10 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import {
+  COMMUNITY_DRAFT_STORAGE_KEY,
+  saveCommunityDraft,
+} from "@/features/community/community-draft";
 import type { CommunityStore } from "@/features/community/community-store";
 import type {
   CommunityPost,
@@ -31,6 +35,12 @@ import { addLocalPostComment } from "@/lib/social-interactions";
 import { HomeFeed } from "./home-feed";
 import { buildHomeFeedSnapshot } from "./model";
 import type { ResourceState } from "./resource-state";
+
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigation,
+}));
 
 const postings: PostingListResponse = {
   total: 1,
@@ -150,6 +160,8 @@ describe("HomeFeed", () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
+    sessionStorage.clear();
+    navigation.push.mockReset();
     vi.restoreAllMocks();
   });
 
@@ -517,7 +529,7 @@ describe("HomeFeed", () => {
       >
         <HomeFeed
           communityStore={store}
-          composeInitiallyOpen
+          composeMode="new"
           snapshot={buildSnapshot()}
         />
       </AuthViewerProvider>,
@@ -613,9 +625,11 @@ describe("HomeFeed", () => {
     );
   });
 
-  it("validates, persists, restores, and deletes a browser-only post", async () => {
-    const { unmount } = render(
-      <HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />,
+  it("keeps a guest draft in the session and sends publishing through login", async () => {
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed composeMode="new" snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
 
@@ -627,77 +641,90 @@ describe("HomeFeed", () => {
       screen.getByRole("radio", { name: "면접 후기" }),
     ).toBeChecked();
     fireEvent.change(screen.getByLabelText("제목"), {
-      target: { value: "첫 이직 준비에서 배운 점" },
+      target: { value: "도움이 필요합니다" },
     });
     fireEvent.change(screen.getByLabelText("내용"), {
-      target: { value: "공고의 요구 기술을 먼저 비교하니 준비할 순서가 훨씬 선명해졌습니다." },
+      target: { value: "공고의 요구 기술을 비교한 뒤 무엇을 학습할지 궁금합니다." },
     });
     fireEvent.change(screen.getByLabelText("태그 (선택)"), {
       target: { value: "이직 준비, Java, Java, 백엔드" },
     });
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
 
-    expect(screen.queryByRole("dialog", { name: "커뮤니티 글쓰기" })).not.toBeInTheDocument();
-    const firstArticle = screen.getAllByRole("article")[0];
-    expect(
-      within(firstArticle).getByRole("heading", { name: "첫 이직 준비에서 배운 점" }),
-    ).toBeInTheDocument();
-    const stored = JSON.parse(
-      localStorage.getItem("ejik-fit:local-community-posts")!,
+    expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toContain(
+      "도움이 필요합니다",
     );
-    expect(stored).toEqual([
-      expect.objectContaining({
-        id: expect.stringMatching(/^local-/),
-        category: "면접 후기",
-        title: "첫 이직 준비에서 배운 점",
-        body: "공고의 요구 기술을 먼저 비교하니 준비할 순서가 훨씬 선명해졌습니다.",
-        tags: ["이직 준비", "Java", "백엔드"],
-      }),
-    ]);
-    expect(
-      within(firstArticle).getByRole("link", {
-        name: "첫 이직 준비에서 배운 점",
-      }),
-    ).toHaveAttribute("href", `/posts/${stored[0].id}`);
-    expect(within(firstArticle).getByText("면접 후기")).toBeInTheDocument();
-    expect(
-      screen.getByText("작성한 글을 이 브라우저에 저장했습니다."),
-    ).toBeInTheDocument();
-    act(() => {
-      recordRecentCommunityTopic(
-        {
-          postId: stored[0].id,
-          title: "첫 이직 준비에서 배운 점",
-          topicLabel: "이직 준비",
-          source: "local",
-        },
-        { viewedAt: "2026-07-14T05:00:00.000Z" },
-      );
-    });
-    expect(
-      await screen.findByRole("link", {
-        name: "이직 준비: 첫 이직 준비에서 배운 점 다시 보기",
-      }),
-    ).toBeInTheDocument();
+    expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
+    expect(navigation.push).toHaveBeenCalledWith(
+      "/login?next=%2F%3Fcompose%3Dresume",
+    );
+  });
 
-    unmount();
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-    const restoredArticle = await screen.findByRole("article", {
-      name: "첫 이직 준비에서 배운 점",
-    });
-    fireEvent.click(
-      within(restoredArticle).getByRole("button", {
-        name: "첫 이직 준비에서 배운 점 삭제",
-      }),
+  it("restores a guest draft after login and publishes only on confirmation", async () => {
+    saveCommunityDraft(
+      {
+        category: "커리어 고민",
+        title: "이어 쓰는 고민",
+        body: "로그인 전 작성한 본문을 다시 확인합니다.",
+        tags: ["이직"],
+      },
+      sessionStorage,
     );
-    expect(
-      screen.queryByRole("article", { name: "첫 이직 준비에서 배운 점" }),
-    ).not.toBeInTheDocument();
-    expect(localStorage.getItem("ejik-fit:local-community-posts")).toBe("[]");
-    expect(readRecentCommunityTopics()).toEqual([]);
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "작성한 글을 이 브라우저에서 삭제했습니다.",
+    const existing: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "나",
+      },
+      category: "커리어 질문",
+      title: "기존 글",
+      body: "기존 본문",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(existing);
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed
+          communityStore={store}
+          composeMode="resume"
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
     );
+
+    expect(screen.getByLabelText("제목")).toHaveValue("이어 쓰는 고민");
+    expect(screen.getByLabelText("내용")).toHaveValue(
+      "로그인 전 작성한 본문을 다시 확인합니다.",
+    );
+    expect(screen.getByText("임시 저장된 글을 불러왔습니다.")).toBeInTheDocument();
+    expect(store.createPost).not.toHaveBeenCalled();
+
+    const publish = screen.getByRole("button", { name: "피드에 올리기" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+
+    await waitFor(() =>
+      expect(store.createPost).toHaveBeenCalledWith(
+        "11111111-1111-4111-8111-111111111111",
+        {
+          category: "커리어 고민",
+          title: "이어 쓰는 고민",
+          body: "로그인 전 작성한 본문을 다시 확인합니다.",
+          tags: ["이직"],
+        },
+      ),
+    );
+    expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
   });
 
   it("reacts to local post changes elsewhere in the same tab", async () => {
@@ -718,8 +745,12 @@ describe("HomeFeed", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps the composer open when browser post storage is blocked", () => {
-    render(<HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />);
+  it("keeps the composer open when session draft storage is blocked", () => {
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed composeMode="new" snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new DOMException("blocked", "SecurityError");
     });
@@ -736,7 +767,7 @@ describe("HomeFeed", () => {
       screen.getByRole("dialog", { name: "커뮤니티 글쓰기" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "글을 브라우저에 저장하지 못했습니다.",
+      "임시 글을 저장하지 못했습니다.",
     );
     expect(screen.getByLabelText("제목")).toHaveValue("저장되지 않을 글");
     expect(
@@ -761,7 +792,11 @@ describe("HomeFeed", () => {
   });
 
   it("keeps Tab focus inside the composer dialog", () => {
-    render(<HomeFeed composeInitiallyOpen snapshot={buildSnapshot()} />);
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed composeMode="new" snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
     const close = screen.getByRole("button", { name: "글쓰기 닫기" });
     const submit = screen.getByRole("button", { name: "피드에 올리기" });
 

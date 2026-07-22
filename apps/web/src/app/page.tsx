@@ -27,6 +27,15 @@ export default async function Home({ searchParams }: HomeProps = {}) {
   );
   const { careerCondition, targetDomain } = careerPreferences;
   const seed = ownedSkills[0];
+  const composeParam = Array.isArray(resolvedSearchParams.compose)
+    ? resolvedSearchParams.compose[0]
+    : resolvedSearchParams.compose;
+  const composeMode =
+    composeParam === "resume"
+      ? "resume"
+      : composeParam === "1"
+        ? "new"
+        : null;
   const careerFilter = careerCondition
     ? { career_type: careerCondition }
     : {};
@@ -65,7 +74,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
 
   return (
     <HomeFeed
-      composeInitiallyOpen={resolvedSearchParams.compose === "1"}
+      composeMode={composeMode}
       snapshot={buildHomeFeedSnapshot({
         postings,
         skillStats,

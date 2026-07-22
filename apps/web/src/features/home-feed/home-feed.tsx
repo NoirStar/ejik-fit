@@ -19,16 +19,21 @@ import {
   X,
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { FormEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import {
+  readCommunityDraft,
+  removeCommunityDraft,
+  saveCommunityDraft,
+} from "@/features/community/community-draft";
 import type { CommunityStore } from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
-  createLocalCommunityPost,
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   deleteLocalCommunityPost,
   readLocalCommunityPosts,
@@ -76,7 +81,7 @@ import type {
 
 export type HomeFeedProps = {
   snapshot: HomeFeedSnapshot;
-  composeInitiallyOpen?: boolean;
+  composeMode?: "new" | "resume" | null;
   communityStore?: CommunityStore;
 };
 
@@ -619,10 +624,11 @@ function FeedCard({
 }
 
 export function HomeFeed({
-  composeInitiallyOpen = false,
+  composeMode = null,
   communityStore,
   snapshot,
 }: HomeFeedProps) {
+  const router = useRouter();
   const { ready: authReady, viewer } = useAuthViewerContext();
   const community = useCommunityFeed({
     authReady,
@@ -636,8 +642,9 @@ export function HomeFeed({
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
-  const [composerOpen, setComposerOpen] = useState(composeInitiallyOpen);
+  const [composerOpen, setComposerOpen] = useState(composeMode !== null);
   const [draft, setDraft] = useState<LocalPostDraft>(EMPTY_DRAFT);
+  const [draftRestored, setDraftRestored] = useState(false);
   const [draftErrors, setDraftErrors] = useState<DraftErrors>({});
   const [announcement, setAnnouncement] = useState("");
   const composerTitleRef = useRef<HTMLInputElement>(null);
@@ -680,8 +687,20 @@ export function HomeFeed({
   }, []);
 
   useEffect(() => {
-    if (composeInitiallyOpen) setComposerOpen(true);
-  }, [composeInitiallyOpen]);
+    if (!composeMode) return;
+    setComposerOpen(true);
+    if (composeMode !== "resume" || typeof window === "undefined") return;
+
+    const restored = readCommunityDraft(window.sessionStorage);
+    if (!restored) return;
+    setDraft({
+      category: restored.category,
+      title: restored.title,
+      body: restored.body,
+      tags: restored.tags.join(", "),
+    });
+    setDraftRestored(true);
+  }, [composeMode]);
 
   useEffect(() => {
     if (!composerOpen) return;
@@ -883,27 +902,26 @@ export function HomeFeed({
       }
       setActiveTab("recommended");
       setDraft(EMPTY_DRAFT);
+      if (typeof window !== "undefined") {
+        removeCommunityDraft(window.sessionStorage);
+      }
+      setDraftRestored(false);
       closeComposer();
       setAnnouncement("작성한 글을 계정에 저장했습니다.");
       return;
     }
 
-    const result = createLocalCommunityPost({
-      category: draft.category,
-      title,
-      body,
-      tags,
-    });
-    setLocalPosts(result.posts);
-    if (!result.post) {
-      setDraftErrors({ storage: "글을 브라우저에 저장하지 못했습니다." });
+    try {
+      saveCommunityDraft(
+        { category: draft.category, title, body, tags },
+        window.sessionStorage,
+      );
+    } catch {
+      setDraftErrors({ storage: "임시 글을 저장하지 못했습니다." });
       return;
     }
-
-    setActiveTab("recommended");
-    setDraft(EMPTY_DRAFT);
-    closeComposer();
-    setAnnouncement("작성한 글을 이 브라우저에 저장했습니다.");
+    setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시를 확인해주세요.");
+    router.push("/login?next=%2F%3Fcompose%3Dresume");
   }
 
   return (
@@ -1246,7 +1264,7 @@ export function HomeFeed({
                   {viewer
                     ? "계정에 저장되는 글"
                     : authReady
-                      ? "이 브라우저에만 저장되는 글"
+                      ? "로그인 후 계정에 저장되는 글"
                       : "로그인 상태 확인 중"}
                 </p>
                 <h2 id="community-composer-title">커뮤니티 글쓰기</h2>
@@ -1257,6 +1275,9 @@ export function HomeFeed({
             </header>
 
             <form className={styles.composerForm} onSubmit={submitPost}>
+              {draftRestored && (
+                <p role="status">임시 저장된 글을 불러왔습니다.</p>
+              )}
               <fieldset className={styles.composerKinds}>
                 <legend>글 종류</legend>
                 <div>
@@ -1343,8 +1364,8 @@ export function HomeFeed({
                   </p>
                 ) : (
                   <p>
-                    로그인 전에는 이 브라우저에 보관됩니다. 이후 로그인하면
-                    작성한 글과 반응을 계정으로 안전하게 옮깁니다.
+                    게시하려면 로그인이 필요합니다. 작성 내용은 로그인하는 동안
+                    이 탭에 임시 저장되며, 로그인 후 다시 확인하고 게시합니다.
                   </p>
                 )}
               </div>
@@ -1361,6 +1382,7 @@ export function HomeFeed({
                 </button>
                 <button
                   disabled={
+                    !authReady ||
                     !localPostsHydrated ||
                     Boolean(viewer && community.state.status !== "ready") ||
                     community.state.pendingKeys.includes("create:post")
