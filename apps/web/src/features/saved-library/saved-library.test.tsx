@@ -63,6 +63,7 @@ const accountCommunityPost: CommunityPost = {
 
 function accountCommunityStore() {
   return {
+    searchPosts: vi.fn(async () => ({ items: [], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listPosts: vi.fn(async () => []),
     listSavedPosts: vi.fn(async () => [accountCommunityPost]),

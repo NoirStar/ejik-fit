@@ -33,6 +33,7 @@ const serverSearchPost: CommunityPost = {
 
 function serverSearchStore() {
   return {
+    searchPosts: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listPosts: vi.fn(async () => [serverSearchPost]),
     listSavedPosts: vi.fn(async () => []),
@@ -235,13 +236,17 @@ describe("SearchResults", () => {
     const community = screen
       .getByRole("link", { name: "Python에서 Go로 옮긴 경험이 궁금해요" })
       .closest("article")!;
-    expect(within(community).getByText("시작 글")).toBeInTheDocument();
+    expect(within(community).getByText("활용 가이드")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "커뮤니티 활용 가이드" }))
+        .getByRole("article", { name: "Python에서 Go로 옮긴 경험이 궁금해요" }),
+    ).toBeInTheDocument();
     expect(
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
     expect(
-      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
-    ).toHaveTextContent("이직핏 시작 글은 커뮤니티 탐색을 돕기 위해 이직핏이 구성했습니다");
+      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
+    ).toHaveTextContent("활용 가이드는 실제 사용자 글이 아닙니다");
   });
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
@@ -251,7 +256,11 @@ describe("SearchResults", () => {
     const localResult = await screen.findByRole("article", {
       name: "Python 공고를 보고 남긴 내 질문",
     });
-    expect(within(localResult).getByText("내 로컬 글")).toBeInTheDocument();
+    expect(within(localResult).getByText("이전 저장 글")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "이전 기기 저장 글" }))
+        .getByRole("article", { name: "Python 공고를 보고 남긴 내 질문" }),
+    ).toBeInTheDocument();
     expect(
       within(localResult).getByRole("link", {
         name: "Python 공고를 보고 남긴 내 질문",
@@ -267,9 +276,9 @@ describe("SearchResults", () => {
       screen.getByRole("article", {
         name: "Python에서 Go로 옮긴 경험이 궁금해요",
       }),
-    ).toHaveTextContent("시작 글");
+    ).toHaveTextContent("활용 가이드");
     expect(
-      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
     ).toBeInTheDocument();
 
     deleteLocalCommunityPost("local-python-search");
@@ -284,7 +293,7 @@ describe("SearchResults", () => {
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
   });
 
-  it("merges recent public account community posts into the community search scope", async () => {
+  it("searches the full public server community in its own result group", async () => {
     const store = serverSearchStore();
     render(
       <AuthViewerProvider
@@ -301,23 +310,33 @@ describe("SearchResults", () => {
     const serverResult = await screen.findByRole("article", {
       name: serverSearchPost.title,
     });
-    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 50 });
+    expect(store.searchPosts).toHaveBeenCalledWith({
+      query: "Python",
+      limit: 50,
+    });
+    expect(
+      within(screen.getByRole("region", {
+        name: "전체 공개 커뮤니티 검색 결과",
+      })).getByRole("article", { name: serverSearchPost.title }),
+    ).toBeInTheDocument();
     expect(within(serverResult).getByText("커뮤니티")).toBeInTheDocument();
     expect(
       within(serverResult).getByRole("link", { name: serverSearchPost.title }),
     ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
     expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
     expect(
-      screen.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
     ).toBeInTheDocument();
   });
 
   it("does not announce an empty search while recent public community posts are loading", async () => {
     const store = serverSearchStore();
-    let resolvePosts: ((posts: CommunityPost[]) => void) | undefined;
-    store.listPosts.mockImplementationOnce(
+    let resolvePosts:
+      | ((page: { items: CommunityPost[]; nextCursor: null }) => void)
+      | undefined;
+    store.searchPosts.mockImplementationOnce(
       () =>
-        new Promise<CommunityPost[]>((resolve) => {
+        new Promise((resolve) => {
           resolvePosts = resolve;
         }),
     );
@@ -338,13 +357,13 @@ describe("SearchResults", () => {
     );
 
     const loadingHeading = await screen.findByRole("heading", {
-      name: "최근 공개 커뮤니티 글까지 검색하고 있습니다.",
+      name: "전체 공개 커뮤니티 글까지 검색하고 있습니다.",
     });
     expect(loadingHeading.closest('[role="status"]')).not.toBeNull();
     expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
 
     await act(async () => {
-      resolvePosts?.([serverSearchPost]);
+      resolvePosts?.({ items: [serverSearchPost], nextCursor: null });
     });
     expect(
       await screen.findByRole("article", { name: serverSearchPost.title }),
@@ -443,9 +462,12 @@ describe("SearchResults", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("distinguishes a completed empty search from unavailable actual data", () => {
+  it("distinguishes a completed empty search from unavailable actual data", async () => {
+    const store = serverSearchStore();
+    store.searchPosts.mockResolvedValue({ items: [], nextCursor: null });
     const { rerender } = render(
       <SearchResults
+        communityStore={store}
         snapshot={snapshot({
           companies: [],
           jobs: [],
@@ -456,10 +478,11 @@ describe("SearchResults", () => {
         })}
       />,
     );
-    expect(screen.getByText("검색 결과가 없습니다.")).toBeInTheDocument();
+    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
 
     rerender(
       <SearchResults
+        communityStore={store}
         snapshot={snapshot({
           dataStatus: "error",
           companies: [],

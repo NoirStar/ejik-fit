@@ -287,7 +287,10 @@ function communityRelevance(item: CommunityItem, query: string) {
   return 4;
 }
 
-function buildCommunity(items: CommunityItem[], query: string) {
+export function buildCommunitySearchResults(
+  items: CommunityItem[],
+  query: string,
+) {
   const normalizedQuery = searchable(query);
   return items
     .filter((item) => communitySearchText(item).includes(normalizedQuery))
@@ -320,7 +323,10 @@ export function mergeCommunitySearchResults(
 ): SearchSnapshot {
   if (!snapshot.query || communityItems.length === 0) return snapshot;
 
-  const incomingResults = buildCommunity(communityItems, snapshot.query);
+  const incomingResults = buildCommunitySearchResults(
+    communityItems,
+    snapshot.query,
+  );
   if (incomingResults.length === 0) return snapshot;
 
   const incomingIds = new Set(incomingResults.map((item) => item.id));
@@ -385,7 +391,7 @@ export function buildSearchSnapshot(input: {
   const companies = postingData ? buildCompanies(postingData.items) : [];
   const jobs = postingData ? buildJobs(postingData.items) : [];
   const skills = skillData ? buildSkills(skillData, query) : [];
-  const community = buildCommunity(input.communityItems, query);
+  const community = buildCommunitySearchResults(input.communityItems, query);
   const errors = [
     input.postings?.status === "error" ? input.postings.message : null,
     input.skillStats?.status === "error" ? input.skillStats.message : null,

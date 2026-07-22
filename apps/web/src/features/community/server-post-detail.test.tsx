@@ -45,6 +45,7 @@ const comment: CommunityComment = {
 
 function createStore() {
   return {
+    searchPosts: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),

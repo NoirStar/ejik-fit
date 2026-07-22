@@ -12,6 +12,7 @@ import {
   isCommunityUuid,
   normalizeCommunityClientOrigin,
   normalizeCommunityCursor,
+  normalizeCommunitySearchQuery,
   normalizeCommunityTags,
   normalizeCommunityText,
   type CommunityComment,
@@ -30,6 +31,7 @@ import {
   mapCommunityFollowRows,
   mapCommunityPostMembershipRows,
   mapCommunityPostRow,
+  mapCommunitySearchPostRow,
 } from "./community-mapper";
 
 const POST_TABLE = "community_posts";
@@ -70,6 +72,11 @@ const DEFAULT_COMMENT_LIMIT = 50;
 const MAX_COMMENT_LIMIT = 50;
 
 export type CommunityStore = {
+  searchPosts(options: {
+    query: string;
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityPost>>;
   listPostPage(options?: {
     authorId?: string;
     before?: CommunityCursor;
@@ -384,6 +391,35 @@ export function createSupabaseCommunityStore(
   }
 
   return {
+    async searchPosts(options) {
+      const query = normalizeCommunitySearchQuery(options.query);
+      if (!query) invalidInput();
+      const before =
+        options.before === undefined ? null : requiredCursor(options.before);
+      const limit = boundedLimit(
+        options.limit,
+        DEFAULT_POST_LIMIT,
+        MAX_POST_LIMIT,
+      );
+      const { data, error } = await client.rpc("search_community_posts", {
+        search_query: query,
+        before_created_at: before?.createdAt ?? null,
+        before_id: before?.id ?? null,
+        result_limit: limit + 1,
+      });
+      if (error) databaseFailure(error);
+      const mapped = mappedRows(data, mapCommunitySearchPostRow);
+      const items = mapped.slice(0, limit);
+      const last = items.at(-1);
+      return {
+        items,
+        nextCursor:
+          mapped.length > limit && last
+            ? { createdAt: last.createdAt, id: last.id }
+            : null,
+      };
+    },
+
     listPostPage,
 
     async listPosts(options = {}) {

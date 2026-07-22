@@ -37,6 +37,10 @@ function storeWith(
   },
 ) {
   return {
+    searchPosts: vi.fn(async () => ({
+      items: posts,
+      nextCursor: null as { createdAt: string; id: string } | null,
+    })),
     listPostPage: vi.fn(async () => ({
       items: posts,
       nextCursor: null as { createdAt: string; id: string } | null,

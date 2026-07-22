@@ -55,6 +55,7 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
 
 function createClient(
   queries: Record<string, ReturnType<typeof createQuery>>,
+  rpc = vi.fn(async () => ({ data: [], error: null })),
 ) {
   const from = vi.fn((table: string) => {
     const query = queries[table];
@@ -62,8 +63,9 @@ function createClient(
     return query;
   });
   return {
-    client: { from } as unknown as SupabaseClient,
+    client: { from, rpc } as unknown as SupabaseClient,
     from,
+    rpc,
   };
 }
 
@@ -143,6 +145,46 @@ describe("Supabase community store", () => {
       }),
     ).rejects.toMatchObject({ code: "invalid_data" });
     expect(posts.select).not.toHaveBeenCalled();
+  });
+
+  it("searches through the RPC with normalized bound arguments", async () => {
+    const { author: _author, ...flatRow } = postRow;
+    const rpc = vi.fn(async () => ({
+      data: [
+        { ...flatRow, author_nickname: "작성자" },
+        {
+          ...flatRow,
+          id: "99999999-9999-4999-8999-999999999999",
+          created_at: "2026-07-20T01:02:03.000Z",
+          updated_at: "2026-07-20T01:02:03.000Z",
+          author_nickname: "작성자",
+        },
+      ],
+      error: null,
+    }));
+    const query = createClient({}, rpc);
+    const store = createSupabaseCommunityStore(query.client);
+
+    await expect(
+      store.searchPosts({
+        query: "  Python   백엔드  ",
+        before: {
+          createdAt: "2026-07-22T01:02:03.000Z",
+          id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        },
+        limit: 1,
+      }),
+    ).resolves.toEqual({
+      items: [expect.objectContaining({ id: POST_ID })],
+      nextCursor: { createdAt: postRow.created_at, id: POST_ID },
+    });
+    expect(rpc).toHaveBeenCalledWith("search_community_posts", {
+      search_query: "Python 백엔드",
+      before_created_at: "2026-07-22T01:02:03.000Z",
+      before_id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      result_limit: 2,
+    });
+    expect(query.from).not.toHaveBeenCalled();
   });
 
   it("loads viewer-owned saved posts in save order without exposing other memberships", async () => {

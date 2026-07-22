@@ -20,6 +20,8 @@ export const MAX_COMMUNITY_TAG_LENGTH = 40;
 export const MAX_COMMUNITY_COMMENT_LENGTH = 600;
 export const MAX_COMMUNITY_REPORT_DETAILS_LENGTH = 500;
 export const MAX_COMMUNITY_CLIENT_ORIGIN_LENGTH = 200;
+export const MIN_COMMUNITY_SEARCH_QUERY_LENGTH = 2;
+export const MAX_COMMUNITY_SEARCH_QUERY_LENGTH = 80;
 
 export type CommunityCategory = (typeof COMMUNITY_CATEGORIES)[number];
 export type CommunityReportTarget =
@@ -207,4 +209,13 @@ export function normalizeCommunityCursor(
     return null;
   }
   return { createdAt: candidate.createdAt, id: candidate.id };
+}
+
+export function normalizeCommunitySearchQuery(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return normalized.length >= MIN_COMMUNITY_SEARCH_QUERY_LENGTH &&
+    normalized.length <= MAX_COMMUNITY_SEARCH_QUERY_LENGTH
+    ? normalized
+    : null;
 }

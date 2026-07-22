@@ -237,6 +237,7 @@ describe("AuthoredQuestions", () => {
       updatedAt: "2026-07-21T04:00:00.000Z",
     };
     const store = {
+      searchPosts: vi.fn(async () => ({ items: [post], nextCursor: null })),
       listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
       listPosts: vi.fn(async () => [post]),
       listSavedPosts: vi.fn(async () => [post]),

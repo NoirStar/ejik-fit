@@ -15,11 +15,13 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
-import { useCommunityFeed } from "@/features/community/use-community-feed";
+import { useCommunitySearch } from "@/features/community/use-community-search";
 import { CompanyMark } from "@/features/home-feed/company-mark";
-import { serverCommunityPostToFeedItem } from "@/features/home-feed/model";
+import {
+  localCommunityPostToFeedItem,
+  serverCommunityPostToFeedItem,
+} from "@/features/home-feed/model";
 import { formatCareer, formatEmployment } from "@/lib/labels";
 import {
   readLocalCommunityPosts,
@@ -29,9 +31,8 @@ import {
 
 import {
   SEARCH_SCOPES,
+  buildCommunitySearchResults,
   buildSearchScopeHref,
-  mergeCommunitySearchResults,
-  mergeLocalCommunitySearchResults,
   type CommunitySearchResult,
   type CompanySearchResult,
   type JobSearchResult,
@@ -271,10 +272,10 @@ function CommunityResult({
       <div className={styles.resultTopline}>
         <span className={styles.exampleBadge} data-source={item.source}>
           {item.source === "local"
-            ? "내 로컬 글"
+            ? "이전 저장 글"
             : item.source === "server"
               ? "커뮤니티"
-              : "시작 글"}
+              : "활용 가이드"}
         </span>
         <span>{item.createdLabel}</span>
       </div>
@@ -309,13 +310,9 @@ export function SearchResults({
   communityStore?: CommunityStore;
   snapshot: SearchSnapshot;
 }) {
-  const { ready: authReady, viewer } = useAuthViewerContext();
-  const accountCommunity = useCommunityFeed({
-    authReady,
-    enabled: Boolean(serverSnapshot.query),
+  const accountCommunity = useCommunitySearch(serverSnapshot.query, {
     limit: 50,
     store: communityStore,
-    viewer,
   });
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
 
@@ -325,17 +322,52 @@ export function SearchResults({
     return unsubscribe;
   }, []);
 
-  const snapshot = useMemo(
-    () => {
-      const withServerCommunity = mergeCommunitySearchResults(
-        serverSnapshot,
-        accountCommunity.state.posts.map((post) =>
-          serverCommunityPostToFeedItem(post),
+  const serverCommunityResults = useMemo(
+    () =>
+      accountCommunity.state.posts.flatMap((post) =>
+        buildCommunitySearchResults(
+          [serverCommunityPostToFeedItem(post)],
+          serverSnapshot.query,
         ),
-      );
-      return mergeLocalCommunitySearchResults(withServerCommunity, localPosts);
-    }, [accountCommunity.state.posts, localPosts, serverSnapshot],
+      ),
+    [accountCommunity.state.posts, serverSnapshot.query],
   );
+  const localCommunityResults = useMemo(
+    () =>
+      buildCommunitySearchResults(
+        localPosts.map((post) => localCommunityPostToFeedItem(post)),
+        serverSnapshot.query,
+      ),
+    [localPosts, serverSnapshot.query],
+  );
+  const guideCommunityResults = useMemo(
+    () =>
+      serverSnapshot.community.filter((item) => item.source === "mock"),
+    [serverSnapshot.community],
+  );
+  const snapshot = useMemo(() => {
+    const community = [
+      ...serverCommunityResults,
+      ...localCommunityResults,
+      ...guideCommunityResults,
+    ];
+    return {
+      ...serverSnapshot,
+      community,
+      counts: { ...serverSnapshot.counts, community: community.length },
+      hasAnyResults:
+        serverSnapshot.companies.length +
+          serverSnapshot.jobs.length +
+          serverSnapshot.skills.length +
+          community.length >
+        0,
+    };
+  }, [
+    guideCommunityResults,
+    localCommunityResults,
+    serverCommunityResults,
+    serverSnapshot,
+  ]);
   const { query, scope } = snapshot;
   const waitingForCommunity =
     !snapshot.hasAnyResults &&
@@ -359,7 +391,7 @@ export function SearchResults({
           )}
         </h1>
         <p className={styles.description}>
-          공식 채용 데이터와 최근 공개·브라우저 커뮤니티 글을 출처별로 나눠 확인하세요.
+          공식 채용 데이터와 전체 공개 커뮤니티 글을 출처별로 나눠 확인하세요.
         </p>
         <form action="/search" className={styles.searchForm} method="get" role="search">
           <MagnifyingGlass aria-hidden="true" size={20} />
@@ -383,8 +415,8 @@ export function SearchResults({
           <div>
             <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
             <p>
-              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 최근 공개
-              계정 글과 이 브라우저의 내 글, 이직핏 시작 글에서 찾습니다.
+              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 서버의 공개
+              계정 글 전체와 이 브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -446,8 +478,8 @@ export function SearchResults({
             {waitingForCommunity ? (
               <section className={styles.noResults} role="status">
                 <MagnifyingGlass aria-hidden="true" size={27} />
-                <h2>최근 공개 커뮤니티 글까지 검색하고 있습니다.</h2>
-                <p>공식 데이터 검색 결과는 유지한 채 커뮤니티 결과를 합치는 중입니다.</p>
+                <h2>전체 공개 커뮤니티 글까지 검색하고 있습니다.</h2>
+                <p>공식 데이터 검색 결과는 유지한 채 서버 검색 결과를 합치는 중입니다.</p>
               </section>
             ) : snapshot.dataStatus === "ready" &&
               !snapshot.hasAnyResults &&
@@ -543,39 +575,109 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="최근 공개 계정 글, 현재 브라우저의 내 글과 이직핏 시작 글입니다."
+                      description="전체 공개 계정 글을 검색하고, 이전 저장 글과 활용 가이드는 별도로 보여줍니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
-                      실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다. 내 로컬 글은
-                      현재 브라우저에서만 검색됩니다. 이직핏 시작 글은 커뮤니티 탐색을
-                      돕기 위해 이직핏이 구성했습니다.
+                      공개 커뮤니티 결과는 서버 전체 글에서 찾습니다. 이전 저장 글은
+                      이 브라우저에서만 복구할 수 있고, 활용 가이드는 실제 사용자 글이
+                      아닙니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
-                        최근 공개 커뮤니티 글을 함께 검색하고 있습니다.
+                        전체 공개 커뮤니티 글을 검색하고 있습니다.
                       </p>
                     )}
-                    {accountCommunity.state.status === "error" && (
+                    {accountCommunity.state.error && (
                       <div className={styles.communityLoadNote} data-error="true" role="alert">
-                        <span>최근 공개 커뮤니티 글을 불러오지 못했습니다. 브라우저 글과 시작 글은 계속 표시합니다.</span>
-                        <button onClick={() => void accountCommunity.reload()} type="button">
+                        <span>{accountCommunity.state.error} 이전 저장 글과 활용 가이드는 계속 표시합니다.</span>
+                        <button
+                          onClick={() =>
+                            void (accountCommunity.state.status === "error"
+                              ? accountCommunity.reload()
+                              : accountCommunity.loadMore())
+                          }
+                          type="button"
+                        >
                           다시 확인
                         </button>
                       </div>
                     )}
-                    {snapshot.community.length === 0 ? (
+                    {snapshot.community.length === 0 &&
+                    accountCommunity.state.status !== "loading" ? (
                       <SectionState>일치하는 커뮤니티 글이 없습니다.</SectionState>
                     ) : (
-                      <div className={styles.communityList}>
-                        {snapshot.community
-                          .slice(0, resultLimit(scope, "community"))
-                          .map((item) => (
-                            <CommunityResult item={item} key={item.id} />
-                          ))}
-                      </div>
+                      <>
+                        <section
+                          aria-label="전체 공개 커뮤니티 검색 결과"
+                          className={styles.communitySourceGroup}
+                        >
+                          <header>
+                            <h3>전체 공개 커뮤니티</h3>
+                            <p>계정에 게시되어 다른 기기에서도 확인되는 실제 글입니다.</p>
+                          </header>
+                          {serverCommunityResults.length > 0 ? (
+                            <div className={styles.communityList}>
+                              {serverCommunityResults
+                                .slice(0, resultLimit(scope, "community"))
+                                .map((item) => (
+                                  <CommunityResult item={item} key={item.id} />
+                                ))}
+                            </div>
+                          ) : accountCommunity.state.status === "ready" ? (
+                            <SectionState>서버 전체 글에서 일치하는 결과가 없습니다.</SectionState>
+                          ) : null}
+                          {scope === "community" &&
+                            accountCommunity.state.nextCursor && (
+                              <button
+                                className={styles.communityMoreButton}
+                                disabled={accountCommunity.state.loadingMore}
+                                onClick={() => void accountCommunity.loadMore()}
+                                type="button"
+                              >
+                                {accountCommunity.state.loadingMore
+                                  ? "불러오는 중..."
+                                  : "공개 글 더 보기"}
+                              </button>
+                            )}
+                        </section>
+
+                        {localCommunityResults.length > 0 && (
+                          <section
+                            aria-label="이전 기기 저장 글"
+                            className={styles.communitySourceGroup}
+                          >
+                            <header>
+                              <h3>이전 기기 저장 글</h3>
+                              <p>아직 계정으로 옮겨지지 않은 이 브라우저의 복구 대상입니다.</p>
+                            </header>
+                            <div className={styles.communityList}>
+                              {localCommunityResults.map((item) => (
+                                <CommunityResult item={item} key={item.id} />
+                              ))}
+                            </div>
+                          </section>
+                        )}
+
+                        {guideCommunityResults.length > 0 && (
+                          <section
+                            aria-label="커뮤니티 활용 가이드"
+                            className={styles.communitySourceGroup}
+                          >
+                            <header>
+                              <h3>커뮤니티 활용 가이드</h3>
+                              <p>검색과 질문 작성을 돕기 위해 이직핏이 구성한 예시입니다.</p>
+                            </header>
+                            <div className={styles.communityList}>
+                              {guideCommunityResults.map((item) => (
+                                <CommunityResult item={item} key={item.id} />
+                              ))}
+                            </div>
+                          </section>
+                        )}
+                      </>
                     )}
                   </section>
                 )}

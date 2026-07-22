@@ -7,6 +7,7 @@ import {
   mapCommunityFollowRows,
   mapCommunityPostMembershipRows,
   mapCommunityPostRow,
+  mapCommunitySearchPostRow,
 } from "./community-mapper";
 
 const AUTHOR_ID = "11111111-1111-4111-8111-111111111111";
@@ -74,6 +75,23 @@ describe("community row mapper", () => {
     ]) {
       expect(() => mapCommunityPostRow(malformed)).toThrow(CommunityDataError);
     }
+  });
+
+  it("maps the search RPC flat public profile row", () => {
+    const { author: _author, ...flatRow } = postRow;
+    expect(
+      mapCommunitySearchPostRow({
+        ...flatRow,
+        author_nickname: "커리어곰",
+      }),
+    ).toEqual(mapCommunityPostRow(postRow));
+
+    expect(() =>
+      mapCommunitySearchPostRow({
+        ...flatRow,
+        author_nickname: " x ",
+      }),
+    ).toThrow(CommunityDataError);
   });
 
   it("keeps private membership rows scoped to the requested viewer", () => {

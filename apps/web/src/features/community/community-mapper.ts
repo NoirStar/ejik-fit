@@ -92,6 +92,27 @@ export function mapCommunityPostRow(value: unknown): CommunityPost {
   };
 }
 
+export function mapCommunitySearchPostRow(value: unknown): CommunityPost {
+  if (!isRecord(value)) return invalid();
+  return mapCommunityPostRow({
+    id: value.id,
+    author_id: value.author_id,
+    category: value.category,
+    title: value.title,
+    body: value.body,
+    tags: value.tags,
+    reaction_count: value.reaction_count,
+    comment_count: value.comment_count,
+    save_count: value.save_count,
+    created_at: value.created_at,
+    updated_at: value.updated_at,
+    author: {
+      user_id: value.author_id,
+      nickname: value.author_nickname,
+    },
+  });
+}
+
 export function mapCommunityCommentRow(value: unknown): CommunityComment {
   if (!isRecord(value)) return invalid();
   if (
