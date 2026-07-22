@@ -10,6 +10,7 @@
     "bench:graph": "vitest bench src/lib/large-graph.bench.ts --run",
     "start": "next start",
     "lint": "next typegen && tsc --noEmit --project tsconfig.lint.json",
+    "smoke:public": "node scripts/smoke-public-deployment.mjs",
     "test": "vitest",
     "test:e2e": "playwright test",
     "test:performance": "playwright test --config=playwright.performance.config.ts"
