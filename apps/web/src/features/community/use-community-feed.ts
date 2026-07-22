@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { AuthViewer } from "@/features/auth/use-auth-viewer";
 import {
+  type CommunityCursor,
   type CommunityPost,
   type CommunityViewerState,
   type CreateCommunityPostInput,
@@ -32,12 +33,15 @@ export type CommunityFeedState = {
   viewerState: CommunityViewerState;
   error: string;
   actionError: string;
+  nextCursor: CommunityCursor | null;
+  loadingMore: boolean;
   pendingKeys: string[];
 };
 
 export type CommunityFeedController = {
   state: CommunityFeedState;
   reload(): Promise<void>;
+  loadMore(): Promise<void>;
   createPost(input: CreateCommunityPostInput): Promise<CommunityPost | null>;
   deletePost(postId: string): Promise<boolean>;
   toggleReaction(postId: string): Promise<boolean>;
@@ -61,6 +65,8 @@ const INITIAL_STATE: CommunityFeedState = {
   viewerState: EMPTY_VIEWER_STATE,
   error: "",
   actionError: "",
+  nextCursor: null,
+  loadingMore: false,
   pendingKeys: [],
 };
 
@@ -93,6 +99,16 @@ function metricWith(
         }
       : post,
   );
+}
+
+function uniqueMembership(values: string[], additions: string[]) {
+  return Array.from(new Set([...values, ...additions]));
+}
+
+function appendUniquePosts(current: CommunityPost[], additions: CommunityPost[]) {
+  const byId = new Map(current.map((post) => [post.id, post]));
+  for (const post of additions) byId.set(post.id, post);
+  return Array.from(byId.values());
 }
 
 export function useCommunityFeed({
@@ -156,11 +172,13 @@ export function useCommunityFeed({
       const previousViewerState = keepPosts
         ? previousState.viewerState
         : EMPTY_VIEWER_STATE;
+      const previousNextCursor = keepPosts ? previousState.nextCursor : null;
       commit({
         ...INITIAL_STATE,
         status: "loading",
         posts: previousPosts,
         viewerState: previousViewerState,
+        nextCursor: previousNextCursor,
       });
       const resolvedStore = resolveStore();
       if (!resolvedStore) {
@@ -170,6 +188,7 @@ export function useCommunityFeed({
             status: "error",
             posts: previousPosts,
             viewerState: previousViewerState,
+            nextCursor: previousNextCursor,
             error: LOAD_ERROR,
           });
         }
@@ -178,12 +197,16 @@ export function useCommunityFeed({
 
       const activeViewerId = viewerId;
       try {
-        const posts = savedOnly && activeViewerId
-          ? await resolvedStore.listSavedPosts(activeViewerId, limit)
-          : await resolvedStore.listPosts({
+        const page = savedOnly && activeViewerId
+          ? {
+              items: await resolvedStore.listSavedPosts(activeViewerId, limit),
+              nextCursor: null,
+            }
+          : await resolvedStore.listPostPage({
               ...(authorId ? { authorId } : {}),
               limit,
             });
+        const posts = page.items;
         const viewerState = activeViewerId
           ? await resolvedStore.loadViewerState(activeViewerId, {
               postIds: posts.map((post) => post.id),
@@ -201,6 +224,7 @@ export function useCommunityFeed({
           status: "ready",
           posts,
           viewerState,
+          nextCursor: page.nextCursor,
         });
       } catch {
         if (
@@ -212,6 +236,7 @@ export function useCommunityFeed({
             status: "error",
             posts: previousPosts,
             viewerState: previousViewerState,
+            nextCursor: previousNextCursor,
             error: LOAD_ERROR,
           });
         }
@@ -235,6 +260,66 @@ export function useCommunityFeed({
       requestRef.current += 1;
     };
   }, [load]);
+
+  const loadMore = useCallback(async () => {
+    const current = stateRef.current;
+    const before = current.nextCursor;
+    if (
+      !before ||
+      current.loadingMore ||
+      savedOnly ||
+      current.status !== "ready"
+    ) {
+      return;
+    }
+    const resolvedStore = resolveStore();
+    if (!resolvedStore) return;
+    const activeViewerId = viewerIdRef.current;
+    commit((value) => ({ ...value, loadingMore: true, actionError: "" }));
+
+    try {
+      const page = await resolvedStore.listPostPage({
+        ...(authorId ? { authorId } : {}),
+        before,
+        limit,
+      });
+      const viewerState = activeViewerId
+        ? await resolvedStore.loadViewerState(activeViewerId, {
+            postIds: page.items.map((post) => post.id),
+            authorIds: page.items.map((post) => post.author.id),
+          })
+        : EMPTY_VIEWER_STATE;
+      if (viewerIdRef.current !== activeViewerId) return;
+      commit((value) => ({
+        ...value,
+        posts: appendUniquePosts(value.posts, page.items),
+        viewerState: {
+          reactedPostIds: uniqueMembership(
+            value.viewerState.reactedPostIds,
+            viewerState.reactedPostIds,
+          ),
+          savedPostIds: uniqueMembership(
+            value.viewerState.savedPostIds,
+            viewerState.savedPostIds,
+          ),
+          followedAuthorIds: uniqueMembership(
+            value.viewerState.followedAuthorIds,
+            viewerState.followedAuthorIds,
+          ),
+        },
+        nextCursor: page.nextCursor,
+        loadingMore: false,
+      }));
+    } catch {
+      if (viewerIdRef.current === activeViewerId) {
+        commit((value) => ({
+          ...value,
+          loadingMore: false,
+          actionError: LOAD_ERROR,
+        }));
+      }
+    }
+  }, [authorId, commit, limit, resolveStore, savedOnly]);
 
   const runMutation = useCallback(
     async (
@@ -418,6 +503,7 @@ export function useCommunityFeed({
   return {
     state,
     reload,
+    loadMore,
     createPost,
     deletePost,
     toggleReaction,

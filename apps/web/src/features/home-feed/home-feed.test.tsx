@@ -131,10 +131,12 @@ function buildSnapshot() {
 
 function serverCommunityStore(post: CommunityPost) {
   return {
+    listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
     getComment: vi.fn(async () => null),
+    listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
     loadViewerState: vi.fn(async () => ({
       reactedPostIds: [post.id],
@@ -144,8 +146,12 @@ function serverCommunityStore(post: CommunityPost) {
     createPost: vi.fn(
       async (_authorId: string, _input: CreateCommunityPostInput) => post,
     ),
+    updatePost: vi.fn(async () => post),
     deletePost: vi.fn(async () => undefined),
     createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    updateComment: vi.fn(async () => {
       throw new Error("not used");
     }),
     deleteComment: vi.fn(async () => undefined),

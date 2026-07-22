@@ -37,17 +37,26 @@ function storeWith(
   },
 ) {
   return {
+    listPostPage: vi.fn(async () => ({
+      items: posts,
+      nextCursor: null as { createdAt: string; id: string } | null,
+    })),
     listPosts: vi.fn(async () => posts),
     listSavedPosts: vi.fn(async () => posts),
     getPost: vi.fn(async () => null),
     getComment: vi.fn(async () => null),
+    listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
     loadViewerState: vi.fn(async () => viewerState),
     createPost: vi.fn(async (_authorId, input) =>
       post({ id: input.id ?? "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }),
     ),
+    updatePost: vi.fn(async () => post()),
     deletePost: vi.fn(async () => undefined),
     createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    updateComment: vi.fn(async () => {
       throw new Error("not used");
     }),
     deleteComment: vi.fn(async () => undefined),
@@ -72,7 +81,7 @@ describe("useCommunityFeed", () => {
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
 
     expect(result.current.state.posts).toEqual([post()]);
-    expect(store.listPosts).toHaveBeenCalledWith({ limit: 20 });
+    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 20 });
     expect(store.loadViewerState).not.toHaveBeenCalled();
   });
 
@@ -123,6 +132,48 @@ describe("useCommunityFeed", () => {
     expect(result.current.state.status).toBe("error");
     expect(result.current.state.posts).toEqual([post()]);
     expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
+  });
+
+  it("appends a cursor page without duplicating overlapping posts", async () => {
+    const nextPost = post({
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      title: "두 번째 서버 글",
+      createdAt: "2026-07-20T04:00:00.000Z",
+      updatedAt: "2026-07-20T04:00:00.000Z",
+    });
+    const store = storeWith();
+    store.listPostPage
+      .mockResolvedValueOnce({
+        items: [post()],
+        nextCursor: { createdAt: post().createdAt, id: POST_ID },
+      })
+      .mockResolvedValueOnce({
+        items: [post(), nextPost],
+        nextCursor: null,
+      });
+    const { result } = renderHook(() =>
+      useCommunityFeed({ authReady: true, store, viewer: null }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    expect(result.current.state.nextCursor).toEqual({
+      createdAt: post().createdAt,
+      id: POST_ID,
+    });
+    await act(async () => {
+      await result.current.loadMore();
+    });
+
+    expect(store.listPostPage).toHaveBeenLastCalledWith({
+      before: { createdAt: post().createdAt, id: POST_ID },
+      limit: 20,
+    });
+    expect(result.current.state.posts.map((item) => item.id)).toEqual([
+      POST_ID,
+      nextPost.id,
+    ]);
+    expect(result.current.state.nextCursor).toBeNull();
+    expect(result.current.state.loadingMore).toBe(false);
   });
 
   it("updates server membership and already-inclusive counters together", async () => {

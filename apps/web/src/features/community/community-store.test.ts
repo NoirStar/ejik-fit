@@ -38,8 +38,10 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
     "in",
     "insert",
     "limit",
+    "or",
     "order",
     "select",
+    "update",
     "upsert",
   ]) {
     query[method] = vi.fn(() => query);
@@ -85,7 +87,62 @@ describe("Supabase community store", () => {
     expect(posts.order).toHaveBeenCalledWith("created_at", {
       ascending: false,
     });
-    expect(posts.limit).toHaveBeenCalledWith(50);
+    expect(posts.order).toHaveBeenCalledWith("id", { ascending: false });
+    expect(posts.limit).toHaveBeenCalledWith(51);
+  });
+
+  it("paginates posts with a stable timestamp and id cursor", async () => {
+    const olderRow = {
+      ...postRow,
+      id: "99999999-9999-4999-8999-999999999999",
+      created_at: "2026-07-20T01:02:03.000Z",
+      updated_at: "2026-07-20T01:02:03.000Z",
+    };
+    const posts = createQuery({ data: [postRow, olderRow], error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({ community_posts: posts }).client,
+    );
+
+    await expect(
+      store.listPostPage({
+        before: {
+          createdAt: "2026-07-22T01:02:03.000Z",
+          id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        },
+        limit: 1,
+      }),
+    ).resolves.toEqual({
+      items: [expect.objectContaining({ id: POST_ID })],
+      nextCursor: {
+        createdAt: postRow.created_at,
+        id: POST_ID,
+      },
+    });
+
+    expect(posts.or).toHaveBeenCalledWith(
+      "created_at.lt.2026-07-22T01:02:03.000Z,and(created_at.eq.2026-07-22T01:02:03.000Z,id.lt.ffffffff-ffff-4fff-8fff-ffffffffffff)",
+    );
+    expect(posts.order).toHaveBeenNthCalledWith(1, "created_at", {
+      ascending: false,
+    });
+    expect(posts.order).toHaveBeenNthCalledWith(2, "id", {
+      ascending: false,
+    });
+    expect(posts.limit).toHaveBeenCalledWith(2);
+  });
+
+  it("rejects malformed cursors before querying the database", async () => {
+    const posts = createQuery({ data: [], error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({ community_posts: posts }).client,
+    );
+
+    await expect(
+      store.listPostPage({
+        before: { createdAt: "not-a-date", id: POST_ID },
+      }),
+    ).rejects.toMatchObject({ code: "invalid_data" });
+    expect(posts.select).not.toHaveBeenCalled();
   });
 
   it("loads viewer-owned saved posts in save order without exposing other memberships", async () => {
@@ -144,6 +201,46 @@ describe("Supabase community store", () => {
     expect(inserted).not.toHaveProperty("updated_at");
   });
 
+  it("updates posts and comments only inside the author scope", async () => {
+    const posts = createQuery({ data: postRow, error: null });
+    const commentRow = {
+      id: COMMENT_ID,
+      post_id: POST_ID,
+      author_id: AUTHOR_ID,
+      body: "수정한 댓글입니다.",
+      created_at: "2026-07-21T03:04:05.000Z",
+      updated_at: "2026-07-21T04:04:05.000Z",
+      author: { user_id: AUTHOR_ID, nickname: "작성자" },
+    };
+    const comments = createQuery({ data: commentRow, error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({
+        community_posts: posts,
+        community_comments: comments,
+      }).client,
+    );
+
+    await store.updatePost(AUTHOR_ID, POST_ID, {
+      category: "커리어 고민",
+      title: "  수정한 질문  ",
+      body: "  수정한 본문입니다.  ",
+      tags: [" React "],
+    });
+    await store.updateComment(AUTHOR_ID, COMMENT_ID, "  수정한 댓글입니다.  ");
+
+    expect(posts.update).toHaveBeenCalledWith({
+      category: "커리어 고민",
+      title: "수정한 질문",
+      body: "수정한 본문입니다.",
+      tags: ["React"],
+    });
+    expect(posts.eq).toHaveBeenCalledWith("author_id", AUTHOR_ID);
+    expect(posts.eq).toHaveBeenCalledWith("id", POST_ID);
+    expect(comments.update).toHaveBeenCalledWith({ body: "수정한 댓글입니다." });
+    expect(comments.eq).toHaveBeenCalledWith("author_id", AUTHOR_ID);
+    expect(comments.eq).toHaveBeenCalledWith("id", COMMENT_ID);
+  });
+
   it("gets one comment by its explicit public id", async () => {
     const comments = createQuery({
       data: {
@@ -172,6 +269,44 @@ describe("Supabase community store", () => {
     );
     expect(selected).not.toContain("client_origin_id");
     expect(comments.eq).toHaveBeenCalledWith("id", COMMENT_ID);
+  });
+
+  it("paginates comments with the same deterministic cursor order", async () => {
+    const first = {
+      id: COMMENT_ID,
+      post_id: POST_ID,
+      author_id: VIEWER_ID,
+      body: "최근 댓글입니다.",
+      created_at: "2026-07-21T03:04:05.000Z",
+      updated_at: "2026-07-21T03:04:05.000Z",
+      author: { user_id: VIEWER_ID, nickname: "댓글러" },
+    };
+    const second = {
+      ...first,
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      body: "이전 댓글입니다.",
+      created_at: "2026-07-20T03:04:05.000Z",
+      updated_at: "2026-07-20T03:04:05.000Z",
+    };
+    const comments = createQuery({ data: [first, second], error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({ community_comments: comments }).client,
+    );
+
+    await expect(
+      store.listCommentPage({ postId: POST_ID, limit: 1 }),
+    ).resolves.toEqual({
+      items: [expect.objectContaining({ id: COMMENT_ID })],
+      nextCursor: { createdAt: first.created_at, id: COMMENT_ID },
+    });
+    expect(comments.eq).toHaveBeenCalledWith("post_id", POST_ID);
+    expect(comments.order).toHaveBeenNthCalledWith(1, "created_at", {
+      ascending: false,
+    });
+    expect(comments.order).toHaveBeenNthCalledWith(2, "id", {
+      ascending: false,
+    });
+    expect(comments.limit).toHaveBeenCalledWith(2);
   });
 
   it("loads only viewer-owned private interaction rows", async () => {

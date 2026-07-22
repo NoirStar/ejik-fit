@@ -45,10 +45,12 @@ const comment: CommunityComment = {
 
 function createStore() {
   return {
+    listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
     getComment: vi.fn(async () => comment),
+    listCommentPage: vi.fn(async () => ({ items: [comment], nextCursor: null })),
     listComments: vi.fn(async () => [comment]),
     loadViewerState: vi.fn(async () => ({
       reactedPostIds: [POST_ID],
@@ -56,6 +58,7 @@ function createStore() {
       followedAuthorIds: [],
     })),
     createPost: vi.fn(async () => post),
+    updatePost: vi.fn(async () => post),
     deletePost: vi.fn(async () => undefined),
     createComment: vi.fn(
       async (
@@ -71,6 +74,7 @@ function createStore() {
         updatedAt: "2026-07-21T05:00:00.000Z",
       }),
     ),
+    updateComment: vi.fn(async () => comment),
     deleteComment: vi.fn(async () => undefined),
     setPostReaction: vi.fn(async () => undefined),
     setPostSaved: vi.fn(async () => undefined),

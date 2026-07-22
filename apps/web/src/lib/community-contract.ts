@@ -63,6 +63,16 @@ export type CommunityViewerState = {
   followedAuthorIds: string[];
 };
 
+export type CommunityCursor = {
+  createdAt: string;
+  id: string;
+};
+
+export type CommunityPage<T> = {
+  items: T[];
+  nextCursor: CommunityCursor | null;
+};
+
 export type CreateCommunityPostInput = {
   id?: string;
   category: CommunityCategory;
@@ -70,6 +80,13 @@ export type CreateCommunityPostInput = {
   body: string;
   tags: string[];
   clientOriginId?: string;
+};
+
+export type UpdateCommunityPostInput = {
+  category: CommunityCategory;
+  title: string;
+  body: string;
+  tags: string[];
 };
 
 export type CreateCommunityCommentInput = {
@@ -172,4 +189,22 @@ export function normalizeCommunityTags(value: unknown): string[] | null {
 export function normalizeCommunityClientOrigin(value: unknown) {
   if (value === undefined || value === null) return null;
   return normalizeCommunityText(value, MAX_COMMUNITY_CLIENT_ORIGIN_LENGTH);
+}
+
+export function normalizeCommunityCursor(
+  value: unknown,
+): CommunityCursor | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (!isCommunityUuid(candidate.id) || typeof candidate.createdAt !== "string") {
+    return null;
+  }
+  const timestamp = Date.parse(candidate.createdAt);
+  if (
+    !Number.isFinite(timestamp) ||
+    new Date(timestamp).toISOString() !== candidate.createdAt
+  ) {
+    return null;
+  }
+  return { createdAt: candidate.createdAt, id: candidate.id };
 }

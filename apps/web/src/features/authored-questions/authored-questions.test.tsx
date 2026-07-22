@@ -237,10 +237,12 @@ describe("AuthoredQuestions", () => {
       updatedAt: "2026-07-21T04:00:00.000Z",
     };
     const store = {
+      listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
       listPosts: vi.fn(async () => [post]),
       listSavedPosts: vi.fn(async () => [post]),
       getPost: vi.fn(async () => post),
       getComment: vi.fn(async () => null),
+      listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
       listComments: vi.fn(async () => []),
       loadViewerState: vi.fn(async () => ({
         reactedPostIds: [],
@@ -250,8 +252,12 @@ describe("AuthoredQuestions", () => {
       createPost: vi.fn(
         async (_authorId: string, _input: CreateCommunityPostInput) => post,
       ),
+      updatePost: vi.fn(async () => post),
       deletePost: vi.fn(async () => undefined),
       createComment: vi.fn(async () => {
+        throw new Error("not used");
+      }),
+      updateComment: vi.fn(async () => {
         throw new Error("not used");
       }),
       deleteComment: vi.fn(async () => undefined),
@@ -273,7 +279,7 @@ describe("AuthoredQuestions", () => {
     const article = await screen.findByRole("article", {
       name: post.title,
     });
-    expect(store.listPosts).toHaveBeenCalledWith({ authorId: userId, limit: 50 });
+    expect(store.listPostPage).toHaveBeenCalledWith({ authorId: userId, limit: 50 });
     expect(within(article).getByText("공감 3")).toBeInTheDocument();
     expect(within(article).getByText("댓글 2")).toBeInTheDocument();
     expect(within(article).getByText("저장됨")).toBeInTheDocument();

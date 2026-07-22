@@ -63,10 +63,12 @@ const accountCommunityPost: CommunityPost = {
 
 function accountCommunityStore() {
   return {
+    listPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listPosts: vi.fn(async () => []),
     listSavedPosts: vi.fn(async () => [accountCommunityPost]),
     getPost: vi.fn(async () => accountCommunityPost),
     getComment: vi.fn(async () => null),
+    listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
     loadViewerState: vi.fn(async () => ({
       reactedPostIds: [],
@@ -74,8 +76,12 @@ function accountCommunityStore() {
       followedAuthorIds: [],
     })),
     createPost: vi.fn(async () => accountCommunityPost),
+    updatePost: vi.fn(async () => accountCommunityPost),
     deletePost: vi.fn(async () => undefined),
     createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    updateComment: vi.fn(async () => {
       throw new Error("not used");
     }),
     deleteComment: vi.fn(async () => undefined),

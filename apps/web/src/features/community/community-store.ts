@@ -11,14 +11,18 @@ import {
   isCommunityReportTarget,
   isCommunityUuid,
   normalizeCommunityClientOrigin,
+  normalizeCommunityCursor,
   normalizeCommunityTags,
   normalizeCommunityText,
   type CommunityComment,
+  type CommunityCursor,
+  type CommunityPage,
   type CommunityPost,
   type CommunityViewerState,
   type CreateCommunityCommentInput,
   type CreateCommunityPostInput,
   type CreateCommunityReportInput,
+  type UpdateCommunityPostInput,
 } from "@/lib/community-contract";
 
 import {
@@ -66,6 +70,11 @@ const DEFAULT_COMMENT_LIMIT = 50;
 const MAX_COMMENT_LIMIT = 50;
 
 export type CommunityStore = {
+  listPostPage(options?: {
+    authorId?: string;
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityPost>>;
   listPosts(options?: {
     authorId?: string;
     limit?: number;
@@ -73,6 +82,11 @@ export type CommunityStore = {
   listSavedPosts(viewerId: string, limit?: number): Promise<CommunityPost[]>;
   getPost(postId: string): Promise<CommunityPost | null>;
   getComment(commentId: string): Promise<CommunityComment | null>;
+  listCommentPage(options: {
+    postId: string;
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityComment>>;
   listComments(postId: string, limit?: number): Promise<CommunityComment[]>;
   loadViewerState(
     viewerId: string,
@@ -82,11 +96,21 @@ export type CommunityStore = {
     authorId: string,
     input: CreateCommunityPostInput,
   ): Promise<CommunityPost>;
+  updatePost(
+    authorId: string,
+    postId: string,
+    input: UpdateCommunityPostInput,
+  ): Promise<CommunityPost>;
   deletePost(authorId: string, postId: string): Promise<void>;
   createComment(
     authorId: string,
     postId: string,
     input: CreateCommunityCommentInput,
+  ): Promise<CommunityComment>;
+  updateComment(
+    authorId: string,
+    commentId: string,
+    body: string,
   ): Promise<CommunityComment>;
   deleteComment(authorId: string, commentId: string): Promise<void>;
   setPostReaction(
@@ -123,6 +147,12 @@ function requiredUuid(value: unknown) {
   return value;
 }
 
+function requiredCursor(value: unknown) {
+  const cursor = normalizeCommunityCursor(value);
+  if (!cursor) return invalidInput();
+  return cursor;
+}
+
 function generatedUuid(value?: string) {
   return value === undefined
     ? globalThis.crypto.randomUUID()
@@ -149,7 +179,12 @@ function errorCode(value: unknown) {
 
 function databaseFailure(error: unknown): never {
   const code = errorCode(error);
-  if (code === "42501" || code === "PGRST301" || code === "PGRST302") {
+  if (
+    code === "42501" ||
+    code === "PGRST116" ||
+    code === "PGRST301" ||
+    code === "PGRST302"
+  ) {
     throw new CommunityStoreError(
       "permission",
       "로그인 상태와 작업 권한을 확인해주세요.",
@@ -210,6 +245,21 @@ function normalizedPostInput(input: CreateCommunityPostInput) {
   };
 }
 
+function normalizedPostUpdateInput(input: UpdateCommunityPostInput) {
+  if (!isCommunityCategory(input.category)) return invalidInput();
+  const title = normalizeCommunityText(
+    input.title,
+    MAX_COMMUNITY_POST_TITLE_LENGTH,
+  );
+  const body = normalizeCommunityText(
+    input.body,
+    MAX_COMMUNITY_POST_BODY_LENGTH,
+  );
+  const tags = normalizeCommunityTags(input.tags);
+  if (!title || !body || !tags) return invalidInput();
+  return { category: input.category, title, body, tags };
+}
+
 function normalizedCommentInput(input: CreateCommunityCommentInput) {
   const body = normalizeCommunityText(input.body, MAX_COMMUNITY_COMMENT_LENGTH);
   if (!body) return invalidInput();
@@ -227,6 +277,87 @@ function normalizedCommentInput(input: CreateCommunityCommentInput) {
 export function createSupabaseCommunityStore(
   client: SupabaseClient,
 ): CommunityStore {
+  async function listPostPage(options: {
+    authorId?: string;
+    before?: CommunityCursor;
+    limit?: number;
+  } = {}): Promise<CommunityPage<CommunityPost>> {
+    const limit = boundedLimit(
+      options.limit,
+      DEFAULT_POST_LIMIT,
+      MAX_POST_LIMIT,
+    );
+    const authorId =
+      options.authorId === undefined
+        ? null
+        : requiredUuid(options.authorId);
+    const before =
+      options.before === undefined ? null : requiredCursor(options.before);
+    let request = client.from(POST_TABLE).select(POST_COLUMNS);
+    if (authorId) {
+      request = request.eq("author_id", authorId);
+    }
+    if (before) {
+      request = request.or(
+        `created_at.lt.${before.createdAt},and(created_at.eq.${before.createdAt},id.lt.${before.id})`,
+      );
+    }
+    const { data, error } = await request
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(limit + 1);
+    if (error) databaseFailure(error);
+    const mapped = mappedRows(data, mapCommunityPostRow);
+    const items = mapped.slice(0, limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        mapped.length > limit && last
+          ? { createdAt: last.createdAt, id: last.id }
+          : null,
+    };
+  }
+
+  async function listCommentPage(options: {
+    postId: string;
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityComment>> {
+    const limit = boundedLimit(
+      options.limit,
+      DEFAULT_COMMENT_LIMIT,
+      MAX_COMMENT_LIMIT,
+    );
+    const postId = requiredUuid(options.postId);
+    const before =
+      options.before === undefined ? null : requiredCursor(options.before);
+    let request = client
+      .from(COMMENT_TABLE)
+      .select(COMMENT_COLUMNS)
+      .eq("post_id", postId);
+    if (before) {
+      request = request.or(
+        `created_at.lt.${before.createdAt},and(created_at.eq.${before.createdAt},id.lt.${before.id})`,
+      );
+    }
+    const { data, error } = await request
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(limit + 1);
+    if (error) databaseFailure(error);
+    const mapped = mappedRows(data, mapCommunityCommentRow);
+    const items = mapped.slice(0, limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        mapped.length > limit && last
+          ? { createdAt: last.createdAt, id: last.id }
+          : null,
+    };
+  }
+
   async function setPostMembership(
     table: typeof REACTION_TABLE | typeof SAVE_TABLE,
     userId: string,
@@ -253,21 +384,10 @@ export function createSupabaseCommunityStore(
   }
 
   return {
+    listPostPage,
+
     async listPosts(options = {}) {
-      const limit = boundedLimit(
-        options.limit,
-        DEFAULT_POST_LIMIT,
-        MAX_POST_LIMIT,
-      );
-      let request = client.from(POST_TABLE).select(POST_COLUMNS);
-      if (options.authorId !== undefined) {
-        request = request.eq("author_id", requiredUuid(options.authorId));
-      }
-      const { data, error } = await request
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      if (error) databaseFailure(error);
-      return mappedRows(data, mapCommunityPostRow);
+      return (await listPostPage(options)).items;
     },
 
     async listSavedPosts(viewerId, requestedLimit) {
@@ -327,20 +447,14 @@ export function createSupabaseCommunityStore(
       return data === null ? null : mapCommunityCommentRow(data);
     },
 
+    listCommentPage,
+
     async listComments(postId, requestedLimit) {
-      const limit = boundedLimit(
-        requestedLimit,
-        DEFAULT_COMMENT_LIMIT,
-        MAX_COMMENT_LIMIT,
-      );
-      const { data, error } = await client
-        .from(COMMENT_TABLE)
-        .select(COMMENT_COLUMNS)
-        .eq("post_id", requiredUuid(postId))
-        .order("created_at", { ascending: true })
-        .limit(limit);
-      if (error) databaseFailure(error);
-      return mappedRows(data, mapCommunityCommentRow);
+      const page = await listCommentPage({
+        postId,
+        ...(requestedLimit === undefined ? {} : { limit: requestedLimit }),
+      });
+      return page.items.toReversed();
     },
 
     async loadViewerState(viewerId, targets) {
@@ -403,6 +517,19 @@ export function createSupabaseCommunityStore(
       return mapCommunityPostRow(data);
     },
 
+    async updatePost(authorId, postId, input) {
+      const normalized = normalizedPostUpdateInput(input);
+      const { data, error } = await client
+        .from(POST_TABLE)
+        .update(normalized)
+        .eq("author_id", requiredUuid(authorId))
+        .eq("id", requiredUuid(postId))
+        .select(POST_COLUMNS)
+        .single();
+      if (error) databaseFailure(error);
+      return mapCommunityPostRow(data);
+    },
+
     async deletePost(authorId, postId) {
       const { error } = await client
         .from(POST_TABLE)
@@ -427,6 +554,23 @@ export function createSupabaseCommunityStore(
             ? { client_origin_id: normalized.clientOriginId }
             : {}),
         })
+        .select(COMMENT_COLUMNS)
+        .single();
+      if (error) databaseFailure(error);
+      return mapCommunityCommentRow(data);
+    },
+
+    async updateComment(authorId, commentId, body) {
+      const normalizedBody = normalizeCommunityText(
+        body,
+        MAX_COMMUNITY_COMMENT_LENGTH,
+      );
+      if (!normalizedBody) invalidInput();
+      const { data, error } = await client
+        .from(COMMENT_TABLE)
+        .update({ body: normalizedBody })
+        .eq("author_id", requiredUuid(authorId))
+        .eq("id", requiredUuid(commentId))
         .select(COMMENT_COLUMNS)
         .single();
       if (error) databaseFailure(error);

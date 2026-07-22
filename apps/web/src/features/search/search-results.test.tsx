@@ -33,10 +33,12 @@ const serverSearchPost: CommunityPost = {
 
 function serverSearchStore() {
   return {
+    listPostPage: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listPosts: vi.fn(async () => [serverSearchPost]),
     listSavedPosts: vi.fn(async () => []),
     getPost: vi.fn(async () => serverSearchPost),
     getComment: vi.fn(async () => null),
+    listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
     loadViewerState: vi.fn(async () => ({
       reactedPostIds: [],
@@ -44,8 +46,12 @@ function serverSearchStore() {
       followedAuthorIds: [],
     })),
     createPost: vi.fn(async () => serverSearchPost),
+    updatePost: vi.fn(async () => serverSearchPost),
     deletePost: vi.fn(async () => undefined),
     createComment: vi.fn(async () => {
+      throw new Error("not used");
+    }),
+    updateComment: vi.fn(async () => {
       throw new Error("not used");
     }),
     deleteComment: vi.fn(async () => undefined),
@@ -295,7 +301,7 @@ describe("SearchResults", () => {
     const serverResult = await screen.findByRole("article", {
       name: serverSearchPost.title,
     });
-    expect(store.listPosts).toHaveBeenCalledWith({ limit: 50 });
+    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 50 });
     expect(within(serverResult).getByText("커뮤니티")).toBeInTheDocument();
     expect(
       within(serverResult).getByRole("link", { name: serverSearchPost.title }),
