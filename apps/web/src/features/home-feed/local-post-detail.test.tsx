@@ -45,7 +45,7 @@ describe("LocalPostDetail", () => {
         name: "브라우저에 저장한 이직 질문",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("로컬 글", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("이전 기기 저장 글", { exact: true })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 2, name: "이 브라우저에 저장된 내 글" }),
     ).toBeInTheDocument();
@@ -55,8 +55,15 @@ describe("LocalPostDetail", () => {
     expect(
       screen.queryByText("이 브라우저에서 직접 작성하고 저장한 커뮤니티 글입니다."),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "글 반응과 댓글" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "댓글" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "글 반응과 댓글" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "댓글" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /공감|댓글 등록/ }))
+      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: "브라우저에 저장한 이직 질문 저장",
+      }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /팔로우/ })).not.toBeInTheDocument();
     await waitFor(() =>

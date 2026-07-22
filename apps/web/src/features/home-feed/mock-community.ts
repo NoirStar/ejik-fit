@@ -117,7 +117,7 @@ export const MOCK_INTERVIEW_REVIEWS: InterviewReviewFeedItem[] = [
   },
 ];
 
-export const MOCK_SOCIAL_ITEMS = [
+export const STARTER_COMMUNITY_GUIDE_ITEMS = [
   MOCK_COMMUNITY_POSTS[0],
   MOCK_INTERVIEW_REVIEWS[0],
   MOCK_COMMUNITY_POSTS[1],
@@ -125,3 +125,7 @@ export const MOCK_SOCIAL_ITEMS = [
   MOCK_INTERVIEW_REVIEWS[1],
   MOCK_COMMUNITY_POSTS[3],
 ];
+
+// Compatibility export for search and older browser-state cleanup. These records
+// are starter guidance, never current member activity.
+export const MOCK_SOCIAL_ITEMS = STARTER_COMMUNITY_GUIDE_ITEMS;

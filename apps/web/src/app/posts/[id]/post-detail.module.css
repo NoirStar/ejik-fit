@@ -1,3 +1,4 @@
+/* Hallmark · genre: modern-minimal · macrostructure: detail document · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .main {
   width: min(100%, 75rem);
   margin: 0 auto;
@@ -57,7 +58,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-warning) 7%, var(--color-surface));
   color: var(--color-warning);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 900;
   letter-spacing: 0.02em;
 }
@@ -71,7 +72,7 @@
   border-radius: 999px;
   background: var(--color-brand-subtle);
   color: var(--color-accent-strong);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 900;
   letter-spacing: 0.02em;
 }

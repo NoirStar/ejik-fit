@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const postTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
 
 for (const width of [1440, 820, 390]) {
-  test(`keeps community detail and home interactions synchronized at ${width}px`, async ({
+  test(`keeps starter guidance clearly read-only at ${width}px`, async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -14,9 +14,11 @@ for (const width of [1440, 820, 390]) {
 
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
-    await page
-      .getByRole("tabpanel")
-      .getByRole("link", { exact: true, name: postTitle })
+    const guide = page.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
+    });
+    await guide
+      .getByRole("link", { name: `${postTitle} 예시 읽기` })
       .click();
 
     await expect(
@@ -35,14 +37,22 @@ for (const width of [1440, 820, 390]) {
       expect(titleBox?.height).toBeLessThanOrEqual(lineHeight * 1.1);
     }
     await expect(
-      page.getByText("이직핏 시작 글", { exact: true }),
+      page.getByText("이직핏 커뮤니티 가이드", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("complementary", { name: "이 글 안내" }),
-    ).toContainText("이직핏이 구성한 시작 글");
+    ).toContainText("실제 회원이 작성한 게시물이 아닌 읽기 전용 예시");
     await expect(
       page.getByRole("navigation", { name: "관련 글" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("complementary", { name: "이 글 안내" }),
+    ).toContainText("실제 커뮤니티 활동에는 포함되지 않습니다");
+
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /공감|저장|팔로우|댓글 등록/ }),
+    ).toHaveCount(0);
 
     expect(
       await page.evaluate(
@@ -50,69 +60,39 @@ for (const width of [1440, 820, 390]) {
       ),
     ).toBe(false);
 
-    const reaction = page.getByRole("button", { name: `${postTitle} 공감` });
-    const comments = page.getByRole("link", { name: "댓글 47" });
-    const save = page.getByRole("button", { name: `${postTitle} 저장` });
-    const follow = page.getByRole("button", { name: "서버정원 팔로우" });
-    for (const target of [reaction, comments, save, follow]) {
+    const back = page.getByRole("link", { name: "홈 피드로 돌아가기" });
+    const related = page
+      .getByRole("navigation", { name: "관련 글" })
+      .getByRole("link")
+      .first();
+    for (const target of [back, related]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
 
-    await follow.click();
-    await reaction.click();
-    await save.click();
-    await page.getByRole("textbox", { name: "댓글 내용" }).fill("브라우저 회귀 댓글");
-    const submitComment = page.getByRole("button", { name: "댓글 등록" });
-    expect(
-      await submitComment.evaluate((element) => getComputedStyle(element).whiteSpace),
-    ).toBe("nowrap");
-    await submitComment.click();
-    await expect(page.getByRole("status")).toContainText(
-      "이 브라우저에 댓글을 저장했습니다.",
-    );
-    await expect(page.getByText("댓글 48", { exact: true })).toBeVisible();
-
     await page.reload();
+    await expect(page.getByRole("textbox")).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "서버정원 팔로우 해제" }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByRole("button", { name: `${postTitle} 공감 취소` }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page.getByRole("button", { name: `${postTitle} 저장 해제` }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByText("브라우저 회귀 댓글")).toBeVisible();
+      page.getByRole("button", { name: /공감|저장|팔로우|댓글 등록/ }),
+    ).toHaveCount(0);
 
     await page.getByRole("link", { name: "홈 피드로 돌아가기" }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("tabpanel")).toBeVisible();
-    const homeCard = page.getByRole("article", { name: new RegExp(postTitle) });
     await expect(
-      homeCard.getByRole("button", { name: `${postTitle} 공감 취소` }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      homeCard.getByRole("button", { name: `${postTitle} 저장 해제` }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      homeCard.getByRole("link", { name: `${postTitle} 댓글 48개` }),
-    ).toBeVisible();
-    await expect(
-      homeCard.getByRole("button", { name: "서버정원 팔로우 해제" }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("tab", { name: "팔로잉" }).click();
-    await expect(homeCard).toBeVisible();
-    await expect(
-      page.getByRole("article", {
-        name: "Kubernetes을 요구하는 공식 공고를 확인했어요",
-      }),
-    ).not.toBeVisible();
+      page
+        .getByRole("tabpanel")
+        .getByRole("article", { name: new RegExp(postTitle) }),
+    ).toHaveCount(0);
+    const homeGuide = page.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
+    });
+    await expect(homeGuide).toContainText("읽기 전용");
 
     if (width === 390) {
-      await homeCard
-        .getByRole("link", { exact: true, name: postTitle })
+      await homeGuide
+        .getByRole("link", { name: `${postTitle} 예시 읽기` })
         .click();
       await expect(
         page.getByRole("heading", { exact: true, level: 1, name: postTitle }),
@@ -149,9 +129,11 @@ test("builds recent topics only from details viewed in this browser", async ({
   let recent = page.getByRole("region", { name: "최근 본 주제" });
   await expect(recent).toHaveCount(0);
 
-  await page
-    .getByRole("tabpanel")
-    .getByRole("link", { exact: true, name: postTitle })
+  let guide = page.getByRole("region", {
+    name: "이직핏 커뮤니티 가이드",
+  });
+  await guide
+    .getByRole("link", { name: `${postTitle} 예시 읽기` })
     .click();
   await expect(
     page.getByRole("heading", { exact: true, level: 1, name: postTitle }),
@@ -172,9 +154,9 @@ test("builds recent topics only from details viewed in this browser", async ({
     }),
   ).toHaveAttribute("href", "/posts/career-move-3y-backend");
 
-  await page
-    .getByRole("tabpanel")
-    .getByRole("link", { exact: true, name: kubernetesTitle })
+  guide = page.getByRole("region", { name: "이직핏 커뮤니티 가이드" });
+  await guide
+    .getByRole("link", { name: `${kubernetesTitle} 예시 읽기` })
     .click();
   await expect(
     page.getByRole("heading", {
@@ -222,24 +204,57 @@ test("builds recent topics only from details viewed in this browser", async ({
   expect(browserErrors).toEqual([]);
 });
 
-test("wraps a maximum-length browser comment on mobile", async ({ page }) => {
+test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 390 });
-  await page.goto("/posts/career-move-3y-backend");
-  await page
-    .getByRole("textbox", { name: "댓글 내용" })
-    .fill("x".repeat(600));
-  await page.getByRole("button", { name: "댓글 등록" }).click();
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "ejik-fit:local-community-posts",
+      JSON.stringify([
+        {
+          id: "local-e2e-recovery",
+          category: "커리어 질문",
+          title: "이전 브라우저에 남아 있던 이직 질문",
+          body: "서버 게시물이 아니라 계정 이전 또는 삭제만 제공해야 하는 글입니다.",
+          tags: ["이직 준비"],
+          createdAt: "2026-07-22T09:00:00.000Z",
+        },
+      ]),
+    );
+  });
+  await page.goto("/posts/local-e2e-recovery");
 
-  const localComment = page.locator('[data-local="true"] p');
-  await expect(localComment).toBeVisible();
-  expect(
-    await localComment.evaluate(
-      (element) => element.scrollWidth <= element.clientWidth + 1,
-    ),
-  ).toBe(true);
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "이전 브라우저에 남아 있던 이직 질문",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("이전 기기 저장 글", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /공감|저장|팔로우|댓글 등록/ }),
+  ).toHaveCount(0);
+
+  const remove = page.getByRole("button", {
+    name: "이전 브라우저에 남아 있던 이직 질문 삭제",
+  });
+  const removeBox = await remove.boundingBox();
+  expect(removeBox?.width).toBeGreaterThanOrEqual(44);
+  expect(removeBox?.height).toBeGreaterThanOrEqual(44);
   expect(
     await page.evaluate(() => document.body.scrollWidth <= window.innerWidth),
   ).toBe(true);
+
+  await remove.click();
+  await expect(page.getByRole("status")).toContainText("글을 삭제했습니다");
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem("ejik-fit:local-community-posts")),
+    )
+    .toBe("[]");
 });
 
 test("keeps a guest draft for login without publishing a local post", async ({

@@ -15,7 +15,6 @@ describe("mock post details", () => {
       expect(detail.paragraphs.every((paragraph) => paragraph.trim().length > 0)).toBe(
         true,
       );
-      expect(detail.sampleComments.length).toBeGreaterThanOrEqual(2);
       expect(detail.relatedPostIds).not.toContain(item.id);
       expect(
         detail.relatedPostIds.every((id) =>
@@ -25,11 +24,8 @@ describe("mock post details", () => {
     }
   });
 
-  it("uses unique comment and related-post ids", () => {
+  it("uses unique related-guide ids", () => {
     for (const detail of Object.values(MOCK_POST_DETAILS)) {
-      expect(new Set(detail.sampleComments.map((comment) => comment.id)).size).toBe(
-        detail.sampleComments.length,
-      );
       expect(new Set(detail.relatedPostIds).size).toBe(
         detail.relatedPostIds.length,
       );

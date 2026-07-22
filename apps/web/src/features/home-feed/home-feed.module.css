@@ -1,3 +1,4 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: 100%;
   max-width: none;
@@ -586,6 +587,253 @@
 
 .feedList > :last-child {
   border-bottom: 0;
+}
+
+.feedPagination {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) 0;
+}
+
+.feedPagination button {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out),
+    transform var(--dur-instant) var(--ease-out);
+}
+
+.feedPagination button:active {
+  transform: translateY(1px);
+}
+
+.feedPagination button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.feedPagination p {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: var(--type-meta);
+  line-height: 1.5;
+}
+
+.starterGuide,
+.legacyRecovery {
+  margin-top: var(--space-md);
+  padding: var(--space-md) var(--space-sm);
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.starterGuideHeader,
+.legacyRecovery > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.starterGuideHeader > div,
+.legacyRecovery > header > div {
+  min-width: 0;
+}
+
+.starterGuideHeader h2,
+.legacyRecovery h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--type-section-title);
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.starterGuideHeader p,
+.legacyRecovery > header p {
+  max-width: 58ch;
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-muted);
+  font-size: var(--type-meta);
+  line-height: 1.6;
+}
+
+.starterGuideHeader > svg {
+  flex: 0 0 auto;
+  color: var(--color-accent-strong);
+}
+
+.starterGuideList,
+.legacyRecoveryList {
+  display: grid;
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.starterGuideList article {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.starterGuideList article:last-child,
+.legacyRecoveryList article:last-child {
+  border-bottom: 0;
+}
+
+.starterGuideLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.starterGuideLabel span,
+.starterGuideLabel small {
+  color: var(--color-accent-strong);
+  font-size: var(--type-meta);
+  font-weight: 800;
+}
+
+.starterGuideLabel small {
+  color: var(--color-faint);
+  font-weight: 700;
+}
+
+.starterGuideList h3,
+.legacyRecoveryList h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--type-body);
+  font-style: normal;
+  letter-spacing: -0.025em;
+  line-height: 1.45;
+}
+
+.starterGuideList h3 a {
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.starterGuideList h3 svg {
+  flex: 0 0 auto;
+}
+
+.starterGuideList article > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  -webkit-box-orient: vertical;
+  color: var(--color-muted);
+  font-size: var(--type-meta);
+  line-height: 1.55;
+  -webkit-line-clamp: 2;
+}
+
+.legacyRecovery {
+  background: var(--color-surface-subtle);
+}
+
+.legacyRecovery > header > span {
+  flex: 0 0 auto;
+  color: var(--color-faint);
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+.legacyRecoveryList article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-line-soft);
+}
+
+.legacyRecoveryList article > div:first-child {
+  min-width: 0;
+}
+
+.legacyRecoveryList article > div:first-child > span,
+.legacyRecoveryList small {
+  color: var(--color-faint);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+}
+
+.legacyRecoveryList h3 {
+  margin-top: var(--space-3xs);
+  overflow-wrap: anywhere;
+}
+
+.legacyRecoveryList small {
+  display: block;
+  margin-top: var(--space-3xs);
+}
+
+.legacyRecoveryActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+}
+
+.legacyRecoveryActions a,
+.legacyRecoveryActions button {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.legacyRecoveryActions button {
+  border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-line));
+  color: var(--color-danger);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .feedPagination button:hover,
+  .starterGuideList h3 a:hover,
+  .legacyRecoveryActions a:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-accent-strong);
+  }
+
+  .legacyRecoveryActions button:hover {
+    background: color-mix(in srgb, var(--color-danger) 7%, var(--color-surface));
+  }
 }
 
 .authorRow {
@@ -1782,6 +2030,33 @@
     border-right: 0;
     border-left: 0;
     border-radius: 0;
+  }
+
+  .feedPagination {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .starterGuide,
+  .legacyRecovery {
+    padding-right: 1rem;
+    padding-left: 1rem;
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .starterGuideHeader,
+  .legacyRecovery > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .legacyRecoveryList article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .legacyRecoveryActions {
+    justify-content: flex-start;
   }
 
   .socialCard,

@@ -42,15 +42,6 @@ import {
   type LocalCommunityPostCategory,
 } from "@/lib/local-community-posts";
 import {
-  EMPTY_SOCIAL_INTERACTIONS,
-  readSocialInteractions,
-  subscribeSocialInteractions,
-  toggleAuthorFollow,
-  togglePostReaction,
-  togglePostSave,
-  type SocialInteractions,
-} from "@/lib/social-interactions";
-import {
   readSavedJobIds,
   subscribeSavedJobs,
   toggleSavedJob,
@@ -64,8 +55,8 @@ import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
-import { MOCK_SOCIAL_ITEMS } from "./mock-community";
 import { RecentTopicList } from "./recent-topic-list";
+import { StarterCommunityGuide } from "./starter-community-guide";
 import styles from "./home-feed.module.css";
 import type {
   CareerContextSummary,
@@ -566,6 +557,59 @@ function HomeCareerContext({
   );
 }
 
+function LegacyPostRecovery({
+  onDelete,
+  posts,
+}: {
+  onDelete(post: CommunityPostFeedItem): void;
+  posts: CommunityPostFeedItem[];
+}) {
+  if (posts.length === 0) return null;
+
+  return (
+    <section aria-label="이전 기기 저장 글" className={styles.legacyRecovery}>
+      <header>
+        <div>
+          <h2>이전 기기 저장 글</h2>
+          <p>
+            이전 버전이 이 브라우저에 남긴 글입니다. 서버에 게시된 활동이 아니며,
+            내용을 확인한 뒤 계정으로 복구하거나 삭제할 수 있습니다.
+          </p>
+        </div>
+        <span>{posts.length.toLocaleString("ko-KR")}개</span>
+      </header>
+      <div className={styles.legacyRecoveryList}>
+        {posts.map((post) => (
+          <article aria-labelledby={`legacy-${post.id}-title`} key={post.id}>
+            <div>
+              <span>{post.category}</span>
+              <h3 id={`legacy-${post.id}-title`}>{post.title}</h3>
+              <small>{post.createdLabel} · 현재 브라우저에만 있음</small>
+            </div>
+            <div className={styles.legacyRecoveryActions}>
+              <Link
+                aria-label={`${post.title} 복구 내용 확인`}
+                href={post.href}
+                prefetch={false}
+              >
+                내용 확인
+              </Link>
+              <button
+                aria-label={`${post.title} 삭제`}
+                onClick={() => onDelete(post)}
+                type="button"
+              >
+                <Trash aria-hidden="true" size={15} />
+                삭제
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function FeedCard({
   actionDisabled,
   canDelete,
@@ -636,9 +680,6 @@ export function HomeFeed({
     viewer,
   });
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
-  const [socialInteractions, setSocialInteractions] =
-    useState<SocialInteractions>(EMPTY_SOCIAL_INTERACTIONS);
-  const [socialHydrated, setSocialHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
@@ -655,12 +696,6 @@ export function HomeFeed({
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
     return subscribeSavedJobs(setSavedJobIds);
-  }, []);
-
-  useEffect(() => {
-    setSocialInteractions(readSocialInteractions());
-    setSocialHydrated(true);
-    return subscribeSocialInteractions(setSocialInteractions);
   }, []);
 
   useEffect(() => {
@@ -727,32 +762,19 @@ export function HomeFeed({
     [community.state.posts],
   );
   const followingRailItems = useMemo(
-    () => [...serverFeedItems, ...snapshot.communityItems],
-    [serverFeedItems, snapshot.communityItems],
+    () => serverFeedItems,
+    [serverFeedItems],
   );
-  const followedAuthorIds = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...socialInteractions.followedAuthorIds,
-          ...community.state.viewerState.followedAuthorIds,
-        ]),
-      ),
-    [
-      community.state.viewerState.followedAuthorIds,
-      socialInteractions.followedAuthorIds,
-    ],
-  );
+  const followedAuthorIds = community.state.viewerState.followedAuthorIds;
   const visibleItems = useMemo(
     () =>
       itemsForTab(
-        [...localFeedItems, ...serverFeedItems, ...snapshot.feedItems],
+        [...serverFeedItems, ...snapshot.feedItems],
         activeTab,
         followedAuthorIds,
       ),
     [
       activeTab,
-      localFeedItems,
       serverFeedItems,
       snapshot.feedItems,
       followedAuthorIds,
@@ -764,34 +786,18 @@ export function HomeFeed({
   }
 
   async function handleAuthorFollow(item: SocialItem) {
-    if (item.source === "server") {
-      if (!viewer) {
-        requestLoginForCommunity();
-        return;
-      }
-      const wasFollowed =
-        community.state.viewerState.followedAuthorIds.includes(item.authorId);
-      const changed = await community.toggleFollowed(item.authorId);
-      setAnnouncement(
-        changed
-          ? `${item.authorName} ${wasFollowed ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`
-          : "팔로우 상태를 변경하지 못했습니다. 다시 시도해주세요.",
-      );
+    if (item.source !== "server") return;
+    if (!viewer) {
+      requestLoginForCommunity();
       return;
     }
-
-    const wasFollowed = socialInteractions.followedAuthorIds.includes(
-      item.authorId,
-    );
-    const next = toggleAuthorFollow(item.authorId);
-    const isFollowed = next.followedAuthorIds.includes(item.authorId);
-    setSocialInteractions(next);
-    if (isFollowed === wasFollowed) {
-      setAnnouncement(`${item.authorName} 팔로우 상태를 저장하지 못했습니다.`);
-      return;
-    }
+    const wasFollowed =
+      community.state.viewerState.followedAuthorIds.includes(item.authorId);
+    const changed = await community.toggleFollowed(item.authorId);
     setAnnouncement(
-      `${item.authorName} ${isFollowed ? "팔로우를 시작했습니다." : "팔로우를 해제했습니다."}`,
+      changed
+        ? `${item.authorName} ${wasFollowed ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`
+        : "팔로우 상태를 변경하지 못했습니다. 다시 시도해주세요.",
     );
   }
 
@@ -847,10 +853,7 @@ export function HomeFeed({
   }
 
   async function handleReaction(item: SocialItem) {
-    if (item.source !== "server") {
-      setSocialInteractions(togglePostReaction(item.id));
-      return;
-    }
+    if (item.source !== "server") return;
     if (!viewer) {
       requestLoginForCommunity();
       return;
@@ -860,10 +863,7 @@ export function HomeFeed({
   }
 
   async function handleSocialSave(item: SocialItem) {
-    if (item.source !== "server") {
-      setSocialInteractions(togglePostSave(item.id));
-      return;
-    }
+    if (item.source !== "server") return;
     if (!viewer) {
       requestLoginForCommunity();
       return;
@@ -1003,7 +1003,7 @@ export function HomeFeed({
                       ? "현재 표시할 실데이터가 없습니다"
                       : "실데이터를 불러오지 못했습니다"}
                 </strong>
-                <p>커뮤니티 미리보기는 계속 볼 수 있으며, 수치를 임의로 채우지 않습니다.</p>
+                <p>확인된 데이터만 표시하며, 읽기 전용 가이드는 아래에서 구분해 제공합니다.</p>
                 {snapshot.resourceErrors.length > 0 && (
                   <ul aria-label="데이터 오류">
                     {snapshot.resourceErrors.map((error) => (
@@ -1085,25 +1085,18 @@ export function HomeFeed({
                     followDisabled={
                       serverItem
                         ? Boolean(serverPending || viewer?.id === item.authorId)
-                        : !socialHydrated
+                        : true
                     }
                     followed={
                       isSocialItem(item) &&
-                      (item.source === "server"
-                        ? community.state.viewerState.followedAuthorIds.includes(
-                            item.authorId,
-                          )
-                        : socialInteractions.followedAuthorIds.includes(
-                            item.authorId,
-                          ))
+                      item.source === "server" &&
+                      community.state.viewerState.followedAuthorIds.includes(
+                        item.authorId,
+                      )
                     }
                     item={item}
                     key={item.id}
-                    localCommentCount={
-                      serverItem
-                        ? 0
-                        : socialInteractions.commentsByPostId[item.id]?.length ?? 0
-                    }
+                    localCommentCount={0}
                     onDelete={() => {
                       if (item.type === "community_post" && item.source === "local") {
                         deleteLocalPost(item);
@@ -1132,14 +1125,14 @@ export function HomeFeed({
                     reacted={
                       serverItem
                         ? community.state.viewerState.reactedPostIds.includes(item.id)
-                        : socialInteractions.reactedPostIds.includes(item.id)
+                        : false
                     }
                     saved={
                       recommendedJob
                         ? savedJobIds.includes(item.postingId)
                         : serverItem
                           ? community.state.viewerState.savedPostIds.includes(item.id)
-                          : socialInteractions.savedPostIds.includes(item.id)
+                          : false
                     }
                   />
                 );
@@ -1167,25 +1160,36 @@ export function HomeFeed({
               </div>
             )}
           </div>
+
+          {community.state.nextCursor && (
+            <div className={styles.feedPagination}>
+              <button
+                aria-busy={community.state.loadingMore}
+                disabled={community.state.loadingMore}
+                onClick={() => void community.loadMore()}
+                type="button"
+              >
+                {community.state.loadingMore
+                  ? "커뮤니티 글 불러오는 중…"
+                  : "커뮤니티 글 더 보기"}
+              </button>
+              {community.state.actionError && (
+                <p role="alert">{community.state.actionError}</p>
+              )}
+            </div>
+          )}
+
+          <StarterCommunityGuide items={snapshot.starterGuideItems} />
+
+          {localPostsHydrated && (
+            <LegacyPostRecovery
+              onDelete={deleteLocalPost}
+              posts={localFeedItems}
+            />
+          )}
         </section>
 
         <aside aria-label="채용 시장 요약" className={styles.rightRail}>
-          <section className={styles.railCard}>
-            <div className={styles.railHeadingRow}>
-              <h2>지금 둘러볼 주제</h2>
-            </div>
-            <ul className={styles.curatedTopics}>
-              {MOCK_SOCIAL_ITEMS.slice(0, 4).map((item) => (
-                <li key={item.id}>
-                  <Link href={item.href} prefetch={false}>
-                    <span>{item.category}</span>
-                    <strong>{item.title}</strong>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-
           <section className={styles.railCard} id="market-insights">
             <div className={styles.railHeadingRow}>
               <h2>주목할 기술 수요</h2>
@@ -1228,7 +1232,7 @@ export function HomeFeed({
 
           <FollowingPostList
             followedAuthorIds={followedAuthorIds}
-            hydrated={socialHydrated}
+            hydrated={community.state.status === "ready"}
             items={followingRailItems}
             onShowFollowing={showFollowingPosts}
           />

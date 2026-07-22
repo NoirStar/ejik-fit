@@ -1,9 +1,9 @@
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpenText,
   Briefcase,
   Buildings,
-  ChatCenteredText,
   Info,
   ListChecks,
 } from "@phosphor-icons/react/dist/ssr";
@@ -12,8 +12,6 @@ import Link from "next/link";
 import styles from "@/app/posts/[id]/post-detail.module.css";
 
 import type { MockPostDetail } from "./mock-post-details";
-import { AuthorFollowButton } from "./author-follow-button";
-import { PostDetailActions } from "./post-detail-actions";
 import { RecentTopicTracker } from "./recent-topic-tracker";
 import type {
   CommunityPostFeedItem,
@@ -27,18 +25,6 @@ type PostDetailViewProps = {
   post: SocialPost;
   relatedPosts: SocialPost[];
 };
-
-function AuthorAvatar({ post }: { post: SocialPost }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={styles.authorAvatar}
-      data-tone={post.authorTone}
-    >
-      {post.authorName.slice(0, 1)}
-    </span>
-  );
-}
 
 function InterviewContext({ post }: { post: InterviewReviewFeedItem }) {
   return (
@@ -86,23 +72,25 @@ export function PostDetailView({
           <header className={styles.hero}>
             <div className={styles.contextRow}>
               <span className={styles.category}>{post.category}</span>
-              <span className={styles.mockBadge}>이직핏 시작 글</span>
+              <span className={styles.mockBadge}>이직핏 커뮤니티 가이드</span>
             </div>
 
             <h1>{post.title}</h1>
 
             <div className={styles.author}>
-              <AuthorAvatar post={post} />
+              <span
+                aria-hidden="true"
+                className={styles.authorAvatar}
+                data-tone="violet"
+              >
+                이
+              </span>
               <div>
-                <strong>{post.authorName}</strong>
-                <span>{post.authorHeadline}</span>
+                <strong>이직핏 편집팀</strong>
+                <span>커뮤니티 활용 예시</span>
               </div>
               <div className={styles.authorMeta}>
-                <time dateTime={post.createdAt}>{post.createdLabel}</time>
-                <AuthorFollowButton
-                  authorId={post.authorId}
-                  authorName={post.authorName}
-                />
+                <span>읽기 전용</span>
               </div>
             </div>
           </header>
@@ -122,34 +110,28 @@ export function PostDetailView({
               <li key={tag}>#{tag}</li>
             ))}
           </ul>
-
-          <PostDetailActions
-            metrics={post.metrics}
-            postId={post.id}
-            postTitle={post.title}
-            sampleComments={detail.sampleComments}
-          />
         </article>
 
         <aside aria-label="이 글 안내" className={styles.sidebar}>
           <section className={styles.dataNotice}>
             <Info aria-hidden="true" size={21} weight="fill" />
             <div>
-              <p>커뮤니티 안내</p>
-              <h2>이직핏이 구성한 시작 글</h2>
+              <p>가이드 안내</p>
+              <h2>읽기 전용 커뮤니티 예시</h2>
               <p>
-                커리어 고민과 답변 흐름을 둘러볼 수 있도록 이직핏이 구성했습니다.
+                실제 회원이 작성한 게시물이 아닌 읽기 전용 예시입니다. 어떤 질문과
+                경험을 나눌 수 있는지 이직핏이 구성했습니다.
               </p>
               <p>
-                직접 작성한 글과 계정 커뮤니티 글은 저장 위치를 구분해 표시합니다.
+                공감·댓글·저장·팔로우 수와 실제 커뮤니티 활동에는 포함되지 않습니다.
               </p>
             </div>
           </section>
 
           <nav aria-label="관련 글" className={styles.related}>
             <header>
-              <ChatCenteredText aria-hidden="true" size={19} weight="duotone" />
-              <h2>함께 읽을 글</h2>
+              <BookOpenText aria-hidden="true" size={19} weight="duotone" />
+              <h2>함께 읽을 가이드</h2>
             </header>
             <ul>
               {relatedPosts.map((related) => (

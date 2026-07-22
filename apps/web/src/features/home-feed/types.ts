@@ -128,7 +128,7 @@ export type FeedItem =
 export type HomeFeedSnapshot = {
   dataStatus: DataStatus;
   feedItems: FeedItem[];
-  communityItems: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
+  starterGuideItems: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
   recommendedJobs: RecommendedJobFeedItem[];
   marketInsights: MarketInsightFeedItem[];
   skillDemand: SkillDemandSummary[];

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { LocalPostDetail } from "@/features/home-feed/local-post-detail";
 import { ServerPostDetail } from "@/features/community/server-post-detail";
-import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
+import { STARTER_COMMUNITY_GUIDE_ITEMS } from "@/features/home-feed/mock-community";
 import { MOCK_POST_DETAILS } from "@/features/home-feed/mock-post-details";
 import { PostDetailView } from "@/features/home-feed/post-detail-view";
 import { isLocalCommunityPostId } from "@/lib/local-community-posts";
@@ -14,13 +14,13 @@ type PostPageProps = {
 };
 
 function postOrNotFound(id: string) {
-  const post = MOCK_SOCIAL_ITEMS.find((item) => item.id === id);
+  const post = STARTER_COMMUNITY_GUIDE_ITEMS.find((item) => item.id === id);
   const detail = MOCK_POST_DETAILS[id];
 
   if (!post || !detail) notFound();
 
   const relatedPosts = detail.relatedPostIds.flatMap((relatedId) => {
-    const related = MOCK_SOCIAL_ITEMS.find((item) => item.id === relatedId);
+    const related = STARTER_COMMUNITY_GUIDE_ITEMS.find((item) => item.id === relatedId);
     return related ? [related] : [];
   });
 
@@ -55,11 +55,11 @@ export async function generateMetadata({
   const { post } = postOrNotFound(id);
   const sourceDescription =
     post.type === "community_post" ? post.body : post.summary;
-  const startingPostLabel = "이직핏 시작 글";
+  const startingPostLabel = "이직핏 커뮤니티 가이드";
   const disclaimer =
     post.type === "community_post"
-      ? "커뮤니티 탐색을 돕기 위해 이직핏이 구성한 시작 글입니다."
-      : "커뮤니티 탐색을 돕기 위해 이직핏이 구성한 면접 이야기이며 특정 기업의 실제 면접 기록이 아닙니다.";
+      ? "커뮤니티 활용을 돕기 위해 이직핏이 구성한 읽기 전용 예시입니다."
+      : "커뮤니티 활용을 돕기 위해 이직핏이 구성한 읽기 전용 면접 예시이며 특정 기업의 실제 면접 기록이 아닙니다.";
   const title = `${post.title} (${startingPostLabel})`;
   const description = `${disclaimer} ${sourceDescription}`;
 

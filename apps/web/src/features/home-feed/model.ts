@@ -22,9 +22,7 @@ import type {
 } from "@/lib/types";
 
 import {
-  MOCK_COMMUNITY_POSTS,
-  MOCK_INTERVIEW_REVIEWS,
-  MOCK_SOCIAL_ITEMS,
+  STARTER_COMMUNITY_GUIDE_ITEMS,
 } from "./mock-community";
 import type { ResourceState } from "./resource-state";
 import type {
@@ -345,17 +343,15 @@ function mergeFeed(
   jobs: RecommendedJobFeedItem[],
   insights: MarketInsightFeedItem[],
 ): FeedItem[] {
-  const ordered: Array<FeedItem | undefined> = [
-    MOCK_COMMUNITY_POSTS[0],
-    jobs[0],
-    MOCK_INTERVIEW_REVIEWS[0],
-    insights[0],
-    MOCK_COMMUNITY_POSTS[1],
-    jobs[1],
-    insights[1],
-    ...MOCK_SOCIAL_ITEMS.slice(3),
-  ];
-  return ordered.filter((item): item is FeedItem => Boolean(item));
+  const ordered: FeedItem[] = [];
+  const length = Math.max(jobs.length, insights.length);
+  for (let index = 0; index < length; index += 1) {
+    const job = jobs[index];
+    const insight = insights[index];
+    if (job) ordered.push(job);
+    if (insight) ordered.push(insight);
+  }
+  return ordered;
 }
 
 function dataStatus(
@@ -398,7 +394,7 @@ export function buildHomeFeedSnapshot(
       hasVerifiedData,
     ),
     feedItems: mergeFeed(recommendedJobs, marketInsights),
-    communityItems: MOCK_SOCIAL_ITEMS,
+    starterGuideItems: STARTER_COMMUNITY_GUIDE_ITEMS,
     recommendedJobs,
     marketInsights,
     skillDemand,

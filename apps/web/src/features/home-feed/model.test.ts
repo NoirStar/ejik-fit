@@ -177,7 +177,7 @@ describe("buildHomeFeedSnapshot", () => {
     });
   });
 
-  it("mixes mock social content with API-backed jobs and skill demand", () => {
+  it("keeps starter guidance out of the verified action feed", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
@@ -190,12 +190,15 @@ describe("buildHomeFeedSnapshot", () => {
       ownedSkills: ["Java", "Kafka"],
     });
 
-    expect(snapshot.feedItems.slice(0, 4).map((item) => item.type)).toEqual([
-      "community_post",
+    expect(snapshot.feedItems.map((item) => item.type)).toEqual([
       "recommended_job",
-      "interview_review",
       "market_insight",
     ]);
+    expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
+    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
+    expect(
+      snapshot.starterGuideItems.every((item) => item.source === "mock"),
+    ).toBe(true);
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       companyName: "토스",
       companyHref: "/companies/toss",
@@ -294,7 +297,7 @@ describe("buildHomeFeedSnapshot", () => {
     });
   });
 
-  it("keeps community and verified posting content when graph loading fails", () => {
+  it("keeps verified posting content and separate guidance when graph loading fails", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
@@ -304,7 +307,8 @@ describe("buildHomeFeedSnapshot", () => {
     });
 
     expect(snapshot.dataStatus).toBe("partial");
-    expect(snapshot.communityItems.length).toBeGreaterThan(0);
+    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
+    expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
     expect(snapshot.recommendedJobs).toHaveLength(1);
     expect(snapshot.recommendedJobs[0].matchedRequiredSkills).toEqual([]);
     expect(snapshot.resourceErrors).toEqual(["graph offline"]);
@@ -324,7 +328,8 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.marketInsights).toEqual([]);
     expect(snapshot.skillDemand).toEqual([]);
     expect(snapshot.careerInsight).toEqual({ status: "needs_skills" });
-    expect(snapshot.feedItems.every((item) => item.source !== "api")).toBe(true);
+    expect(snapshot.feedItems).toEqual([]);
+    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
   });
 
   it("marks only the personalized insight unavailable when fit analysis fails", () => {

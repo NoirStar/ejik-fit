@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
@@ -24,9 +24,9 @@ describe("PostPage", () => {
     });
 
     expect(metadata.title).toBe(
-      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? (이직핏 시작 글)",
+      "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? (이직핏 커뮤니티 가이드)",
     );
-    expect(metadata.description).toContain("이직핏이 구성한 시작 글");
+    expect(metadata.description).toContain("읽기 전용 예시");
     expect(metadata.description).toContain("성장 속도가 느린 것 같습니다");
     expect(metadata.alternates?.canonical).toBe(
       "/posts/career-move-3y-backend",
@@ -42,9 +42,9 @@ describe("PostPage", () => {
     });
 
     expect(metadata.title).toBe(
-      "플랫폼 기업 백엔드 1차 기술 면접 후기 (이직핏 시작 글)",
+      "플랫폼 기업 백엔드 1차 기술 면접 후기 (이직핏 커뮤니티 가이드)",
     );
-    expect(metadata.description).toContain("이직핏이 구성한 면접 이야기");
+    expect(metadata.description).toContain("이직핏이 구성한 읽기 전용 면접 예시");
     expect(metadata.description).toContain(
       "특정 기업의 실제 면접 기록이 아닙니다",
     );
@@ -62,7 +62,7 @@ describe("PostPage", () => {
     expect(metadata.robots).toMatchObject({ follow: false, index: false });
   });
 
-  it("renders built-in community content as a polished starting conversation", async () => {
+  it("renders built-in community content as an explicit read-only guide", async () => {
     render(
       await PostPage({
         params: Promise.resolve({ id: "career-move-3y-backend" }),
@@ -76,12 +76,18 @@ describe("PostPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("이직핏 시작 글", { exact: true }),
+      screen.getByText("이직핏 커뮤니티 가이드", { exact: true }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/예시/)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "글 반응과 댓글" }),
+      screen.getByText(/실제 회원이 작성한 게시물이 아닌 읽기 전용 예시/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "글 반응과 댓글" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /팔로우|공감|저장|신고|수정/ }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "댓글 내용" }))
+      .not.toBeInTheDocument();
     expect(
       screen.getByRole("complementary", { name: "이 글 안내" }),
     ).toBeInTheDocument();
@@ -111,21 +117,15 @@ describe("PostPage", () => {
     );
   });
 
-  it("persists the mock author's browser-local follow choice", async () => {
+  it("does not offer a browser-local follow action for a guide author", async () => {
     render(
       await PostPage({
         params: Promise.resolve({ id: "career-move-3y-backend" }),
       }),
     );
 
-    const follow = screen.getByRole("button", { name: "서버정원 팔로우" });
-    await waitFor(() => expect(follow).toBeEnabled());
-    fireEvent.click(follow);
-
-    expect(follow).toHaveAttribute("aria-pressed", "true");
-    expect(
-      JSON.parse(localStorage.getItem("ejik-fit:social-interactions")!),
-    ).toMatchObject({ followedAuthorIds: ["server-garden"] });
+    expect(screen.queryByRole("button", { name: /팔로우/ })).not.toBeInTheDocument();
+    expect(localStorage.getItem("ejik-fit:social-interactions")).toBeNull();
   });
 
   it("shows interview context only for a mock interview review", async () => {
@@ -165,7 +165,7 @@ describe("PostPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "로컬 상세 라우트" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("로컬 글", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("이전 기기 저장 글", { exact: true })).toBeInTheDocument();
     await waitFor(() =>
       expect(readRecentCommunityTopics()).toEqual([
         expect.objectContaining({

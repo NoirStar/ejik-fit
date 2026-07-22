@@ -14,7 +14,6 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { localCommunityPostToFeedItem } from "./model";
-import { PostDetailActions } from "./post-detail-actions";
 import { RecentTopicTracker } from "./recent-topic-tracker";
 
 type LocalPostDetailState =
@@ -110,7 +109,7 @@ export function LocalPostDetail({ postId }: { postId: string }) {
           <header className={styles.hero}>
             <div className={styles.contextRow}>
               <span className={styles.category}>{item.category}</span>
-              <span className={styles.localBadge}>로컬 글</span>
+              <span className={styles.localBadge}>이전 기기 저장 글</span>
             </div>
 
             <h1>{item.title}</h1>
@@ -144,14 +143,6 @@ export function LocalPostDetail({ postId }: { postId: string }) {
               ))}
             </ul>
           )}
-
-          <PostDetailActions
-            contentKind="local"
-            metrics={item.metrics}
-            postId={item.id}
-            postTitle={item.title}
-            sampleComments={[]}
-          />
         </article>
 
         <aside aria-label="이 글 안내" className={styles.sidebar}>
@@ -164,7 +155,10 @@ export function LocalPostDetail({ postId }: { postId: string }) {
                 이 글은 서버 커뮤니티에 게시되지 않으며 다른 브라우저나 기기로
                 동기화되지 않습니다.
               </p>
-              <p>공감, 저장, 댓글도 현재 브라우저에만 남습니다.</p>
+              <p>
+                로그인하면 계정 이전을 시도하며, 성공하기 전까지 원문을 이
+                브라우저에 보존합니다.
+              </p>
             </div>
           </section>
 

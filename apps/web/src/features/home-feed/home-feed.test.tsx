@@ -16,6 +16,7 @@ import {
 } from "@/features/community/community-draft";
 import type { CommunityStore } from "@/features/community/community-store";
 import type {
+  CommunityCursor,
   CommunityPost,
   CreateCommunityPostInput,
 } from "@/lib/community-contract";
@@ -132,7 +133,10 @@ function buildSnapshot() {
 function serverCommunityStore(post: CommunityPost) {
   return {
     searchPosts: vi.fn(async () => ({ items: [post], nextCursor: null })),
-    listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
+    listPostPage: vi.fn(async () => ({
+      items: [post],
+      nextCursor: null as CommunityCursor | null,
+    })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
@@ -172,7 +176,7 @@ describe("HomeFeed", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders mixed social and verified market content", () => {
+  it("renders verified market content with separate starter guidance", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
@@ -199,14 +203,14 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("link", { name: "토스 기업 채용 현황" }),
     ).toHaveAttribute("href", "/companies/toss");
-    const communityPost = screen.getByRole("article", {
-      name: /3년차 백엔드 개발자/,
+    const communityGuide = screen.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
     });
     expect(
-      within(communityPost).getByRole("link", {
-        name: "백엔드 커뮤니티 검색",
+      within(communityGuide).getByRole("link", {
+        name: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? 예시 읽기",
       }),
-    ).toHaveAttribute("href", "/search?q=%EB%B0%B1%EC%97%94%EB%93%9C&scope=community");
+    ).toHaveAttribute("href", "/posts/career-move-3y-backend");
     expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
       "href",
       "/career/saved",
@@ -230,6 +234,117 @@ describe("HomeFeed", () => {
     expect(within(marketContext).getByRole("link", {
       name: "기술 관리 · 조건 수정",
     })).toHaveAttribute("href", "/career");
+  });
+
+  it("separates read-only starter guidance from real activity", () => {
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    const activity = screen.getByRole("tabpanel");
+    expect(
+      within(activity).queryByRole("article", { name: /3년차 백엔드 개발자/ }),
+    ).not.toBeInTheDocument();
+
+    const guide = screen.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
+    });
+    const example = within(guide).getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
+    expect(within(example).getByText("이직핏 커뮤니티 가이드")).toBeVisible();
+    expect(within(example).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("keeps previous-browser posts in a recovery-only section", async () => {
+    createLocalCommunityPost(
+      {
+        title: "이전 브라우저에 남은 글",
+        body: "서버 이전 전 남아 있는 내용입니다.",
+        tags: ["복구"],
+      },
+      {
+        id: "local-recovery-post",
+        createdAt: "2026-07-14T04:00:00.000Z",
+      },
+    );
+
+    render(<HomeFeed snapshot={buildSnapshot()} />);
+
+    const recovery = await screen.findByRole("region", {
+      name: "이전 기기 저장 글",
+    });
+    expect(
+      within(screen.getByRole("tabpanel")).queryByRole("article", {
+        name: "이전 브라우저에 남은 글",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(recovery).getByRole("link", {
+        name: "이전 브라우저에 남은 글 복구 내용 확인",
+      }),
+    ).toHaveAttribute("href", "/posts/local-recovery-post");
+    expect(
+      within(recovery).getByRole("button", {
+        name: "이전 브라우저에 남은 글 삭제",
+      }),
+    ).toBeInTheDocument();
+    expect(within(recovery).queryByText(/공감|댓글|저장 [0-9]/)).not.toBeInTheDocument();
+  });
+
+  it("loads the next page of real community posts without replacing the first page", async () => {
+    const first: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "첫작성자",
+      },
+      category: "커리어 질문",
+      title: "첫 페이지 실제 글",
+      body: "서버 첫 페이지 본문",
+      tags: ["백엔드"],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const second: CommunityPost = {
+      ...first,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      title: "다음 페이지 실제 글",
+      createdAt: "2026-07-20T04:00:00.000Z",
+      updatedAt: "2026-07-20T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(first);
+    store.listPostPage
+      .mockResolvedValueOnce({
+        items: [first],
+        nextCursor: { createdAt: first.createdAt, id: first.id },
+      })
+      .mockResolvedValueOnce({ items: [second], nextCursor: null });
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "33333333-3333-4333-8333-333333333333",
+          email: "reader@example.com",
+        }}
+      >
+        <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+
+    expect(
+      await screen.findByRole("article", { name: "첫 페이지 실제 글" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "커뮤니티 글 더 보기" }),
+    );
+
+    expect(
+      await screen.findByRole("article", { name: "다음 페이지 실제 글" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("article", { name: "첫 페이지 실제 글" }),
+    ).toBeInTheDocument();
   });
 
   it("uses the shell write action without repeating a central write button", () => {
@@ -343,8 +458,17 @@ describe("HomeFeed", () => {
     ).toHaveAttribute("href", "/posts/salary-negotiation-range");
   });
 
-  it("builds the following tab from browser-owned author choices", async () => {
-    const firstRender = render(<HomeFeed snapshot={buildSnapshot()} />);
+  it("does not promote old browser-only follows into real activity", () => {
+    localStorage.setItem(
+      "ejik-fit:social-interactions",
+      JSON.stringify({
+        reactedPostIds: [],
+        savedPostIds: [],
+        followedAuthorIds: ["server-garden"],
+        commentsByPostId: {},
+      }),
+    );
+    render(<HomeFeed snapshot={buildSnapshot()} />);
     expect(
       screen.queryByRole("region", { name: "팔로우 중인 글" }),
     ).not.toBeInTheDocument();
@@ -358,83 +482,26 @@ describe("HomeFeed", () => {
       screen.getByRole("button", { name: "추천 탭에서 작성자 찾기" }),
     );
     expect(screen.getByRole("tab", { name: "추천" })).toHaveFocus();
-
-    const communityPost = screen.getByRole("article", {
-      name: /3년차 백엔드 개발자/,
-    });
-    const follow = within(communityPost).getByRole("button", {
-      name: "서버정원 팔로우",
-    });
-    await waitFor(() => expect(follow).toBeEnabled());
-    fireEvent.click(follow);
-    expect(follow).toHaveAttribute("aria-pressed", "true");
-    expect(localStorage.getItem("ejik-fit:social-interactions")).toContain(
-      "server-garden",
-    );
-    const followingRail = screen.getByRole("region", {
-      name: "팔로우 중인 글",
-    });
     expect(
-      within(followingRail).getByRole("link", {
-        name: "서버정원의 글: 3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?",
-      }),
-    ).toHaveAttribute("href", "/posts/career-move-3y-backend");
-    fireEvent.click(
-      within(followingRail).getByRole("button", { name: "팔로잉 탭 보기" }),
-    );
-    expect(screen.getByRole("tab", { name: "팔로잉" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: "팔로잉" })).toHaveFocus();
-
-    firstRender.unmount();
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "서버정원 팔로우 해제" }),
-      ).toHaveAttribute("aria-pressed", "true"),
-    );
-    fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
-
-    expect(screen.queryByRole("article", { name: /Backend Engineer/ })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("article", {
-        name: "Kubernetes을 요구하는 공식 공고를 확인했어요",
-      }),
+      within(
+        screen.getByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+      ).queryByRole("button", { name: /팔로우/ }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "서버정원 팔로우 해제" }),
-    );
-    expect(
-      screen.getByText("팔로우한 작성자가 없습니다."),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "서버정원 팔로우를 해제했습니다.",
-    );
   });
 
-  it("toggles local reactions and saves without changing server facts", () => {
+  it("does not expose starter metrics as interactive facts", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
-    const article = screen.getByRole("article", { name: /3년차 백엔드 개발자/ });
-    const reaction = within(article).getByRole("button", { name: /공감/ });
-    const save = within(article).getByRole("button", { name: /저장/ });
+    const guide = screen.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
+    });
+    const article = within(guide).getByRole("article", {
+      name: /3년차 백엔드 개발자/,
+    });
 
-    expect(reaction).toHaveAttribute("aria-pressed", "false");
-    expect(reaction).toHaveTextContent("32");
-    fireEvent.click(reaction);
-    expect(reaction).toHaveAttribute("aria-pressed", "true");
-    expect(reaction).toHaveTextContent("33");
-
-    expect(save).toHaveAttribute("aria-pressed", "false");
-    expect(save).toHaveTextContent("18");
-    fireEvent.click(save);
-    expect(save).toHaveAttribute("aria-pressed", "true");
-    expect(save).toHaveTextContent("19");
+    expect(within(article).queryByText("32")).not.toBeInTheDocument();
+    expect(within(article).queryByText("47")).not.toBeInTheDocument();
+    expect(within(article).queryByText("18")).not.toBeInTheDocument();
+    expect(within(article).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("renders account community posts before fixtures without double-counting reactions", async () => {
@@ -578,40 +645,21 @@ describe("HomeFeed", () => {
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
   });
 
-  it("restores shared post reactions, saves, and browser comment counts", async () => {
+  it("keeps old browser comments out of starter guidance", () => {
     addLocalPostComment("career-move-3y-backend", "상세에서 남긴 댓글", {
       createdAt: "2026-07-14T02:00:00.000Z",
       id: "home-sync-comment",
     });
-    const { unmount } = render(<HomeFeed snapshot={buildSnapshot()} />);
-    const firstArticle = screen.getByRole("article", {
-      name: /3년차 백엔드 개발자/,
-    });
-
-    expect(
-      await within(firstArticle).findByRole("link", {
-        name: /댓글 48개/,
-      }),
-    ).toBeInTheDocument();
-    fireEvent.click(within(firstArticle).getByRole("button", { name: /공감/ }));
-    fireEvent.click(within(firstArticle).getByRole("button", { name: /저장/ }));
-    unmount();
-
     render(<HomeFeed snapshot={buildSnapshot()} />);
-    const restoredArticle = screen.getByRole("article", {
+    const guide = screen.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
+    });
+    const article = within(guide).getByRole("article", {
       name: /3년차 백엔드 개발자/,
     });
-    await waitFor(() => {
-      expect(
-        within(restoredArticle).getByRole("button", { name: /공감/ }),
-      ).toHaveAttribute("aria-pressed", "true");
-      expect(
-        within(restoredArticle).getByRole("button", { name: /저장/ }),
-      ).toHaveAttribute("aria-pressed", "true");
-    });
-    expect(
-      within(restoredArticle).getByRole("link", { name: /댓글 48개/ }),
-    ).toBeInTheDocument();
+
+    expect(within(article).queryByText("상세에서 남긴 댓글")).not.toBeInTheDocument();
+    expect(within(article).queryByRole("link", { name: /댓글/ })).not.toBeInTheDocument();
   });
 
   it("persists recommended job saves in the shared browser list", async () => {
