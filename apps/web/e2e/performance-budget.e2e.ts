@@ -91,3 +91,26 @@ for (const route of ["/", "/market"]) {
     ).toBeLessThanOrEqual(15);
   });
 }
+
+test("/market keeps initial JavaScript within budget", async ({ page }) => {
+  const { resources } = await coldResources(page, "/market");
+  const scripts = resources.filter(({ name }) => {
+      const url = new URL(name);
+      return (
+        url.pathname.startsWith("/_next/static/chunks/") &&
+        url.pathname.endsWith(".js")
+      );
+    });
+  const scriptBytes = scripts.reduce(
+    (total, resource) => total + resource.transferSize,
+    0,
+  );
+
+  expect(scriptBytes).toBeGreaterThan(0);
+  expect(
+    scriptBytes,
+    `Initial scripts:\n${scripts
+      .map(({ name, transferSize }) => `${new URL(name).pathname} ${transferSize}`)
+      .join("\n")}`,
+  ).toBeLessThanOrEqual(275 * 1024);
+});

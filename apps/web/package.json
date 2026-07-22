@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "assets:fonts": "node scripts/sync-pretendard-subsets.mjs",
+    "assets:technology-icons": "node scripts/sync-technology-icons.mjs",
     "dev": "next dev",
     "build": "next build",
     "bench:graph": "vitest bench src/lib/large-graph.bench.ts --run",
