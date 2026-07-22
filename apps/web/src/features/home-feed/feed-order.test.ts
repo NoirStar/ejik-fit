@@ -19,6 +19,23 @@ const items: FeedItem[] = [
     tags: ["백엔드"],
     href: "/posts/community-1",
     metrics: { reactions: 12, comments: 4, saves: 3 },
+    source: "server",
+  },
+  {
+    id: "starter-community-1",
+    type: "community_post",
+    category: "커리어 질문",
+    authorId: "server-garden",
+    authorName: "가이드 작성자",
+    authorHeadline: "읽기 전용",
+    authorTone: "blue",
+    createdAt: "2026-07-13T11:00:00.000Z",
+    createdLabel: "가이드",
+    title: "실제 팔로잉에 섞이면 안 되는 가이드",
+    body: "가이드 본문",
+    tags: ["가이드"],
+    href: "/posts/starter-community-1",
+    metrics: { reactions: 99, comments: 99, saves: 99 },
     source: "mock",
   },
   {
@@ -76,11 +93,10 @@ const items: FeedItem[] = [
 ];
 
 describe("itemsForTab", () => {
-  it("keeps the curated order for recommended", () => {
+  it("keeps the curated order while excluding read-only guidance", () => {
     expect(itemsForTab(items, "recommended").map(({ id }) => id)).toEqual([
       "community-1",
       "job-1",
-      "review-1",
       "market-1",
     ]);
   });
@@ -94,7 +110,6 @@ describe("itemsForTab", () => {
 
   it("sorts dated social content before undated API cards for latest", () => {
     expect(itemsForTab(items, "latest").map(({ id }) => id)).toEqual([
-      "review-1",
       "community-1",
       "job-1",
       "market-1",
@@ -103,7 +118,6 @@ describe("itemsForTab", () => {
 
   it("ranks only social content by visible engagement for popular", () => {
     expect(itemsForTab(items, "popular").map(({ id }) => id)).toEqual([
-      "review-1",
       "community-1",
     ]);
   });

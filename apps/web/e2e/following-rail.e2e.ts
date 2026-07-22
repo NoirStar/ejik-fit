@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-const title = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
+const starterTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
 
 for (const width of [1440, 390]) {
-  test(`keeps followed posts synchronized with the following tab at ${width}px`, async ({
+  test(`keeps legacy starter follows out of the real following feed at ${width}px`, async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -13,43 +13,43 @@ for (const width of [1440, 390]) {
     page.on("pageerror", (error) => browserErrors.push(error.message));
 
     await page.setViewportSize({ height: 900, width });
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "ejik-fit:social-interactions",
+        JSON.stringify({
+          followedAuthorIds: ["server-garden"],
+          reactedPostIds: ["career-move-3y-backend"],
+          savedPostIds: ["career-move-3y-backend"],
+        }),
+      );
+    });
     await page.goto("/");
 
-    let rail = page.getByRole("region", { name: "팔로우 중인 글" });
-    await expect(rail).toHaveCount(0);
-
-    let article = page.getByRole("article", { name: title });
-    const follow = article.getByRole("button", { name: "서버정원 팔로우" });
-    await expect(follow).toBeEnabled();
-    await follow.click();
-
-    rail = page.getByRole("region", { name: "팔로우 중인 글" });
-    let railLink = rail.getByRole("link", {
-      name: `서버정원의 글: ${title}`,
+    const guide = page.getByRole("region", {
+      name: "이직핏 커뮤니티 가이드",
     });
-    await expect(railLink).toHaveAttribute("href", "/posts/career-move-3y-backend");
-    const railLinkBox = await railLink.boundingBox();
-    expect(railLinkBox?.width).toBeGreaterThanOrEqual(44);
-    expect(railLinkBox?.height).toBeGreaterThanOrEqual(44);
-
-    await railLink.click();
     await expect(
-      page.getByRole("heading", { exact: true, level: 1, name: title }),
+      guide.getByRole("link", { name: `${starterTitle} 예시 읽기` }),
     ).toBeVisible();
-    await page.goBack();
+    await expect(guide.getByText("읽기 전용").first()).toBeVisible();
+    await expect(guide.getByRole("button")).toHaveCount(0);
+    await expect(
+      page.getByRole("region", { name: "팔로우 중인 글" }),
+    ).toHaveCount(0);
 
-    rail = page.getByRole("region", { name: "팔로우 중인 글" });
-    railLink = rail.getByRole("link", { name: `서버정원의 글: ${title}` });
-    await expect(railLink).toBeVisible();
-    await rail.getByRole("button", { name: "팔로잉 탭 보기" }).click();
     const followingTab = page.getByRole("tab", { name: "팔로잉" });
+    await followingTab.click();
     await expect(followingTab).toHaveAttribute("aria-selected", "true");
     await expect(followingTab).toBeFocused();
 
-    article = page.getByRole("article", { name: title });
-    await article.getByRole("button", { name: "서버정원 팔로우 해제" }).click();
-    await expect(rail).toHaveCount(0);
-    await expect(page.getByText("팔로우한 작성자가 없습니다.")).toBeVisible();
+    const panel = page.getByRole("tabpanel");
+    await expect(
+      panel.getByText("팔로우한 작성자가 없습니다."),
+    ).toBeVisible();
+    await expect(panel.getByText(starterTitle)).toHaveCount(0);
+    await expect(
+      guide.getByRole("link", { name: `${starterTitle} 예시 읽기` }),
+    ).toBeVisible();
 
     expect(
       await page.evaluate(

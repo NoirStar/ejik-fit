@@ -101,7 +101,7 @@ describe("saved library model", () => {
     ).toThrow(TypeError);
   });
 
-  it("separates saved local and mock community items from missing IDs", () => {
+  it("selects durable local records but ignores read-only starter saves", () => {
     const localPost = localCommunityPostToFeedItem(
       {
         id: "local-browser-question",
@@ -124,19 +124,12 @@ describe("saved library model", () => {
 
     expect(selected.items.map((item) => item.id)).toEqual([
       "local-browser-question",
-      "kubernetes-experience",
-      "career-move-3y-backend",
     ]);
     expect(selected.items[0]).toMatchObject({
       source: "local",
       title: "브라우저에 저장한 내 질문",
       authorName: "나",
       createdLabel: "5분 전",
-    });
-    expect(selected.items[1]).toMatchObject({
-      source: "mock",
-      title: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
-      summary: expect.stringContaining("개인 클러스터"),
     });
     expect(selected.unavailableIds).toEqual(["local-missing"]);
   });

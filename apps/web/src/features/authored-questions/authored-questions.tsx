@@ -8,6 +8,7 @@ import {
   Heart,
   NotePencil,
   ShieldCheck,
+  SignIn,
   Trash,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -29,50 +30,62 @@ import {
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
-import {
-  EMPTY_SOCIAL_INTERACTIONS,
-  readSocialInteractions,
-  subscribeSocialInteractions,
-  type SocialInteractions,
-} from "@/lib/social-interactions";
 
 import styles from "./authored-questions.module.css";
 
-function QuestionCard({
-  interactions,
+type DeleteControls = {
+  onCancelDelete(): void;
+  onConfirmDelete(): void;
+  onRequestDelete(): void;
+  pendingDelete: boolean;
+};
+
+function DeleteConfirmation({
+  label,
+  onCancelDelete,
+  onConfirmDelete,
+}: {
+  label: string;
+  onCancelDelete(): void;
+  onConfirmDelete(): void;
+}) {
+  return (
+    <div
+      aria-label={`${label} 삭제 확인`}
+      className={styles.deleteConfirm}
+      role="group"
+    >
+      <p>삭제하면 글에 남아 있는 댓글과 반응도 함께 지워집니다.</p>
+      <div>
+        <button onClick={onCancelDelete} type="button">
+          삭제 취소
+        </button>
+        <button onClick={onConfirmDelete} type="button">
+          정말 삭제
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AccountQuestionCard({
   onCancelDelete,
   onConfirmDelete,
   onRequestDelete,
   pendingDelete,
   post,
-  serverSaved,
-}: {
-  interactions: SocialInteractions;
-  onCancelDelete(): void;
-  onConfirmDelete(): void;
-  onRequestDelete(): void;
-  pendingDelete: boolean;
+  saved,
+}: DeleteControls & {
   post: CommunityPostFeedItem;
-  serverSaved: boolean;
+  saved: boolean;
 }) {
   const titleId = `authored-question-${post.id}-title`;
-  const local = post.source === "local";
-  const reacted = local && interactions.reactedPostIds.includes(post.id);
-  const saved = local
-    ? interactions.savedPostIds.includes(post.id)
-    : serverSaved;
-  const commentCount = local
-    ? interactions.commentsByPostId[post.id]?.length ?? 0
-    : post.metrics.comments;
-  const reactionCount = local ? (reacted ? 1 : 0) : post.metrics.reactions;
 
   return (
     <article aria-labelledby={titleId} className={styles.questionCard}>
       <div className={styles.cardTopline}>
         <div>
-          <span>
-            {post.category} · {local ? "이 브라우저에서 작성" : "계정에 작성"}
-          </span>
+          <span>{post.category} · 계정에 작성</span>
           <time dateTime={post.createdAt}>{post.createdLabel}</time>
         </div>
         <button
@@ -105,17 +118,17 @@ function QuestionCard({
       )}
 
       <div aria-label={`${post.title} 반응`} className={styles.facts}>
-        <span data-active={reactionCount > 0 ? "true" : undefined}>
+        <span data-active={post.metrics.reactions > 0 ? "true" : undefined}>
           <Heart
             aria-hidden="true"
             size={16}
-            weight={reactionCount > 0 ? "fill" : "regular"}
+            weight={post.metrics.reactions > 0 ? "fill" : "regular"}
           />
-          공감 {reactionCount}
+          공감 {post.metrics.reactions}
         </span>
         <span>
           <ChatCircle aria-hidden="true" size={16} />
-          댓글 {commentCount}
+          댓글 {post.metrics.comments}
         </span>
         <span data-active={saved ? "true" : undefined}>
           <BookmarkSimple
@@ -132,21 +145,71 @@ function QuestionCard({
       </div>
 
       {pendingDelete && (
-        <div
-          aria-label={`${post.title} 삭제 확인`}
-          className={styles.deleteConfirm}
-          role="group"
-        >
-          <p>삭제하면 댓글과 반응도 함께 지워집니다.</p>
-          <div>
-            <button onClick={onCancelDelete} type="button">
-              삭제 취소
-            </button>
-            <button onClick={onConfirmDelete} type="button">
-              정말 삭제
-            </button>
-          </div>
+        <DeleteConfirmation
+          label={post.title}
+          onCancelDelete={onCancelDelete}
+          onConfirmDelete={onConfirmDelete}
+        />
+      )}
+    </article>
+  );
+}
+
+function LegacyRecoveryCard({
+  onCancelDelete,
+  onConfirmDelete,
+  onRequestDelete,
+  pendingDelete,
+  post,
+}: DeleteControls & { post: CommunityPostFeedItem }) {
+  const titleId = `legacy-question-${post.id}-title`;
+
+  return (
+    <article aria-labelledby={titleId} className={styles.questionCard}>
+      <div className={styles.cardTopline}>
+        <div>
+          <span>{post.category} · 이전 기기 저장</span>
+          <time dateTime={post.createdAt}>{post.createdLabel}</time>
         </div>
+        <button
+          aria-expanded={pendingDelete}
+          aria-label={`${post.title} 삭제`}
+          className={styles.deleteButton}
+          onClick={onRequestDelete}
+          type="button"
+        >
+          <Trash aria-hidden="true" size={16} />
+          삭제
+        </button>
+      </div>
+      <div className={styles.cardCopy}>
+        <h2 id={titleId}>
+          <Link href={post.href}>{post.title}</Link>
+        </h2>
+        <p>{post.body}</p>
+      </div>
+      {post.tags.length > 0 && (
+        <ul aria-label={`${post.title} 태그`} className={styles.tags}>
+          {post.tags.map((tag) => (
+            <li key={tag}>
+              <span>{tag}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className={styles.recoveryActions}>
+        <Link href={post.href}>
+          복구 내용 확인
+          <ArrowRight aria-hidden="true" size={15} weight="bold" />
+        </Link>
+        <span>서버 활동 및 개수에 포함되지 않음</span>
+      </div>
+      {pendingDelete && (
+        <DeleteConfirmation
+          label={post.title}
+          onCancelDelete={onCancelDelete}
+          onConfirmDelete={onConfirmDelete}
+        />
       )}
     </article>
   );
@@ -162,61 +225,54 @@ export function AuthoredQuestions({
     authReady,
     authorId: viewer?.id,
     enabled: Boolean(viewer),
-    limit: 50,
+    limit: 20,
     store: communityStore,
     viewer,
   });
   const [hydrated, setHydrated] = useState(false);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
-  const [interactions, setInteractions] = useState<SocialInteractions>(
-    EMPTY_SOCIAL_INTERACTIONS,
-  );
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     setLocalPosts(readLocalCommunityPosts());
-    setInteractions(readSocialInteractions());
     setHydrated(true);
-    const unsubscribePosts = subscribeLocalCommunityPosts(setLocalPosts);
-    const unsubscribeInteractions = subscribeSocialInteractions(setInteractions);
-    return () => {
-      unsubscribePosts();
-      unsubscribeInteractions();
-    };
+    return subscribeLocalCommunityPosts(setLocalPosts);
   }, []);
 
-  const posts = useMemo(
+  const accountPosts = useMemo(
     () =>
-      [
-        ...localPosts.map((post) => localCommunityPostToFeedItem(post)),
-        ...community.state.posts.map((post) =>
-          serverCommunityPostToFeedItem(post),
-        ),
-      ].sort(
-        (left, right) =>
-          Date.parse(right.createdAt) - Date.parse(left.createdAt) ||
-          left.id.localeCompare(right.id),
+      community.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
       ),
-    [community.state.posts, localPosts],
+    [community.state.posts],
+  );
+  const recoveryPosts = useMemo(
+    () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
+    [localPosts],
   );
 
-  async function deleteQuestion(post: CommunityPostFeedItem) {
-    if (post.source === "server") {
-      const deleted = await community.deletePost(post.id);
-      if (!deleted) {
-        setAnnouncement("");
-        setError("글을 계정에서 삭제하지 못했습니다. 다시 시도해주세요.");
-        return;
-      }
-      removeRecentCommunityTopic(post.id);
-      setPendingDeleteId(null);
-      setError("");
-      setAnnouncement(`${post.title}을 계정에서 삭제했습니다.`);
+  function requestDelete(postId: string) {
+    setAnnouncement("");
+    setError("");
+    setPendingDeleteId(postId);
+  }
+
+  async function deleteAccountQuestion(post: CommunityPostFeedItem) {
+    const deleted = await community.deletePost(post.id);
+    if (!deleted) {
+      setAnnouncement("");
+      setError("글을 계정에서 삭제하지 못했습니다. 다시 시도해 주세요.");
       return;
     }
+    removeRecentCommunityTopic(post.id);
+    setPendingDeleteId(null);
+    setError("");
+    setAnnouncement(`${post.title}을 계정에서 삭제했습니다.`);
+  }
 
+  function deleteLegacyQuestion(post: CommunityPostFeedItem) {
     const result = deleteLocalCommunityPost(post.id);
     setLocalPosts(result.posts);
     if (result.status !== "removed") {
@@ -228,38 +284,39 @@ export function AuthoredQuestions({
       );
       return;
     }
-
     removeRecentCommunityTopic(post.id);
     setPendingDeleteId(null);
     setError("");
     setAnnouncement(`${post.title}을 이 브라우저에서 삭제했습니다.`);
   }
 
-  const loading =
-    !hydrated ||
-    Boolean(viewer && community.state.status === "loading" && posts.length === 0);
-  const visibleError = error ||
+  const visibleError =
+    error ||
+    community.state.actionError ||
     (community.state.status === "error" ? community.state.error : "");
+  const accountLoading = Boolean(
+    viewer && community.state.status === "loading" && accountPosts.length === 0,
+  );
 
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>
-            내 커리어 · {viewer ? "계정 커뮤니티" : "브라우저 커뮤니티"}
-          </p>
+          <p className={styles.eyebrow}>내 커리어 · 계정 커뮤니티</p>
           <h1>내 글</h1>
           <p className={styles.description}>
-            {viewer
-              ? "내 계정으로 작성한 질문, 커리어 고민과 면접 후기를 모든 기기에서 다시 확인합니다."
-              : "지금 작성한 질문, 커리어 고민과 면접 후기는 이 브라우저에 보관되며, 로그인하면 계정으로 안전하게 옮겨집니다."}
+            계정에 게시된 질문과 경험만 내 글로 집계합니다. 이전 브라우저에
+            남은 글은 아래 복구 영역에서 따로 확인할 수 있습니다.
           </p>
         </div>
         <div className={styles.introActions}>
-          {hydrated && (
+          {viewer ? (
             <span>
-              {viewer ? `계정에 ${posts.length}개 작성` : `이 브라우저에 ${posts.length}개 저장`}
+              계정 글 {accountPosts.length}
+              {community.state.nextCursor ? "+" : ""}개 불러옴
             </span>
+          ) : (
+            <span>계정 연결 전</span>
           )}
           <Link href="/?compose=1">
             <NotePencil aria-hidden="true" size={17} weight="bold" />
@@ -268,11 +325,14 @@ export function AuthoredQuestions({
         </div>
       </header>
 
-      <section aria-labelledby="authored-question-list-title" className={styles.collection}>
+      <section
+        aria-labelledby="account-authored-question-list-title"
+        className={styles.collection}
+      >
         <div className={styles.collectionHeader}>
           <div>
-            <p>작성 기록</p>
-            <h2 id="authored-question-list-title">최근 작성한 순서</h2>
+            <p>실제 서버 기록</p>
+            <h2 id="account-authored-question-list-title">계정에 작성한 글</h2>
           </div>
           <ShieldCheck aria-hidden="true" size={21} weight="fill" />
         </div>
@@ -289,41 +349,58 @@ export function AuthoredQuestions({
           </p>
         )}
 
-        {loading ? (
+        {!authReady || accountLoading ? (
           <div className={styles.loading} role="status">
-            <p>작성한 글을 불러오는 중입니다.</p>
+            <p>계정에 작성한 글을 불러오는 중입니다.</p>
           </div>
-        ) : posts.length > 0 ? (
-          <div className={styles.questionList}>
-            {posts.map((post) => (
-              <QuestionCard
-                interactions={interactions}
-                key={post.id}
-                onCancelDelete={() => setPendingDeleteId(null)}
-                onConfirmDelete={() => void deleteQuestion(post)}
-                onRequestDelete={() => {
-                  setAnnouncement("");
-                  setError("");
-                  setPendingDeleteId(post.id);
-                }}
-                pendingDelete={pendingDeleteId === post.id}
-                post={post}
-                serverSaved={community.state.viewerState.savedPostIds.includes(
-                  post.id,
-                )}
-              />
-            ))}
+        ) : !viewer ? (
+          <div className={styles.emptyState}>
+            <div>
+              <SignIn aria-hidden="true" size={24} weight="bold" />
+            </div>
+            <h2>계정에 연결하면 내 글을 모든 기기에서 볼 수 있습니다.</h2>
+            <p>로그인 전 브라우저 글은 서버 게시물로 집계하지 않습니다.</p>
+            <Link href="/login?next=%2Fcareer%2Fquestions">
+              로그인하고 내 글 보기
+              <ArrowRight aria-hidden="true" size={16} weight="bold" />
+            </Link>
           </div>
+        ) : accountPosts.length > 0 ? (
+          <>
+            <div className={styles.questionList}>
+              {accountPosts.map((post) => (
+                <AccountQuestionCard
+                  key={post.id}
+                  onCancelDelete={() => setPendingDeleteId(null)}
+                  onConfirmDelete={() => void deleteAccountQuestion(post)}
+                  onRequestDelete={() => requestDelete(post.id)}
+                  pendingDelete={pendingDeleteId === post.id}
+                  post={post}
+                  saved={community.state.viewerState.savedPostIds.includes(
+                    post.id,
+                  )}
+                />
+              ))}
+            </div>
+            {community.state.nextCursor && (
+              <button
+                className={styles.loadMore}
+                disabled={community.state.loadingMore}
+                onClick={() => void community.loadMore()}
+                type="button"
+              >
+                {community.state.loadingMore
+                  ? "내 글 불러오는 중..."
+                  : "내 글 더 보기"}
+              </button>
+            )}
+          </>
         ) : (
           <div className={styles.emptyState}>
             <div>
               <NotePencil aria-hidden="true" size={24} weight="bold" />
             </div>
-            <h2>
-              {viewer
-                ? "계정에 작성한 글이 없습니다."
-                : "이 브라우저에서 작성한 글이 없습니다."}
-            </h2>
+            <h2>계정에 작성한 글이 없습니다.</h2>
             <p>질문이나 커리어 고민, 면접에서 배운 점을 홈 피드에 남겨보세요.</p>
             <Link href="/?compose=1">
               첫 글 작성
@@ -333,11 +410,45 @@ export function AuthoredQuestions({
         )}
 
         <p className={styles.storageNote}>
-          {viewer
-            ? "계정 글과 반응은 이직핏 서버에 저장됩니다. 삭제한 글은 복구할 수 없습니다."
-            : "로그인 전에는 글과 반응이 현재 브라우저에 보관됩니다. 로그인하면 계정으로 옮겨지며, 옮기기 전 브라우저 데이터를 지우면 복구할 수 없습니다."}
+          계정 글의 본문·댓글·반응은 이직핏 서버에 저장됩니다. 삭제한 글은
+          복구할 수 없습니다.
         </p>
       </section>
+
+      {hydrated && recoveryPosts.length > 0 && (
+        <section
+          aria-labelledby="legacy-authored-question-list-title"
+          className={`${styles.collection} ${styles.recoveryCollection}`}
+        >
+          <div className={styles.collectionHeader}>
+            <div>
+              <p>현재 브라우저에서만 확인</p>
+              <h2 id="legacy-authored-question-list-title">
+                이전 기기 저장 글
+              </h2>
+            </div>
+            <span className={styles.recoveryCount}>
+              복구할 글 {recoveryPosts.length}개
+            </span>
+          </div>
+          <p className={styles.recoveryNote}>
+            서버에 게시된 활동이 아닙니다. 로그인하면 계정 이전을 시도하며,
+            원문을 확인하거나 이 브라우저에서 삭제할 수 있습니다.
+          </p>
+          <div className={styles.questionList}>
+            {recoveryPosts.map((post) => (
+              <LegacyRecoveryCard
+                key={post.id}
+                onCancelDelete={() => setPendingDeleteId(null)}
+                onConfirmDelete={() => deleteLegacyQuestion(post)}
+                onRequestDelete={() => requestDelete(post.id)}
+                pendingDelete={pendingDeleteId === post.id}
+                post={post}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

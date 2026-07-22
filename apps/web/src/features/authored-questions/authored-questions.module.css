@@ -1,3 +1,4 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: min(100%, 68rem);
   margin: 0 auto;
@@ -244,7 +245,8 @@
   list-style: none;
 }
 
-.tags a {
+.tags a,
+.tags span {
   display: inline-flex;
   min-width: var(--touch-target);
   min-height: var(--touch-target);
@@ -257,6 +259,70 @@
   font-size: 0.7rem;
   font-weight: 740;
   text-decoration: none;
+}
+
+.recoveryCollection {
+  margin-top: var(--space-md);
+}
+
+.recoveryCount {
+  color: var(--color-muted);
+  font-size: var(--type-meta);
+  font-weight: 750;
+}
+
+.recoveryNote {
+  margin: 0;
+  padding: var(--space-xs) 1.3rem;
+  border-top: 1px solid var(--color-line);
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
+  font-size: var(--type-meta);
+  line-height: 1.55;
+}
+
+.recoveryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-line);
+}
+
+.recoveryActions a,
+.loadMore {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
+  color: var(--color-accent-strong);
+  font-size: var(--type-meta);
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.recoveryActions span {
+  color: var(--color-muted);
+  font-size: var(--type-meta);
+}
+
+.loadMore {
+  width: calc(100% - 2.6rem);
+  margin: 0 1.3rem var(--space-sm);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.loadMore:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .facts {

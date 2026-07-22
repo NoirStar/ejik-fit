@@ -18,6 +18,14 @@ import { createLocalCommunityPost } from "@/lib/local-community-posts";
 
 import { AuthoredQuestions } from "./authored-questions";
 
+function renderGuest() {
+  return render(
+    <AuthViewerProvider ready viewer={null}>
+      <AuthoredQuestions />
+    </AuthViewerProvider>,
+  );
+}
+
 function storePosts() {
   window.localStorage.setItem(
     "ejik-fit:local-community-posts",
@@ -66,50 +74,49 @@ describe("AuthoredQuestions", () => {
   });
 
   it("shows an honest empty state with a route to the existing composer", async () => {
-    render(<AuthoredQuestions />);
+    renderGuest();
 
     expect(
       screen.getByRole("heading", { level: 1, name: "내 글" }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText("이 브라우저에서 작성한 글이 없습니다."),
+      await screen.findByText("계정에 연결하면 내 글을 모든 기기에서 볼 수 있습니다."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "첫 글 작성" }),
-    ).toHaveAttribute("href", "/?compose=1");
-    expect(screen.getByText(/로그인하면 계정으로 안전하게 옮겨집니다/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/로그인하면 계정으로 옮겨지며/),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "로그인하고 내 글 보기" }),
+    ).toHaveAttribute("href", "/login?next=%2Fcareer%2Fquestions");
     expect(
       screen.queryByText(/커뮤니티 새 글을 불러오지 못했습니다/),
     ).not.toBeInTheDocument();
   });
 
-  it("lists newest questions with browser-owned interaction facts", async () => {
+  it("keeps legacy browser questions in a recovery-only section", async () => {
     storePosts();
-    render(<AuthoredQuestions />);
+    renderGuest();
 
-    const articles = await screen.findAllByRole("article");
+    const recovery = await screen.findByRole("region", {
+      name: "이전 기기 저장 글",
+    });
+    const articles = within(recovery).getAllByRole("article");
     expect(articles).toHaveLength(2);
-    expect(articles[0]).toHaveAccessibleName("최근 작성한 기술 질문");
-    expect(articles[1]).toHaveAccessibleName("먼저 작성한 이직 질문");
 
     const newest = within(articles[0]);
     expect(
       newest.getByRole("link", { name: "최근 작성한 기술 질문" }),
     ).toHaveAttribute("href", "/posts/local-newer-question");
     expect(newest.getByText("Kubernetes")).toBeInTheDocument();
-    expect(newest.getByText("면접 후기 · 이 브라우저에서 작성")).toBeInTheDocument();
-    expect(newest.getByText("공감 1")).toBeInTheDocument();
-    expect(newest.getByText("댓글 1")).toBeInTheDocument();
-    expect(newest.getByText("저장됨")).toBeInTheDocument();
-    expect(screen.getByText("이 브라우저에 2개 저장")).toBeInTheDocument();
+    expect(newest.getByText("면접 후기 · 이전 기기 저장")).toBeInTheDocument();
+    expect(newest.queryByText(/공감|댓글|저장됨/)).not.toBeInTheDocument();
+    expect(screen.getByText("복구할 글 2개")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("region", { name: "계정에 작성한 글" }))
+        .queryByRole("article"),
+    ).not.toBeInTheDocument();
   });
 
   it("reacts to a question created elsewhere in the same browser tab", async () => {
-    render(<AuthoredQuestions />);
-    await screen.findByText("이 브라우저에서 작성한 글이 없습니다.");
+    renderGuest();
+    await screen.findByRole("link", { name: "로그인하고 내 글 보기" });
 
     createLocalCommunityPost(
       {
@@ -123,8 +130,11 @@ describe("AuthoredQuestions", () => {
       },
     );
 
+    const recovery = await screen.findByRole("region", {
+      name: "이전 기기 저장 글",
+    });
     expect(
-      await screen.findByRole("article", { name: "보관함 동기화 질문" }),
+      within(recovery).getByRole("article", { name: "보관함 동기화 질문" }),
     ).toBeInTheDocument();
   });
 
@@ -142,7 +152,7 @@ describe("AuthoredQuestions", () => {
         },
       ]),
     );
-    render(<AuthoredQuestions />);
+    renderGuest();
 
     const newest = await screen.findByRole("article", {
       name: "최근 작성한 기술 질문",
@@ -153,11 +163,11 @@ describe("AuthoredQuestions", () => {
       }),
     );
     expect(
-      within(newest).getByText("삭제하면 댓글과 반응도 함께 지워집니다."),
+      within(newest).getByText(/삭제하면 .*댓글과 반응도 함께 지워집니다/),
     ).toBeInTheDocument();
     fireEvent.click(within(newest).getByRole("button", { name: "삭제 취소" }));
     expect(
-      within(newest).queryByText("삭제하면 댓글과 반응도 함께 지워집니다."),
+      within(newest).queryByText(/삭제하면 .*댓글과 반응도 함께 지워집니다/),
     ).not.toBeInTheDocument();
 
     fireEvent.click(
@@ -205,7 +215,7 @@ describe("AuthoredQuestions", () => {
       }
       return originalSetItem.call(this, key, value);
     });
-    render(<AuthoredQuestions />);
+    renderGuest();
 
     const newest = await screen.findByRole("article", {
       name: "최근 작성한 기술 질문",
@@ -236,9 +246,20 @@ describe("AuthoredQuestions", () => {
       createdAt: "2026-07-21T04:00:00.000Z",
       updatedAt: "2026-07-21T04:00:00.000Z",
     };
+    const olderPost: CommunityPost = {
+      ...post,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      title: "계정에 작성한 두 번째 질문",
+      createdAt: "2026-07-20T04:00:00.000Z",
+      updatedAt: "2026-07-20T04:00:00.000Z",
+    };
+    const firstCursor = { createdAt: post.createdAt, id: post.id };
     const store = {
       searchPosts: vi.fn(async () => ({ items: [post], nextCursor: null })),
-      listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
+      listPostPage: vi
+        .fn()
+        .mockResolvedValueOnce({ items: [post], nextCursor: firstCursor })
+        .mockResolvedValueOnce({ items: [olderPost], nextCursor: null }),
       listPosts: vi.fn(async () => [post]),
       listSavedPosts: vi.fn(async () => [post]),
       getPost: vi.fn(async () => post),
@@ -280,11 +301,22 @@ describe("AuthoredQuestions", () => {
     const article = await screen.findByRole("article", {
       name: post.title,
     });
-    expect(store.listPostPage).toHaveBeenCalledWith({ authorId: userId, limit: 50 });
+    expect(store.listPostPage).toHaveBeenCalledWith({ authorId: userId, limit: 20 });
     expect(within(article).getByText("공감 3")).toBeInTheDocument();
     expect(within(article).getByText("댓글 2")).toBeInTheDocument();
     expect(within(article).getByText("저장됨")).toBeInTheDocument();
-    expect(screen.getByText("계정에 1개 작성")).toBeInTheDocument();
+    expect(screen.getByText("계정 글 1+개 불러옴")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "내 글 더 보기" }));
+    expect(
+      await screen.findByRole("article", { name: olderPost.title }),
+    ).toBeInTheDocument();
+    expect(store.listPostPage).toHaveBeenLastCalledWith({
+      authorId: userId,
+      before: firstCursor,
+      limit: 20,
+    });
+    expect(screen.getByText("계정 글 2개 불러옴")).toBeInTheDocument();
 
     fireEvent.click(
       within(article).getByRole("button", { name: `${post.title} 삭제` }),

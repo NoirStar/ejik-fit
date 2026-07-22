@@ -19,6 +19,9 @@ import type { PostingDetail } from "@/lib/types";
 export const MAX_SAVED_JOB_LOOKUPS = MAX_SAVED_JOB_IDS;
 
 type CommunityItem = CommunityPostFeedItem | InterviewReviewFeedItem;
+type DurableCommunityItem = CommunityPostFeedItem & {
+  source: "local" | "server";
+};
 
 export type SavedJobItem = {
   id: string;
@@ -49,7 +52,7 @@ export type SavedCommunityItem = {
   createdLabel: string;
   tags: string[];
   href: string;
-  source: "mock" | "local" | "server";
+  source: "local" | "server";
 };
 
 export type SavedJobData = {
@@ -228,12 +231,18 @@ export function normalizeSavedJobDataResponse(value: unknown): SavedJobData {
   };
 }
 
-function toSavedCommunityItem(item: CommunityItem): SavedCommunityItem {
+function isDurableCommunityItem(
+  item: CommunityItem,
+): item is DurableCommunityItem {
+  return item.type === "community_post" && item.source !== "mock";
+}
+
+function toSavedCommunityItem(item: DurableCommunityItem): SavedCommunityItem {
   return {
     id: item.id,
     category: item.category,
     title: item.title,
-    summary: item.type === "community_post" ? item.body : item.summary,
+    summary: item.body,
     authorName: item.authorName,
     authorHeadline: item.authorHeadline,
     createdLabel: item.createdLabel,
@@ -261,6 +270,7 @@ export function selectSavedCommunityItems(
       unavailableIds.push(id);
       continue;
     }
+    if (!isDurableCommunityItem(item)) continue;
     items.push(toSavedCommunityItem(item));
   }
 

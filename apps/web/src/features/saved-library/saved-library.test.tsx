@@ -149,7 +149,7 @@ describe("SavedLibrary", () => {
     vi.unstubAllGlobals();
   });
 
-  it("separates revalidated jobs from built-in starting community saves", async () => {
+  it("ignores old browser saves for read-only starter guidance", async () => {
     saveBrowserItems();
     render(<SavedLibrary />);
 
@@ -182,12 +182,12 @@ describe("SavedLibrary", () => {
       }),
     );
 
-    const community = screen.getByRole("article", {
-      name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
-    });
-    expect(within(community).getByText("시작 글")).toBeInTheDocument();
-    expect(screen.getByText(/이직핏 시작 글은 현재 브라우저에 저장됩니다/)).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "전체 2" })).toHaveAttribute(
+    expect(
+      screen.queryByRole("article", {
+        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "전체 1" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -207,17 +207,23 @@ describe("SavedLibrary", () => {
     const localPost = await screen.findByRole("article", {
       name: "브라우저에 저장한 내 질문",
     });
-    expect(within(localPost).getByText("내 로컬 글")).toBeInTheDocument();
+    expect(within(localPost).getByText("이전 기기 저장")).toBeInTheDocument();
     expect(
       within(localPost).getByRole("link", { name: "브라우저에 저장한 내 질문" }),
     ).toHaveAttribute("href", "/posts/local-browser-question");
-    expect(within(localPost).getByText(/나 · 이 브라우저에서 작성/)).toBeInTheDocument();
+    expect(within(localPost).getByText(/현재 브라우저 원문/)).toBeInTheDocument();
     expect(
-      screen.getByRole("article", {
+      screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
-    ).toHaveTextContent("시작 글");
-    expect(screen.getByRole("tab", { name: "커뮤니티 2" })).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    const recovery = screen.getByRole("region", {
+      name: "이전 기기 저장 글",
+    });
+    expect(within(recovery).getByRole("article", {
+      name: "브라우저에 저장한 내 질문",
+    })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: "공식 공고" }),
     ).not.toBeInTheDocument();
@@ -230,7 +236,7 @@ describe("SavedLibrary", () => {
         screen.queryByRole("article", { name: "브라우저에 저장한 내 질문" }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "커뮤니티 0" })).toBeInTheDocument();
     expect(screen.queryByText(/찾지 못한 저장 글/)).not.toBeInTheDocument();
   });
 
@@ -250,7 +256,7 @@ describe("SavedLibrary", () => {
       name: accountCommunityPost.title,
     });
     expect(store.listSavedPosts).toHaveBeenCalledWith(viewerId, 50);
-    expect(within(savedPost).getByText("커뮤니티")).toBeInTheDocument();
+    expect(within(savedPost).getByText("계정 저장")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
 
     fireEvent.click(
@@ -291,7 +297,7 @@ describe("SavedLibrary", () => {
 
     fireEvent.click(
       within(localPost).getByRole("button", {
-        name: "브라우저에 저장한 내 질문 저장 해제",
+        name: "브라우저에 저장한 내 질문 저장 표시 지우기",
       }),
     );
 
@@ -370,7 +376,7 @@ describe("SavedLibrary", () => {
     setItem.mockRestore();
   });
 
-  it("removes saved jobs and community items through the shared browser stores", async () => {
+  it("removes saved jobs without reviving an old starter save", async () => {
     saveBrowserItems(
       ["job-python"],
       ["kubernetes-experience"],
@@ -396,11 +402,6 @@ describe("SavedLibrary", () => {
       "{}",
     );
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요? 저장 해제",
-      }),
-    );
     expect(
       await screen.findByRole("heading", {
         level: 2,
@@ -411,7 +412,7 @@ describe("SavedLibrary", () => {
       JSON.parse(
         window.localStorage.getItem("ejik-fit:social-interactions")!,
       ).savedPostIds,
-    ).toEqual([]);
+    ).toEqual(["kubernetes-experience"]);
   });
 
   it("shows an honest empty state without making an API request", async () => {
@@ -452,7 +453,7 @@ describe("SavedLibrary", () => {
     expect(requestBody.job_ids).not.toContain("job-0");
   });
 
-  it("keeps successful and mock items visible while explaining partial failures", async () => {
+  it("keeps verified jobs visible while explaining partial failures", async () => {
     saveBrowserItems(
       ["job-python", "gone-job", "retry-job"],
       ["kubernetes-experience"],
@@ -488,10 +489,10 @@ describe("SavedLibrary", () => {
     ).not.toBeNull();
     expect(screen.getByRole("button", { name: "공고 다시 확인" })).toBeInTheDocument();
     expect(
-      screen.getByRole("article", {
+      screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
 
     window.localStorage.setItem(
       "ejik-fit:job-application-stages",
@@ -512,7 +513,7 @@ describe("SavedLibrary", () => {
     ).toEqual({ "retry-job": "offer", "concurrent-job": "preparing" });
   });
 
-  it("preserves mock saves and offers retry when the actual job request fails", async () => {
+  it("ignores starter saves and offers retry when the actual job request fails", async () => {
     saveBrowserItems();
     fetchMock.mockRejectedValueOnce(new Error("network unavailable"));
     fetchMock.mockResolvedValueOnce(jsonResponse(savedJobResponse));
@@ -522,10 +523,10 @@ describe("SavedLibrary", () => {
       await screen.findByRole("alert"),
     ).toHaveTextContent("저장한 공식 공고를 불러오지 못했습니다.");
     expect(
-      screen.getByRole("article", {
+      screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "공고 다시 확인" }));
     expect(
@@ -534,13 +535,13 @@ describe("SavedLibrary", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("switches result scope without changing the browser-owned evidence", async () => {
+  it("switches result scope without reviving old starter evidence", async () => {
     saveBrowserItems();
     render(<SavedLibrary />);
     await screen.findByRole("article", { name: "Python Backend Engineer" });
 
-    fireEvent.click(screen.getByRole("tab", { name: "커뮤니티 1" }));
-    expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toHaveAttribute(
+    fireEvent.click(screen.getByRole("tab", { name: "커뮤니티 0" }));
+    expect(screen.getByRole("tab", { name: "커뮤니티 0" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -548,9 +549,12 @@ describe("SavedLibrary", () => {
       screen.queryByRole("article", { name: "Python Backend Engineer" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("article", {
+      screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("로그인하면 계정에 저장한 글을 볼 수 있습니다."),
     ).toBeInTheDocument();
     expect(window.localStorage.getItem("ejik-fit:saved-job-ids")).toBe(
       '["job-python"]',

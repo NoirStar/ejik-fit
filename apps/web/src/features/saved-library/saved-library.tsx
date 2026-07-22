@@ -18,7 +18,6 @@ import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { CompanyMark } from "@/features/home-feed/company-mark";
-import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
 import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
@@ -287,14 +286,11 @@ export function SavedLibrary({
     };
   }, [hydrated, retryVersion, savedJobKey]);
 
-  const browserSavedCommunity = useMemo(
+  const legacySavedRecovery = useMemo(
     () =>
       selectSavedCommunityItems(
         socialInteractions.savedPostIds,
-        [
-          ...MOCK_SOCIAL_ITEMS,
-          ...localPosts.map((post) => localCommunityPostToFeedItem(post)),
-        ],
+        localPosts.map((post) => localCommunityPostToFeedItem(post)),
       ),
     [localPosts, socialInteractions.savedPostIds],
   );
@@ -308,23 +304,6 @@ export function SavedLibrary({
       items,
     );
   }, [accountCommunity.state.posts, accountCommunity.state.viewerState.savedPostIds]);
-  const savedCommunity = useMemo(() => {
-    const seen = new Set<string>();
-    const items = [
-      ...serverSavedCommunity.items,
-      ...browserSavedCommunity.items,
-    ].filter((item) => {
-      if (seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    });
-    return {
-      items,
-      unavailableIds: browserSavedCommunity.unavailableIds.filter(
-        (id) => !seen.has(id),
-      ),
-    };
-  }, [browserSavedCommunity, serverSavedCommunity.items]);
   const visibleSavedJobs = useMemo(() => {
     if (jobState.status !== "ready") return [];
     if (activeScope !== "applications") return jobState.data.items;
@@ -335,10 +314,9 @@ export function SavedLibrary({
   const applicationCount = savedJobIds.filter(
     (id) => applicationStages[id],
   ).length;
-  const communityCount = new Set([
-    ...socialInteractions.savedPostIds,
-    ...serverSavedCommunity.items.map((item) => item.id),
-  ]).size;
+  const serverCommunityCount = serverSavedCommunity.items.length;
+  const legacyRecoveryCount = legacySavedRecovery.items.length;
+  const communityCount = serverCommunityCount + legacyRecoveryCount;
   const totalCount = jobCount + communityCount;
   const accountCommunityLoading = Boolean(
     viewer && accountCommunity.state.status === "loading",
@@ -354,8 +332,13 @@ export function SavedLibrary({
     (activeScope === "all" && jobCount > 0);
   const showCommunity =
     activeScope === "community" ||
-    (activeScope === "all" && (communityCount > 0 || hasCommunityCollectionState));
-  const singleCollection = Number(showJobs) + Number(showCommunity) <= 1;
+    (activeScope === "all" &&
+      (serverCommunityCount > 0 || hasCommunityCollectionState));
+  const showLegacyRecovery =
+    legacyRecoveryCount > 0 &&
+    (activeScope === "all" || activeScope === "community");
+  const singleCollection =
+    Number(showJobs) + Number(showCommunity) + Number(showLegacyRecovery) <= 1;
 
   function countForScope(scope: SavedScope) {
     if (scope === "jobs") return jobCount;
@@ -392,16 +375,16 @@ export function SavedLibrary({
   }
 
   async function removeCommunity(item: SavedCommunityItem) {
-    if (item.source === "server") {
-      const removed = await accountCommunity.toggleSaved(item.id);
-      setAnnouncement(
-        removed
-          ? `${item.title}을 계정 저장 보관함에서 제거했습니다.`
-          : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
-      );
-      return;
-    }
+    if (item.source !== "server") return;
+    const removed = await accountCommunity.toggleSaved(item.id);
+    setAnnouncement(
+      removed
+        ? `${item.title}을 계정 저장 보관함에서 제거했습니다.`
+        : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
+    );
+  }
 
+  function removeLegacySave(item: SavedCommunityItem) {
     const wasSaved = socialInteractions.savedPostIds.includes(item.id);
     const next = togglePostSave(item.id);
     setSocialInteractions(next);
@@ -409,7 +392,7 @@ export function SavedLibrary({
       setAnnouncement(`${item.title}의 저장 상태를 변경하지 못했습니다.`);
       return;
     }
-    setAnnouncement(`${item.title}을 저장 보관함에서 제거했습니다.`);
+    setAnnouncement(`${item.title}의 이전 기기 저장 표시를 지웠습니다.`);
   }
 
   function removeUnavailableJobs() {
@@ -421,23 +404,6 @@ export function SavedLibrary({
     setSavedJobIds(nextIds);
     setApplicationStages(readJobApplicationStages());
     setAnnouncement("현재 API에서 확인되지 않는 저장 공고를 정리했습니다.");
-  }
-
-  function removeUnavailableCommunity() {
-    let next = socialInteractions;
-    for (const id of savedCommunity.unavailableIds) {
-      next = togglePostSave(id);
-    }
-    setSocialInteractions(next);
-    if (
-      savedCommunity.unavailableIds.some((id) =>
-        next.savedPostIds.includes(id),
-      )
-    ) {
-      setAnnouncement("확인 불가 저장 글 일부를 정리하지 못했습니다.");
-      return;
-    }
-    setAnnouncement("현재 브라우저에서 확인되지 않는 저장 글을 정리했습니다.");
   }
 
   function handleTabKeyDown(
@@ -465,10 +431,9 @@ export function SavedLibrary({
           <h1>저장 보관함</h1>
           <p className={styles.description}>
             공고 저장과 지원 단계는 로그인 전에는 이 브라우저에
-            남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의
-            저장은 로그인 계정에 보관하고, 로컬 글과 이직핏 시작 글의 저장은
-            현재 브라우저에만 남깁니다. 공고 내용은 열 때마다 공식 API에서
-            다시 확인합니다.
+            남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의 저장은
+            로그인 계정에서만 복원합니다. 이전 브라우저 글은 서버 저장과
+            섞지 않고 별도 복구 영역에 표시합니다.
           </p>
         </div>
         <div className={styles.introActions}>
@@ -512,7 +477,7 @@ export function SavedLibrary({
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          계정과 현재 기기에 병합된 저장·지원 기준
+          서버 저장과 이전 기기 기록을 구분해 표시
         </p>
       </section>
 
@@ -523,11 +488,13 @@ export function SavedLibrary({
         id="saved-library-panel"
         role="tabpanel"
       >
-        {!hydrated || (accountCommunityLoading && totalCount === 0) ? (
+        {!hydrated ? (
           <div className={styles.loadingState} role="status">
             저장한 항목을 확인하고 있습니다.
           </div>
-        ) : totalCount === 0 && !accountCommunityUnavailable ? (
+        ) : totalCount === 0 &&
+          !accountCommunityUnavailable &&
+          !accountCommunityLoading ? (
           <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
             <h2>아직 저장한 항목이 없습니다.</h2>
@@ -579,7 +546,7 @@ export function SavedLibrary({
                     <WarningCircle aria-hidden="true" size={22} weight="fill" />
                     <div>
                       <strong>저장한 공식 공고를 불러오지 못했습니다.</strong>
-                      <p>커뮤니티 시작 글은 계속 볼 수 있으며 공고 내용을 임의로 채우지 않습니다.</p>
+                      <p>다른 저장 영역은 계속 볼 수 있으며 공고 내용을 임의로 채우지 않습니다.</p>
                     </div>
                     <button onClick={() => setRetryVersion((value) => value + 1)} type="button">
                       공고 다시 확인
@@ -662,66 +629,52 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>계정 커뮤니티 + 브라우저 글</p>
-                    <h2 id="saved-community-title">커뮤니티</h2>
+                    <p>실제 서버 저장</p>
+                    <h2 id="saved-community-title">계정 저장 커뮤니티</h2>
                   </div>
-                  <span>{communityCount}개 저장</span>
+                  <span>{serverCommunityCount}개 저장</span>
                 </header>
-                <div className={styles.mockNotice}>
-                  <WarningCircle aria-hidden="true" size={18} weight="fill" />
+                <div className={styles.sourceNotice}>
+                  <ShieldCheck aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    실제 커뮤니티 저장은 계정에서 복원합니다. 로컬 글은 이
-                    브라우저에서만 복원하며, 이직핏 시작 글은 현재 브라우저에
-                    저장됩니다.
+                    서버가 확인한 계정 게시물만 표시합니다. 읽기 전용 가이드와
+                    브라우저 글은 이 개수에 포함하지 않습니다.
                   </p>
                 </div>
 
-                {accountCommunityLoading && (
+                {!viewer ? (
+                  <div className={styles.compactState}>
+                    <ShieldCheck aria-hidden="true" size={22} />
+                    <div>
+                      <strong>로그인하면 계정에 저장한 글을 볼 수 있습니다.</strong>
+                      <p>브라우저에 남은 이전 기록은 아래 복구 영역에서만 표시합니다.</p>
+                    </div>
+                    <Link href="/login?next=%2Fcareer%2Fsaved">
+                      로그인
+                    </Link>
+                  </div>
+                ) : accountCommunityLoading ? (
                   <div className={styles.loadingState} role="status">
                     계정에 저장한 커뮤니티 글을 확인하고 있습니다.
                   </div>
-                )}
-
-                {accountCommunityUnavailable && (
+                ) : accountCommunityUnavailable ? (
                   <div className={styles.errorState} role="alert">
                     <WarningCircle aria-hidden="true" size={22} weight="fill" />
                     <div>
                       <strong>계정에 저장한 커뮤니티 글을 불러오지 못했습니다.</strong>
-                      <p>브라우저 저장 항목은 계속 볼 수 있으며 계정 저장 상태는 유지했습니다.</p>
+                      <p>이전 기기 복구 기록과 공고 저장은 계속 볼 수 있습니다.</p>
                     </div>
                     <button onClick={() => void accountCommunity.reload()} type="button">
                       커뮤니티 다시 확인
                     </button>
                   </div>
-                )}
-
-                {savedCommunity.unavailableIds.length > 0 && (
-                  <div className={styles.dataNotice} role="status">
-                    <div>
-                      <strong>
-                        현재 브라우저 글 또는 시작 글에서 찾지 못한 저장 글 {savedCommunity.unavailableIds.length}개
-                      </strong>
-                      <p>내용을 만들지 않고 저장 ID만 유지했습니다.</p>
-                    </div>
-                    <button onClick={removeUnavailableCommunity} type="button">
-                      확인 불가 항목 정리
-                    </button>
-                  </div>
-                )}
-
-                {savedCommunity.items.length > 0 ? (
+                ) : serverSavedCommunity.items.length > 0 ? (
                   <div className={styles.communityList}>
-                    {savedCommunity.items.map((item) => (
+                    {serverSavedCommunity.items.map((item) => (
                       <article aria-label={item.title} className={styles.communityCard} key={item.id}>
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
-                          <small data-source={item.source}>
-                            {item.source === "local"
-                              ? "내 로컬 글"
-                              : item.source === "server"
-                                ? "커뮤니티"
-                                : "시작 글"}
-                          </small>
+                          <small data-source="server">계정 저장</small>
                         </div>
                         <h3>
                           <Link href={item.href}>{item.title}</Link>
@@ -765,12 +718,71 @@ export function SavedLibrary({
                   <div className={styles.compactState} role="status">
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
-                      <strong>현재 표시할 커뮤니티 글이 없습니다.</strong>
-                      <p>홈에서 실제 커뮤니티 글, 내 로컬 글이나 이직핏 시작 글을 저장하면 이곳에서 다시 볼 수 있습니다.</p>
+                      <strong>계정에 저장한 커뮤니티 글이 없습니다.</strong>
+                      <p>실제 회원 글에서 저장을 누르면 모든 기기에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>
                 )}
+              </section>
+            )}
+
+            {showLegacyRecovery && (
+              <section
+                aria-labelledby="legacy-saved-community-title"
+                className={styles.collection}
+              >
+                <header className={styles.collectionHeader}>
+                  <div>
+                    <p>현재 브라우저에서만 확인</p>
+                    <h2 id="legacy-saved-community-title">
+                      이전 기기 저장 글
+                    </h2>
+                  </div>
+                  <span>{legacyRecoveryCount}개 복구</span>
+                </header>
+                <div className={styles.sourceNotice} data-legacy="true">
+                  <WarningCircle aria-hidden="true" size={18} weight="fill" />
+                  <p>
+                    서버 저장 활동이 아닙니다. 원문을 확인하거나 오래된 저장
+                    표시만 지울 수 있습니다.
+                  </p>
+                </div>
+                <div className={styles.communityList}>
+                  {legacySavedRecovery.items.map((item) => (
+                    <article
+                      aria-label={item.title}
+                      className={styles.communityCard}
+                      key={item.id}
+                    >
+                      <div className={styles.communityTopline}>
+                        <span>{item.category}</span>
+                        <small data-source="local">이전 기기 저장</small>
+                      </div>
+                      <h3>
+                        <Link href={item.href}>{item.title}</Link>
+                      </h3>
+                      <p className={styles.communitySummary}>{item.summary}</p>
+                      <p className={styles.communityAuthor}>
+                        현재 브라우저 원문 · {item.createdLabel}
+                      </p>
+                      <footer className={styles.communityActions}>
+                        <Link href={item.href}>
+                          복구 내용 확인
+                          <ArrowRight aria-hidden="true" size={14} weight="bold" />
+                        </Link>
+                        <button
+                          aria-label={`${item.title} 저장 표시 지우기`}
+                          onClick={() => removeLegacySave(item)}
+                          type="button"
+                        >
+                          <Trash aria-hidden="true" size={16} />
+                          저장 표시 지우기
+                        </button>
+                      </footer>
+                    </article>
+                  ))}
+                </div>
               </section>
             )}
           </>

@@ -22,26 +22,29 @@ export function itemsForTab(
   tab: FeedTab,
   followedAuthorIds: string[] = [],
 ): FeedItem[] {
-  if (tab === "recommended") return [...items];
+  const realItems = items.filter(
+    (item) => !isSocialItem(item) || item.source === "server",
+  );
+
+  if (tab === "recommended") return realItems;
 
   if (tab === "following") {
     const followed = new Set(followedAuthorIds);
-    return items.filter(
+    return realItems.filter(
       (item) =>
-        isSocialItem(item) &&
-        (item.source === "local" || followed.has(item.authorId)),
+        isSocialItem(item) && followed.has(item.authorId),
     );
   }
 
   if (tab === "latest") {
-    return [...items].sort((left, right) => {
+    return [...realItems].sort((left, right) => {
       const rightTime = isSocialItem(right) ? Date.parse(right.createdAt) : 0;
       const leftTime = isSocialItem(left) ? Date.parse(left.createdAt) : 0;
       return rightTime - leftTime;
     });
   }
 
-  return items
+  return realItems
     .filter(isSocialItem)
     .sort((left, right) => engagementScore(right) - engagementScore(left));
 }

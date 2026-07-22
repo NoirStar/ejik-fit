@@ -1,3 +1,4 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -31,6 +32,7 @@
 .emptyState p,
 .compactState p,
 .mockNotice p,
+.sourceNotice p,
 .dataNotice p,
 .errorState p {
   margin: 0;
@@ -464,6 +466,7 @@
 }
 
 .mockNotice,
+.sourceNotice,
 .dataNotice,
 .errorState,
 .compactState {
@@ -474,13 +477,15 @@
   border-top: 1px solid var(--color-line);
 }
 
-.mockNotice {
+.mockNotice,
+.sourceNotice {
   align-items: flex-start;
   background: color-mix(in srgb, var(--color-warning) 8%, var(--color-surface));
   color: var(--color-warning-strong);
 }
 
 .mockNotice p,
+.sourceNotice p,
 .dataNotice p,
 .errorState p,
 .compactState p {
@@ -492,6 +497,11 @@
 .dataNotice {
   justify-content: space-between;
   background: var(--color-surface-subtle);
+}
+
+.sourceNotice[data-legacy="true"] {
+  background: var(--color-surface-subtle);
+  color: var(--color-muted);
 }
 
 .dataNotice[data-warning="true"],
