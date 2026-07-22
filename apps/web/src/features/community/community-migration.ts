@@ -19,7 +19,10 @@ type CommunityMigrationStore = Pick<
 
 export type CommunityMigrationResult = {
   migratedPostIds: string[];
-  failedPostIds: string[];
+  failures: Array<{
+    localPostId: string;
+    message: string;
+  }>;
 };
 
 function bytesToUuid(bytes: Uint8Array) {
@@ -53,6 +56,12 @@ export async function deterministicCommunityUuid(seed: string) {
 
 function isConflict(error: unknown) {
   return error instanceof CommunityStoreError && error.code === "conflict";
+}
+
+function migrationFailureMessage(error: unknown) {
+  return error instanceof CommunityStoreError
+    ? error.message
+    : "계정으로 옮기지 못했습니다.";
 }
 
 async function ensurePost(
@@ -119,7 +128,7 @@ export async function migrateLocalCommunityContent(
   const interactions = readSocialInteractions(storage);
   const result: CommunityMigrationResult = {
     migratedPostIds: [],
-    failedPostIds: [],
+    failures: [],
   };
 
   for (const localPost of posts) {
@@ -146,8 +155,11 @@ export async function migrateLocalCommunityContent(
         throw new Error(`local cleanup failed: ${deletion.status}`);
       }
       result.migratedPostIds.push(localPost.id);
-    } catch {
-      result.failedPostIds.push(localPost.id);
+    } catch (error) {
+      result.failures.push({
+        localPostId: localPost.id,
+        message: migrationFailureMessage(error),
+      });
     }
   }
 

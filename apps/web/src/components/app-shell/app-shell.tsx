@@ -23,6 +23,7 @@ import { BrandMark } from "@/components/brand/brand-mark";
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
+import { useCommunityLegacyMigration } from "@/features/community/use-community-legacy-migration";
 import { ActivityNotificationCenter } from "@/features/notifications/activity-notification-center";
 import { useActivityNotifications } from "@/features/notifications/use-activity-notifications";
 import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
@@ -219,6 +220,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     signOut,
   } = useAuthViewer();
   const accountSyncStatus = useAccountStateSync(viewer);
+  const communityMigration = useCommunityLegacyMigration(viewer);
   const activityNotifications = useActivityNotifications(viewer);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const stackButtonRef = useRef<HTMLButtonElement>(null);
@@ -517,6 +519,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
+
+      {communityMigration.phase === "failed" && (
+        <div className={styles.migrationNotice} role="alert">
+          <span>
+            이전 브라우저 글 {communityMigration.failureCount}개를 계정으로 옮기지
+            못했습니다. 원본은 그대로 보관되어 있습니다.
+          </span>
+          <button
+            onClick={() => void communityMigration.retry()}
+            type="button"
+          >
+            다시 옮기기
+          </button>
+        </div>
+      )}
 
       <div
         className={styles.content}

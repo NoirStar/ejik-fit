@@ -119,9 +119,10 @@ describe("local community migration", () => {
 
     const result = await migrateLocalCommunityContent(store, USER_ID);
 
-    expect(result).toEqual({ migratedPostIds: [
-      "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-    ], failedPostIds: [] });
+    expect(result).toEqual({
+      migratedPostIds: ["local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
+      failures: [],
+    });
     expect(store.createPost).toHaveBeenCalledWith(
       USER_ID,
       expect.objectContaining({
@@ -155,8 +156,11 @@ describe("local community migration", () => {
 
     const first = await migrateLocalCommunityContent(store, USER_ID);
     const firstServerId = vi.mocked(store.createPost).mock.calls[0]?.[1].id!;
-    expect(first.failedPostIds).toEqual([
-      "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    expect(first.failures).toEqual([
+      {
+        localPostId: "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        message: "일시 오류",
+      },
     ]);
     expect(readLocalCommunityPosts()).toHaveLength(1);
     expect(readSocialInteractions().commentsByPostId).not.toEqual({});
@@ -167,10 +171,47 @@ describe("local community migration", () => {
     vi.mocked(store.getPost).mockResolvedValueOnce(serverPost(firstServerId));
     const second = await migrateLocalCommunityContent(store, USER_ID);
 
-    expect(second.failedPostIds).toEqual([]);
+    expect(second.failures).toEqual([]);
     expect(second.migratedPostIds).toHaveLength(1);
     expect(vi.mocked(store.createPost).mock.calls[1]?.[1].id).toBe(firstServerId);
     expect(store.getPost).toHaveBeenCalledWith(firstServerId);
     expect(readLocalCommunityPosts()).toEqual([]);
+  });
+
+  it("continues with independent posts and reports structured failures", async () => {
+    seedBrowserContent();
+    createLocalCommunityPost(
+      {
+        category: "커리어 고민",
+        title: "별개의 두 번째 글",
+        body: "첫 번째 글이 실패해도 이 글은 계정으로 옮겨져야 합니다.",
+        tags: ["재시도"],
+      },
+      {
+        id: "local-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        createdAt: "2026-07-21T02:00:00.000Z",
+      },
+    );
+    const store = createStore();
+    vi.mocked(store.createPost)
+      .mockRejectedValueOnce(
+        new CommunityStoreError("unavailable", "첫 글 저장 실패"),
+      )
+      .mockImplementationOnce(async (_userId, input) => serverPost(input.id!));
+
+    const result = await migrateLocalCommunityContent(store, USER_ID);
+
+    expect(result.failures).toEqual([
+      {
+        localPostId: "local-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        message: "첫 글 저장 실패",
+      },
+    ]);
+    expect(result.migratedPostIds).toEqual([
+      "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    ]);
+    expect(readLocalCommunityPosts().map((post) => post.id)).toEqual([
+      "local-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    ]);
   });
 });

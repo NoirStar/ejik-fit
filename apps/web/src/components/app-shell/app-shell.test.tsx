@@ -25,6 +25,15 @@ const authViewer = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
 }));
 
+const legacyMigration = vi.hoisted(() => ({
+  observe: vi.fn(),
+  status: {
+    phase: "complete" as "idle" | "running" | "complete" | "failed",
+    failureCount: 0,
+    retry: vi.fn(async () => undefined),
+  },
+}));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
   useSearchParams: () => new URLSearchParams(navigation.search),
@@ -48,6 +57,13 @@ vi.mock("@/features/auth/use-auth-viewer", async () => {
   };
 });
 
+vi.mock("@/features/community/use-community-legacy-migration", () => ({
+  useCommunityLegacyMigration: (viewer: unknown) => {
+    legacyMigration.observe(viewer);
+    return legacyMigration.status;
+  },
+}));
+
 vi.mock("@/features/saved-searches/use-saved-job-searches", () => ({
   useSavedJobSearches: vi.fn(),
 }));
@@ -66,6 +82,10 @@ describe("AppShell", () => {
     authViewer.state.ready = true;
     authViewer.state.signingOut = false;
     authViewer.state.error = "";
+    legacyMigration.status.phase = "complete";
+    legacyMigration.status.failureCount = 0;
+    legacyMigration.status.retry.mockReset();
+    legacyMigration.status.retry.mockResolvedValue(undefined);
     vi.mocked(useSavedJobSearches).mockReturnValue({
       state: { status: "ready", items: [], error: "" },
       create: vi.fn(),
@@ -184,6 +204,28 @@ describe("AppShell", () => {
       screen.getByRole("button", { name: "이 검색 저장" }),
     ).toBeEnabled();
     expect(authViewer.subscribe).toHaveBeenCalledTimes(1);
+    expect(legacyMigration.observe).toHaveBeenCalledWith(authViewer.state.viewer);
+  });
+
+  it("offers a retry when legacy community records could not move", () => {
+    authViewer.state.viewer = {
+      id: "viewer-1",
+      email: "developer@example.com",
+    };
+    legacyMigration.status.phase = "failed";
+    legacyMigration.status.failureCount = 2;
+
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "이전 브라우저 글 2개를 계정으로 옮기지 못했습니다",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "다시 옮기기" }));
+    expect(legacyMigration.status.retry).toHaveBeenCalledTimes(1);
   });
 
   it("marks the desktop skill graph as an immersive route", () => {

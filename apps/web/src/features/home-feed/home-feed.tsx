@@ -1031,19 +1031,6 @@ export function HomeFeed({
             </section>
           )}
 
-          {community.state.migrationFailedPostIds.length > 0 && (
-            <section className={styles.dataNotice} role="status">
-              <WarningCircle aria-hidden="true" size={20} weight="fill" />
-              <div>
-                <strong>브라우저 글 일부를 계정으로 옮기지 못했습니다</strong>
-                <p>원본은 그대로 보관했습니다. 연결이 안정되면 다시 시도할 수 있어요.</p>
-                <button onClick={() => void community.reload()} type="button">
-                  다시 옮기기
-                </button>
-              </div>
-            </section>
-          )}
-
           <div aria-label="피드 정렬" className={styles.tabs} role="tablist">
             {TABS.map((tab, index) => (
               <button

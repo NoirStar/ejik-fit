@@ -10,7 +10,6 @@ import {
 } from "@/lib/community-contract";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-import { migrateLocalCommunityContent } from "./community-migration";
 import {
   createSupabaseCommunityStore,
   type CommunityStore,
@@ -33,7 +32,6 @@ export type CommunityFeedState = {
   viewerState: CommunityViewerState;
   error: string;
   actionError: string;
-  migrationFailedPostIds: string[];
   pendingKeys: string[];
 };
 
@@ -63,7 +61,6 @@ const INITIAL_STATE: CommunityFeedState = {
   viewerState: EMPTY_VIEWER_STATE,
   error: "",
   actionError: "",
-  migrationFailedPostIds: [],
   pendingKeys: [],
 };
 
@@ -159,15 +156,11 @@ export function useCommunityFeed({
       const previousViewerState = keepPosts
         ? previousState.viewerState
         : EMPTY_VIEWER_STATE;
-      const previousMigrationFailures = keepPosts
-        ? previousState.migrationFailedPostIds
-        : [];
       commit({
         ...INITIAL_STATE,
         status: "loading",
         posts: previousPosts,
         viewerState: previousViewerState,
-        migrationFailedPostIds: previousMigrationFailures,
       });
       const resolvedStore = resolveStore();
       if (!resolvedStore) {
@@ -177,7 +170,6 @@ export function useCommunityFeed({
             status: "error",
             posts: previousPosts,
             viewerState: previousViewerState,
-            migrationFailedPostIds: previousMigrationFailures,
             error: LOAD_ERROR,
           });
         }
@@ -186,9 +178,6 @@ export function useCommunityFeed({
 
       const activeViewerId = viewerId;
       try {
-        const migration = activeViewerId
-          ? await migrateLocalCommunityContent(resolvedStore, activeViewerId)
-          : { migratedPostIds: [], failedPostIds: [] };
         const posts = savedOnly && activeViewerId
           ? await resolvedStore.listSavedPosts(activeViewerId, limit)
           : await resolvedStore.listPosts({
@@ -212,7 +201,6 @@ export function useCommunityFeed({
           status: "ready",
           posts,
           viewerState,
-          migrationFailedPostIds: migration.failedPostIds,
         });
       } catch {
         if (
@@ -224,7 +212,6 @@ export function useCommunityFeed({
             status: "error",
             posts: previousPosts,
             viewerState: previousViewerState,
-            migrationFailedPostIds: previousMigrationFailures,
             error: LOAD_ERROR,
           });
         }
