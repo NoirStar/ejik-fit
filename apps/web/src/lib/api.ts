@@ -15,36 +15,31 @@ import {
   normalizePostingDetail,
   normalizePostingList,
 } from "./posting-contract";
+import {
+  ApiError,
+  ApiTimeoutError,
+  requestJson,
+  type RequestPolicy,
+} from "./api-request";
+
+export { ApiError, ApiTimeoutError };
 
 const API_BASE_URL =
   process.env.API_BASE_URL ?? "http://localhost:8000";
 
-export class ApiError extends Error {
-  constructor(
-    public readonly url: string,
-    public readonly status: number,
-  ) {
-    super(`API request failed: ${url} (${status})`);
-  }
-}
-
 async function request<T>(
   path: string,
-  init?: RequestInit,
+  options: RequestInit & {
+    policy?: RequestPolicy;
+    tags?: string[];
+  } = {},
 ): Promise<T> {
-  const url = new URL(path, API_BASE_URL);
-  const response = await fetch(url, {
-    cache: "no-store",
+  const { policy = "public", tags = [], ...init } = options;
+  return requestJson<T>(API_BASE_URL, path, {
     ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-    },
+    policy,
+    tags,
   });
-
-  if (!response.ok) {
-    throw new ApiError(url.toString(), response.status);
-  }
-  return response.json() as Promise<T>;
 }
 
 export async function getPostings(filters: {
@@ -80,7 +75,10 @@ export async function getPostings(filters: {
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return normalizePostingList(
-    await request<unknown>(`/api/postings${query}`),
+    await request<unknown>(`/api/postings${query}`, {
+      policy: "public",
+      tags: ["postings"],
+    }),
   );
 }
 
@@ -90,7 +88,9 @@ export async function getPosting(
 ): Promise<PostingDetail> {
   return normalizePostingDetail(
     await request<unknown>(`/api/postings/${encodeURIComponent(id)}`, {
+      policy: "public",
       signal,
+      tags: ["postings"],
     }),
   );
 }
@@ -112,7 +112,10 @@ export async function getHiringOverview(filters: {
     params.set("limit", String(filters.limit));
   }
   return normalizeHiringOverview(
-    await request<unknown>(`/api/hiring/overview?${params.toString()}`),
+    await request<unknown>(`/api/hiring/overview?${params.toString()}`, {
+      policy: "public",
+      tags: ["hiring"],
+    }),
   );
 }
 
@@ -132,11 +135,17 @@ export function getSkillStats(filters: {
     params.set("limit", String(filters.limit));
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
-  return request<SkillStatsResponse>(`/api/skills/stats${query}`);
+  return request<SkillStatsResponse>(`/api/skills/stats${query}`, {
+    policy: "public",
+    tags: ["skills"],
+  });
 }
 
 export function getSkillCatalog(): Promise<SkillCatalogResponse> {
-  return request<SkillCatalogResponse>("/api/skills/catalog");
+  return request<SkillCatalogResponse>("/api/skills/catalog", {
+    policy: "durable",
+    tags: ["skill-catalog"],
+  });
 }
 
 export function getSkillTrends(
@@ -147,11 +156,20 @@ export function getSkillTrends(
   for (const skill of skills.slice(0, 3)) {
     params.append("skills", skill);
   }
-  return request<SkillTrendResponse>(`/api/skills/trends?${params.toString()}`);
+  return request<SkillTrendResponse>(
+    `/api/skills/trends?${params.toString()}`,
+    {
+      policy: "public",
+      tags: ["skill-trends"],
+    },
+  );
 }
 
 export function getSourceDirectory(): Promise<SourceDirectoryResponse> {
-  return request<SourceDirectoryResponse>("/api/sources");
+  return request<SourceDirectoryResponse>("/api/sources", {
+    policy: "durable",
+    tags: ["sources"],
+  });
 }
 
 export function getSkillGraph(filters: {
@@ -174,7 +192,10 @@ export function getSkillGraph(filters: {
     params.set("limit", String(filters.limit));
   }
   const query = params.size > 0 ? `?${params.toString()}` : "";
-  return request<SkillGraphResponse>(`/api/graph/skills${query}`);
+  return request<SkillGraphResponse>(`/api/graph/skills${query}`, {
+    policy: "public",
+    tags: ["skill-graph"],
+  });
 }
 
 export function analyzeFit(
@@ -183,6 +204,7 @@ export function analyzeFit(
 ): Promise<FitAnalyzeResponse> {
   return request<FitAnalyzeResponse>("/api/fit/analyze", {
     method: "POST",
+    policy: "private",
     headers: {
       "content-type": "application/json",
     },
