@@ -182,7 +182,10 @@ describe("MarketOverview", () => {
     renderReadyMarket();
 
     expect(
-      screen.getByRole("heading", { name: "채용 시장", level: 1 }),
+      screen.getByRole("heading", {
+        name: "지금 채용시장의 기술 흐름",
+        level: 1,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/이직핏이 확인한 기업 공식 채용 공고 범위/),
@@ -233,18 +236,18 @@ describe("MarketOverview", () => {
     ).toHaveAttribute("href", "/jobs?q=Kubernetes&career_type=experienced");
   });
 
-  it("updates recent verified jobs when a technology is selected", () => {
+  it("updates selected technology evidence when a technology is selected", () => {
     renderReadyMarket();
 
     expect(
-      screen.getByRole("heading", { name: "Kubernetes 관련 최근 공고" }),
+      screen.getByRole("region", { name: "Kubernetes 시장 근거" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /플랫폼 엔지니어/ })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Docker 기술 선택" }));
 
     expect(
-      screen.getByRole("heading", { name: "Docker 관련 최근 공고" }),
+      screen.getByRole("region", { name: "Docker 시장 근거" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /컨테이너 인프라 개발자/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /플랫폼 엔지니어/ })).not.toBeInTheDocument();
@@ -254,7 +257,9 @@ describe("MarketOverview", () => {
     renderReadyMarket();
 
     fireEvent.click(
-      within(screen.getByRole("navigation", { name: "기술 분야" })).getByRole(
+      within(
+        screen.getByRole("navigation", { name: "포함 기술 분야" }),
+      ).getByRole(
         "link",
         { name: "인프라" },
       ),
@@ -308,20 +313,25 @@ describe("MarketOverview", () => {
     ).toBeInTheDocument();
   });
 
-  it("labels co-occurrence as co-occurrence and keeps fit claims separate", () => {
+  it("keeps market evidence separate from personal learning guidance", () => {
     renderReadyMarket();
 
-    const combinations = screen.getByRole("region", { name: "함께 등장한 기술" });
-    expect(within(combinations).getByText("Docker + Kubernetes")).toBeInTheDocument();
-    expect(within(combinations).getByText("함께 등장한 공고 1건")).toBeInTheDocument();
-    expect(within(combinations).queryByText(/지원 가능한 공고.*증가/)).not.toBeInTheDocument();
-    expect(screen.getByText(/내 기술을 저장하면/)).toBeInTheDocument();
+    expect(screen.queryByText(/내 기술을 저장하면/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/다음 학습 후보/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Kubernetes 시장 근거" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "포함 기술 분야" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/선택한 분야의 기술이 하나 이상 확인된 공고/),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "LLM 기술 선택" }));
-    expect(within(combinations).getByText("LLM + Python")).toBeInTheDocument();
     expect(
-      within(combinations).queryByText("Docker + Kubernetes"),
-    ).not.toBeInTheDocument();
+      screen.getByRole("region", { name: "LLM 시장 근거" }),
+    ).toHaveTextContent("Python");
   });
 
   it("keeps skill demand visible when postings fail", () => {
@@ -347,12 +357,14 @@ describe("MarketOverview", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "공고 데이터를 불러오지 못했습니다.",
     );
-    const combinations = screen.getByRole("region", { name: "함께 등장한 기술" });
-    expect(combinations).toHaveTextContent(
-      "공고 데이터를 불러오지 못해 함께 등장한 기술을 확인할 수 없습니다.",
+    const evidence = screen.getByRole("region", {
+      name: "Kubernetes 시장 근거",
+    });
+    expect(evidence).toHaveTextContent(
+      "공고 데이터를 불러오지 못했습니다.",
     );
-    expect(combinations).not.toHaveTextContent(
-      "반복해서 함께 등장한 기술 조합이 없습니다.",
+    expect(evidence).toHaveTextContent(
+      "전체 시장 수요 수치는 계속 확인할 수 있습니다.",
     );
   });
 

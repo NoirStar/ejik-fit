@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { MarketFilters } from "./market-filters";
-import { MarketFitInsight } from "./market-fit-insight";
 import { MarketPulseSummary } from "./market-pulse-summary";
 import {
   buildMarketFilterHref,
@@ -15,12 +14,10 @@ import {
   type MarketOverviewSnapshot,
   type MarketSort,
 } from "./model";
-import { RecentJobList } from "./recent-job-list";
-import { SkillCombinationRecommendations } from "./skill-combination-recommendations";
+import { SelectedTechnologyEvidence } from "./selected-technology-evidence";
 import styles from "./market-overview.module.css";
 import { TechnologyDemandChart } from "./technology-demand-chart";
 import { TechnologyTrendPanel } from "./technology-trend-panel";
-import { useMarketFit } from "./use-market-fit";
 import { useMarketTrends } from "./use-market-trends";
 
 function formatVerifiedDate(value: string | null) {
@@ -118,7 +115,6 @@ export function MarketOverview({
     () => buildSkillCombinations(snapshot.jobs, 3, effectiveSkill),
     [effectiveSkill, snapshot.jobs],
   );
-  const fit = useMarketFit(snapshot.careerType);
   const marketUnavailable = Boolean(
     snapshot.postingError && snapshot.skillError,
   );
@@ -126,7 +122,7 @@ export function MarketOverview({
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <h1>채용 시장</h1>
+        <h1>지금 채용시장의 기술 흐름</h1>
         <p>기업 공식 채용 공고를 분석해 현재 기술 수요와 요구 조건을 확인합니다.</p>
       </header>
 
@@ -204,11 +200,6 @@ export function MarketOverview({
               />
             )}
 
-            <SkillCombinationRecommendations
-              combinations={combinations}
-              unavailable={Boolean(snapshot.postingError)}
-            />
-            <MarketFitInsight fit={fit} />
           </div>
 
           <aside className={styles.sideColumn}>
@@ -223,11 +214,11 @@ export function MarketOverview({
               onRetry={trend.retry}
               resource={trend.resource}
             />
-            <RecentJobList
-              browseHref={selected?.jobsHref ?? snapshot.jobsBrowseHref}
+            <SelectedTechnologyEvidence
+              combinations={combinations}
               error={snapshot.postingError}
               jobs={recentJobs}
-              selectedSkill={effectiveSkill}
+              selected={selected}
             />
           </aside>
         </div>
@@ -236,9 +227,9 @@ export function MarketOverview({
       <section aria-label="데이터를 읽는 기준" className={styles.methodNote}>
         <strong>데이터를 읽는 기준</strong>
         <p>
-          기술별 숫자는 이직핏이 확인한 현재 공식 공고 수입니다. 요구 조건 막대는 각
-          기술 안의 필수·우대·미분류 구성이며, 상대 수요 막대는 현재 필터의 1위 기술을
-          기준으로만 비교합니다.
+          막대와 주간 변화는 필수·우대로 명시된 공고 수를 사용합니다. 구분 안 됨은
+          기술은 확인됐지만 원문에서 필수·우대 여부를 확인할 수 없는 공고입니다.
+          막대 길이는 현재 1위 대비 비교이며 시장점유율이 아닙니다.
         </p>
         <div>
           <Link href="/methodology">분석 방법</Link>

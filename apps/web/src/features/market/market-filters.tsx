@@ -15,7 +15,8 @@ import type { SkillCategory } from "@/lib/skill-categories";
 import styles from "./market-overview.module.css";
 
 const SORT_OPTIONS: Array<{ value: MarketSort; label: string }> = [
-  { value: "demand", label: "공고 수 많은 순" },
+  { value: "explicit", label: "명시 요구 많은 순" },
+  { value: "demand", label: "전체 등장 많은 순" },
   { value: "required", label: "필수 요구 많은 순" },
   { value: "preferred", label: "우대 요구 많은 순" },
   { value: "name", label: "기술명 순" },
@@ -80,8 +81,8 @@ export function MarketFilters({
         </span>
       ) : null}
       <div className={styles.filterRow}>
-        <strong>기술 분야</strong>
-        <nav aria-label="기술 분야" className={styles.filters}>
+        <strong>포함 기술 분야</strong>
+        <nav aria-label="포함 기술 분야" className={styles.filters}>
           {MARKET_CATEGORIES.map((filter) => (
             <Link
               aria-current={category === filter.value ? "page" : undefined}
@@ -101,6 +102,10 @@ export function MarketFilters({
           ))}
         </nav>
       </div>
+      <p className={styles.filterHelp}>
+        선택한 분야의 기술이 하나 이상 확인된 공고를 모아, 그 공고에 함께
+        등장한 모든 기술을 집계합니다.
+      </p>
       <div className={styles.filterRow}>
         <strong>경력 조건</strong>
         <nav aria-label="경력 조건" className={styles.filters}>
