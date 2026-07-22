@@ -52,16 +52,13 @@ export function TechnologyDemandChart({
       <header className={styles.sectionHeader}>
         <div>
           <h2 id="skill-demand-title">현재 기술 수요</h2>
-          <p>막대 길이는 필수·우대로 명시된 공고 수를 비교합니다.</p>
+          <p>필수·우대 명시 공고 · 1위 대비 길이</p>
         </div>
         <div aria-label="요구 조건 범례" className={styles.legend}>
           <span data-legend="required">필수</span>
           <span data-legend="preferred">우대</span>
         </div>
       </header>
-      <p className={styles.relativeNote}>
-        막대 길이는 시장점유율이 아니라 현재 1위 기술 대비 길이입니다.
-      </p>
       <div aria-hidden="true" className={styles.tableHeader}>
         <span>순위 · 기술</span>
         <span>명시 요구</span>

@@ -15,38 +15,45 @@ function trendLabel(resource: MarketTrendResource) {
 }
 
 export function MarketPulseSummary({
-  postingCountLabel,
-  topSkills,
+  leader,
+  postingTotal,
+  skillTotal,
   trendResource,
   verifiedLabel,
 }: {
-  postingCountLabel: string;
-  topSkills: readonly PulseSkill[];
+  leader: PulseSkill | undefined;
+  postingTotal: number | null;
+  skillTotal: number | null;
   trendResource: MarketTrendResource;
   verifiedLabel: string;
 }) {
-  const leader = topSkills[0];
+  const postingLabel =
+    postingTotal === null
+      ? "확인 불가"
+      : `${postingTotal.toLocaleString("ko-KR")}건`;
+  const skillLabel =
+    skillTotal === null
+      ? "확인 불가"
+      : `${skillTotal.toLocaleString("ko-KR")}종`;
 
   return (
     <section aria-label="현재 채용시장 요약" className={styles.pulsePanel}>
       <div className={styles.pulsePrimary}>
-        <span>가장 많이 명시된 기술</span>
+        <span>명시 요구 1위</span>
         <strong>
           {leader
             ? `${leader.name} · ${leader.explicitCount.toLocaleString("ko-KR")}건`
             : "확인 불가"}
         </strong>
-        <small>필수·우대로 명시된 공식 공고</small>
+        <small>필수·우대 명시</small>
       </div>
       <div>
-        <span>명시 요구 상위</span>
-        <strong>
-          {topSkills.map((skill) => skill.name).join(" · ") || "확인 불가"}
-        </strong>
-        <small>{postingCountLabel}</small>
+        <span>분석 범위</span>
+        <strong>{postingLabel} · {skillLabel}</strong>
+        <small>공고 · 기술</small>
       </div>
       <div>
-        <span>최근 변화</span>
+        <span>주간 변화</span>
         <strong>{trendLabel(trendResource)}</strong>
         <small>{verifiedLabel} 기준</small>
       </div>

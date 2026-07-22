@@ -28,48 +28,6 @@ function formatVerifiedDate(value: string | null) {
   }).format(new Date(value));
 }
 
-function Summary({ snapshot }: { snapshot: MarketOverviewSnapshot }) {
-  const items = [
-    {
-      label: "확인된 공고",
-      value: snapshot.postingCountLabel,
-      detail: "현재 필터와 공식 공고 상태 기준",
-    },
-    {
-      label: "확인된 기술",
-      value:
-        snapshot.skillTotal === null
-          ? "확인 불가"
-          : `${snapshot.skillTotal.toLocaleString("ko-KR")}종`,
-      detail: "공식 공고에서 확인된 기술",
-    },
-    {
-      label: "마지막 업데이트",
-      value: formatVerifiedDate(snapshot.latestVerifiedAt),
-      detail: "공고 원문 재확인 시각",
-    },
-    {
-      label: "데이터 출처",
-      value: "기업 공식 채용 홈페이지",
-      detail: "직접 수집 및 분석",
-    },
-  ];
-
-  return (
-    <section aria-label="채용 시장 데이터 요약" className={styles.summaryPanel}>
-      <dl>
-        {items.map((item) => (
-          <div key={item.label}>
-            <dt>{item.label}</dt>
-            <dd>{item.value}</dd>
-            <span>{item.detail}</span>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
 export function MarketOverview({
   snapshot,
 }: {
@@ -122,26 +80,22 @@ export function MarketOverview({
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <h1>지금 채용시장의 기술 흐름</h1>
+        <h1>지금 채용 시장의 기술 흐름</h1>
         <p>기업 공식 채용 공고를 분석해 현재 기술 수요와 요구 조건을 확인합니다.</p>
       </header>
 
       <section aria-label="데이터 범위 안내" className={styles.dataNotice}>
         <Info aria-hidden="true" size={18} weight="duotone" />
         <div>
-          <strong>이 데이터는 이직핏이 확인한 기업 공식 채용 공고 범위입니다.</strong>
-          <p>
-            국내 전체 채용시장을 의미하지 않습니다. 기업 공식 채용 페이지에서 수집한
-            공고를 분석한 결과입니다.
-          </p>
+          <strong>기업 공식 채용 페이지 확인 범위</strong>
+          <p>국내 전체 채용시장 통계가 아닙니다.</p>
         </div>
       </section>
 
-      <Summary snapshot={snapshot} />
-
       <MarketPulseSummary
-        postingCountLabel={snapshot.postingCountLabel}
-        topSkills={topExplicitSkills}
+        leader={topExplicitSkills[0]}
+        postingTotal={snapshot.postingTotal}
+        skillTotal={snapshot.skillTotal}
         trendResource={trend.resource}
         verifiedLabel={formatVerifiedDate(snapshot.latestVerifiedAt)}
       />

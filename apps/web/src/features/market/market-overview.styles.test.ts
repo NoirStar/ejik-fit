@@ -14,19 +14,36 @@ function rule(selector: string) {
 }
 
 describe("market overview styles", () => {
+  it("records the locked Hallmark workbench direction", () => {
+    expect(css.trimStart()).toMatch(
+      /^\/\* Hallmark · genre: modern-minimal · tone: Korean product workbench · anchor: violet oklch\(54\.36% 0\.2236 286\.27\) · macrostructure: Workbench · designed-as-app/,
+    );
+  });
+
   it("uses a compact service scale and a bounded 1280px canvas", () => {
     expect(rule(".page")).toContain("width: min(100%, 80rem);");
     expect(rule(".intro h1")).toContain("font-size: var(--type-page-title);");
     expect(css).toMatch(
-      /\.sectionHeader h2,[\s\S]*?\.combinationHeader h2\s*\{[^}]*font-size: 1rem;/,
+      /\.sectionHeader h2,[\s\S]*?\.sideHeader h2\s*\{[^}]*font-size: 1rem;/,
     );
   });
 
-  it("keeps the desktop hierarchy at an 800px-ish main and 352px side panel", () => {
+  it("makes the explicit-demand chart the dominant visual", () => {
     expect(rule(".dashboardGrid")).toContain(
       "grid-template-columns: minmax(0, 1fr) 22rem;",
     );
     expect(rule(".dashboardGrid")).toContain("gap: 1.25rem;");
+    expect(rule(".explicitDemandFill")).toContain(
+      "transition: transform var(--dur-medium) var(--ease-out);",
+    );
+    expect(rule(".explicitDemandFill")).toContain("transform-origin: left center;");
+    expect(rule('.explicitDemandFill > [data-segment="required"]')).toContain(
+      "background: var(--market-required);",
+    );
+    expect(rule('.explicitDemandFill > [data-segment="preferred"]')).toContain(
+      "background: var(--market-preferred);",
+    );
+    expect(css).not.toContain(".relativeDemand");
   });
 
   it("uses the coordinated blue, mint, cream and coral market palette", () => {
@@ -61,6 +78,8 @@ describe("market overview styles", () => {
     expect(css).not.toContain("linear-gradient");
     expect(css).not.toContain("radial-gradient");
     expect(css).not.toContain("box-shadow");
+    expect(css).not.toMatch(/font-size:\s*(?:8px|0\.5625rem)/);
+    expect(css).not.toMatch(/animation:\s*listFade\s+\d+ms\s+ease-out/);
   });
 
   it("moves the side rail below 1200px and turns filters into a mobile rail", () => {
@@ -75,6 +94,25 @@ describe("market overview styles", () => {
     );
   });
 
+  it("keeps the market snapshot compact before stacking chart, trend, and evidence", () => {
+    expect(css).not.toContain(".summaryPanel");
+    expect(css).toMatch(
+      /@media \(max-width: 52\.4375rem\)[\s\S]*?\.pulsePanel\s*\{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 35\.9375rem\)[\s\S]*?\.skillSelect\s*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 35\.9375rem\)[\s\S]*?\.filterRow\s*\{[\s\S]*?grid-template-columns: 4\.75rem minmax\(0, 1fr\);/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 35\.9375rem\)[\s\S]*?\.sectionHeader > div:first-child\s*\{[^}]*display: contents;/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 35\.9375rem\)[\s\S]*?\.sectionHeader p\s*\{[^}]*grid-column: 1 \/ -1;/,
+    );
+  });
+
   it("keeps filter pills short and keyboard accessible", () => {
     expect(rule(".filter")).toContain("min-width: 0;");
     expect(rule(".filter")).toContain("min-height: 2rem;");
@@ -86,6 +124,13 @@ describe("market overview styles", () => {
       /\.sideHeader > a\s*\{[^}]*min-height: var\(--touch-target\);/,
     );
     expect(css).toContain(".filter:focus-visible");
+    expect(rule(".trendAddControl select:disabled")).toContain(
+      "cursor: not-allowed;",
+    );
+    expect(rule(".trendAddControl select:disabled")).toContain("opacity: 0.55;");
+    expect(css).toMatch(
+      /@media \(pointer: coarse\)[\s\S]*?\.filter,[\s\S]*?\.sortControl select\s*\{[^}]*min-height: var\(--touch-target\);/,
+    );
   });
 
   it("removes list and bar motion when reduced motion is requested", () => {

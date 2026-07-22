@@ -103,8 +103,7 @@ export function MarketFilters({
         </nav>
       </div>
       <p className={styles.filterHelp}>
-        선택한 분야의 기술이 하나 이상 확인된 공고를 모아, 그 공고에 함께
-        등장한 모든 기술을 집계합니다.
+        선택 분야 포함 공고의 모든 기술을 집계합니다.
       </p>
       <div className={styles.filterRow}>
         <strong>경력 조건</strong>

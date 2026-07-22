@@ -45,14 +45,17 @@ describe("MarketPage", () => {
       limit: 100,
     });
     expect(
-      screen.getByRole("heading", { name: "채용 시장", level: 1 }),
+      screen.getByRole("heading", {
+        name: "지금 채용 시장의 기술 흐름",
+        level: 1,
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "인프라" })).toHaveAttribute(
       "aria-current",
       "page",
     );
     expect(
-      screen.getByText(/이직핏이 확인한 기업 공식 채용 공고 범위/),
+      screen.getByText(/기업 공식 채용 페이지 확인 범위/),
     ).toBeInTheDocument();
   });
 
@@ -69,10 +72,9 @@ describe("MarketPage", () => {
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
     expect(
-      within(screen.getByRole("navigation", { name: "기술 분야" })).getByRole(
-        "link",
-        { name: "전체" },
-      ),
+      within(
+        screen.getByRole("navigation", { name: "포함 기술 분야" }),
+      ).getByRole("link", { name: "전체" }),
     ).toHaveAttribute("aria-current", "page");
   });
 });

@@ -1,3 +1,7 @@
+/* Hallmark · genre: modern-minimal · tone: Korean product workbench · anchor: violet oklch(54.36% 0.2236 286.27) · macrostructure: Workbench · designed-as-app
+ * design-system: design.md · fingerprint: left-functional heading · asymmetric workbench · hairline dividers · outlined actions · data-only imagery · no page reveal
+ * pre-emit critique: P5 H5 E4 S5 R5 V4
+ */
 .srOnly {
   position: absolute;
   width: 1px;
@@ -38,9 +42,10 @@
 .sideHeader h2,
 .collectingState p,
 .panelFootnote,
-.combinationHeader h2,
-.combinationHeader p,
-.fitPanel p,
+.filterHelp,
+.trendScope,
+.evidenceSection h3,
+.evidenceSection p,
 .methodNote p,
 .largeState h3,
 .largeState p,
@@ -66,9 +71,10 @@
 .dataNotice {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.75rem;
-  margin-top: 0.875rem;
-  padding: 0.75rem 0.875rem;
+  align-items: center;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+  padding: 0.625rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--color-accent) 22%, var(--color-line));
   border-radius: 0.625rem;
   background: color-mix(in srgb, var(--color-brand-subtle) 46%, var(--color-surface));
@@ -76,70 +82,74 @@
 }
 
 .dataNotice > svg {
-  margin-top: 0.1rem;
+  flex: 0 0 auto;
+}
+
+.dataNotice > div {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem 0.75rem;
+}
+
+.dataNotice strong,
+.dataNotice p {
+  font-size: 0.75rem;
+  line-height: 1.45;
 }
 
 .dataNotice strong {
   color: var(--color-text);
-  font-size: 0.8125rem;
   font-weight: 750;
 }
 
 .dataNotice p {
-  margin-top: 0.15rem;
   color: var(--color-muted);
-  font-size: 0.75rem;
-  line-height: 1.5;
 }
 
-.summaryPanel {
-  margin-top: 1rem;
+.pulsePanel {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  margin-top: 0.75rem;
   overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
   background: var(--color-surface);
 }
 
-.summaryPanel dl {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0;
-}
-
-.summaryPanel dl > div {
-  display: grid;
+.pulsePanel > div {
   min-width: 0;
-  gap: 0.175rem;
-  padding: 0.875rem 1rem;
-}
-
-.summaryPanel dl > div + div {
+  padding: 0.75rem 1rem;
   border-left: 1px solid var(--color-line);
 }
 
-.summaryPanel dt {
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  font-weight: 650;
+.pulsePanel > div:first-child {
+  border-left: 0;
 }
 
-.summaryPanel dd {
-  margin: 0;
+.pulsePrimary {
+  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+}
+
+.pulsePanel span,
+.pulsePanel small {
+  display: block;
   overflow: hidden;
-  color: var(--color-text);
-  font-size: 1rem;
-  font-variant-numeric: tabular-nums;
-  font-weight: 760;
-  letter-spacing: -0.025em;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.summaryPanel span {
+.pulsePanel strong {
+  display: block;
+  margin: 0.2rem 0 0.1rem;
   overflow: hidden;
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  line-height: 1.4;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -147,14 +157,14 @@
 .filterPanel {
   display: grid;
   gap: 0.5rem;
-  margin: 1rem 0 0;
-  padding: 0.75rem 0;
+  margin: 0.75rem 0 0;
+  padding: 0.625rem 0;
   border-block: 1px solid var(--color-line);
 }
 
 .filterRow {
   display: grid;
-  grid-template-columns: 4.25rem minmax(0, 1fr) auto;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.625rem;
 }
@@ -163,6 +173,13 @@
   color: var(--color-muted);
   font-size: 0.6875rem;
   font-weight: 700;
+}
+
+.filterHelp {
+  margin-left: 6.625rem;
+  color: var(--color-faint);
+  font-size: 0.6875rem;
+  line-height: 1.4;
 }
 
 .filters {
@@ -214,7 +231,7 @@
 .rowAction:active,
 .showMore:active,
 .recentJobList a:active,
-.combinationList a:active {
+.evidenceActions a:active {
   transform: translateY(1px);
 }
 
@@ -251,8 +268,8 @@
 .rowAction:focus-visible,
 .showMore:focus-visible,
 .sidePanel a:focus-visible,
-.combinationPanel a:focus-visible,
-.fitPanel a:focus-visible,
+.evidencePanel a:focus-visible,
+.collectingState button:focus-visible,
 .methodNote a:focus-visible,
 .completeFailure a:focus-visible,
 .largeState a:focus-visible {
@@ -265,7 +282,7 @@
   grid-template-columns: minmax(0, 1fr) 22rem;
   align-items: start;
   gap: 1.25rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .mainColumn,
@@ -277,8 +294,7 @@
 
 .demandPanel,
 .sidePanel,
-.combinationPanel,
-.fitPanel,
+.evidencePanel,
 .largeState,
 .completeFailure {
   min-width: 0;
@@ -292,8 +308,7 @@
 }
 
 .sectionHeader,
-.sideHeader,
-.combinationHeader {
+.sideHeader {
   display: flex;
   min-width: 0;
   align-items: flex-start;
@@ -306,16 +321,14 @@
 }
 
 .sectionHeader h2,
-.sideHeader h2,
-.combinationHeader h2 {
+.sideHeader h2 {
   color: var(--color-text);
   font-size: 1rem;
   font-weight: 750;
   letter-spacing: -0.025em;
 }
 
-.sectionHeader p,
-.combinationHeader p {
+.sectionHeader p {
   margin-top: 0.18rem;
   color: var(--color-muted);
   font-size: 0.6875rem;
@@ -354,14 +367,6 @@
   background: var(--market-preferred);
 }
 
-.relativeNote {
-  margin: 0;
-  padding: 0 1rem 0.625rem;
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  line-height: 1.45;
-}
-
 .tableHeader {
   display: grid;
   grid-template-columns: minmax(12rem, 1.05fr) minmax(6rem, 0.45fr)
@@ -378,8 +383,7 @@
 }
 
 .skillList,
-.recentJobList,
-.combinationList {
+.recentJobList {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -512,11 +516,13 @@
 
 .explicitDemandFill {
   display: flex;
+  width: 100%;
   height: 100%;
   overflow: hidden;
   border-radius: inherit;
+  transform-origin: left center;
   white-space: nowrap;
-  transition: width 320ms ease;
+  transition: transform var(--dur-medium) var(--ease-out);
 }
 
 .explicitDemandFill > [data-segment="required"] {
@@ -626,6 +632,21 @@
   color: var(--color-demand-preferred-ink);
 }
 
+.trendScope {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 0.625rem;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.trendScope small {
+  color: var(--color-faint);
+  font: inherit;
+}
+
 .trendControls {
   display: grid;
   gap: 0.5rem;
@@ -670,9 +691,9 @@
 
 .trendSkillChip button {
   display: inline-grid;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-right: -0.2rem;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  margin: -0.45rem -0.4rem -0.45rem 0;
   padding: 0;
   place-items: center;
   border: 0;
@@ -699,7 +720,7 @@
 }
 
 .trendAddControl select {
-  min-height: 1.875rem;
+  min-height: var(--touch-target);
   padding: 0 1.75rem 0 0.5rem;
   border: 1px solid var(--color-line);
   border-radius: 0.45rem;
@@ -712,36 +733,8 @@
 }
 
 .trendAddControl select:disabled {
-  cursor: default;
-  opacity: 0.62;
-}
-
-.trendSelection {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 0 0.5rem;
-}
-
-.trendSelection > span:first-child {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.375rem;
-  overflow: hidden;
-  color: var(--color-text);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.compareLimit {
-  flex: 0 0 auto;
-  color: var(--color-faint);
-  font-size: 0.625rem;
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .collectingState {
@@ -770,12 +763,26 @@
   line-height: 1.55;
 }
 
+.collectingState button {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0 0.875rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .trendChartWrap {
   padding: 0.4rem 0.35rem 0.25rem;
   border: 1px solid var(--color-line);
   border-radius: 0.625rem;
   background: var(--color-surface-subtle);
-  animation: listFade 200ms ease-out both;
+  animation: listFade var(--dur-short) var(--ease-out) both;
 }
 
 .trendChart {
@@ -794,7 +801,7 @@
 .trendAxisLabel,
 .trendDateLabel {
   fill: var(--color-faint);
-  font-size: 8px;
+  font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -812,11 +819,14 @@
 }
 
 .trendLatestValues li {
-  display: flex;
+  display: grid;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.125rem 0.25rem;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  background: var(--color-surface);
   color: var(--color-muted);
   font-size: 0.625rem;
 }
@@ -843,6 +853,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+.trendLatestValues small {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--color-faint);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .panelFootnote {
   margin-top: 0.625rem;
   color: var(--color-faint);
@@ -853,7 +873,7 @@
 .recentJobList {
   display: grid;
   padding-top: 0.375rem;
-  animation: listFade 180ms ease-out both;
+  animation: listFade var(--dur-short) var(--ease-out) both;
 }
 
 @keyframes listFade {
@@ -951,132 +971,128 @@
   text-decoration: none;
 }
 
-.combinationPanel {
+.evidencePanel {
   padding: 0.875rem;
 }
 
-.combinationHeader {
-  align-items: center;
-}
-
-.combinationHeader > a {
-  display: inline-flex;
-  min-height: var(--touch-target);
-  flex: 0 0 auto;
-  align-items: center;
-  color: var(--color-accent-strong);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.combinationList {
+.evidenceMetrics {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin-top: 0.625rem;
-}
-
-.combinationList a {
-  display: grid;
-  min-height: var(--touch-target);
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0.15rem 0.375rem;
-  padding: 0.5rem 0.625rem;
-  border: 1px solid var(--color-line);
-  border-radius: 0.5rem;
-  background: var(--color-surface-subtle);
-  color: var(--color-text);
-  text-decoration: none;
-  transition:
-    border-color 150ms var(--ease-standard),
-    background-color 150ms var(--ease-standard),
-    transform 150ms var(--ease-standard);
-}
-
-.combinationList a:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 26%, var(--color-line));
-  background: var(--color-brand-subtle);
-}
-
-.combinationSkills {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.combinationSkills strong {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0.75rem 0 0;
   overflow: hidden;
+  border-top: 1px solid var(--color-line);
+  border-right: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.evidenceMetrics > div {
+  min-width: 0;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-line);
+  border-left: 1px solid var(--color-line);
+}
+
+.evidenceMetrics > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.evidenceMetrics dt {
+  color: var(--color-muted);
+  font-size: 0.625rem;
+  font-weight: 650;
+}
+
+.evidenceMetrics dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+}
+
+.evidenceSection {
+  margin-top: 0.875rem;
+}
+
+.evidenceSection + .evidenceSection {
+  padding-top: 0.875rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-line) 72%, transparent);
+}
+
+.evidenceSection h3 {
+  color: var(--color-text);
   font-size: 0.75rem;
   font-weight: 750;
+}
+
+.evidenceSection > p {
+  margin-top: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.connectionList {
+  display: grid;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.connectionList li {
+  display: flex;
+  min-width: 0;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  background: var(--color-surface-subtle);
+}
+
+.connectionList span {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.6875rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.combinationList a > span:nth-child(2) {
-  grid-column: 1;
+.connectionList b {
+  flex: 0 0 auto;
   color: var(--color-muted);
   font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
 }
 
-.combinationList a > svg {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  color: var(--color-faint);
-}
-
-.combinationEmpty {
-  margin: 0.75rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-}
-
-.fitPanel {
-  display: flex;
-  min-height: 4.75rem;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  background: color-mix(in srgb, var(--color-brand-subtle) 34%, var(--color-surface));
-}
-
-.fitPanel > svg {
-  flex: 0 0 auto;
-  color: var(--color-accent-strong);
-}
-
-.fitPanel > div {
+.evidenceActions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+}
+
+.evidenceActions a {
+  display: flex;
   min-width: 0;
-  flex: 1;
-  gap: 0.2rem;
-}
-
-.fitPanel strong {
-  font-size: 0.8125rem;
-  line-height: 1.4;
-}
-
-.fitPanel p {
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  line-height: 1.45;
-}
-
-.fitPanel > a {
-  display: inline-flex;
   min-height: var(--touch-target);
-  flex: 0 0 auto;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
   color: var(--color-accent-strong);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 700;
+  text-align: center;
   text-decoration: none;
-  white-space: nowrap;
+}
+
+.evidenceActions a:first-child {
+  background: var(--color-brand-subtle);
 }
 
 .largeState,
@@ -1192,22 +1208,22 @@
   border-radius: 0.625rem;
 }
 
-.skeletonSummary {
+.skeletonPulse {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 0.75rem;
   overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: 0.75rem;
 }
 
-.skeletonSummary > div {
+.skeletonPulse > div {
   display: grid;
   gap: 0.5rem;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
 }
 
-.skeletonSummary > div + div {
+.skeletonPulse > div + div {
   border-left: 1px solid var(--color-line);
 }
 
@@ -1247,7 +1263,7 @@
 .skeletonLine,
 .skeletonFilters span {
   display: block;
-  animation: marketSkeletonPulse 1.25s ease-in-out infinite alternate;
+  animation: marketSkeletonPulse 1.25s var(--ease-in-out) infinite alternate;
   background: var(--color-surface-muted);
 }
 
@@ -1297,24 +1313,16 @@
     font-size: 1.75rem;
   }
 
-  .summaryPanel dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .pulsePanel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .skeletonSummary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summaryPanel dl > div:nth-child(3) {
-    border-left: 0;
-  }
-
-  .summaryPanel dl > div:nth-child(n + 3) {
-    border-top: 1px solid var(--color-line);
+  .pulsePanel > div {
+    border-left: 1px solid var(--color-line);
   }
 
   .filterRow {
-    grid-template-columns: 4.25rem minmax(0, 1fr);
+    grid-template-columns: 6rem minmax(0, 1fr);
   }
 
   .filters {
@@ -1341,35 +1349,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .tableHeader {
-    display: none;
-  }
-
-  .skillSelect {
-    grid-template-areas:
-      "identity count"
-      "composition composition";
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem 0.75rem;
-    padding: 0.625rem;
-  }
-
-  .skillIdentity {
-    grid-area: identity;
-  }
-
-  .explicitCount {
-    grid-area: count;
-  }
-
-  .explicitDemand {
-    grid-area: composition;
-  }
-
-  .combinationList {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .methodNote {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1381,6 +1360,7 @@
 
 @media (max-width: 35.9375rem) {
   .page {
+    padding-top: 0.75rem;
     padding-inline: 0.875rem;
   }
 
@@ -1390,43 +1370,105 @@
   }
 
   .dataNotice {
-    padding: 0.75rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
   }
 
-  .summaryPanel dl > div {
-    padding: 0.75rem;
+  .pulsePanel {
+    margin-top: 0.5rem;
   }
 
-  .summaryPanel dd {
-    font-size: 0.875rem;
+  .pulsePanel > div,
+  .skeletonPulse > div {
+    padding: 0.5rem;
+  }
+
+  .pulsePanel span,
+  .pulsePanel small {
+    font-size: 0.625rem;
+  }
+
+  .pulsePanel strong {
+    font-size: 0.8125rem;
   }
 
   .filterRow {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 4.75rem minmax(0, 1fr);
+    gap: 0.5rem;
   }
 
-  .filterRow > strong,
-  .sortControl {
-    grid-column: 1;
+  .filterPanel {
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    padding-block: 0.5rem;
+  }
+
+  .filterHelp {
+    margin-left: 5.25rem;
   }
 
   .sortControl {
-    justify-content: space-between;
+    grid-column: 2;
+    justify-content: flex-end;
   }
 
   .sortControl select {
     min-width: 9.75rem;
   }
 
-  .sectionHeader,
-  .combinationHeader {
+  .sectionHeader {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: flex-start;
-    flex-direction: column;
-    gap: 0.375rem;
+    column-gap: 0.5rem;
+    padding: 0.75rem 1rem 0.5rem;
+    row-gap: 0;
+  }
+
+  .sectionHeader > div:first-child {
+    display: contents;
+  }
+
+  .sectionHeader h2 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .sectionHeader p {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .legend {
+    grid-column: 2;
+    grid-row: 1;
     min-height: auto;
+  }
+
+  .dashboardGrid {
+    margin-top: 0.5rem;
+  }
+
+  .tableHeader {
+    display: none;
+  }
+
+  .skillSelect {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.625rem;
+    padding: 0.625rem;
+  }
+
+  .explicitCount {
+    width: 100%;
+    grid-template-columns: auto auto;
+    align-items: baseline;
+    justify-content: space-between;
+    justify-items: start;
+  }
+
+  .explicitDemand {
+    width: 100%;
   }
 
   .skillRow {
@@ -1442,20 +1484,25 @@
     display: none;
   }
 
-  .fitPanel,
   .largeState,
   .completeFailure {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .fitPanel > a,
   .largeState > a,
   .failureActions {
     width: 100%;
   }
 
   .failureActions {
+    min-height: var(--touch-target);
+  }
+}
+
+@media (pointer: coarse) {
+  .filter,
+  .sortControl select {
     min-height: var(--touch-target);
   }
 }
@@ -1469,7 +1516,7 @@
   .recentJobList,
   .trendChartWrap,
   .recentJobList a,
-  .combinationList a,
+  .evidenceActions a,
   .skeletonIcon,
   .skeletonLine,
   .skeletonFilters span {

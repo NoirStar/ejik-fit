@@ -23,7 +23,8 @@ export function ExplicitDemandBar({
       <span aria-hidden="true" className={styles.explicitDemandTrack}>
         <span
           className={styles.explicitDemandFill}
-          style={{ width: `${skill.relativeExplicitDemand}%` }}
+          data-demand-fill
+          style={{ transform: `scaleX(${skill.relativeExplicitDemand / 100})` }}
         >
           <i
             data-segment="required"

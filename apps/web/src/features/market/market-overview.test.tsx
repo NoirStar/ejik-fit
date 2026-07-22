@@ -183,23 +183,19 @@ describe("MarketOverview", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "지금 채용시장의 기술 흐름",
+        name: "지금 채용 시장의 기술 흐름",
         level: 1,
       }),
     ).toBeInTheDocument();
+    const scopeNotice = screen.getByLabelText("데이터 범위 안내");
+    expect(scopeNotice).toHaveTextContent("기업 공식 채용 페이지 확인 범위");
+    expect(scopeNotice).toHaveTextContent("국내 전체 채용시장 통계가 아닙니다");
     expect(
-      screen.getByText(/이직핏이 확인한 기업 공식 채용 공고 범위/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/국내 전체 채용시장을 의미하지 않습니다/)).toBeInTheDocument();
-    expect(screen.getByText("확인된 공고").closest("div")).toHaveTextContent(
-      "100건 확인",
-    );
-    expect(screen.getByText("확인된 기술").closest("div")).toHaveTextContent(
-      "69종",
-    );
-    expect(screen.getByText("데이터 출처").closest("div")).toHaveTextContent(
-      "기업 공식 채용 홈페이지",
-    );
+      screen.getByRole("region", { name: "현재 채용시장 요약" }),
+    ).toHaveTextContent("100건 · 69종");
+    expect(
+      screen.queryByRole("region", { name: "채용 시장 데이터 요약" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("63%")).not.toBeInTheDocument();
     expect(screen.queryByText(/한국 개발자 채용시장/)).not.toBeInTheDocument();
   });
@@ -226,7 +222,7 @@ describe("MarketOverview", () => {
     expect(within(kubernetesRow!).getByText("필수 5건")).toBeInTheDocument();
     expect(within(kubernetesRow!).getByText("우대 4건")).toBeInTheDocument();
     expect(within(kubernetesRow!).getByText("구분 안 됨 3건")).toBeInTheDocument();
-    expect(within(demand).getByText(/시장점유율이 아니라 현재 1위 기술 대비/)).toBeInTheDocument();
+    expect(within(demand).getByText(/1위 대비 길이/)).toBeInTheDocument();
     expect(
       demand.querySelector('[data-technology-icon="kubernetes"]'),
     ).not.toBeNull();
@@ -325,7 +321,7 @@ describe("MarketOverview", () => {
       screen.getByRole("navigation", { name: "포함 기술 분야" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/선택한 분야의 기술이 하나 이상 확인된 공고/),
+      screen.getByText(/선택 분야 포함 공고의 모든 기술/),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "LLM 기술 선택" }));
@@ -351,9 +347,9 @@ describe("MarketOverview", () => {
     expect(
       screen.getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("확인된 공고").closest("div")).toHaveTextContent(
-      "확인 불가",
-    );
+    expect(
+      screen.getByRole("region", { name: "현재 채용시장 요약" }),
+    ).toHaveTextContent("확인 불가 · 69종");
     expect(screen.getByRole("alert")).toHaveTextContent(
       "공고 데이터를 불러오지 못했습니다.",
     );

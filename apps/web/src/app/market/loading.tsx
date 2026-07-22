@@ -25,7 +25,7 @@ export default function MarketLoading() {
       className={`${styles.page} ${styles.loadingPage}`}
     >
       <header className={styles.intro}>
-        <h1>채용 시장</h1>
+        <h1>지금 채용 시장의 기술 흐름</h1>
         <p>기업 공식 채용 공고의 기술 수요를 정리하고 있습니다.</p>
       </header>
 
@@ -35,8 +35,8 @@ export default function MarketLoading() {
           <SkeletonLine width="82%" />
         </div>
 
-        <div className={styles.skeletonSummary}>
-          {Array.from({ length: 4 }, (_, index) => (
+        <div className={styles.skeletonPulse}>
+          {Array.from({ length: 3 }, (_, index) => (
             <div key={index}>
               <SkeletonLine width="48%" />
               <SkeletonLine width="70%" />

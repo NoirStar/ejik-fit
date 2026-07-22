@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "audited_at": "2026-07-21",
+  "audited_at": "2026-07-22",
   "scope": "multi-page production app",
   "genre": "modern-minimal",
   "tone": "Korean product workbench",
@@ -15,10 +15,10 @@
   "footer": "Ft2 inline rule",
   "pre_emit_critique": {
     "purpose": 5,
-    "hierarchy": 4,
+    "hierarchy": 5,
     "emphasis": 4,
     "specificity": 5,
-    "responsiveness": 4,
+    "responsiveness": 5,
     "visual_quality": 4
   },
   "gates": {
@@ -39,6 +39,6 @@
     "/data-policy",
     "/login"
   ],
-  "verified_widths": [320, 375, 414, 768, 1280, 1440, 1920],
-  "intentional_exception": "Market demand segments animate width to explain filter-driven data changes; prefers-reduced-motion reduces the transition to 0.01ms."
+  "verified_widths": [320, 375, 414, 600, 768, 1280, 1440, 1920],
+  "intentional_exception": null
 }
