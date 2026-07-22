@@ -48,18 +48,13 @@ describe("market overview styles", () => {
     expect(rule(".page")).toContain(
       "--market-relative: var(--color-demand-highlight);",
     );
-    expect(rule('.stackedSegment[data-segment="required"]')).toContain(
+    expect(rule('.explicitDemandFill > [data-segment="required"]')).toContain(
       "background: var(--market-required);",
     );
-    expect(rule('.stackedSegment[data-segment="preferred"]')).toContain(
+    expect(rule('.explicitDemandFill > [data-segment="preferred"]')).toContain(
       "background: var(--market-preferred);",
     );
-    expect(rule('.stackedSegment[data-segment="unspecified"]')).toContain(
-      "background: var(--market-unspecified);",
-    );
-    expect(rule(".relativeDemand > span")).toContain(
-      "background: var(--market-relative);",
-    );
+    expect(css).not.toContain('[data-segment="unspecified"]');
   });
 
   it("avoids decorative gradients and heavy card shadows", () => {
@@ -95,7 +90,7 @@ describe("market overview styles", () => {
 
   it("removes list and bar motion when reduced motion is requested", () => {
     expect(css).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.skillRow,[\s\S]*?\.stackedSegment,[\s\S]*?animation: none;[\s\S]*?transition: none;/,
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.skillRow,[\s\S]*?\.explicitDemandFill,[\s\S]*?animation: none;[\s\S]*?transition: none;/,
     );
   });
 });

@@ -16,7 +16,7 @@ import {
 import { RecentJobList } from "./recent-job-list";
 import { SkillCombinationRecommendations } from "./skill-combination-recommendations";
 import styles from "./market-overview.module.css";
-import { TechnologyDemandTable } from "./technology-demand-table";
+import { TechnologyDemandChart } from "./technology-demand-chart";
 import { TechnologyTrendPanel } from "./technology-trend-panel";
 import { useMarketFit } from "./use-market-fit";
 
@@ -166,7 +166,7 @@ export function MarketOverview({
                 <Link href="/market">필터 초기화</Link>
               </section>
             ) : (
-              <TechnologyDemandTable
+              <TechnologyDemandChart
                 onSelect={setSelectedSkill}
                 selectedSkill={effectiveSkill}
                 skills={snapshot.skills}

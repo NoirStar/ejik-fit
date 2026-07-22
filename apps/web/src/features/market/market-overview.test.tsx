@@ -153,17 +153,17 @@ describe("MarketOverview", () => {
     expect(screen.queryByText(/한국 개발자 채용시장/)).not.toBeInTheDocument();
   });
 
-  it("renders a ranked demand table with brand and neutral icons", () => {
+  it("renders ranked explicit demand with brand and neutral icons", () => {
     renderReadyMarket();
 
-    const demand = screen.getByRole("region", { name: "기술 수요 순위" });
+    const demand = screen.getByRole("region", { name: "현재 기술 수요" });
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAttribute("aria-pressed", "true");
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAccessibleDescription(
-      "인프라, 공고 12건, 필수 5건, 우대 4건, 미분류 3건, 1위 대비 상대 수요 100%",
+      "인프라, 명시 요구 9건, 필수 5건, 우대 4건, 전체 등장 12건, 구분 안 됨 3건, 현재 1위 대비 막대 길이 100%",
     );
     expect(
       within(demand).getByRole("button", { name: "Docker 기술 선택" }),
@@ -174,8 +174,8 @@ describe("MarketOverview", () => {
     expect(kubernetesRow).not.toBeNull();
     expect(within(kubernetesRow!).getByText("필수 5건")).toBeInTheDocument();
     expect(within(kubernetesRow!).getByText("우대 4건")).toBeInTheDocument();
-    expect(within(kubernetesRow!).getByText("미분류 3건")).toBeInTheDocument();
-    expect(within(demand).getByText(/1위 기술 대비 상대적 수요/)).toBeInTheDocument();
+    expect(within(kubernetesRow!).getByText("구분 안 됨 3건")).toBeInTheDocument();
+    expect(within(demand).getByText(/시장점유율이 아니라 현재 1위 기술 대비/)).toBeInTheDocument();
     expect(
       demand.querySelector('[data-technology-icon="kubernetes"]'),
     ).not.toBeNull();
