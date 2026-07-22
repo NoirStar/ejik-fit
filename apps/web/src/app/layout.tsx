@@ -61,6 +61,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html data-scroll-behavior="smooth" lang="ko">
+      <head>
+        <link
+          href="/fonts/pretendard/pretendardvariable-dynamic-subset.min.css"
+          rel="stylesheet"
+        />
+      </head>
       <body className={geist.variable}>
         <a className="skip-link" href="#main-content">
           본문으로 건너뛰기

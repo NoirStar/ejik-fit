@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "assets:fonts": "node scripts/sync-pretendard-subsets.mjs",
     "dev": "next dev",
     "build": "next build",
     "bench:graph": "vitest bench src/lib/large-graph.bench.ts --run",
     "start": "next start",
     "lint": "next typegen && tsc --noEmit --project tsconfig.lint.json",
     "test": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:performance": "playwright test --config=playwright.performance.config.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

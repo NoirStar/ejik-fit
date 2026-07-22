@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -48,12 +48,47 @@ describe("design system foundation", () => {
       "--mobile-safe-area-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);",
     );
     expect(tokens).not.toContain("@media (prefers-color-scheme: dark)");
-    expect(typography).toContain("/fonts/PretendardVariable.woff2");
-    expect(typography).toContain("font-display: swap");
     expect(typography).toContain(
       '--font-korean: "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
     );
     expect(globals).not.toContain("@media (prefers-color-scheme: dark)");
+  });
+
+  it("uses the pinned self-hosted Pretendard variable dynamic subset", () => {
+    const layout = read("src/app/layout.tsx");
+    const typography = read("src/styles/typography.css");
+    const subsetStylesheet = resolve(
+      process.cwd(),
+      "public/fonts/pretendard/pretendardvariable-dynamic-subset.min.css",
+    );
+
+    expect(existsSync(subsetStylesheet)).toBe(true);
+
+    const subsetCss = read(
+      "public/fonts/pretendard/pretendardvariable-dynamic-subset.min.css",
+    );
+    const slices = readdirSync(
+      resolve(process.cwd(), "public/fonts/pretendard"),
+    ).filter((name) => /^PretendardVariable\.subset\.\d+\.woff2$/.test(name));
+
+    expect(layout).toContain(
+      'href="/fonts/pretendard/pretendardvariable-dynamic-subset.min.css"',
+    );
+    expect(typography).not.toContain("/fonts/PretendardVariable.woff2");
+    expect(typography).toContain(
+      '--font-korean: "Pretendard Variable", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
+    );
+    expect(subsetCss.match(/@font-face/g)).toHaveLength(92);
+    expect(subsetCss).toContain(
+      "url(./PretendardVariable.subset.91.woff2)",
+    );
+    expect(slices).toHaveLength(92);
+  });
+
+  it("copies public assets into the standalone runtime image", () => {
+    const dockerfile = read("Dockerfile");
+
+    expect(dockerfile).toContain("COPY --from=builder /app/public ./public");
   });
 
   it("keeps Pretendard as the computed body family instead of Geist", () => {
