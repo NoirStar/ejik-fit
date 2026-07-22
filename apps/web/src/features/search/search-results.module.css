@@ -1,3 +1,5 @@
+/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V4 */
+/* Hallmark · genre: modern-minimal · macrostructure: scope rail + evidence index · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: min(100%, 76rem);
   margin: 0 auto;
@@ -88,6 +90,7 @@
 .searchForm input {
   min-width: 0;
   height: 100%;
+  min-height: var(--touch-target);
   border: 0;
   outline: 0;
   background: transparent;

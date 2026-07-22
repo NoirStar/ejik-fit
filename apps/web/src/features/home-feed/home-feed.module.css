@@ -1,4 +1,5 @@
-/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
+/* Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V4 */
+/* Hallmark · genre: modern-minimal · macrostructure: signal stream + guidance shelf · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: 100%;
   max-width: none;
@@ -1213,7 +1214,7 @@
 
 .stackPrompt a {
   display: inline-flex;
-  min-height: 2.25rem;
+  min-height: var(--touch-target);
   flex: 0 0 auto;
   align-items: center;
   padding: 0 0.6875rem;

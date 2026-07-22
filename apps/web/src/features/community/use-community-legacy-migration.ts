@@ -3,13 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { AuthViewer } from "@/features/auth/use-auth-viewer";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-import { migrateLocalCommunityContent } from "./community-migration";
-import {
-  createSupabaseCommunityStore,
-  type CommunityStore,
-} from "./community-store";
+import type { CommunityStore } from "./community-store";
 
 const completedMigrations = new Set<string>();
 
@@ -46,11 +41,16 @@ export function useCommunityLegacyMigration(
   );
   viewerIdRef.current = viewerId;
 
-  const resolveStore = useCallback(() => {
+  const resolveStore = useCallback(async () => {
     if (options.store) return options.store;
     if (productionStoreRef.current !== undefined) {
       return productionStoreRef.current;
     }
+    const [{ createBrowserSupabaseClient }, { createSupabaseCommunityStore }] =
+      await Promise.all([
+        import("@/lib/supabase/client"),
+        import("./community-store"),
+      ]);
     const client = createBrowserSupabaseClient();
     productionStoreRef.current = client
       ? createSupabaseCommunityStore(client)
@@ -63,15 +63,22 @@ export function useCommunityLegacyMigration(
       const request = requestRef.current + 1;
       requestRef.current = request;
       setState({ phase: "running", failureCount: 0 });
-      const store = resolveStore();
-      if (!store) {
-        if (viewerIdRef.current === activeViewerId) {
-          setState({ phase: "failed", failureCount: 1 });
-        }
-        return;
-      }
 
       try {
+        const [{ migrateLocalCommunityContent }, store] = await Promise.all([
+          import("./community-migration"),
+          resolveStore(),
+        ]);
+        if (
+          requestRef.current !== request ||
+          viewerIdRef.current !== activeViewerId
+        ) {
+          return;
+        }
+        if (!store) {
+          setState({ phase: "failed", failureCount: 1 });
+          return;
+        }
         const result = await migrateLocalCommunityContent(
           store,
           activeViewerId,

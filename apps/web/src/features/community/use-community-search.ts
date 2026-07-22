@@ -142,6 +142,7 @@ export function useCommunitySearch(
     }
     const store = resolveStore();
     if (!store) return;
+    const request = requestRef.current;
     const before = current.nextCursor;
     commit((value) => ({ ...value, loadingMore: true, error: "" }));
     try {
@@ -150,7 +151,12 @@ export function useCommunitySearch(
         before,
         limit,
       });
-      if (queryRef.current !== activeQuery) return;
+      if (
+        requestRef.current !== request ||
+        queryRef.current !== activeQuery
+      ) {
+        return;
+      }
       commit((value) => ({
         ...value,
         posts: appendUniquePosts(value.posts, page.items),
@@ -158,7 +164,10 @@ export function useCommunitySearch(
         loadingMore: false,
       }));
     } catch {
-      if (queryRef.current === activeQuery) {
+      if (
+        requestRef.current === request &&
+        queryRef.current === activeQuery
+      ) {
         commit((value) => ({
           ...value,
           loadingMore: false,

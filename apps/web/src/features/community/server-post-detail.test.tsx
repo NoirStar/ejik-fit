@@ -14,9 +14,16 @@ import type {
   CommunityPost,
   CreateCommunityCommentInput,
 } from "@/lib/community-contract";
+import { CommunityStoreError } from "@/lib/community-contract";
 
 import type { CommunityStore } from "./community-store";
 import { ServerPostDetail } from "./server-post-detail";
+
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigation,
+}));
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
 const AUTHOR_ID = "22222222-2222-4222-8222-222222222222";
@@ -47,6 +54,11 @@ function createStore() {
   return {
     searchPosts: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
+    listFollowingPostPage: vi.fn(async () => ({
+      items: [post],
+      nextCursor: null,
+    })),
+    listSavedPostPage: vi.fn(async () => ({ items: [post], nextCursor: null })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
@@ -85,7 +97,10 @@ function createStore() {
 }
 
 describe("ServerPostDetail", () => {
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    navigation.push.mockReset();
+  });
 
   it("renders persisted content and keeps server counters consistent", async () => {
     const store = createStore();
@@ -132,7 +147,9 @@ describe("ServerPostDetail", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "댓글 내용" }), {
       target: { value: "계정에 남길 댓글입니다." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+    const submit = screen.getByRole("button", { name: "댓글 등록" });
+    await waitFor(() => expect(submit).toBeEnabled());
+    fireEvent.click(submit);
 
     expect(await screen.findByText("계정에 남길 댓글입니다.")).toBeInTheDocument();
     expect(store.createComment).toHaveBeenCalledWith(USER_ID, POST_ID, {
@@ -142,6 +159,31 @@ describe("ServerPostDetail", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "댓글을 계정에 등록했습니다.",
     );
+  });
+
+  it("returns guest reactions and comments to the same post after login", async () => {
+    const store = createStore();
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <ServerPostDetail postId={POST_ID} store={store} />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: post.title });
+
+    fireEvent.click(screen.getByRole("button", { name: /공감$/ }));
+    expect(navigation.push).toHaveBeenLastCalledWith(
+      `/login?next=${encodeURIComponent(`/posts/${POST_ID}`)}`,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "댓글 내용" }), {
+      target: { value: "로그인 뒤 남길 댓글" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+    expect(navigation.push).toHaveBeenLastCalledWith(
+      `/login?next=${encodeURIComponent(`/posts/${POST_ID}`)}`,
+    );
+    expect(store.setPostReaction).not.toHaveBeenCalled();
+    expect(store.createComment).not.toHaveBeenCalled();
   });
 
   it("updates an author's rendered post immediately from the saved server record", async () => {
@@ -222,5 +264,32 @@ describe("ServerPostDetail", () => {
     expect(store.deletePost).toHaveBeenCalledWith(AUTHOR_ID, POST_ID);
     expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" }))
       .toHaveAttribute("href", "/");
+  });
+
+  it("treats an already-removed post as missing instead of reporting a retryable failure", async () => {
+    const store = createStore();
+    store.deletePost.mockRejectedValueOnce(
+      new CommunityStoreError("not_found", "이미 삭제됨"),
+    );
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: AUTHOR_ID, email: "author@example.com" }}
+      >
+        <ServerPostDetail postId={POST_ID} store={store} />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: post.title });
+
+    fireEvent.click(screen.getByRole("button", { name: "이 글 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "정말 삭제" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "글을 찾을 수 없습니다.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/글을 삭제하지 못했습니다/)).not.toBeInTheDocument();
   });
 });

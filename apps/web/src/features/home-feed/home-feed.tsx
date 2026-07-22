@@ -32,6 +32,11 @@ import {
 import type { CommunityStore } from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
+import { safeAuthNextPath } from "@/lib/auth/redirect";
+import {
+  MAX_COMMUNITY_POST_TAGS,
+  MAX_COMMUNITY_TAG_LENGTH,
+} from "@/lib/community-contract";
 import { trapTabKey } from "@/lib/focus-trap";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
@@ -82,7 +87,9 @@ type LocalPostDraft = {
   body: string;
   tags: string;
 };
-type DraftErrors = Partial<Record<"title" | "body" | "storage", string>>;
+type DraftErrors = Partial<
+  Record<"title" | "body" | "storage" | "tags", string>
+>;
 type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
 
 const TABS: Array<{
@@ -119,9 +126,10 @@ function draftTags(value: string) {
     const tag = candidate.trim();
     const key = tag.toLocaleLowerCase("ko-KR");
     if (!tag || seen.has(key)) continue;
+    if (tag.length > MAX_COMMUNITY_TAG_LENGTH) return null;
     tags.push(tag);
     seen.add(key);
-    if (tags.length === 4) break;
+    if (tags.length > MAX_COMMUNITY_POST_TAGS) return null;
   }
   return tags;
 }
@@ -673,13 +681,19 @@ export function HomeFeed({
   snapshot,
 }: HomeFeedProps) {
   const router = useRouter();
-  const { ready: authReady, viewer } = useAuthViewerContext();
+  const {
+    error: authError,
+    ready: authReady,
+    status: authStatus,
+    viewer,
+  } = useAuthViewerContext();
+  const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const community = useCommunityFeed({
     authReady,
+    followingOnly: activeTab === "following",
     store: communityStore,
     viewer,
   });
-  const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
@@ -706,8 +720,11 @@ export function HomeFeed({
 
   const closeComposer = useCallback(() => {
     setComposerOpen(false);
+    setDraft(EMPTY_DRAFT);
+    setDraftRestored(false);
     setDraftErrors({});
     if (typeof window !== "undefined") {
+      removeCommunityDraft(window.sessionStorage);
       const url = new URL(window.location.href);
       if (url.searchParams.has("compose")) {
         url.searchParams.delete("compose");
@@ -781,8 +798,19 @@ export function HomeFeed({
     ],
   );
 
-  function requestLoginForCommunity() {
+  function requestLoginForCommunity(nextPath = "/") {
+    if (authStatus !== "unauthenticated") {
+      setAnnouncement(
+        authStatus === "loading"
+          ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
+          : authError ||
+              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+      );
+      return;
+    }
     setAnnouncement("로그인하면 공감·저장·팔로우를 계정에 보관할 수 있습니다.");
+    const safeNextPath = safeAuthNextPath(nextPath);
+    router.push(`/login?next=${encodeURIComponent(safeNextPath)}`);
   }
 
   async function handleAuthorFollow(item: SocialItem) {
@@ -876,16 +904,30 @@ export function HomeFeed({
     event.preventDefault();
     const title = draft.title.trim();
     const body = draft.body.trim();
+    const tags = draftTags(draft.tags);
     const nextErrors: DraftErrors = {};
     if (!title) nextErrors.title = "제목을 입력해 주세요.";
     if (!body) nextErrors.body = "내용을 입력해 주세요.";
+    if (!tags) {
+      nextErrors.tags = `태그는 중복을 제외하고 최대 ${MAX_COMMUNITY_POST_TAGS}개, 각 ${MAX_COMMUNITY_TAG_LENGTH}자까지 입력해 주세요.`;
+    }
 
     if (Object.keys(nextErrors).length > 0) {
       setDraftErrors(nextErrors);
       return;
     }
+    if (!tags) return;
 
-    const tags = draftTags(draft.tags);
+    if (authStatus === "loading" || authStatus === "error") {
+      setDraftErrors({
+        storage:
+          authStatus === "loading"
+            ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
+            : authError ||
+              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+      });
+      return;
+    }
 
     if (viewer) {
       const post = await community.createPost({
@@ -921,7 +963,7 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시를 확인해주세요.");
-    router.push("/login?next=%2F%3Fcompose%3Dresume");
+    requestLoginForCommunity("/?compose=resume");
   }
 
   return (
@@ -1338,13 +1380,32 @@ export function HomeFeed({
 
               <label htmlFor="community-post-tags">태그 (선택)</label>
               <input
-                id="community-post-tags"
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, tags: event.target.value }))
+                aria-describedby={
+                  draftErrors.tags ? "community-post-tags-error" : undefined
                 }
+                aria-invalid={Boolean(draftErrors.tags)}
+                id="community-post-tags"
+                onChange={(event) => {
+                  setDraft((current) => ({
+                    ...current,
+                    tags: event.target.value,
+                  }));
+                  if (draftErrors.tags) {
+                    setDraftErrors((current) => {
+                      const next = { ...current };
+                      delete next.tags;
+                      return next;
+                    });
+                  }
+                }}
                 placeholder="쉼표로 구분, 최대 4개"
                 value={draft.tags}
               />
+              {draftErrors.tags && (
+                <p id="community-post-tags-error" role="alert">
+                  {draftErrors.tags}
+                </p>
+              )}
 
               <div className={styles.composerNote}>
                 <ShieldCheck aria-hidden="true" size={18} />

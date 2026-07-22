@@ -118,8 +118,14 @@ function readyGroup(
 
 function mockAuth(activeViewer: AuthViewer | null, ready = true) {
   vi.mocked(useAuthViewerContext).mockReturnValue({
+    error: "",
     viewer: activeViewer,
     ready,
+    status: ready
+      ? activeViewer
+        ? "authenticated"
+        : "unauthenticated"
+      : "loading",
   });
 }
 
@@ -377,6 +383,24 @@ describe("SavedSearchManager", () => {
       "/login?next=%2Fcareer%2Falerts",
     );
     expect(useSavedJobSearches).toHaveBeenCalledWith(null);
+  });
+
+  it("shows an authentication error without presenting a login action", () => {
+    vi.mocked(useAuthViewerContext).mockReturnValue({
+      error: "인증 서버 응답을 확인하지 못했습니다.",
+      viewer: null,
+      ready: true,
+      status: "error",
+    });
+
+    render(<SavedSearchManager />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "인증 서버 응답을 확인하지 못했습니다.",
+    );
+    expect(
+      screen.queryByRole("link", { name: "로그인하고 공고 알림 관리" }),
+    ).not.toBeInTheDocument();
   });
 
   it("links an empty account back to the jobs explorer", () => {

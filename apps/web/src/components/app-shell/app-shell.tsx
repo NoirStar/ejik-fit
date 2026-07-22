@@ -17,16 +17,21 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ReactNode, RefObject } from "react";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { BrandMark } from "@/components/brand/brand-mark";
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import { useAccountStateSync } from "@/features/auth/use-account-state-sync";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import { useCommunityLegacyMigration } from "@/features/community/use-community-legacy-migration";
-import { ActivityNotificationCenter } from "@/features/notifications/activity-notification-center";
 import { useActivityNotifications } from "@/features/notifications/use-activity-notifications";
-import { OwnedSkillsSheet } from "@/features/owned-skills/owned-skills-sheet";
 import {
   readCareerPreferences,
   writeCareerPreferences,
@@ -36,12 +41,25 @@ import {
   homeContextFromUrlSearchParams,
   homeContextToDashboardHref,
 } from "@/lib/home-context";
+import { safeAuthNextPath } from "@/lib/auth/redirect";
 import {
   readOwnedSkills,
   writeOwnedSkills,
 } from "@/lib/owned-skills";
 
 import styles from "./app-shell.module.css";
+
+const ActivityNotificationCenter = lazy(async () => {
+  const module = await import(
+    "@/features/notifications/activity-notification-center"
+  );
+  return { default: module.ActivityNotificationCenter };
+});
+
+const OwnedSkillsSheet = lazy(async () => {
+  const module = await import("@/features/owned-skills/owned-skills-sheet");
+  return { default: module.OwnedSkillsSheet };
+});
 
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: House },
@@ -196,7 +214,7 @@ function UserMenuLoginLink({
   return (
     <Link
       className={styles.loginAction}
-      href={`/login?next=${encodeURIComponent(nextPath)}`}
+      href={`/login?next=${encodeURIComponent(safeAuthNextPath(nextPath))}`}
       onClick={onClick}
     >
       <SignIn aria-hidden="true" size={18} weight="bold" />
@@ -215,6 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const {
     viewer,
     ready,
+    status: authStatus,
     signingOut,
     error: authError,
     signOut,
@@ -242,6 +261,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        if (sheetOpen) {
+          setSheetOpen(false);
+          stackButtonRef.current?.focus();
+        }
         if (notificationOpen) notificationButtonRef.current?.focus();
         if (userMenuOpen) userButtonRef.current?.focus();
         closeUtilityMenus();
@@ -262,7 +285,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeUtilityMenus, notificationOpen, userMenuOpen]);
+  }, [closeUtilityMenus, notificationOpen, sheetOpen, userMenuOpen]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -406,11 +429,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <strong>알림</strong>
                     <span>저장 검색과 관심 기업의 새 공고, 지원 현황을 보여드려요.</span>
                   </div>
-                  <ActivityNotificationCenter
-                    notifications={activityNotifications}
-                    onNavigate={closeUtilityMenus}
-                    viewer={viewer}
-                  />
+                  <Suspense fallback={<p role="status">알림을 불러오는 중입니다.</p>}>
+                    <ActivityNotificationCenter
+                      notifications={activityNotifications}
+                      onNavigate={closeUtilityMenus}
+                      viewer={viewer}
+                    />
+                  </Suspense>
                 </div>
               )}
             </div>
@@ -574,17 +599,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      <OwnedSkillsSheet
-        onClose={closeSheet}
-        onSkillsChange={handleSkillsChange}
-        open={sheetOpen}
-        openerRef={stackButtonRef}
-      />
+      {sheetOpen && (
+        <Suspense fallback={null}>
+          <OwnedSkillsSheet
+            onClose={closeSheet}
+            onSkillsChange={handleSkillsChange}
+            open
+            openerRef={stackButtonRef}
+          />
+        </Suspense>
+      )}
     </div>
   );
 
   return (
-    <AuthViewerProvider ready={ready} viewer={viewer}>
+    <AuthViewerProvider
+      error={authError}
+      ready={ready}
+      status={authStatus}
+      viewer={viewer}
+    >
       {shell}
     </AuthViewerProvider>
   );

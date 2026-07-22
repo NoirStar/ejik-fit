@@ -18,6 +18,7 @@ import type { CommunityStore } from "@/features/community/community-store";
 import type {
   CommunityCursor,
   CommunityPost,
+  CommunityViewerState,
   CreateCommunityPostInput,
 } from "@/lib/community-contract";
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
@@ -137,17 +138,30 @@ function serverCommunityStore(post: CommunityPost) {
       items: [post],
       nextCursor: null as CommunityCursor | null,
     })),
+    listFollowingPostPage: vi.fn(async () => ({
+      items: [post],
+      nextCursor: null as CommunityCursor | null,
+    })),
+    listSavedPostPage: vi.fn(async () => ({
+      items: [post],
+      nextCursor: null as CommunityCursor | null,
+    })),
     listPosts: vi.fn(async () => [post]),
     listSavedPosts: vi.fn(async () => [post]),
     getPost: vi.fn(async () => post),
     getComment: vi.fn(async () => null),
     listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
-    loadViewerState: vi.fn(async () => ({
-      reactedPostIds: [post.id],
-      savedPostIds: [],
-      followedAuthorIds: [],
-    })),
+    loadViewerState: vi.fn(
+      async (
+        _viewerId: string,
+        _targets: { postIds: string[]; authorIds: string[] },
+      ): Promise<CommunityViewerState> => ({
+        reactedPostIds: [post.id],
+        savedPostIds: [],
+        followedAuthorIds: [],
+      }),
+    ),
     createPost: vi.fn(
       async (_authorId: string, _input: CreateCommunityPostInput) => post,
     ),
@@ -489,6 +503,71 @@ describe("HomeFeed", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("loads followed authors from the complete server feed beyond the public first page", async () => {
+    const publicPost: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "22222222-2222-4222-8222-222222222222",
+        nickname: "첫페이지작성자",
+      },
+      category: "커리어 질문",
+      title: "공개 첫 페이지 글",
+      body: "최신 공개 피드에 있는 글입니다.",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const followedPost: CommunityPost = {
+      ...publicPost,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      author: {
+        id: "33333333-3333-4333-8333-333333333333",
+        nickname: "팔로우작성자",
+      },
+      title: "첫 페이지 밖의 팔로잉 글",
+      createdAt: "2026-06-01T04:00:00.000Z",
+      updatedAt: "2026-06-01T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(publicPost);
+    store.listFollowingPostPage.mockResolvedValue({
+      items: [followedPost],
+      nextCursor: null,
+    });
+    store.loadViewerState.mockImplementation(async (_viewerId, targets) => ({
+      reactedPostIds: [],
+      savedPostIds: [],
+      followedAuthorIds: targets.authorIds.includes(followedPost.author.id)
+        ? [followedPost.author.id]
+        : [],
+    }));
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "reader@example.com",
+        }}
+      >
+        <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+    expect(
+      await screen.findByRole("article", { name: publicPost.title }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
+
+    expect(
+      await screen.findByRole("article", { name: followedPost.title }),
+    ).toBeInTheDocument();
+    expect(store.listFollowingPostPage).toHaveBeenCalledWith({ limit: 20 });
+    expect(
+      screen.queryByRole("article", { name: publicPost.title }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not expose starter metrics as interactive facts", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
     const guide = screen.getByRole("region", {
@@ -645,6 +724,59 @@ describe("HomeFeed", () => {
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
   });
 
+  it("explains invalid tags instead of silently dropping extras", async () => {
+    const existing: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "나",
+      },
+      category: "커리어 질문",
+      title: "기존 글",
+      body: "기존 본문",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(existing);
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed
+          communityStore={store}
+          composeMode="new"
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "태그 검증 글" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "태그가 사라지지 않아야 합니다." },
+    });
+    fireEvent.change(screen.getByLabelText("태그 (선택)"), {
+      target: { value: "하나, 둘, 셋, 넷, 다섯" },
+    });
+    const publish = screen.getByRole("button", { name: "피드에 올리기" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "태그는 중복을 제외하고 최대 4개",
+    );
+    expect(store.createPost).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("태그 (선택)")).toHaveValue(
+      "하나, 둘, 셋, 넷, 다섯",
+    );
+  });
+
   it("keeps old browser comments out of starter guidance", () => {
     addLocalPostComment("career-move-3y-backend", "상세에서 남긴 댓글", {
       createdAt: "2026-07-14T02:00:00.000Z",
@@ -715,6 +847,66 @@ describe("HomeFeed", () => {
     );
   });
 
+  it("sends a guest community action to a safe same-origin login return path", async () => {
+    const guestPost: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "22222222-2222-4222-8222-222222222222",
+        nickname: "실제작성자",
+      },
+      category: "커리어 질문",
+      title: "로그인이 필요한 실제 글",
+      body: "공개로 읽되 반응은 계정에 저장합니다.",
+      tags: ["백엔드"],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed
+          communityStore={serverCommunityStore(guestPost)}
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    const article = await screen.findByRole("article", {
+      name: guestPost.title,
+    });
+    fireEvent.click(within(article).getByRole("button", { name: /공감$/ }));
+
+    expect(navigation.push).toHaveBeenCalledWith("/login?next=%2F");
+  });
+
+  it("keeps the draft in place when the login state cannot be verified", () => {
+    render(
+      <AuthViewerProvider
+        error="로그인 상태를 확인하지 못했습니다."
+        ready
+        status="error"
+        viewer={null}
+      >
+        <HomeFeed composeMode="new" snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "확인 뒤 게시할 글" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "인증 장애를 비로그인으로 오인하면 안 됩니다." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "로그인 상태를 확인하지 못했습니다.",
+    );
+    expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("제목")).toHaveValue("확인 뒤 게시할 글");
+  });
+
   it("restores a guest draft after login and publishes only on confirmation", async () => {
     saveCommunityDraft(
       {
@@ -780,6 +972,30 @@ describe("HomeFeed", () => {
       ),
     );
     expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
+  });
+
+  it("removes a restored session draft when the user cancels the composer", () => {
+    saveCommunityDraft(
+      {
+        category: "커리어 고민",
+        title: "취소할 임시 글",
+        body: "명시적으로 취소하면 현재 탭에서도 제거되어야 합니다.",
+        tags: ["임시 글"],
+      },
+      sessionStorage,
+    );
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed composeMode="resume" snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+
+    expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
+    expect(
+      screen.queryByRole("dialog", { name: "커뮤니티 글쓰기" }),
+    ).not.toBeInTheDocument();
   });
 
   it("reacts to local post changes elsewhere in the same tab", async () => {

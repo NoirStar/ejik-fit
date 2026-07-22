@@ -55,7 +55,7 @@ describe("OwnedSkillsSheet", () => {
     );
   });
 
-  it("starts empty on first visit and persists an added skill", () => {
+  it("starts empty on first visit and persists an added skill", async () => {
     render(
       <AppShell>
         <main>내용</main>
@@ -64,7 +64,9 @@ describe("OwnedSkillsSheet", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
 
-    expect(screen.getByRole("dialog", { name: "내 스택" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "내 스택" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("아직 저장한 기술이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
     expect(screen.queryByText("AWS")).not.toBeInTheDocument();
@@ -108,7 +110,7 @@ describe("OwnedSkillsSheet", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
-    const input = screen.getByRole("combobox", { name: "추가할 기술" });
+    const input = await screen.findByRole("combobox", { name: "추가할 기술" });
     fireEvent.change(input, { target: { value: "kube" } });
 
     expect(
@@ -123,14 +125,14 @@ describe("OwnedSkillsSheet", () => {
     ]);
   });
 
-  it("keeps Tab focus inside the modal sheet", () => {
+  it("keeps Tab focus inside the modal sheet", async () => {
     render(
       <AppShell>
         <main>내용</main>
       </AppShell>,
     );
     fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
-    const close = screen.getByRole("button", { name: "내 스택 닫기" });
+    const close = await screen.findByRole("button", { name: "내 스택 닫기" });
     const add = screen.getByRole("button", { name: "기술 추가" });
 
     add.focus();
@@ -142,7 +144,7 @@ describe("OwnedSkillsSheet", () => {
     expect(add).toHaveFocus();
   });
 
-  it("keeps the dialog label unique on the career page", () => {
+  it("keeps the dialog label unique on the career page", async () => {
     render(
       <AppShell>
         <CareerOverview suggestions={[]} suggestionsUnavailable={false} />
@@ -151,7 +153,9 @@ describe("OwnedSkillsSheet", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
 
-    expect(screen.getByRole("dialog", { name: "내 스택" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "내 스택" }),
+    ).toBeInTheDocument();
     expect(document.querySelectorAll("#owned-skills-title")).toHaveLength(1);
     expect(
       document.querySelectorAll("#career-owned-skills-title"),

@@ -21,6 +21,14 @@ const POST: CommunityPost = {
   updatedAt: "2026-07-23T03:00:00.000Z",
 };
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 function searchStore() {
   const searchPosts = vi.fn<CommunityStore["searchPosts"]>();
   searchPosts.mockResolvedValue({ items: [POST], nextCursor: null });
@@ -113,5 +121,44 @@ describe("useCommunitySearch", () => {
       second.id,
     ]);
     expect(result.current.state.nextCursor).toBeNull();
+  });
+
+  it("ignores an older load-more response after the same query reloads", async () => {
+    const stalePage = deferred<{ items: CommunityPost[]; nextCursor: null }>();
+    const refreshed = { ...POST, title: "새로고침한 검색 결과" };
+    const stale = {
+      ...POST,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      title: "늦게 도착한 검색 결과",
+    };
+    const store = searchStore();
+    store.searchPosts
+      .mockResolvedValueOnce({
+        items: [POST],
+        nextCursor: { createdAt: POST.createdAt, id: POST.id },
+      })
+      .mockImplementationOnce(() => stalePage.promise)
+      .mockResolvedValueOnce({ items: [refreshed], nextCursor: null });
+    const { result } = renderHook(() =>
+      useCommunitySearch("Python", { store }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    let pendingLoadMore!: Promise<void>;
+    act(() => {
+      pendingLoadMore = result.current.loadMore();
+    });
+    await waitFor(() => expect(store.searchPosts).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await result.current.reload();
+    });
+    expect(result.current.state.posts).toEqual([refreshed]);
+
+    await act(async () => {
+      stalePage.resolve({ items: [stale], nextCursor: null });
+      await pendingLoadMore;
+    });
+
+    expect(result.current.state.posts).toEqual([refreshed]);
   });
 });

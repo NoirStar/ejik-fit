@@ -48,5 +48,7 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "market_snapshots" in sql
     assert "skill_demand_snapshots" in sql
     assert "search_community_posts" in sql
+    assert "list_community_following_posts" in sql
+    assert "list_community_saved_posts" in sql
     assert "SECURITY INVOKER" in sql
     assert "ix_community_posts_title_trgm" in sql

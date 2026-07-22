@@ -220,7 +220,12 @@ export function AuthoredQuestions({
 }: {
   communityStore?: CommunityStore;
 } = {}) {
-  const { ready: authReady, viewer } = useAuthViewerContext();
+  const {
+    error: authError,
+    ready: authReady,
+    status: authStatus,
+    viewer,
+  } = useAuthViewerContext();
   const community = useCommunityFeed({
     authReady,
     authorId: viewer?.id,
@@ -292,6 +297,7 @@ export function AuthoredQuestions({
 
   const visibleError =
     error ||
+    (authStatus === "error" ? authError : "") ||
     community.state.actionError ||
     (community.state.status === "error" ? community.state.error : "");
   const accountLoading = Boolean(
@@ -352,6 +358,14 @@ export function AuthoredQuestions({
         {!authReady || accountLoading ? (
           <div className={styles.loading} role="status">
             <p>계정에 작성한 글을 불러오는 중입니다.</p>
+          </div>
+        ) : authStatus === "error" ? (
+          <div className={styles.emptyState}>
+            <div>
+              <ShieldCheck aria-hidden="true" size={24} weight="bold" />
+            </div>
+            <h2>로그인 상태를 확인하지 못했습니다.</h2>
+            <p>브라우저의 복구 글은 유지됩니다. 연결을 확인한 뒤 새로고침해 주세요.</p>
           </div>
         ) : !viewer ? (
           <div className={styles.emptyState}>

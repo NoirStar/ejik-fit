@@ -57,16 +57,47 @@ describe("useAuthViewer", () => {
     expect(auth.unsubscribe).toHaveBeenCalledTimes(1);
   });
 
-  it("does not leave the account UI waiting forever when auth is unreachable", () => {
+  it("reports an explicit error instead of treating an auth timeout as a guest", () => {
     vi.useFakeTimers();
     auth.getUser.mockReturnValue(new Promise(() => undefined));
 
     const { result } = renderHook(() => useAuthViewer());
     expect(result.current.ready).toBe(false);
+    expect(result.current.status).toBe("loading");
 
     act(() => vi.advanceTimersByTime(3_000));
 
     expect(result.current.ready).toBe(true);
+    expect(result.current.status).toBe("error");
     expect(result.current.viewer).toBeNull();
+    expect(result.current.error).toContain("로그인 상태");
+  });
+
+  it("reports a rejected auth lookup without silently becoming a guest", async () => {
+    auth.getUser.mockRejectedValue(new Error("network unavailable"));
+
+    const { result } = renderHook(() => useAuthViewer());
+
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.ready).toBe(true);
+    expect(result.current.viewer).toBeNull();
+    expect(result.current.error).toContain("로그인 상태");
+  });
+
+  it("treats Supabase's expected missing-session result as a signed-out viewer", async () => {
+    auth.getUser.mockResolvedValue({
+      data: { user: null },
+      error: {
+        name: "AuthSessionMissingError",
+        message: "Auth session missing!",
+      },
+    });
+
+    const { result } = renderHook(() => useAuthViewer());
+
+    await waitFor(() => expect(result.current.status).toBe("unauthenticated"));
+    expect(result.current.ready).toBe(true);
+    expect(result.current.viewer).toBeNull();
+    expect(result.current.error).toBe("");
   });
 });

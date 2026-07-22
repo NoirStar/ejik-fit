@@ -82,6 +82,14 @@ export type CommunityStore = {
     before?: CommunityCursor;
     limit?: number;
   }): Promise<CommunityPage<CommunityPost>>;
+  listFollowingPostPage(options?: {
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityPost>>;
+  listSavedPostPage(options?: {
+    before?: CommunityCursor;
+    limit?: number;
+  }): Promise<CommunityPage<CommunityPost>>;
   listPosts(options?: {
     authorId?: string;
     limit?: number;
@@ -147,6 +155,20 @@ function invalidInput(): never {
     "invalid_data",
     "입력한 커뮤니티 내용을 확인해주세요.",
   );
+}
+
+function requireDeletedRow(value: unknown, expectedId: string) {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("id" in value) ||
+    value.id !== expectedId
+  ) {
+    throw new CommunityStoreError(
+      "not_found",
+      "이미 삭제되었거나 접근할 수 없습니다.",
+    );
+  }
 }
 
 function requiredUuid(value: unknown) {
@@ -223,6 +245,24 @@ function mappedRows<T>(
     );
   }
   return value.map(mapper);
+}
+
+function mappedMembershipCursor(value: unknown, id: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new CommunityStoreError(
+      "invalid_data",
+      "커뮤니티 데이터 형식이 올바르지 않습니다.",
+    );
+  }
+  const createdAt = (value as Record<string, unknown>).membership_created_at;
+  const cursor = normalizeCommunityCursor({ createdAt, id });
+  if (!cursor) {
+    throw new CommunityStoreError(
+      "invalid_data",
+      "커뮤니티 데이터 형식이 올바르지 않습니다.",
+    );
+  }
+  return cursor;
 }
 
 function normalizedPostInput(input: CreateCommunityPostInput) {
@@ -422,6 +462,68 @@ export function createSupabaseCommunityStore(
 
     listPostPage,
 
+    async listFollowingPostPage(options = {}) {
+      const before =
+        options.before === undefined ? null : requiredCursor(options.before);
+      const limit = boundedLimit(
+        options.limit,
+        DEFAULT_POST_LIMIT,
+        MAX_POST_LIMIT,
+      );
+      const { data, error } = await client.rpc(
+        "list_community_following_posts",
+        {
+          before_created_at: before?.createdAt ?? null,
+          before_id: before?.id ?? null,
+          result_limit: limit + 1,
+        },
+      );
+      if (error) databaseFailure(error);
+      const mapped = mappedRows(data, mapCommunitySearchPostRow);
+      const items = mapped.slice(0, limit);
+      const last = items.at(-1);
+      return {
+        items,
+        nextCursor:
+          mapped.length > limit && last
+            ? { createdAt: last.createdAt, id: last.id }
+            : null,
+      };
+    },
+
+    async listSavedPostPage(options = {}) {
+      const before =
+        options.before === undefined ? null : requiredCursor(options.before);
+      const limit = boundedLimit(
+        options.limit,
+        DEFAULT_POST_LIMIT,
+        MAX_POST_LIMIT,
+      );
+      const { data, error } = await client.rpc("list_community_saved_posts", {
+        before_created_at: before?.createdAt ?? null,
+        before_id: before?.id ?? null,
+        result_limit: limit + 1,
+      });
+      if (error) databaseFailure(error);
+      const rows = Array.isArray(data) ? data : null;
+      if (!rows) {
+        throw new CommunityStoreError(
+          "invalid_data",
+          "커뮤니티 데이터 형식이 올바르지 않습니다.",
+        );
+      }
+      const mapped = rows.map(mapCommunitySearchPostRow);
+      const items = mapped.slice(0, limit);
+      const last = items.at(-1);
+      return {
+        items,
+        nextCursor:
+          mapped.length > limit && last
+            ? mappedMembershipCursor(rows[items.length - 1], last.id)
+            : null,
+      };
+    },
+
     async listPosts(options = {}) {
       return (await listPostPage(options)).items;
     },
@@ -567,12 +669,16 @@ export function createSupabaseCommunityStore(
     },
 
     async deletePost(authorId, postId) {
-      const { error } = await client
+      const scopedPostId = requiredUuid(postId);
+      const { data, error } = await client
         .from(POST_TABLE)
         .delete()
         .eq("author_id", requiredUuid(authorId))
-        .eq("id", requiredUuid(postId));
+        .eq("id", scopedPostId)
+        .select("id")
+        .maybeSingle();
       if (error) databaseFailure(error);
+      requireDeletedRow(data, scopedPostId);
     },
 
     async createComment(authorId, postId, input) {
@@ -614,12 +720,16 @@ export function createSupabaseCommunityStore(
     },
 
     async deleteComment(authorId, commentId) {
-      const { error } = await client
+      const scopedCommentId = requiredUuid(commentId);
+      const { data, error } = await client
         .from(COMMENT_TABLE)
         .delete()
         .eq("author_id", requiredUuid(authorId))
-        .eq("id", requiredUuid(commentId));
+        .eq("id", scopedCommentId)
+        .select("id")
+        .maybeSingle();
       if (error) databaseFailure(error);
+      requireDeletedRow(data, scopedCommentId);
     },
 
     async setPostReaction(userId, postId, active) {

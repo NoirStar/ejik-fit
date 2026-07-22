@@ -5,6 +5,12 @@ import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api
 
 import Home from "./page";
 
+const navigation = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => navigation,
+}));
+
 vi.mock("@/lib/api", () => ({
   analyzeFit: vi.fn(),
   getPostings: vi.fn(),

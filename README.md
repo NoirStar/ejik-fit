@@ -165,6 +165,22 @@ npm test -- --run
 npm run build
 ```
 
+배포 후에는 쓰기나 테스트 계정 생성 없이 공개 경계를 한 번에 확인할 수 있습니다.
+아래 값에는 운영 Web/API/Supabase의 공개 주소와 publishable key만 사용하며,
+service-role key는 사용하지 않습니다.
+
+```bash
+cd apps/web
+PUBLIC_SITE_URL=https://your-web.example \
+PUBLIC_API_URL=https://your-api.example \
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key \
+npm run smoke:public
+```
+
+이 검사는 홈·로그인·개인정보·검색·안전한 404, 잘못된 인증 callback의 동일 출처
+복귀, API `/health`, Supabase 공개 커뮤니티 조회까지 8개 경계를 확인합니다.
+
 ## 초기 공식 출처
 
 아래 표는 프로젝트 최초 검증에 사용한 출처입니다. 현재 운영 중이거나 연결을 준비하는

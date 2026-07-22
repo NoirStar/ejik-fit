@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
 
+import {
+  resetCommunityFixture,
+  seedFollowingFixture,
+  signInCommunityViewer,
+} from "./fixtures/community-auth";
+
 const starterTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
 
 for (const width of [1440, 390]) {
@@ -59,3 +65,21 @@ for (const width of [1440, 390]) {
     expect(browserErrors).toEqual([]);
   });
 }
+
+test("shows followed authors even when their post is outside the public first page", async ({
+  page,
+  request,
+}) => {
+  await resetCommunityFixture(request);
+  await seedFollowingFixture(request);
+  await signInCommunityViewer(page);
+
+  const targetTitle = "공개 첫 페이지 밖의 팔로잉 글";
+  await expect(page.getByRole("article", { name: targetTitle })).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "팔로잉" }).click();
+
+  await expect(
+    page.getByRole("article", { name: targetTitle }),
+  ).toBeVisible();
+});

@@ -187,6 +187,44 @@ describe("Supabase community store", () => {
     expect(query.from).not.toHaveBeenCalled();
   });
 
+  it("lists the complete following feed through an auth-scoped cursor RPC", async () => {
+    const { author: _author, ...flatRow } = postRow;
+    const rpc = vi.fn(async () => ({
+      data: [
+        { ...flatRow, author_nickname: "작성자" },
+        {
+          ...flatRow,
+          id: "99999999-9999-4999-8999-999999999999",
+          created_at: "2026-07-20T01:02:03.000Z",
+          updated_at: "2026-07-20T01:02:03.000Z",
+          author_nickname: "작성자",
+        },
+      ],
+      error: null,
+    }));
+    const query = createClient({}, rpc);
+    const store = createSupabaseCommunityStore(query.client);
+
+    await expect(
+      store.listFollowingPostPage({
+        before: {
+          createdAt: "2026-07-22T01:02:03.000Z",
+          id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        },
+        limit: 1,
+      }),
+    ).resolves.toEqual({
+      items: [expect.objectContaining({ id: POST_ID })],
+      nextCursor: { createdAt: postRow.created_at, id: POST_ID },
+    });
+    expect(rpc).toHaveBeenCalledWith("list_community_following_posts", {
+      before_created_at: "2026-07-22T01:02:03.000Z",
+      before_id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      result_limit: 2,
+    });
+    expect(query.from).not.toHaveBeenCalled();
+  });
+
   it("loads viewer-owned saved posts in save order without exposing other memberships", async () => {
     const saves = createQuery({
       data: [{ post_id: POST_ID, user_id: VIEWER_ID }],
@@ -212,6 +250,50 @@ describe("Supabase community store", () => {
     expect(saves.limit).toHaveBeenCalledWith(50);
     expect(posts.in).toHaveBeenCalledWith("id", [POST_ID]);
     expect(posts.select.mock.calls[0]?.[0]).not.toContain("client_origin_id");
+  });
+
+  it("paginates the complete saved collection through an auth-scoped RPC", async () => {
+    const { author: _author, ...flatRow } = postRow;
+    const rpc = vi.fn(async () => ({
+      data: [
+        {
+          ...flatRow,
+          author_nickname: "작성자",
+          membership_created_at: "2026-07-22T01:02:03.000Z",
+        },
+        {
+          ...flatRow,
+          id: "99999999-9999-4999-8999-999999999999",
+          author_nickname: "작성자",
+          membership_created_at: "2026-07-21T01:02:03.000Z",
+        },
+      ],
+      error: null,
+    }));
+    const query = createClient({}, rpc);
+    const store = createSupabaseCommunityStore(query.client);
+
+    await expect(
+      store.listSavedPostPage({
+        before: {
+          createdAt: "2026-07-23T01:02:03.000Z",
+          id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        },
+        limit: 1,
+      }),
+    ).resolves.toEqual({
+      items: [expect.objectContaining({ id: POST_ID })],
+      nextCursor: {
+        createdAt: "2026-07-22T01:02:03.000Z",
+        id: POST_ID,
+      },
+    });
+    expect(rpc).toHaveBeenCalledWith("list_community_saved_posts", {
+      before_created_at: "2026-07-23T01:02:03.000Z",
+      before_id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+      result_limit: 2,
+    });
+    expect(query.from).not.toHaveBeenCalled();
   });
 
   it("creates posts with writable fields only", async () => {
@@ -389,7 +471,7 @@ describe("Supabase community store", () => {
     const reactions = createQuery();
     const saves = createQuery();
     const follows = createQuery();
-    const comments = createQuery();
+    const comments = createQuery({ data: { id: COMMENT_ID }, error: null });
     const reports = createQuery();
     const query = createClient({
       community_post_reactions: reactions,
@@ -431,6 +513,7 @@ describe("Supabase community store", () => {
     );
     expect(comments.eq).toHaveBeenCalledWith("author_id", VIEWER_ID);
     expect(comments.eq).toHaveBeenCalledWith("id", COMMENT_ID);
+    expect(comments.select).toHaveBeenCalledWith("id");
     expect(reports.insert).toHaveBeenCalledWith({
       id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
       reporter_id: VIEWER_ID,
@@ -439,6 +522,30 @@ describe("Supabase community store", () => {
       reason: "other",
       details: "추가 검토가 필요합니다.",
     });
+  });
+
+  it("rejects post and comment deletes when no owned row was affected", async () => {
+    const posts = createQuery({ data: null, error: null });
+    const comments = createQuery({ data: null, error: null });
+    const store = createSupabaseCommunityStore(
+      createClient({
+        community_posts: posts,
+        community_comments: comments,
+      }).client,
+    );
+
+    await expect(store.deletePost(AUTHOR_ID, POST_ID)).rejects.toMatchObject({
+      code: "not_found",
+      message: "이미 삭제되었거나 접근할 수 없습니다.",
+    });
+    await expect(
+      store.deleteComment(AUTHOR_ID, COMMENT_ID),
+    ).rejects.toMatchObject({
+      code: "not_found",
+      message: "이미 삭제되었거나 접근할 수 없습니다.",
+    });
+    expect(posts.select).toHaveBeenCalledWith("id");
+    expect(comments.select).toHaveBeenCalledWith("id");
   });
 
   it("maps database failures to stable user-safe errors", async () => {

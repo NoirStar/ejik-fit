@@ -11,6 +11,7 @@ import {
   readSocialInteractions,
   togglePostReaction,
   togglePostSave,
+  writeSocialInteractions,
 } from "@/lib/social-interactions";
 
 import type { CommunityStore } from "./community-store";
@@ -176,6 +177,51 @@ describe("local community migration", () => {
     expect(vi.mocked(store.createPost).mock.calls[1]?.[1].id).toBe(firstServerId);
     expect(store.getPost).toHaveBeenCalledWith(firstServerId);
     expect(readLocalCommunityPosts()).toEqual([]);
+  });
+
+  it("retains a post when another tab adds an interaction during migration", async () => {
+    seedBrowserContent();
+    const localPostId = "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const store = createStore();
+    vi.mocked(store.setPostSaved).mockImplementationOnce(async () => {
+      const current = readSocialInteractions();
+      writeSocialInteractions({
+        ...current,
+        commentsByPostId: {
+          ...current.commentsByPostId,
+          [localPostId]: [
+            ...(current.commentsByPostId[localPostId] ?? []),
+            {
+              id: "local-comment-from-another-tab",
+              body: "이관 도중 다른 탭에서 남긴 댓글",
+              createdAt: "2026-07-21T01:02:00.000Z",
+            },
+          ],
+        },
+      });
+    });
+
+    const first = await migrateLocalCommunityContent(store, USER_ID);
+
+    expect(first.migratedPostIds).toEqual([]);
+    expect(first.failures).toEqual([
+      {
+        localPostId,
+        message: "이전 중 새 활동이 확인되어 브라우저 원본을 유지했습니다.",
+      },
+    ]);
+    expect(readLocalCommunityPosts()).toHaveLength(1);
+    expect(
+      readSocialInteractions().commentsByPostId[localPostId]?.map(
+        (comment) => comment.id,
+      ),
+    ).toEqual(["local-comment-1", "local-comment-from-another-tab"]);
+
+    const second = await migrateLocalCommunityContent(store, USER_ID);
+
+    expect(second).toEqual({ migratedPostIds: [localPostId], failures: [] });
+    expect(readLocalCommunityPosts()).toEqual([]);
+    expect(readSocialInteractions().commentsByPostId[localPostId]).toBeUndefined();
   });
 
   it("continues with independent posts and reports structured failures", async () => {

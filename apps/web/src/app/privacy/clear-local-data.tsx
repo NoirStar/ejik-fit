@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 
+import {
+  COMMUNITY_DRAFT_STORAGE_KEY,
+  removeCommunityDraft,
+} from "@/features/community/community-draft";
 import { clearCareerPreferences } from "@/lib/career-preferences";
 import { clearFollowedCompanies } from "@/lib/followed-companies";
 import { clearJobApplicationStages } from "@/lib/job-application-stages";
@@ -18,6 +22,7 @@ export function ClearLocalData() {
 
   function clearData() {
     let storageCleared = false;
+    let draftCleared = false;
     try {
       const storage = window.localStorage;
       clearOwnedSkills(storage);
@@ -40,8 +45,15 @@ export function ClearLocalData() {
     } catch {
       storageCleared = false;
     }
+    try {
+      const session = window.sessionStorage;
+      removeCommunityDraft(session);
+      draftCleared = session.getItem(COMMUNITY_DRAFT_STORAGE_KEY) === null;
+    } catch {
+      draftCleared = false;
+    }
     window.history.replaceState({}, "", window.location.pathname);
-    setResult(storageCleared ? "success" : "failure");
+    setResult(storageCleared && draftCleared ? "success" : "failure");
   }
 
   return (

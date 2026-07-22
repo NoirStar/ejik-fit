@@ -94,6 +94,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: null,
       ready: true,
+      status: "unauthenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -109,6 +110,10 @@ describe("AccountOverview", () => {
       "href",
       "/login?next=%2Fcareer%2Faccount",
     );
+    expect(
+      screen.getByText("커뮤니티 게시는 로그인 확인 뒤 진행합니다."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/현재 탭의 임시 글로만 보관/)).toBeInTheDocument();
   });
 
   it("shows the signed-in account and real browser career counts", async () => {
@@ -131,6 +136,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: { id: "viewer-1", email: "dev@example.com" },
       ready: true,
+      status: "authenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -167,6 +173,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: { id: "viewer-1", email: "dev@example.com" },
       ready: true,
+      status: "authenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -186,6 +193,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: { id: "viewer-1", email: "dev@example.com" },
       ready: true,
+      status: "authenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -220,6 +228,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: { id: "viewer-1", email: "dev@example.com" },
       ready: true,
+      status: "authenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -248,6 +257,7 @@ describe("AccountOverview", () => {
     vi.mocked(useAuthViewer).mockReturnValue({
       viewer: { id: "viewer-1", email: "dev@example.com" },
       ready: true,
+      status: "authenticated",
       signingOut: false,
       error: "",
       signOut,
@@ -286,5 +296,29 @@ describe("AccountOverview", () => {
     expect(window.localStorage.getItem("ejik-fit:owned-skills")).toBeNull();
     expect(accountActionMocks.replace).toHaveBeenCalledWith("/");
     expect(accountActionMocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("does not present an auth lookup failure as a signed-out account", () => {
+    vi.mocked(useAuthViewer).mockReturnValue({
+      viewer: null,
+      ready: true,
+      status: "error",
+      signingOut: false,
+      error: "로그인 상태를 확인하지 못했습니다.",
+      signOut,
+    });
+
+    render(<AccountOverview />);
+
+    expect(
+      screen.getByRole("heading", { name: "로그인 상태를 확인하지 못했어요" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("로그인 없이 이용 중")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "이메일로 로그인" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "로그인 상태를 확인하지 못했습니다.",
+    );
   });
 });

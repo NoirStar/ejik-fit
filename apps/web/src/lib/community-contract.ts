@@ -115,6 +115,7 @@ export class CommunityDataError extends Error {
 export type CommunityStoreErrorCode =
   | "conflict"
   | "invalid_data"
+  | "not_found"
   | "permission"
   | "unavailable";
 

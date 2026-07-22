@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -24,11 +25,13 @@ import { serverCommunityPostToFeedItem } from "@/features/home-feed/model";
 import { RecentTopicTracker } from "@/features/home-feed/recent-topic-tracker";
 import { buildSearchScopeHref } from "@/features/search/model";
 import {
+  CommunityStoreError,
   MAX_COMMUNITY_REPORT_DETAILS_LENGTH,
   type CommunityPost,
   type CommunityReportReason,
   type CommunityViewerState,
 } from "@/lib/community-contract";
+import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
@@ -131,7 +134,13 @@ export function ServerPostDetail({
   postId,
   store: injectedStore,
 }: ServerPostDetailProps) {
-  const { ready: authReady, viewer } = useAuthViewerContext();
+  const router = useRouter();
+  const {
+    error: authError,
+    ready: authReady,
+    status: authStatus,
+    viewer,
+  } = useAuthViewerContext();
   const [status, setStatus] = useState<DetailStatus>("loading");
   const [post, setPost] = useState<CommunityPost | null>(null);
   const [viewerState, setViewerState] =
@@ -210,9 +219,27 @@ export function ServerPostDetail({
     [post],
   );
 
+  function loginRequiredMessage() {
+    if (authStatus === "loading") {
+      return "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해 주세요.";
+    }
+    if (authStatus === "error") {
+      return (
+        authError ||
+        "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
+      );
+    }
+    return "로그인하면 커뮤니티 활동을 계정에 저장할 수 있습니다.";
+  }
+
   function requireViewer() {
     if (viewer) return true;
-    setAnnouncement("로그인하면 커뮤니티 활동을 계정에 저장할 수 있습니다.");
+    const message = loginRequiredMessage();
+    setAnnouncement(message);
+    if (authStatus === "unauthenticated") {
+      const nextPath = safeAuthNextPath(`/posts/${postId}`);
+      router.push(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
     return false;
   }
 
@@ -319,8 +346,14 @@ export function ServerPostDetail({
     try {
       await store.deletePost(viewer.id, post.id);
       setStatus("removed");
-    } catch {
-      setActionError("글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+    } catch (error) {
+      if (error instanceof CommunityStoreError && error.code === "not_found") {
+        setPost(null);
+        setDeleteConfirm(false);
+        setStatus("missing");
+      } else {
+        setActionError("글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+      }
     } finally {
       setPending("");
     }
@@ -535,6 +568,10 @@ export function ServerPostDetail({
                     : current,
                 )
               }
+              onLoginRequired={() => {
+                requireViewer();
+                return loginRequiredMessage();
+              }}
               postId={post.id}
               store={store}
               totalCount={post.metrics.comments}

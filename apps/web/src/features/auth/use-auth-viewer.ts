@@ -11,40 +11,83 @@ export type AuthViewer = {
   email: string;
 };
 
+export type AuthViewerStatus =
+  | "loading"
+  | "authenticated"
+  | "unauthenticated"
+  | "error";
+
+const AUTH_LOOKUP_ERROR =
+  "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.";
+
 function viewerFromUser(user: User | null): AuthViewer | null {
   const email = user?.email?.trim();
   return user && email ? { id: user.id, email } : null;
 }
 
+function isMissingAuthSession(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as Record<string, unknown>;
+  return (
+    candidate.name === "AuthSessionMissingError" ||
+    candidate.code === "session_not_found" ||
+    (typeof candidate.message === "string" &&
+      /auth session missing/i.test(candidate.message))
+  );
+}
+
 export function useAuthViewer() {
   const [viewer, setViewer] = useState<AuthViewer | null>(null);
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<AuthViewerStatus>("loading");
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState("");
+  const ready = status !== "loading";
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setReady(true);
+      setError(AUTH_LOOKUP_ERROR);
+      setStatus("error");
       return;
     }
 
     let active = true;
     const readyFallback = window.setTimeout(() => {
-      if (active) setReady(true);
-    }, 3_000);
-    void supabase.auth.getUser().then(({ data }) => {
       if (!active) return;
-      window.clearTimeout(readyFallback);
-      setViewer(viewerFromUser(data.user));
-      setReady(true);
-    });
+      setError(AUTH_LOOKUP_ERROR);
+      setStatus("error");
+    }, 3_000);
+    void supabase.auth
+      .getUser()
+      .then(({ data, error: authError }) => {
+        if (!active) return;
+        window.clearTimeout(readyFallback);
+        if (authError && !isMissingAuthSession(authError)) {
+          setViewer(null);
+          setError(AUTH_LOOKUP_ERROR);
+          setStatus("error");
+          return;
+        }
+        const nextViewer = viewerFromUser(data.user);
+        setViewer(nextViewer);
+        setError("");
+        setStatus(nextViewer ? "authenticated" : "unauthenticated");
+      })
+      .catch(() => {
+        if (!active) return;
+        window.clearTimeout(readyFallback);
+        setViewer(null);
+        setError(AUTH_LOOKUP_ERROR);
+        setStatus("error");
+      });
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       window.clearTimeout(readyFallback);
-      setViewer(viewerFromUser(session?.user ?? null));
-      setReady(true);
+      const nextViewer = viewerFromUser(session?.user ?? null);
+      setViewer(nextViewer);
+      setError("");
+      setStatus(nextViewer ? "authenticated" : "unauthenticated");
     });
 
     return () => {
@@ -72,8 +115,9 @@ export function useAuthViewer() {
 
     clearBrowserAccountState();
     setViewer(null);
+    setStatus("unauthenticated");
     return true;
   }, []);
 
-  return { viewer, ready, signingOut, error, signOut };
+  return { viewer, ready, status, signingOut, error, signOut };
 }

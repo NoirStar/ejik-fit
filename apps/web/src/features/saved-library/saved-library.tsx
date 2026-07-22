@@ -202,7 +202,12 @@ export function SavedLibrary({
   communityStore?: CommunityStore;
   initialScope?: SavedScope;
 }) {
-  const { ready: authReady, viewer } = useAuthViewerContext();
+  const {
+    error: authError,
+    ready: authReady,
+    status: authStatus,
+    viewer,
+  } = useAuthViewerContext();
   const accountCommunity = useCommunityFeed({
     authReady,
     enabled: Boolean(viewer),
@@ -321,9 +326,9 @@ export function SavedLibrary({
   const accountCommunityLoading = Boolean(
     viewer && accountCommunity.state.status === "loading",
   );
-  const accountCommunityUnavailable = Boolean(
-    viewer && accountCommunity.state.status === "error",
-  );
+  const accountCommunityUnavailable =
+    authStatus === "error" ||
+    Boolean(viewer && accountCommunity.state.status === "error");
   const hasCommunityCollectionState =
     accountCommunityLoading || accountCommunityUnavailable;
   const showJobs =
@@ -439,7 +444,11 @@ export function SavedLibrary({
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            {viewer ? "계정 저장 연결됨" : "로그인 시 계정 연동"}
+            {viewer
+              ? "계정 저장 연결됨"
+              : authStatus === "error"
+                ? "계정 상태 확인 필요"
+                : "로그인 시 계정 연동"}
           </span>
           <Link href="/career">
             내 기술 비교
@@ -642,7 +651,18 @@ export function SavedLibrary({
                   </p>
                 </div>
 
-                {!viewer ? (
+                {authStatus === "error" ? (
+                  <div className={styles.errorState} role="alert">
+                    <WarningCircle aria-hidden="true" size={22} weight="fill" />
+                    <div>
+                      <strong>로그인 상태를 확인하지 못했습니다.</strong>
+                      <p>
+                        {authError ||
+                          "연결을 확인한 뒤 새로고침해 주세요. 브라우저 저장 항목은 유지됩니다."}
+                      </p>
+                    </div>
+                  </div>
+                ) : !viewer ? (
                   <div className={styles.compactState}>
                     <ShieldCheck aria-hidden="true" size={22} />
                     <div>
@@ -669,9 +689,10 @@ export function SavedLibrary({
                     </button>
                   </div>
                 ) : serverSavedCommunity.items.length > 0 ? (
-                  <div className={styles.communityList}>
-                    {serverSavedCommunity.items.map((item) => (
-                      <article aria-label={item.title} className={styles.communityCard} key={item.id}>
+                  <>
+                    <div className={styles.communityList}>
+                      {serverSavedCommunity.items.map((item) => (
+                        <article aria-label={item.title} className={styles.communityCard} key={item.id}>
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
                           <small data-source="server">계정 저장</small>
@@ -711,9 +732,22 @@ export function SavedLibrary({
                             저장 해제
                           </button>
                         </footer>
-                      </article>
-                    ))}
-                  </div>
+                        </article>
+                      ))}
+                    </div>
+                    {accountCommunity.state.nextCursor && (
+                      <button
+                        className={styles.communityLoadMore}
+                        disabled={accountCommunity.state.loadingMore}
+                        onClick={() => void accountCommunity.loadMore()}
+                        type="button"
+                      >
+                        {accountCommunity.state.loadingMore
+                          ? "저장 글 불러오는 중..."
+                          : "계정 저장 글 더 보기"}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <div className={styles.compactState} role="status">
                     <CheckCircle aria-hidden="true" size={22} />

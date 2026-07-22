@@ -8,12 +8,15 @@ for (const width of [1440, 820, 390]) {
     await page.goto("/");
 
     const pageContent = page.locator("#main-content");
-    const homeTag = pageContent.getByRole("link", {
-      name: "백엔드 커뮤니티 검색",
-    }).first();
-    const homeTagBox = await homeTag.boundingBox();
-    expect(homeTagBox?.width).toBeGreaterThanOrEqual(44);
-    expect(homeTagBox?.height).toBeGreaterThanOrEqual(44);
+    const guideLink = pageContent
+      .getByRole("region", { name: "이직핏 커뮤니티 가이드" })
+      .getByRole("link", {
+        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요? 예시 읽기",
+      });
+    await expect(guideLink).toBeVisible();
+    const guideLinkBox = await guideLink.boundingBox();
+    expect(guideLinkBox?.width).toBeGreaterThanOrEqual(44);
+    expect(guideLinkBox?.height).toBeGreaterThanOrEqual(44);
 
     const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
     await globalSearch.fill("Python");
@@ -67,7 +70,7 @@ for (const width of [1440, 820, 390]) {
   });
 }
 
-test("moves between actual result scopes and clearly labeled starting posts", async ({
+test("moves between actual result scopes and clearly labeled guidance", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 844, width: 390 });
@@ -82,9 +85,10 @@ test("moves between actual result scopes and clearly labeled starting posts", as
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     }),
   ).toBeVisible();
-  await expect(page.getByText("시작 글", { exact: true })).toBeVisible();
+  const guide = page.getByRole("region", { name: "커뮤니티 활용 가이드" });
+  await expect(guide.getByText("활용 가이드", { exact: true })).toBeVisible();
   await expect(
-    page.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+    page.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
   ).toBeVisible();
   const communityTag = page.getByRole("link", {
     name: "Kubernetes 커뮤니티 검색",
@@ -108,7 +112,7 @@ test("moves between actual result scopes and clearly labeled starting posts", as
   await expect(page.getByRole("heading", { name: "NAVER" })).toBeVisible();
 });
 
-test("finds a browser-owned post after reload and opens its local detail", async ({
+test("finds a legacy browser post as recovery data after reload", async ({
   page,
 }) => {
   const browserErrors: string[] = [];
@@ -119,23 +123,44 @@ test("finds a browser-owned post after reload and opens its local detail", async
 
   const query = "로컬 검색";
   const title = "로컬 검색으로 다시 찾는 내 질문";
+  const localPostId = "local-search-recovery-question";
   await page.setViewportSize({ height: 900, width: 390 });
-  await page.goto("/?compose=1");
-  await page.getByLabel("제목").fill(title);
-  await page
-    .getByLabel("내용")
-    .fill("실제 공고를 비교한 뒤 이 브라우저에서 다시 찾을 질문입니다.");
-  await page.getByLabel("태그 (선택)").fill(`${query}, 이직 준비`);
-  await page.getByRole("button", { name: "피드에 올리기" }).click();
-  await expect(page.getByRole("article", { name: title })).toBeVisible();
+  await page.addInitScript(
+    ({ id, postTitle, searchQuery }) => {
+      localStorage.setItem(
+        "ejik-fit:local-community-posts",
+        JSON.stringify([
+          {
+            id,
+            category: "커리어 질문",
+            title: postTitle,
+            body: "실제 공고를 비교한 뒤 이 브라우저에서 복구할 질문입니다.",
+            tags: [searchQuery, "이직 준비"],
+            createdAt: "2026-07-22T12:00:00.000Z",
+          },
+        ]),
+      );
+    },
+    { id: localPostId, postTitle: title, searchQuery: query },
+  );
+  await page.goto(`/search?q=${encodeURIComponent(query)}`);
+  await expect(
+    page.getByRole("heading", { name: `“${query}” 검색 결과` }),
+  ).toBeVisible();
 
-  const localPostId = await page.evaluate(() => {
-    const posts = JSON.parse(
-      localStorage.getItem("ejik-fit:local-community-posts") ?? "[]",
-    );
-    return posts[0]?.id as string | undefined;
-  });
-  expect(localPostId).toMatch(/^local-/);
+  expect(
+    await page.evaluate(() =>
+      JSON.parse(
+        localStorage.getItem("ejik-fit:local-community-posts") ?? "[]",
+      ),
+    ),
+  ).toHaveLength(1);
+  await expect(
+    page.getByRole("region", { name: "이전 기기 저장 글" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("article", { name: title }).getByText("이전 저장 글"),
+  ).toBeVisible();
 
   const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
   await globalSearch.fill(query);
@@ -147,11 +172,11 @@ test("finds a browser-owned post after reload and opens its local detail", async
 
   let localResult = page.getByRole("article", { name: title });
   await expect(localResult).toBeVisible();
-  await expect(localResult.getByText("내 로컬 글")).toBeVisible();
+  await expect(localResult.getByText("이전 저장 글")).toBeVisible();
   await expect(page.getByRole("link", { name: /커뮤니티.*1/ })).toBeVisible();
   await expect(page.getByText("검색 결과가 없습니다.")).toHaveCount(0);
   await expect(
-    page.getByText(/실제 커뮤니티 글은 최근 공개 글 범위에서 검색합니다/),
+    page.getByText(/이전 저장 글은 이 브라우저에서만 복구할 수 있고/),
   ).toBeVisible();
 
   const resultLink = localResult.getByRole("link", { exact: true, name: title });
@@ -173,7 +198,13 @@ test("finds a browser-owned post after reload and opens its local detail", async
   await expect(
     page.getByRole("heading", { exact: true, level: 1, name: title }),
   ).toBeVisible();
-  await expect(page.getByText("로컬 글", { exact: true })).toBeVisible();
+  await expect(page.getByText("이전 기기 저장 글", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "이 브라우저에 저장된 내 글",
+    }),
+  ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);
   expect(browserErrors).toEqual([]);
 });

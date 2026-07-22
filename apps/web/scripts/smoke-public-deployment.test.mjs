@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  classifyCallbackResponse,
+  classifyJsonResponse,
   classifyPublicResponse,
+  normalizePublicServiceUrl,
   normalizePublicSiteUrl,
+  PUBLIC_SMOKE_CHECKS,
 } from "./smoke-public-deployment.mjs";
 
 const baseResponse = {
@@ -15,6 +19,14 @@ const baseResponse = {
 };
 
 describe("public deployment smoke classification", () => {
+  it("includes the public login screen in the HTML checks", () => {
+    expect(PUBLIC_SMOKE_CHECKS).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "login", path: "/login" }),
+      ]),
+    );
+  });
+
   it("accepts public HTML and the expected safe 404", () => {
     expect(classifyPublicResponse(baseResponse)).toBeNull();
     expect(
@@ -85,5 +97,74 @@ describe("public deployment smoke classification", () => {
     ]) {
       expect(() => normalizePublicSiteUrl(value)).toThrow();
     }
+  });
+
+  it("accepts only a same-origin callback redirect to the login error state", () => {
+    expect(
+      classifyCallbackResponse({
+        location: "/login?error=callback&mode=signin&next=%2F",
+        siteOrigin: "https://ejik.fit",
+        status: 307,
+      }),
+    ).toBeNull();
+    expect(
+      classifyCallbackResponse({
+        location: "https://evil.example/login?error=callback",
+        siteOrigin: "https://ejik.fit",
+        status: 307,
+      }),
+    ).toMatch(/off-origin/i);
+    expect(
+      classifyCallbackResponse({
+        location: "/",
+        siteOrigin: "https://ejik.fit",
+        status: 200,
+      }),
+    ).toMatch(/redirect status/i);
+  });
+
+  it("validates API health and a public Supabase collection response", () => {
+    expect(
+      classifyJsonResponse({
+        body: '{"status":"ok","service":"ejik-fit-api"}',
+        contentType: "application/json",
+        expectedOrigin: "https://api.ejik.fit",
+        finalUrl: "https://api.ejik.fit/health",
+        status: 200,
+        validate: (value) =>
+          value?.status === "ok" && value?.service === "ejik-fit-api",
+      }),
+    ).toBeNull();
+    expect(
+      classifyJsonResponse({
+        body: "[]",
+        contentType: "application/json; charset=utf-8",
+        expectedOrigin: "https://example.supabase.co",
+        finalUrl:
+          "https://example.supabase.co/rest/v1/community_posts?select=id&limit=1",
+        status: 200,
+        validate: Array.isArray,
+      }),
+    ).toBeNull();
+    expect(
+      classifyJsonResponse({
+        body: '{"status":"degraded"}',
+        contentType: "application/json",
+        expectedOrigin: "https://api.ejik.fit",
+        finalUrl: "https://api.ejik.fit/health",
+        status: 200,
+        validate: (value) => value?.status === "ok",
+      }),
+    ).toMatch(/unexpected json/i);
+  });
+
+  it("normalizes credential-free API and Supabase base URLs", () => {
+    expect(
+      normalizePublicServiceUrl("https://api.ejik.fit/v1", "PUBLIC_API_URL")
+        .href,
+    ).toBe("https://api.ejik.fit/");
+    expect(() =>
+      normalizePublicServiceUrl("https://user:secret@api.ejik.fit", "API"),
+    ).toThrow(/credentials/i);
   });
 });

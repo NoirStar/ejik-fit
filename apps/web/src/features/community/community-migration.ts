@@ -3,6 +3,11 @@ import {
   deleteLocalCommunityPost,
   readLocalCommunityPosts,
 } from "@/lib/local-community-posts";
+import {
+  acquireLocalCommunityMigrationLease,
+  ownsLocalCommunityMigrationLease,
+  releaseLocalCommunityMigrationLease,
+} from "@/lib/local-community-migration-lock";
 import { readSocialInteractions } from "@/lib/social-interactions";
 
 import type { CommunityStore } from "./community-store";
@@ -62,6 +67,44 @@ function migrationFailureMessage(error: unknown) {
   return error instanceof CommunityStoreError
     ? error.message
     : "계정으로 옮기지 못했습니다.";
+}
+
+type LocalMigrationSnapshot = {
+  post: ReturnType<typeof readLocalCommunityPosts>[number];
+  reacted: boolean;
+  saved: boolean;
+  comments: NonNullable<
+    ReturnType<typeof readSocialInteractions>["commentsByPostId"][string]
+  >;
+};
+
+function migrationSnapshot(
+  localPost: LocalMigrationSnapshot["post"],
+  interactions: ReturnType<typeof readSocialInteractions>,
+): LocalMigrationSnapshot {
+  return {
+    post: localPost,
+    reacted: interactions.reactedPostIds.includes(localPost.id),
+    saved: interactions.savedPostIds.includes(localPost.id),
+    comments: interactions.commentsByPostId[localPost.id] ?? [],
+  };
+}
+
+function currentSnapshot(
+  localPostId: string,
+  storage?: Storage | null,
+): LocalMigrationSnapshot | null {
+  const post = readLocalCommunityPosts(storage).find(
+    (candidate) => candidate.id === localPostId,
+  );
+  return post ? migrationSnapshot(post, readSocialInteractions(storage)) : null;
+}
+
+function snapshotsMatch(
+  left: LocalMigrationSnapshot,
+  right: LocalMigrationSnapshot | null,
+) {
+  return right !== null && JSON.stringify(left) === JSON.stringify(right);
 }
 
 async function ensurePost(
@@ -125,16 +168,31 @@ export async function migrateLocalCommunityContent(
   storage?: Storage | null,
 ): Promise<CommunityMigrationResult> {
   const posts = readLocalCommunityPosts(storage);
-  const interactions = readSocialInteractions(storage);
   const result: CommunityMigrationResult = {
     migratedPostIds: [],
     failures: [],
   };
 
-  for (const localPost of posts) {
+  for (const initialPost of posts) {
+    const lease = acquireLocalCommunityMigrationLease(initialPost.id, storage);
+    if (!lease) {
+      result.failures.push({
+        localPostId: initialPost.id,
+        message: "다른 탭에서 이 글을 계정으로 옮기고 있습니다.",
+      });
+      continue;
+    }
     try {
+      const localPost = readLocalCommunityPosts(storage).find(
+        (candidate) => candidate.id === initialPost.id,
+      );
+      if (!localPost) continue;
+      const snapshot = migrationSnapshot(
+        localPost,
+        readSocialInteractions(storage),
+      );
       const serverPost = await ensurePost(store, userId, localPost);
-      for (const comment of interactions.commentsByPostId[localPost.id] ?? []) {
+      for (const comment of snapshot.comments) {
         await ensureComment(
           store,
           userId,
@@ -143,11 +201,17 @@ export async function migrateLocalCommunityContent(
           comment,
         );
       }
-      if (interactions.reactedPostIds.includes(localPost.id)) {
-        await store.setPostReaction(userId, serverPost.id, true);
-      }
-      if (interactions.savedPostIds.includes(localPost.id)) {
-        await store.setPostSaved(userId, serverPost.id, true);
+      await store.setPostReaction(userId, serverPost.id, snapshot.reacted);
+      await store.setPostSaved(userId, serverPost.id, snapshot.saved);
+
+      if (
+        !ownsLocalCommunityMigrationLease(localPost.id, lease, storage) ||
+        !snapshotsMatch(snapshot, currentSnapshot(localPost.id, storage))
+      ) {
+        throw new CommunityStoreError(
+          "conflict",
+          "이전 중 새 활동이 확인되어 브라우저 원본을 유지했습니다.",
+        );
       }
 
       const deletion = deleteLocalCommunityPost(localPost.id, storage);
@@ -157,9 +221,11 @@ export async function migrateLocalCommunityContent(
       result.migratedPostIds.push(localPost.id);
     } catch (error) {
       result.failures.push({
-        localPostId: localPost.id,
+        localPostId: initialPost.id,
         message: migrationFailureMessage(error),
       });
+    } finally {
+      releaseLocalCommunityMigrationLease(initialPost.id, lease, storage);
     }
   }
 

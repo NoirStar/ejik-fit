@@ -13,6 +13,14 @@ const USER_ID = "11111111-1111-4111-8111-111111111111";
 const AUTHOR_ID = "22222222-2222-4222-8222-222222222222";
 const POST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 function post(overrides: Partial<CommunityPost> = {}): CommunityPost {
   return {
     id: POST_ID,
@@ -42,6 +50,14 @@ function storeWith(
       nextCursor: null as { createdAt: string; id: string } | null,
     })),
     listPostPage: vi.fn(async () => ({
+      items: posts,
+      nextCursor: null as { createdAt: string; id: string } | null,
+    })),
+    listFollowingPostPage: vi.fn(async () => ({
+      items: posts,
+      nextCursor: null as { createdAt: string; id: string } | null,
+    })),
+    listSavedPostPage: vi.fn(async () => ({
       items: posts,
       nextCursor: null as { createdAt: string; id: string } | null,
     })),
@@ -107,9 +123,51 @@ describe("useCommunityFeed", () => {
 
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
 
-    expect(store.listSavedPosts).toHaveBeenCalledWith(USER_ID, 50);
+    expect(store.listSavedPostPage).toHaveBeenCalledWith({ limit: 50 });
+    expect(store.listSavedPosts).not.toHaveBeenCalled();
     expect(store.listPosts).not.toHaveBeenCalled();
     expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
+  });
+
+  it("loads and paginates the complete auth-scoped following feed", async () => {
+    const olderPost = post({
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      title: "공개 첫 페이지 밖의 팔로잉 글",
+      createdAt: "2026-07-01T04:00:00.000Z",
+      updatedAt: "2026-07-01T04:00:00.000Z",
+    });
+    const store = storeWith();
+    store.listFollowingPostPage
+      .mockResolvedValueOnce({
+        items: [post()],
+        nextCursor: { createdAt: post().createdAt, id: POST_ID },
+      })
+      .mockResolvedValueOnce({ items: [olderPost], nextCursor: null });
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        followingOnly: true,
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    expect(store.listFollowingPostPage).toHaveBeenCalledWith({ limit: 20 });
+    expect(store.listPostPage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.loadMore();
+    });
+
+    expect(store.listFollowingPostPage).toHaveBeenLastCalledWith({
+      before: { createdAt: post().createdAt, id: POST_ID },
+      limit: 20,
+    });
+    expect(result.current.state.posts.map((item) => item.id)).toEqual([
+      POST_ID,
+      olderPost.id,
+    ]);
   });
 
   it("keeps visible posts and viewer membership when a manual reload fails", async () => {
@@ -127,7 +185,7 @@ describe("useCommunityFeed", () => {
       }),
     );
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
-    store.listSavedPosts.mockRejectedValueOnce(new Error("offline"));
+    store.listSavedPostPage.mockRejectedValueOnce(new Error("offline"));
 
     await act(async () => {
       await result.current.reload();
@@ -178,6 +236,47 @@ describe("useCommunityFeed", () => {
     ]);
     expect(result.current.state.nextCursor).toBeNull();
     expect(result.current.state.loadingMore).toBe(false);
+  });
+
+  it("ignores an older load-more response after a reload starts", async () => {
+    const stalePage = deferred<{
+      items: CommunityPost[];
+      nextCursor: null;
+    }>();
+    const refreshed = post({ title: "새로고침으로 받은 최신 목록" });
+    const stale = post({
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      title: "늦게 도착한 이전 페이지",
+    });
+    const store = storeWith();
+    store.listPostPage
+      .mockResolvedValueOnce({
+        items: [post()],
+        nextCursor: { createdAt: post().createdAt, id: POST_ID },
+      })
+      .mockImplementationOnce(() => stalePage.promise)
+      .mockResolvedValueOnce({ items: [refreshed], nextCursor: null });
+    const { result } = renderHook(() =>
+      useCommunityFeed({ authReady: true, store, viewer: null }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    let pendingLoadMore!: Promise<void>;
+    act(() => {
+      pendingLoadMore = result.current.loadMore();
+    });
+    await waitFor(() => expect(store.listPostPage).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      await result.current.reload();
+    });
+    expect(result.current.state.posts).toEqual([refreshed]);
+
+    await act(async () => {
+      stalePage.resolve({ items: [stale], nextCursor: null });
+      await pendingLoadMore;
+    });
+
+    expect(result.current.state.posts).toEqual([refreshed]);
   });
 
   it("updates server membership and already-inclusive counters together", async () => {

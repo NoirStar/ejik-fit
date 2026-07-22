@@ -54,7 +54,7 @@ export function SavedSearchComposer({
   filters,
   openOnReady = false,
 }: SavedSearchComposerProps) {
-  const { ready, viewer } = useAuthViewerContext();
+  const { ready, status: authStatus, viewer } = useAuthViewerContext();
   const savedSearches = useSavedJobSearches(viewer);
   const normalizedFilters = useMemo(
     () => normalizeSavedJobSearchFilters(filters),
@@ -207,7 +207,7 @@ export function SavedSearchComposer({
             </p>
           )}
         </form>
-      ) : ready && !viewer && hasFilter ? (
+      ) : authStatus === "unauthenticated" && !viewer && hasFilter ? (
         <Link className={styles.trigger} href={loginHref(filters)}>
           이 검색 저장
         </Link>

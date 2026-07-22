@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import styles from "@/features/home-feed/post-detail-actions.module.css";
 import {
+  CommunityStoreError,
   MAX_COMMUNITY_COMMENT_LENGTH,
   normalizeCommunityText,
   type CommunityComment,
@@ -20,7 +21,7 @@ import {
 
 import type { CommunityStore } from "./community-store";
 
-const COMMENT_PAGE_SIZE = 20;
+const COMMENT_PAGE_SIZE = 30;
 
 type CommentStore = Pick<
   CommunityStore,
@@ -29,6 +30,7 @@ type CommentStore = Pick<
 
 type ServerCommentListProps = {
   onCountChange(delta: number): void;
+  onLoginRequired?(): string | void;
   postId: string;
   store: CommentStore;
   totalCount: number;
@@ -68,6 +70,7 @@ function mergeComments(
 
 export function ServerCommentList({
   onCountChange,
+  onLoginRequired,
   postId,
   store,
   totalCount,
@@ -86,6 +89,8 @@ export function ServerCommentList({
   const [editDraft, setEditDraft] = useState("");
   const [editError, setEditError] = useState("");
   const request = useRef(0);
+  const postIdRef = useRef(postId);
+  postIdRef.current = postId;
 
   const loadFirstPage = useCallback(async () => {
     const activeRequest = request.current + 1;
@@ -93,6 +98,7 @@ export function ServerCommentList({
     setStatus("loading");
     setComments([]);
     setNextCursor(null);
+    setLoadingMore(false);
     setActionError("");
     try {
       const page = await store.listCommentPage({
@@ -123,20 +129,38 @@ export function ServerCommentList({
 
   async function loadMore() {
     if (!nextCursor || loadingMore) return;
+    const activeRequest = request.current;
+    const activePostId = postId;
     setLoadingMore(true);
     setActionError("");
     try {
       const page = await store.listCommentPage({
-        postId,
+        postId: activePostId,
         limit: COMMENT_PAGE_SIZE,
         before: nextCursor,
       });
+      if (
+        request.current !== activeRequest ||
+        postIdRef.current !== activePostId
+      ) {
+        return;
+      }
       setComments((current) => mergeComments(current, page.items));
       setNextCursor(page.nextCursor);
     } catch {
-      setActionError("댓글을 더 불러오지 못했습니다. 다시 시도해 주세요.");
+      if (
+        request.current === activeRequest &&
+        postIdRef.current === activePostId
+      ) {
+        setActionError("댓글을 더 불러오지 못했습니다. 다시 시도해 주세요.");
+      }
     } finally {
-      setLoadingMore(false);
+      if (
+        request.current === activeRequest &&
+        postIdRef.current === activePostId
+      ) {
+        setLoadingMore(false);
+      }
     }
   }
 
@@ -155,7 +179,9 @@ export function ServerCommentList({
       return;
     }
     if (!viewerId) {
-      setFormError("댓글을 등록하려면 로그인이 필요합니다.");
+      setFormError(
+        onLoginRequired?.() || "댓글을 등록하려면 로그인이 필요합니다.",
+      );
       return;
     }
 
@@ -237,8 +263,17 @@ export function ServerCommentList({
       if (editingId === comment.id) cancelEdit();
       onCountChange(-1);
       setAnnouncement("댓글을 삭제했습니다.");
-    } catch {
-      setActionError("댓글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+    } catch (error) {
+      if (error instanceof CommunityStoreError && error.code === "not_found") {
+        setComments((current) =>
+          current.filter((candidate) => candidate.id !== comment.id),
+        );
+        if (editingId === comment.id) cancelEdit();
+        onCountChange(-1);
+        setActionError("이미 삭제된 댓글이라 목록에서 정리했습니다.");
+      } else {
+        setActionError("댓글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+      }
     } finally {
       setPending("");
     }

@@ -375,7 +375,12 @@ function SavedSearchRow({
 }
 
 export function SavedSearchManager() {
-  const { ready: authReady, viewer } = useAuthViewerContext();
+  const {
+    error: authError,
+    ready: authReady,
+    status: authStatus,
+    viewer,
+  } = useAuthViewerContext();
   const savedSearches = useSavedJobSearches(viewer);
   const evaluation = useSavedSearchEvaluation(
     savedSearches.state.items,
@@ -482,6 +487,20 @@ export function SavedSearchManager() {
     return (
       <main className={styles.page}>
         <LoadingState message="로그인 상태를 확인하고 있습니다." />
+      </main>
+    );
+  }
+
+  if (authStatus === "error") {
+    return (
+      <main className={styles.page}>
+        <section className={styles.statePanel} role="alert">
+          <WarningCircle aria-hidden="true" size={26} />
+          <div>
+            <h1>로그인 상태를 확인하지 못했습니다.</h1>
+            <p>{authError || "연결을 확인한 뒤 새로고침해 주세요."}</p>
+          </div>
+        </section>
       </main>
     );
   }

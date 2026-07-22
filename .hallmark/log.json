@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "audited_at": "2026-07-22",
-  "scope": "multi-page production app",
+  "audited_at": "2026-07-23",
+  "scope": "multi-page production app with authenticated community persistence",
   "genre": "modern-minimal",
   "tone": "Korean product workbench",
   "anchor_hue": 286,
@@ -27,7 +27,9 @@
     "chrome_47": "pass",
     "token_discipline_48": "pass",
     "responsive_34_49_57": "pass",
-    "iconography_30": "pass"
+    "iconography_30": "pass",
+    "input_state_39": "pass",
+    "performance_budget": "pass"
   },
   "verified_routes": [
     "/",
@@ -36,9 +38,18 @@
     "/career",
     "/skills/graph?skill=Kubernetes",
     "/posts/1",
+    "/career/saved",
+    "/career/questions",
+    "/search?q=Python&scope=community",
     "/data-policy",
     "/login"
   ],
   "verified_widths": [320, 375, 414, 600, 768, 1280, 1440, 1920],
+  "audit_evidence": {
+    "responsive_route_width_pairs": 25,
+    "horizontal_overflow_failures": 0,
+    "wrapped_primary_actions": 0,
+    "browser_e2e_passed": 72
+  },
   "intentional_exception": null
 }

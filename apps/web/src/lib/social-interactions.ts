@@ -1,3 +1,5 @@
+import { isLocalCommunityMigrationLocked } from "./local-community-migration-lock";
+
 const KEY = "ejik-fit:social-interactions";
 const CHANGE_EVENT = "ejik-fit:social-interactions-change";
 const MAX_IDS = 200;
@@ -182,6 +184,12 @@ function togglePostId(
   const id = normalizedId(postId);
   const current = readSocialInteractions(storage);
   if (!id) return current;
+  if (
+    field !== "followedAuthorIds" &&
+    isLocalCommunityMigrationLocked(id, storage)
+  ) {
+    return current;
+  }
   const ids = current[field];
   return writeSocialInteractions(
     {
@@ -250,6 +258,9 @@ export function addLocalPostComment(
     options.storage === undefined ? defaultStorage() : options.storage;
   const current = readSocialInteractions(storage);
   const id = normalizedId(postId);
+  if (id && isLocalCommunityMigrationLocked(id, storage)) {
+    return { state: current, comment: null };
+  }
   const comment = normalizedComment({
     id: options.id ?? localCommentId(),
     body,

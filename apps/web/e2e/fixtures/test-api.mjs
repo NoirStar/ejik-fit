@@ -542,6 +542,14 @@ const FIXTURE_USER = {
   email: "community@example.com",
   nickname: "커뮤니티테스터",
 };
+const FIXTURE_FOLLOWED_AUTHOR = {
+  id: "22222222-2222-4222-8222-222222222222",
+  nickname: "팔로우작성자",
+};
+const FIXTURE_NOISE_AUTHOR = {
+  id: "33333333-3333-4333-8333-333333333333",
+  nickname: "최신글작성자",
+};
 const FIXTURE_PASSWORD = "FixturePass123";
 const FIXTURE_REFRESH_TOKEN = "fixture-refresh-token";
 const FIXTURE_CREATED_AT = "2026-07-23T00:00:00.000Z";
@@ -607,6 +615,53 @@ function resetSupabaseFixture() {
   postSaves = new Set();
   authorFollows = new Set();
   careerState = null;
+}
+
+function fixtureAuthorNickname(authorId) {
+  if (authorId === FIXTURE_USER.id) return FIXTURE_USER.nickname;
+  if (authorId === FIXTURE_FOLLOWED_AUTHOR.id) {
+    return FIXTURE_FOLLOWED_AUTHOR.nickname;
+  }
+  if (authorId === FIXTURE_NOISE_AUTHOR.id) return FIXTURE_NOISE_AUTHOR.nickname;
+  return null;
+}
+
+function seedFollowingFixture() {
+  const target = {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    author_id: FIXTURE_FOLLOWED_AUTHOR.id,
+    category: "커리어 질문",
+    title: "공개 첫 페이지 밖의 팔로잉 글",
+    body: "첫 페이지보다 오래됐지만 팔로잉 탭에서는 확인할 수 있어야 합니다.",
+    tags: ["팔로잉"],
+    reaction_count: 0,
+    comment_count: 0,
+    save_count: 0,
+    client_origin_id: null,
+    created_at: "2026-06-01T00:00:00.000Z",
+    updated_at: "2026-06-01T00:00:00.000Z",
+  };
+  communityPosts.set(target.id, target);
+  for (let index = 0; index < 25; index += 1) {
+    const suffix = String(index + 1).padStart(12, "0");
+    const createdAt = new Date(
+      Date.parse("2026-07-23T00:00:00.000Z") - index * 60_000,
+    ).toISOString();
+    const post = {
+      ...target,
+      id: `00000000-0000-4000-8000-${suffix}`,
+      author_id: FIXTURE_NOISE_AUTHOR.id,
+      title: `최신 공개 글 ${index + 1}`,
+      body: "공개 첫 페이지를 채우는 테스트 글입니다.",
+      tags: ["최신"],
+      created_at: createdAt,
+      updated_at: createdAt,
+    };
+    communityPosts.set(post.id, post);
+  }
+  authorFollows.add(
+    membershipKey(FIXTURE_USER.id, FIXTURE_FOLLOWED_AUTHOR.id),
+  );
 }
 
 function applyCors(request, response) {
@@ -724,8 +779,7 @@ function postWithAuthor(post) {
     ...post,
     author: {
       user_id: post.author_id,
-      nickname:
-        post.author_id === FIXTURE_USER.id ? FIXTURE_USER.nickname : null,
+      nickname: fixtureAuthorNickname(post.author_id),
     },
   };
 }
@@ -735,8 +789,7 @@ function commentWithAuthor(comment) {
     ...comment,
     author: {
       user_id: comment.author_id,
-      nickname:
-        comment.author_id === FIXTURE_USER.id ? FIXTURE_USER.nickname : null,
+      nickname: fixtureAuthorNickname(comment.author_id),
     },
   };
 }
@@ -926,7 +979,7 @@ async function handleCommunityPosts(request, response, requestUrl) {
     postSaves = new Set(
       Array.from(postSaves).filter((key) => !key.endsWith(`:${post.id}`)),
     );
-    sendEmpty(response);
+    mutationResponse(request, response, [{ id: post.id }]);
     return;
   }
 
@@ -997,7 +1050,7 @@ async function handleCommunityComments(request, response, requestUrl) {
   if (request.method === "DELETE") {
     communityComments.delete(comment.id);
     recountPost(comment.post_id);
-    sendEmpty(response);
+    mutationResponse(request, response, [{ id: comment.id }]);
     return;
   }
 
@@ -1108,8 +1161,77 @@ async function handleSearchRpc(request, response) {
     .slice(0, limit)
     .map((post) => ({
       ...post,
-      author_nickname:
-        post.author_id === FIXTURE_USER.id ? FIXTURE_USER.nickname : null,
+      author_nickname: fixtureAuthorNickname(post.author_id),
+    }));
+  sendJson(response, 200, rows);
+}
+
+async function handleFollowingRpc(request, response) {
+  if (request.method !== "POST") {
+    sendDatabaseError(response, 405, "PGRST101", "method not allowed");
+    return;
+  }
+  const user = requireFixtureUser(request, response);
+  if (!user) return;
+  const body = await readJson(request);
+  const followedIds = new Set(
+    Array.from(authorFollows)
+      .map((key) => key.split(":"))
+      .filter(([followerId]) => followerId === user.id)
+      .map(([, followedId]) => followedId),
+  );
+  const requestedLimit = Number(body.result_limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(51, Math.max(1, Math.trunc(requestedLimit)))
+    : 20;
+  const rows = descendingRows(Array.from(communityPosts.values()))
+    .filter((post) => followedIds.has(post.author_id))
+    .filter(
+      (post) =>
+        !body.before_created_at ||
+        post.created_at < body.before_created_at ||
+        (post.created_at === body.before_created_at && post.id < body.before_id),
+    )
+    .slice(0, limit)
+    .map((post) => ({
+      ...post,
+      author_nickname: fixtureAuthorNickname(post.author_id),
+    }));
+  sendJson(response, 200, rows);
+}
+
+async function handleSavedRpc(request, response) {
+  if (request.method !== "POST") {
+    sendDatabaseError(response, 405, "PGRST101", "method not allowed");
+    return;
+  }
+  const user = requireFixtureUser(request, response);
+  if (!user) return;
+  const body = await readJson(request);
+  const savedPostIds = new Set(
+    Array.from(postSaves)
+      .map((key) => key.split(":"))
+      .filter(([userId]) => userId === user.id)
+      .map(([, postId]) => postId),
+  );
+  const requestedLimit = Number(body.result_limit);
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(51, Math.max(1, Math.trunc(requestedLimit)))
+    : 20;
+  const rows = Array.from(communityPosts.values())
+    .filter((post) => savedPostIds.has(post.id))
+    .sort((left, right) => right.id.localeCompare(left.id))
+    .filter(
+      (post) =>
+        !body.before_created_at ||
+        FIXTURE_CREATED_AT < body.before_created_at ||
+        (FIXTURE_CREATED_AT === body.before_created_at && post.id < body.before_id),
+    )
+    .slice(0, limit)
+    .map((post) => ({
+      ...post,
+      author_nickname: fixtureAuthorNickname(post.author_id),
+      membership_created_at: FIXTURE_CREATED_AT,
     }));
   sendJson(response, 200, rows);
 }
@@ -1118,6 +1240,14 @@ async function handleRest(request, response, requestUrl) {
   const rpcName = requestUrl.pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/)?.[1];
   if (rpcName === "search_community_posts") {
     await handleSearchRpc(request, response);
+    return true;
+  }
+  if (rpcName === "list_community_following_posts") {
+    await handleFollowingRpc(request, response);
+    return true;
+  }
+  if (rpcName === "list_community_saved_posts") {
+    await handleSavedRpc(request, response);
     return true;
   }
 
@@ -1195,6 +1325,8 @@ function apiBody(request, requestUrl) {
   const detailId = pathname.match(/^\/api\/postings\/([^/]+)$/)?.[1];
   return detailId
     ? postingDetails[detailId] ?? null
+    : pathname === "/health"
+      ? { status: "ok", service: "ejik-fit-api" }
     : pathname === "/api/postings"
       ? postingsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
@@ -1227,6 +1359,14 @@ const server = createServer(async (request, response) => {
       request.method === "POST"
     ) {
       resetSupabaseFixture();
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+    if (
+      requestUrl.pathname === "/__test__/seed-following" &&
+      request.method === "POST"
+    ) {
+      seedFollowingFixture();
       sendJson(response, 200, { ok: true });
       return;
     }

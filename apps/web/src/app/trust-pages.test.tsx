@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSourceDirectory } from "@/lib/api";
+import { COMMUNITY_DRAFT_STORAGE_KEY } from "@/features/community/community-draft";
 
 import CorrectionsPage from "./corrections/page";
 import DataPolicyPage from "./data-policy/page";
@@ -181,6 +182,10 @@ describe("public trust pages", () => {
       "ejik-fit:recent-community-topics",
       '[{"postId":"career-move-3y-backend","title":"최근 글","topicLabel":"백엔드","source":"mock","viewedAt":"2026-07-14T01:00:00.000Z"}]',
     );
+    sessionStorage.setItem(
+      COMMUNITY_DRAFT_STORAGE_KEY,
+      '{"version":1,"category":"커리어 질문","title":"임시 글","body":"현재 탭 초안","tags":[],"savedAt":"2026-07-23T00:00:00.000Z"}',
+    );
     window.history.replaceState({}, "", "/privacy?owned_skills=Java");
     render(<PrivacyPage />);
 
@@ -191,12 +196,19 @@ describe("public trust pages", () => {
     expect(
       screen.getByText(/ejik-fit:job-application-stages/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:social-interactions/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ejik-fit:social-interactions/)).toHaveLength(2);
     expect(screen.getByText(/ejik-fit:career-preferences/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:followed-company-slugs/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:local-community-posts/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:recent-community-topics/)).toBeInTheDocument();
     expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "작성 중인 임시 글" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:community-draft/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "이전 브라우저 글" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "이 브라우저의 저장 데이터 삭제" }));
@@ -210,6 +222,7 @@ describe("public trust pages", () => {
     expect(localStorage.getItem("ejik-fit:followed-company-slugs")).toBeNull();
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
     expect(localStorage.getItem("ejik-fit:recent-community-topics")).toBeNull();
+    expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
     expect(window.location.search).toBe("");
   });
 

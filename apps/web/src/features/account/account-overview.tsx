@@ -36,7 +36,7 @@ type AccountSummaryItem = {
 };
 
 export function AccountOverview() {
-  const { viewer, ready, signingOut, error, signOut } = useAuthViewer();
+  const { viewer, ready, status, signingOut, error, signOut } = useAuthViewer();
   const [careerState, setCareerState] = useState<AccountCareerState>(
     EMPTY_ACCOUNT_CAREER_STATE,
   );
@@ -101,6 +101,8 @@ export function AccountOverview() {
           <h2 id="account-status-title">
             {!ready
               ? "로그인 상태를 확인하고 있어요"
+              : status === "error"
+                ? "로그인 상태를 확인하지 못했어요"
               : viewer
                 ? "계정 동기화 사용 중"
                 : "로그인 없이 이용 중"}
@@ -108,6 +110,8 @@ export function AccountOverview() {
           <p>
             {viewer
               ? "내 스택, 저장 공고, 지원 단계와 관심 기업을 비공개 계정 데이터로 관리합니다."
+              : status === "error"
+                ? "현재 브라우저 데이터는 그대로 유지됩니다. 연결이 복구되면 로그인 상태를 다시 확인합니다."
               : "로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합합니다."}
           </p>
         </div>
@@ -121,7 +125,7 @@ export function AccountOverview() {
               <SignOut aria-hidden="true" size={17} />
               {signingOut ? "로그아웃 중" : "로그아웃"}
             </button>
-          ) : ready ? (
+          ) : status === "unauthenticated" ? (
             <Link href="/login?next=%2Fcareer%2Faccount">
               <SignIn aria-hidden="true" size={18} weight="bold" />
               이메일로 로그인
@@ -177,12 +181,12 @@ export function AccountOverview() {
           <strong>
             {viewer
               ? "계정 커뮤니티 활동도 함께 보관합니다."
-              : "비로그인 커뮤니티 활동은 브라우저에 먼저 보관합니다."}
+              : "커뮤니티 게시는 로그인 확인 뒤 진행합니다."}
           </strong>
           <p>
             {viewer
-              ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 서버에 저장됩니다. 이직핏 시작 글의 체험 활동과 최근 본 주제만 이 브라우저에 남습니다."
-              : "직접 작성한 로컬 글과 그 글의 댓글·공감·저장은 로그인 후 계정으로 안전하게 옮깁니다. 이직핏 시작 글의 체험 활동은 서버로 전송하지 않습니다."}
+              ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 서버에 저장됩니다. 작성 중인 임시 글과 최근 본 주제만 현재 탭 또는 브라우저에 남습니다."
+              : "게시 전 작성 내용은 현재 탭의 임시 글로만 보관합니다. 이전 버전의 로컬 글은 별도 복구 대상으로 표시하고 로그인 후 계정 이전을 시도합니다."}
           </p>
         </div>
         <Link href="/privacy">저장 범위 자세히 보기</Link>

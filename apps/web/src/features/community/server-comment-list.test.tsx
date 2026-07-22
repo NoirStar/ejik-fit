@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -9,6 +10,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CommunityStoreError,
   MAX_COMMUNITY_COMMENT_LENGTH,
   type CommunityComment,
   type CommunityCursor,
@@ -43,6 +45,15 @@ function comment(
 const FIRST_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const SECOND_ID = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const THIRD_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const SECOND_POST_ID = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 type CommentStore = Pick<
   CommunityStore,
@@ -70,23 +81,25 @@ function createStore(overrides: Partial<CommentStore> = {}): CommentStore {
 
 function renderList({
   onCountChange = vi.fn(),
+  postId = POST_ID,
   store = createStore(),
   viewerId = USER_ID,
 }: {
   onCountChange?: (delta: number) => void;
+  postId?: string;
   store?: CommentStore;
   viewerId?: string | null;
 } = {}) {
-  render(
+  const rendered = render(
     <ServerCommentList
       onCountChange={onCountChange}
-      postId={POST_ID}
+      postId={postId}
       store={store}
       totalCount={2}
       viewerId={viewerId}
     />,
   );
-  return { onCountChange, store };
+  return { ...rendered, onCountChange, store };
 }
 
 describe("ServerCommentList", () => {
@@ -99,7 +112,7 @@ describe("ServerCommentList", () => {
     expect(await screen.findByText("첫 댓글")).toBeInTheDocument();
     expect(store.listCommentPage).toHaveBeenCalledWith({
       postId: POST_ID,
-      limit: 20,
+      limit: 30,
     });
     expect(screen.getByText("1개 표시 · 전체 2개")).toBeInTheDocument();
   });
@@ -143,11 +156,65 @@ describe("ServerCommentList", () => {
     ]);
     expect(listCommentPage).toHaveBeenLastCalledWith({
       postId: POST_ID,
-      limit: 20,
+      limit: 30,
       before,
     });
     expect(screen.queryByRole("button", { name: "댓글 더 보기" }))
       .not.toBeInTheDocument();
+  });
+
+  it("ignores an older page after the component moves to another post", async () => {
+    const before = { createdAt: comment(FIRST_ID, "첫 댓글").createdAt, id: FIRST_ID };
+    const stalePage = deferred<{
+      items: CommunityComment[];
+      nextCursor: null;
+    }>();
+    const listCommentPage = vi
+      .fn()
+      .mockResolvedValueOnce({
+        items: [comment(FIRST_ID, "첫 글의 댓글")],
+        nextCursor: before,
+      })
+      .mockImplementationOnce(() => stalePage.promise)
+      .mockResolvedValueOnce({
+        items: [
+          {
+            ...comment(SECOND_ID, "두 번째 글의 댓글"),
+            postId: SECOND_POST_ID,
+          },
+        ],
+        nextCursor: null,
+      });
+    const store = createStore({ listCommentPage });
+    const rendered = renderList({ store });
+    await screen.findByText("첫 글의 댓글");
+
+    fireEvent.click(screen.getByRole("button", { name: "댓글 더 보기" }));
+    await waitFor(() => expect(listCommentPage).toHaveBeenCalledTimes(2));
+    rendered.rerender(
+      <ServerCommentList
+        onCountChange={rendered.onCountChange}
+        postId={SECOND_POST_ID}
+        store={store}
+        totalCount={1}
+        viewerId={USER_ID}
+      />,
+    );
+    expect(await screen.findByText("두 번째 글의 댓글")).toBeInTheDocument();
+
+    await act(async () => {
+      stalePage.resolve({
+        items: [comment(THIRD_ID, "늦게 도착한 첫 글의 댓글")],
+        nextCursor: null,
+      });
+      await stalePage.promise;
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByText("늦게 도착한 첫 글의 댓글"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText("두 번째 글의 댓글")).toBeInTheDocument();
   });
 
   it("offers edit and delete controls only for the comment author", async () => {
@@ -281,5 +348,28 @@ describe("ServerCommentList", () => {
     await waitFor(() => expect(screen.queryByText("삭제할 댓글")).not.toBeInTheDocument());
     expect(store.deleteComment).toHaveBeenCalledWith(USER_ID, FIRST_ID);
     expect(onCountChange).toHaveBeenCalledWith(-1);
+  });
+
+  it("removes a stale comment when the server reports it was already deleted", async () => {
+    const mine = comment(FIRST_ID, "이미 지워진 댓글", USER_ID);
+    const onCountChange = vi.fn();
+    const store = createStore({
+      deleteComment: vi.fn(async () => {
+        throw new CommunityStoreError("not_found", "이미 삭제됨");
+      }),
+      listCommentPage: vi.fn(async () => ({ items: [mine], nextCursor: null })),
+    });
+    renderList({ onCountChange, store });
+    await screen.findByText(mine.body);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: `${mine.body} 댓글 삭제` }),
+    );
+
+    await waitFor(() => expect(screen.queryByText(mine.body)).not.toBeInTheDocument());
+    expect(onCountChange).toHaveBeenCalledWith(-1);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "이미 삭제된 댓글이라 목록에서 정리했습니다.",
+    );
   });
 });

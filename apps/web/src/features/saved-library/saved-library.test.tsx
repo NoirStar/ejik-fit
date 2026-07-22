@@ -10,7 +10,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
-import type { CommunityPost } from "@/lib/community-contract";
+import type {
+  CommunityCursor,
+  CommunityPost,
+  CommunityViewerState,
+} from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 import type { PostingDetail } from "@/lib/types";
 
@@ -65,17 +69,27 @@ function accountCommunityStore() {
   return {
     searchPosts: vi.fn(async () => ({ items: [], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
+    listFollowingPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
+    listSavedPostPage: vi.fn(async () => ({
+      items: [accountCommunityPost],
+      nextCursor: null as CommunityCursor | null,
+    })),
     listPosts: vi.fn(async () => []),
     listSavedPosts: vi.fn(async () => [accountCommunityPost]),
     getPost: vi.fn(async () => accountCommunityPost),
     getComment: vi.fn(async () => null),
     listCommentPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listComments: vi.fn(async () => []),
-    loadViewerState: vi.fn(async () => ({
-      reactedPostIds: [],
-      savedPostIds: [accountCommunityPost.id],
-      followedAuthorIds: [],
-    })),
+    loadViewerState: vi.fn(
+      async (
+        _viewerId: string,
+        _targets: { postIds: string[]; authorIds: string[] },
+      ): Promise<CommunityViewerState> => ({
+        reactedPostIds: [],
+        savedPostIds: [accountCommunityPost.id],
+        followedAuthorIds: [],
+      }),
+    ),
     createPost: vi.fn(async () => accountCommunityPost),
     updatePost: vi.fn(async () => accountCommunityPost),
     deletePost: vi.fn(async () => undefined),
@@ -255,7 +269,8 @@ describe("SavedLibrary", () => {
     const savedPost = await screen.findByRole("article", {
       name: accountCommunityPost.title,
     });
-    expect(store.listSavedPosts).toHaveBeenCalledWith(viewerId, 50);
+    expect(store.listSavedPostPage).toHaveBeenCalledWith({ limit: 50 });
+    expect(store.listSavedPosts).not.toHaveBeenCalled();
     expect(within(savedPost).getByText("계정 저장")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
 
@@ -276,6 +291,73 @@ describe("SavedLibrary", () => {
       ).not.toBeInTheDocument();
     });
     expect(screen.getByText(/계정 저장 보관함에서 제거했습니다/)).toBeInTheDocument();
+  });
+
+  it("loads saved community records beyond the first account page", async () => {
+    const viewerId = "11111111-1111-4111-8111-111111111111";
+    const olderPost: CommunityPost = {
+      ...accountCommunityPost,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      title: "두 번째 계정 저장 글",
+      createdAt: "2026-07-20T04:00:00.000Z",
+      updatedAt: "2026-07-20T04:00:00.000Z",
+    };
+    const cursor = {
+      createdAt: "2026-07-22T04:00:00.000Z",
+      id: accountCommunityPost.id,
+    };
+    const store = accountCommunityStore();
+    store.listSavedPostPage
+      .mockResolvedValueOnce({
+        items: [accountCommunityPost],
+        nextCursor: cursor,
+      })
+      .mockResolvedValueOnce({ items: [olderPost], nextCursor: null });
+    store.loadViewerState.mockImplementation(async (_viewerId, targets) => ({
+      reactedPostIds: [],
+      savedPostIds: targets.postIds,
+      followedAuthorIds: [],
+    }));
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: viewerId, email: "viewer@example.com" }}
+      >
+        <SavedLibrary communityStore={store} initialScope="community" />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("article", { name: accountCommunityPost.title });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "계정 저장 글 더 보기" }),
+    );
+
+    expect(
+      await screen.findByRole("article", { name: olderPost.title }),
+    ).toBeInTheDocument();
+    expect(store.listSavedPostPage).toHaveBeenLastCalledWith({
+      before: cursor,
+      limit: 50,
+    });
+  });
+
+  it("shows an authentication failure without offering a misleading login action", async () => {
+    render(
+      <AuthViewerProvider
+        error="인증 서버에 연결하지 못했습니다."
+        ready
+        status="error"
+        viewer={null}
+      >
+        <SavedLibrary initialScope="community" />
+      </AuthViewerProvider>,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "인증 서버에 연결하지 못했습니다.",
+    );
+    expect(screen.queryByRole("link", { name: "로그인" })).not.toBeInTheDocument();
   });
 
   it("does not announce success when a community save removal is blocked", async () => {

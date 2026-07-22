@@ -35,6 +35,11 @@ function serverSearchStore() {
   return {
     searchPosts: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
+    listFollowingPostPage: vi.fn(async () => ({
+      items: [serverSearchPost],
+      nextCursor: null,
+    })),
+    listSavedPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
     listPosts: vi.fn(async () => [serverSearchPost]),
     listSavedPosts: vi.fn(async () => []),
     getPost: vi.fn(async () => serverSearchPost),

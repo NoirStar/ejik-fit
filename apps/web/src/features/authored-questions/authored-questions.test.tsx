@@ -90,6 +90,26 @@ describe("AuthoredQuestions", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not present an authentication outage as a signed-out empty state", () => {
+    render(
+      <AuthViewerProvider
+        error="로그인 상태를 확인하지 못했습니다."
+        ready
+        status="error"
+        viewer={null}
+      >
+        <AuthoredQuestions />
+      </AuthViewerProvider>,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "로그인 상태를 확인하지 못했습니다.",
+    );
+    expect(
+      screen.queryByRole("link", { name: /로그인하고 내 글 보기/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps legacy browser questions in a recovery-only section", async () => {
     storePosts();
     renderGuest();
@@ -260,6 +280,14 @@ describe("AuthoredQuestions", () => {
         .fn()
         .mockResolvedValueOnce({ items: [post], nextCursor: firstCursor })
         .mockResolvedValueOnce({ items: [olderPost], nextCursor: null }),
+      listFollowingPostPage: vi.fn(async () => ({
+        items: [post],
+        nextCursor: null,
+      })),
+      listSavedPostPage: vi.fn(async () => ({
+        items: [post],
+        nextCursor: null,
+      })),
       listPosts: vi.fn(async () => [post]),
       listSavedPosts: vi.fn(async () => [post]),
       getPost: vi.fn(async () => post),
