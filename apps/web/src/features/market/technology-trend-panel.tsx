@@ -6,11 +6,16 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import type { SkillTrendResponse, SkillTrendSeries } from "@/lib/types";
+import type { SkillTrendSeries } from "@/lib/types";
 import { MARKET_TREND_COLORS } from "@/styles/design-tokens";
 
+import {
+  explicitTrendCount,
+  latestExplicitTrendDelta,
+  type MarketTrendResource,
+} from "./market-trend";
 import styles from "./market-overview.module.css";
 import { TechnologyIcon } from "./technology-icon";
 
@@ -18,11 +23,6 @@ type TrendSkillOption = {
   category: string;
   name: string;
 };
-
-type TrendResource =
-  | { status: "loading" }
-  | { status: "error" }
-  | { status: "ready"; data: SkillTrendResponse };
 
 function formatWeek(value: string) {
   const date = new Date(`${value}T00:00:00+09:00`);
@@ -34,6 +34,11 @@ function formatWeek(value: string) {
   }).format(date);
 }
 
+function formatDelta(delta: number) {
+  if (delta === 0) return "변화 없음";
+  return `전주 대비 ${delta > 0 ? "+" : ""}${delta.toLocaleString("ko-KR")}건`;
+}
+
 function TrendChart({ series }: { series: SkillTrendSeries[] }) {
   const width = 320;
   const height = 154;
@@ -42,7 +47,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
   const plotHeight = height - padding.top - padding.bottom;
   const pointCount = Math.max(...series.map((item) => item.points.length), 1);
   const maximum = Math.max(
-    ...series.flatMap((item) => item.points.map((point) => point.count)),
+    ...series.flatMap((item) => item.points.map(explicitTrendCount)),
     1,
   );
   const firstWeek = series[0]?.points[0]?.week_start;
@@ -56,7 +61,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
   return (
     <div className={styles.trendChartWrap}>
       <svg
-        aria-label={`최근 ${pointCount}개 주차 기술 수요 변화`}
+        aria-label={`최근 ${pointCount}개 주차 명시 요구 변화`}
         className={styles.trendChart}
         role="img"
         viewBox={`0 0 ${width} ${height}`}
@@ -74,7 +79,11 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
             />
           );
         })}
-        <text className={styles.trendAxisLabel} x={padding.left - 5} y={padding.top + 4}>
+        <text
+          className={styles.trendAxisLabel}
+          x={padding.left - 5}
+          y={padding.top + 4}
+        >
           {maximum}
         </text>
         <text
@@ -85,11 +94,14 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
           0
         </text>
         {series.map((item, seriesIndex) => {
-          const color = MARKET_TREND_COLORS[seriesIndex] ?? MARKET_TREND_COLORS[0];
+          const color =
+            MARKET_TREND_COLORS[seriesIndex] ?? MARKET_TREND_COLORS[0];
           const path = item.points
             .map((point, index) => {
               const command = index === 0 ? "M" : "L";
-              return `${command}${x(index).toFixed(1)},${y(point.count).toFixed(1)}`;
+              return `${command}${x(index).toFixed(1)},${y(
+                explicitTrendCount(point),
+              ).toFixed(1)}`;
             })
             .join(" ");
           return (
@@ -104,19 +116,23 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
                 strokeWidth="2.25"
                 vectorEffect="non-scaling-stroke"
               />
-              {item.points.map((point, index) => (
-                <circle
-                  cx={x(index)}
-                  cy={y(point.count)}
-                  fill={color}
-                  key={point.week_start}
-                  r="2.6"
-                >
-                  <title>
-                    {item.skill} · {formatWeek(point.week_start)} · {point.count}건
-                  </title>
-                </circle>
-              ))}
+              {item.points.map((point, index) => {
+                const count = explicitTrendCount(point);
+                return (
+                  <circle
+                    cx={x(index)}
+                    cy={y(count)}
+                    fill={color}
+                    key={point.week_start}
+                    r="2.6"
+                  >
+                    <title>
+                      {item.skill} · {formatWeek(point.week_start)} · 명시 요구{" "}
+                      {count}건
+                    </title>
+                  </circle>
+                );
+              })}
             </g>
           );
         })}
@@ -140,26 +156,37 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
           </text>
         )}
       </svg>
-      <ul aria-label="기술별 최신 수요" className={styles.trendLatestValues}>
-        {series.map((item, index) => (
-          <li key={item.skill}>
-            <span>
-              <i style={{ backgroundColor: MARKET_TREND_COLORS[index] }} />
-              {item.skill}
-            </span>
-            <strong>{item.points.at(-1)?.count ?? 0}건</strong>
-          </li>
-        ))}
+      <ul
+        aria-label="기술별 최신 명시 요구"
+        className={styles.trendLatestValues}
+      >
+        {series.map((item, index) => {
+          const delta = latestExplicitTrendDelta(item);
+          return (
+            <li key={item.skill}>
+              <span>
+                <i style={{ backgroundColor: MARKET_TREND_COLORS[index] }} />
+                {item.skill}
+              </span>
+              <strong>
+                {delta
+                  ? `${delta.current.toLocaleString("ko-KR")}건`
+                  : "확인 중"}
+              </strong>
+              <small>{delta ? formatDelta(delta.delta) : "전주 비교 대기"}</small>
+            </li>
+          );
+        })}
       </ul>
       <table className={styles.srOnly}>
-        <caption>주차별 기술 수요</caption>
+        <caption>주차별 기술 명시 요구</caption>
         <tbody>
           {series.flatMap((item) =>
             item.points.map((point) => (
               <tr key={`${item.skill}-${point.week_start}`}>
                 <th>{item.skill}</th>
                 <td>{point.week_start}</td>
-                <td>{point.count}건</td>
+                <td>{explicitTrendCount(point)}건</td>
               </tr>
             )),
           )}
@@ -171,61 +198,38 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
 
 export function TechnologyTrendPanel({
   availableSkills,
-  selectedSkill,
+  comparedSkills,
+  filterIsActive,
+  onAddSkill,
+  onRemoveSkill,
+  onRetry,
+  resource,
 }: {
   availableSkills: TrendSkillOption[];
-  selectedSkill: string;
+  comparedSkills: string[];
+  filterIsActive: boolean;
+  onAddSkill: (skill: string) => void;
+  onRemoveSkill: (skill: string) => void;
+  onRetry: () => void;
+  resource: MarketTrendResource;
 }) {
-  const [comparedSkills, setComparedSkills] = useState<string[]>(
-    selectedSkill ? [selectedSkill] : [],
-  );
-  const [resource, setResource] = useState<TrendResource>({ status: "loading" });
   const categories = useMemo(
     () => new Map(availableSkills.map((skill) => [skill.name, skill.category])),
     [availableSkills],
   );
-  const comparisonKey = comparedSkills.join("\u0000");
-
-  useEffect(() => {
-    if (!selectedSkill) return;
-    setComparedSkills((current) => [
-      selectedSkill,
-      ...current.filter((skill) => skill !== selectedSkill),
-    ].slice(0, 3));
-  }, [selectedSkill]);
-
-  useEffect(() => {
-    if (comparedSkills.length === 0) {
-      setResource({ status: "loading" });
-      return;
-    }
-    const controller = new AbortController();
-    const params = new URLSearchParams();
-    for (const skill of comparedSkills) params.append("skills", skill);
-    setResource({ status: "loading" });
-    void fetch(`/market/trend-data?${params.toString()}`, {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`trend request failed: ${response.status}`);
-        return response.json() as Promise<SkillTrendResponse>;
-      })
-      .then((data) => setResource({ status: "ready", data }))
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setResource({ status: "error" });
-      });
-    return () => controller.abort();
-  }, [comparisonKey]);
-
   const addableSkills = availableSkills.filter(
     (skill) => !comparedSkills.includes(skill.name),
   );
   const trendReady =
     resource.status === "ready" &&
     resource.data.status === "ready" &&
+    resource.data.collected_weeks >= resource.data.minimum_weeks &&
     resource.data.series.length > 0;
+  const badgeLabel = trendReady
+    ? "주간 추세"
+    : resource.status === "error"
+      ? "확인 불가"
+      : "추세 수집 중";
 
   return (
     <section
@@ -236,13 +240,20 @@ export function TechnologyTrendPanel({
       <header className={styles.sideHeader}>
         <div>
           <h2 id="technology-trend-title">기술 수요 추세</h2>
-          <span>최근 12주 · 공식 공고 기준</span>
+          <span>최근 12주 · 주간 공개 공고 스냅샷</span>
         </div>
-        <span className={styles.collectingBadge} data-ready={trendReady || undefined}>
+        <span
+          className={styles.collectingBadge}
+          data-ready={trendReady || undefined}
+        >
           <ClockCounterClockwise aria-hidden="true" size={13} />
-          {trendReady ? "주간 추세" : "추세 수집 중"}
+          {badgeLabel}
         </span>
       </header>
+      <p className={styles.trendScope}>
+        <span>전체 경력·전체 분야 기준</span>
+        {filterIsActive ? <small> · 위 필터와 별도</small> : null}
+      </p>
 
       <div className={styles.trendControls}>
         <div className={styles.trendSkills}>
@@ -258,11 +269,7 @@ export function TechnologyTrendPanel({
               {index > 0 && (
                 <button
                   aria-label={`${skill} 비교에서 제외`}
-                  onClick={() =>
-                    setComparedSkills((current) =>
-                      current.filter((item) => item !== skill),
-                    )
-                  }
+                  onClick={() => onRemoveSkill(skill)}
                   type="button"
                 >
                   <X aria-hidden="true" size={12} weight="bold" />
@@ -278,9 +285,7 @@ export function TechnologyTrendPanel({
             disabled={comparedSkills.length >= 3 || addableSkills.length === 0}
             onChange={(event) => {
               const next = event.target.value;
-              if (next) {
-                setComparedSkills((current) => [...current, next].slice(0, 3));
-              }
+              if (next) onAddSkill(next);
               event.target.value = "";
             }}
             value=""
@@ -289,7 +294,9 @@ export function TechnologyTrendPanel({
               {comparedSkills.length >= 3 ? "최대 3개 비교" : "+ 기술 비교"}
             </option>
             {addableSkills.slice(0, 12).map((skill) => (
-              <option key={skill.name} value={skill.name}>{skill.name}</option>
+              <option key={skill.name} value={skill.name}>
+                {skill.name}
+              </option>
             ))}
           </select>
         </label>
@@ -302,6 +309,9 @@ export function TechnologyTrendPanel({
           <WarningCircle aria-hidden="true" size={24} weight="duotone" />
           <strong>추세 수집 상태를 불러오지 못했어요.</strong>
           <p>현재 수요 순위와 공고는 계속 확인할 수 있습니다.</p>
+          <button onClick={onRetry} type="button">
+            다시 시도
+          </button>
         </div>
       ) : (
         <div className={styles.collectingState}>
@@ -315,7 +325,8 @@ export function TechnologyTrendPanel({
         </div>
       )}
       <p className={styles.panelFootnote}>
-        실제 공식 공고 스냅샷만 사용하며, 누락된 주차나 예시 수치를 채워 넣지 않습니다.
+        실제 공식 공고 스냅샷만 사용하며, 누락된 주차나 예시 수치를 채워 넣지
+        않습니다.
       </p>
     </section>
   );

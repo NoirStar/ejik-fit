@@ -6,10 +6,12 @@ import { useMemo, useState } from "react";
 
 import { MarketFilters } from "./market-filters";
 import { MarketFitInsight } from "./market-fit-insight";
+import { MarketPulseSummary } from "./market-pulse-summary";
 import {
   buildMarketFilterHref,
   buildSkillCombinations,
   jobsForSkill,
+  sortMarketSkills,
   type MarketOverviewSnapshot,
   type MarketSort,
 } from "./model";
@@ -19,6 +21,7 @@ import styles from "./market-overview.module.css";
 import { TechnologyDemandChart } from "./technology-demand-chart";
 import { TechnologyTrendPanel } from "./technology-trend-panel";
 import { useMarketFit } from "./use-market-fit";
+import { useMarketTrends } from "./use-market-trends";
 
 function formatVerifiedDate(value: string | null) {
   if (!value || Number.isNaN(Date.parse(value))) return "확인 시각 없음";
@@ -75,18 +78,38 @@ export function MarketOverview({
 }: {
   snapshot: MarketOverviewSnapshot;
 }) {
-  const [sort, setSort] = useState<MarketSort>("demand");
+  const topExplicitSkills = useMemo(
+    () => sortMarketSkills(snapshot.skills, "explicit").slice(0, 3),
+    [snapshot.skills],
+  );
+  const [sort, setSort] = useState<MarketSort>("explicit");
   const [selectedSkill, setSelectedSkill] = useState(
-    snapshot.skills[0]?.name ?? "",
+    topExplicitSkills[0]?.name ?? "",
   );
   const effectiveSkill = snapshot.skills.some(
     (skill) => skill.name === selectedSkill,
   )
     ? selectedSkill
-    : (snapshot.skills[0]?.name ?? "");
+    : (topExplicitSkills[0]?.name ?? "");
   const selected = snapshot.skills.find(
     (skill) => skill.name === effectiveSkill,
   );
+  const orderedSkills = useMemo(
+    () => sortMarketSkills(snapshot.skills, sort),
+    [snapshot.skills, sort],
+  );
+  const trendSkills = useMemo(
+    () =>
+      orderedSkills.slice(0, 15).map(({ category, name }) => ({
+        category,
+        name,
+      })),
+    [orderedSkills],
+  );
+  const trend = useMarketTrends({
+    availableSkills: trendSkills,
+    selectedSkill: effectiveSkill,
+  });
   const recentJobs = useMemo(
     () => jobsForSkill(snapshot.jobs, effectiveSkill),
     [effectiveSkill, snapshot.jobs],
@@ -119,6 +142,13 @@ export function MarketOverview({
       </section>
 
       <Summary snapshot={snapshot} />
+
+      <MarketPulseSummary
+        postingCountLabel={snapshot.postingCountLabel}
+        topSkills={topExplicitSkills}
+        trendResource={trend.resource}
+        verifiedLabel={formatVerifiedDate(snapshot.latestVerifiedAt)}
+      />
 
       <MarketFilters
         careerType={snapshot.careerType}
@@ -183,11 +213,15 @@ export function MarketOverview({
 
           <aside className={styles.sideColumn}>
             <TechnologyTrendPanel
-              availableSkills={snapshot.skills.slice(0, 15).map((skill) => ({
-                category: skill.category,
-                name: skill.name,
-              }))}
-              selectedSkill={effectiveSkill}
+              availableSkills={trendSkills}
+              comparedSkills={trend.comparedSkills}
+              filterIsActive={Boolean(
+                snapshot.careerType || snapshot.category,
+              )}
+              onAddSkill={trend.addSkill}
+              onRemoveSkill={trend.removeSkill}
+              onRetry={trend.retry}
+              resource={trend.resource}
             />
             <RecentJobList
               browseHref={selected?.jobsHref ?? snapshot.jobsBrowseHref}

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
@@ -7,6 +7,43 @@ import { MarketOverview } from "./market-overview";
 import { buildMarketOverviewSnapshot } from "./model";
 
 const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
+
+const collectingTrend = {
+  status: "collecting",
+  collected_weeks: 2,
+  minimum_weeks: 4,
+  latest_snapshot_at: "2026-07-22T00:00:00Z",
+  series: [],
+} as const;
+
+const readyTrend = {
+  status: "ready",
+  collected_weeks: 4,
+  minimum_weeks: 4,
+  latest_snapshot_at: "2026-07-22T00:00:00Z",
+  series: [
+    {
+      skill: "Kubernetes",
+      category: "infra",
+      points: [
+        {
+          week_start: "2026-07-06",
+          count: 30,
+          required_count: 8,
+          preferred_count: 4,
+          unspecified_count: 18,
+        },
+        {
+          week_start: "2026-07-13",
+          count: 32,
+          required_count: 9,
+          preferred_count: 6,
+          unspecified_count: 17,
+        },
+      ],
+    },
+  ],
+} as const;
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
@@ -125,9 +162,20 @@ function renderReadyMarket() {
 }
 
 describe("MarketOverview", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => collectingTrend,
+      }),
+    );
+  });
+
   afterEach(() => {
     cleanup();
     replaceMock.mockReset();
+    vi.unstubAllGlobals();
   });
 
   it("states the official-posting scope and filtered total honestly", () => {
@@ -241,6 +289,23 @@ describe("MarketOverview", () => {
     expect(within(trend).queryByText(/UI 시안용/)).not.toBeInTheDocument();
     expect(within(trend).queryByText(/증가|감소|예측/)).not.toBeInTheDocument();
     expect(trend.querySelector("path[data-trend-line]")).toBeNull();
+  });
+
+  it("renders explicit weekly change only when real trend data is ready", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => readyTrend,
+      }),
+    );
+    renderReadyMarket();
+
+    expect(await screen.findByText("전주 대비 +3건")).toBeInTheDocument();
+    expect(screen.getByText("전체 경력·전체 분야 기준")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: /주차 명시 요구 변화/ }),
+    ).toBeInTheDocument();
   });
 
   it("labels co-occurrence as co-occurrence and keeps fit claims separate", () => {
