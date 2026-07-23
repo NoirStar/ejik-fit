@@ -155,7 +155,9 @@ describe("SearchPage", () => {
     expect(
       screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "공식 원문" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "기업 채용페이지 보기" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
     consoleError.mockRestore();
   });

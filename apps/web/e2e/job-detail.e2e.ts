@@ -155,11 +155,45 @@ test("keeps a long Korean job title grouped by words on mobile", async ({
     name: "공식 채용페이지에서 지원",
   });
   await expect(apply).toBeVisible();
+  const save = page.getByRole("button", {
+    name: "플랫폼 데이터 서비스 개발자 채용 저장",
+  });
+  await expect(save).toBeVisible();
+  const backLink = page.getByRole("link", {
+    name: "채용공고로 돌아가기",
+  });
+  await expect(backLink).toHaveAttribute("href", "/jobs");
+  await expect(backLink).not.toHaveAttribute("target", "_blank");
+  const companyPageLink = page
+    .getByRole("region", { name: "공고 신뢰 정보" })
+    .getByRole("link", { name: "기업 채용페이지 보기" });
+  await expect(companyPageLink).toHaveAttribute(
+    "href",
+    "https://recruit.navercorp.com/job-korean",
+  );
+  await expect(companyPageLink).toHaveAttribute("target", "_blank");
+  await expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
   expect(
     await apply.evaluate(
       (element) => getComputedStyle(element).whiteSpace === "nowrap",
     ),
   ).toBe(true);
+  const [applyBox, saveBox] = await Promise.all([
+    apply.boundingBox(),
+    save.boundingBox(),
+  ]);
+  expect(applyBox).not.toBeNull();
+  expect(saveBox).not.toBeNull();
+  for (const box of [applyBox!, saveBox!]) {
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  const ctasOverlap =
+    applyBox!.x < saveBox!.x + saveBox!.width &&
+    applyBox!.x + applyBox!.width > saveBox!.x &&
+    applyBox!.y < saveBox!.y + saveBox!.height &&
+    applyBox!.y + applyBox!.height > saveBox!.y;
+  expect(ctasOverlap).toBe(false);
   expect(
     await title.evaluate((element) => getComputedStyle(element).wordBreak),
   ).toBe("keep-all");

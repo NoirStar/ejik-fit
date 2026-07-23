@@ -43,8 +43,11 @@ const JOB_COPY = {
   description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
   currentList: "현재 목록",
   details: "공고 보기",
-  requirements: "기술 요건 보기",
-  empty: "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+  companyPage: "기업 채용페이지 보기",
+  browseAll: "전체 공고 보기",
+  filteredEmpty: "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+  outOfRangeEmpty: "요청한 페이지는 공고 목록 범위를 벗어났습니다.",
+  unfilteredEmpty: "현재 확인할 수 있는 공고가 없습니다.",
   savedEmpty: "저장한 공고가 없습니다.",
   addSkills: "내 기술을 추가하면 공고의 기술 요건과 비교합니다.",
 } as const;
@@ -219,10 +222,10 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
             href={`/jobs/${encodeURIComponent(job.id)}`}
             prefetch={false}
           >
-            {JOB_COPY.requirements}
+            {JOB_COPY.details}
           </Link>
           <a href={job.source_url} rel="noreferrer" target="_blank">
-            공식 원문
+            {JOB_COPY.companyPage}
             <ArrowSquareOut aria-hidden="true" size={15} weight="bold" />
           </a>
         </div>
@@ -365,6 +368,14 @@ export function JobList({
         ? `전체 ${total}개 공고 중 ${pageStart + 1}번부터 ${pageEnd}번까지 표시합니다.`
         : `현재 페이지에서 ${visibleJobs.length}개 공고를 표시합니다.`
       : "표시할 공고가 없습니다.";
+  const emptyCopy = filtering
+    ? { description: null, title: JOB_COPY.filteredEmpty }
+    : currentPage > 1
+      ? {
+          description: "첫 페이지에서 전체 공고를 확인해 주세요.",
+          title: JOB_COPY.outOfRangeEmpty,
+        }
+      : { description: null, title: JOB_COPY.unfilteredEmpty };
 
   function selectView(nextView: JobView) {
     setView(nextView);
@@ -391,7 +402,7 @@ export function JobList({
             <>
               <li>
                 <strong>공고 집계 불가</strong>
-                <span>API 응답 확인 필요</span>
+                <span>채용공고 데이터를 확인할 수 없습니다</span>
               </li>
               <li>
                 <strong>기업 집계 불가</strong>
@@ -490,7 +501,7 @@ export function JobList({
                   href="/jobs"
                   prefetch={false}
                 >
-                  필터 초기화
+                  {JOB_COPY.browseAll}
                 </Link>
               )}
             </div>
@@ -540,7 +551,7 @@ export function JobList({
                 기술 일치 <span>{matchingCount}</span>
               </button>
               <button
-                aria-label={`저장한 공고 ${savedCount}`}
+                aria-label={`${PRODUCT_TERMS.savedItems} ${savedCount}`}
                 aria-pressed={view === "saved"}
                 onClick={() => selectView("saved")}
                 type="button"
@@ -566,9 +577,10 @@ export function JobList({
             <div className={styles.emptyState}>
               <MagnifyingGlass aria-hidden="true" size={24} />
               <div>
-                <h3>{JOB_COPY.empty}</h3>
+                <h3>{emptyCopy.title}</h3>
+                {emptyCopy.description && <p>{emptyCopy.description}</p>}
               </div>
-              <Link href="/jobs">{JOB_COPY.details}</Link>
+              <Link href="/jobs">{JOB_COPY.browseAll}</Link>
             </div>
           ) : visibleJobs.length === 0 ? (
             <ViewEmptyState

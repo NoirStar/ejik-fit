@@ -30,7 +30,7 @@ export function SourceMeta({
       <span>{PRODUCT_TERMS.lastChecked} {formatVerifiedAt(lastVerifiedAt)}</span>
       {showSourceLink && (
         <a href={sourceUrl} target="_blank" rel="noreferrer">
-          공고 보기
+          기업 채용페이지 보기
           <span aria-hidden="true"> ↗</span>
         </a>
       )}

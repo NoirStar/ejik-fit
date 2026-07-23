@@ -27,12 +27,16 @@ describe("JobCard", () => {
     expect(screen.getByText("신입")).toBeInTheDocument();
     expect(screen.getByText("정규직")).toBeInTheDocument();
     expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "신입 백엔드 개발자" }),
-    ).toHaveAttribute("href", "/jobs/1");
-    expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
-      "href",
-      job.source_url,
-    );
+    const internalDetailLink = screen.getByRole("link", {
+      name: "신입 백엔드 개발자",
+    });
+    expect(internalDetailLink).toHaveAttribute("href", "/jobs/1");
+    expect(internalDetailLink).not.toHaveAttribute("target");
+    const companyPageLink = screen.getByRole("link", {
+      name: "기업 채용페이지 보기",
+    });
+    expect(companyPageLink).toHaveAttribute("href", job.source_url);
+    expect(companyPageLink).toHaveAttribute("target", "_blank");
+    expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
   });
 });

@@ -70,8 +70,8 @@ describe("JobsPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python Engineer" })).toBeInTheDocument();
     expect(
-      screen.getAllByRole("link", { name: "기술 요건 보기" }).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("link", { name: "기업 채용페이지 보기" }),
+    ).toHaveAttribute("href", "https://careers.example.com/job-1");
     expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵" })).toBeInTheDocument();
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
@@ -178,7 +178,9 @@ describe("JobsPage", () => {
     render(await JobsPage());
 
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "공식 원문" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "기업 채용페이지 보기" }),
+    ).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 });

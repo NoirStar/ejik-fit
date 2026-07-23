@@ -7,7 +7,7 @@ export function PostingDescription({ text }: { text: string }) {
   if (blocks.length === 0) {
     return (
       <p className={styles.descriptionEmpty}>
-        API가 제공한 공고 본문 텍스트가 없습니다. 공식 원문을 확인해 주세요.
+        제공된 공고 원문이 없습니다. 기업 채용페이지를 확인해 주세요.
       </p>
     );
   }

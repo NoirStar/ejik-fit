@@ -98,21 +98,30 @@ describe("JobList", () => {
       "href",
       "/skill-map?skill=Python",
     );
-    expect(within(job).getByRole("link", { name: "공식 원문" })).toHaveAttribute(
+    const internalDetailLink = within(job).getByRole("link", {
+      name: "공고 보기",
+    });
+    expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-1");
+    expect(internalDetailLink).not.toHaveAttribute("target");
+    const companyPageLink = within(job).getByRole("link", {
+      name: "기업 채용페이지 보기",
+    });
+    expect(companyPageLink).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-1",
     );
-    expect(
-      screen.getAllByRole("link", { name: "기술 요건 보기" }).length,
-    ).toBeGreaterThan(0);
+    expect(companyPageLink).toHaveAttribute("target", "_blank");
+    expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
     expect(screen.getByText("필수·우대 미표기").parentElement).toHaveTextContent(
       "Linux",
     );
     expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "필터 초기화" })).toHaveAttribute(
+    const resetLink = screen.getByRole("link", { name: "전체 공고 보기" });
+    expect(resetLink).toHaveAttribute(
       "href",
       "/jobs",
     );
+    expect(resetLink).not.toHaveAttribute("target");
     expect(screen.queryByText(/합격 가능성|적합도 점수|AI 추천/)).not.toBeInTheDocument();
 
     expect(
@@ -167,12 +176,12 @@ describe("JobList", () => {
     expect(
       await screen.findByRole("button", { name: "내 기술 겹침 1" }),
     ).toHaveTextContent(/^기술 일치\s*1$/);
-    expect(screen.getByRole("button", { name: "저장한 공고 0" })).toHaveTextContent(
+    expect(screen.getByRole("button", { name: "저장 목록 0" })).toHaveTextContent(
       /^저장\s*0$/,
     );
     expect(screen.queryByText("이 페이지")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "저장한 공고 0" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 목록 0" }));
     expect(screen.getByText("저장한 공고가 없습니다.")).toBeInTheDocument();
 
     fireEvent.click(
@@ -187,7 +196,7 @@ describe("JobList", () => {
     expect(
       JSON.parse(window.localStorage.getItem("ejik-fit:saved-job-ids")!),
     ).toEqual(["job-1"]);
-    fireEvent.click(screen.getByRole("button", { name: "저장한 공고 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 목록 1" }));
     expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 겹침 1" }));
@@ -276,8 +285,8 @@ describe("JobList", () => {
     expect(screen.getByText("21-21 / 21건")).toBeInTheDocument();
   });
 
-  it("distinguishes empty, missing-stack, and API error states", async () => {
-    const { rerender } = render(
+  it("shows filter guidance and a whole-list action for an empty filtered result", () => {
+    render(
       <JobList
         filters={{ query: "rust", careerType: "", category: "" }}
         postings={{ items: [], total: 0 }}
@@ -290,10 +299,63 @@ describe("JobList", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("공고 데이터를 불러오지 못했습니다.")).not.toBeInTheDocument();
+    const wholeListLinks = screen.getAllByRole("link", {
+      name: "전체 공고 보기",
+    });
+    expect(wholeListLinks).toHaveLength(2);
+    for (const link of wholeListLinks) {
+      expect(link).toHaveAttribute("href", "/jobs");
+      expect(link).not.toHaveAttribute("target");
+    }
+  });
 
-    rerender(
+  it("explains an out-of-range page and returns to the first whole list", () => {
+    render(
+      <JobList
+        currentPage={3}
+        filters={{ query: "", careerType: "", category: "" }}
+        postings={{ items: [], total: 2 }}
+      />,
+    );
+
+    expect(
+      screen.getByText("요청한 페이지는 공고 목록 범위를 벗어났습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+      ),
+    ).not.toBeInTheDocument();
+    const firstPageLink = screen.getByRole("link", {
+      name: "전체 공고 보기",
+    });
+    expect(firstPageLink).toHaveAttribute("href", "/jobs");
+    expect(firstPageLink).not.toHaveAttribute("target");
+  });
+
+  it("states an unfiltered zero-result list without suggesting filters", () => {
+    render(
+      <JobList
+        filters={{ query: "", careerType: "", category: "" }}
+        postings={{ items: [], total: 0 }}
+      />,
+    );
+
+    expect(
+      screen.getByText("현재 확인할 수 있는 공고가 없습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("distinguishes missing-stack and unavailable-data states", async () => {
+    const { rerender } = render(
       <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
+
     fireEvent.click(
       await screen.findByRole("button", { name: "내 기술 겹침 0" }),
     );
@@ -314,6 +376,10 @@ describe("JobList", () => {
       />,
     );
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText("채용공고 데이터를 확인할 수 없습니다"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/API/)).not.toBeInTheDocument();
     expect(
       screen.queryByText(
         "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",

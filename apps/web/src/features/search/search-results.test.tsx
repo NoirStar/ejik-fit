@@ -223,7 +223,7 @@ describe("SearchResults", () => {
     const company = screen
       .getByRole("link", { name: "NAVER 기업 채용 현황" })
       .closest("article")!;
-    expect(within(company).getByText("현재 검색 응답 공고 2건")).toBeInTheDocument();
+    expect(within(company).getByText("현재 검색 결과 공고 2건")).toBeInTheDocument();
     expect(within(company).getByRole("link", { name: "Python 스킬맵" })).toHaveAttribute(
       "href",
       "/skill-map?skill=Python",
@@ -233,26 +233,41 @@ describe("SearchResults", () => {
       .getByRole("link", { name: "Python Backend Engineer" })
       .closest("article")!;
     expect(within(job).getByText("공식 공고")).toBeInTheDocument();
-    expect(within(job).getByRole("link", { name: "공식 원문" })).toHaveAttribute(
+    const companyPageLink = within(job).getByRole("link", {
+      name: "기업 채용페이지 보기",
+    });
+    expect(companyPageLink).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-python",
     );
-    expect(within(job).getByRole("link", { name: "공고 보기" })).toHaveAttribute(
-      "href",
-      "/jobs/job-python",
-    );
+    expect(companyPageLink).toHaveAttribute("target", "_blank");
+    expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
+    const internalDetailLink = within(job).getByRole("link", {
+      name: "공고 보기",
+    });
+    expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
+    expect(internalDetailLink).not.toHaveAttribute("target");
 
     const skill = screen
       .getByRole("link", { name: "Python 스킬맵 보기" })
       .closest("article")!;
     expect(within(skill).getByText("공고 통계 표본")).toBeInTheDocument();
     expect(within(skill).getByText("18건 공고")).toBeInTheDocument();
-    expect(within(skill).getByText("필수 12 · 우대 4 · 미표기 2")).toBeInTheDocument();
+    const unspecifiedHelp = screen.getByText(
+      "미표기: 공고에서 필수 또는 우대로 구분하지 않은 기술",
+    );
+    expect(unspecifiedHelp).toBeVisible();
+    const breakdown = within(skill).getByLabelText(
+      "필수 12건, 우대 4건, 필수·우대 미표기 2건",
+    );
+    expect(breakdown).toHaveTextContent("필수 12 · 우대 4 · 미표기 2");
+    expect(breakdown).toHaveAttribute("aria-describedby", unspecifiedHelp.id);
     expect(
       screen.getByText(
-        "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
+        "현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다.",
       ),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/API/)).not.toBeInTheDocument();
 
     const community = screen
       .getByRole("link", { name: "Python에서 Go로 옮긴 경험이 궁금해요" })
@@ -272,6 +287,27 @@ describe("SearchResults", () => {
     expect(
       screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
     ).not.toHaveTextContent(GUIDE_DISCLOSURE);
+  });
+
+  it("uses the full unspecified requirement label on a search job card", () => {
+    const jobWithUnspecifiedSkill = {
+      ...snapshot().jobs[0],
+      requiredSkills: [],
+      preferredSkills: [],
+      unspecifiedSkills: ["Linux"],
+    };
+
+    render(
+      <SearchResults
+        snapshot={snapshot({ jobs: [jobWithUnspecifiedSkill] })}
+      />,
+    );
+
+    const job = screen
+      .getByRole("link", { name: "Python Backend Engineer" })
+      .closest("article")!;
+    expect(within(job).getByText("필수·우대 미표기 Linux")).toBeInTheDocument();
+    expect(within(job).queryByText("언급 Linux")).not.toBeInTheDocument();
   });
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {

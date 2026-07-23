@@ -42,17 +42,43 @@ for (const width of [1440, 820, 390, 320]) {
       pageContent.getByText("공식 공고", { exact: true }),
     ).toBeVisible();
     await expect(pageContent.getByText("공고 통계 표본")).toBeVisible();
-    await expect(
-      pageContent.getByRole("link", { name: "공고 보기" }),
-    ).toBeVisible();
+    const internalDetailLink = pageContent.getByRole("link", {
+      name: "공고 보기",
+    });
+    await expect(internalDetailLink).toBeVisible();
+    await expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
+    await expect(internalDetailLink).not.toHaveAttribute("target", "_blank");
+    const companyPageLink = pageContent.getByRole("link", {
+      name: "기업 채용페이지 보기",
+    });
+    await expect(companyPageLink).toHaveAttribute(
+      "href",
+      "https://recruit.navercorp.com/job-python",
+    );
+    await expect(companyPageLink).toHaveAttribute("target", "_blank");
+    await expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
     await expect(
       pageContent.getByText(/필수 \d+ · 우대 \d+ · 미표기 \d+/),
     ).toBeVisible();
     await expect(
       pageContent.getByText(
-        "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
+        "현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다.",
       ),
     ).toBeVisible();
+    const unspecifiedHelp = pageContent.getByText(
+      "미표기: 공고에서 필수 또는 우대로 구분하지 않은 기술",
+    );
+    await expect(unspecifiedHelp).toBeVisible();
+    const breakdown = pageContent.getByLabel(
+      "필수 27건, 우대 8건, 필수·우대 미표기 28건",
+    );
+    const unspecifiedHelpId = await unspecifiedHelp.getAttribute("id");
+    expect(unspecifiedHelpId).not.toBeNull();
+    await expect(breakdown).toHaveAttribute(
+      "aria-describedby",
+      unspecifiedHelpId!,
+    );
+    await expect(pageContent.getByText(/API/)).toHaveCount(0);
 
     expect(
       await page.evaluate(
@@ -66,6 +92,9 @@ for (const width of [1440, 820, 390, 320]) {
       pageContent.getByRole("link", { name: "NAVER 기업 채용 현황" }),
       pageContent.getByRole("link", { name: "Python 스킬맵", exact: true }),
       pageContent.getByRole("link", { name: "NAVER", exact: true }),
+      pageContent.getByRole("link", { name: "Python 스킬맵 보기" }),
+      internalDetailLink,
+      companyPageLink,
     ];
     if (width > 600) {
       touchTargets.push(
@@ -78,6 +107,11 @@ for (const width of [1440, 820, 390, 320]) {
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
+    const skillMapLink = pageContent.getByRole("link", {
+      name: "Python 스킬맵 보기",
+    });
+    await skillMapLink.focus();
+    await expect(skillMapLink).toBeFocused();
 
     if (width === 320) {
       const scopeLinks = pageContent

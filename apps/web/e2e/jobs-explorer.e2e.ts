@@ -24,6 +24,20 @@ for (const width of [1440, 820, 600, 390, 320]) {
       .getByRole("heading", { level: 1, name: "채용공고" })
       .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
     expect(pageTitleSize).toBeLessThanOrEqual(width <= 760 ? 28 : 32);
+    const internalDetailLink = page
+      .getByRole("link", { name: "공고 보기" })
+      .first();
+    await expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
+    await expect(internalDetailLink).not.toHaveAttribute("target", "_blank");
+    const companyPageLink = page
+      .getByRole("link", { name: "기업 채용페이지 보기" })
+      .first();
+    await expect(companyPageLink).toHaveAttribute(
+      "href",
+      "https://recruit.navercorp.com/job-python",
+    );
+    await expect(companyPageLink).toHaveAttribute("target", "_blank");
+    await expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
 
     const requiredVisibleTitles = width === 1440 ? 2 : width === 390 ? 1 : 0;
     const titles = page.locator("article h3");
@@ -38,7 +52,8 @@ for (const width of [1440, 820, 600, 390, 320]) {
     for (const target of [
       page.getByRole("button", { name: "검색", exact: true }),
       page.getByRole("link", { name: "Python 스킬맵" }),
-      page.getByRole("link", { name: "기술 요건 보기" }).first(),
+      internalDetailLink,
+      companyPageLink,
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
@@ -54,8 +69,9 @@ for (const width of [1440, 820, 600, 390, 320]) {
       for (const target of [
         page.getByRole("button", { name: "전체 공고 2" }),
         page.getByRole("button", { name: "내 기술 겹침 0" }),
-        page.getByRole("button", { name: "저장한 공고 0" }),
-        page.getByRole("link", { name: "기술 요건 보기" }).first(),
+        page.getByRole("button", { name: "저장 목록 0" }),
+        internalDetailLink,
+        companyPageLink,
       ]) {
         expect(
           await target.evaluate(
@@ -101,7 +117,7 @@ test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Go Platform Engineer 저장" }).click();
-  await page.getByRole("button", { name: "저장한 공고 1" }).click();
+  await page.getByRole("button", { name: "저장 목록 1" }).click();
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
   ).toBeVisible();
@@ -109,7 +125,7 @@ test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
     await page.evaluate(() => localStorage.getItem("ejik-fit:saved-job-ids")),
   ).toBe('["job-go"]');
 
-  await page.getByRole("link", { name: "필터 초기화" }).click();
+  await page.getByRole("link", { name: "전체 공고 보기" }).click();
   await expect(page).toHaveURL(/\/jobs$/);
   await expect(page.getByLabel("공고 검색")).toHaveValue("");
   await expect(page.getByLabel("경력 조건")).toHaveValue("");
@@ -131,6 +147,12 @@ test("combines query and career filters like the production API", async ({
       "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
     ),
   ).toBeVisible();
+  const wholeListLinks = page.getByRole("link", { name: "전체 공고 보기" });
+  await expect(wholeListLinks).toHaveCount(2);
+  for (let index = 0; index < (await wholeListLinks.count()); index += 1) {
+    await expect(wholeListLinks.nth(index)).toHaveAttribute("href", "/jobs");
+    await expect(wholeListLinks.nth(index)).not.toHaveAttribute("target", "_blank");
+  }
 });
 
 test("keeps category filter actions together at tablet width", async ({
@@ -143,7 +165,7 @@ test("keeps category filter actions together at tablet width", async ({
   const searchBox = await page
     .getByRole("button", { name: "검색", exact: true })
     .boundingBox();
-  const resetBox = await page.getByRole("link", { name: "필터 초기화" }).boundingBox();
+  const resetBox = await page.getByRole("link", { name: "전체 공고 보기" }).boundingBox();
 
   expect(searchBox).not.toBeNull();
   expect(resetBox).not.toBeNull();

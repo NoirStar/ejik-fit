@@ -73,6 +73,8 @@ const SEARCH_COPY = {
   communityError: "커뮤니티 검색 결과를 불러오지 못했습니다.",
 } as const;
 
+const UNSPECIFIED_HELP_ID = "search-skill-unspecified-help";
+
 function formatVerifiedDate(value: string | null) {
   if (!value || Number.isNaN(Date.parse(value))) return "확인 시각 없음";
   return `${new Intl.DateTimeFormat("ko-KR", {
@@ -138,7 +140,7 @@ function CompanyResult({ company }: { company: CompanySearchResult }) {
         sourceUrl={company.sourceUrl}
       />
       <div className={styles.companyCopy}>
-        <p>현재 검색 응답 공고 {company.postingCount}건</p>
+        <p>현재 검색 결과 공고 {company.postingCount}건</p>
         <h3>
           <Link aria-label={`${company.name} 기업 채용 현황`} href={company.href}>
             {company.name}
@@ -208,7 +210,7 @@ function JobResult({ job }: { job: JobSearchResult }) {
                 ? "필수"
                 : skill.kind === "preferred"
                   ? "우대"
-                  : "언급"}{" "}
+                  : PRODUCT_TERMS.unspecifiedRequirement}{" "}
               {skill.name}
             </li>
           ))}
@@ -220,7 +222,7 @@ function JobResult({ job }: { job: JobSearchResult }) {
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
         <a href={job.sourceUrl} rel="noreferrer" target="_blank">
-          공식 원문
+          기업 채용페이지 보기
           <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
         </a>
       </footer>
@@ -237,6 +239,15 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
   const hasRequirementBreakdown = requirementCounts.some(
     ([, count]) => count !== null,
   );
+  const expandedRequirementLabel = requirementCounts
+    .map(([label, count]) =>
+      `${
+        label === PRODUCT_TERMS.unspecifiedRequirementCompact
+          ? PRODUCT_TERMS.unspecifiedRequirement
+          : label
+      } ${count === null ? "미제공" : `${count}건`}`,
+    )
+    .join(", ");
 
   return (
     <article className={styles.skillResult}>
@@ -250,7 +261,10 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
       </div>
       <div className={styles.skillEvidence}>
         <strong>{skill.postingCount}건 공고</strong>
-        <span>
+        <span
+          aria-describedby={hasRequirementBreakdown ? UNSPECIFIED_HELP_ID : undefined}
+          aria-label={hasRequirementBreakdown ? expandedRequirementLabel : undefined}
+        >
           {hasRequirementBreakdown
             ? requirementCounts
                 .map(([label, count]) => `${label} ${count ?? "미제공"}`)
@@ -452,7 +466,7 @@ export function SearchResults({
             <div className={styles.boundaryNote}>
               <CheckCircle aria-hidden="true" size={17} weight="fill" />
               <p>
-                기업·공고·기술 수치는 전체 검색량이 아니라 현재 API 응답과 통계 표본
+                기업·공고·기술 수치는 전체 검색량이 아니라 현재 검색 결과와 통계 표본
                 범위입니다.
               </p>
             </div>
@@ -499,7 +513,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="company-results-title">기업</span>
                     <SectionHeader
                       count={snapshot.counts.companies}
-                      description="검색된 공식 공고 응답에서 확인한 관련 기업입니다."
+                      description="현재 공고 검색 결과에서 확인한 관련 기업입니다."
                       query={query}
                       scope="companies"
                       title="기업"
@@ -507,7 +521,7 @@ export function SearchResults({
                     {snapshot.counts.companies === null ? (
                       <SectionState>공고 기반 기업 결과를 현재 확인할 수 없습니다.</SectionState>
                     ) : snapshot.companies.length === 0 ? (
-                      <SectionState>현재 공고 응답에서 관련 기업을 찾지 못했습니다.</SectionState>
+                      <SectionState>현재 공고 검색 결과에서 관련 기업을 찾지 못했습니다.</SectionState>
                     ) : (
                       <div className={styles.companyGrid}>
                         {snapshot.companies
@@ -525,7 +539,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="job-results-title">공고</span>
                     <SectionHeader
                       count={snapshot.counts.jobs}
-                      description="공식 채용페이지의 현재 공개 공고 검색 응답입니다."
+                      description="기업 채용페이지에서 확인한 현재 공개 공고 검색 결과입니다."
                       query={query}
                       scope="jobs"
                       title="공고"
@@ -551,7 +565,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="skill-results-title">기술</span>
                     <SectionHeader
                       count={snapshot.counts.skills}
-                      description="공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다."
+                      description="현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다."
                       query={query}
                       scope="skills"
                       title="기술"
@@ -561,13 +575,19 @@ export function SearchResults({
                     ) : snapshot.skills.length === 0 ? (
                       <SectionState>현재 통계 표본에서 일치하는 기술이 없습니다.</SectionState>
                     ) : (
-                      <div className={styles.skillList}>
-                        {snapshot.skills
-                          .slice(0, resultLimit(scope, "skills"))
-                          .map((skill) => (
-                            <SkillResult key={skill.name} skill={skill} />
-                          ))}
-                      </div>
+                      <>
+                        <p className={styles.skillHelper} id={UNSPECIFIED_HELP_ID}>
+                          {PRODUCT_TERMS.unspecifiedRequirementCompact}: 공고에서 필수 또는
+                          우대로 구분하지 않은 기술
+                        </p>
+                        <div className={styles.skillList}>
+                          {snapshot.skills
+                            .slice(0, resultLimit(scope, "skills"))
+                            .map((skill) => (
+                              <SkillResult key={skill.name} skill={skill} />
+                            ))}
+                        </div>
+                      </>
                     )}
                   </section>
                 )}

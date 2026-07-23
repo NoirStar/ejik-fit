@@ -566,6 +566,15 @@
   display: grid;
 }
 
+.skillHelper {
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
 .skillResult {
   display: grid;
   min-width: 0;

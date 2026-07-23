@@ -239,7 +239,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             className={styles.description}
           >
             <header className={styles.sectionHeader}>
-              <p>API가 제공한 원문 텍스트</p>
+              <p>제공된 공고 원문</p>
               <h2 id="job-description-title">공고 원문</h2>
             </header>
             <PostingDescription text={job.description_text} />
@@ -249,7 +249,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               rel="noreferrer"
               target="_blank"
             >
-              공식 원문에서 계속 읽기
+              기업 채용페이지 보기
               <ArrowSquareOut aria-hidden="true" size={17} weight="bold" />
             </a>
           </section>
