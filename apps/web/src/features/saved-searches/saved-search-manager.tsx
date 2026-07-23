@@ -529,8 +529,9 @@ export function SavedSearchManager() {
   }
 
   if (
-    savedSearches.state.status === "idle" ||
-    savedSearches.state.status === "loading"
+    (savedSearches.state.status === "idle" ||
+      savedSearches.state.status === "loading") &&
+    savedSearches.state.items.length === 0
   ) {
     return (
       <main className={styles.page}>
@@ -614,6 +615,12 @@ export function SavedSearchManager() {
             {savedSearches.state.items.length.toLocaleString("ko-KR")}개
           </span>
         </header>
+
+        {savedSearches.state.status === "loading" && (
+          <p aria-live="polite" className={styles.evaluationLoading}>
+            공고 알림을 불러오는 중…
+          </p>
+        )}
 
         {savedSearches.state.status === "error" && (
           <div className={styles.notice} role="alert">

@@ -131,6 +131,37 @@ describe("useSavedJobSearches", () => {
     expect(result.current.state.error).not.toContain("raw provider list failure");
   });
 
+  it("recovers from an initial list failure when reload succeeds", async () => {
+    const store = fakeStore({
+      list: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("raw initial list failure"))
+        .mockResolvedValueOnce([existing]),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("error"));
+    expect(result.current.state).toEqual({
+      status: "error",
+      items: [],
+      error:
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+    });
+    expect(result.current.state.error).not.toContain(
+      "raw initial list failure",
+    );
+
+    await act(() => result.current.reload());
+
+    expect(result.current.state).toEqual({
+      status: "ready",
+      items: [existing],
+      error: "",
+    });
+    expect(store.list).toHaveBeenCalledTimes(2);
+  });
+
   it("ignores an old-account mutation success after logout", async () => {
     const update = deferred<SavedJobSearch>();
     const store = fakeStore({
@@ -388,6 +419,51 @@ describe("useSavedJobSearches", () => {
     await waitFor(() =>
       expect(result.current.state.items).toEqual(persisted),
     );
+  });
+
+  it("keeps authoritative items ready after a failed create so it can retry", async () => {
+    const created = savedSearch("search-2", "Rust");
+    const store = fakeStore({
+      list: vi.fn().mockResolvedValue([existing]),
+      insert: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("raw provider insert failure"))
+        .mockResolvedValueOnce(created),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    const filters = {
+      query: "Rust",
+      category: "backend" as const,
+      careerType: "" as const,
+    };
+
+    let firstOutcome;
+    await act(async () => {
+      firstOutcome = await result.current.create(filters, "재시도할 알림");
+    });
+
+    expect(firstOutcome).toEqual({ status: "error" });
+    expect(result.current.state).toEqual({
+      status: "ready",
+      items: [existing],
+      error: "",
+    });
+
+    let secondOutcome;
+    await act(async () => {
+      secondOutcome = await result.current.create(filters, "재시도할 알림");
+    });
+
+    expect(secondOutcome).toEqual({ status: "created", item: created });
+    expect(result.current.state).toEqual({
+      status: "ready",
+      items: [created, existing],
+      error: "",
+    });
+    expect(store.insert).toHaveBeenCalledTimes(2);
   });
 
   it("reserves a duplicate filter across concurrent creates", async () => {

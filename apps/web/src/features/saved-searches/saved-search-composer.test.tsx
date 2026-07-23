@@ -12,6 +12,7 @@ import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import type { AuthViewer } from "@/features/auth/use-auth-viewer";
 import type { SavedJobSearch } from "@/lib/saved-job-searches";
 
+import type { SavedJobSearchStore } from "./saved-job-search-store";
 import {
   type CreateSavedJobSearchResult,
   type SavedJobSearchesController,
@@ -263,6 +264,68 @@ describe("SavedSearchComposer", () => {
     expect(screen.getByRole("form", { name: "알림 조건 저장" })).not.toHaveTextContent(
       /저장 검색|저장된 검색|새 검색 만들기/,
     );
+  });
+
+  it("keeps a failed store insert retryable and succeeds on the second submit", async () => {
+    const actualSavedSearches = await vi.importActual<
+      typeof import("./use-saved-job-searches")
+    >("./use-saved-job-searches");
+    const createdSearch: SavedJobSearch = {
+      ...savedSearch,
+      id: "search-2",
+      name: "재시도할 알림",
+      query: "Rust",
+      filterKey: "rust|backend|",
+    };
+    const store: SavedJobSearchStore = {
+      list: vi.fn().mockResolvedValue([savedSearch]),
+      insert: vi
+        .fn()
+        .mockRejectedValueOnce(new Error("raw provider insert failure"))
+        .mockResolvedValueOnce(createdSearch),
+      update: vi.fn(),
+      remove: vi.fn(),
+      markChecked: vi.fn(),
+    };
+    vi.mocked(useSavedJobSearches).mockImplementation((activeViewer) =>
+      actualSavedSearches.useSavedJobSearches(activeViewer, store),
+    );
+    mockAuth(viewer);
+    render(
+      <SavedSearchComposer
+        filters={{ query: "Rust", category: "backend", careerType: "" }}
+      />,
+    );
+    const trigger = screen.getByRole("button", {
+      name: "이 조건으로 알림 만들기",
+    });
+    await waitFor(() => expect(trigger).toBeEnabled());
+    fireEvent.click(trigger);
+    const nameInput = screen.getByLabelText("알림 조건 이름");
+    fireEvent.change(nameInput, { target: { value: "재시도할 알림" } });
+    fireEvent.click(screen.getByRole("button", { name: "알림 조건 저장" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "알림 조건을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(alert).not.toHaveTextContent("raw provider insert failure");
+    expect(nameInput).toHaveValue("재시도할 알림");
+    await waitFor(() => expect(nameInput).toHaveFocus());
+    const retryButton = screen.getByRole("button", {
+      name: "알림 조건 저장",
+    });
+    expect(retryButton).toBeEnabled();
+
+    fireEvent.click(retryButton);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "알림 조건을 저장했습니다.",
+    );
+    expect(store.insert).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByRole("link", { name: "공고 알림 관리" }),
+    ).toHaveAttribute("href", "/career/alerts");
   });
 
   it("keeps filterless saving disabled", () => {

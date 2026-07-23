@@ -169,7 +169,10 @@ describe("SavedSearchManager", () => {
     remove.mockResolvedValue(true);
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("manages an active saved search and links to its exact jobs filter", async () => {
     render(<SavedSearchManager />);
@@ -480,6 +483,63 @@ describe("SavedSearchManager", () => {
     expect(screen.getByText("공고 수 확인 실패")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "공고 수 다시 확인" }));
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps evaluated counts visible while the same saved searches reload and fail", async () => {
+    const actualEvaluation = await vi.importActual<
+      typeof import("./use-saved-search-evaluation")
+    >("./use-saved-search-evaluation");
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          evaluatedAt: "2026-07-20T04:00:00.000Z",
+          groups: [readyGroup(pythonSearch.id, 23, ["job-1"])],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      ),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    vi.mocked(useSavedSearchEvaluation).mockImplementation(
+      actualEvaluation.useSavedSearchEvaluation,
+    );
+    markChecked.mockResolvedValue(true);
+    const { rerender } = render(<SavedSearchManager />);
+    expect(
+      await screen.findByText("현재 공식 공고 23건"),
+    ).toBeInTheDocument();
+
+    mockSearches({
+      status: "loading",
+      items: [{ ...pythonSearch }],
+      error: "",
+    });
+    rerender(<SavedSearchManager />);
+
+    expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
+    expect(
+      screen.getByText("공고 알림을 불러오는 중…"),
+    ).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    mockSearches({
+      status: "error",
+      items: [{ ...pythonSearch }],
+      error:
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+    });
+    rerender(<SavedSearchManager />);
+
+    expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
+    expect(screen.getByText("새로 확인 1건")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledOnce();
   });
 
   it("uses only the public alert vocabulary in the alert manager", () => {

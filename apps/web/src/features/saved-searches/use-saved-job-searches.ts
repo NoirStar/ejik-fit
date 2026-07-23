@@ -371,7 +371,7 @@ export function useSavedJobSearches(
             return { status: "created", item };
           } catch {
             if (!isAccountActive(token)) return { status: "error" };
-            commitState((current) => failed(current.items));
+            commitState((current) => ready(current.items));
             return { status: "error" };
           }
         },

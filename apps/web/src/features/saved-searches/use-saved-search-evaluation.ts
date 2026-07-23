@@ -192,6 +192,20 @@ function searchSignature(
   ]);
 }
 
+function groupsMatchSearchIdentity(
+  groups: SavedSearchEvaluationGroup[],
+  searches: SavedJobSearch[],
+) {
+  if (groups.length !== searches.length) return false;
+  const searchIds = new Set(searches.map((search) => search.id));
+  const groupIds = new Set(groups.map((group) => group.searchId));
+  return (
+    searchIds.size === searches.length &&
+    groupIds.size === groups.length &&
+    groups.every((group) => searchIds.has(group.searchId))
+  );
+}
+
 export function useSavedSearchEvaluation(
   searches: SavedJobSearch[],
   loadStatus: SavedJobSearchesState["status"],
@@ -225,14 +239,20 @@ export function useSavedSearchEvaluation(
     requestSequence.current = requestId;
     activeRequest.current = requestId;
 
-    if (loadStatus !== "ready") {
-      setState(IDLE_STATE);
-      return;
-    }
-
     const evaluationSearches = includePaused
       ? searches
       : searches.filter((search) => search.enabled);
+
+    if (loadStatus !== "ready") {
+      setState((current) =>
+        evaluationSearches.length > 0 &&
+        groupsMatchSearchIdentity(current.groups, evaluationSearches)
+          ? current
+          : IDLE_STATE,
+      );
+      return;
+    }
+
     if (evaluationSearches.length === 0) {
       setState({ status: "ready", groups: [], error: "" });
       return;
@@ -242,7 +262,12 @@ export function useSavedSearchEvaluation(
     let cancelled = false;
     setState((current) => ({
       status: "loading",
-      groups: current.groups,
+      groups: groupsMatchSearchIdentity(
+        current.groups,
+        evaluationSearches,
+      )
+        ? current.groups
+        : [],
       error: "",
     }));
 

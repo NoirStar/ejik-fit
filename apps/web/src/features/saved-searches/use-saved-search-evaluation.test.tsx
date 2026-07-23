@@ -5,7 +5,10 @@ import type { SavedJobSearch } from "@/lib/saved-job-searches";
 import type { SavedSearchEvaluationResponse } from "@/lib/saved-search-notifications";
 import type { PostingSummary } from "@/lib/types";
 
-import type { SavedJobSearchesController } from "./use-saved-job-searches";
+import type {
+  SavedJobSearchesController,
+  SavedJobSearchesState,
+} from "./use-saved-job-searches";
 import { useSavedSearchEvaluation } from "./use-saved-search-evaluation";
 
 const evaluatedAt = "2026-07-20T04:00:00.000Z";
@@ -36,6 +39,7 @@ function posting(id: string): PostingSummary {
     id,
     title: `${id} title`,
     company_name: `${id} company`,
+    company_slug: undefined,
     career_type: null,
     employment_type: null,
     career_min: null,
@@ -45,6 +49,11 @@ function posting(id: string): PostingSummary {
     source_url: `https://example.com/${id}`,
     first_seen_at: "2026-07-20T03:00:00.000Z",
     last_verified_at: "2026-07-20T04:00:00.000Z",
+    opens_at: null,
+    closes_at: null,
+    required_skills: [],
+    preferred_skills: [],
+    unspecified_skills: [],
   };
 }
 
@@ -504,6 +513,150 @@ describe("useSavedSearchEvaluation", () => {
     );
   });
 
+  it("keeps evaluated groups while the same search identities reload and fail", async () => {
+    const searches = [savedSearch("search-1", true)];
+    const response: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: searches[0].id,
+          status: "ready",
+          total: 7,
+          items: [posting("job-1")],
+        },
+      ],
+    };
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      jsonResponse(response),
+    );
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    type Props = {
+      items: SavedJobSearch[];
+      loadStatus: SavedJobSearchesState["status"];
+    };
+    const { result, rerender } = renderHook(
+      ({ items, loadStatus }: Props) =>
+        useSavedSearchEvaluation(items, loadStatus, markChecked, {
+          fetcher,
+        }),
+      {
+        initialProps: {
+          items: searches,
+          loadStatus: "ready",
+        } as Props,
+      },
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    rerender({ items: [{ ...searches[0] }], loadStatus: "loading" });
+
+    expect(result.current.state).toEqual({
+      status: "ready",
+      groups: response.groups,
+      error: "",
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    rerender({ items: [{ ...searches[0] }], loadStatus: "error" });
+
+    expect(result.current.state).toEqual({
+      status: "ready",
+      groups: response.groups,
+      error: "",
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it("drops stale groups for different or empty identities before evaluating replacements", async () => {
+    const firstSearch = savedSearch("search-1", true);
+    const nextSearch = savedSearch("search-2", true, {
+      userId: "user-2",
+    });
+    const firstResponse: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: firstSearch.id,
+          status: "ready",
+          total: 7,
+          items: [posting("job-1")],
+        },
+      ],
+    };
+    const nextResponse: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: nextSearch.id,
+          status: "ready",
+          total: 3,
+          items: [posting("job-2")],
+        },
+      ],
+    };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(firstResponse))
+      .mockResolvedValueOnce(jsonResponse(nextResponse));
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    type Props = {
+      items: SavedJobSearch[];
+      loadStatus: SavedJobSearchesState["status"];
+    };
+    const { result, rerender } = renderHook(
+      ({ items, loadStatus }: Props) =>
+        useSavedSearchEvaluation(items, loadStatus, markChecked, {
+          fetcher,
+        }),
+      {
+        initialProps: {
+          items: [firstSearch],
+          loadStatus: "ready",
+        } as Props,
+      },
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    rerender({ items: [nextSearch], loadStatus: "error" });
+
+    expect(result.current.state).toEqual({
+      status: "idle",
+      groups: [],
+      error: "",
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    rerender({ items: [nextSearch], loadStatus: "ready" });
+
+    await waitFor(() =>
+      expect(result.current.state).toEqual({
+        status: "ready",
+        groups: nextResponse.groups,
+        error: "",
+      }),
+    );
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    const secondRequest = JSON.parse(
+      String(fetcher.mock.calls[1]?.[1]?.body),
+    ) as { searches: Array<{ id: string }> };
+    expect(secondRequest.searches.map((search) => search.id)).toEqual([
+      nextSearch.id,
+    ]);
+
+    rerender({ items: [], loadStatus: "loading" });
+
+    expect(result.current.state).toEqual({
+      status: "idle",
+      groups: [],
+      error: "",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   it("starts one request for one signature in StrictMode", async () => {
     const response: SavedSearchEvaluationResponse = {
       evaluatedAt,
@@ -608,5 +761,36 @@ describe("useSavedSearchEvaluation", () => {
     unmount();
 
     expect(request.signal?.aborted).toBe(true);
+  });
+
+  it("aborts an in-flight evaluation when the saved-search load stops being ready", async () => {
+    const request = { signal: null as AbortSignal | null };
+    const fetcher = vi.fn<typeof fetch>(
+      async (_input, init) => {
+        request.signal = init?.signal ?? null;
+        return new Promise<Response>(() => undefined);
+      },
+    );
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    type Props = {
+      loadStatus: SavedJobSearchesState["status"];
+    };
+    const searches = [savedSearch("search-1", true)];
+    const { rerender } = renderHook(
+      ({ loadStatus }: Props) =>
+        useSavedSearchEvaluation(searches, loadStatus, markChecked, {
+          fetcher,
+        }),
+      { initialProps: { loadStatus: "ready" } as Props },
+    );
+    await waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+
+    rerender({ loadStatus: "loading" });
+
+    expect(request.signal?.aborted).toBe(true);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(markChecked).not.toHaveBeenCalled();
   });
 });
