@@ -35,7 +35,7 @@ export function normalizeCredentialAuthMode(
 
 export function validateEmail(value: string) {
   const email = value.trim();
-  if (!email) return "이메일을 입력해주세요.";
+  if (!email) return "이메일을 입력해 주세요.";
   if (email.length > 254) return "이메일은 254자 이하여야 합니다.";
 
   const parts = email.split("@");
@@ -46,7 +46,7 @@ export function validateEmail(value: string) {
     /\s/u.test(parts[0]) ||
     /\s/u.test(parts[1])
   ) {
-    return "올바른 이메일 주소를 입력해주세요.";
+    return "올바른 이메일 주소를 입력해 주세요.";
   }
   return "";
 }
@@ -54,13 +54,13 @@ export function validateEmail(value: string) {
 export function validatePassword(value: string) {
   const length = characterCount(value);
   if (length < 10 || length > 72) {
-    return "비밀번호는 10자 이상 72자 이하로 입력해주세요.";
+    return "비밀번호는 10자 이상 72자 이하로 입력해 주세요.";
   }
   if (!/\p{L}/u.test(value)) {
-    return "비밀번호에 영문자나 한글 등 문자를 1개 이상 포함해주세요.";
+    return "비밀번호에 영문자나 한글 등 문자를 1개 이상 포함해 주세요.";
   }
   if (!/\d/u.test(value)) {
-    return "비밀번호에 숫자를 1개 이상 포함해주세요.";
+    return "비밀번호에 숫자를 1개 이상 포함해 주세요.";
   }
   return "";
 }
@@ -77,7 +77,7 @@ export function validateNickname(value: string) {
   if (length < 2 || length > 20) {
     return {
       value: nickname,
-      error: "닉네임은 2자 이상 20자 이하로 입력해주세요.",
+      error: "닉네임은 2자 이상 20자 이하로 입력해 주세요.",
     };
   }
   return { value: nickname, error: "" };
@@ -92,7 +92,7 @@ export function validateSignUp(fields: SignUpFields): SignUpErrors {
   if (emailError) errors.email = emailError;
   if (passwordError) errors.password = passwordError;
   if (!fields.passwordConfirmation) {
-    errors.passwordConfirmation = "비밀번호를 한 번 더 입력해주세요.";
+    errors.passwordConfirmation = "비밀번호를 한 번 더 입력해 주세요.";
   } else if (fields.passwordConfirmation !== fields.password) {
     errors.passwordConfirmation = "비밀번호가 일치하지 않습니다.";
   }
@@ -112,7 +112,7 @@ export function validatePasswordUpdate(
 
   if (passwordError) errors.password = passwordError;
   if (!passwordConfirmation) {
-    errors.passwordConfirmation = "비밀번호를 한 번 더 입력해주세요.";
+    errors.passwordConfirmation = "비밀번호를 한 번 더 입력해 주세요.";
   } else if (passwordConfirmation !== password) {
     errors.passwordConfirmation = "비밀번호가 일치하지 않습니다.";
   }

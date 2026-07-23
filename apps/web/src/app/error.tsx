@@ -11,7 +11,7 @@ export default function ErrorPage({ reset }: ErrorPageProps) {
   return (
     <main className="not-found">
       <h1>페이지를 불러오지 못했습니다.</h1>
-      <p>일시적인 문제일 수 있습니다. 다시 시도하거나 안전한 경로로 이동해주세요.</p>
+      <p>다시 시도하거나 홈으로 이동해 주세요.</p>
       <div className="not-found__actions">
         <button
           className="not-found__primary"

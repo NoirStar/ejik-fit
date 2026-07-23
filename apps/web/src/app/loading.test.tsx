@@ -10,8 +10,18 @@ describe("home loading state", () => {
     expect(
       screen.getByRole("main", { name: "홈 피드를 불러오는 중" }),
     ).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("complementary", { name: "내 커리어 로딩" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "피드 로딩" })).toBeInTheDocument();
-    expect(screen.getByRole("complementary", { name: "채용 시장 요약 로딩" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("complementary", {
+        name: "내 커리어를 불러오는 중",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "피드를 불러오는 중" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("complementary", {
+        name: "채용 시장 요약을 불러오는 중",
+      }),
+    ).toBeInTheDocument();
   });
 });

@@ -62,7 +62,7 @@ describe("OwnedSkillsSheet", () => {
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
 
     expect(
       await screen.findByRole("dialog", { name: "내 스택" }),
@@ -93,7 +93,7 @@ describe("OwnedSkillsSheet", () => {
         <main>내용</main>
       </AppShell>,
     );
-    const opener = screen.getByRole("button", { name: "내 스택 열기" });
+    const opener = screen.getByRole("button", { name: "내 기술 열기" });
 
     fireEvent.click(opener);
     fireEvent.keyDown(document, { key: "Escape" });
@@ -109,7 +109,7 @@ describe("OwnedSkillsSheet", () => {
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
     const input = await screen.findByRole("combobox", { name: "추가할 기술" });
     fireEvent.change(input, { target: { value: "kube" } });
 
@@ -131,7 +131,7 @@ describe("OwnedSkillsSheet", () => {
         <main>내용</main>
       </AppShell>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
     const close = await screen.findByRole("button", { name: "내 스택 닫기" });
     const add = screen.getByRole("button", { name: "기술 추가" });
 
@@ -151,7 +151,7 @@ describe("OwnedSkillsSheet", () => {
       </AppShell>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "내 스택 열기" }));
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
 
     expect(
       await screen.findByRole("dialog", { name: "내 스택" }),

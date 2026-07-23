@@ -70,7 +70,9 @@ describe("useAuthViewer", () => {
     expect(result.current.ready).toBe(true);
     expect(result.current.status).toBe("error");
     expect(result.current.viewer).toBeNull();
-    expect(result.current.error).toContain("로그인 상태");
+    expect(result.current.error).toBe(
+      "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+    );
   });
 
   it("reports a rejected auth lookup without silently becoming a guest", async () => {
@@ -81,7 +83,9 @@ describe("useAuthViewer", () => {
     await waitFor(() => expect(result.current.status).toBe("error"));
     expect(result.current.ready).toBe(true);
     expect(result.current.viewer).toBeNull();
-    expect(result.current.error).toContain("로그인 상태");
+    expect(result.current.error).toBe(
+      "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+    );
   });
 
   it("treats Supabase's expected missing-session result as a signed-out viewer", async () => {

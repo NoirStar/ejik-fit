@@ -22,8 +22,7 @@ export const metadata: Metadata = {
     default: "이직핏 | 커리어 네트워크",
     template: "%s | 이직핏",
   },
-  description:
-    "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
+  description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
   applicationName: "이직핏",
   alternates: { canonical: "/" },
   openGraph: {
@@ -32,14 +31,12 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "이직핏",
     title: "이직핏 | 커리어 네트워크",
-    description:
-      "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
+    description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
   },
   twitter: {
     card: "summary",
     title: "이직핏 | 커리어 네트워크",
-    description:
-      "실제 커리어 경험과 공식 채용공고 데이터를 함께 탐색하는 이직핏 커리어 네트워크입니다.",
+    description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
   },
   icons: {
     icon: "/brand/ejik-fit-mascot.png",

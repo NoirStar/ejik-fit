@@ -10,6 +10,11 @@ describe("NotFound", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "페이지를 찾을 수 없습니다." }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "요청한 주소가 바뀌었거나 더 이상 제공되지 않는 페이지일 수 있습니다.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "홈으로" })).toHaveAttribute(
       "href",
       "/",

@@ -189,7 +189,9 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setFormError("로그인 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError(
+        "로그인을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -200,12 +202,12 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         password,
       });
       if (error) {
-        setFormError("이메일 또는 비밀번호를 확인해주세요.");
+        setFormError("이메일 또는 비밀번호를 확인해 주세요.");
         return;
       }
       finishAuthentication();
     } catch {
-      setFormError("로그인하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError("로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setPending(false);
     }
@@ -227,7 +229,9 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setFormError("회원가입 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError(
+        "회원가입을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -243,7 +247,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         },
       });
       if (error) {
-        setFormError("회원가입을 완료하지 못했습니다. 입력 내용을 다시 확인해주세요.");
+        setFormError("회원가입하지 못했습니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
       if (data.session) {
@@ -253,7 +257,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
       setVerificationEmail(email.trim());
       setVerificationMessage("확인 메일을 보냈습니다.");
     } catch {
-      setFormError("회원가입을 완료하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError("회원가입하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setPending(false);
     }
@@ -269,7 +273,9 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setFormError("확인 메일 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError(
+        "메일 전송을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -281,13 +287,13 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         options: { emailRedirectTo: callbackUrl(nextPath) },
       });
       if (error) {
-        setFormError("확인 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setFormError("확인 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
       setVerificationEmail(targetEmail);
       setVerificationMessage("확인 메일을 다시 보냈습니다.");
     } catch {
-      setFormError("확인 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError("확인 메일을 다시 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setPending(false);
     }
@@ -304,7 +310,9 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
 
     const supabase = createBrowserSupabaseClient();
     if (!supabase) {
-      setFormError("재설정 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError(
+        "메일 전송을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -314,12 +322,12 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         redirectTo: passwordResetCallbackUrl(nextPath),
       });
       if (error) {
-        setFormError("재설정 안내 메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setFormError("재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
       setResetSentEmail(email.trim());
     } catch {
-      setFormError("재설정 안내 메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError("재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setPending(false);
     }
@@ -344,12 +352,12 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        setFormError("새 비밀번호를 저장하지 못했습니다. 다시 시도해주세요.");
+        setFormError("새 비밀번호를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
         return;
       }
       finishAuthentication();
     } catch {
-      setFormError("새 비밀번호를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setFormError("새 비밀번호를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setPending(false);
     }
@@ -383,8 +391,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
           <div>
             <h2>{verificationMessage}</h2>
             <p>
-              <strong>{verificationEmail}</strong> 주소의 받은편지함에서 가입을
-              확인해주세요.
+              <strong>{verificationEmail}</strong>의 메일함에서 가입을 확인해 주세요.
             </p>
           </div>
         </section>
@@ -425,10 +432,9 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         <section className={styles.sentState} role="status">
           <EnvelopeSimple aria-hidden="true" size={28} weight="duotone" />
           <div>
-            <h2>재설정 안내 메일을 보냈습니다.</h2>
+            <h2>비밀번호 재설정 요청을 완료했습니다.</h2>
             <p>
-              가입 여부와 관계없이 <strong>{resetSentEmail}</strong> 주소로 안내를
-              요청했습니다.
+              <strong>{resetSentEmail}</strong>의 메일함을 확인해 주세요.
             </p>
           </div>
         </section>
@@ -446,7 +452,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         <div className={styles.root}>
           {navigation}
           <p className={styles.checkingState} role="status">
-            비밀번호 재설정 세션을 확인하고 있습니다.
+            재설정 링크를 확인하고 있습니다.
           </p>
         </div>
       );
@@ -458,8 +464,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
           <section className={styles.missingState} role="alert">
             <LockKey aria-hidden="true" size={25} />
             <div>
-              <h2>재설정 링크를 다시 확인해주세요.</h2>
-              <p>링크가 만료됐거나 유효한 복구 세션을 찾지 못했습니다.</p>
+              <h2>이 링크는 만료되었거나 사용할 수 없습니다.</h2>
             </div>
           </section>
           <Link className={styles.fullLink} href={modeHref("reset", nextPath)}>
@@ -475,7 +480,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         {navigation}
         <form className={styles.form} noValidate onSubmit={handlePasswordUpdate}>
           <FormHeader title="새 비밀번호 설정">
-            앞으로 사용할 비밀번호를 입력해주세요.
+            앞으로 사용할 비밀번호를 입력해 주세요.
           </FormHeader>
           <AuthField
             error={fieldErrors.password}
@@ -547,9 +552,6 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
             <PaperPlaneTilt aria-hidden="true" size={18} weight="bold" />
             {pending ? "보내는 중" : "재설정 메일 보내기"}
           </button>
-          <p className={styles.privacyHelper}>
-            가입된 주소인지 여부는 화면에 표시하지 않습니다.
-          </p>
           {formError && (
             <p className={styles.formError} role="alert">
               {formError}
@@ -566,7 +568,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
         {navigation}
         <form className={styles.form} noValidate onSubmit={handleSignUp}>
           <FormHeader title="이직핏 계정 만들기">
-            이메일 확인 후 내 커리어 정보를 여러 기기에서 이어볼 수 있습니다.
+            가입하려면 이메일 확인이 필요합니다.
           </FormHeader>
           <AuthField
             error={fieldErrors.email}
@@ -646,9 +648,6 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
     <div className={styles.root}>
       {navigation}
       <form className={styles.form} noValidate onSubmit={handleSignIn}>
-        <FormHeader title="계정 로그인">
-          확인된 이메일과 비밀번호를 입력해주세요.
-        </FormHeader>
         <AuthField
           error={fieldErrors.email}
           icon={<EnvelopeSimple aria-hidden="true" size={19} />}

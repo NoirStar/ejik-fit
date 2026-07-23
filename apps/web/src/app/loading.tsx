@@ -42,12 +42,12 @@ export default function Loading() {
       className={`${styles.page} ${styles.loadingPage}`}
     >
       <div className={styles.layout}>
-        <aside aria-label="내 커리어 로딩" className={styles.leftRail}>
+        <aside aria-label="내 커리어를 불러오는 중" className={styles.leftRail}>
           <RailSkeleton rows={3} />
           <RailSkeleton rows={4} />
         </aside>
 
-        <section aria-label="피드 로딩" className={styles.feedColumn}>
+        <section aria-label="피드를 불러오는 중" className={styles.feedColumn}>
           <div aria-hidden="true" className={styles.skeletonFeedHeader}>
             <span className={styles.skeletonTitle} />
             <span className={styles.skeletonHalfLine} />
@@ -65,7 +65,7 @@ export default function Loading() {
           </div>
         </section>
 
-        <aside aria-label="채용 시장 요약 로딩" className={styles.rightRail}>
+        <aside aria-label="채용 시장 요약을 불러오는 중" className={styles.rightRail}>
           <RailSkeleton rows={5} />
           <RailSkeleton rows={4} />
           <RailSkeleton rows={3} />

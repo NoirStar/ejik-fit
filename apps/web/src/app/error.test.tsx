@@ -14,6 +14,9 @@ describe("ErrorPage", () => {
         name: "페이지를 불러오지 못했습니다.",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("다시 시도하거나 홈으로 이동해 주세요."),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(reset).toHaveBeenCalledOnce();
     expect(screen.getByRole("link", { name: "홈으로" })).toHaveAttribute(

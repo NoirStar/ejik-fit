@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "이직핏",
     short_name: "이직핏",
-    description: "공식 채용공고 기반 기술 스택 인텔리전스",
+    description: "채용공고 기술 분석과 스킬맵",
     start_url: "/",
     display: "standalone",
     background_color: MANIFEST_COLORS.background,

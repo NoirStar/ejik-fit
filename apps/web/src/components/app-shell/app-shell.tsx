@@ -42,6 +42,7 @@ import {
   homeContextToDashboardHref,
 } from "@/lib/home-context";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   readOwnedSkills,
   writeOwnedSkills,
@@ -153,7 +154,7 @@ function HeaderSearchFormView({
         key={currentQuery || "global-search-empty"}
         maxLength={200}
         name="q"
-        placeholder="회사, 직무, 기술, 주제를 검색해보세요"
+        placeholder="회사, 직무, 기술, 주제 검색"
         ref={inputRef}
         type="search"
       />
@@ -381,7 +382,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Suspense>
 
             <button
-              aria-label="내 스택 열기"
+              aria-label={`${PRODUCT_TERMS.ownedSkills} 열기`}
               className={styles.stackButton}
               disabled={!interactive}
               onClick={openSkillsSheet}
@@ -389,7 +390,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
             >
               <Stack aria-hidden="true" size={20} />
-              <span className={styles.utilityLabel}>내 스택</span>
+              <span className={styles.utilityLabel}>{PRODUCT_TERMS.ownedSkills}</span>
             </button>
 
             <div className={styles.menuAnchor} ref={notificationAnchorRef}>
@@ -427,7 +428,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <div className={styles.menuHeader}>
                     <strong>알림</strong>
-                    <span>저장 검색과 관심 기업의 새 공고, 지원 현황을 보여드려요.</span>
+                    <span>새 공고와 지원 현황을 확인합니다.</span>
                   </div>
                   <Suspense fallback={<p role="status">알림을 불러오는 중입니다.</p>}>
                     <ActivityNotificationCenter
@@ -471,11 +472,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span aria-live={viewer ? "polite" : undefined}>
                       {viewer
                         ? accountSyncStatus === "synced"
-                          ? "내 스택·관심 기업·저장 공고가 동기화되었습니다."
+                          ? "내 기술과 저장 항목을 계정에 저장했습니다."
                           : accountSyncStatus === "error"
                             ? "계정 데이터를 동기화하지 못했습니다."
                             : "내 커리어 정보를 동기화하고 있습니다."
-                        : "내 스택은 현재 이 브라우저에만 저장됩니다."}
+                        : "내 기술은 이 기기에 저장됩니다."}
                     </span>
                   </div>
                   {!viewer && (
@@ -504,7 +505,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     내 커리어
                   </Link>
                   <Link href="/career/saved" onClick={closeUtilityMenus}>
-                    저장 보관함
+                    {PRODUCT_TERMS.savedItems}
                   </Link>
                   <Link href="/career/alerts" onClick={closeUtilityMenus}>
                     공고 알림

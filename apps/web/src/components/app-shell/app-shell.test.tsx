@@ -115,11 +115,18 @@ describe("AppShell", () => {
       "글쓰기",
     );
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute("name", "q");
+    expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute(
+      "placeholder",
+      "회사, 직무, 기술, 주제 검색",
+    );
     expect(screen.getByRole("searchbox", { name: "통합 검색" }).closest("form")).toHaveAttribute(
       "action",
       "/search",
     );
     expect(screen.queryByText("김민준")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "내 기술 열기" })).toHaveTextContent(
+      "내 기술",
+    );
   });
 
   it("places the desktop navigation inside the single header row", () => {
@@ -253,6 +260,7 @@ describe("AppShell", () => {
     const notificationButton = screen.getByRole("button", { name: "알림 열기" });
     fireEvent.click(notificationButton);
     expect(screen.getByLabelText("알림")).toBeInTheDocument();
+    expect(screen.getByText("새 공고와 지원 현황을 확인합니다.")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByLabelText("알림")).not.toBeInTheDocument();
     expect(notificationButton).toHaveFocus();
@@ -261,7 +269,8 @@ describe("AppShell", () => {
     expect(userButton).toBeEnabled();
     fireEvent.click(userButton);
     expect(screen.getByLabelText("사용자 메뉴")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+    expect(screen.getByText("내 기술은 이 기기에 저장됩니다.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "저장 목록" })).toHaveAttribute(
       "href",
       "/career/saved",
     );

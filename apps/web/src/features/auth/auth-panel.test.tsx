@@ -88,6 +88,9 @@ describe("AuthPanel", () => {
     expect(screen.getByRole("status")).toHaveTextContent(
       "확인 메일을 보냈습니다.",
     );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "developer@example.com의 메일함에서 가입을 확인해 주세요.",
+    );
 
     fireEvent.click(
       screen.getByRole("button", { name: "확인 메일 다시 보내기" }),
@@ -143,9 +146,12 @@ describe("AuthPanel", () => {
     expect(callback.searchParams.get("next")).toBe(
       "/login?mode=update-password&next=%2Fcareer%2Fsaved",
     );
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "재설정 안내 메일을 보냈습니다.",
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent("비밀번호 재설정 요청을 완료했습니다.");
+    expect(status).toHaveTextContent(
+      "developer@example.com의 메일함을 확인해 주세요.",
     );
+    expect(status).not.toHaveTextContent("가입 여부와 관계없이");
   });
 
   it("updates the password only after confirming a recovery session", async () => {
@@ -189,7 +195,9 @@ describe("AuthPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "회원가입" }));
 
     expect(mocks.signUp).not.toHaveBeenCalled();
-    expect(screen.getByText("올바른 이메일 주소를 입력해주세요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("올바른 이메일 주소를 입력해 주세요."),
+    ).toBeInTheDocument();
     expect(screen.getByText("비밀번호가 일치하지 않습니다.")).toBeInTheDocument();
   });
 
@@ -207,7 +215,7 @@ describe("AuthPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "로그인" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "이메일 또는 비밀번호를 확인해주세요.",
+      "이메일 또는 비밀번호를 확인해 주세요.",
     );
     expect(screen.queryByText("User does not exist")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "로그인" })).toBeEnabled();
