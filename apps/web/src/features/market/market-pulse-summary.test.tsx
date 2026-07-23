@@ -20,6 +20,7 @@ describe("MarketPulseSummary", () => {
             series: [],
           },
         }}
+        trendUnavailable={false}
         verifiedLabel="2026. 7. 22."
       />,
     );

@@ -26,6 +26,8 @@ type TrendSkillOption = {
 
 const TREND_COPY = {
   loading: "주간 추세를 불러오고 있습니다.",
+  unavailable:
+    "비교할 기술을 확인할 수 없어 주간 추세를 표시하지 않습니다.",
   insufficient: (collectedWeeks: number, requiredWeeks: number) =>
     `${collectedWeeks}주치 데이터가 쌓였습니다. ${requiredWeeks}주부터 변화선을 표시합니다.`,
   error:
@@ -215,6 +217,7 @@ export function TechnologyTrendPanel({
   onRetry,
   relatedJobsAvailable,
   resource,
+  trendUnavailable,
 }: {
   availableSkills: TrendSkillOption[];
   comparedSkills: string[];
@@ -224,6 +227,7 @@ export function TechnologyTrendPanel({
   onRetry: () => void;
   relatedJobsAvailable: boolean;
   resource: MarketTrendResource;
+  trendUnavailable: boolean;
 }) {
   const categories = useMemo(
     () => new Map(availableSkills.map((skill) => [skill.name, skill.category])),
@@ -239,9 +243,11 @@ export function TechnologyTrendPanel({
     resource.data.series.length > 0;
   const badgeLabel = trendReady
     ? "주간 추세"
-    : resource.status === "error"
-      ? "확인 불가"
-      : "추세 수집 중";
+    : trendUnavailable
+      ? "표시 안 함"
+      : resource.status === "error"
+        ? "확인 불가"
+        : "추세 수집 중";
 
   return (
     <section
@@ -316,6 +322,11 @@ export function TechnologyTrendPanel({
 
       {trendReady ? (
         <TrendChart series={resource.data.series} />
+      ) : trendUnavailable ? (
+        <div className={styles.collectingState}>
+          <ChartLine aria-hidden="true" size={24} weight="duotone" />
+          <strong>{TREND_COPY.unavailable}</strong>
+        </div>
       ) : resource.status === "error" ? (
         <div className={styles.collectingState}>
           <WarningCircle aria-hidden="true" size={24} weight="duotone" />

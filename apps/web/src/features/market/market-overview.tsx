@@ -67,6 +67,8 @@ export function MarketOverview({
     availableSkills: trendSkills,
     selectedSkill: effectiveSkill,
   });
+  const trendUnavailable =
+    trendSkills.length === 0 && trend.resource.status === "idle";
   const recentJobs = useMemo(
     () => jobsForSkill(snapshot.jobs, effectiveSkill),
     [effectiveSkill, snapshot.jobs],
@@ -99,6 +101,7 @@ export function MarketOverview({
         postingTotal={snapshot.postingTotal}
         skillTotal={snapshot.skillTotal}
         trendResource={trend.resource}
+        trendUnavailable={trendUnavailable}
         verifiedLabel={formatVerifiedDate(snapshot.latestVerifiedAt)}
       />
 
@@ -168,6 +171,7 @@ export function MarketOverview({
               onRetry={trend.retry}
               relatedJobsAvailable={!snapshot.postingError}
               resource={trend.resource}
+              trendUnavailable={trendUnavailable}
             />
             <SelectedTechnologyEvidence
               combinations={combinations}

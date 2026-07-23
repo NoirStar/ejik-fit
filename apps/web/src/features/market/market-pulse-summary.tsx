@@ -3,7 +3,11 @@ import styles from "./market-overview.module.css";
 
 type PulseSkill = { explicitCount: number; name: string };
 
-function trendLabel(resource: MarketTrendResource) {
+function trendLabel(
+  resource: MarketTrendResource,
+  trendUnavailable: boolean,
+) {
+  if (trendUnavailable) return "주간 추세 표시 안 함";
   if (resource.status === "loading" || resource.status === "idle") {
     return "추세 상태 확인 중";
   }
@@ -19,12 +23,14 @@ export function MarketPulseSummary({
   postingTotal,
   skillTotal,
   trendResource,
+  trendUnavailable,
   verifiedLabel,
 }: {
   leader: PulseSkill | undefined;
   postingTotal: number | null;
   skillTotal: number | null;
   trendResource: MarketTrendResource;
+  trendUnavailable: boolean;
   verifiedLabel: string;
 }) {
   const postingLabel =
@@ -54,7 +60,7 @@ export function MarketPulseSummary({
       </div>
       <div>
         <span>주간 변화</span>
-        <strong>{trendLabel(trendResource)}</strong>
+        <strong>{trendLabel(trendResource, trendUnavailable)}</strong>
         <small>{verifiedLabel} 기준</small>
       </div>
     </section>

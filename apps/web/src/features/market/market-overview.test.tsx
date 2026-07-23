@@ -161,6 +161,25 @@ function renderReadyMarket() {
   );
 }
 
+function expectTrendUnavailable(fetchMock: ReturnType<typeof vi.fn>) {
+  const trend = screen.getByRole("region", { name: "기술 수요 추세" });
+  const summary = screen.getByRole("region", { name: "현재 채용시장 요약" });
+
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect(
+    within(trend).getByText(
+      "비교할 기술을 확인할 수 없어 주간 추세를 표시하지 않습니다.",
+    ),
+  ).toBeInTheDocument();
+  expect(within(trend).getByText("표시 안 함")).toBeInTheDocument();
+  expect(within(summary).getByText("주간 추세 표시 안 함")).toBeInTheDocument();
+  expect(
+    within(trend).queryByText("주간 추세를 불러오고 있습니다."),
+  ).not.toBeInTheDocument();
+  expect(within(trend).queryByText("추세 수집 중")).not.toBeInTheDocument();
+  expect(within(summary).queryByText("추세 상태 확인 중")).not.toBeInTheDocument();
+}
+
 describe("MarketOverview", () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -310,13 +329,53 @@ describe("MarketOverview", () => {
   });
 
   it("describes trend loading directly", () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => undefined)));
+    const fetchMock = vi.fn(() => new Promise(() => undefined));
+    vi.stubGlobal("fetch", fetchMock);
     renderReadyMarket();
 
     const trend = screen.getByRole("region", { name: "기술 수요 추세" });
+    const summary = screen.getByRole("region", { name: "현재 채용시장 요약" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(within(trend).getByText("추세 수집 중")).toBeInTheDocument();
     expect(
       within(trend).getByText("주간 추세를 불러오고 있습니다."),
     ).toBeInTheDocument();
+    expect(within(summary).getByText("추세 상태 확인 중")).toBeInTheDocument();
+  });
+
+  it("does not describe trends as loading when skill statistics fail", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MarketOverview
+        snapshot={buildMarketOverviewSnapshot({
+          careerType: "",
+          postings: { status: "ready", data: postings },
+          skillStats: {
+            status: "error",
+            message: "기술 수요 데이터를 불러오지 못했습니다.",
+          },
+        })}
+      />,
+    );
+
+    expectTrendUnavailable(fetchMock);
+  });
+
+  it("does not describe trends as loading when no technologies were found", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MarketOverview
+        snapshot={buildMarketOverviewSnapshot({
+          careerType: "new_comer",
+          postings: { status: "ready", data: { total: 0, items: [] } },
+          skillStats: { status: "ready", data: { total: 0, items: [] } },
+        })}
+      />,
+    );
+
+    expectTrendUnavailable(fetchMock);
   });
 
   it("keeps demand and jobs available when trend loading fails", async () => {
