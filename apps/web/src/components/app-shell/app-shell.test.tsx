@@ -25,6 +25,10 @@ const authViewer = vi.hoisted(() => ({
   unsubscribe: vi.fn(),
 }));
 
+const accountSync = vi.hoisted(() => ({
+  status: "local" as "error" | "local" | "synced" | "syncing",
+}));
+
 const legacyMigration = vi.hoisted(() => ({
   observe: vi.fn(),
   status: {
@@ -57,6 +61,10 @@ vi.mock("@/features/auth/use-auth-viewer", async () => {
   };
 });
 
+vi.mock("@/features/auth/use-account-state-sync", () => ({
+  useAccountStateSync: () => accountSync.status,
+}));
+
 vi.mock("@/features/community/use-community-legacy-migration", () => ({
   useCommunityLegacyMigration: (viewer: unknown) => {
     legacyMigration.observe(viewer);
@@ -82,6 +90,7 @@ describe("AppShell", () => {
     authViewer.state.ready = true;
     authViewer.state.signingOut = false;
     authViewer.state.error = "";
+    accountSync.status = "local";
     legacyMigration.status.phase = "complete";
     legacyMigration.status.failureCount = 0;
     legacyMigration.status.retry.mockReset();
@@ -198,6 +207,7 @@ describe("AppShell", () => {
       id: "viewer-1",
       email: "developer@example.com",
     };
+    accountSync.status = "synced";
 
     render(
       <AppShell>
@@ -212,6 +222,12 @@ describe("AppShell", () => {
     ).toBeEnabled();
     expect(authViewer.subscribe).toHaveBeenCalledTimes(1);
     expect(legacyMigration.observe).toHaveBeenCalledWith(authViewer.state.viewer);
+    fireEvent.click(
+      screen.getByRole("button", { name: "사용자 메뉴 열기" }),
+    );
+    expect(
+      screen.getByText("내 기술과 저장 항목을 계정에 저장했습니다."),
+    ).toBeInTheDocument();
   });
 
   it("offers a retry when legacy community records could not move", () => {

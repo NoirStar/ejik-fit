@@ -236,11 +236,11 @@ export function OwnedSkillsSheet({
       >
         <header className={styles.header}>
           <div>
-            <h2 id="owned-skills-title">내 스택</h2>
-            <p>공고와 기술 맵의 분석 기준을 직접 관리합니다.</p>
+            <h2 id="owned-skills-title">내 기술</h2>
+            <p>공고와 스킬맵의 분석 기준을 직접 관리합니다.</p>
           </div>
           <button
-            aria-label="내 스택 닫기"
+            aria-label="내 기술 닫기"
             className={styles.iconButton}
             onClick={closeSheet}
             ref={closeButtonRef}

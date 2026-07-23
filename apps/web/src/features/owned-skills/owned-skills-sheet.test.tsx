@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell/app-shell";
@@ -64,8 +70,15 @@ describe("OwnedSkillsSheet", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
 
+    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
     expect(
-      await screen.findByRole("dialog", { name: "내 스택" }),
+      within(dialog).getByRole("heading", { level: 2, name: "내 기술" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "내 기술 닫기" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("공고와 스킬맵의 분석 기준을 직접 관리합니다."),
     ).toBeInTheDocument();
     expect(screen.getByText("아직 저장한 기술이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
@@ -98,7 +111,9 @@ describe("OwnedSkillsSheet", () => {
     fireEvent.click(opener);
     fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(screen.queryByRole("dialog", { name: "내 스택" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("dialog", { name: "내 기술" }),
+    ).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
   });
 
@@ -132,7 +147,7 @@ describe("OwnedSkillsSheet", () => {
       </AppShell>,
     );
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
-    const close = await screen.findByRole("button", { name: "내 스택 닫기" });
+    const close = await screen.findByRole("button", { name: "내 기술 닫기" });
     const add = screen.getByRole("button", { name: "기술 추가" });
 
     add.focus();
@@ -154,7 +169,7 @@ describe("OwnedSkillsSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
 
     expect(
-      await screen.findByRole("dialog", { name: "내 스택" }),
+      await screen.findByRole("dialog", { name: "내 기술" }),
     ).toBeInTheDocument();
     expect(document.querySelectorAll("#owned-skills-title")).toHaveLength(1);
     expect(

@@ -109,15 +109,13 @@
 
 .helper,
 .fieldError,
-.formError,
-.privacyHelper {
+.formError {
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.5;
 }
 
-.helper,
-.privacyHelper {
+.helper {
   color: var(--color-muted);
 }
 

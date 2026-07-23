@@ -1,9 +1,17 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthPanel } from "./auth-panel";
 
 const mocks = vi.hoisted(() => ({
+  clientAvailable: true,
   getUser: vi.fn(),
   refresh: vi.fn(),
   replace: vi.fn(),
@@ -19,16 +27,19 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/supabase/client", () => ({
-  createBrowserSupabaseClient: () => ({
-    auth: {
-      getUser: mocks.getUser,
-      resend: mocks.resend,
-      resetPasswordForEmail: mocks.resetPasswordForEmail,
-      signInWithPassword: mocks.signInWithPassword,
-      signUp: mocks.signUp,
-      updateUser: mocks.updateUser,
-    },
-  }),
+  createBrowserSupabaseClient: () =>
+    mocks.clientAvailable
+      ? {
+          auth: {
+            getUser: mocks.getUser,
+            resend: mocks.resend,
+            resetPasswordForEmail: mocks.resetPasswordForEmail,
+            signInWithPassword: mocks.signInWithPassword,
+            signUp: mocks.signUp,
+            updateUser: mocks.updateUser,
+          },
+        }
+      : null,
 }));
 
 function fillEmail(value = "developer@example.com") {
@@ -37,9 +48,39 @@ function fillEmail(value = "developer@example.com") {
   });
 }
 
+function submitValidForm(mode: "reset" | "signin" | "signup") {
+  fillEmail();
+  if (mode !== "reset") {
+    fireEvent.change(screen.getByLabelText("비밀번호"), {
+      target: { value: "career2026" },
+    });
+  }
+  if (mode === "signup") {
+    fireEvent.change(screen.getByLabelText("비밀번호 확인"), {
+      target: { value: "career2026" },
+    });
+    fireEvent.change(screen.getByLabelText("닉네임"), {
+      target: { value: "커리어곰" },
+    });
+  }
+  fireEvent.click(
+    screen.getByRole("button", {
+      name:
+        mode === "signin"
+          ? "로그인"
+          : mode === "signup"
+            ? "회원가입"
+            : "재설정 메일 보내기",
+    }),
+  );
+}
+
 describe("AuthPanel", () => {
   beforeEach(() => {
-    Object.values(mocks).forEach((mock) => mock.mockReset());
+    Object.values(mocks).forEach((mock) => {
+      if (typeof mock === "function") mock.mockReset();
+    });
+    mocks.clientAvailable = true;
     mocks.getUser.mockResolvedValue({
       data: { user: { id: "user-1" } },
       error: null,
@@ -129,6 +170,10 @@ describe("AuthPanel", () => {
   it("requests a password recovery callback without exposing account state", async () => {
     render(<AuthPanel initialMode="reset" nextPath="/career/saved" />);
 
+    expect(screen.queryByText(/가입 여부와 관계없이/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("가입된 주소인지 여부는 화면에 표시하지 않습니다."),
+    ).not.toBeInTheDocument();
     fillEmail();
     fireEvent.click(
       screen.getByRole("button", { name: "재설정 메일 보내기" }),
@@ -151,7 +196,96 @@ describe("AuthPanel", () => {
     expect(status).toHaveTextContent(
       "developer@example.com의 메일함을 확인해 주세요.",
     );
-    expect(status).not.toHaveTextContent("가입 여부와 관계없이");
+  });
+
+  it.each([
+    {
+      expected:
+        "로그인을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      mode: "signin",
+    },
+    {
+      expected:
+        "회원가입을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      mode: "signup",
+    },
+    {
+      expected:
+        "메일 전송을 시작하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+      mode: "reset",
+    },
+  ] as const)(
+    "shows the exact missing-client error in $mode mode",
+    ({ expected, mode }) => {
+      mocks.clientAvailable = false;
+      render(<AuthPanel initialMode={mode} nextPath="/career" />);
+
+      submitValidForm(mode);
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        new RegExp(`^${expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`),
+      );
+    },
+  );
+
+  it.each([
+    {
+      expected: "로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      mode: "signin",
+      reject: () => mocks.signInWithPassword.mockRejectedValue(new Error("offline")),
+    },
+    {
+      expected: "회원가입하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      mode: "signup",
+      reject: () => mocks.signUp.mockRejectedValue(new Error("offline")),
+    },
+    {
+      expected: "재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      mode: "reset",
+      reject: () =>
+        mocks.resetPasswordForEmail.mockRejectedValue(new Error("offline")),
+    },
+  ] as const)(
+    "shows the exact generic asynchronous error in $mode mode",
+    async ({ expected, mode, reject }) => {
+      reject();
+      render(<AuthPanel initialMode={mode} nextPath="/career" />);
+
+      submitValidForm(mode);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        new RegExp(`^${expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`),
+      );
+    },
+  );
+
+  it("shows exact recovery checking and missing-link copy", async () => {
+    let resolveGetUser!: (value: {
+      data: { user: null };
+      error: { message: string };
+    }) => void;
+    mocks.getUser.mockReturnValue(
+      new Promise((resolve) => {
+        resolveGetUser = resolve;
+      }),
+    );
+
+    render(<AuthPanel initialMode="update-password" nextPath="/career" />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^재설정 링크를 확인하고 있습니다\.$/,
+    );
+
+    await act(async () => {
+      resolveGetUser({
+        data: { user: null },
+        error: { message: "Auth session missing" },
+      });
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /^이 링크는 만료되었거나 사용할 수 없습니다\.$/,
+    );
   });
 
   it("updates the password only after confirming a recovery session", async () => {
