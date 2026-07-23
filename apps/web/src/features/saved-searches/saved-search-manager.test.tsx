@@ -485,30 +485,54 @@ describe("SavedSearchManager", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps evaluated counts visible while the same saved searches reload and fail", async () => {
+  it("settles an aborted same-search refresh while list loading and errors retain counts", async () => {
     const actualEvaluation = await vi.importActual<
       typeof import("./use-saved-search-evaluation")
     >("./use-saved-search-evaluation");
-    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          evaluatedAt: "2026-07-20T04:00:00.000Z",
-          groups: [readyGroup(pythonSearch.id, 23, ["job-1"])],
-        }),
-        {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        },
-      ),
-    );
+    const refreshRequest = { signal: null as AbortSignal | null };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            evaluatedAt: "2026-07-20T04:00:00.000Z",
+            groups: [readyGroup(pythonSearch.id, 23, ["job-1"])],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+      )
+      .mockImplementationOnce(async (_input, init) => {
+        refreshRequest.signal = init?.signal ?? null;
+        return new Promise<Response>(() => undefined);
+      });
     vi.stubGlobal("fetch", fetcher);
+    let currentEvaluation: ReturnType<
+      typeof actualEvaluation.useSavedSearchEvaluation
+    > | null = null;
     vi.mocked(useSavedSearchEvaluation).mockImplementation(
-      actualEvaluation.useSavedSearchEvaluation,
+      (searches, loadStatus, currentMarkChecked, options) => {
+        currentEvaluation = actualEvaluation.useSavedSearchEvaluation(
+          searches,
+          loadStatus,
+          currentMarkChecked,
+          options,
+        );
+        return currentEvaluation;
+      },
     );
     markChecked.mockResolvedValue(true);
     const { rerender } = render(<SavedSearchManager />);
     expect(
       await screen.findByText("현재 공식 공고 23건"),
+    ).toBeInTheDocument();
+
+    act(() => currentEvaluation?.refresh());
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(
+      screen.getByText("공고 알림을 확인하는 중…"),
     ).toBeInTheDocument();
 
     mockSearches({
@@ -522,7 +546,11 @@ describe("SavedSearchManager", () => {
     expect(
       screen.getByText("공고 알림을 불러오는 중…"),
     ).toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByText("공고 알림을 확인하는 중…"),
+    ).not.toBeInTheDocument();
+    expect(refreshRequest.signal?.aborted).toBe(true);
+    expect(fetcher).toHaveBeenCalledTimes(2);
 
     mockSearches({
       status: "error",
@@ -539,7 +567,10 @@ describe("SavedSearchManager", () => {
         "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
       ),
     ).toBeInTheDocument();
-    expect(fetcher).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByText("공고 알림을 확인하는 중…"),
+    ).not.toBeInTheDocument();
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
   it("uses only the public alert vocabulary in the alert manager", () => {

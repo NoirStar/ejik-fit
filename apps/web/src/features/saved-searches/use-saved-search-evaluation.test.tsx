@@ -569,6 +569,239 @@ describe("useSavedSearchEvaluation", () => {
     expect(fetcher).toHaveBeenCalledOnce();
   });
 
+  it("restores the last ready result when a same-identity refresh is aborted by list loading", async () => {
+    const searches = [savedSearch("search-1", true)];
+    const response: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: searches[0].id,
+          status: "ready",
+          total: 7,
+          items: [posting("job-1")],
+        },
+      ],
+    };
+    const refreshRequest = { signal: null as AbortSignal | null };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(response))
+      .mockImplementationOnce(async (_input, init) => {
+        refreshRequest.signal = init?.signal ?? null;
+        return new Promise<Response>(() => undefined);
+      });
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    type Props = {
+      items: SavedJobSearch[];
+      loadStatus: SavedJobSearchesState["status"];
+    };
+    const { result, rerender } = renderHook(
+      ({ items, loadStatus }: Props) =>
+        useSavedSearchEvaluation(items, loadStatus, markChecked, {
+          fetcher,
+        }),
+      {
+        initialProps: {
+          items: searches,
+          loadStatus: "ready",
+        } as Props,
+      },
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    const settled = result.current.state;
+
+    act(() => result.current.refresh());
+
+    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+    expect(result.current.state).toEqual({
+      status: "loading",
+      groups: settled.groups,
+      error: "",
+    });
+
+    rerender({
+      items: [{ ...searches[0] }],
+      loadStatus: "loading",
+    });
+
+    expect(refreshRequest.signal?.aborted).toBe(true);
+    expect(result.current.state).toEqual(settled);
+    expect(result.current.state.status).not.toBe("loading");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+
+    rerender({
+      items: [{ ...searches[0] }],
+      loadStatus: "error",
+    });
+
+    expect(result.current.state).toEqual(settled);
+    expect(result.current.state.status).not.toBe("loading");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    {
+      name: "partial",
+      searches: [
+        savedSearch("search-1", true),
+        savedSearch("search-2", true),
+      ],
+      response: {
+        evaluatedAt,
+        groups: [
+          {
+            searchId: "search-1",
+            status: "ready" as const,
+            total: 7,
+            items: [posting("job-1")],
+          },
+          {
+            searchId: "search-2",
+            status: "error" as const,
+            total: null,
+            items: [] as [],
+          },
+        ],
+      },
+      settledStatus: "partial" as const,
+    },
+    {
+      name: "error",
+      searches: [savedSearch("search-1", true)],
+      response: {
+        evaluatedAt,
+        groups: [
+          {
+            searchId: "search-1",
+            status: "error" as const,
+            total: null,
+            items: [] as [],
+          },
+        ],
+      },
+      settledStatus: "error" as const,
+    },
+  ])(
+    "restores the last $name state when its refresh is aborted",
+    async ({ response, searches, settledStatus }) => {
+      const refreshRequest = { signal: null as AbortSignal | null };
+      const fetcher = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(jsonResponse(response))
+        .mockImplementationOnce(async (_input, init) => {
+          refreshRequest.signal = init?.signal ?? null;
+          return new Promise<Response>(() => undefined);
+        });
+      const markChecked =
+        vi.fn<SavedJobSearchesController["markChecked"]>()
+          .mockResolvedValue(true);
+      type Props = {
+        loadStatus: SavedJobSearchesState["status"];
+      };
+      const { result, rerender } = renderHook(
+        ({ loadStatus }: Props) =>
+          useSavedSearchEvaluation(
+            searches,
+            loadStatus,
+            markChecked,
+            { fetcher },
+          ),
+        { initialProps: { loadStatus: "ready" } as Props },
+      );
+      await waitFor(() =>
+        expect(result.current.state.status).toBe(settledStatus),
+      );
+      const settled = result.current.state;
+
+      act(() => result.current.refresh());
+      await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+      expect(result.current.state.status).toBe("loading");
+
+      rerender({ loadStatus: "loading" });
+
+      expect(refreshRequest.signal?.aborted).toBe(true);
+      expect(result.current.state).toEqual(settled);
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it.each([
+    {
+      name: "different",
+      items: [
+        savedSearch("search-1", true),
+        savedSearch("search-3", true),
+      ],
+    },
+    { name: "empty", items: [] },
+    {
+      name: "duplicate",
+      items: [
+        savedSearch("search-1", true),
+        savedSearch("search-1", true),
+      ],
+    },
+  ])("resets a $name non-ready identity to idle", async ({ items }) => {
+    const searches = [
+      savedSearch("search-1", true),
+      savedSearch("search-2", true),
+    ];
+    const response: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: "search-1",
+          status: "ready",
+          total: 7,
+          items: [posting("job-1")],
+        },
+        {
+          searchId: "search-2",
+          status: "ready",
+          total: 3,
+          items: [posting("job-2")],
+        },
+      ],
+    };
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      jsonResponse(response),
+    );
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    type Props = {
+      items: SavedJobSearch[];
+      loadStatus: SavedJobSearchesState["status"];
+    };
+    const { result, rerender } = renderHook(
+      ({ items: currentItems, loadStatus }: Props) =>
+        useSavedSearchEvaluation(
+          currentItems,
+          loadStatus,
+          markChecked,
+          { fetcher },
+        ),
+      {
+        initialProps: {
+          items: searches,
+          loadStatus: "ready",
+        } as Props,
+      },
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    rerender({ items, loadStatus: "error" });
+
+    expect(result.current.state).toEqual({
+      status: "idle",
+      groups: [],
+      error: "",
+    });
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
   it("drops stale groups for different or empty identities before evaluating replacements", async () => {
     const firstSearch = savedSearch("search-1", true);
     const nextSearch = savedSearch("search-2", true, {

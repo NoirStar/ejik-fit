@@ -43,6 +43,16 @@ type PendingCheckpoint = {
   evaluatedAt: string;
 };
 
+type SettledEvaluationState = Extract<
+  SavedSearchEvaluationState,
+  { status: "ready" | "partial" | "error" }
+>;
+
+type SettledEvaluation = {
+  identity: string;
+  state: SettledEvaluationState;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -192,6 +202,14 @@ function searchSignature(
   ]);
 }
 
+function searchIdentity(searches: SavedJobSearch[]) {
+  const ids = searches.map((search) => search.id);
+  if (ids.length === 0 || new Set(ids).size !== ids.length) {
+    return null;
+  }
+  return JSON.stringify([...ids].sort());
+}
+
 function groupsMatchSearchIdentity(
   groups: SavedSearchEvaluationGroup[],
   searches: SavedJobSearch[],
@@ -222,6 +240,7 @@ export function useSavedSearchEvaluation(
   const requestSequence = useRef(0);
   const activeRequest = useRef(0);
   const pendingCheckpoint = useRef<PendingCheckpoint | null>(null);
+  const lastSettledEvaluation = useRef<SettledEvaluation | null>(null);
   const mounted = useRef(false);
   fetcherRef.current = options.fetcher;
   markCheckedRef.current = markChecked;
@@ -242,20 +261,29 @@ export function useSavedSearchEvaluation(
     const evaluationSearches = includePaused
       ? searches
       : searches.filter((search) => search.enabled);
+    const identity = searchIdentity(evaluationSearches);
 
     if (loadStatus !== "ready") {
+      const settled = lastSettledEvaluation.current;
+      if (!identity || settled?.identity !== identity) {
+        lastSettledEvaluation.current = null;
+        setState(IDLE_STATE);
+        return;
+      }
       setState((current) =>
-        evaluationSearches.length > 0 &&
-        groupsMatchSearchIdentity(current.groups, evaluationSearches)
-          ? current
-          : IDLE_STATE,
+        current.status === "loading" ? settled.state : current,
       );
       return;
     }
 
     if (evaluationSearches.length === 0) {
+      lastSettledEvaluation.current = null;
       setState({ status: "ready", groups: [], error: "" });
       return;
+    }
+
+    if (lastSettledEvaluation.current?.identity !== identity) {
+      lastSettledEvaluation.current = null;
     }
 
     const controller = new AbortController();
@@ -312,11 +340,17 @@ export function useSavedSearchEvaluation(
           (group) => group.status === "ready",
         );
         if (readyGroups.length === 0) {
-          setState((current) => ({
-            status: "error",
-            groups: current.groups,
-            error: LOAD_ERROR,
-          }));
+          setState((current) => {
+            const next: SettledEvaluationState = {
+              status: "error",
+              groups: current.groups,
+              error: LOAD_ERROR,
+            };
+            lastSettledEvaluation.current = identity
+              ? { identity, state: next }
+              : null;
+            return next;
+          });
           return;
         }
 
@@ -338,15 +372,18 @@ export function useSavedSearchEvaluation(
             evaluatedAt: body.evaluatedAt,
           };
         }
-        setState(
+        const next: SettledEvaluationState =
           partial
             ? {
                 status: "partial",
                 groups: body.groups,
                 error: PARTIAL_ERROR,
               }
-            : { status: "ready", groups: body.groups, error: "" },
-        );
+            : { status: "ready", groups: body.groups, error: "" };
+        lastSettledEvaluation.current = identity
+          ? { identity, state: next }
+          : null;
+        setState(next);
       } catch {
         if (
           cancelled ||
@@ -356,11 +393,17 @@ export function useSavedSearchEvaluation(
           return;
         }
         pendingCheckpoint.current = null;
-        setState((current) => ({
-          status: "error",
-          groups: current.groups,
-          error: LOAD_ERROR,
-        }));
+        setState((current) => {
+          const next: SettledEvaluationState = {
+            status: "error",
+            groups: current.groups,
+            error: LOAD_ERROR,
+          };
+          lastSettledEvaluation.current = identity
+            ? { identity, state: next }
+            : null;
+          return next;
+        });
       }
     }
 
@@ -421,7 +464,7 @@ export function useSavedSearchEvaluation(
           ) {
             return current;
           }
-          return {
+          const next: SettledEvaluationState = {
             status: "partial",
             groups: current.groups,
             error:
@@ -429,6 +472,14 @@ export function useSavedSearchEvaluation(
                 ? `${current.error} ${CHECKPOINT_ERROR}`
                 : CHECKPOINT_ERROR,
           };
+          const settled = lastSettledEvaluation.current;
+          if (settled) {
+            lastSettledEvaluation.current = {
+              identity: settled.identity,
+              state: next,
+            };
+          }
+          return next;
         });
       }
       void saveCheckpoint(checkpoint);
