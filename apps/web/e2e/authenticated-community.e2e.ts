@@ -19,14 +19,25 @@ test("restores a guest draft after login and publishes only after confirmation",
   request,
 }) => {
   await resetCommunityFixture(request);
+  await page.setViewportSize({ height: 844, width: 320 });
   await page.goto("/?compose=1");
   const guestComposer = page.getByRole("dialog", { name: "커뮤니티 글쓰기" });
+  const publish = guestComposer.getByRole("button", { name: "피드에 올리기" });
+  await expect(publish).toHaveCSS("white-space", "nowrap");
+  const publishBox = await publish.boundingBox();
+  expect(publishBox?.width).toBeGreaterThanOrEqual(44);
+  expect(publishBox?.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    ),
+  ).toBe(false);
   await guestComposer.getByLabel("제목").fill("로그인 뒤 확인할 임시 글");
   await guestComposer
     .getByLabel("내용")
     .fill("로그인 전에는 서버 글이 생기지 않아야 합니다.");
   await guestComposer.getByLabel("태그 (선택)").fill("임시 글, 인증");
-  await guestComposer.getByRole("button", { name: "피드에 올리기" }).click();
+  await publish.click();
 
   await expect(page).toHaveURL(/\/login\?next=%2F%3Fcompose%3Dresume$/);
   const beforeLogin = await request.get(

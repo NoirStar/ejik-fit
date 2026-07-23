@@ -261,9 +261,42 @@ describe("ServerPostDetail", () => {
       body: "보낸 수정 본문",
       tags: ["이직 준비"],
     });
+    expect(screen.queryByText("글 수정 내용을 서버에 저장했습니다."))
+      .not.toBeInTheDocument();
+    const status = screen.getByText("글 수정을 저장했습니다.").closest(
+      '[role="status"]',
+    );
+    expect(status).not.toBeNull();
+    expect(status?.className).toContain("srOnly");
+
+    store.updatePost.mockRejectedValueOnce(new Error("offline"));
+    fireEvent.click(screen.getByRole("button", { name: "이 글 수정" }));
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "실패해도 남아야 하는 수정 제목" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "수정 내용 저장" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "수정 내용을 저장하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+    );
+    expect(screen.getByLabelText("제목")).toHaveValue(
+      "실패해도 남아야 하는 수정 제목",
+    );
+    expect(screen.queryByText("글 수정을 저장했습니다."))
+      .not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "수정 내용 저장" }));
     expect(
-      screen.queryByText("글 수정 내용을 서버에 저장했습니다."),
-    ).not.toBeInTheDocument();
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "서버에서 돌아온 수정 제목",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const retryStatus = screen.getByText("글 수정을 저장했습니다.").closest(
+      '[role="status"]',
+    );
+    expect(retryStatus?.className).toContain("srOnly");
   });
 
   it("keeps the home-feed route available after an author deletes a post", async () => {

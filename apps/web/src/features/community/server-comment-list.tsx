@@ -85,6 +85,7 @@ export function ServerCommentList({
   const [draft, setDraft] = useState("");
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [announcement, setAnnouncement] = useState("");
   const [pending, setPending] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -101,6 +102,7 @@ export function ServerCommentList({
     setNextCursor(null);
     setLoadingMore(false);
     setActionError("");
+    setAnnouncement("");
     try {
       const page = await store.listCommentPage({
         postId,
@@ -134,6 +136,7 @@ export function ServerCommentList({
     const activePostId = postId;
     setLoadingMore(true);
     setActionError("");
+    setAnnouncement("");
     try {
       const page = await store.listCommentPage({
         postId: activePostId,
@@ -170,6 +173,7 @@ export function ServerCommentList({
     if (pending || status !== "ready") return;
     const body = normalizeCommunityText(draft, MAX_COMMUNITY_COMMENT_LENGTH);
     setActionError("");
+    setAnnouncement("");
     if (!body) {
       setFormError(
         draft.trim()
@@ -192,6 +196,7 @@ export function ServerCommentList({
       setComments((current) => mergeComments(current, [created]));
       setDraft("");
       onCountChange(1);
+      setAnnouncement("댓글을 등록했습니다.");
     } catch {
       setFormError(COMMUNITY_FAILURE_COPY.comment);
     } finally {
@@ -205,6 +210,7 @@ export function ServerCommentList({
     setEditDraft(comment.body);
     setEditError("");
     setActionError("");
+    setAnnouncement("");
   }
 
   function cancelEdit() {
@@ -235,6 +241,7 @@ export function ServerCommentList({
 
     setPending(`edit:${comment.id}`);
     setEditError("");
+    setAnnouncement("");
     try {
       const updated = await store.updateComment(viewerId, comment.id, body);
       setComments((current) => mergeComments(current, [updated]));
@@ -251,6 +258,7 @@ export function ServerCommentList({
     if (!viewerId || comment.author.id !== viewerId || pending) return;
     setPending(`delete:${comment.id}`);
     setActionError("");
+    setAnnouncement("");
     try {
       await store.deleteComment(viewerId, comment.id);
       setComments((current) =>
@@ -416,6 +424,11 @@ export function ServerCommentList({
       )}
 
       {actionError && <p className={styles.commentActionError} role="alert">{actionError}</p>}
+      {announcement && (
+        <p className={styles.srOnly} role="status">
+          {announcement}
+        </p>
+      )}
       <form className={styles.form} id="post-comment-form" onSubmit={createComment}>
         <label htmlFor="post-comment-body">댓글 내용</label>
         <textarea
@@ -425,6 +438,7 @@ export function ServerCommentList({
           onChange={(event) => {
             setDraft(event.target.value);
             if (formError) setFormError("");
+            if (announcement) setAnnouncement("");
           }}
           placeholder="생각이나 경험을 남겨 주세요."
           rows={4}

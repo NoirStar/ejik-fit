@@ -96,19 +96,28 @@ describe("PostDetailActions", () => {
     fireEvent.click(submit);
 
     expect(await screen.findByText("경험 공유 감사합니다.")).toBeInTheDocument();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("댓글을 등록했습니다.");
+    expect(status.className).toContain("srOnly");
     expect(textarea).toHaveValue("");
     expect(screen.getByText("댓글 48")).toBeInTheDocument();
+
+    fireEvent.click(submit);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "댓글 내용을 입력해 주세요.",
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("does not claim a blocked browser write succeeded", () => {
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new DOMException("blocked", "SecurityError");
-    });
+  it("does not claim a blocked browser write succeeded", async () => {
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
     render(<PostDetailActions {...props} />);
 
     const save = screen.getByRole("button", {
       name: `${props.postTitle} 저장`,
+    });
+    setItem.mockImplementationOnce(() => {
+      throw new DOMException("blocked", "SecurityError");
     });
     fireEvent.click(save);
     expect(save).toHaveAttribute("aria-pressed", "false");
@@ -116,6 +125,9 @@ describe("PostDetailActions", () => {
     const textarea = screen.getByRole("textbox", { name: "댓글 내용" });
     fireEvent.change(textarea, {
       target: { value: "저장 시도" },
+    });
+    setItem.mockImplementationOnce(() => {
+      throw new DOMException("blocked", "SecurityError");
     });
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
@@ -125,6 +137,14 @@ describe("PostDetailActions", () => {
     expect(screen.getByRole("list", { name: "댓글 목록" })).not.toHaveTextContent(
       "저장 시도",
     );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+    expect(await screen.findByText("저장 시도")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("댓글을 등록했습니다.");
+    expect(status.className).toContain("srOnly");
   });
 
   it("defensively rejects a comment beyond the browser input limit", () => {

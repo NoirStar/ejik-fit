@@ -73,6 +73,7 @@ export function PostDetailActions({
   );
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     setInteractions(readSocialInteractions());
@@ -89,6 +90,7 @@ export function PostDetailActions({
   function submitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = draft.trim();
+    setAnnouncement("");
     if (!body) {
       setError("댓글 내용을 입력해 주세요.");
       return;
@@ -106,6 +108,7 @@ export function PostDetailActions({
     }
     setDraft("");
     setError("");
+    setAnnouncement("댓글을 등록했습니다.");
   }
 
   return (
@@ -115,7 +118,10 @@ export function PostDetailActions({
           aria-label={`${postTitle} ${reacted ? "공감 취소" : "공감"}`}
           aria-pressed={reacted}
           data-active={reacted ? "true" : undefined}
-          onClick={() => setInteractions(togglePostReaction(postId))}
+          onClick={() => {
+            setAnnouncement("");
+            setInteractions(togglePostReaction(postId));
+          }}
           type="button"
         >
           <Heart aria-hidden="true" size={20} weight={reacted ? "fill" : "regular"} />
@@ -129,7 +135,10 @@ export function PostDetailActions({
           aria-label={`${postTitle} ${saved ? "저장 해제" : "저장"}`}
           aria-pressed={saved}
           data-active={saved ? "true" : undefined}
-          onClick={() => setInteractions(togglePostSave(postId))}
+          onClick={() => {
+            setAnnouncement("");
+            setInteractions(togglePostSave(postId));
+          }}
           type="button"
         >
           <BookmarkSimple
@@ -200,6 +209,7 @@ export function PostDetailActions({
             onChange={(event) => {
               setDraft(event.target.value);
               if (error) setError("");
+              if (announcement) setAnnouncement("");
             }}
             placeholder="생각이나 경험을 남겨 주세요."
             rows={4}
@@ -220,6 +230,11 @@ export function PostDetailActions({
           {error && (
             <p id="post-comment-error" role="alert">
               {error}
+            </p>
+          )}
+          {announcement && (
+            <p className={styles.srOnly} role="status">
+              {announcement}
             </p>
           )}
         </form>

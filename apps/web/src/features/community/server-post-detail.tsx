@@ -148,6 +148,7 @@ export function ServerPostDetail({
   const [pending, setPending] = useState("");
   const [actionError, setActionError] = useState("");
   const [announcement, setAnnouncement] = useState("");
+  const [editAnnouncement, setEditAnnouncement] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -182,6 +183,7 @@ export function ServerPostDetail({
 
     setStatus("loading");
     setActionError("");
+    setEditAnnouncement("");
     try {
       const loadedPost = await store.getPost(postId);
       if (request.current !== currentRequest) return;
@@ -248,6 +250,7 @@ export function ServerPostDetail({
     setPending("reaction");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setPostReaction(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -283,6 +286,7 @@ export function ServerPostDetail({
     setPending("save");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setPostSaved(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -316,6 +320,7 @@ export function ServerPostDetail({
     setPending("follow");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setAuthorFollowed(viewer.id, post.author.id, !active);
       setViewerState((current) => ({
@@ -335,6 +340,7 @@ export function ServerPostDetail({
     if (!store) return;
     setPending("delete");
     setActionError("");
+    setEditAnnouncement("");
     try {
       await store.deletePost(viewer.id, post.id);
       setStatus("removed");
@@ -361,6 +367,7 @@ export function ServerPostDetail({
     setPending("report");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.createReport(viewer.id, {
         targetType: "post",
@@ -467,6 +474,7 @@ export function ServerPostDetail({
                 setPost(updated);
                 setEditorOpen(false);
                 setActionError("");
+                setEditAnnouncement("글 수정을 저장했습니다.");
               }}
               post={post}
               store={store}
@@ -536,6 +544,11 @@ export function ServerPostDetail({
                 {actionError}
               </p>
             )}
+            {editAnnouncement && (
+              <p className={actionStyles.srOnly} role="status">
+                {editAnnouncement}
+              </p>
+            )}
             {announcement && (
               <p className={actionStyles.commentAnnouncement} role="status">
                 <CheckCircle aria-hidden="true" size={15} weight="fill" />
@@ -587,6 +600,7 @@ export function ServerPostDetail({
                 <button
                   className={detailStyles.ownerEdit}
                   onClick={() => {
+                    setEditAnnouncement("");
                     setEditorOpen((current) => !current);
                     setDeleteConfirm(false);
                   }}

@@ -341,9 +341,9 @@ describe("ServerCommentList", () => {
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     expect(await screen.findByText("새 서버 댓글")).toBeInTheDocument();
     expect(onCountChange).toHaveBeenCalledWith(1);
-    expect(
-      screen.queryByText("댓글을 계정에 등록했습니다."),
-    ).not.toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("댓글을 등록했습니다.");
+    expect(status.className).toContain("srOnly");
 
     fireEvent.click(
       screen.getByRole("button", { name: "삭제할 댓글 댓글 삭제" }),
@@ -351,6 +351,41 @@ describe("ServerCommentList", () => {
     await waitFor(() => expect(screen.queryByText("삭제할 댓글")).not.toBeInTheDocument());
     expect(store.deleteComment).toHaveBeenCalledWith(USER_ID, FIRST_ID);
     expect(onCountChange).toHaveBeenCalledWith(-1);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("keeps a failed comment draft and announces only a successful retry", async () => {
+    let attempt = 0;
+    const createComment: CommentStore["createComment"] = vi.fn(
+      async (_viewerId, postId, input) => {
+        attempt += 1;
+        if (attempt === 1) throw new Error("offline");
+        return {
+          ...comment(THIRD_ID, input.body, USER_ID),
+          postId,
+        };
+      },
+    );
+    renderList({ store: createStore({ createComment }) });
+    await screen.findByText("첫 댓글");
+
+    const textarea = screen.getByRole("textbox", { name: "댓글 내용" });
+    fireEvent.change(textarea, { target: { value: "재시도할 댓글" } });
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "댓글을 등록하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+    );
+    expect(textarea).toHaveValue("재시도할 댓글");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+    expect(await screen.findByText("재시도할 댓글")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("댓글을 등록했습니다.");
+    expect(status.className).toContain("srOnly");
+    expect(createComment).toHaveBeenCalledTimes(2);
   });
 
   it("uses a Unicode ellipsis while comment registration is pending", async () => {

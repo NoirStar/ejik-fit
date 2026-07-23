@@ -247,6 +247,11 @@ describe("HomeFeed", () => {
       "href",
       "/career/questions",
     );
+    expect(screen.getByRole("link", { name: "스킬맵 보기" })).toHaveAttribute(
+      "href",
+      "/skill-map",
+    );
+    expect(screen.queryByText("스킬 연결 보기")).not.toBeInTheDocument();
     const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
     expect(within(insight).getByText("내 기술과 겹치는 공개 공고")).toBeInTheDocument();
     expect(within(insight).getByText("12건")).toBeInTheDocument();
@@ -262,6 +267,12 @@ describe("HomeFeed", () => {
     expect(within(marketContext).getByRole("link", {
       name: "기술 관리 · 조건 수정",
     })).toHaveAttribute("href", "/career");
+
+    fireEvent.click(screen.getByRole("tab", { name: "인기" }));
+    expect(
+      screen.getByText("다른 탭을 선택하거나 첫 글을 작성해 주세요."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/작성해 보세요/)).not.toBeInTheDocument();
   });
 
   it("separates read-only starter guidance from real activity", () => {

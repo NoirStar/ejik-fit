@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 390, 320]) {
   test(`keeps saved market conditions aligned with actual home data at ${width}px`, async ({
     page,
   }) => {
@@ -69,6 +69,20 @@ for (const width of [1440, 390]) {
     const editBox = await edit.boundingBox();
     expect(editBox?.width).toBeGreaterThanOrEqual(44);
     expect(editBox?.height).toBeGreaterThanOrEqual(44);
+    await expect(edit).toHaveCSS("white-space", "nowrap");
+    if (width === 320) {
+      const tabs = page
+        .getByRole("tablist", { name: "피드 정렬" })
+        .getByRole("tab");
+      await expect(tabs).toHaveCount(4);
+      for (let index = 0; index < (await tabs.count()); index += 1) {
+        const tab = tabs.nth(index);
+        await expect(tab).toHaveCSS("white-space", "nowrap");
+        const tabBox = await tab.boundingBox();
+        expect(tabBox?.width).toBeGreaterThanOrEqual(44);
+        expect(tabBox?.height).toBeGreaterThanOrEqual(44);
+      }
+    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,

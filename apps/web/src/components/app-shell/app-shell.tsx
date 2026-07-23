@@ -549,8 +549,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {communityMigration.phase === "failed" && (
         <div className={styles.migrationNotice} role="alert">
           <span>
-            이전 브라우저 글 {communityMigration.failureCount}개를 계정으로 옮기지
-            못했습니다. 원본은 그대로 보관되어 있습니다.
+            이 기기에 남은 글 {communityMigration.failureCount}개를 계정으로 옮기지
+            못했습니다. 글은 이 기기에 그대로 남아 있습니다.
           </span>
           <button
             onClick={() => void communityMigration.retry()}

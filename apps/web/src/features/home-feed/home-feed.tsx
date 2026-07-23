@@ -1018,7 +1018,7 @@ export function HomeFeed({
               </Link>
               <Link href="/skill-map" prefetch={false}>
                 <ChartLineUp aria-hidden="true" size={18} />
-                스킬 연결 보기
+                스킬맵 보기
               </Link>
               <Link href="/data-policy" prefetch={false}>
                 <ShieldCheck aria-hidden="true" size={18} />
@@ -1195,7 +1195,7 @@ export function HomeFeed({
                 <p>
                   {activeTab === "following"
                     ? HOME_COPY.followingAction
-                    : "다른 탭을 선택하거나 첫 글을 작성해 보세요."}
+                    : "다른 탭을 선택하거나 첫 글을 작성해 주세요."}
                 </p>
                 {activeTab === "following" && (
                   <button

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const postTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`keeps starter guidance clearly read-only at ${width}px`, async ({
     page,
   }) => {
@@ -70,6 +70,9 @@ for (const width of [1440, 820, 390]) {
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
+    if (width === 320) {
+      await expect(back).toHaveCSS("white-space", "nowrap");
+    }
 
     await page.reload();
     await expect(page.getByRole("textbox")).toHaveCount(0);
@@ -90,7 +93,7 @@ for (const width of [1440, 820, 390]) {
     });
     await expect(homeGuide).toContainText("읽기 전용");
 
-    if (width === 390) {
+    if (width <= 390) {
       await homeGuide
         .getByRole("link", { name: `${postTitle} 예시 읽기` })
         .click();

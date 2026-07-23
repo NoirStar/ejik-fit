@@ -269,7 +269,7 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
             ? requirementCounts
                 .map(([label, count]) => `${label} ${count ?? "미제공"}`)
                 .join(" · ")
-            : "필수·우대 분류 미제공"}
+            : PRODUCT_TERMS.unspecifiedRequirement}
         </span>
       </div>
       <div className={styles.skillActions}>
@@ -293,7 +293,7 @@ function CommunityResult({
       <div className={styles.resultTopline}>
         {item.source !== "mock" && (
           <span className={styles.exampleBadge} data-source={item.source}>
-            {item.source === "local" ? "이전 저장 글" : "커뮤니티"}
+            {item.source === "local" ? "이 기기에 남은 글" : "커뮤니티"}
           </span>
         )}
         <span>{item.createdLabel}</span>
@@ -433,7 +433,7 @@ export function SearchResults({
             <h2>{SEARCH_COPY.prompt}</h2>
             <p>
               기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이
-              브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.
+              기기에 남은 글, 활용 가이드에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -600,14 +600,14 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="전체 공개 계정 글을 검색하고, 이전 저장 글과 활용 가이드는 별도로 보여줍니다."
+                      description="전체 공개 계정 글을 검색하고, 이 기기에 남은 글과 활용 가이드는 별도로 보여줍니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
-                      커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이
-                      브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.
+                      커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은
+                      계정 글과 구분해 표시합니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
@@ -664,7 +664,7 @@ export function SearchResults({
                                 type="button"
                               >
                                 {accountCommunity.state.loadingMore
-                                  ? "불러오는 중..."
+                                  ? "불러오는 중…"
                                   : "공개 글 더 보기"}
                               </button>
                             )}
@@ -672,12 +672,12 @@ export function SearchResults({
 
                         {localCommunityResults.length > 0 && (
                           <section
-                            aria-label="이전 기기 저장 글"
+                            aria-label="이 기기에 남은 글"
                             className={styles.communitySourceGroup}
                           >
                             <header>
-                              <h3>이전 기기 저장 글</h3>
-                              <p>아직 계정으로 옮겨지지 않은 이 브라우저의 복구 대상입니다.</p>
+                              <h3>이 기기에 남은 글</h3>
+                              <p>계정에 게시되지 않고 이 기기에 남아 있는 글입니다.</p>
                             </header>
                             <div className={styles.communityList}>
                               {localCommunityResults.map((item) => (

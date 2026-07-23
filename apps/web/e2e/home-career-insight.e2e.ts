@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390]) {
+for (const width of [1440, 390, 320]) {
   test(`synchronizes the browser stack with verified home insight at ${width}px`, async ({
     page,
   }) => {
@@ -15,9 +15,16 @@ for (const width of [1440, 390]) {
 
     const context = page.getByRole("region", { name: "내 관심 시장" });
     await expect(context).toContainText("전체 경력 · 전체 기술 분야");
-    await expect(
-      context.getByRole("link", { name: "기술 추가 · 조건 설정" }),
-    ).toBeVisible();
+    const setup = context.getByRole("link", {
+      name: "기술 추가 · 조건 설정",
+    });
+    await expect(setup).toBeVisible();
+    if (width === 320) {
+      await expect(setup).toHaveCSS("white-space", "nowrap");
+      const setupBox = await setup.boundingBox();
+      expect(setupBox?.width).toBeGreaterThanOrEqual(44);
+      expect(setupBox?.height).toBeGreaterThanOrEqual(44);
+    }
     await expect(
       page.getByRole("region", { name: "내 기술과 맞는 공고" }),
     ).toHaveCount(0);
@@ -29,9 +36,7 @@ for (const width of [1440, 390]) {
       await stack.getByRole("button", { name: "기술 추가" }).click();
       await stack.getByRole("button", { name: "내 기술 닫기" }).click();
     } else {
-      await context
-        .getByRole("link", { name: "기술 추가 · 조건 설정" })
-        .click();
+      await setup.click();
       await page.getByLabel("추가할 기술").fill("Java");
       await page.getByRole("button", { name: "기술 추가" }).click();
       await page.goto("/");

@@ -244,9 +244,11 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "이전 브라우저 글 2개를 계정으로 옮기지 못했습니다",
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(
+      "이 기기에 남은 글 2개를 계정으로 옮기지 못했습니다. 글은 이 기기에 그대로 남아 있습니다.",
     );
+    expect(alert).not.toHaveTextContent(/브라우저|원본|\.\.\./);
     fireEvent.click(screen.getByRole("button", { name: "다시 옮기기" }));
     expect(legacyMigration.status.retry).toHaveBeenCalledTimes(1);
   });

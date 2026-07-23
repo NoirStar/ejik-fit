@@ -530,6 +530,7 @@
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -1777,6 +1778,7 @@
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 750;
+  white-space: nowrap;
   cursor: pointer;
 }
 

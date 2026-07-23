@@ -1,6 +1,7 @@
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -10,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
-import type { CommunityPost } from "@/lib/community-contract";
+import type { CommunityCursor, CommunityPost } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 
 import type { SearchSnapshot } from "./model";
@@ -20,14 +21,28 @@ const EMPTY_SEARCH_COPY =
   "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.";
 const GUIDE_DISCLOSURE = "활용 가이드는 실제 사용자 글이 아닙니다.";
 const START_DISCLOSURE =
-  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.";
+  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 기기에 남은 글, 활용 가이드에서 찾습니다.";
 const COMMUNITY_DISCLOSURE =
-  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.";
+  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은 계정 글과 구분해 표시합니다.";
 const COMMUNITY_MERGE_COPY =
   "공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는 중입니다.";
 const COMMUNITY_EMPTY_COPY =
   "공개 계정 글에서 일치하는 결과가 없습니다.";
 const IMPLEMENTATION_JARGON = /API|서버|응답/;
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
+function productCopyWithoutAuthoredContent(container: HTMLElement) {
+  const productCopy = container.cloneNode(true) as HTMLElement;
+  productCopy.querySelectorAll("article").forEach((article) => article.remove());
+  return productCopy;
+}
 
 const serverSearchPost: CommunityPost = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -46,7 +61,10 @@ const serverSearchPost: CommunityPost = {
 
 function serverSearchStore() {
   return {
-    searchPosts: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
+    searchPosts: vi.fn(async () => ({
+      items: [serverSearchPost],
+      nextCursor: null as CommunityCursor | null,
+    })),
     listPostPage: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listFollowingPostPage: vi.fn(async () => ({
       items: [serverSearchPost],
@@ -325,14 +343,15 @@ describe("SearchResults", () => {
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
     saveLocalSearchPost();
-    render(<SearchResults snapshot={snapshot()} />);
+    const { container } = render(<SearchResults snapshot={snapshot()} />);
 
     const localResult = await screen.findByRole("article", {
       name: "Python 공고를 보고 남긴 내 질문",
     });
-    expect(within(localResult).getByText("이전 저장 글")).toBeInTheDocument();
+    expect(within(localResult).getByText("이 기기에 남은 글")).toBeInTheDocument();
+    expect(within(localResult).queryByText("이전 저장 글")).not.toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "이전 기기 저장 글" }))
+      within(screen.getByRole("region", { name: "이 기기에 남은 글" }))
         .getByRole("article", { name: "Python 공고를 보고 남긴 내 질문" }),
     ).toBeInTheDocument();
     expect(
@@ -352,6 +371,8 @@ describe("SearchResults", () => {
       }),
     ).not.toHaveTextContent("활용 가이드");
     expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
+    expect(productCopyWithoutAuthoredContent(container))
+      .not.toHaveTextContent(/브라우저|원본|\.\.\./);
 
     deleteLocalCommunityPost("local-python-search");
 
@@ -397,6 +418,44 @@ describe("SearchResults", () => {
     ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
     expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
     expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
+  });
+
+  it("uses a Unicode ellipsis while public community pagination is pending", async () => {
+    const store = serverSearchStore();
+    const nextCursor: CommunityCursor = {
+      createdAt: serverSearchPost.createdAt,
+      id: serverSearchPost.id,
+    };
+    const pending = deferred<{
+      items: CommunityPost[];
+      nextCursor: CommunityCursor | null;
+    }>();
+    store.searchPosts
+      .mockResolvedValueOnce({ items: [serverSearchPost], nextCursor })
+      .mockImplementationOnce(() => pending.promise);
+
+    const { container } = render(
+      <SearchResults
+        communityStore={store}
+        snapshot={snapshot({ scope: "community" })}
+      />,
+    );
+
+    const loadMore = await screen.findByRole("button", {
+      name: "공개 글 더 보기",
+    });
+    fireEvent.click(loadMore);
+
+    expect(screen.getByRole("button", { name: "불러오는 중…" })).toBeDisabled();
+    expect(productCopyWithoutAuthoredContent(container))
+      .not.toHaveTextContent(/브라우저|원본|\.\.\./);
+
+    await act(async () => {
+      pending.resolve({ items: [], nextCursor: null });
+      await pending.promise;
+    });
+    expect(screen.queryByRole("button", { name: "불러오는 중…" }))
+      .not.toBeInTheDocument();
   });
 
   it("describes an empty public account result without implementation jargon", async () => {
@@ -517,7 +576,8 @@ describe("SearchResults", () => {
       />,
     );
 
-    expect(screen.getByText("필수·우대 분류 미제공")).toBeInTheDocument();
+    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
+    expect(screen.queryByText("필수·우대 분류 미제공")).not.toBeInTheDocument();
     expect(screen.queryByText(/필수 0/)).not.toBeInTheDocument();
   });
 
