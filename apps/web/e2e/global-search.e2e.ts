@@ -269,6 +269,11 @@ test("finds a legacy browser post as recovery data after reload", async ({
     page.getByRole("heading", { exact: true, level: 1, name: title }),
   ).toBeVisible();
   await expect(
+    page
+      .getByRole("article")
+      .getByText("이 기기에 남은 글", { exact: true }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
   ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);

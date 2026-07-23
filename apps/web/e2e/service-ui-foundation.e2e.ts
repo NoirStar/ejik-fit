@@ -15,6 +15,7 @@ for (const viewport of [
     await page.goto("/");
 
     const heading = page.getByRole("heading", {
+      exact: true,
       name: "커리어 이야기",
     });
     const feedPanel = page.getByRole("tabpanel", { name: "둘러보기" });
@@ -35,14 +36,28 @@ for (const viewport of [
     const articlePositions = await feedPanel.evaluate((element) =>
       [...element.querySelectorAll<HTMLElement>(":scope > article")]
         .slice(0, 2)
-        .map((article) => article.getBoundingClientRect().top),
+        .map((article) => {
+          const box = article.getBoundingClientRect();
+          return {
+            height: box.height,
+            top: box.top,
+            visible: article.checkVisibility(),
+            width: box.width,
+          };
+        }),
     );
     expect(articlePositions.length).toBeGreaterThan(0);
-    expect(articlePositions[0]).toBeLessThan(viewport.height);
+    expect(articlePositions[0]).toMatchObject({ visible: true });
+    expect(articlePositions[0].height).toBeGreaterThan(0);
+    expect(articlePositions[0].width).toBeGreaterThan(0);
+    expect(articlePositions[0].top).toBeLessThan(viewport.height);
 
     if (viewport.label === "desktop") {
       expect(articlePositions.length).toBeGreaterThan(1);
-      expect(articlePositions[1]).toBeLessThan(900);
+      expect(articlePositions[1]).toMatchObject({ visible: true });
+      expect(articlePositions[1].height).toBeGreaterThan(0);
+      expect(articlePositions[1].width).toBeGreaterThan(0);
+      expect(articlePositions[1].top).toBeLessThan(900);
     }
 
     const overflows = await page.evaluate(
