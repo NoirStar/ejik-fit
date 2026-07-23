@@ -25,7 +25,7 @@ const RESULT_MESSAGES = {
   created: "검색 조건을 저장했습니다.",
   duplicate: "이미 같은 조건을 저장했습니다.",
   limit: "저장 검색은 최대 10개까지 만들 수 있습니다.",
-  error: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+  error: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
 } as const;
 
 type ResultStatus = keyof typeof RESULT_MESSAGES;
@@ -191,7 +191,7 @@ export function SavedSearchComposer({
           </div>
           <div className={styles.formActions}>
             <button disabled={submitDisabled} type="submit">
-              {pending ? "저장 중" : "검색 조건 저장"}
+              {pending ? "저장 중…" : "검색 조건 저장"}
             </button>
             <button onClick={closeComposer} type="button">
               취소

@@ -14,6 +14,7 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 import {
   EMPTY_CAREER_PREFERENCES,
   readCareerPreferences,
@@ -33,6 +34,7 @@ import {
   skillCategoryLabel,
 } from "@/lib/skill-categories";
 import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import type { FitAnalyzeResponse, SkillCatalogItem } from "@/lib/types";
 
 import {
@@ -66,6 +68,19 @@ type ComparisonState =
   | { status: "loading" }
   | { status: "ready"; snapshot: CareerSnapshot }
   | { status: "error" };
+
+const CAREER_COPY = {
+  pageTitle: "내 커리어",
+  pageDescription: "내 기술과 채용공고를 비교해 다음에 준비할 기술을 찾습니다.",
+  ownedSkills: PRODUCT_TERMS.ownedSkills,
+  guestStorage: "이 기기에 저장됨",
+  accountStorage: "계정에 저장됨",
+  emptyTitle: "먼저 내 기술을 추가해 주세요.",
+  emptyBody: "기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+  quickAdd: "추천 기술",
+  comparison: "공고와 비교",
+  limits: "이 결과는 합격 가능성이나 학습 순서를 예측하지 않습니다.",
+};
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -138,7 +153,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
       <header className={styles.resultHeader}>
         <div>
           <p>{snapshot.scopeLabel} 조건</p>
-          <h2 id="career-result-title">공고 비교 결과</h2>
+          <h2 id="career-result-title">{CAREER_COPY.comparison}</h2>
         </div>
         <span>현재 공개 공고 기준</span>
       </header>
@@ -150,7 +165,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             {formatCount(snapshot.metrics.matchingPostingCount, "건")}
           </dd>
           <dd className={styles.metricDescription}>
-            보유 기술이 한 개 이상 확인된 공고
+            내 기술이 한 개 이상 확인된 공고
           </dd>
         </div>
         <div>
@@ -179,7 +194,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
           <div>
             <h3>현재 조건에서 겹치는 공고가 없습니다.</h3>
             <p>
-              보유 기술을 더 추가하거나 전체 공고에서 다른 조건을 확인해 보세요.
+              내 기술을 더 추가하거나 전체 공고에서 다른 조건을 확인할 수 있습니다.
             </p>
           </div>
           <Link className={styles.inlineLink} href="/jobs">
@@ -196,7 +211,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             <header className={styles.sectionHeader}>
               <div>
                 <p>부족 요구사항</p>
-                <h3 id="career-next-skills-title">다음 준비 기술</h3>
+                <h3 id="career-next-skills-title">다음에 배울 기술</h3>
               </div>
               <span>최대 6개</span>
             </header>
@@ -204,7 +219,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             {snapshot.recommendations.length === 0 ? (
               <div className={styles.compactState}>
                 <h4>반복해서 확인된 다음 기술이 없습니다.</h4>
-                <p>현재 보유 기술과 겹치는 공고는 있지만 부족 요구사항이 추출되지 않았습니다.</p>
+                <p>현재 내 기술과 겹치는 공고는 있지만 부족 요구사항이 확인되지 않았습니다.</p>
               </div>
             ) : (
               <ol className={styles.recommendationList} role="list">
@@ -261,7 +276,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
             {snapshot.branches.length === 0 ? (
               <div className={styles.compactState}>
                 <h4>분야별 근거가 아직 없습니다.</h4>
-                <p>비교 결과에 분야가 확인되면 보유 기술과 부족 기술을 나눠 보여드립니다.</p>
+                <p>비교 결과에 분야가 확인되면 내 기술과 부족 기술을 나눠 보여줍니다.</p>
               </div>
             ) : (
               <div className={styles.branchList} role="list">
@@ -272,7 +287,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
                       <span>근거 공고 {formatCount(branch.supportingPostingCount, "건")}</span>
                     </header>
                     <div className={styles.evidenceGroup}>
-                      <h5>보유 기술</h5>
+                      <h5>{CAREER_COPY.ownedSkills}</h5>
                       <EvidenceSkills skills={branch.coveredSkills} />
                     </div>
                     <div className={styles.evidenceGroup}>
@@ -302,6 +317,7 @@ export function CareerOverview({
   domainSuggestions = [],
   domainSuggestionsUnavailable = false,
 }: CareerOverviewProps) {
+  const { viewer } = useAuthViewerContext();
   const inputId = useId();
   const inputErrorId = useId();
   const catalogHintId = useId();
@@ -516,30 +532,30 @@ export function CareerOverview({
     activeTargetDomain,
   );
   const announcement = !hydrated || !preferencesHydrated
-    ? "저장한 기술을 확인하고 있습니다."
+    ? "내 기술을 불러오는 중…"
     : comparison.status === "loading"
       ? `${selectedScopeLabel} 조건의 공개 공고를 비교하고 있습니다.`
       : comparison.status === "error"
         ? "공고 비교를 불러오지 못했습니다."
         : comparison.status === "ready"
           ? `겹치는 공개 공고 ${comparison.snapshot.metrics.matchingPostingCount}건을 확인했습니다.`
-          : "보유 기술을 저장하면 공개 공고를 비교합니다.";
+          : "내 기술을 추가하면 공개 공고와 비교합니다.";
 
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <h1>내 커리어</h1>
+        <h1>{CAREER_COPY.pageTitle}</h1>
         <p className={styles.description}>
-          직접 저장한 기술과 현재 공개 공고의 확정된 요구사항을 비교해 다음 탐색 근거를 확인하세요.
+          {CAREER_COPY.pageDescription}
         </p>
         <div className={styles.introMeta}>
           <span className={styles.privacyBadge}>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            브라우저 저장 · 로그인 시 동기화
+            {viewer ? CAREER_COPY.accountStorage : CAREER_COPY.guestStorage}
           </span>
           <Link className={styles.savedLibraryLink} href="/career/saved">
             <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-            저장 보관함
+            {PRODUCT_TERMS.savedItems}
           </Link>
           <Link className={styles.savedLibraryLink} href="/career/companies">
             <Buildings aria-hidden="true" size={16} weight="fill" />
@@ -564,13 +580,15 @@ export function CareerOverview({
           <header className={styles.panelHeader}>
             <div>
               <p>분석 기준</p>
-              <h2 id="career-owned-skills-title">내 기술</h2>
+              <h2 id="career-owned-skills-title">{CAREER_COPY.ownedSkills}</h2>
             </div>
             <span>{ownedSkills.length}개</span>
           </header>
 
           <p className={styles.localNote}>
-            로그인 전에는 이 브라우저에서 관리하고, 로그인하면 계정과 동기화합니다.
+            {viewer
+              ? "내 기술과 비교 조건을 계정에 저장합니다."
+              : "내 기술과 비교 조건은 이 기기에 저장됩니다. 로그인하면 계정 데이터와 합칩니다."}
           </p>
 
           <form className={styles.skillForm} onSubmit={handleSubmit}>
@@ -624,7 +642,7 @@ export function CareerOverview({
           </form>
 
           <div className={styles.savedHeader}>
-            <h3>저장한 기술</h3>
+            <h3>내 기술 목록</h3>
             {ownedSkills.length > 0 && (
               <button className={styles.clearButton} onClick={handleClear} type="button">
                 전체 삭제
@@ -633,11 +651,11 @@ export function CareerOverview({
           </div>
 
           {!hydrated ? (
-            <p className={styles.stackState}>저장한 기술을 확인하고 있습니다.</p>
+            <p className={styles.stackState}>내 기술을 불러오는 중…</p>
           ) : ownedSkills.length === 0 ? (
             <p className={styles.stackState}>아직 저장한 기술이 없습니다.</p>
           ) : (
-            <ul aria-label="저장한 기술 목록" className={styles.savedSkills} role="list">
+            <ul aria-label="내 기술 목록" className={styles.savedSkills} role="list">
               {ownedSkills.map((skill) => (
                 <li key={skill}>
                   <span>{skill}</span>
@@ -655,8 +673,8 @@ export function CareerOverview({
 
           <section aria-labelledby="quick-skills-title" className={styles.quickSkills}>
             <header>
-              <h3 id="quick-skills-title">빠르게 추가</h3>
-              <span>실제 공고 수 기준</span>
+              <h3 id="quick-skills-title">{CAREER_COPY.quickAdd}</h3>
+              <span>공고 수 기준</span>
             </header>
             {suggestionsUnavailable ? (
               <p className={styles.suggestionState}>
@@ -696,8 +714,8 @@ export function CareerOverview({
               <p>비교 범위</p>
               <h2 id="career-condition-title">비교 조건</h2>
               <span>
-                비교 조건은 이 브라우저에 우선 저장되며, 로그인하면 계정과
-                동기화됩니다. 공고 비교 요청에는 선택한 조건만 사용합니다.
+                비교 조건은 이 기기에 먼저 저장되며, 로그인하면 계정 데이터와
+                합칩니다. 공고 비교에는 선택한 조건만 사용합니다.
               </span>
               {preferenceStatus && (
                 <span className={styles.conditionStatus} role="status">
@@ -772,16 +790,16 @@ export function CareerOverview({
             <section className={styles.messagePanel} role="status">
               <span className={styles.loadingMark} aria-hidden="true" />
               <div>
-                <h2>저장한 기술을 확인하고 있습니다.</h2>
-                <p>이 기기에 저장하고 계정과 동기화한 기술을 불러옵니다.</p>
+                <h2>내 기술을 불러오는 중…</h2>
+                <p>이 기기와 계정에 저장된 기술을 확인합니다.</p>
               </div>
             </section>
           ) : ownedSkills.length === 0 ? (
             <section className={styles.messagePanel}>
               <Plus aria-hidden="true" size={24} />
               <div>
-                <h2>먼저 보유 기술을 저장해 주세요.</h2>
-                <p>왼쪽에서 기술을 직접 입력하거나 실제 공고 기준 제안을 선택할 수 있습니다.</p>
+                <h2>{CAREER_COPY.emptyTitle}</h2>
+                <p>{CAREER_COPY.emptyBody}</p>
               </div>
               <Link className={styles.inlineLink} href="/skill-map">
                 스킬맵 둘러보기
@@ -814,21 +832,11 @@ export function CareerOverview({
             <ComparisonResult snapshot={comparison.snapshot} />
           ) : null}
 
-          <section aria-labelledby="career-method-title" className={styles.methodPanel}>
-            <div>
-              <p>해석 기준</p>
-              <h2 id="career-method-title">숫자를 읽는 방법</h2>
-            </div>
-            <p>
-              희망 기술 분야는 현재 스킬 그래프가 제공하는 분야 메타데이터로 비교
-              범위를 좁힙니다. {" "}
-              공식 채용페이지에서 현재 공개 상태로 확인된 공고와 확정 기술 추출만 비교합니다.
-              이 결과는 합격 여부, 장기 전망 또는 학습 순서를 예측하지 않습니다.
-            </p>
+          <section aria-label="커리어 분석 범위" className={styles.methodPanel}>
+            <p>{CAREER_COPY.limits}</p>
             <nav aria-label="커리어 분석 관련 페이지" className={styles.methodLinks}>
               <Link href="/methodology">분석 방법</Link>
-              <Link href="/skill-map">스킬맵</Link>
-              <Link href="/jobs">공개 공고</Link>
+              <Link href="/data-policy">데이터 정책</Link>
             </nav>
           </section>
         </div>

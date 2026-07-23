@@ -4,11 +4,12 @@ import {
   SavedLibrary,
   type SavedScope,
 } from "@/features/saved-library/saved-library";
+import { PRODUCT_TERMS } from "@/lib/labels";
 
 export const metadata: Metadata = {
-  title: "저장 보관함",
+  title: PRODUCT_TERMS.savedItems,
   description:
-    "계정과 현재 브라우저에 저장한 공식 공고, 커뮤니티 글과 지원 단계를 다시 확인합니다.",
+    "이 기기와 계정에 저장한 공고, 커뮤니티 글과 지원 단계를 확인합니다.",
   robots: { index: false, follow: false },
 };
 

@@ -65,7 +65,7 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
 
     const client = createBrowserSupabaseClient();
     if (!client) {
-      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
       return;
     }
 
@@ -79,7 +79,7 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
       setSavedNickname(validated.value);
       setStatus("닉네임을 저장했습니다.");
     } catch {
-      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setSaving(false);
     }
@@ -135,7 +135,7 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
                 setSaveError("");
                 setStatus("");
               }}
-              placeholder={loadState === "loading" ? "불러오는 중" : "2-20자 닉네임"}
+              placeholder={loadState === "loading" ? "불러오는 중…" : "2-20자 닉네임"}
               type="text"
               value={nickname}
             />
@@ -156,7 +156,7 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
           type="button"
         >
           <FloppyDisk aria-hidden="true" size={17} />
-          {saving ? "저장 중" : "저장"}
+          {saving ? "저장 중…" : "저장"}
         </button>
       </div>
 

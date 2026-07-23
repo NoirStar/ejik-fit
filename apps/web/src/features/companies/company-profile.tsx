@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { buildJobEvidence, formatCareerRange, formatClosingDate, formatVerifiedDate } from "@/features/jobs/model";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import type {
   PostingListResponse,
   PostingSummary,
@@ -59,7 +59,7 @@ function CompanyState({
         <p>
           {error
             ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
-            : "최근 수집 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다."}
+            : "최근 확인 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다."}
         </p>
         <nav aria-label="기업 공고 상태 안내">
           {error && (
@@ -292,7 +292,7 @@ export function CompanyProfile({
             <dd>근무 지역 {snapshot.locationCount}곳</dd>
           </div>
           <div>
-            <dt>최근 검증</dt>
+            <dt>{PRODUCT_TERMS.lastChecked}</dt>
             <dd>{formatVerifiedDate(snapshot.latestVerifiedAt)}</dd>
           </div>
         </dl>
@@ -367,7 +367,7 @@ export function CompanyProfile({
               <h2>이 수치를 읽는 기준</h2>
               <p>
                 {hasMorePostings
-                  ? `공개 공고 총수는 API의 전체 결과이며, 기술과 채용 조건은 최근 ${snapshot.postingCount.toLocaleString("ko-KR")}개 공고를 기준으로 집계합니다. `
+                  ? `공개 공고 총수는 확인된 전체 공고 수이며, 기술과 채용 조건은 최근 ${snapshot.postingCount.toLocaleString("ko-KR")}개 공고를 기준으로 집계합니다. `
                   : "공개 공고와 기술·채용 조건은 현재 확인된 공고를 기준으로 집계합니다. "}
                 기술은 공고별로 한 번만 세며 시장 전체나 기업 규모를 뜻하지 않습니다.
               </p>

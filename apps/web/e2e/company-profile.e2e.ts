@@ -15,6 +15,7 @@ for (const width of [1440, 820, 390]) {
       page.getByRole("heading", { level: 1, name: "NAVER" }),
     ).toBeVisible();
     await expect(page.getByText("현재 공개 공고 1건")).toBeVisible();
+    await expect(page.getByText("최근 확인")).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeVisible();

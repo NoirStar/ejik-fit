@@ -24,7 +24,7 @@ describe("AlertsPage", () => {
     expect(metadata).toMatchObject({
       title: "공고 알림",
       description:
-        "저장한 공고 검색 조건과 새로 확인된 공식 공고를 관리합니다.",
+        "저장한 알림과 새로 확인된 공고를 관리합니다.",
       robots: { index: false, follow: false },
     });
   });

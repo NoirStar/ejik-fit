@@ -22,6 +22,7 @@ import {
   subscribeBrowserAccountState,
   type AccountCareerState,
 } from "@/lib/account-state";
+import { PRODUCT_TERMS } from "@/lib/labels";
 
 import { AccountControls } from "./account-controls";
 import styles from "./account-overview.module.css";
@@ -51,14 +52,14 @@ export function AccountOverview() {
     {
       href: "/career",
       icon: Stack,
-      label: "내 기술",
+      label: PRODUCT_TERMS.ownedSkills,
       value: `${careerState.ownedSkills.length}개`,
-      description: "기술 스택과 희망 조건",
+      description: "저장한 기술과 희망 조건",
     },
     {
       href: "/career/saved",
       icon: BookmarkSimple,
-      label: "저장 공고",
+      label: PRODUCT_TERMS.savedItems,
       value: `${careerState.savedJobIds.length}건`,
       description: "다시 확인할 공식 공고",
     },
@@ -73,7 +74,7 @@ export function AccountOverview() {
       href: "/career/alerts",
       icon: Bell,
       label: "공고 알림",
-      value: viewer ? "계정 저장" : "로그인 필요",
+      value: viewer ? "계정에 저장됨" : "로그인 필요",
       description: "저장 검색과 새 공고",
     },
     {
@@ -88,9 +89,9 @@ export function AccountOverview() {
   return (
     <main className={styles.page}>
       <header className={styles.pageHeader}>
-        <span>내 정보</span>
-        <h1>계정 및 동기화</h1>
-        <p>로그인 상태와 기기 간에 이어지는 커리어 정보 범위를 확인합니다.</p>
+        <span>내 커리어</span>
+        <h1>계정</h1>
+        <p>프로필과 커리어 데이터의 저장 범위를 관리합니다.</p>
       </header>
 
       <section aria-labelledby="account-status-title" className={styles.identityPanel}>
@@ -100,16 +101,16 @@ export function AccountOverview() {
         <div className={styles.identityCopy}>
           <h2 id="account-status-title">
             {!ready
-              ? "로그인 상태를 확인하고 있어요"
+              ? "로그인 상태를 불러오는 중…"
               : status === "error"
-                ? "로그인 상태를 확인하지 못했어요"
+                ? "로그인 상태를 확인하지 못했습니다."
               : viewer
-                ? "계정 동기화 사용 중"
+                ? "로그인됨"
                 : "로그인 없이 이용 중"}
           </h2>
           <p>
             {viewer
-              ? "내 스택, 저장 공고, 지원 단계와 관심 기업을 비공개 계정 데이터로 관리합니다."
+              ? "내 기술, 저장 목록, 지원 기록과 관심 기업을 계정에 저장합니다."
               : status === "error"
                 ? "현재 브라우저 데이터는 그대로 유지됩니다. 연결이 복구되면 로그인 상태를 다시 확인합니다."
               : "로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합합니다."}
@@ -123,7 +124,7 @@ export function AccountOverview() {
               type="button"
             >
               <SignOut aria-hidden="true" size={17} />
-              {signingOut ? "로그아웃 중" : "로그아웃"}
+              {signingOut ? "로그아웃 중…" : "로그아웃"}
             </button>
           ) : status === "unauthenticated" ? (
             <Link href="/login?next=%2Fcareer%2Faccount">
@@ -142,7 +143,11 @@ export function AccountOverview() {
         <div className={styles.sectionHeader}>
           <div>
             <h2 id="account-data-title">내 커리어 데이터</h2>
-            <p>현재 이 기기에 병합되어 있는 값을 기준으로 표시합니다.</p>
+            <p>
+              {viewer
+                ? "현재 계정과 이 기기에 합쳐진 값을 표시합니다."
+                : "현재 이 기기에 저장된 값을 표시합니다."}
+            </p>
           </div>
           <span className={styles.scopeBadge} data-signed-in={viewer ? "true" : undefined}>
             {viewer ? (
@@ -150,7 +155,7 @@ export function AccountOverview() {
             ) : (
               <LockKey aria-hidden="true" size={15} />
             )}
-            {viewer ? "계정 동기화 대상" : "브라우저 저장"}
+            {viewer ? "계정에 저장됨" : "이 기기에 저장됨"}
           </span>
         </div>
 
@@ -186,7 +191,7 @@ export function AccountOverview() {
           <p>
             {viewer
               ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 서버에 저장됩니다. 작성 중인 임시 글과 최근 본 주제만 현재 탭 또는 브라우저에 남습니다."
-              : "게시 전 작성 내용은 현재 탭의 임시 글로만 보관합니다. 이전 버전의 로컬 글은 별도 복구 대상으로 표시하고 로그인 후 계정 이전을 시도합니다."}
+              : "게시 전 작성 내용은 현재 탭의 임시 글로만 보관합니다. 이전 버전에서 이 기기에 남긴 글은 별도 복구 대상으로 표시하고 로그인 후 계정 이전을 시도합니다."}
           </p>
         </div>
         <Link href="/privacy">저장 범위 자세히 보기</Link>

@@ -135,8 +135,9 @@ describe("ActivityNotificationCenter", () => {
     render(<ActivityNotificationCenter />);
 
     expect(
-      await screen.findByText("아직 확인할 활동이 없습니다."),
+      await screen.findByText("새 알림이 없습니다."),
     ).toBeInTheDocument();
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("links saved jobs, application stages, and skills to their real destinations", async () => {

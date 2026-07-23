@@ -168,8 +168,9 @@ describe("SavedLibrary", () => {
     render(<SavedLibrary />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "저장 보관함" }),
+      screen.getByRole("heading", { level: 1, name: "저장 목록" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "내 기술 비교" })).toHaveAttribute(
       "href",
       "/career",
@@ -178,7 +179,7 @@ describe("SavedLibrary", () => {
     const job = await screen.findByRole("article", {
       name: "Python Backend Engineer",
     });
-    expect(within(job).getByText("현재 API 재확인")).toBeInTheDocument();
+    expect(within(job).getByText("최근 확인")).toBeInTheDocument();
     expect(
       within(job).getByRole("link", { name: "Python Backend Engineer" }),
     ).toHaveAttribute("href", "/jobs/job-python");
@@ -225,7 +226,7 @@ describe("SavedLibrary", () => {
     expect(
       within(localPost).getByRole("link", { name: "브라우저에 저장한 내 질문" }),
     ).toHaveAttribute("href", "/posts/local-browser-question");
-    expect(within(localPost).getByText(/현재 브라우저 원문/)).toBeInTheDocument();
+    expect(within(localPost).getByText(/이 기기에 남은 글/)).toBeInTheDocument();
     expect(
       screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -271,7 +272,7 @@ describe("SavedLibrary", () => {
     });
     expect(store.listSavedPostPage).toHaveBeenCalledWith({ limit: 50 });
     expect(store.listSavedPosts).not.toHaveBeenCalled();
-    expect(within(savedPost).getByText("계정 저장")).toBeInTheDocument();
+    expect(within(savedPost).getByText("계정에 저장됨")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
 
     fireEvent.click(
@@ -290,7 +291,7 @@ describe("SavedLibrary", () => {
         screen.queryByRole("article", { name: accountCommunityPost.title }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/계정 저장 보관함에서 제거했습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/계정 저장 목록에서 제거했습니다/)).toBeInTheDocument();
   });
 
   it("loads saved community records beyond the first account page", async () => {
@@ -387,7 +388,7 @@ describe("SavedLibrary", () => {
     expect(
       screen.getByText("브라우저에 저장한 내 질문의 저장 상태를 변경하지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/저장 보관함에서 제거했습니다/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/저장 목록에서 제거했습니다/)).not.toBeInTheDocument();
     setItem.mockRestore();
   });
 
@@ -413,7 +414,7 @@ describe("SavedLibrary", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "지원 관리 1" }));
     expect(job).toBeInTheDocument();
-    expect(screen.getByText("지원 단계를 기록한 실제 공고")).toBeInTheDocument();
+    expect(screen.getByText("지원 단계를 기록한 공고")).toBeInTheDocument();
     expect(
       screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -487,7 +488,7 @@ describe("SavedLibrary", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "아직 저장한 항목이 없습니다.",
+        name: "저장한 항목이 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(
@@ -503,17 +504,17 @@ describe("SavedLibrary", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "아직 저장한 항목이 없습니다.",
+        name: "저장한 항목이 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "공식 공고 둘러보기" }),
+      screen.getByRole("link", { name: "공고 보기" }),
     ).toHaveAttribute("href", "/jobs");
     expect(
-      screen.getByRole("link", { name: "커뮤니티 보기" }),
-    ).toHaveAttribute("href", "/");
+      screen.queryByRole("link", { name: "커뮤니티 보기" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText("아직 저장한 항목이 없습니다.").closest('[role="status"]'),
+      screen.getByText("저장한 항목이 없습니다.").closest('[role="status"]'),
     ).not.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -554,11 +555,11 @@ describe("SavedLibrary", () => {
       await screen.findByRole("article", { name: "Python Backend Engineer" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("현재 API에서 확인되지 않는 저장 공고 1개"),
+      screen.getByText("현재 확인할 수 없는 저장 공고 1개"),
     ).toBeInTheDocument();
     expect(
       screen
-        .getByText("현재 API에서 확인되지 않는 저장 공고 1개")
+        .getByText("현재 확인할 수 없는 저장 공고 1개")
         .closest('[role="status"]'),
     ).not.toBeNull();
     expect(

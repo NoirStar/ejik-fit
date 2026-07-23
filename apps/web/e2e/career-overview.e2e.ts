@@ -29,17 +29,22 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   page,
 }) => {
   const fitRequests: Array<Record<string, unknown>> = [];
-  await page.setViewportSize({ height: 844, width: 390 });
+  await page.setViewportSize({ height: 844, width: 320 });
   await page.route("**/skills/graph/fit", async (route) => {
     fitRequests.push(route.request().postDataJSON() as Record<string, unknown>);
     await route.fulfill({ json: fitResponse });
   });
   await page.goto("/career");
 
+  await expect(
+    page.getByRole("heading", { level: 1, name: "내 커리어" }),
+  ).toBeVisible();
+  await expect(page.getByText("이 기기에 저장됨")).toBeVisible();
+
   await page.getByLabel("추가할 기술").fill("Python");
   await page.getByRole("button", { name: "기술 추가" }).click();
   await expect(
-    page.getByRole("heading", { name: "공고 비교 결과" }),
+    page.getByRole("heading", { name: "공고와 비교" }),
   ).toBeVisible();
   await expect(page.getByText("17건", { exact: true })).toBeVisible();
 
@@ -78,7 +83,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   await page.getByRole("button", { name: "기술 추가" }).click();
 
   await expect(
-    page.getByRole("list", { name: "저장한 기술 목록" }),
+    page.getByRole("list", { name: "내 기술 목록" }),
   ).toContainText("React");
   await expect.poll(() => fitRequests.at(-1)).toMatchObject({
     owned_skills: ["Python", "React"],
@@ -93,7 +98,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
 
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "공고 비교 결과" }),
+    page.getByRole("heading", { name: "공고와 비교" }),
   ).toBeVisible();
   await expect(careerSelect).toHaveValue("experienced");
   await expect(domainSelect).toHaveValue("cloud");

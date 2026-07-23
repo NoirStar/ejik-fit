@@ -102,7 +102,8 @@ describe("AccountOverview", () => {
 
     render(<AccountOverview />);
 
-    expect(screen.getByRole("heading", { name: "계정 및 동기화" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "계정" })).toBeInTheDocument();
+    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
     expect(
       screen.getByText(/로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합/),
     ).toBeInTheDocument();
@@ -148,7 +149,7 @@ describe("AccountOverview", () => {
       "readonly",
     );
     expect(screen.getByText("내 기술").closest("a")).toHaveTextContent("2개");
-    expect(screen.getByText("저장 공고").closest("a")).toHaveTextContent("2건");
+    expect(screen.getByText("저장 목록").closest("a")).toHaveTextContent("2건");
     expect(screen.getByText("지원 기록").closest("a")).toHaveTextContent("1건");
     expect(screen.getByText("관심 기업").closest("a")).toHaveTextContent("1곳");
     expect(screen.getByText("공고 알림").closest("a")).toHaveAttribute(
@@ -156,7 +157,7 @@ describe("AccountOverview", () => {
       "/career/alerts",
     );
     expect(screen.getByText("공고 알림").closest("a")).toHaveTextContent(
-      "계정 저장",
+      "계정에 저장됨",
     );
     expect(
       screen.getByText("계정 커뮤니티 활동도 함께 보관합니다."),
@@ -311,7 +312,7 @@ describe("AccountOverview", () => {
     render(<AccountOverview />);
 
     expect(
-      screen.getByRole("heading", { name: "로그인 상태를 확인하지 못했어요" }),
+      screen.getByRole("heading", { name: "로그인 상태를 확인하지 못했습니다." }),
     ).toBeInTheDocument();
     expect(screen.queryByText("로그인 없이 이용 중")).not.toBeInTheDocument();
     expect(

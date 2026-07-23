@@ -42,6 +42,7 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
@@ -104,7 +105,7 @@ function SavedJobCard({
           <div className={styles.jobTopline}>
             <span className={styles.actualBadge}>
               <ShieldCheck aria-hidden="true" size={13} weight="fill" />
-              현재 API 재확인
+              {PRODUCT_TERMS.lastChecked}
             </span>
             <span data-open={item.status === "open" ? "true" : undefined}>
               {item.statusLabel}
@@ -141,7 +142,7 @@ function SavedJobCard({
           ))}
         </ul>
       ) : (
-        <p className={styles.noSkills}>현재 응답에서 확인된 기술이 없습니다.</p>
+        <p className={styles.noSkills}>현재 공고에서 확인된 기술이 없습니다.</p>
       )}
 
       <div
@@ -167,7 +168,7 @@ function SavedJobCard({
           </select>
         </label>
         <small id={removalNoteId}>
-          브라우저 저장 · 로그인 시 동기화
+          이 기기에 저장되며 로그인하면 계정 데이터와 합칩니다.
           {applicationStage ? " · 저장 해제 시 단계도 삭제" : ""}
         </small>
       </div>
@@ -356,7 +357,7 @@ export function SavedLibrary({
     setSavedJobIds(toggleSavedJob(item.id));
     setApplicationStages(removeJobApplicationStage(item.id));
     setAnnouncement(
-      `${item.title}을 저장 보관함에서 제거하고 지원 단계도 삭제했습니다.`,
+      `${item.title}을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
     );
   }
 
@@ -384,7 +385,7 @@ export function SavedLibrary({
     const removed = await accountCommunity.toggleSaved(item.id);
     setAnnouncement(
       removed
-        ? `${item.title}을 계정 저장 보관함에서 제거했습니다.`
+        ? `${item.title}을 계정 저장 목록에서 제거했습니다.`
         : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
     );
   }
@@ -408,7 +409,7 @@ export function SavedLibrary({
     }
     setSavedJobIds(nextIds);
     setApplicationStages(readJobApplicationStages());
-    setAnnouncement("현재 API에서 확인되지 않는 저장 공고를 정리했습니다.");
+    setAnnouncement("현재 확인할 수 없는 저장 공고를 정리했습니다.");
   }
 
   function handleTabKeyDown(
@@ -432,23 +433,18 @@ export function SavedLibrary({
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>내 커리어 보관함</p>
-          <h1>저장 보관함</h1>
+          <p className={styles.eyebrow}>내 커리어</p>
+          <h1>{PRODUCT_TERMS.savedItems}</h1>
           <p className={styles.description}>
-            공고 저장과 지원 단계는 로그인 전에는 이 브라우저에
-            남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의 저장은
-            로그인 계정에서만 복원합니다. 이전 브라우저 글은 서버 저장과
-            섞지 않고 별도 복구 영역에 표시합니다.
+            공고와 지원 단계는 이 기기에 먼저 저장하고, 로그인하면 계정
+            데이터와 합칩니다. 커뮤니티 글은 계정에 저장한 글만 여러 기기에서
+            불러옵니다. 이전 기기에 남은 글은 별도 복구 영역에 표시합니다.
           </p>
         </div>
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            {viewer
-              ? "계정 저장 연결됨"
-              : authStatus === "error"
-                ? "계정 상태 확인 필요"
-                : "로그인 시 계정 연동"}
+            {viewer ? "계정에 저장됨" : "이 기기에 저장됨"}
           </span>
           <Link href="/career">
             내 기술 비교
@@ -486,7 +482,7 @@ export function SavedLibrary({
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          서버 저장과 이전 기기 기록을 구분해 표시
+          계정 저장과 이전 기기 기록을 구분해 표시
         </p>
       </section>
 
@@ -499,22 +495,18 @@ export function SavedLibrary({
       >
         {!hydrated ? (
           <div className={styles.loadingState} role="status">
-            저장한 항목을 확인하고 있습니다.
+            저장 목록을 불러오는 중…
           </div>
         ) : totalCount === 0 &&
           !accountCommunityUnavailable &&
           !accountCommunityLoading ? (
           <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
-            <h2>아직 저장한 항목이 없습니다.</h2>
-            <p>관심 있는 공식 공고와 커뮤니티 글을 저장하면 여기서 다시 볼 수 있습니다.</p>
+            <h2>저장한 항목이 없습니다.</h2>
+            <p>공고를 저장하면 이곳에서 다시 확인할 수 있습니다.</p>
             <div>
               <Link href="/jobs">
-                공식 공고 둘러보기
-                <ArrowRight aria-hidden="true" size={15} weight="bold" />
-              </Link>
-              <Link href="/">
-                커뮤니티 보기
+                공고 보기
                 <ArrowRight aria-hidden="true" size={15} weight="bold" />
               </Link>
             </div>
@@ -527,8 +519,8 @@ export function SavedLibrary({
                   <div>
                     <p>
                       {activeScope === "applications"
-                        ? "지원 단계를 기록한 실제 공고"
-                        : "실제 공고 API"}
+                        ? "지원 단계를 기록한 공고"
+                        : "현재 공식 공고"}
                     </p>
                     <h2 id="saved-jobs-title">
                       {activeScope === "applications" ? "지원 관리" : "공식 공고"}
@@ -542,13 +534,13 @@ export function SavedLibrary({
                 </header>
                 <p className={styles.collectionNote}>
                   {activeScope === "applications"
-                    ? "사용자가 선택한 단계만 로컬에 저장하며, 공고 정보는 현재 공식 API와 다시 대조합니다."
-                    : "저장한 ID를 현재 공식 공고 상세 응답과 다시 대조합니다."}
+                    ? "지원 단계는 이 기기에 저장하며, 공고 정보는 현재 공식 공고와 다시 확인합니다."
+                    : "저장한 공고를 현재 공식 공고와 다시 확인합니다."}
                 </p>
 
                 {jobState.status === "idle" || jobState.status === "loading" ? (
                   <div className={styles.loadingState} role="status">
-                    저장 공고를 현재 API에서 다시 확인하고 있습니다.
+                    저장한 공고를 불러오는 중…
                   </div>
                 ) : jobState.status === "error" ? (
                   <div className={styles.errorState} role="alert">
@@ -567,9 +559,9 @@ export function SavedLibrary({
                       <div className={styles.dataNotice} role="status">
                         <div>
                           <strong>
-                            현재 API에서 확인되지 않는 저장 공고 {jobState.data.unavailableIds.length}개
+                            현재 확인할 수 없는 저장 공고 {jobState.data.unavailableIds.length}개
                           </strong>
-                          <p>삭제되었거나 현재 API에서 제공되지 않는 ID입니다.</p>
+                          <p>삭제되었거나 현재 공식 공고에서 제공되지 않습니다.</p>
                         </div>
                         <button onClick={removeUnavailableJobs} type="button">
                           확인 불가 항목 정리
@@ -586,7 +578,7 @@ export function SavedLibrary({
                           <strong>
                             저장 공고 {jobState.data.failedIds.length}개를 다시 확인하지 못했습니다.
                           </strong>
-                          <p>일시적인 API 오류일 수 있어 저장 상태는 유지했습니다.</p>
+                          <p>일시적인 연결 오류일 수 있어 저장 상태는 유지했습니다.</p>
                         </div>
                         <button onClick={() => setRetryVersion((value) => value + 1)} type="button">
                           공고 다시 확인
@@ -617,10 +609,10 @@ export function SavedLibrary({
                             {activeScope === "applications"
                               ? applicationCount === 0
                                 ? "지원 단계를 기록한 공고가 없습니다."
-                                : "지원 단계는 유지했지만 현재 API에서 확인 가능한 공고가 없습니다."
+                                : "지원 단계는 유지했지만 현재 확인할 수 있는 공고가 없습니다."
                               : jobCount === 0
                                 ? "공고에서 저장 버튼을 누르면 이곳에 표시됩니다."
-                                : "현재 API에서 확인 가능한 저장 공고가 없습니다."}
+                                : "현재 확인할 수 있는 저장 공고가 없습니다."}
                           </p>
                         </div>
                         <Link href="/jobs">공고 보기</Link>
@@ -638,16 +630,16 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>실제 서버 저장</p>
-                    <h2 id="saved-community-title">계정 저장 커뮤니티</h2>
+                    <p>계정에 저장됨</p>
+                    <h2 id="saved-community-title">계정에 저장한 글</h2>
                   </div>
                   <span>{serverCommunityCount}개 저장</span>
                 </header>
                 <div className={styles.sourceNotice}>
                   <ShieldCheck aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    서버가 확인한 계정 게시물만 표시합니다. 읽기 전용 가이드와
-                    브라우저 글은 이 개수에 포함하지 않습니다.
+                    계정에 저장한 게시물만 표시합니다. 읽기 전용 안내와 이전
+                    기기에 남은 글은 이 개수에 포함하지 않습니다.
                   </p>
                 </div>
 
@@ -658,7 +650,7 @@ export function SavedLibrary({
                       <strong>로그인 상태를 확인하지 못했습니다.</strong>
                       <p>
                         {authError ||
-                          "연결을 확인한 뒤 새로고침해 주세요. 브라우저 저장 항목은 유지됩니다."}
+                          "연결을 확인한 뒤 새로고침해 주세요. 이 기기에 저장한 항목은 유지됩니다."}
                       </p>
                     </div>
                   </div>
@@ -667,7 +659,7 @@ export function SavedLibrary({
                     <ShieldCheck aria-hidden="true" size={22} />
                     <div>
                       <strong>로그인하면 계정에 저장한 글을 볼 수 있습니다.</strong>
-                      <p>브라우저에 남은 이전 기록은 아래 복구 영역에서만 표시합니다.</p>
+                      <p>이전 기기에 남은 기록은 아래 복구 영역에서만 표시합니다.</p>
                     </div>
                     <Link href="/login?next=%2Fcareer%2Fsaved">
                       로그인
@@ -675,7 +667,7 @@ export function SavedLibrary({
                   </div>
                 ) : accountCommunityLoading ? (
                   <div className={styles.loadingState} role="status">
-                    계정에 저장한 커뮤니티 글을 확인하고 있습니다.
+                    계정에 저장한 글을 불러오는 중…
                   </div>
                 ) : accountCommunityUnavailable ? (
                   <div className={styles.errorState} role="alert">
@@ -695,7 +687,7 @@ export function SavedLibrary({
                         <article aria-label={item.title} className={styles.communityCard} key={item.id}>
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
-                          <small data-source="server">계정 저장</small>
+                          <small data-source="server">계정에 저장됨</small>
                         </div>
                         <h3>
                           <Link href={item.href}>{item.title}</Link>
@@ -743,7 +735,7 @@ export function SavedLibrary({
                         type="button"
                       >
                         {accountCommunity.state.loadingMore
-                          ? "저장 글 불러오는 중..."
+                          ? "저장 글 불러오는 중…"
                           : "계정 저장 글 더 보기"}
                       </button>
                     )}
@@ -753,7 +745,7 @@ export function SavedLibrary({
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
                       <strong>계정에 저장한 커뮤니티 글이 없습니다.</strong>
-                      <p>실제 회원 글에서 저장을 누르면 모든 기기에서 다시 볼 수 있습니다.</p>
+                      <p>회원 글에서 저장을 누르면 모든 기기에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>
@@ -768,7 +760,7 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>현재 브라우저에서만 확인</p>
+                    <p>이 기기에서만 확인</p>
                     <h2 id="legacy-saved-community-title">
                       이전 기기 저장 글
                     </h2>
@@ -778,7 +770,7 @@ export function SavedLibrary({
                 <div className={styles.sourceNotice} data-legacy="true">
                   <WarningCircle aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    서버 저장 활동이 아닙니다. 원문을 확인하거나 오래된 저장
+                    계정 활동이 아닙니다. 글을 확인하거나 오래된 저장
                     표시만 지울 수 있습니다.
                   </p>
                 </div>
@@ -798,7 +790,7 @@ export function SavedLibrary({
                       </h3>
                       <p className={styles.communitySummary}>{item.summary}</p>
                       <p className={styles.communityAuthor}>
-                        현재 브라우저 원문 · {item.createdLabel}
+                        이 기기에 남은 글 · {item.createdLabel}
                       </p>
                       <footer className={styles.communityActions}>
                         <Link href={item.href}>

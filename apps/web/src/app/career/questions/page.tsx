@@ -4,7 +4,7 @@ import { AuthoredQuestions } from "@/features/authored-questions/authored-questi
 
 export const metadata: Metadata = {
   title: "내 글",
-  description: "직접 작성한 커뮤니티 글을 계정에서 다시 확인하고 관리합니다.",
+  description: "계정에 작성한 커뮤니티 글을 확인하고 관리합니다.",
   robots: { index: false, follow: false },
 };
 

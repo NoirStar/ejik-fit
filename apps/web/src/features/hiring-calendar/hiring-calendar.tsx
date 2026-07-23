@@ -295,7 +295,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
         <header className={styles.intro}>
           <div>
             <h1>채용 일정</h1>
-            <p>공식 공고에 명시된 마감일과 최근 확인된 기업 활동을 살펴봅니다.</p>
+            <p>공식 채용공고의 마감일과 최근 기업 활동을 확인합니다.</p>
           </div>
         </header>
         <section className={styles.errorState} role="alert">
@@ -335,10 +335,10 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
       <header className={styles.intro}>
         <div>
           <h1>채용 일정</h1>
-          <p>공식 공고에 명시된 마감일과 최근 확인된 기업 활동을 살펴봅니다.</p>
+          <p>공식 채용공고의 마감일과 최근 기업 활동을 확인합니다.</p>
         </div>
         <Link className={styles.jobsLink} href="/jobs">
-          전체 공고
+          공고 보기
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
       </header>
@@ -449,7 +449,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
               <CalendarBlank aria-hidden="true" size={22} />
               <p>
                 {filter === "all"
-                  ? "이 달에는 명시 마감일이 있는 공고가 없습니다."
+                  ? "표시할 채용 일정이 없습니다."
                   : `${filterLabel}에 해당하는 명시 마감 공고가 없습니다.`}
               </p>
               {filter !== "all" && (
@@ -462,7 +462,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
 
           {model.truncated && (
             <p className={styles.truncatedNote}>
-              표시 한도를 넘은 공고가 있어 일부 일정만 보여드립니다.
+              표시 한도를 넘은 공고가 있어 일부 일정만 표시합니다.
             </p>
           )}
         </section>
@@ -523,7 +523,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
                     ? "이달에 남은 명시 마감 공고가 없습니다."
                     : "표시할 명시 마감 공고가 없습니다."}
                 </strong>
-                <p>다른 필터를 선택하거나 달력에서 이전 일정을 확인해 보세요.</p>
+                <p>다른 필터를 선택하거나 달력에서 이전 일정을 확인할 수 있습니다.</p>
               </div>
             )}
           </section>

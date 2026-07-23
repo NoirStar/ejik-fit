@@ -169,6 +169,32 @@ describe("HiringCalendar", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows one next action when there are no hiring dates to display", () => {
+    const emptyOverview: HiringOverviewResponse = {
+      ...overview,
+      deadline_total: 0,
+      closing_next_7_days: 0,
+      deadlines: [],
+      activities: [],
+    };
+
+    render(
+      <HiringCalendar
+        model={buildHiringCalendarModel(
+          emptyOverview,
+          "2026-07",
+          "2026-07-20",
+        )}
+      />,
+    );
+
+    expect(screen.getByText("표시할 채용 일정이 없습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
+      "href",
+      "/jobs",
+    );
+  });
+
   it("keeps the upcoming panel compact and expands only on request", () => {
     const manyDeadlines: HiringOverviewResponse = {
       ...overview,

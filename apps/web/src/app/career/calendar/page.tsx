@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "채용 일정",
-  description: "기업 공식 채용 공고에 명시된 마감일과 최근 확인된 채용 활동을 살펴봅니다.",
+  description: "공식 채용공고의 마감일과 최근 기업 활동을 확인합니다.",
 };
 
 type CalendarSearchParams = Record<string, string | string[] | undefined>;

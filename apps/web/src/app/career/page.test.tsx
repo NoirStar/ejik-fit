@@ -72,6 +72,22 @@ describe("CareerPage", () => {
 
     render(await CareerPage());
 
+    expect(
+      screen.getByRole("heading", { level: 1, name: "내 커리어" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "내 기술" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        level: 2,
+        name: "먼저 내 기술을 추가해 주세요.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/내 스택|브라우저 저장 · 로그인 시 동기화/),
+    ).not.toBeInTheDocument();
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 12 });
     expect(getSkillCatalog).toHaveBeenCalledOnce();
     expect(getSkillGraph).toHaveBeenCalledWith({ limit: 60 });

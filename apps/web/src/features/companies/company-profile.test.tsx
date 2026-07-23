@@ -61,6 +61,7 @@ describe("CompanyProfile", () => {
     expect(screen.getByText("현재 공개 공고 2건")).toBeInTheDocument();
     expect(screen.getByText("확정 기술 3개")).toBeInTheDocument();
     expect(screen.getByText("근무 지역 2곳")).toBeInTheDocument();
+    expect(screen.getByText("최근 확인")).toBeInTheDocument();
     expect(screen.getAllByText("7월 14일 확인")).toHaveLength(2);
 
     const jobs = screen.getByRole("region", { name: "현재 공개 공고" });

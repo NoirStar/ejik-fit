@@ -37,13 +37,13 @@ for (const width of [1440, 820, 390]) {
     await page.goto("/career/saved");
 
     await expect(
-      page.getByRole("heading", { level: 1, name: "저장 보관함" }),
+      page.getByRole("heading", { level: 1, name: "저장 목록" }),
     ).toBeVisible();
     const job = page.getByRole("article", {
       name: "Python Backend Engineer",
     });
     await expect(job).toBeVisible();
-    await expect(job.getByText("현재 API 재확인")).toBeVisible();
+    await expect(job.getByText("최근 확인")).toBeVisible();
     await expect(job.getByRole("link", { name: "공식 원문" })).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-python",
@@ -107,7 +107,7 @@ for (const width of [1440, 820, 390]) {
     await expect(job).not.toBeVisible();
     await page.reload();
     await expect(
-      page.getByRole("heading", { level: 2, name: "아직 저장한 항목이 없습니다." }),
+      page.getByRole("heading", { level: 2, name: "저장한 항목이 없습니다." }),
     ).toBeVisible();
     await expect(
       page.getByRole("article", { name: "Python Backend Engineer" }),
@@ -161,7 +161,9 @@ test("keeps a saved account post connected to its detail on mobile", async ({
     await page.goto("/career/saved");
     let savedCard = page.getByRole("article", { name: title });
     await expect(savedCard).toBeVisible();
-    await expect(savedCard.getByText("계정 저장", { exact: true })).toBeVisible();
+    await expect(
+      savedCard.getByText("계정에 저장됨", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("tab", { name: "커뮤니티 1" })).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 2, name: "이전 기기 저장 글" }),
@@ -202,7 +204,7 @@ test("keeps a saved account post connected to its detail on mobile", async ({
     await expect(
       page.getByRole("heading", {
         level: 2,
-        name: "아직 저장한 항목이 없습니다.",
+        name: "저장한 항목이 없습니다.",
       }),
     ).toBeVisible();
     await page.goto("/");
@@ -224,11 +226,11 @@ test("opens the saved library from the user utility menu", async ({ page }) => {
   await page.getByRole("button", { name: "사용자 메뉴 열기" }).click();
   await page
     .locator('[aria-label="사용자 메뉴"]')
-    .getByRole("link", { name: "저장 보관함" })
+    .getByRole("link", { name: "저장 목록" })
     .click();
 
   await expect(page).toHaveURL("/career/saved");
   await expect(
-    page.getByRole("heading", { level: 2, name: "아직 저장한 항목이 없습니다." }),
+    page.getByRole("heading", { level: 2, name: "저장한 항목이 없습니다." }),
   ).toBeVisible();
 });

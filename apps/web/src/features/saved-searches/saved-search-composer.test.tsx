@@ -211,7 +211,7 @@ describe("SavedSearchComposer", () => {
     },
     {
       result: { status: "error" },
-      message: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+      message: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     },
   ])("shows the $result.status mutation result", async ({ result, message }) => {
     mockAuth(viewer);

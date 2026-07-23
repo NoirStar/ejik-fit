@@ -11,7 +11,7 @@ describe("SavedPage", () => {
     render(await SavedPage());
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "저장 보관함" }),
+      screen.getByRole("heading", { level: 1, name: "저장 목록" }),
     ).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe("SavedPage", () => {
 
   it("keeps the personalized local page out of search indexes", () => {
     expect(metadata).toMatchObject({
-      title: "저장 보관함",
+      title: "저장 목록",
       robots: { index: false, follow: false },
     });
   });

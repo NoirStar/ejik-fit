@@ -110,6 +110,35 @@ describe("AuthoredQuestions", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows one writing action when the account has no authored posts", async () => {
+    const store = {
+      listPostPage: vi.fn(async () => ({ items: [], nextCursor: null })),
+      loadViewerState: vi.fn(async () => ({
+        reactedPostIds: [],
+        savedPostIds: [],
+        followedAuthorIds: [],
+      })),
+    } as unknown as CommunityStore;
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{ id: "viewer-1", email: "viewer@example.com" }}
+      >
+        <AuthoredQuestions communityStore={store} />
+      </AuthViewerProvider>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "작성한 글이 없습니다." }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
+      "href",
+      "/?compose=1",
+    );
+    expect(screen.getAllByRole("link", { name: "글쓰기" })).toHaveLength(1);
+  });
+
   it("keeps legacy browser questions in a recovery-only section", async () => {
     storePosts();
     renderGuest();
@@ -203,7 +232,7 @@ describe("AuthoredQuestions", () => {
       ).not.toBeInTheDocument();
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      "최근 작성한 기술 질문을 이 브라우저에서 삭제했습니다.",
+      "최근 작성한 기술 질문을 이 기기에서 삭제했습니다.",
     );
     expect(
       JSON.parse(
@@ -333,7 +362,7 @@ describe("AuthoredQuestions", () => {
     expect(within(article).getByText("공감 3")).toBeInTheDocument();
     expect(within(article).getByText("댓글 2")).toBeInTheDocument();
     expect(within(article).getByText("저장됨")).toBeInTheDocument();
-    expect(screen.getByText("계정 글 1+개 불러옴")).toBeInTheDocument();
+    expect(screen.getByText("계정 글 1+개")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "내 글 더 보기" }));
     expect(
@@ -344,7 +373,7 @@ describe("AuthoredQuestions", () => {
       before: firstCursor,
       limit: 20,
     });
-    expect(screen.getByText("계정 글 2개 불러옴")).toBeInTheDocument();
+    expect(screen.getByText("계정 글 2개")).toBeInTheDocument();
 
     fireEvent.click(
       within(article).getByRole("button", { name: `${post.title} 삭제` }),

@@ -52,7 +52,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
         if (!active) return;
         setPreferenceReady(true);
         setPreferenceSupported(false);
-        setMessage("알림 설정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+        setMessage("알림 설정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
       });
     return () => {
       active = false;
@@ -74,7 +74,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
       await saveNotificationPreference(viewer.id, nextEnabled);
       setNotificationsEnabled(nextEnabled);
     } catch {
-      setMessage("알림 설정을 저장하지 못했습니다. 다시 시도해주세요.");
+      setMessage("알림 설정을 저장하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setSavingPreference(false);
     }
@@ -88,7 +88,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
       downloadAccountDataArchive(archive);
       setMessage("내 데이터 파일을 만들었습니다.");
     } catch {
-      setMessage("내 데이터를 내보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setMessage("내 데이터를 내보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setExporting(false);
     }
@@ -105,7 +105,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
       router.refresh();
     } catch {
       setDeleting(false);
-      setMessage("계정을 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      setMessage("계정을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
   }
 
@@ -149,11 +149,11 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           </button>
           <span className={styles.controlStatus}>
             {!preferenceReady
-              ? "확인 중"
+              ? "확인 중…"
               : !preferenceSupported
-                ? "설정 준비 중"
+                ? "설정 준비 중…"
                 : savingPreference
-                  ? "저장 중"
+                  ? "저장 중…"
                   : notificationsEnabled
                     ? "받는 중"
                     : "꺼짐"}
@@ -177,7 +177,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
             onClick={() => void exportData()}
             type="button"
           >
-            {exporting ? "준비 중" : "내보내기"}
+            {exporting ? "내보내는 중…" : "내보내기"}
           </button>
         </div>
 
@@ -210,7 +210,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           <div>
             <strong>계정을 정말 삭제할까요?</strong>
             <p>
-              계속하려면 아래 입력란에 <b>탈퇴</b>를 입력해주세요.
+              계속하려면 아래 입력란에 <b>탈퇴</b>를 입력해 주세요.
             </p>
           </div>
           <button
@@ -238,7 +238,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
             onClick={() => void deleteAccount()}
             type="button"
           >
-            {deleting ? "삭제 중" : "영구 삭제"}
+            {deleting ? "삭제 중…" : "영구 삭제"}
           </button>
         </div>
       )}

@@ -202,7 +202,7 @@ function LegacyRecoveryCard({
           복구 내용 확인
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
-        <span>서버 활동 및 개수에 포함되지 않음</span>
+        <span>계정 활동 및 개수에 포함되지 않음</span>
       </div>
       {pendingDelete && (
         <DeleteConfirmation
@@ -285,14 +285,14 @@ export function AuthoredQuestions({
       setError(
         result.status === "interactions_failed"
           ? "댓글과 반응을 정리하지 못해 삭제를 중단했습니다."
-          : "글을 브라우저에서 삭제하지 못했습니다.",
+          : "글을 이 기기에서 삭제하지 못했습니다.",
       );
       return;
     }
     removeRecentCommunityTopic(post.id);
     setPendingDeleteId(null);
     setError("");
-    setAnnouncement(`${post.title}을 이 브라우저에서 삭제했습니다.`);
+    setAnnouncement(`${post.title}을 이 기기에서 삭제했습니다.`);
   }
 
   const visibleError =
@@ -308,25 +308,25 @@ export function AuthoredQuestions({
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>내 커리어 · 계정 커뮤니티</p>
+          <p className={styles.eyebrow}>내 커리어</p>
           <h1>내 글</h1>
           <p className={styles.description}>
-            계정에 게시된 질문과 경험만 내 글로 집계합니다. 이전 브라우저에
-            남은 글은 아래 복구 영역에서 따로 확인할 수 있습니다.
+            계정에 작성한 질문과 경험을 관리합니다. 이전 기기에 남은 글은 아래
+            복구 영역에서 따로 확인할 수 있습니다.
           </p>
         </div>
         <div className={styles.introActions}>
           {viewer ? (
             <span>
               계정 글 {accountPosts.length}
-              {community.state.nextCursor ? "+" : ""}개 불러옴
+              {community.state.nextCursor ? "+" : ""}개
             </span>
           ) : (
             <span>계정 연결 전</span>
           )}
           <Link href="/?compose=1">
             <NotePencil aria-hidden="true" size={17} weight="bold" />
-            새 글 작성
+            글쓰기
           </Link>
         </div>
       </header>
@@ -337,7 +337,7 @@ export function AuthoredQuestions({
       >
         <div className={styles.collectionHeader}>
           <div>
-            <p>실제 서버 기록</p>
+            <p>계정에 저장됨</p>
             <h2 id="account-authored-question-list-title">계정에 작성한 글</h2>
           </div>
           <ShieldCheck aria-hidden="true" size={21} weight="fill" />
@@ -357,7 +357,7 @@ export function AuthoredQuestions({
 
         {!authReady || accountLoading ? (
           <div className={styles.loading} role="status">
-            <p>계정에 작성한 글을 불러오는 중입니다.</p>
+            <p>작성한 글을 불러오는 중…</p>
           </div>
         ) : authStatus === "error" ? (
           <div className={styles.emptyState}>
@@ -365,7 +365,7 @@ export function AuthoredQuestions({
               <ShieldCheck aria-hidden="true" size={24} weight="bold" />
             </div>
             <h2>로그인 상태를 확인하지 못했습니다.</h2>
-            <p>브라우저의 복구 글은 유지됩니다. 연결을 확인한 뒤 새로고침해 주세요.</p>
+            <p>이 기기의 복구 글은 유지됩니다. 연결을 확인한 뒤 새로고침해 주세요.</p>
           </div>
         ) : !viewer ? (
           <div className={styles.emptyState}>
@@ -373,7 +373,7 @@ export function AuthoredQuestions({
               <SignIn aria-hidden="true" size={24} weight="bold" />
             </div>
             <h2>계정에 연결하면 내 글을 모든 기기에서 볼 수 있습니다.</h2>
-            <p>로그인 전 브라우저 글은 서버 게시물로 집계하지 않습니다.</p>
+            <p>로그인 전에 이 기기에 남긴 글은 계정 활동으로 집계하지 않습니다.</p>
             <Link href="/login?next=%2Fcareer%2Fquestions">
               로그인하고 내 글 보기
               <ArrowRight aria-hidden="true" size={16} weight="bold" />
@@ -404,7 +404,7 @@ export function AuthoredQuestions({
                 type="button"
               >
                 {community.state.loadingMore
-                  ? "내 글 불러오는 중..."
+                  ? "내 글 불러오는 중…"
                   : "내 글 더 보기"}
               </button>
             )}
@@ -414,18 +414,14 @@ export function AuthoredQuestions({
             <div>
               <NotePencil aria-hidden="true" size={24} weight="bold" />
             </div>
-            <h2>계정에 작성한 글이 없습니다.</h2>
-            <p>질문이나 커리어 고민, 면접에서 배운 점을 홈 피드에 남겨보세요.</p>
-            <Link href="/?compose=1">
-              첫 글 작성
-              <ArrowRight aria-hidden="true" size={16} weight="bold" />
-            </Link>
+            <h2>작성한 글이 없습니다.</h2>
+            <p>질문이나 커리어 고민, 면접에서 배운 점을 글로 남길 수 있습니다.</p>
           </div>
         )}
 
         <p className={styles.storageNote}>
-          계정 글의 본문·댓글·반응은 이직핏 서버에 저장됩니다. 삭제한 글은
-          복구할 수 없습니다.
+          계정 글의 본문·댓글·반응은 계정에 저장됩니다. 삭제한 글은 복구할 수
+          없습니다.
         </p>
       </section>
 
@@ -436,7 +432,7 @@ export function AuthoredQuestions({
         >
           <div className={styles.collectionHeader}>
             <div>
-              <p>현재 브라우저에서만 확인</p>
+              <p>이 기기에서만 확인</p>
               <h2 id="legacy-authored-question-list-title">
                 이전 기기 저장 글
               </h2>
@@ -446,8 +442,8 @@ export function AuthoredQuestions({
             </span>
           </div>
           <p className={styles.recoveryNote}>
-            서버에 게시된 활동이 아닙니다. 로그인하면 계정 이전을 시도하며,
-            원문을 확인하거나 이 브라우저에서 삭제할 수 있습니다.
+            계정에 게시된 활동이 아닙니다. 로그인하면 계정 이전을 시도하며,
+            글을 확인하거나 이 기기에서 삭제할 수 있습니다.
           </p>
           <div className={styles.questionList}>
             {recoveryPosts.map((post) => (

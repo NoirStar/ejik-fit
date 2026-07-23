@@ -20,6 +20,7 @@ import {
 } from "react";
 
 import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   MAX_SAVED_JOB_SEARCH_NAME_LENGTH,
   type SavedJobSearch,
@@ -71,8 +72,8 @@ function filterLabels(search: SavedJobSearch) {
 
 function formatLastCheckedAt(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "마지막 확인 시각 미상";
-  return `마지막 확인 ${new Intl.DateTimeFormat("ko-KR", {
+  if (Number.isNaN(date.getTime())) return `${PRODUCT_TERMS.lastChecked} 시각 미상`;
+  return `${PRODUCT_TERMS.lastChecked} ${new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
   }).format(date)}`;
 }
@@ -97,7 +98,6 @@ function LoadingState({
       <span aria-hidden="true" className={styles.loadingMark} />
       <div>
         <h1>{message}</h1>
-        <p>잠시만 기다려 주세요.</p>
       </div>
     </section>
   );
@@ -235,7 +235,7 @@ function SavedSearchRow({
           ) : evaluation?.status === "error" ? (
             <span className={styles.unavailable}>공고 수 확인 실패</span>
           ) : (
-            <span>공고 수 확인 중</span>
+            <span>공고 수 확인 중…</span>
           )}
           <span
             className={
@@ -250,7 +250,7 @@ function SavedSearchRow({
                 ? `새로 확인 ${readyEvaluation.items.length.toLocaleString(
                     "ko-KR",
                   )}건`
-                : "신규 공고 확인 중"
+                : "신규 공고 확인 중…"
               : "일시 중지"}
           </span>
           <time dateTime={search.lastCheckedAt}>
@@ -486,7 +486,7 @@ export function SavedSearchManager() {
   if (!authReady) {
     return (
       <main className={styles.page}>
-        <LoadingState message="로그인 상태를 확인하고 있습니다." />
+        <LoadingState message="로그인 상태를 불러오는 중…" />
       </main>
     );
   }
@@ -532,7 +532,7 @@ export function SavedSearchManager() {
   ) {
     return (
       <main className={styles.page}>
-        <LoadingState message="저장한 공고 검색을 불러오고 있습니다." />
+        <LoadingState message="공고 알림을 불러오는 중…" />
       </main>
     );
   }
@@ -561,18 +561,18 @@ export function SavedSearchManager() {
     return (
       <main className={styles.page}>
         <header className={styles.intro}>
-          <p className={styles.eyebrow}>MY JOB ALERTS</p>
+          <p className={styles.eyebrow}>내 커리어</p>
           <h1>공고 알림</h1>
           <p>저장한 검색 조건과 새로 확인된 공식 공고를 관리합니다.</p>
         </header>
         <section className={styles.statePanel}>
           <BellRinging aria-hidden="true" size={26} />
           <div>
-            <h2>저장한 공고 검색이 없습니다.</h2>
-            <p>공고에서 검색어나 기술 분야를 선택한 뒤 알림을 저장해 보세요.</p>
+            <h2>저장한 알림이 없습니다.</h2>
+            <p>공고에서 검색어나 기술 분야를 선택해 알림을 만들 수 있습니다.</p>
           </div>
           <Link href="/jobs">
-            공고에서 검색 저장하기
+            공고에서 알림 만들기
             <ArrowRight aria-hidden="true" size={16} weight="bold" />
           </Link>
         </section>
@@ -587,7 +587,7 @@ export function SavedSearchManager() {
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <p className={styles.eyebrow}>MY JOB ALERTS</p>
+        <p className={styles.eyebrow}>내 커리어</p>
         <h1>공고 알림</h1>
         <p>
           저장한 검색 조건과 이직핏이 새로 확인한 기업 공식 공고를
@@ -635,7 +635,7 @@ export function SavedSearchManager() {
 
         {evaluation.state.status === "loading" && (
           <p aria-live="polite" className={styles.evaluationLoading}>
-            현재 공식 공고와 새로 확인된 공고를 확인하고 있습니다.
+            공고 알림을 확인하는 중…
           </p>
         )}
 

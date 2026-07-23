@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "관심 기업",
-  description: "저장한 기업의 공식 채용 공고 수집 상태와 현재 열린 공고를 확인합니다.",
+  description: "관심 기업의 현재 열린 공고와 확인 상태를 관리합니다.",
 };
 
 export default async function FollowedCompaniesPage() {

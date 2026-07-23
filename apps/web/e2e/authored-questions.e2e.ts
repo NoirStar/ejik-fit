@@ -40,7 +40,7 @@ test("keeps an account-authored question available after reload and safely delet
 
     let question = page.getByRole("article", { name: title });
     await expect(question).toBeVisible();
-    await expect(page.getByText("계정 글 1개 불러옴")).toBeVisible();
+    await expect(page.getByText("계정 글 1개")).toBeVisible();
     await expect(question.getByText("커리어 고민 · 계정에 작성")).toBeVisible();
     await expect(question.getByText("Kubernetes")).toBeVisible();
     await expect(
@@ -73,7 +73,10 @@ test("keeps an account-authored question available after reload and safely delet
 
     await expect(question).not.toBeVisible();
     await expect(
-      page.getByText("계정에 작성한 글이 없습니다."),
+      page.getByText("작성한 글이 없습니다."),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("main").getByRole("link", { name: "글쓰기" }),
     ).toBeVisible();
     expect(
       await page.evaluate(() =>

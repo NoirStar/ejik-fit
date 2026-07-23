@@ -176,6 +176,7 @@ describe("SavedSearchManager", () => {
     expect(screen.getByText("Python 백엔드")).toBeInTheDocument();
     expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
     expect(screen.getByText("새로 확인 2건")).toBeInTheDocument();
+    expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
       "href",
       "/jobs?q=Python&category=backend",
@@ -410,10 +411,10 @@ describe("SavedSearchManager", () => {
     render(<SavedSearchManager />);
 
     expect(
-      screen.getByRole("heading", { name: "저장한 공고 검색이 없습니다." }),
+      screen.getByRole("heading", { name: "저장한 알림이 없습니다." }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "공고에서 검색 저장하기" }),
+      screen.getByRole("link", { name: "공고에서 알림 만들기" }),
     ).toHaveAttribute("href", "/jobs");
   });
 
