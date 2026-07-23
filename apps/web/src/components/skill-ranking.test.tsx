@@ -34,9 +34,13 @@ describe("SkillRanking", () => {
     expect(
       screen.getByText("필수 24 · 우대 10 · 미표기 6"),
     ).toBeInTheDocument();
+    const unspecifiedHelp = screen.getByText(
+      "필수·우대 미표기: 공고에서 필수 또는 우대로 구분하지 않은 기술",
+    );
+    expect(unspecifiedHelp).toBeVisible();
     expect(
       screen.getByLabelText("필수 24, 우대 10, 필수·우대 미표기 6"),
-    ).toHaveAttribute("title", "필수·우대 미표기");
+    ).toHaveAttribute("aria-describedby", unspecifiedHelp.id);
     expect(screen.getByText("인프라")).toBeInTheDocument();
   });
 

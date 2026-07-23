@@ -535,10 +535,14 @@ export function SkillGraphExperience({
           >
             <details
               className={styles.controlsDisclosure}
-              onToggle={(event) => setControlsOpen(event.currentTarget.open)}
               open={controlsOpen}
             >
-              <summary>
+              <summary
+                onClick={(event) => {
+                  event.preventDefault();
+                  setControlsOpen((current) => !current);
+                }}
+              >
                 <span>
                   {SKILL_MAP_COPY.ownedSkills}과 {SKILL_MAP_COPY.filters}
                 </span>
@@ -654,7 +658,7 @@ export function SkillGraphExperience({
                         onChange={(event) => setShowEvidence(event.target.checked)}
                         type="checkbox"
                       />
-                      공고 근거 노드
+                      관련 공고
                     </label>
                     <label>
                       <input
@@ -882,7 +886,7 @@ export function SkillGraphExperience({
           <aside aria-label="선택 기술 분석" className={styles.inspector}>
             <section className={styles.selectedSkill}>
               <p className={styles.eyebrow}>선택 기술</p>
-              <h2>{selected?.label ?? "기술을 선택하세요"}</h2>
+              <h2>{selected?.label ?? "기술을 선택해 주세요"}</h2>
               <p>
                 {selected
                   ? `${selected.domains.map(displayDomain).join(", ")} 분야의 공개 공고에서 확인한 수치입니다.`

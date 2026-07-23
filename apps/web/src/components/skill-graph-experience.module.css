@@ -917,12 +917,12 @@
   }
 
   .graphColumn {
-    order: 1;
+    order: 2;
     width: 100%;
   }
 
   .inspector {
-    order: 2;
+    order: 3;
     display: grid;
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -937,7 +937,7 @@
   }
 
   .controls {
-    order: 3;
+    order: 1;
     width: 100%;
   }
 

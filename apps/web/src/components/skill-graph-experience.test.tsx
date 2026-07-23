@@ -139,6 +139,12 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
     expect(
+      screen.getByRole("checkbox", { name: "관련 공고" }),
+    ).toBeChecked();
+    expect(
+      screen.queryByText("공고 근거 노드", { exact: true }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByText(
         "내 기술을 추가하면 공고에서 함께 요구되는 기술이 표시됩니다.",
       ),
@@ -239,6 +245,9 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.queryByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "기술을 선택해 주세요" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("확인 가능한 관련 공고가 없습니다.")).toBeInTheDocument();
   });
 

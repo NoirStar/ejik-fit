@@ -487,11 +487,73 @@ for (const width of [1440, 820, 390, 320]) {
       ),
     ).toBe(false);
 
+    if (width === 1440) {
+      await expect(
+        graphFrame.getByText("드래그 · 확대 · 선택", { exact: true }),
+      ).toBeVisible();
+
+      const canvas = forceCanvas.locator("canvas");
+      await waitForPaintedCanvas(canvas);
+      await waitForZoomStability(canvas);
+      const beforeDrag = await readCanvasZoom(canvas);
+      const canvasBox = await canvas.boundingBox();
+      expect(beforeDrag).not.toBeNull();
+      expect(canvasBox).not.toBeNull();
+
+      await page.mouse.move(canvasBox!.x + 32, canvasBox!.y + 32);
+      await page.mouse.down();
+      await page.mouse.move(canvasBox!.x + 104, canvasBox!.y + 80, {
+        steps: 6,
+      });
+      await page.mouse.up();
+
+      await expect
+        .poll(async () => {
+          const afterDrag = await readCanvasZoom(canvas);
+          if (!beforeDrag || !afterDrag) return 0;
+          return Math.hypot(
+            afterDrag.x - beforeDrag.x,
+            afterDrag.y - beforeDrag.y,
+          );
+        })
+        .toBeGreaterThan(1);
+    }
+
     if (width <= 900) {
       const disclosure = page.locator("details").filter({
         hasText: "내 기술과 그래프 범위",
       });
       await expect(disclosure).not.toHaveAttribute("open", "");
+
+      if (width <= 820) {
+        const summary = disclosure.locator("summary");
+        const nextSkillHeading = page.getByRole("heading", {
+          name: "다음에 배울 기술",
+          exact: true,
+        });
+        const relatedSkillHeading = inspector.getByRole("heading", {
+          name: "함께 요구되는 기술",
+          exact: true,
+        });
+        const [summaryBox, nextSkillBox, relatedSkillBox] = await Promise.all([
+          summary.boundingBox(),
+          nextSkillHeading.boundingBox(),
+          relatedSkillHeading.boundingBox(),
+        ]);
+        expect(summaryBox).not.toBeNull();
+        expect(nextSkillBox).not.toBeNull();
+        expect(relatedSkillBox).not.toBeNull();
+        expect(summaryBox!.y + summaryBox!.height).toBeLessThanOrEqual(
+          graphBox!.y,
+        );
+        expect(graphBox!.y + graphBox!.height).toBeLessThanOrEqual(
+          nextSkillBox!.y,
+        );
+        expect(graphBox!.y + graphBox!.height).toBeLessThanOrEqual(
+          relatedSkillBox!.y,
+        );
+      }
+
       await disclosure.locator("summary").click();
       await expect(page.getByLabel("기술 추가")).toBeVisible();
 
@@ -521,13 +583,16 @@ for (const width of [1440, 820, 390, 320]) {
           page.getByRole("button", { name: "Rust 제거" }),
           page.getByRole("button", { name: "초기화" }),
           page.getByRole("button", { name: "선택 주변" }),
-          page.getByText("공고 근거 노드", { exact: true }).locator(".."),
+          page.getByRole("checkbox", { name: "관련 공고" }).locator(".."),
           page.getByRole("button", { name: /클라우드/ }),
         ]) {
           const box = await target.boundingBox();
           expect(box?.height).toBeGreaterThanOrEqual(44);
         }
       }
+
+      await disclosure.locator("summary").click();
+      await expect(disclosure).not.toHaveAttribute("open", "");
     }
 
     if (width === 390) {
@@ -538,6 +603,14 @@ for (const width of [1440, 820, 390, 320]) {
       await graphFrame.evaluate((element) =>
         element.scrollIntoView({ block: "end" }),
       );
+      await expect
+        .poll(() =>
+          graphFrame.evaluate(
+            (element) =>
+              element.getBoundingClientRect().bottom <= window.innerHeight,
+          ),
+        )
+        .toBe(true);
       const mobileNavigationBox = await mobileNavigation.boundingBox();
       expect(mobileNavigationBox).not.toBeNull();
 

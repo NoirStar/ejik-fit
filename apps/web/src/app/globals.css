@@ -481,6 +481,13 @@ main,
   gap: 14px 40px;
 }
 
+.skill-ranking__help {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .skill-ranking__item {
   display: flex;
   align-items: center;
