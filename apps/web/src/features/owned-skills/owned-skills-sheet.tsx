@@ -16,6 +16,7 @@ import {
   removeOwnedSkill,
 } from "@/lib/owned-skills";
 import { trapTabKey } from "@/lib/focus-trap";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   normalizeSkillCategory,
   skillCategoryLabel,
@@ -146,7 +147,7 @@ export function OwnedSkillsSheet({
     }
     const skillName = canonicalSkillName(normalized, catalog);
     if (skills.some((skill) => skillNameKey(skill) === skillNameKey(skillName))) {
-      setError("이미 저장한 기술입니다.");
+      setError("이미 추가한 기술입니다.");
       return false;
     }
 
@@ -236,11 +237,11 @@ export function OwnedSkillsSheet({
       >
         <header className={styles.header}>
           <div>
-            <h2 id="owned-skills-title">내 기술</h2>
+            <h2 id="owned-skills-title">{PRODUCT_TERMS.ownedSkills}</h2>
             <p>공고와 스킬맵의 분석 기준을 직접 관리합니다.</p>
           </div>
           <button
-            aria-label="내 기술 닫기"
+            aria-label={`${PRODUCT_TERMS.ownedSkills} 닫기`}
             className={styles.iconButton}
             onClick={closeSheet}
             ref={closeButtonRef}
@@ -341,7 +342,7 @@ export function OwnedSkillsSheet({
         </form>
 
         <div className={styles.listHeader}>
-          <h3>저장한 기술</h3>
+          <h3>추가한 기술</h3>
           {skills.length > 0 && (
             <button className={styles.clearButton} onClick={clearSkills} type="button">
               전체 삭제
@@ -351,11 +352,11 @@ export function OwnedSkillsSheet({
 
         {skills.length === 0 ? (
           <div className={styles.empty}>
-            <strong>아직 저장한 기술이 없습니다.</strong>
+            <strong>아직 추가한 기술이 없습니다.</strong>
             <p>기술을 추가하면 관련 공식 공고와 인접 기술을 비교할 수 있습니다.</p>
           </div>
         ) : (
-          <ul className={styles.skillList} aria-label="저장한 기술 목록">
+          <ul className={styles.skillList} aria-label="추가한 기술 목록">
             {skills.map((skill) => (
               <li key={skill}>
                 <span>{skill}</span>

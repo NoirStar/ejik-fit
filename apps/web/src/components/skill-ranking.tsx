@@ -1,4 +1,5 @@
 import type { SkillStat } from "@/lib/types";
+import { PRODUCT_TERMS } from "@/lib/labels";
 
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -35,9 +36,14 @@ export function SkillRanking({ stats }: { stats: SkillStat[] }) {
               </span>
               <span className="skill-ranking__count">{stat.count}건</span>
             </div>
-            <span className="skill-ranking__breakdown">
+            <span
+              aria-label={`필수 ${stat.required_count ?? 0}, 우대 ${stat.preferred_count ?? 0}, ${PRODUCT_TERMS.unspecifiedRequirement} ${stat.unspecified_count ?? 0}`}
+              className="skill-ranking__breakdown"
+              title={PRODUCT_TERMS.unspecifiedRequirement}
+            >
               필수 {stat.required_count ?? 0} · 우대{" "}
-              {stat.preferred_count ?? 0}
+              {stat.preferred_count ?? 0} · {PRODUCT_TERMS.unspecifiedRequirementCompact}{" "}
+              {stat.unspecified_count ?? 0}
             </span>
             <div
               className="skill-ranking__bar"

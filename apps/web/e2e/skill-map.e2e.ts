@@ -406,7 +406,7 @@ test("keeps fixture graph scope aligned with the production API contract", async
   });
 });
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`keeps the evidence-led skill map usable at ${width}px`, async ({
     page,
   }) => {
@@ -432,7 +432,7 @@ for (const width of [1440, 820, 390]) {
 
     await expect(page).toHaveURL(/\/skills\/graph\?seed=Kubernetes$/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "이직핏 기술 맵" }),
+      page.getByRole("heading", { level: 1, name: "스킬맵" }),
     ).toBeVisible();
 
     const productNavigation = page.getByRole("navigation", {
@@ -489,14 +489,32 @@ for (const width of [1440, 820, 390]) {
 
     if (width <= 900) {
       const disclosure = page.locator("details").filter({
-        hasText: "내 스택과 필터",
+        hasText: "내 기술과 그래프 범위",
       });
       await expect(disclosure).not.toHaveAttribute("open", "");
       await disclosure.locator("summary").click();
-      await expect(page.getByLabel("스킬 추가")).toBeVisible();
+      await expect(page.getByLabel("기술 추가")).toBeVisible();
+
+      if (width === 320) {
+        for (const target of [
+          disclosure.getByRole("button", { name: "추가", exact: true }),
+          disclosure.getByRole("button", { name: "초기화" }),
+          disclosure.getByRole("button", { name: "선택 주변" }),
+          disclosure.getByRole("button", { name: "현재 범위" }),
+        ]) {
+          const lineCount = await target.evaluate((element) => {
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            return new Set(
+              Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
+            ).size;
+          });
+          expect(lineCount).toBe(1);
+        }
+      }
 
       if (width === 390) {
-        await page.getByLabel("스킬 추가").fill("Rust");
+        await page.getByLabel("기술 추가").fill("Rust");
         await page.getByRole("button", { name: "추가" }).click();
 
         for (const target of [
@@ -525,7 +543,7 @@ for (const width of [1440, 820, 390]) {
 
       for (const overlay of [
         graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-        graphFrame.getByText("이동 · 핀치 확대 · 탭 선택"),
+        graphFrame.getByText("이동 · 두 손가락으로 확대 · 탭하여 선택"),
       ]) {
         const overlayBox = await overlay.boundingBox();
         expect(overlayBox).not.toBeNull();

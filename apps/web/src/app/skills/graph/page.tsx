@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
 import { getSkillGraph } from "@/lib/api";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
 import type { SkillGraphResponse } from "@/lib/types";
 
@@ -10,9 +11,8 @@ export const dynamic = "force-dynamic";
 
 
 export const metadata: Metadata = {
-  title: "스킬맵",
-  description:
-    "보유 기술에서 연결되는 채용시장, 부족한 준비, 관련 공고를 한 화면에서 확인합니다.",
+  title: PRODUCT_TERMS.skillMap,
+  description: "내 기술과 함께 자주 요구되는 기술을 보여줍니다.",
 };
 
 type SkillGraphSearchParams = Record<

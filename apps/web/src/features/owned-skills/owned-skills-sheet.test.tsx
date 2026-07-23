@@ -80,7 +80,10 @@ describe("OwnedSkillsSheet", () => {
     expect(
       within(dialog).getByText("공고와 스킬맵의 분석 기준을 직접 관리합니다."),
     ).toBeInTheDocument();
-    expect(screen.getByText("아직 저장한 기술이 없습니다.")).toBeInTheDocument();
+    expect(within(dialog).getByText("추가한 기술")).toBeInTheDocument();
+    expect(
+      screen.getByText("아직 추가한 기술이 없습니다."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
     expect(screen.queryByText("AWS")).not.toBeInTheDocument();
 

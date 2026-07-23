@@ -31,7 +31,12 @@ describe("SkillRanking", () => {
     expect(screen.getByText("Python")).toBeInTheDocument();
     expect(screen.getByText("언어")).toBeInTheDocument();
     expect(screen.getByText("40건")).toBeInTheDocument();
-    expect(screen.getByText("필수 24 · 우대 10")).toBeInTheDocument();
+    expect(
+      screen.getByText("필수 24 · 우대 10 · 미표기 6"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("필수 24, 우대 10, 필수·우대 미표기 6"),
+    ).toHaveAttribute("title", "필수·우대 미표기");
     expect(screen.getByText("인프라")).toBeInTheDocument();
   });
 
@@ -47,6 +52,8 @@ describe("SkillRanking", () => {
       />,
     );
 
-    expect(screen.getByText("필수 0 · 우대 0")).toBeInTheDocument();
+    expect(
+      screen.getByText("필수 0 · 우대 0 · 미표기 0"),
+    ).toBeInTheDocument();
   });
 });

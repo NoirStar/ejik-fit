@@ -88,9 +88,11 @@ describe("SkillGraphPage", () => {
 
     render(await SkillGraphPage());
 
-    expect(screen.getByRole("heading", { name: "이직핏 기술 맵" })).toBeInTheDocument();
     expect(
-      screen.getByText(/한 공고에서 함께 확인된 기술을 탐색하고/),
+      screen.getByRole("heading", { level: 1, name: "스킬맵" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("내 기술과 함께 자주 요구되는 기술을 보여줍니다."),
     ).toBeInTheDocument();
     expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
     expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
@@ -99,11 +101,13 @@ describe("SkillGraphPage", () => {
     expect(
       screen.getByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
-    expect(screen.getByText("내 스택")).toBeInTheDocument();
-    expect(screen.getByText("그래프 필터")).toBeInTheDocument();
+    expect(screen.getByText("내 기술")).toBeInTheDocument();
+    expect(screen.getByText("그래프 범위")).toBeInTheDocument();
+    expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
+    expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("언급 공고")).toBeInTheDocument();
     expect(screen.getByText("18건")).toBeInTheDocument();
-    expect(screen.getByText("미분류")).toBeInTheDocument();
+    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
     expect(screen.getByText("2건")).toBeInTheDocument();
     expect(screen.queryByText("채용 캘린더")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "설정" })).not.toBeInTheDocument();
@@ -146,9 +150,8 @@ describe("SkillGraphPage", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "스킬 관계 데이터를 불러오지 못했습니다.",
+      "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
-    expect(screen.getByText(/임의 데이터로 채우지 않았습니다/)).toBeInTheDocument();
     expect(screen.getByText("그래프 범위 확인 불가")).toBeInTheDocument();
     expect(screen.queryByText(/0개 스킬/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(

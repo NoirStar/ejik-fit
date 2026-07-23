@@ -6,6 +6,7 @@ import { ArrowClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { PRODUCT_TERMS } from "@/lib/labels";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
 import { buildSkillGraphHref } from "@/lib/product-routes";
 import { domainColor, summarizeGraph } from "@/lib/skill-graph";
@@ -38,6 +39,27 @@ type SkillGraphExperienceProps = {
   initialOwnedSkills: string[];
   loadFailed?: boolean;
   retryHref?: string;
+};
+
+
+const SKILL_MAP_COPY = {
+  title: PRODUCT_TERMS.skillMap,
+  description: "내 기술과 함께 자주 요구되는 기술을 보여줍니다.",
+  ownedSkills: PRODUCT_TERMS.ownedSkills,
+  addSkill: "기술 추가",
+  filters: "그래프 범위",
+  recommendation: "다음에 배울 기술",
+  related: "함께 요구되는 기술",
+  desktopControls: "드래그 · 확대 · 선택",
+  mobileControls: "이동 · 두 손가락으로 확대 · 탭하여 선택",
+};
+
+
+const GRAPH_STATES = {
+  loadError: "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  empty: "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
+  fitLoading: "내 기술과 공고를 비교하고 있습니다.",
+  fitError: "내 기술을 비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
 };
 
 
@@ -431,14 +453,11 @@ export function SkillGraphExperience({
 
   return (
     <main className={styles.page}>
-      <section aria-label="이직핏 기술 맵" className={styles.experience}>
+      <section aria-label={SKILL_MAP_COPY.title} className={styles.experience}>
         <header className={styles.intro}>
           <div className={styles.introCopy}>
-            <h1>이직핏 기술 맵</h1>
-            <p className={styles.description}>
-              한 공고에서 함께 확인된 기술을 탐색하고, 선택한 기술의 실제 채용
-              근거를 확인하세요.
-            </p>
+            <h1>{SKILL_MAP_COPY.title}</h1>
+            <p className={styles.description}>{SKILL_MAP_COPY.description}</p>
             <div className={styles.trustLine}>
               <span>
                 {loadFailed ? "그래프 범위 확인 불가" : summarizeGraph(initialGraph)}
@@ -484,8 +503,7 @@ export function SkillGraphExperience({
         {loadFailed && (
           <section className={styles.errorState} role="alert">
             <div>
-              <strong>스킬 관계 데이터를 불러오지 못했습니다.</strong>
-              <p>잠시 후 다시 시도해 주세요. 임의 데이터로 채우지 않았습니다.</p>
+              <strong>{GRAPH_STATES.loadError}</strong>
             </div>
             <Link href={retryHref}>다시 시도</Link>
           </section>
@@ -511,14 +529,19 @@ export function SkillGraphExperience({
         </nav>
 
         <div className={styles.workspace}>
-          <aside aria-label="보유 기술과 그래프 필터" className={styles.controls}>
+          <aside
+            aria-label={`${SKILL_MAP_COPY.ownedSkills}과 ${SKILL_MAP_COPY.filters}`}
+            className={styles.controls}
+          >
             <details
               className={styles.controlsDisclosure}
               onToggle={(event) => setControlsOpen(event.currentTarget.open)}
               open={controlsOpen}
             >
               <summary>
-                <span>내 스택과 필터</span>
+                <span>
+                  {SKILL_MAP_COPY.ownedSkills}과 {SKILL_MAP_COPY.filters}
+                </span>
                 <small>
                   {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "현재 범위"}
                 </small>
@@ -528,8 +551,8 @@ export function SkillGraphExperience({
                 <section className={styles.controlSection}>
                   <header className={styles.sectionHeader}>
                     <div>
-                      <p>보유 기술</p>
-                      <h2>내 스택</h2>
+                      <p>추가한 기술</p>
+                      <h2>{SKILL_MAP_COPY.ownedSkills}</h2>
                     </div>
                     <span>{ownedSkills.length}개</span>
                   </header>
@@ -541,7 +564,7 @@ export function SkillGraphExperience({
                       addSkill();
                     }}
                   >
-                    <label htmlFor="owned-skill">스킬 추가</label>
+                    <label htmlFor="owned-skill">{SKILL_MAP_COPY.addSkill}</label>
                     <div>
                       <input
                         id="owned-skill"
@@ -554,7 +577,10 @@ export function SkillGraphExperience({
                   </form>
 
                   {ownedSkills.length > 0 ? (
-                    <div aria-label="저장된 보유 스킬" className={styles.ownedSkills}>
+                    <div
+                      aria-label={`${SKILL_MAP_COPY.ownedSkills} 목록`}
+                      className={styles.ownedSkills}
+                    >
                       {ownedSkills.map((skill) => (
                         <button
                           aria-label={`${skill} 제거`}
@@ -569,8 +595,7 @@ export function SkillGraphExperience({
                     </div>
                   ) : (
                     <p className={styles.emptyCopy}>
-                      보유 기술을 추가하면 공고 근거를 바탕으로 다음 준비 기술을
-                      비교합니다.
+                      추가한 기술이 없습니다. 위에서 기술을 추가해 주세요.
                     </p>
                   )}
                 </section>
@@ -579,7 +604,7 @@ export function SkillGraphExperience({
                   <header className={styles.sectionHeader}>
                     <div>
                       <p>관계 범위</p>
-                      <h2>그래프 필터</h2>
+                      <h2>{SKILL_MAP_COPY.filters}</h2>
                     </div>
                     <button className={styles.resetButton} onClick={resetGraphView} type="button">
                       초기화
@@ -706,10 +731,10 @@ export function SkillGraphExperience({
 
               <div className={styles.graphStatus}>
                 <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
-                <span className={styles.pointerHint}>드래그 · 확대 · 선택</span>
-                <span className={styles.touchHint}>
-                  이동 · 핀치 확대 · 탭 선택
+                <span className={styles.pointerHint}>
+                  {SKILL_MAP_COPY.desktopControls}
                 </span>
+                <span className={styles.touchHint}>{SKILL_MAP_COPY.mobileControls}</span>
               </div>
 
               {viewData.nodes.length === 0 && (
@@ -740,16 +765,7 @@ export function SkillGraphExperience({
                       />
                     ))}
                   </div>
-                  <strong>
-                    {isFilteredEmpty
-                      ? "필터와 일치하는 기술이 없습니다."
-                      : "그래프 데이터가 아직 없습니다."}
-                  </strong>
-                  <p>
-                    {isFilteredEmpty
-                      ? "검색어 또는 분야 필터를 줄여 다시 확인해 주세요."
-                      : "공식 공고에서 관계가 확인되면 이곳에 표시됩니다."}
-                  </p>
+                  <strong>{GRAPH_STATES.empty}</strong>
                   {isFilteredEmpty && (
                     <button onClick={resetGraphView} type="button">
                       필터 초기화
@@ -804,19 +820,21 @@ export function SkillGraphExperience({
               )}
             </div>
 
-            <section aria-label="공고 기반 다음 신호" className={styles.signals}>
+            <section aria-label={SKILL_MAP_COPY.recommendation} className={styles.signals}>
               <article>
                 <header className={styles.sectionHeader}>
                   <div>
-                    <p>보유 기술 비교</p>
-                    <h2>다음 준비</h2>
+                    <p>내 기술 비교</p>
+                    <h2>{SKILL_MAP_COPY.recommendation}</h2>
                   </div>
                   <span>{fitState === "loading" ? "분석 중" : "공고 근거"}</span>
                 </header>
                 <div className={styles.nextSkills}>
-                  {fitState === "loading" && <p role="status">공고 요구 기술을 비교하고 있습니다.</p>}
+                  {fitState === "loading" && (
+                    <p role="status">{GRAPH_STATES.fitLoading}</p>
+                  )}
                   {fitState === "error" && (
-                    <p role="alert">보유 기술 비교를 불러오지 못했습니다.</p>
+                    <p role="alert">{GRAPH_STATES.fitError}</p>
                   )}
                   {fitState === "idle" &&
                     (fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
@@ -829,10 +847,12 @@ export function SkillGraphExperience({
                       </Link>
                     ))}
                   {fitState === "idle" && !fit && ownedSkills.length === 0 && (
-                    <p>내 스택에 기술을 추가하면 다음 준비 근거를 확인할 수 있습니다.</p>
+                    <p>
+                      내 기술을 추가하면 공고에서 함께 요구되는 기술이 표시됩니다.
+                    </p>
                   )}
                   {fitState === "idle" && fit?.recommended_next_skills.length === 0 && (
-                    <p>현재 공개 공고에서 추가 추천 근거를 찾지 못했습니다.</p>
+                    <p>현재 공고에서 함께 요구되는 기술을 찾지 못했습니다.</p>
                   )}
                 </div>
               </article>
@@ -866,7 +886,7 @@ export function SkillGraphExperience({
               <p>
                 {selected
                   ? `${selected.domains.map(displayDomain).join(", ")} 분야의 공개 공고에서 확인한 수치입니다.`
-                  : "그래프 노드를 선택하면 실제 공고 근거와 가까운 기술을 확인할 수 있습니다."}
+                  : "기술을 선택하면 관련 공고와 함께 요구되는 기술을 확인할 수 있습니다."}
               </p>
               <dl className={styles.evidenceMetrics}>
                 <div>
@@ -882,7 +902,7 @@ export function SkillGraphExperience({
                   <dd>{selected ? `${selected.preferred_count}건` : "—"}</dd>
                 </div>
                 <div>
-                  <dt>미분류</dt>
+                  <dt>{PRODUCT_TERMS.unspecifiedRequirement}</dt>
                   <dd>{selected ? `${selected.unspecified_count}건` : "—"}</dd>
                 </div>
               </dl>
@@ -892,7 +912,7 @@ export function SkillGraphExperience({
               <header className={styles.sectionHeader}>
                 <div>
                   <p>공고 동시 등장</p>
-                  <h2>가까운 기술</h2>
+                  <h2>{SKILL_MAP_COPY.related}</h2>
                 </div>
                 <span>{strongestConnections.length}개</span>
               </header>
@@ -938,21 +958,21 @@ export function SkillGraphExperience({
             </section>
 
             <section className={styles.recommendation}>
-              <p className={styles.eyebrow}>다음 경로</p>
+              <p className={styles.eyebrow}>학습 근거</p>
               <strong>
                 {fitState === "loading"
-                  ? "보유 기술 비교 중"
+                  ? GRAPH_STATES.fitLoading
                   : fitState === "error"
-                    ? "보유 기술 비교 불가"
-                    : topNextSkill?.skill ?? "보유 기술 비교 대기"}
+                    ? GRAPH_STATES.fitError
+                    : topNextSkill?.skill ?? "내 기술을 먼저 추가해 주세요"}
               </strong>
               <span>
                 {fitState === "loading"
-                  ? "변경된 내 스택을 공개 공고 요구와 다시 비교하고 있습니다."
+                  ? GRAPH_STATES.fitLoading
                   : fitState === "error"
-                    ? "현재 비교 데이터를 불러오지 못했습니다. 잠시 후 다시 변경해 주세요."
+                    ? GRAPH_STATES.fitError
                     : topNextSkill?.reason ??
-                      "내 스택을 추가하면 공개 공고 요구와 비교해 다음 기술 근거를 보여드립니다."}
+                      "기술을 추가하면 다음 학습 근거를 확인할 수 있습니다."}
               </span>
             </section>
           </aside>

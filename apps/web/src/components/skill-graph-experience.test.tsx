@@ -123,6 +123,31 @@ describe("SkillGraphExperience", () => {
     vi.unstubAllGlobals();
   });
 
+  it("makes the next learning decision clear", () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "스킬맵" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("내 기술과 함께 자주 요구되는 기술을 보여줍니다."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("내 기술")).toBeInTheDocument();
+    expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
+    expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
+    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "내 기술을 추가하면 공고에서 함께 요구되는 기술이 표시됩니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/내 스택|기술 맵|다음 준비|미분류/),
+    ).not.toBeInTheDocument();
+  });
+
   it("links quick skills to a newly seeded graph", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
@@ -142,7 +167,7 @@ describe("SkillGraphExperience", () => {
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
 
-    fireEvent.change(screen.getByLabelText("스킬 추가"), {
+    fireEvent.change(screen.getByLabelText("기술 추가"), {
       target: { value: "Kubernetes" },
     });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
@@ -183,10 +208,18 @@ describe("SkillGraphExperience", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "그래프 검색" }), {
       target: { value: "존재하지않는기술" },
     });
-    expect(screen.getByText("필터와 일치하는 기술이 없습니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
-    expect(screen.queryByText("필터와 일치하는 기술이 없습니다.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
+      ),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "그래프 검색" })).toHaveValue("");
   });
 
@@ -230,7 +263,7 @@ describe("SkillGraphExperience", () => {
       ),
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("스킬 추가"), {
+    fireEvent.change(screen.getByLabelText("기술 추가"), {
       target: { value: "ROS2" },
     });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
@@ -241,13 +274,19 @@ describe("SkillGraphExperience", () => {
         "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
       ),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("보유 기술 비교 중")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("내 기술과 공고를 비교하고 있습니다.").length,
+    ).toBeGreaterThan(0);
 
     resolveSecondRequest?.(jsonResponse(fitResponse, 503));
 
     expect(
-      await screen.findByText("보유 기술 비교 불가"),
-    ).toBeInTheDocument();
+      (
+        await screen.findAllByText(
+          "내 기술을 비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        )
+      ).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByText(
         "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
