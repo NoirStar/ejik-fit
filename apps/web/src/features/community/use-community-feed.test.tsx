@@ -5,6 +5,7 @@ import type {
   CommunityPost,
   CommunityViewerState,
 } from "@/lib/community-contract";
+import { CommunityStoreError } from "@/lib/community-contract";
 
 import type { CommunityStore } from "./community-store";
 import { useCommunityFeed } from "./use-community-feed";
@@ -193,7 +194,7 @@ describe("useCommunityFeed", () => {
 
     expect(result.current.state.status).toBe("error");
     expect(result.current.state.error).toBe(
-      "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "커뮤니티 글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
     expect(result.current.state.posts).toEqual([post()]);
     expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
@@ -337,7 +338,78 @@ describe("useCommunityFeed", () => {
     expect(result.current.state.posts[0]?.metrics.reactions).toBe(4);
     expect(result.current.state.viewerState.reactedPostIds).toEqual([POST_ID]);
     expect(result.current.state.actionError).toBe(
-      "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
+  });
+
+  it.each([
+    {
+      code: "permission" as const,
+      message: "이 작업을 처리할 권한이 없습니다.",
+    },
+    {
+      code: "conflict" as const,
+      message: "이미 처리된 커뮤니티 활동입니다.",
+    },
+  ])("keeps the safe $code mutation guidance", async ({ code, message }) => {
+    const store = storeWith();
+    store.setPostReaction.mockRejectedValueOnce(
+      new CommunityStoreError(code, message),
+    );
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    await act(async () => {
+      expect(await result.current.toggleReaction(POST_ID)).toBe(false);
+    });
+
+    expect(result.current.state.actionError).toBe(message);
+  });
+
+  it.each([
+    {
+      failure: new CommunityStoreError(
+        "permission",
+        "이 작업을 처리할 권한이 없습니다.",
+      ),
+      message: "이 작업을 처리할 권한이 없습니다.",
+    },
+    {
+      failure: new Error("raw create failure"),
+      message: "글을 게시하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+    },
+  ])("returns safe create guidance without a duplicate feed error", async ({
+    failure,
+    message,
+  }) => {
+    const store = storeWith();
+    store.createPost.mockRejectedValueOnce(failure);
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    let createResult;
+    await act(async () => {
+      createResult = await result.current.createPost({
+        category: "커리어 질문",
+        title: "게시할 글",
+        body: "게시 실패 안내를 확인합니다.",
+        tags: [],
+      });
+    });
+
+    expect(createResult).toEqual({ error: message, post: null });
+    expect(result.current.state.actionError).toBe("");
   });
 });

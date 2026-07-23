@@ -62,7 +62,7 @@ export function AccountOverview() {
       icon: Stack,
       label: PRODUCT_TERMS.ownedSkills,
       value: `${careerState.ownedSkills.length}개`,
-      description: "저장한 기술과 희망 조건",
+      description: "내 기술과 희망 조건",
     },
     {
       href: "/career/saved",

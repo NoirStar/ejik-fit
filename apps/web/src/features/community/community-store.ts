@@ -74,11 +74,22 @@ const MAX_COMMENT_LIMIT = 50;
 export const COMMUNITY_FAILURE_COPY = {
   invalid: "작성 내용을 확인해 주세요.",
   auth: "로그인한 뒤 다시 시도해 주세요.",
-  connection: "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  authCheck:
+    "로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.",
+  load: "커뮤니티 글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  action: "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  data: "커뮤니티 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  permission: "이 작업을 처리할 권한이 없습니다.",
+  unavailable:
+    "지금은 커뮤니티 요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.",
   create: "글을 게시하지 못했습니다. 작성 내용은 그대로 두었습니다.",
   update: "수정 내용을 저장하지 못했습니다. 작성 내용은 그대로 두었습니다.",
   comment: "댓글을 등록하지 못했습니다. 작성 내용은 그대로 두었습니다.",
 } as const;
+
+export function communityFailureMessage(error: unknown, fallback: string) {
+  return error instanceof CommunityStoreError ? error.message : fallback;
+}
 
 export type CommunityStore = {
   searchPosts(options: {
@@ -225,7 +236,7 @@ function databaseFailure(error: unknown): never {
   ) {
     throw new CommunityStoreError(
       "permission",
-      COMMUNITY_FAILURE_COPY.auth,
+      COMMUNITY_FAILURE_COPY.permission,
       { cause: error },
     );
   }
@@ -238,7 +249,7 @@ function databaseFailure(error: unknown): never {
   }
   throw new CommunityStoreError(
     "unavailable",
-    COMMUNITY_FAILURE_COPY.connection,
+    COMMUNITY_FAILURE_COPY.unavailable,
     { cause: error },
   );
 }
@@ -250,7 +261,7 @@ function mappedRows<T>(
   if (!Array.isArray(value)) {
     throw new CommunityStoreError(
       "invalid_data",
-      COMMUNITY_FAILURE_COPY.connection,
+      COMMUNITY_FAILURE_COPY.data,
     );
   }
   return value.map(mapper);
@@ -260,7 +271,7 @@ function mappedMembershipCursor(value: unknown, id: string) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new CommunityStoreError(
       "invalid_data",
-      COMMUNITY_FAILURE_COPY.connection,
+      COMMUNITY_FAILURE_COPY.data,
     );
   }
   const createdAt = (value as Record<string, unknown>).membership_created_at;
@@ -268,7 +279,7 @@ function mappedMembershipCursor(value: unknown, id: string) {
   if (!cursor) {
     throw new CommunityStoreError(
       "invalid_data",
-      COMMUNITY_FAILURE_COPY.connection,
+      COMMUNITY_FAILURE_COPY.data,
     );
   }
   return cursor;
@@ -518,7 +529,7 @@ export function createSupabaseCommunityStore(
       if (!rows) {
         throw new CommunityStoreError(
           "invalid_data",
-          COMMUNITY_FAILURE_COPY.connection,
+          COMMUNITY_FAILURE_COPY.data,
         );
       }
       const mapped = rows.map(mapCommunitySearchPostRow);

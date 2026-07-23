@@ -209,6 +209,33 @@ describe("ServerPostDetail", () => {
     expect(store.createComment).not.toHaveBeenCalled();
   });
 
+  it("keeps the user on the post when login status cannot be verified", async () => {
+    const store = createStore();
+    render(
+      <AuthViewerProvider
+        error="로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요."
+        ready
+        status="error"
+        viewer={null}
+      >
+        <ServerPostDetail postId={POST_ID} store={store} />
+      </AuthViewerProvider>,
+    );
+    await screen.findByRole("heading", { level: 1, name: post.title });
+
+    fireEvent.click(screen.getByRole("button", { name: /공감$/ }));
+
+    expect(
+      screen.getByText(
+        "로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("로그인한 뒤 다시 시도해 주세요."))
+      .not.toBeInTheDocument();
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(store.setPostReaction).not.toHaveBeenCalled();
+  });
+
   it("updates an author's rendered post immediately from the saved server record", async () => {
     const updated: CommunityPost = {
       ...post,

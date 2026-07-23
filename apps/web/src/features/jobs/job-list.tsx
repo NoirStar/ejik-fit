@@ -42,7 +42,7 @@ const JOB_COPY = {
   title: "채용공고",
   description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
   currentList: "현재 목록",
-  details: "공고 보기",
+  details: "기술 요건 보기",
   companyPage: "기업 채용페이지 보기",
   browseAll: "전체 공고 보기",
   filteredEmpty: "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
@@ -425,7 +425,7 @@ export function JobList({
               </li>
               <li>
                 <strong>{summary.latestVerifiedLabel}</strong>
-                <span>가장 최근 확인</span>
+                <span>{PRODUCT_TERMS.lastChecked}</span>
               </li>
             </>
           )}

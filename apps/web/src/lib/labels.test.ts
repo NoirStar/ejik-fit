@@ -14,6 +14,7 @@ it("keeps shared Korean product terms consistent", () => {
     unspecifiedRequirementCompact: "미표기",
     savedItems: "저장 목록",
     lastChecked: "최근 확인",
+    nextSkill: "다음에 배울 기술",
   });
 });
 

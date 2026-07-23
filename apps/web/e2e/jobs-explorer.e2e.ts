@@ -25,7 +25,7 @@ for (const width of [1440, 820, 600, 390, 320]) {
       .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
     expect(pageTitleSize).toBeLessThanOrEqual(width <= 760 ? 28 : 32);
     const internalDetailLink = page
-      .getByRole("link", { name: "공고 보기" })
+      .getByRole("link", { name: "기술 요건 보기" })
       .first();
     await expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
     await expect(internalDetailLink).not.toHaveAttribute("target", "_blank");

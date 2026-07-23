@@ -21,6 +21,7 @@ import type {
   CommunityViewerState,
   CreateCommunityPostInput,
 } from "@/lib/community-contract";
+import { CommunityStoreError } from "@/lib/community-contract";
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
 import {
   readRecentCommunityTopics,
@@ -732,7 +733,7 @@ describe("HomeFeed", () => {
       fireEvent.click(control);
       expect(
         await screen.findByText(
-          "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         ),
       ).toBeInTheDocument();
 
@@ -745,7 +746,71 @@ describe("HomeFeed", () => {
       );
       expect(
         screen.queryByText(
-          "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each([
+    {
+      action: "reaction" as const,
+      code: "permission" as const,
+      message: "이 작업을 처리할 권한이 없습니다.",
+    },
+    {
+      action: "save" as const,
+      code: "conflict" as const,
+      message: "이미 처리된 커뮤니티 활동입니다.",
+    },
+  ])(
+    "shows the safe $code guidance on a first-page $action failure",
+    async ({ action, code, message }) => {
+      const post: CommunityPost = {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        author: {
+          id: "22222222-2222-4222-8222-222222222222",
+          nickname: "실제작성자",
+        },
+        category: "커리어 질문",
+        title: "오류 안내를 확인할 커뮤니티 질문",
+        body: "다음 페이지가 없어도 안전한 오류 안내를 표시합니다.",
+        tags: ["백엔드"],
+        metrics: { reactions: 4, comments: 2, saves: 1 },
+        createdAt: "2026-07-21T04:00:00.000Z",
+        updatedAt: "2026-07-21T04:00:00.000Z",
+      };
+      const store = serverCommunityStore(post);
+      const failure = new CommunityStoreError(code, message);
+      if (action === "reaction") {
+        store.setPostReaction.mockRejectedValueOnce(failure);
+      } else {
+        store.setPostSaved.mockRejectedValueOnce(failure);
+      }
+
+      render(
+        <AuthViewerProvider
+          ready
+          viewer={{
+            id: "11111111-1111-4111-8111-111111111111",
+            email: "viewer@example.com",
+          }}
+        >
+          <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+        </AuthViewerProvider>,
+      );
+
+      const article = await screen.findByRole("article", { name: post.title });
+      fireEvent.click(
+        action === "reaction"
+          ? within(article).getByRole("button", { name: /공감 취소/ })
+          : within(article).getByRole("button", { name: `${post.title} 저장` }),
+      );
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(message);
+      expect(
+        screen.queryByText(
+          "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.",
         ),
       ).not.toBeInTheDocument();
     },
@@ -1116,6 +1181,9 @@ describe("HomeFeed", () => {
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
+      "로그인 상태를 확인하지 못했습니다.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(
       "로그인한 뒤 다시 시도해 주세요.",
     );
     expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();

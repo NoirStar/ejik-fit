@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { SourceDirectory } from "@/features/sources/source-directory";
 import { getSourceDirectory } from "@/lib/api";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import type { SourceDirectoryResponse } from "@/lib/types";
 
 import { TrustPageLayout } from "../trust-page-layout";
@@ -46,7 +47,8 @@ export default async function DataPolicyPage() {
         <h2>수집하는 정보</h2>
         <p>
           로그인 없이 접근 가능한 기업 공식 채용페이지만 수집합니다. 공고 제목,
-          직무 조건, 근무지, 본문, 공식 출처 URL과 마지막 확인 시각을 저장합니다.
+          직무 조건, 근무지, 본문, 공식 출처 URL과 {PRODUCT_TERMS.lastChecked}
+          시각을 저장합니다.
         </p>
         <Link href="/jobs">현재 공식 공고 보기</Link>
       </section>
@@ -71,9 +73,9 @@ export default async function DataPolicyPage() {
       <section>
         <h2>화면에 표시하는 기준</h2>
         <p>
-          모든 공고에 공식 출처와 마지막 확인 시각을 표시합니다. 일부 수집 결과를
-          불러오지 못하면 성공한 데이터만 표시하고, 샘플 데이터로 빈 영역을 채우지
-          않습니다.
+          모든 공고에 공식 출처와 {PRODUCT_TERMS.lastChecked} 시각을 표시합니다.
+          일부 수집 결과를 불러오지 못하면 성공한 데이터만 표시하고, 샘플 데이터로
+          빈 영역을 채우지 않습니다.
         </p>
         <Link href="/corrections">정보 정정 요청 방법</Link>
       </section>

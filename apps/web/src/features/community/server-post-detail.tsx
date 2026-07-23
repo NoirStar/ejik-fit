@@ -36,6 +36,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
   COMMUNITY_FAILURE_COPY,
+  communityFailureMessage,
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
@@ -137,6 +138,7 @@ export function ServerPostDetail({
 }: ServerPostDetailProps) {
   const router = useRouter();
   const {
+    error: authError,
     ready: authReady,
     status: authStatus,
     viewer,
@@ -226,7 +228,7 @@ export function ServerPostDetail({
       return "로그인 상태를 확인하는 중…";
     }
     if (authStatus === "error") {
-      return COMMUNITY_FAILURE_COPY.auth;
+      return authError || COMMUNITY_FAILURE_COPY.authCheck;
     }
     return COMMUNITY_FAILURE_COPY.auth;
   }
@@ -271,8 +273,10 @@ export function ServerPostDetail({
             }
           : current,
       );
-    } catch {
-      setActionError(COMMUNITY_FAILURE_COPY.connection);
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
+      );
     } finally {
       setPending("");
     }
@@ -304,8 +308,10 @@ export function ServerPostDetail({
             }
           : current,
       );
-    } catch {
-      setActionError(COMMUNITY_FAILURE_COPY.connection);
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
+      );
     } finally {
       setPending("");
     }
@@ -327,8 +333,10 @@ export function ServerPostDetail({
         ...current,
         followedAuthorIds: active ? [] : [post.author.id],
       }));
-    } catch {
-      setActionError(COMMUNITY_FAILURE_COPY.connection);
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
+      );
     } finally {
       setPending("");
     }

@@ -18,7 +18,7 @@ export type AuthViewerStatus =
   | "error";
 
 const AUTH_LOOKUP_ERROR =
-  "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.";
+  "로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.";
 
 function viewerFromUser(user: User | null): AuthViewer | null {
   const email = user?.email?.trim();

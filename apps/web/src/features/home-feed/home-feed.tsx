@@ -523,7 +523,7 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
               href={`/skill-map?skill=${encodeURIComponent(insight.nextSkill.skillName)}`}
               prefetch={false}
             >
-              <span>다음 준비 기술</span>
+              <span>{PRODUCT_TERMS.nextSkill}</span>
               <strong>{insight.nextSkill.skillName}</strong>
               <small>
                 겹치는 공고 {insight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건의 부족 요구사항
@@ -695,6 +695,7 @@ export function HomeFeed({
 }: HomeFeedProps) {
   const router = useRouter();
   const {
+    error: authError,
     ready: authReady,
     status: authStatus,
     viewer,
@@ -815,7 +816,7 @@ export function HomeFeed({
       setAnnouncement(
         authStatus === "loading"
           ? "로그인 상태를 확인하는 중…"
-          : COMMUNITY_FAILURE_COPY.auth,
+          : authError || COMMUNITY_FAILURE_COPY.authCheck,
       );
       return;
     }
@@ -830,12 +831,8 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
-    const changed = await community.toggleFollowed(item.authorId);
-    if (changed) {
-      setAnnouncement("");
-      return;
-    }
-    setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
+    setAnnouncement("");
+    await community.toggleFollowed(item.authorId);
   }
 
   function handleTabKeyDown(
@@ -896,8 +893,7 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    const changed = await community.toggleReaction(item.id);
-    if (!changed) setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
+    await community.toggleReaction(item.id);
   }
 
   async function handleSocialSave(item: SocialItem) {
@@ -907,8 +903,7 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    const changed = await community.toggleSaved(item.id);
-    if (!changed) setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
+    await community.toggleSaved(item.id);
   }
 
   async function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -934,21 +929,21 @@ export function HomeFeed({
         storage:
           authStatus === "loading"
             ? "로그인 상태를 확인하는 중…"
-            : COMMUNITY_FAILURE_COPY.auth,
+            : authError || COMMUNITY_FAILURE_COPY.authCheck,
       });
       return;
     }
 
     if (viewer) {
-      const post = await community.createPost({
+      const result = await community.createPost({
         category: draft.category,
         title,
         body,
         tags,
       });
-      if (!post) {
+      if (!result.post) {
         setDraftErrors({
-          storage: COMMUNITY_FAILURE_COPY.create,
+          storage: result.error || COMMUNITY_FAILURE_COPY.create,
         });
         return;
       }
@@ -1209,18 +1204,20 @@ export function HomeFeed({
             )}
           </div>
 
-          {community.state.nextCursor && (
+          {(community.state.nextCursor || community.state.actionError) && (
             <div className={styles.feedPagination}>
-              <button
-                aria-busy={community.state.loadingMore}
-                disabled={community.state.loadingMore}
-                onClick={() => void community.loadMore()}
-                type="button"
-              >
-                {community.state.loadingMore
-                  ? "커뮤니티 글 불러오는 중…"
-                  : "커뮤니티 글 더 보기"}
-              </button>
+              {community.state.nextCursor && (
+                <button
+                  aria-busy={community.state.loadingMore}
+                  disabled={community.state.loadingMore}
+                  onClick={() => void community.loadMore()}
+                  type="button"
+                >
+                  {community.state.loadingMore
+                    ? "커뮤니티 글 불러오는 중…"
+                    : "커뮤니티 글 더 보기"}
+                </button>
+              )}
               {community.state.actionError && (
                 <p role="alert">{community.state.actionError}</p>
               )}

@@ -99,7 +99,7 @@ describe("JobList", () => {
       "/skill-map?skill=Python",
     );
     const internalDetailLink = within(job).getByRole("link", {
-      name: "공고 보기",
+      name: "기술 요건 보기",
     });
     expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-1");
     expect(internalDetailLink).not.toHaveAttribute("target");

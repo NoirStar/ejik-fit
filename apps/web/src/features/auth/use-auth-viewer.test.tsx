@@ -71,7 +71,7 @@ describe("useAuthViewer", () => {
     expect(result.current.status).toBe("error");
     expect(result.current.viewer).toBeNull();
     expect(result.current.error).toBe(
-      "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+      "로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.",
     );
   });
 
@@ -84,7 +84,7 @@ describe("useAuthViewer", () => {
     expect(result.current.ready).toBe(true);
     expect(result.current.viewer).toBeNull();
     expect(result.current.error).toBe(
-      "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요.",
+      "로그인 상태를 확인하지 못했습니다. 새로고침한 뒤 다시 시도해 주세요.",
     );
   });
 

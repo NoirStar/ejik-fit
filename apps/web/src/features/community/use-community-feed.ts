@@ -13,6 +13,7 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
   COMMUNITY_FAILURE_COPY,
+  communityFailureMessage,
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
@@ -23,8 +24,8 @@ const EMPTY_VIEWER_STATE: CommunityViewerState = {
   followedAuthorIds: [],
 };
 
-const LOAD_ERROR = COMMUNITY_FAILURE_COPY.connection;
-const ACTION_ERROR = COMMUNITY_FAILURE_COPY.connection;
+const LOAD_ERROR = COMMUNITY_FAILURE_COPY.load;
+const ACTION_ERROR = COMMUNITY_FAILURE_COPY.action;
 
 export type CommunityFeedState = {
   status: "idle" | "loading" | "ready" | "error";
@@ -41,7 +42,10 @@ export type CommunityFeedController = {
   state: CommunityFeedState;
   reload(): Promise<void>;
   loadMore(): Promise<void>;
-  createPost(input: CreateCommunityPostInput): Promise<CommunityPost | null>;
+  createPost(input: CreateCommunityPostInput): Promise<{
+    error: string;
+    post: CommunityPost | null;
+  }>;
   deletePost(postId: string): Promise<boolean>;
   toggleReaction(postId: string): Promise<boolean>;
   toggleSaved(postId: string): Promise<boolean>;
@@ -227,7 +231,7 @@ export function useCommunityFeed({
           viewerState,
           nextCursor: page.nextCursor,
         });
-      } catch {
+      } catch (error) {
         if (
           requestRef.current === request &&
           viewerIdRef.current === activeViewerId
@@ -238,7 +242,7 @@ export function useCommunityFeed({
             posts: previousPosts,
             viewerState: previousViewerState,
             nextCursor: previousNextCursor,
-            error: LOAD_ERROR,
+            error: communityFailureMessage(error, LOAD_ERROR),
           });
         }
       }
@@ -321,7 +325,7 @@ export function useCommunityFeed({
         nextCursor: page.nextCursor,
         loadingMore: false,
       }));
-    } catch {
+    } catch (error) {
       if (
         requestRef.current === request &&
         viewerIdRef.current === activeViewerId
@@ -329,7 +333,7 @@ export function useCommunityFeed({
         commit((value) => ({
           ...value,
           loadingMore: false,
-          actionError: LOAD_ERROR,
+          actionError: communityFailureMessage(error, LOAD_ERROR),
         }));
       }
     }
@@ -358,9 +362,12 @@ export function useCommunityFeed({
         if (viewerIdRef.current !== activeViewerId) return false;
         commit((current) => apply({ ...current, actionError: "" }));
         return true;
-      } catch {
+      } catch (error) {
         if (viewerIdRef.current === activeViewerId) {
-          commit((current) => ({ ...current, actionError: ACTION_ERROR }));
+          commit((current) => ({
+            ...current,
+            actionError: communityFailureMessage(error, ACTION_ERROR),
+          }));
         }
         return false;
       } finally {
@@ -380,9 +387,13 @@ export function useCommunityFeed({
     async (input: CreateCommunityPostInput) => {
       const activeViewerId = viewerIdRef.current;
       const resolvedStore = resolveStore();
-      if (!activeViewerId || !resolvedStore) return null;
+      if (!activeViewerId || !resolvedStore) {
+        return { error: COMMUNITY_FAILURE_COPY.create, post: null };
+      }
       const key = "create:post";
-      if (pendingRef.current.has(key)) return null;
+      if (pendingRef.current.has(key)) {
+        return { error: COMMUNITY_FAILURE_COPY.create, post: null };
+      }
       pendingRef.current.add(key);
       commit((current) => ({
         ...current,
@@ -391,17 +402,22 @@ export function useCommunityFeed({
       }));
       try {
         const post = await resolvedStore.createPost(activeViewerId, input);
-        if (viewerIdRef.current !== activeViewerId) return null;
+        if (viewerIdRef.current !== activeViewerId) {
+          return { error: COMMUNITY_FAILURE_COPY.create, post: null };
+        }
         commit((current) => ({
           ...current,
           posts: [post, ...current.posts.filter((item) => item.id !== post.id)],
         }));
-        return post;
-      } catch {
-        if (viewerIdRef.current === activeViewerId) {
-          commit((current) => ({ ...current, actionError: ACTION_ERROR }));
-        }
-        return null;
+        return { error: "", post };
+      } catch (error) {
+        return {
+          error: communityFailureMessage(
+            error,
+            COMMUNITY_FAILURE_COPY.create,
+          ),
+          post: null,
+        };
       } finally {
         pendingRef.current.delete(key);
         if (viewerIdRef.current === activeViewerId) {

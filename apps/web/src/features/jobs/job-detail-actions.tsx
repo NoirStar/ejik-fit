@@ -176,7 +176,7 @@ export function JobDetailActions({
           {stageAnnouncement ||
             (applicationStage
               ? `${applicationStageLabel(applicationStage)} · 로그인 시 계정과 동기화됩니다.`
-              : "선택하면 공고도 보관함에 함께 저장됩니다.")}
+              : `선택하면 공고도 ${PRODUCT_TERMS.savedItems}에 함께 추가됩니다.`)}
         </p>
       </div>
 

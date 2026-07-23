@@ -551,7 +551,7 @@ describe("Supabase community store", () => {
     expect(comments.select).toHaveBeenCalledWith("id");
   });
 
-  it("maps database failures to stable user-safe errors", async () => {
+  it("maps permission failures to a stable user-safe error", async () => {
     const posts = createQuery({
       data: null,
       error: { code: "42501", message: "raw database policy detail" },
@@ -564,12 +564,12 @@ describe("Supabase community store", () => {
     await expect(promise).rejects.toBeInstanceOf(CommunityStoreError);
     await expect(promise).rejects.toMatchObject({
       code: "permission",
-      message: "로그인한 뒤 다시 시도해 주세요.",
+      message: "이 작업을 처리할 권한이 없습니다.",
     });
     await expect(promise).rejects.not.toThrow("raw database policy detail");
   });
 
-  it("maps unknown provider failures to a safe connection message", async () => {
+  it("maps unknown provider failures without guessing the cause", async () => {
     const posts = createQuery({
       data: null,
       error: { code: "PROVIDER_UNKNOWN", message: "raw provider detail" },
@@ -581,7 +581,7 @@ describe("Supabase community store", () => {
     const promise = store.listPosts();
     await expect(promise).rejects.toMatchObject({
       code: "unavailable",
-      message: "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      message: "지금은 커뮤니티 요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.",
     });
     await expect(promise).rejects.not.toThrow("raw provider detail");
   });

@@ -179,7 +179,7 @@ function ComparisonResult({ snapshot }: { snapshot: CareerSnapshot }) {
           </dd>
         </div>
         <div>
-          <dt>다음 준비 후보</dt>
+          <dt>{PRODUCT_TERMS.nextSkill}</dt>
           <dd className={styles.metricValue}>
             {formatCount(snapshot.metrics.recommendationCount, "개")}
           </dd>
@@ -493,7 +493,7 @@ export function CareerOverview({
           skillNameKey(ownedSkill) === skillNameKey(normalized),
       )
     ) {
-      setInputError("이미 저장한 기술입니다.");
+      setInputError("이미 추가한 기술입니다.");
       return;
     }
 
@@ -665,7 +665,7 @@ export function CareerOverview({
           {!hydrated ? (
             <p className={styles.stackState}>내 기술을 불러오는 중…</p>
           ) : ownedSkills.length === 0 ? (
-            <p className={styles.stackState}>아직 저장한 기술이 없습니다.</p>
+            <p className={styles.stackState}>아직 추가한 기술이 없습니다.</p>
           ) : (
             <ul aria-label="내 기술 목록" className={styles.savedSkills} role="list">
               {ownedSkills.map((skill) => (
@@ -830,7 +830,7 @@ export function CareerOverview({
             <section className={styles.errorPanel} role="alert">
               <div>
                 <h2>공고 비교를 불러오지 못했습니다.</h2>
-                <p>저장한 기술은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.</p>
+                <p>내 기술은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.</p>
               </div>
               <button
                 className={styles.retryButton}
