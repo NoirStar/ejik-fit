@@ -280,7 +280,7 @@ function configureAnimation(
       .cooldownTicks(0)
       .cooldownTime(0)
       .autoPauseRedraw(true)
-      .pauseAnimation();
+      .resumeAnimation();
     return;
   }
 

@@ -1,4 +1,368 @@
-import { expect, test } from "@playwright/test";
+import {
+  expect,
+  test,
+  type CDPSession,
+  type Locator,
+  type Page,
+} from "@playwright/test";
+
+import { GRAPH_DOMAIN_COLORS } from "../src/styles/design-tokens";
+
+type CanvasFingerprint = {
+  hash: number;
+  paintedPixels: number;
+};
+
+type CanvasPoint = {
+  x: number;
+  y: number;
+};
+
+type CanvasZoom = {
+  k: number;
+  x: number;
+  y: number;
+};
+
+const backendNodeRgb = [
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(5, 7), 16),
+] as const;
+
+async function readCanvasFingerprint(
+  canvas: Locator,
+): Promise<CanvasFingerprint> {
+  return canvas.evaluate((element) => {
+    const canvasElement = element as HTMLCanvasElement;
+    const context = canvasElement.getContext("2d", {
+      willReadFrequently: true,
+    });
+    if (!context) return { hash: 0, paintedPixels: 0 };
+    const pixels = context.getImageData(
+      0,
+      0,
+      canvasElement.width,
+      canvasElement.height,
+    ).data;
+    let hash = 2_166_136_261;
+    let paintedPixels = 0;
+    for (let index = 0; index < pixels.length; index += 16) {
+      const alpha = pixels[index + 3];
+      if (alpha > 0) paintedPixels += 1;
+      hash ^=
+        pixels[index] |
+        (pixels[index + 1] << 8) |
+        (pixels[index + 2] << 16) |
+        (alpha << 24);
+      hash = Math.imul(hash, 16_777_619);
+    }
+    return { hash: hash >>> 0, paintedPixels };
+  });
+}
+
+async function readCanvasZoom(canvas: Locator): Promise<CanvasZoom | null> {
+  return canvas.evaluate((element) => {
+    const zoom = (
+      element as HTMLCanvasElement & {
+        __zoom?: CanvasZoom;
+      }
+    ).__zoom;
+    return zoom ? { k: zoom.k, x: zoom.x, y: zoom.y } : null;
+  });
+}
+
+async function waitForCanvasStability(canvas: Locator) {
+  let lastHash: number | null = null;
+  let stableSamples = 0;
+  let latest: CanvasFingerprint = { hash: 0, paintedPixels: 0 };
+
+  await expect
+    .poll(
+      async () => {
+        latest = await readCanvasFingerprint(canvas);
+        stableSamples =
+          latest.paintedPixels > 0 && latest.hash === lastHash
+            ? stableSamples + 1
+            : 0;
+        lastHash = latest.hash;
+        return stableSamples;
+      },
+      { intervals: [100], timeout: 2_000 },
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  return latest;
+}
+
+async function waitForPaintedCanvas(canvas: Locator) {
+  await expect
+    .poll(async () => (await readCanvasFingerprint(canvas)).paintedPixels)
+    .toBeGreaterThan(0);
+  return readCanvasFingerprint(canvas);
+}
+
+async function waitForZoomStability(canvas: Locator) {
+  let lastZoom: CanvasZoom | null = null;
+  let stableSamples = 0;
+
+  await expect
+    .poll(
+      async () => {
+        const zoom = await readCanvasZoom(canvas);
+        stableSamples =
+          zoom &&
+          lastZoom &&
+          Math.abs(zoom.k - lastZoom.k) < 0.0001 &&
+          Math.abs(zoom.x - lastZoom.x) < 0.01 &&
+          Math.abs(zoom.y - lastZoom.y) < 0.01
+            ? stableSamples + 1
+            : 0;
+        lastZoom = zoom;
+        return stableSamples;
+      },
+      { intervals: [100], timeout: 2_000 },
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  return lastZoom;
+}
+
+async function dispatchTouchPan(
+  session: CDPSession,
+  start: CanvasPoint,
+) {
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [
+      {
+        force: 1,
+        id: 1,
+        radiusX: 4,
+        radiusY: 4,
+        x: start.x,
+        y: start.y,
+      },
+    ],
+    type: "touchStart",
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [
+      {
+        force: 1,
+        id: 1,
+        radiusX: 4,
+        radiusY: 4,
+        x: start.x + 48,
+        y: start.y + 24,
+      },
+    ],
+    type: "touchMove",
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [],
+    type: "touchEnd",
+  });
+}
+
+async function dispatchPinch(
+  page: Page,
+  session: CDPSession,
+  center: CanvasPoint,
+) {
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [
+      {
+        force: 1,
+        id: 1,
+        radiusX: 5,
+        radiusY: 5,
+        x: center.x - 28,
+        y: center.y,
+      },
+      {
+        force: 1,
+        id: 2,
+        radiusX: 5,
+        radiusY: 5,
+        x: center.x + 28,
+        y: center.y,
+      },
+    ],
+    type: "touchStart",
+  });
+  for (const distance of [42, 58, 74]) {
+    await session.send("Input.dispatchTouchEvent", {
+      touchPoints: [
+        {
+          force: 1,
+          id: 1,
+          radiusX: 5,
+          radiusY: 5,
+          x: center.x - distance,
+          y: center.y,
+        },
+        {
+          force: 1,
+          id: 2,
+          radiusX: 5,
+          radiusY: 5,
+          x: center.x + distance,
+          y: center.y,
+        },
+      ],
+      type: "touchMove",
+    });
+    await page.waitForTimeout(32);
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [],
+    type: "touchEnd",
+  });
+}
+
+async function findBackendNodePoint(canvas: Locator) {
+  return canvas.evaluate(
+    (element, [red, green, blue]) => {
+      const canvasElement = element as HTMLCanvasElement;
+      const context = canvasElement.getContext("2d", {
+        willReadFrequently: true,
+      });
+      if (!context) return null;
+      const pixels = context.getImageData(
+        0,
+        0,
+        canvasElement.width,
+        canvasElement.height,
+      ).data;
+      const rect = canvasElement.getBoundingClientRect();
+      const step = 2;
+      const gridWidth = Math.ceil(canvasElement.width / step);
+      const matchingPixels = new Set<number>();
+      for (let y = 0; y < canvasElement.height; y += 2) {
+        for (let x = 0; x < canvasElement.width; x += 2) {
+          const offset = (y * canvasElement.width + x) * 4;
+          if (
+            Math.abs(pixels[offset] - red) <= 4 &&
+            Math.abs(pixels[offset + 1] - green) <= 4 &&
+            Math.abs(pixels[offset + 2] - blue) <= 4 &&
+            pixels[offset + 3] >= 180
+          ) {
+            matchingPixels.add((y / step) * gridWidth + x / step);
+          }
+        }
+      }
+
+      let largestComponent: number[] = [];
+      while (matchingPixels.size > 0) {
+        const first = matchingPixels.values().next().value;
+        if (typeof first !== "number") break;
+        matchingPixels.delete(first);
+        const stack = [first];
+        const component: number[] = [];
+        while (stack.length > 0) {
+          const current = stack.pop()!;
+          component.push(current);
+          const x = current % gridWidth;
+          const y = Math.floor(current / gridWidth);
+          for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+            for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+              if (offsetX === 0 && offsetY === 0) continue;
+              const nextX = x + offsetX;
+              const nextY = y + offsetY;
+              if (nextX < 0 || nextX >= gridWidth || nextY < 0) continue;
+              const next = nextY * gridWidth + nextX;
+              if (!matchingPixels.delete(next)) continue;
+              stack.push(next);
+            }
+          }
+        }
+        if (component.length > largestComponent.length) {
+          largestComponent = component;
+        }
+      }
+      if (largestComponent.length === 0) return null;
+
+      const center = largestComponent.reduce(
+        (sum, point) => ({
+          x: sum.x + (point % gridWidth) * step,
+          y: sum.y + Math.floor(point / gridWidth) * step,
+        }),
+        { x: 0, y: 0 },
+      );
+      const x = center.x / largestComponent.length;
+      const y = center.y / largestComponent.length;
+      return {
+        x: rect.left + x * (rect.width / canvasElement.width),
+        y: rect.top + y * (rect.height / canvasElement.height),
+      };
+    },
+    backendNodeRgb,
+  );
+}
+
+async function tapBackendNode(
+  page: Page,
+  session: CDPSession,
+  canvas: Locator,
+) {
+  let point: CanvasPoint | null = null;
+  const selectableBackendSkills = ["Docker", "Go", "Linux", "Python"];
+  const tooltip = canvas.locator("xpath=..").locator(".float-tooltip-kap");
+  await expect
+    .poll(
+      async () => {
+        point = await findBackendNodePoint(canvas);
+        if (!point) return false;
+        await page.mouse.move(point.x, point.y);
+        const clickable = await canvas.evaluate((element) =>
+          element.classList.contains("clickable"),
+        );
+        const tooltipText = await tooltip.textContent();
+        return (
+          clickable &&
+          selectableBackendSkills.some((skill) =>
+            tooltipText?.startsWith(`${skill} /`),
+          )
+        );
+      },
+      { intervals: [100, 200, 400, 800], timeout: 3_000 },
+    )
+    .toBe(true);
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [
+      {
+        force: 1,
+        id: 1,
+        radiusX: 7,
+        radiusY: 7,
+        x: point!.x,
+        y: point!.y,
+      },
+    ],
+    type: "touchStart",
+  });
+  await page.waitForTimeout(40);
+  await session.send("Input.dispatchTouchEvent", {
+    touchPoints: [],
+    type: "touchEnd",
+  });
+
+  await expect
+    .poll(() => {
+      const selected = new URL(page.url()).searchParams.get("seed");
+      return selected && selectableBackendSkills.includes(selected)
+        ? selected
+        : null;
+    })
+    .not.toBeNull();
+  const selected = new URL(page.url()).searchParams.get("seed");
+  expect(selectableBackendSkills).toContain(selected);
+  await expect(
+    page
+      .getByRole("complementary", { name: "선택 기술 분석" })
+      .getByRole("heading", { name: selected!, exact: true }),
+  ).toBeVisible();
+}
 
 test("keeps fixture graph scope aligned with the production API contract", async ({
   request,
@@ -190,7 +554,7 @@ for (const width of [1440, 820, 390]) {
   });
 }
 
-test("supports direct graph panning on a touch device", async ({ browser }) => {
+test("supports touch pan, pinch zoom, and node selection", async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:3102",
     deviceScaleFactor: 3,
@@ -212,40 +576,94 @@ test("supports direct graph panning on a touch device", async ({ browser }) => {
   expect(graphBox).not.toBeNull();
 
   const canvas = forceCanvas.locator("canvas");
-  const readZoom = () =>
-    canvas.evaluate((element) => {
-      const zoom = (
-        element as HTMLCanvasElement & {
-          __zoom?: { k: number; x: number; y: number };
-        }
-      ).__zoom;
-      return zoom ? { k: zoom.k, x: zoom.x, y: zoom.y } : null;
-    });
-  const beforePan = await readZoom();
-  const x = graphBox!.x + 72;
-  const y = graphBox!.y + 72;
-  await session.send("Input.dispatchTouchEvent", {
-    touchPoints: [{ force: 1, id: 1, radiusX: 4, radiusY: 4, x, y }],
-    type: "touchStart",
+  const beforePan = await readCanvasZoom(canvas);
+  await waitForPaintedCanvas(canvas);
+  await dispatchTouchPan(session, {
+    x: graphBox!.x + 72,
+    y: graphBox!.y + 72,
   });
-  await session.send("Input.dispatchTouchEvent", {
-    touchPoints: [
-      { force: 1, id: 1, radiusX: 4, radiusY: 4, x: x + 48, y: y + 24 },
-    ],
-    type: "touchMove",
-  });
-  await session.send("Input.dispatchTouchEvent", {
-    touchPoints: [],
-    type: "touchEnd",
-  });
-  await page.waitForTimeout(100);
-
-  const afterPan = await readZoom();
+  await expect
+    .poll(async () => (await readCanvasZoom(canvas))?.x)
+    .not.toBe(beforePan?.x);
+  const afterPan = await readCanvasZoom(canvas);
   expect(beforePan).not.toBeNull();
-  expect(afterPan?.x).not.toBe(beforePan?.x);
 
   await graphFrame.getByRole("button", { name: "그래프 확대" }).click();
-  await page.waitForTimeout(280);
-  expect((await readZoom())?.k).toBeGreaterThan(afterPan?.k ?? 0);
+  await expect
+    .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
+    .toBeGreaterThan(afterPan?.k ?? 0);
+  const afterButtonZoom = await readCanvasZoom(canvas);
+
+  const canvasBox = await canvas.boundingBox();
+  expect(canvasBox).not.toBeNull();
+  await dispatchPinch(page, session, {
+    x: canvasBox!.x + canvasBox!.width / 2,
+    y: canvasBox!.y + canvasBox!.height / 2,
+  });
+  await expect
+    .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
+    .toBeGreaterThan(afterButtonZoom?.k ?? 0);
+
+  await graphFrame.getByRole("button", { name: "그래프 전체 맞춤" }).click();
+  await waitForZoomStability(canvas);
+  await tapBackendNode(page, session, canvas);
+  await context.close();
+});
+
+test("keeps a static, painted, touch-controllable graph with reduced motion", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3102",
+    deviceScaleFactor: 3,
+    hasTouch: true,
+    isMobile: true,
+    reducedMotion: "reduce",
+    viewport: { height: 844, width: 390 },
+  });
+  const page = await context.newPage();
+  const session = await context.newCDPSession(page);
+  await page.goto("/skills/graph?seed=Kubernetes");
+
+  const graphFrame = page.locator(
+    '[data-testid="skill-graph-frame"]:visible',
+  );
+  const forceCanvas = graphFrame.locator(".force-canvas--ready");
+  const canvas = forceCanvas.locator("canvas");
+  await expect(forceCanvas).toBeVisible();
+  await expect(canvas).toBeVisible();
+  await graphFrame.scrollIntoViewIfNeeded();
+
+  const initialCanvas = await waitForCanvasStability(canvas);
+  expect(initialCanvas.paintedPixels).toBeGreaterThan(0);
+  const initialZoom = await readCanvasZoom(canvas);
+  const canvasBox = await canvas.boundingBox();
+  expect(initialZoom).not.toBeNull();
+  expect(canvasBox).not.toBeNull();
+
+  await dispatchTouchPan(session, {
+    x: canvasBox!.x + 72,
+    y: canvasBox!.y + 72,
+  });
+  await expect
+    .poll(async () => (await readCanvasZoom(canvas))?.x)
+    .not.toBe(initialZoom?.x);
+  const afterPanCanvas = await waitForCanvasStability(canvas);
+  expect(afterPanCanvas.hash).not.toBe(initialCanvas.hash);
+
+  const beforePinch = await readCanvasZoom(canvas);
+  await dispatchPinch(page, session, {
+    x: canvasBox!.x + canvasBox!.width / 2,
+    y: canvasBox!.y + canvasBox!.height / 2,
+  });
+  await expect
+    .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
+    .toBeGreaterThan(beforePinch?.k ?? 0);
+  const afterPinchCanvas = await waitForCanvasStability(canvas);
+  expect(afterPinchCanvas.hash).not.toBe(afterPanCanvas.hash);
+
+  await graphFrame.getByRole("button", { name: "그래프 전체 맞춤" }).click();
+  await waitForCanvasStability(canvas);
+  await tapBackendNode(page, session, canvas);
   await context.close();
 });
