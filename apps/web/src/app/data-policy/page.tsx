@@ -25,7 +25,7 @@ const SOURCE_REQUEST_URL =
       "현재 확인한 기술 공고 URL (선택):",
       "제안 이유 (선택):",
       "",
-      "※ 구직자 개인정보나 비공개 채용 정보는 작성하지 말아주세요.",
+      "※ 구직자 개인정보나 비공개 채용 정보는 작성하지 말아 주세요.",
     ].join("\n"),
   }).toString();
 
@@ -71,8 +71,9 @@ export default async function DataPolicyPage() {
       <section>
         <h2>화면에 표시하는 기준</h2>
         <p>
-          모든 공고에 공식 출처와 마지막 확인 시각을 표시합니다. 일부 API가 실패하면
-          성공한 데이터만 표시하고, 샘플 데이터로 빈 영역을 채우지 않습니다.
+          모든 공고에 공식 출처와 마지막 확인 시각을 표시합니다. 일부 수집 결과를
+          불러오지 못하면 성공한 데이터만 표시하고, 샘플 데이터로 빈 영역을 채우지
+          않습니다.
         </p>
         <Link href="/corrections">정보 정정 요청 방법</Link>
       </section>
@@ -82,8 +83,8 @@ export default async function DataPolicyPage() {
           <div>
             <h2>수집 기업과 공식 출처</h2>
             <p>
-              운영 DB의 현재 상태를 기준으로 공개합니다. 수집 준비 중인 기업은 공고
-              데이터가 서비스에 반영된 것으로 계산하지 않습니다.
+              서비스에 반영된 최신 상태를 기준으로 공개합니다. 수집 준비 중인 기업은
+              공고 데이터가 서비스에 반영된 것으로 계산하지 않습니다.
             </p>
           </div>
           <div className={styles.directoryActions}>
@@ -98,7 +99,7 @@ export default async function DataPolicyPage() {
         ) : (
           <div className={styles.directoryError} role="status">
             <strong>수집 기업 목록을 불러오지 못했습니다.</strong>
-            <span>공고 데이터는 계속 이용할 수 있으며, 잠시 후 다시 확인해주세요.</span>
+            <span>공고 화면에는 영향이 없습니다. 잠시 후 다시 확인해 주세요.</span>
           </div>
         )}
       </section>

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { PRODUCT_TERMS } from "@/lib/labels";
+
 import { TrustPageLayout } from "../trust-page-layout";
 import { ClearLocalData } from "./clear-local-data";
 
@@ -79,6 +81,8 @@ export default function PrivacyPage() {
           계정 커뮤니티 글의 공감·저장·댓글·작성자 팔로우는 로그인한 사용자 ID와
           함께 비공개 계정 관계 테이블에 저장됩니다. 글과 댓글의 본문, 공개
           닉네임, 집계된 반응 수는 커뮤니티 화면에서 다른 사용자에게 표시됩니다.
+        </p>
+        <p>
           이직핏 커뮤니티 활용 가이드는 읽기 전용이라 공감·저장·댓글·팔로우
           활동을 만들지 않습니다. 이전 버전의 체험 기록은
           <code>ejik-fit:social-interactions</code> 키 정리 대상으로만 남습니다.
@@ -102,9 +106,9 @@ export default function PrivacyPage() {
           이전 버전에서 이미 작성된 글과 연결 활동은
           <code>ejik-fit:local-community-posts</code>와
           <code>ejik-fit:social-interactions</code>에 복구 대상으로 남을 수
-          있습니다. 로그인하면 계정 이전을 시도하고, 모든 서버 쓰기가 성공한
-          글만 브라우저 원본을 삭제합니다. 실패하거나 이전 중 변경된 원본은
-          재시도를 위해 그대로 보관합니다.
+          있습니다. 로그인하면 계정 이전을 시도하고, 글과 연결 활동을 계정으로
+          모두 옮긴 경우에만 이 기기에 남은 글을 삭제합니다. 실패하거나 이전 중
+          내용이 바뀐 글은 재시도를 위해 그대로 보관합니다.
         </p>
       </section>
 
@@ -130,10 +134,11 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>내 스택 저장</h2>
+        <h2>{PRODUCT_TERMS.ownedSkills} 저장</h2>
         <p>
           선택한 기술은 브라우저 localStorage의 <code>ejik-fit:owned-skills</code> 키에
-          저장됩니다. 로그인하면 계정 데이터와 병합해 다른 기기에서도 불러옵니다.
+          저장됩니다. 로그인하면 계정에 저장된 기술과 병합해 다른 기기에서도
+          불러옵니다.
         </p>
       </section>
 
@@ -156,22 +161,22 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>URL query</h2>
+        <h2>주소에 포함된 검색 조건</h2>
         <p>
-          공고 검색 조건과 일부 기술 선택은 URL query에 포함될 수 있습니다. URL을
-          공유하면 query 값도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
+          공고 검색 조건과 일부 기술 선택은 주소에 포함될 수 있습니다. 주소를
+          공유하면 검색 조건도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
         </p>
       </section>
 
       <section>
         <h2>저장 데이터 삭제</h2>
         <p>
-          아래 버튼은 내 스택, 커리어 비교 조건, 작성한 로컬 글, 최근 본 주제,
-          저장한 공고 ID, 지원 단계, 관심 기업, 이전 커뮤니티 상호작용, 현재 탭의
-          임시 글, 현재 URL query를 이 브라우저에서 지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정
-          데이터를 삭제하지 않습니다. 서버 글은 내 글 화면에서 개별 삭제할 수
-          있고, 전체 계정 데이터는 계정 화면에서 내보내거나 계정과 함께 삭제할 수
-          있습니다.
+          아래 버튼은 {PRODUCT_TERMS.ownedSkills}, 커리어 비교 조건, 작성한 로컬 글,
+          최근 본 주제, 저장한 공고 ID, 지원 단계, 관심 기업, 이전 커뮤니티
+          상호작용, 현재 탭의 임시 글, 주소에 포함된 검색 조건을 이 브라우저에서
+          지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정 데이터를 삭제하지
+          않습니다. 서버 글은 내 글 화면에서 개별 삭제할 수 있고, 전체 계정
+          데이터는 계정 화면에서 내보내거나 계정과 함께 삭제할 수 있습니다.
         </p>
         <ClearLocalData />
       </section>

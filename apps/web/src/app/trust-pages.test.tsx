@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSourceDirectory } from "@/lib/api";
@@ -82,6 +88,13 @@ describe("public trust pages", () => {
     );
     expect(screen.getByText("수집 중 1개 기업")).toBeInTheDocument();
     expect(screen.getByText("연결 준비 2개 기업")).toBeInTheDocument();
+    expect(screen.getByLabelText("수집 현황")).toHaveTextContent(
+      "서비스 반영 데이터 · 1분마다 갱신",
+    );
+    expect(screen.queryByLabelText("수집 출처 요약")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/서비스에 반영된 최신 상태를 기준으로 공개합니다/),
+    ).toBeInTheDocument();
     expect(screen.getByText("공식 사이트 접근 제한")).toBeInTheDocument();
     expect(
       screen.getByText("보안 확인을 우회하지 않아 자동 수집을 보류했습니다."),
@@ -101,12 +114,37 @@ describe("public trust pages", () => {
     fireEvent.click(screen.getByRole("button", { name: "수집 중만 보기" }));
     expect(screen.getByRole("link", { name: "네이버 공고 보기" })).toBeInTheDocument();
     expect(screen.queryByText("현대자동차")).not.toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "수집 기업 검색" }),
+      { target: { value: "없는 기업" } },
+    );
+    expect(screen.getByText("조건에 맞는 기업이 없습니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText("검색어나 수집 상태를 바꿔 주세요."),
+    ).toBeInTheDocument();
     unmount();
 
     render(<MethodologyPage />);
     expect(screen.getByRole("heading", { level: 1, name: "분석 방법" })).toBeInTheDocument();
     expect(screen.getByText(/채용 가능성을 예측하지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/서류 통과 확률이나 합격률/)).toBeInTheDocument();
+    expect(screen.getByText(/시장 전체의 추세로 일반화하지 않습니다/)).toBeInTheDocument();
     expect(screen.getByText(/0.80/)).toBeInTheDocument();
+  });
+
+  it("limits a source-directory failure to the directory branch", async () => {
+    vi.mocked(getSourceDirectory).mockRejectedValueOnce(
+      new Error("directory unavailable"),
+    );
+
+    render(await DataPolicyPage());
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("수집 기업 목록을 불러오지 못했습니다.");
+    expect(status).toHaveTextContent(
+      "공고 화면에는 영향이 없습니다. 잠시 후 다시 확인해 주세요.",
+    );
   });
 
   it("reveals a large source directory in compact increments", async () => {
@@ -202,6 +240,8 @@ describe("public trust pages", () => {
     expect(screen.getByText(/ejik-fit:local-community-posts/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:recent-community-topics/)).toBeInTheDocument();
     expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
+    expect(screen.getByText(/닉네임은 커뮤니티에 공개되는 프로필/)).toBeInTheDocument();
+    expect(screen.getByText(/이메일은 비공개 로그인 식별자/)).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 2, name: "작성 중인 임시 글" }),
     ).toBeInTheDocument();
@@ -209,7 +249,36 @@ describe("public trust pages", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "이전 브라우저 글" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "URL query" })).toBeInTheDocument();
+    expect(screen.getByText(/이 기기에 남은 글을 삭제합니다/)).toBeInTheDocument();
+    expect(screen.getByText(/재시도를 위해 그대로 보관합니다/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "내 기술 저장" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/계정에 저장된 기술과 병합해/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "주소에 포함된 검색 조건",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "URL query" }),
+    ).not.toBeInTheDocument();
+
+    const interactionSection = screen
+      .getByRole("heading", { level: 2, name: "커뮤니티 상호작용" })
+      .closest("section");
+    expect(interactionSection).not.toBeNull();
+    expect(interactionSection?.querySelectorAll("p")).toHaveLength(2);
+
+    const deletionSection = screen
+      .getByRole("heading", { level: 2, name: "저장 데이터 삭제" })
+      .closest("section");
+    expect(deletionSection).not.toBeNull();
+    expect(deletionSection).toHaveTextContent(
+      "이 버튼은 서버에 게시된 커뮤니티 글이나 계정 데이터를 삭제하지 않습니다.",
+    );
+    expect(within(deletionSection!).getByText(/전체 계정 데이터/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "이 브라우저의 저장 데이터 삭제" }));
     expect(localStorage.getItem("ejik-fit:owned-skills")).toBeNull();

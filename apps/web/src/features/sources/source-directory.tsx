@@ -228,11 +228,11 @@ export function SourceDirectory({
 
   return (
     <>
-      <div aria-label="수집 출처 요약" className={styles.directorySummary}>
+      <div aria-label="수집 현황" className={styles.directorySummary}>
         <span>수집 중 {directory.collecting_count}개 기업</span>
         <span>연결 준비 {directory.preparing_count}개 기업</span>
         <span>열린 공고 {directory.open_postings}건</span>
-        <span>운영 DB 기준 · 1분 자동 갱신</span>
+        <span>서비스 반영 데이터 · 1분마다 갱신</span>
       </div>
 
       <div className={styles.sourceToolbar}>
@@ -294,7 +294,7 @@ export function SourceDirectory({
       ) : (
         <div className={styles.sourceEmpty} role="status">
           <strong>조건에 맞는 기업이 없습니다.</strong>
-          <span>회사명이나 수집 상태를 바꿔 다시 확인해보세요.</span>
+          <span>검색어나 수집 상태를 바꿔 주세요.</span>
           <button onClick={resetFilters} type="button">
             필터 초기화
           </button>
