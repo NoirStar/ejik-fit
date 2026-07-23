@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -12,6 +19,14 @@ import { ServerPostEditor } from "./server-post-editor";
 
 const AUTHOR_ID = "11111111-1111-4111-8111-111111111111";
 const POST_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
 
 const post: CommunityPost = {
   id: POST_ID,
@@ -165,9 +180,24 @@ describe("ServerPostEditor", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정 내용 저장" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "글을 수정하지 못했습니다",
+      "수정 내용을 저장하지 못했습니다. 작성 내용은 그대로 두었습니다.",
     );
     expect(screen.getByLabelText("제목")).toHaveValue("서버 재시도용 제목");
     expect(screen.getByRole("region", { name: "글 수정" })).toBeInTheDocument();
+  });
+
+  it("uses a Unicode ellipsis while an edit is being saved", async () => {
+    const pending = deferred<CommunityPost>();
+    renderEditor({ store: { updatePost: vi.fn(() => pending.promise) } });
+
+    fireEvent.click(screen.getByRole("button", { name: "수정 내용 저장" }));
+
+    expect(screen.getByRole("button", { name: "저장 중…" })).toBeDisabled();
+    expect(screen.queryByText(/저장 중\.\.\./)).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve(post);
+      await pending.promise;
+    });
   });
 });

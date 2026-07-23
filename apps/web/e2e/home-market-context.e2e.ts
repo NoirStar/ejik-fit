@@ -48,6 +48,18 @@ for (const width of [1440, 390]) {
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).toBeVisible();
     await expect(
+      page.getByRole("heading", { name: "커리어 이야기" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("채용 시장", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("내 기술과 맞는 공고", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/),
+    ).toHaveCount(0);
+    await expect(
       page.getByRole("article", { name: "Go Platform Engineer" }),
     ).toHaveCount(0);
 

@@ -7,7 +7,7 @@ import {
   normalizeCareerPreferences,
   type CareerPreferences,
 } from "@/lib/career-preferences";
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
@@ -39,7 +39,7 @@ import type {
 
 function formatCommunityCreatedLabel(createdAt: string, now: Date) {
   const created = new Date(createdAt);
-  if (Number.isNaN(created.getTime())) return "이 브라우저에서 작성";
+  if (Number.isNaN(created.getTime())) return "이 기기에서 작성";
   const elapsed = Math.max(0, now.getTime() - created.getTime());
   const minutes = Math.floor(elapsed / 60_000);
   if (minutes < 1) return "방금 전";
@@ -64,7 +64,7 @@ export function localCommunityPostToFeedItem(
     category: post.category ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
     authorId: "local-browser-user",
     authorName: "나",
-    authorHeadline: "이 브라우저에서 작성",
+    authorHeadline: "이 기기에서 작성",
     authorTone: "violet",
     createdAt: post.createdAt,
     createdLabel: formatCommunityCreatedLabel(post.createdAt, now),
@@ -276,8 +276,8 @@ function buildMarketInsights(
     id: `market-${normalize(skill.skillName).replaceAll(" ", "-")}`,
     type: "market_insight",
     skillName: skill.skillName,
-    title: `${skill.skillName}을 요구하는 공식 공고를 확인했어요`,
-    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건, 미분류 ${skill.unspecifiedCount}건으로 확인됐습니다.`,
+    title: `${skill.skillName} 요구 공고`,
+    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건, ${PRODUCT_TERMS.unspecifiedRequirement} ${skill.unspecifiedCount}건으로 확인됐습니다.`,
     postingCount: skill.postingCount,
     requiredCount: skill.requiredCount,
     preferredCount: skill.preferredCount,

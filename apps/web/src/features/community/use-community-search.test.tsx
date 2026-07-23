@@ -161,4 +161,23 @@ describe("useCommunitySearch", () => {
 
     expect(result.current.state.posts).toEqual([refreshed]);
   });
+
+  it("exposes a safe retryable error without provider details", async () => {
+    const store = searchStore();
+    store.searchPosts.mockRejectedValueOnce(
+      new Error("raw search provider failure"),
+    );
+
+    const { result } = renderHook(() =>
+      useCommunitySearch("Python", { store }),
+    );
+
+    await waitFor(() => expect(result.current.state.status).toBe("error"));
+    expect(result.current.state.error).toBe(
+      "커뮤니티 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
+    expect(result.current.state.error).not.toContain(
+      "raw search provider failure",
+    );
+  });
 });

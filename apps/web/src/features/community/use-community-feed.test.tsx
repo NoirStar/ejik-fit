@@ -192,6 +192,9 @@ describe("useCommunityFeed", () => {
     });
 
     expect(result.current.state.status).toBe("error");
+    expect(result.current.state.error).toBe(
+      "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    );
     expect(result.current.state.posts).toEqual([post()]);
     expect(result.current.state.viewerState.savedPostIds).toEqual([POST_ID]);
   });
@@ -334,7 +337,7 @@ describe("useCommunityFeed", () => {
     expect(result.current.state.posts[0]?.metrics.reactions).toBe(4);
     expect(result.current.state.viewerState.reactedPostIds).toEqual([POST_ID]);
     expect(result.current.state.actionError).toBe(
-      "커뮤니티 활동을 반영하지 못했습니다. 다시 시도해주세요.",
+      "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
   });
 });

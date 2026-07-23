@@ -130,6 +130,29 @@ describe("ServerPostDetail", () => {
       expect(store.setPostReaction).toHaveBeenCalledWith(USER_ID, POST_ID, false),
     );
     expect(reaction).toHaveTextContent("공감 3");
+    expect(screen.queryByText("공감을 취소했습니다.")).not.toBeInTheDocument();
+
+    const save = within(actions).getByRole("button", { name: /저장$/ });
+    fireEvent.click(save);
+    await waitFor(() =>
+      expect(store.setPostSaved).toHaveBeenCalledWith(USER_ID, POST_ID, true),
+    );
+    expect(save).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("내 저장 목록에 추가했습니다.")).not.toBeInTheDocument();
+
+    const follow = screen.getByRole("button", { name: "실제작성자 팔로우" });
+    fireEvent.click(follow);
+    await waitFor(() =>
+      expect(store.setAuthorFollowed).toHaveBeenCalledWith(
+        USER_ID,
+        AUTHOR_ID,
+        true,
+      ),
+    );
+    expect(follow).toHaveAttribute("aria-pressed", "true");
+    expect(
+      screen.queryByText("실제작성자 팔로우를 시작했습니다."),
+    ).not.toBeInTheDocument();
   });
 
   it("creates an account comment and updates the visible count", async () => {
@@ -156,9 +179,9 @@ describe("ServerPostDetail", () => {
       body: "계정에 남길 댓글입니다.",
     });
     expect(screen.getByText("댓글 2")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "댓글을 계정에 등록했습니다.",
-    );
+    expect(
+      screen.queryByText("댓글을 계정에 등록했습니다."),
+    ).not.toBeInTheDocument();
   });
 
   it("returns guest reactions and comments to the same post after login", async () => {
@@ -238,9 +261,9 @@ describe("ServerPostDetail", () => {
       body: "보낸 수정 본문",
       tags: ["이직 준비"],
     });
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "글 수정 내용을 서버에 저장했습니다.",
-    );
+    expect(
+      screen.queryByText("글 수정 내용을 서버에 저장했습니다."),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the home-feed route available after an author deletes a post", async () => {
@@ -256,7 +279,7 @@ describe("ServerPostDetail", () => {
     await screen.findByRole("heading", { level: 1, name: post.title });
 
     fireEvent.click(screen.getByRole("button", { name: "이 글 삭제" }));
-    fireEvent.click(screen.getByRole("button", { name: "정말 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "글 삭제" }));
 
     expect(
       await screen.findByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
@@ -282,7 +305,7 @@ describe("ServerPostDetail", () => {
     await screen.findByRole("heading", { level: 1, name: post.title });
 
     fireEvent.click(screen.getByRole("button", { name: "이 글 삭제" }));
-    fireEvent.click(screen.getByRole("button", { name: "정말 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "글 삭제" }));
 
     expect(
       await screen.findByRole("heading", {

@@ -71,6 +71,15 @@ const MAX_POST_LIMIT = 50;
 const DEFAULT_COMMENT_LIMIT = 50;
 const MAX_COMMENT_LIMIT = 50;
 
+export const COMMUNITY_FAILURE_COPY = {
+  invalid: "작성 내용을 확인해 주세요.",
+  auth: "로그인한 뒤 다시 시도해 주세요.",
+  connection: "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  create: "글을 게시하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+  update: "수정 내용을 저장하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+  comment: "댓글을 등록하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+} as const;
+
 export type CommunityStore = {
   searchPosts(options: {
     query: string;
@@ -153,7 +162,7 @@ export type CommunityStore = {
 function invalidInput(): never {
   throw new CommunityStoreError(
     "invalid_data",
-    "입력한 커뮤니티 내용을 확인해주세요.",
+    COMMUNITY_FAILURE_COPY.invalid,
   );
 }
 
@@ -216,7 +225,7 @@ function databaseFailure(error: unknown): never {
   ) {
     throw new CommunityStoreError(
       "permission",
-      "로그인 상태와 작업 권한을 확인해주세요.",
+      COMMUNITY_FAILURE_COPY.auth,
       { cause: error },
     );
   }
@@ -229,7 +238,7 @@ function databaseFailure(error: unknown): never {
   }
   throw new CommunityStoreError(
     "unavailable",
-    "커뮤니티 서버에 연결하지 못했습니다. 잠시 후 다시 시도해주세요.",
+    COMMUNITY_FAILURE_COPY.connection,
     { cause: error },
   );
 }
@@ -241,7 +250,7 @@ function mappedRows<T>(
   if (!Array.isArray(value)) {
     throw new CommunityStoreError(
       "invalid_data",
-      "커뮤니티 데이터 형식이 올바르지 않습니다.",
+      COMMUNITY_FAILURE_COPY.connection,
     );
   }
   return value.map(mapper);
@@ -251,7 +260,7 @@ function mappedMembershipCursor(value: unknown, id: string) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new CommunityStoreError(
       "invalid_data",
-      "커뮤니티 데이터 형식이 올바르지 않습니다.",
+      COMMUNITY_FAILURE_COPY.connection,
     );
   }
   const createdAt = (value as Record<string, unknown>).membership_created_at;
@@ -259,7 +268,7 @@ function mappedMembershipCursor(value: unknown, id: string) {
   if (!cursor) {
     throw new CommunityStoreError(
       "invalid_data",
-      "커뮤니티 데이터 형식이 올바르지 않습니다.",
+      COMMUNITY_FAILURE_COPY.connection,
     );
   }
   return cursor;
@@ -509,7 +518,7 @@ export function createSupabaseCommunityStore(
       if (!rows) {
         throw new CommunityStoreError(
           "invalid_data",
-          "커뮤니티 데이터 형식이 올바르지 않습니다.",
+          COMMUNITY_FAILURE_COPY.connection,
         );
       }
       const mapped = rows.map(mapCommunitySearchPostRow);

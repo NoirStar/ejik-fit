@@ -143,7 +143,10 @@ describe("Supabase community store", () => {
       store.listPostPage({
         before: { createdAt: "not-a-date", id: POST_ID },
       }),
-    ).rejects.toMatchObject({ code: "invalid_data" });
+    ).rejects.toMatchObject({
+      code: "invalid_data",
+      message: "작성 내용을 확인해 주세요.",
+    });
     expect(posts.select).not.toHaveBeenCalled();
   });
 
@@ -559,7 +562,27 @@ describe("Supabase community store", () => {
 
     const promise = store.listPosts();
     await expect(promise).rejects.toBeInstanceOf(CommunityStoreError);
-    await expect(promise).rejects.toMatchObject({ code: "permission" });
+    await expect(promise).rejects.toMatchObject({
+      code: "permission",
+      message: "로그인한 뒤 다시 시도해 주세요.",
+    });
     await expect(promise).rejects.not.toThrow("raw database policy detail");
+  });
+
+  it("maps unknown provider failures to a safe connection message", async () => {
+    const posts = createQuery({
+      data: null,
+      error: { code: "PROVIDER_UNKNOWN", message: "raw provider detail" },
+    });
+    const store = createSupabaseCommunityStore(
+      createClient({ community_posts: posts }).client,
+    );
+
+    const promise = store.listPosts();
+    await expect(promise).rejects.toMatchObject({
+      code: "unavailable",
+      message: "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+    await expect(promise).rejects.not.toThrow("raw provider detail");
   });
 });

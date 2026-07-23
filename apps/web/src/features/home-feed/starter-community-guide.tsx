@@ -21,8 +21,8 @@ export function StarterCommunityGuide({ items }: { items: StarterGuideItem[] }) 
         <div>
           <h2 id="starter-community-guide-title">이직핏 커뮤니티 가이드</h2>
           <p>
-            어떤 질문과 경험을 나눌 수 있는지 보여주는 읽기 전용 예시입니다.
-            실제 회원 활동과 반응 수에는 포함되지 않습니다.
+            질문과 경험을 나눌 때 참고하는 읽기 전용 글입니다. 실제 회원 글과
+            반응 수에는 포함되지 않습니다.
           </p>
         </div>
         <BookOpenText aria-hidden="true" size={22} weight="duotone" />

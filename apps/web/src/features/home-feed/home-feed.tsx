@@ -29,7 +29,10 @@ import {
   removeCommunityDraft,
   saveCommunityDraft,
 } from "@/features/community/community-draft";
-import type { CommunityStore } from "@/features/community/community-store";
+import {
+  COMMUNITY_FAILURE_COPY,
+  type CommunityStore,
+} from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
@@ -38,6 +41,7 @@ import {
   MAX_COMMUNITY_TAG_LENGTH,
 } from "@/lib/community-contract";
 import { trapTabKey } from "@/lib/focus-trap";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   deleteLocalCommunityPost,
@@ -118,6 +122,16 @@ const EMPTY_DRAFT: LocalPostDraft = {
   body: "",
   tags: "",
 };
+
+const HOME_COPY = {
+  title: "커리어 이야기",
+  market: "채용 시장",
+  career: "내 기술과 맞는 공고",
+  addSkills: "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+  graphEvidenceMissing: "이 공고에서 확인된 기술 요건이 없습니다.",
+  followingEmpty: "팔로우한 작성자의 글이 없습니다.",
+  followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
+} as const;
 
 function draftTags(value: string) {
   const tags: string[] = [];
@@ -374,8 +388,8 @@ function JobCard({
 
       {ownedSkills.length === 0 ? (
         <div className={styles.stackPrompt}>
-          <span>내 스택을 추가하면 일치 공고를 계산합니다.</span>
-          <Link href="/career">내 기술 추가</Link>
+          <span>{HOME_COPY.addSkills}</span>
+          <Link href="/career">{PRODUCT_TERMS.ownedSkills} 추가</Link>
         </div>
       ) : hasEvidence ? (
         <div className={styles.skillEvidence}>
@@ -397,7 +411,7 @@ function JobCard({
           ))}
         </div>
       ) : (
-        <p className={styles.stackPrompt}>이 공고의 기술 근거가 그래프 응답에 없습니다.</p>
+        <p className={styles.stackPrompt}>{HOME_COPY.graphEvidenceMissing}</p>
       )}
 
       <footer className={styles.jobActions}>
@@ -438,7 +452,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
       </div>
       <div className={styles.marketBody}>
         <div className={styles.marketTopline}>
-          <span>채용 시장 인사이트</span>
+          <span>{HOME_COPY.market}</span>
           <small>{item.sourceLabel}</small>
         </div>
         <h2 id={titleId}>
@@ -451,7 +465,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           <strong>{item.sampleLabel}</strong>
           <span>필수 {item.requiredCount}건</span>
           <span>우대 {item.preferredCount}건</span>
-          <span>미분류 {item.unspecifiedCount}건</span>
+          <span>{PRODUCT_TERMS.unspecifiedRequirementCompact} {item.unspecifiedCount}건</span>
         </div>
         <Link className={styles.marketLink} href={item.href} prefetch={false}>
           스킬맵에서 공고 근거 보기
@@ -471,7 +485,7 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
       className={`${styles.railCard} ${styles.careerInsightCard}`}
     >
       <div className={styles.railHeadingRow}>
-        <h2 id={titleId}>내 커리어 인사이트</h2>
+        <h2 id={titleId}>{HOME_COPY.career}</h2>
         <Link href="/career" prefetch={false}>
           자세히
         </Link>
@@ -479,14 +493,14 @@ function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
 
       {insight.status === "needs_skills" ? (
         <div className={styles.careerInsightState}>
-          <p>내 스택을 추가하면 현재 공개 공고와 비교할 수 있어요.</p>
+          <p>{HOME_COPY.addSkills}</p>
           <Link className={styles.textLink} href="/career">
             기술 추가하기 <ArrowRight aria-hidden="true" size={14} />
           </Link>
         </div>
       ) : insight.status === "unavailable" ? (
         <div className={styles.careerInsightState}>
-          <p>현재 커리어 비교를 불러오지 못했습니다.</p>
+          <p>맞는 공고를 불러오지 못했습니다.</p>
           <Link className={styles.textLink} href="/career">
             내 커리어에서 다시 보기
             <ArrowRight aria-hidden="true" size={14} />
@@ -575,13 +589,12 @@ function LegacyPostRecovery({
   if (posts.length === 0) return null;
 
   return (
-    <section aria-label="이전 기기 저장 글" className={styles.legacyRecovery}>
+    <section aria-label="이 기기에 남은 글" className={styles.legacyRecovery}>
       <header>
         <div>
-          <h2>이전 기기 저장 글</h2>
+          <h2>이 기기에 남은 글</h2>
           <p>
-            이전 버전이 이 브라우저에 남긴 글입니다. 서버에 게시된 활동이 아니며,
-            내용을 확인한 뒤 계정으로 복구하거나 삭제할 수 있습니다.
+            계정에 게시되지 않은 글입니다. 내용을 확인하거나 삭제해 주세요.
           </p>
         </div>
         <span>{posts.length.toLocaleString("ko-KR")}개</span>
@@ -592,11 +605,11 @@ function LegacyPostRecovery({
             <div>
               <span>{post.category}</span>
               <h3 id={`legacy-${post.id}-title`}>{post.title}</h3>
-              <small>{post.createdLabel} · 현재 브라우저에만 있음</small>
+              <small>{post.createdLabel} · 이 기기에만 있음</small>
             </div>
             <div className={styles.legacyRecoveryActions}>
               <Link
-                aria-label={`${post.title} 복구 내용 확인`}
+                aria-label={`${post.title} 내용 확인`}
                 href={post.href}
                 prefetch={false}
               >
@@ -682,7 +695,6 @@ export function HomeFeed({
 }: HomeFeedProps) {
   const router = useRouter();
   const {
-    error: authError,
     ready: authReady,
     status: authStatus,
     viewer,
@@ -802,9 +814,8 @@ export function HomeFeed({
     if (authStatus !== "unauthenticated") {
       setAnnouncement(
         authStatus === "loading"
-          ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
-          : authError ||
-              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+          ? "로그인 상태를 확인하는 중…"
+          : COMMUNITY_FAILURE_COPY.auth,
       );
       return;
     }
@@ -819,14 +830,12 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
-    const wasFollowed =
-      community.state.viewerState.followedAuthorIds.includes(item.authorId);
     const changed = await community.toggleFollowed(item.authorId);
-    setAnnouncement(
-      changed
-        ? `${item.authorName} ${wasFollowed ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`
-        : "팔로우 상태를 변경하지 못했습니다. 다시 시도해주세요.",
-    );
+    if (changed) {
+      setAnnouncement("");
+      return;
+    }
+    setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
   }
 
   function handleTabKeyDown(
@@ -862,21 +871,21 @@ export function HomeFeed({
     if (result.status !== "removed") {
       setAnnouncement(
         result.status === "interactions_failed"
-          ? "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다."
-          : "작성한 글을 삭제하지 못했습니다.",
+          ? "글과 반응·댓글을 함께 삭제하지 못했습니다. 글은 그대로 두었습니다."
+          : "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
       );
       return;
     }
     removeRecentCommunityTopic(post.id);
-    setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
+    setAnnouncement("글을 삭제했습니다.");
   }
 
   async function deleteServerPost(post: CommunityPostFeedItem) {
     const deleted = await community.deletePost(post.id);
     setAnnouncement(
       deleted
-        ? "작성한 글을 계정에서 삭제했습니다."
-        : "작성한 글을 삭제하지 못했습니다. 다시 시도해주세요.",
+        ? "글을 삭제했습니다."
+        : "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
     );
   }
 
@@ -886,8 +895,9 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
+    setAnnouncement("");
     const changed = await community.toggleReaction(item.id);
-    if (!changed) setAnnouncement("공감을 반영하지 못했습니다. 다시 시도해주세요.");
+    if (!changed) setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
   }
 
   async function handleSocialSave(item: SocialItem) {
@@ -896,8 +906,9 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
+    setAnnouncement("");
     const changed = await community.toggleSaved(item.id);
-    if (!changed) setAnnouncement("저장 상태를 반영하지 못했습니다. 다시 시도해주세요.");
+    if (!changed) setAnnouncement(COMMUNITY_FAILURE_COPY.connection);
   }
 
   async function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -922,9 +933,8 @@ export function HomeFeed({
       setDraftErrors({
         storage:
           authStatus === "loading"
-            ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
-            : authError ||
-              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+            ? "로그인 상태를 확인하는 중…"
+            : COMMUNITY_FAILURE_COPY.auth,
       });
       return;
     }
@@ -938,7 +948,7 @@ export function HomeFeed({
       });
       if (!post) {
         setDraftErrors({
-          storage: "글을 계정에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+          storage: COMMUNITY_FAILURE_COPY.create,
         });
         return;
       }
@@ -949,7 +959,7 @@ export function HomeFeed({
       }
       setDraftRestored(false);
       closeComposer();
-      setAnnouncement("작성한 글을 계정에 저장했습니다.");
+      setAnnouncement("글을 게시했습니다.");
       return;
     }
 
@@ -959,10 +969,10 @@ export function HomeFeed({
         window.sessionStorage,
       );
     } catch {
-      setDraftErrors({ storage: "임시 글을 저장하지 못했습니다." });
+      setDraftErrors({ storage: COMMUNITY_FAILURE_COPY.create });
       return;
     }
-    setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시를 확인해주세요.");
+    setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시 내용을 확인해 주세요.");
     requestLoginForCommunity("/?compose=resume");
   }
 
@@ -1000,7 +1010,7 @@ export function HomeFeed({
               </Link>
               <Link href="/career/saved" prefetch={false}>
                 <BookmarkSimple aria-hidden="true" size={18} />
-                저장 보관함
+                {PRODUCT_TERMS.savedItems}
               </Link>
               <Link href="/career/questions" prefetch={false}>
                 <ChatCircle aria-hidden="true" size={18} />
@@ -1022,11 +1032,7 @@ export function HomeFeed({
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
           <header className={styles.feedHeader}>
-            <h1 id="home-feed-title">
-              {hasPersonalization
-                ? "내 커리어와 가까운 이야기"
-                : "커리어 이야기 둘러보기"}
-            </h1>
+            <h1 id="home-feed-title">{HOME_COPY.title}</h1>
           </header>
 
           <HomeCareerContext
@@ -1040,12 +1046,12 @@ export function HomeFeed({
               <div>
                 <strong>
                   {snapshot.dataStatus === "partial"
-                    ? "일부 실데이터를 불러오지 못했습니다"
+                    ? "일부 정보를 불러오지 못했습니다."
                     : snapshot.dataStatus === "empty"
-                      ? "현재 표시할 실데이터가 없습니다"
-                      : "실데이터를 불러오지 못했습니다"}
+                      ? "표시할 정보가 없습니다."
+                      : "정보를 불러오지 못했습니다."}
                 </strong>
-                <p>확인된 데이터만 표시하며, 읽기 전용 가이드는 아래에서 구분해 제공합니다.</p>
+                <p>불러온 정보만 표시합니다.</p>
                 {snapshot.resourceErrors.length > 0 && (
                   <ul aria-label="데이터 오류">
                     {snapshot.resourceErrors.map((error) => (
@@ -1054,7 +1060,7 @@ export function HomeFeed({
                   </ul>
                 )}
                 <button onClick={() => window.location.reload()} type="button">
-                  데이터 다시 불러오기
+                  다시 불러오기
                 </button>
               </div>
             </section>
@@ -1183,12 +1189,12 @@ export function HomeFeed({
               <div className={styles.emptyFeed}>
                 <strong>
                   {activeTab === "following"
-                    ? "팔로우한 작성자가 없습니다."
+                    ? HOME_COPY.followingEmpty
                     : "이 탭에 표시할 글이 없습니다."}
                 </strong>
                 <p>
                   {activeTab === "following"
-                    ? "관심 있는 작성자를 팔로우하면 이 탭에서 모아볼 수 있어요."
+                    ? HOME_COPY.followingAction
                     : "다른 탭을 선택하거나 첫 글을 작성해 보세요."}
                 </p>
                 {activeTab === "following" && (
@@ -1251,7 +1257,7 @@ export function HomeFeed({
                       <span>{skill.postingCount}건</span>
                       <small>
                         필수 {skill.requiredCount} · 우대 {skill.preferredCount} ·
-                        미분류 {skill.unspecifiedCount}
+                        {PRODUCT_TERMS.unspecifiedRequirementCompact} {skill.unspecifiedCount}
                       </small>
                     </Link>
                   </li>
@@ -1261,7 +1267,8 @@ export function HomeFeed({
               <p className={styles.railEmpty}>확인된 기술 수요가 없습니다.</p>
             )}
             <p className={styles.railFootnote}>
-              기술 언급 공고를 필수·우대·미분류 중 하나로 집계합니다.
+              {PRODUCT_TERMS.unspecifiedRequirement}는 공고에 기술이 나오지만 필수
+              또는 우대로 구분되지 않은 경우입니다.
               <Link href="/data-policy" prefetch={false}>
                 수집 기준 확인
               </Link>
@@ -1293,13 +1300,6 @@ export function HomeFeed({
           >
             <header className={styles.composerHeader}>
               <div>
-                <p>
-                  {viewer
-                    ? "계정에 저장되는 글"
-                    : authReady
-                      ? "로그인 후 계정에 저장되는 글"
-                      : "로그인 상태 확인 중"}
-                </p>
                 <h2 id="community-composer-title">커뮤니티 글쓰기</h2>
               </div>
               <button aria-label="글쓰기 닫기" onClick={closeComposer} type="button">
@@ -1368,7 +1368,7 @@ export function HomeFeed({
                 onChange={(event) =>
                   setDraft((current) => ({ ...current, body: event.target.value }))
                 }
-                placeholder="상황과 궁금한 점을 구체적으로 적어주세요."
+                placeholder="상황과 궁금한 점을 구체적으로 적어 주세요."
                 rows={7}
                 value={draft.body}
               />
@@ -1410,14 +1410,11 @@ export function HomeFeed({
               <div className={styles.composerNote}>
                 <ShieldCheck aria-hidden="true" size={18} />
                 {viewer ? (
-                  <p>
-                    게시한 글은 계정에 안전하게 저장되며 다른 사용자가 볼 수
-                    있습니다. 개인정보가 포함되지 않았는지 확인해주세요.
-                  </p>
+                  <p>개인정보와 회사 기밀은 적지 말아 주세요.</p>
                 ) : (
                   <p>
                     게시하려면 로그인이 필요합니다. 작성 내용은 로그인하는 동안
-                    이 탭에 임시 저장되며, 로그인 후 다시 확인하고 게시합니다.
+                    이 탭에 남아 있습니다.
                   </p>
                 )}
               </div>
@@ -1442,7 +1439,7 @@ export function HomeFeed({
                   type="submit"
                 >
                   {community.state.pendingKeys.includes("create:post")
-                    ? "게시 중..."
+                    ? "게시 중…"
                     : "피드에 올리기"}
                 </button>
               </div>

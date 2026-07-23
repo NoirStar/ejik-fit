@@ -31,7 +31,7 @@ export function RecentTopicList() {
     >
       <div className={styles.railHeadingRow}>
         <h2 id="recent-community-topics-title">최근 본 주제</h2>
-        <span>이 브라우저</span>
+        <span>이 기기</span>
       </div>
       <ul className={styles.recentTopics}>
         {topics.slice(0, VISIBLE_RECENT_TOPICS).map((topic) => (

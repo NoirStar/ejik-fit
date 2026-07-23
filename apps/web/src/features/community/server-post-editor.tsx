@@ -17,7 +17,10 @@ import {
   type CommunityPost,
 } from "@/lib/community-contract";
 
-import type { CommunityStore } from "./community-store";
+import {
+  COMMUNITY_FAILURE_COPY,
+  type CommunityStore,
+} from "./community-store";
 
 type PostEditorStore = Pick<CommunityStore, "updatePost">;
 
@@ -117,7 +120,7 @@ export function ServerPostEditor({
       onSaved(updated);
     } catch {
       setErrors({
-        storage: "글을 수정하지 못했습니다. 입력 내용은 그대로 두었으니 다시 시도해 주세요.",
+        storage: COMMUNITY_FAILURE_COPY.update,
       });
     } finally {
       setSaving(false);
@@ -128,8 +131,7 @@ export function ServerPostEditor({
     <section aria-label="글 수정" className={styles.postEditor}>
       <header>
         <div>
-          <p>내 글 편집</p>
-          <h2>공개된 내용을 수정합니다</h2>
+          <h2>글 수정</h2>
         </div>
         <button
           aria-label="편집 닫기"
@@ -225,7 +227,7 @@ export function ServerPostEditor({
           </button>
           <button disabled={saving} type="submit">
             <FloppyDisk aria-hidden="true" size={18} weight="bold" />
-            {saving ? "저장 중..." : "수정 내용 저장"}
+            {saving ? "저장 중…" : "수정 내용 저장"}
           </button>
         </div>
       </form>

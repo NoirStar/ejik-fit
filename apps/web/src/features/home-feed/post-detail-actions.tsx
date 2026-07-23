@@ -35,7 +35,7 @@ type PostDetailActionsProps = {
 
 function formatLocalCommentDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "이 브라우저에서 작성";
+  if (Number.isNaN(date.getTime())) return "이 기기에서 작성";
   return `${new Intl.DateTimeFormat("ko-KR", {
     month: "long",
     day: "numeric",
@@ -54,7 +54,7 @@ function LocalComment({ comment }: { comment: LocalPostComment }) {
           <span>{formatLocalCommentDate(comment.createdAt)}</span>
         </header>
         <p>{comment.body}</p>
-        <small>이 브라우저에만 저장된 댓글</small>
+        <small>이 기기에 남은 댓글</small>
       </div>
     </li>
   );
@@ -73,7 +73,6 @@ export function PostDetailActions({
   );
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
-  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     setInteractions(readSocialInteractions());
@@ -90,7 +89,6 @@ export function PostDetailActions({
   function submitComment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const body = draft.trim();
-    setAnnouncement("");
     if (!body) {
       setError("댓글 내용을 입력해 주세요.");
       return;
@@ -103,12 +101,11 @@ export function PostDetailActions({
     const result = addLocalPostComment(postId, body);
     setInteractions(result.state);
     if (!result.comment) {
-      setError("브라우저 저장소를 사용할 수 없습니다.");
+      setError("댓글을 등록하지 못했습니다. 작성 내용은 그대로 두었습니다.");
       return;
     }
     setDraft("");
     setError("");
-    setAnnouncement("이 브라우저에 댓글을 저장했습니다.");
   }
 
   return (
@@ -145,8 +142,8 @@ export function PostDetailActions({
       </div>
       <p className={styles.metricNote}>
         {isLocalPost
-          ? "반응과 댓글은 이 브라우저에만 저장됩니다."
-          : "표시된 반응 수에 이 브라우저에서 누른 반응을 더합니다."}
+          ? "반응과 댓글은 이 기기에 남습니다."
+          : "내가 남긴 반응은 이 기기에 보관됩니다."}
       </p>
 
       <section aria-labelledby="post-comments-title" className={styles.discussion}>
@@ -157,8 +154,8 @@ export function PostDetailActions({
             </h2>
             <p>
               {isLocalPost
-                ? "작성한 댓글도 서버로 전송되지 않고 이 브라우저에서만 유지됩니다."
-                : "이직핏이 구성한 시작 댓글과 이 브라우저에서 작성한 댓글을 함께 표시합니다."}
+                ? "이 글에 대한 생각이나 경험을 남겨 주세요."
+                : "이직핏이 구성한 가이드 댓글입니다."}
             </p>
           </div>
           <strong>{sampleComments.length + localComments.length}개 표시</strong>
@@ -204,7 +201,7 @@ export function PostDetailActions({
               setDraft(event.target.value);
               if (error) setError("");
             }}
-            placeholder="이 글에 대한 생각이나 경험을 남겨보세요."
+            placeholder="생각이나 경험을 남겨 주세요."
             rows={4}
             value={draft}
           />
@@ -212,7 +209,7 @@ export function PostDetailActions({
             <div>
               <span>{draft.length}/{MAX_LOCAL_COMMENT_LENGTH}</span>
               <small id="post-comment-storage-note">
-                커뮤니티 댓글은 로그인 후에도 이 브라우저에만 저장됩니다.
+                댓글은 이 기기에만 남습니다.
               </small>
             </div>
             <button type="submit">
@@ -225,7 +222,6 @@ export function PostDetailActions({
               {error}
             </p>
           )}
-          {announcement && <p role="status">{announcement}</p>}
         </form>
       </section>
     </section>

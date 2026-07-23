@@ -2,7 +2,6 @@
 
 import {
   ArrowDown,
-  CheckCircle,
   PaperPlaneTilt,
   PencilSimple,
   Trash,
@@ -19,7 +18,10 @@ import {
   type CommunityCursor,
 } from "@/lib/community-contract";
 
-import type { CommunityStore } from "./community-store";
+import {
+  COMMUNITY_FAILURE_COPY,
+  type CommunityStore,
+} from "./community-store";
 
 const COMMENT_PAGE_SIZE = 30;
 
@@ -83,7 +85,6 @@ export function ServerCommentList({
   const [draft, setDraft] = useState("");
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
-  const [announcement, setAnnouncement] = useState("");
   const [pending, setPending] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
@@ -168,7 +169,6 @@ export function ServerCommentList({
     event.preventDefault();
     if (pending || status !== "ready") return;
     const body = normalizeCommunityText(draft, MAX_COMMUNITY_COMMENT_LENGTH);
-    setAnnouncement("");
     setActionError("");
     if (!body) {
       setFormError(
@@ -180,7 +180,7 @@ export function ServerCommentList({
     }
     if (!viewerId) {
       setFormError(
-        onLoginRequired?.() || "댓글을 등록하려면 로그인이 필요합니다.",
+        onLoginRequired?.() || COMMUNITY_FAILURE_COPY.auth,
       );
       return;
     }
@@ -192,9 +192,8 @@ export function ServerCommentList({
       setComments((current) => mergeComments(current, [created]));
       setDraft("");
       onCountChange(1);
-      setAnnouncement("댓글을 계정에 등록했습니다.");
     } catch {
-      setFormError("댓글을 등록하지 못했습니다. 입력 내용은 그대로 두었습니다.");
+      setFormError(COMMUNITY_FAILURE_COPY.comment);
     } finally {
       setPending("");
     }
@@ -206,7 +205,6 @@ export function ServerCommentList({
     setEditDraft(comment.body);
     setEditError("");
     setActionError("");
-    setAnnouncement("");
   }
 
   function cancelEdit() {
@@ -242,9 +240,8 @@ export function ServerCommentList({
       setComments((current) => mergeComments(current, [updated]));
       setEditingId(null);
       setEditDraft("");
-      setAnnouncement("댓글을 수정했습니다.");
     } catch {
-      setEditError("댓글을 수정하지 못했습니다. 입력 내용은 그대로 두었습니다.");
+      setEditError("댓글을 수정하지 못했습니다. 작성 내용은 그대로 두었습니다.");
     } finally {
       setPending("");
     }
@@ -254,7 +251,6 @@ export function ServerCommentList({
     if (!viewerId || comment.author.id !== viewerId || pending) return;
     setPending(`delete:${comment.id}`);
     setActionError("");
-    setAnnouncement("");
     try {
       await store.deleteComment(viewerId, comment.id);
       setComments((current) =>
@@ -262,7 +258,6 @@ export function ServerCommentList({
       );
       if (editingId === comment.id) cancelEdit();
       onCountChange(-1);
-      setAnnouncement("댓글을 삭제했습니다.");
     } catch (error) {
       if (error instanceof CommunityStoreError && error.code === "not_found") {
         setComments((current) =>
@@ -272,7 +267,9 @@ export function ServerCommentList({
         onCountChange(-1);
         setActionError("이미 삭제된 댓글이라 목록에서 정리했습니다.");
       } else {
-        setActionError("댓글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+        setActionError(
+          "댓글을 삭제하지 못했습니다. 댓글은 그대로 두었습니다. 다시 시도해 주세요.",
+        );
       }
     } finally {
       setPending("");
@@ -287,14 +284,14 @@ export function ServerCommentList({
       <header className={styles.discussionHeader}>
         <div>
           <h2 id="post-comments-title">댓글</h2>
-          <p>경험과 의견을 나누되 개인정보와 회사 기밀은 포함하지 마세요.</p>
+          <p>개인정보와 회사 기밀은 적지 말아 주세요.</p>
         </div>
         <strong>{comments.length}개 표시 · 전체 {totalCount}개</strong>
       </header>
 
       {status === "loading" && (
         <p className={styles.emptyComments} role="status">
-          댓글을 불러오고 있습니다.
+          댓글 불러오는 중…
         </p>
       )}
       {status === "error" && (
@@ -359,7 +356,7 @@ export function ServerCommentList({
                           type="submit"
                         >
                           {pending === `edit:${comment.id}`
-                            ? "저장 중..."
+                            ? "저장 중…"
                             : "수정 저장"}
                         </button>
                       </div>
@@ -402,7 +399,7 @@ export function ServerCommentList({
       )}
       {status === "ready" && comments.length === 0 && (
         <p className={styles.emptyComments}>
-          아직 댓글이 없습니다. 첫 의견을 남겨보세요.
+          아직 댓글이 없습니다. 첫 댓글을 남겨 주세요.
         </p>
       )}
 
@@ -414,18 +411,11 @@ export function ServerCommentList({
           type="button"
         >
           <ArrowDown aria-hidden="true" size={16} weight="bold" />
-          {loadingMore ? "댓글 불러오는 중..." : "댓글 더 보기"}
+          {loadingMore ? "댓글 불러오는 중…" : "댓글 더 보기"}
         </button>
       )}
 
       {actionError && <p className={styles.commentActionError} role="alert">{actionError}</p>}
-      {announcement && (
-        <p className={styles.commentAnnouncement} role="status">
-          <CheckCircle aria-hidden="true" size={15} weight="fill" />
-          {announcement}
-        </p>
-      )}
-
       <form className={styles.form} id="post-comment-form" onSubmit={createComment}>
         <label htmlFor="post-comment-body">댓글 내용</label>
         <textarea
@@ -436,7 +426,7 @@ export function ServerCommentList({
             setDraft(event.target.value);
             if (formError) setFormError("");
           }}
-          placeholder="이 글에 대한 생각이나 경험을 남겨보세요."
+          placeholder="생각이나 경험을 남겨 주세요."
           rows={4}
           value={draft}
         />
@@ -445,8 +435,8 @@ export function ServerCommentList({
             <span>{draft.length}/{MAX_COMMUNITY_COMMENT_LENGTH}</span>
             <small id="post-comment-storage-note">
               {viewerId
-                ? "댓글은 내 계정으로 등록됩니다."
-                : "댓글을 등록하려면 로그인이 필요합니다."}
+                ? "댓글은 계정에 등록됩니다."
+                : "댓글을 등록하려면 로그인해 주세요."}
             </small>
           </div>
           <button
@@ -454,7 +444,7 @@ export function ServerCommentList({
             type="submit"
           >
             <PaperPlaneTilt aria-hidden="true" size={18} weight="bold" />
-            {pending === "create" ? "등록 중..." : "댓글 등록"}
+            {pending === "create" ? "등록 중…" : "댓글 등록"}
           </button>
         </div>
         {formError && (

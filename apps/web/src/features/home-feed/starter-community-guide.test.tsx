@@ -15,6 +15,12 @@ describe("StarterCommunityGuide", () => {
     });
     const entries = within(guide).getAllByRole("article");
     expect(entries).toHaveLength(items.length);
+    expect(
+      within(guide).getByText(
+        "질문과 경험을 나눌 때 참고하는 읽기 전용 글입니다. 실제 회원 글과 반응 수에는 포함되지 않습니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(within(guide).queryByText(/보여주는/)).not.toBeInTheDocument();
 
     for (const [index, entry] of entries.entries()) {
       expect(within(entry).getByText("이직핏 커뮤니티 가이드")).toBeVisible();

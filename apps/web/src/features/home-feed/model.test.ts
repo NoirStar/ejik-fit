@@ -138,7 +138,7 @@ describe("buildHomeFeedSnapshot", () => {
       category: "커리어 고민",
       authorId: "local-browser-user",
       authorName: "나",
-      authorHeadline: "이 브라우저에서 작성",
+      authorHeadline: "이 기기에서 작성",
       authorTone: "violet",
       createdAt: "2026-07-14T01:00:00.000Z",
       createdLabel: "12분 전",
@@ -208,6 +208,9 @@ describe("buildHomeFeedSnapshot", () => {
     });
     expect(snapshot.marketInsights[0]).toMatchObject({
       skillName: "Kubernetes",
+      title: "Kubernetes 요구 공고",
+      summary:
+        "분석된 공고에서 필수 8건, 우대 4건, 필수·우대 미표기 2건으로 확인됐습니다.",
       postingCount: 14,
       requiredCount: 8,
       preferredCount: 4,
@@ -244,6 +247,27 @@ describe("buildHomeFeedSnapshot", () => {
     });
     expect(JSON.stringify(snapshot)).not.toContain("trendPercent");
     expect(JSON.stringify(snapshot)).not.toContain("matchScore");
+  });
+
+  it("keeps market insight titles natural for vowel-ending skill names", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(postings),
+      skillStats: ready({
+        total: 2,
+        items: [
+          { ...skillStats.items[0], skill: "Java" },
+          { ...skillStats.items[0], skill: "Go" },
+        ],
+      }),
+      graph: ready(graph),
+      fit: null,
+      ownedSkills: [],
+    });
+
+    expect(snapshot.marketInsights.map((insight) => insight.title)).toEqual([
+      "Java 요구 공고",
+      "Go 요구 공고",
+    ]);
   });
 
   it("prioritizes a later posting when verified skill evidence matches my stack", () => {

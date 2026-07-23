@@ -320,7 +320,7 @@ describe("ServerCommentList", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "댓글을 수정하지 못했습니다",
+      "댓글을 수정하지 못했습니다. 작성 내용은 그대로 두었습니다.",
     );
     expect(screen.getByRole("textbox", { name: "댓글 수정 내용" }))
       .toHaveValue("실패해도 남아야 하는 댓글");
@@ -341,6 +341,9 @@ describe("ServerCommentList", () => {
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     expect(await screen.findByText("새 서버 댓글")).toBeInTheDocument();
     expect(onCountChange).toHaveBeenCalledWith(1);
+    expect(
+      screen.queryByText("댓글을 계정에 등록했습니다."),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "삭제할 댓글 댓글 삭제" }),
@@ -348,6 +351,29 @@ describe("ServerCommentList", () => {
     await waitFor(() => expect(screen.queryByText("삭제할 댓글")).not.toBeInTheDocument());
     expect(store.deleteComment).toHaveBeenCalledWith(USER_ID, FIRST_ID);
     expect(onCountChange).toHaveBeenCalledWith(-1);
+  });
+
+  it("uses a Unicode ellipsis while comment registration is pending", async () => {
+    const pending = deferred<CommunityComment>();
+    const store = createStore({
+      createComment: vi.fn(() => pending.promise),
+    });
+    renderList({ store });
+    await screen.findByText("첫 댓글");
+
+    fireEvent.change(screen.getByRole("textbox", { name: "댓글 내용" }), {
+      target: { value: "등록을 기다리는 댓글" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
+
+    expect(screen.getByRole("button", { name: "등록 중…" })).toBeDisabled();
+    expect(screen.queryByText(/등록 중\.\.\./)).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve(comment(THIRD_ID, "등록을 기다리는 댓글", USER_ID));
+      await pending.promise;
+    });
+    expect(await screen.findByText("등록을 기다리는 댓글")).toBeInTheDocument();
   });
 
   it("removes a stale comment when the server reports it was already deleted", async () => {

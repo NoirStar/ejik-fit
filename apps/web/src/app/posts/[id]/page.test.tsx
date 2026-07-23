@@ -56,8 +56,8 @@ describe("PostPage", () => {
       params: Promise.resolve({ id: "local-first-post" }),
     });
 
-    expect(metadata.title).toBe("이 브라우저에 저장한 커뮤니티 글");
-    expect(metadata.description).toContain("현재 브라우저에만 저장");
+    expect(metadata.title).toBe("이 기기에 남은 커뮤니티 글");
+    expect(metadata.description).toContain("이 기기에만 남아 있는");
     expect(metadata.alternates?.canonical).toBe("/posts/local-first-post");
     expect(metadata.robots).toMatchObject({ follow: false, index: false });
   });
@@ -165,7 +165,9 @@ describe("PostPage", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "로컬 상세 라우트" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("이전 기기 저장 글", { exact: true })).toBeInTheDocument();
+    expect(
+      screen.getAllByText("이 기기에 남은 글", { exact: true }).length,
+    ).toBeGreaterThan(0);
     await waitFor(() =>
       expect(readRecentCommunityTopics()).toEqual([
         expect.objectContaining({

@@ -15,7 +15,7 @@ import {
 } from "./community-store";
 
 const SEARCH_ERROR =
-  "커뮤니티 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+  "커뮤니티 검색 결과를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 
 export type CommunitySearchState = {
   status: "idle" | "loading" | "ready" | "error";

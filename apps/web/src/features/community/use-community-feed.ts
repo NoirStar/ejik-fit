@@ -12,6 +12,7 @@ import {
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
+  COMMUNITY_FAILURE_COPY,
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
@@ -22,10 +23,8 @@ const EMPTY_VIEWER_STATE: CommunityViewerState = {
   followedAuthorIds: [],
 };
 
-const LOAD_ERROR =
-  "커뮤니티 새 글을 불러오지 못했습니다. 기존 콘텐츠는 계속 볼 수 있어요.";
-const ACTION_ERROR =
-  "커뮤니티 활동을 반영하지 못했습니다. 다시 시도해주세요.";
+const LOAD_ERROR = COMMUNITY_FAILURE_COPY.connection;
+const ACTION_ERROR = COMMUNITY_FAILURE_COPY.connection;
 
 export type CommunityFeedState = {
   status: "idle" | "loading" | "ready" | "error";

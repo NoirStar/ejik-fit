@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "이직핏 홈",
   description:
-    "커리어 커뮤니티의 경험과 공식 채용공고의 기술 수요를 한 피드에서 확인합니다.",
+    "커리어 이야기와 채용공고의 기술 수요를 한곳에서 확인합니다.",
 };
 
 type HomeSearchParams = Record<string, string | string[] | undefined>;
@@ -47,18 +47,18 @@ export default async function Home({ searchParams }: HomeProps = {}) {
           ...careerFilter,
           ...(targetDomain ? { domains: [targetDomain] } : {}),
         }),
-        "커리어 비교 데이터를 불러오지 못했습니다.",
+        "내 기술과 맞는 공고를 불러오지 못했습니다.",
       )
     : Promise.resolve(null);
 
   const [postings, skillStats, graph, fit] = await Promise.all([
     settledResource(
       getPostings({ ...careerFilter, limit: 40 }),
-      "공고 데이터를 불러오지 못했습니다.",
+      "공고를 불러오지 못했습니다.",
     ),
     settledResource(
       getSkillStats({ ...careerFilter, limit: 8 }),
-      "기술 수요 데이터를 불러오지 못했습니다.",
+      "채용 시장 기술 수요를 불러오지 못했습니다.",
     ),
     settledResource(
       getSkillGraph({
@@ -67,7 +67,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
         ...careerFilter,
         limit: 30,
       }),
-      "스킬 연결 데이터를 불러오지 못했습니다.",
+      "스킬맵을 불러오지 못했습니다.",
     ),
     fitRequest,
   ]);

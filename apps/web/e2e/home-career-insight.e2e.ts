@@ -19,15 +19,15 @@ for (const width of [1440, 390]) {
       context.getByRole("link", { name: "기술 추가 · 조건 설정" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "내 커리어 인사이트" }),
+      page.getByRole("region", { name: "내 기술과 맞는 공고" }),
     ).toHaveCount(0);
 
     if (width > 820) {
-      await page.getByRole("button", { name: "내 스택 열기" }).click();
-      const stack = page.getByRole("dialog", { name: "내 스택" });
+      await page.getByRole("button", { name: "내 기술 열기" }).click();
+      const stack = page.getByRole("dialog", { name: "내 기술" });
       await stack.getByLabel("추가할 기술").fill("Java");
       await stack.getByRole("button", { name: "기술 추가" }).click();
-      await stack.getByRole("button", { name: "내 스택 닫기" }).click();
+      await stack.getByRole("button", { name: "내 기술 닫기" }).click();
     } else {
       await context
         .getByRole("link", { name: "기술 추가 · 조건 설정" })
@@ -38,7 +38,9 @@ for (const width of [1440, 390]) {
     }
 
     await expect(page).toHaveURL(/owned_skills=Java/);
-    const insight = page.getByRole("region", { name: "내 커리어 인사이트" });
+    const insight = page.getByRole("region", {
+      name: "내 기술과 맞는 공고",
+    });
     await expect(insight.getByText("17건", { exact: true })).toBeVisible();
     await expect(insight).toContainText("필수 기술 절반 이상 6건");
     const skillLink = insight.getByRole("link", {

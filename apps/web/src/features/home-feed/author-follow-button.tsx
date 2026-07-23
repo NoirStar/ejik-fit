@@ -40,7 +40,7 @@ export function AuthorFollowButton({
     setInteractions(next);
     setAnnouncement(
       nextFollowed === followed
-        ? `${authorName} 팔로우 상태를 저장하지 못했습니다.`
+        ? `${authorName} 팔로우 상태를 저장하지 못했습니다. 다시 시도해 주세요.`
         : `${authorName} ${nextFollowed ? "팔로우를 시작했습니다." : "팔로우를 해제했습니다."}`,
     );
   }

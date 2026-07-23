@@ -26,17 +26,17 @@ function LocalPostState({ status }: { status: "checking" | "missing" | "removed"
   const copy =
     status === "checking"
       ? {
-          title: "이 브라우저의 글을 확인하고 있습니다.",
-          body: "서버가 아니라 현재 브라우저 저장소만 확인합니다.",
+          title: "이 기기에 남은 글을 확인하는 중…",
+          body: "잠시만 기다려 주세요.",
         }
       : status === "removed"
         ? {
             title: "글을 삭제했습니다.",
-            body: "글과 이 글에 남긴 로컬 반응·댓글을 이 브라우저에서 지웠습니다.",
+            body: "글과 함께 반응·댓글도 삭제했습니다.",
           }
         : {
-            title: "이 브라우저에서 글을 찾지 못했습니다.",
-            body: "다른 브라우저에서 작성했거나 이미 삭제한 글일 수 있습니다.",
+            title: "이 기기에서 글을 찾을 수 없습니다.",
+            body: "이미 삭제했거나 이 기기에 없는 글입니다.",
           };
 
   return (
@@ -46,7 +46,7 @@ function LocalPostState({ status }: { status: "checking" | "missing" | "removed"
         홈 피드로 돌아가기
       </Link>
       <section className={styles.localState} role="status">
-        <p>브라우저 전용 커뮤니티 글</p>
+        <p>이 기기에 남은 글</p>
         <h1>{copy.title}</h1>
         <span>{copy.body}</span>
       </section>
@@ -82,8 +82,8 @@ export function LocalPostDetail({ postId }: { postId: string }) {
     if (result.status !== "removed") {
       setError(
         result.status === "interactions_failed"
-          ? "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다."
-          : "글을 브라우저에서 삭제하지 못했습니다.",
+          ? "글과 반응·댓글을 함께 삭제하지 못했습니다. 글은 그대로 두었습니다."
+          : "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
       );
       return;
     }
@@ -109,7 +109,7 @@ export function LocalPostDetail({ postId }: { postId: string }) {
           <header className={styles.hero}>
             <div className={styles.contextRow}>
               <span className={styles.category}>{item.category}</span>
-              <span className={styles.localBadge}>이전 기기 저장 글</span>
+              <span className={styles.localBadge}>이 기기에 남은 글</span>
             </div>
 
             <h1>{item.title}</h1>
@@ -124,7 +124,7 @@ export function LocalPostDetail({ postId }: { postId: string }) {
               </span>
               <div>
                 <strong>나</strong>
-                <span>이 브라우저에서 작성</span>
+                <span>이 기기에서 작성</span>
               </div>
               <div className={styles.authorMeta}>
                 <time dateTime={item.createdAt}>{item.createdLabel}</time>
@@ -150,21 +150,19 @@ export function LocalPostDetail({ postId }: { postId: string }) {
             <Info aria-hidden="true" size={21} weight="fill" />
             <div>
               <p>저장 안내</p>
-              <h2>이 브라우저에 저장된 내 글</h2>
+              <h2>이 기기에 남은 글</h2>
               <p>
-                이 글은 서버 커뮤니티에 게시되지 않으며 다른 브라우저나 기기로
-                동기화되지 않습니다.
+                이 글은 계정에 게시되지 않아 다른 기기에서 볼 수 없습니다.
               </p>
               <p>
-                로그인하면 계정 이전을 시도하며, 성공하기 전까지 원문을 이
-                브라우저에 보존합니다.
+                로그인하면 계정으로 옮기며, 완료될 때까지 이 기기에 보관합니다.
               </p>
             </div>
           </section>
 
           <section className={styles.localManagement}>
             <h2>내 글 관리</h2>
-            <p>삭제하면 글과 이 글에 남긴 로컬 반응·댓글도 함께 지워집니다.</p>
+            <p>글을 삭제하면 반응과 댓글도 함께 삭제됩니다.</p>
             <button aria-label={`${item.title} 삭제`} onClick={deletePost} type="button">
               <Trash aria-hidden="true" size={17} />
               이 글 삭제

@@ -117,6 +117,14 @@ function ready<T>(data: T): ResourceState<T> {
   return { status: "ready", data };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 function buildSnapshot() {
   return buildHomeFeedSnapshot({
     postings: ready(postings),
@@ -194,8 +202,9 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
-      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+      screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("채용 시장")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "추천" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -205,12 +214,17 @@ describe("HomeFeed", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("article", {
-        name: "Kubernetes을 요구하는 공식 공고를 확인했어요",
+        name: "Kubernetes 요구 공고",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
-    expect(screen.getByText("미분류 2건")).toBeInTheDocument();
+    expect(screen.getByText("미표기 2건")).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/,
+      ),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "수집 기준 확인" }),
     ).toHaveAttribute("href", "/data-policy");
@@ -225,7 +239,7 @@ describe("HomeFeed", () => {
         name: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? 예시 읽기",
       }),
     ).toHaveAttribute("href", "/posts/career-move-3y-backend");
-    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "저장 목록" })).toHaveAttribute(
       "href",
       "/career/saved",
     );
@@ -233,7 +247,7 @@ describe("HomeFeed", () => {
       "href",
       "/career/questions",
     );
-    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
     expect(within(insight).getByText("내 기술과 겹치는 공개 공고")).toBeInTheDocument();
     expect(within(insight).getByText("12건")).toBeInTheDocument();
     expect(within(insight).getByText("필수 기술 절반 이상 4건")).toBeInTheDocument();
@@ -284,7 +298,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     const recovery = await screen.findByRole("region", {
-      name: "이전 기기 저장 글",
+      name: "이 기기에 남은 글",
     });
     expect(
       within(screen.getByRole("tabpanel")).queryByRole("article", {
@@ -293,7 +307,7 @@ describe("HomeFeed", () => {
     ).not.toBeInTheDocument();
     expect(
       within(recovery).getByRole("link", {
-        name: "이전 브라우저에 남은 글 복구 내용 확인",
+        name: "이전 브라우저에 남은 글 내용 확인",
       }),
     ).toHaveAttribute("href", "/posts/local-recovery-post");
     expect(
@@ -365,7 +379,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
-      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+      screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "커뮤니티 글쓰기" }),
@@ -392,14 +406,14 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={snapshot} />);
 
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기 둘러보기" }),
+      screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "둘러보기" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
     expect(
-      screen.queryByRole("region", { name: "내 커리어 인사이트" }),
+      screen.queryByRole("region", { name: "내 기술과 맞는 공고" }),
     ).not.toBeInTheDocument();
     const context = screen.getByRole("region", { name: "내 관심 시장" });
     expect(within(context).queryByText("내 기술 0개")).not.toBeInTheDocument();
@@ -411,6 +425,11 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("link", { name: "내 기술 추가" }),
     ).toHaveAttribute("href", "/career");
+    expect(
+      screen.getByText(
+        "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("does not spend rail space on an empty recent-topic state", () => {
@@ -443,6 +462,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     const recent = screen.getByRole("region", { name: "최근 본 주제" });
+    expect(within(recent).getByText("이 기기")).toBeInTheDocument();
     const restoredLinks = await within(recent).findAllByRole("link", {
       name: /다시 보기/,
     });
@@ -490,7 +510,10 @@ describe("HomeFeed", () => {
     fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
 
     expect(
-      screen.getByText("팔로우한 작성자가 없습니다."),
+      screen.getByText("팔로우한 작성자의 글이 없습니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("다른 글에서 관심 있는 작성자를 팔로우해 주세요."),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "추천 탭에서 작성자 찾기" }),
@@ -640,12 +663,82 @@ describe("HomeFeed", () => {
       ),
     );
     expect(
+      screen.queryByText("실제작성자 팔로우를 시작했습니다."),
+    ).not.toBeInTheDocument();
+    expect(
       within(screen.getByRole("region", { name: "팔로우 중인 글" })).getByRole(
         "link",
         { name: `실제작성자의 글: ${post.title}` },
       ),
     ).toHaveAttribute("href", `/posts/${post.id}`);
   });
+
+  it.each(["reaction", "save"] as const)(
+    "clears a failed %s message after a successful retry",
+    async (action) => {
+      const post: CommunityPost = {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        author: {
+          id: "22222222-2222-4222-8222-222222222222",
+          nickname: "실제작성자",
+        },
+        category: "커리어 질문",
+        title: "다시 시도할 커뮤니티 질문",
+        body: "첫 시도가 실패해도 같은 글에서 다시 시도합니다.",
+        tags: ["백엔드"],
+        metrics: { reactions: 4, comments: 2, saves: 1 },
+        createdAt: "2026-07-21T04:00:00.000Z",
+        updatedAt: "2026-07-21T04:00:00.000Z",
+      };
+      const store = serverCommunityStore(post);
+      if (action === "reaction") {
+        store.setPostReaction.mockRejectedValueOnce(
+          new Error("reaction offline"),
+        );
+      } else {
+        store.setPostSaved.mockRejectedValueOnce(new Error("save offline"));
+      }
+
+      render(
+        <AuthViewerProvider
+          ready
+          viewer={{
+            id: "11111111-1111-4111-8111-111111111111",
+            email: "viewer@example.com",
+          }}
+        >
+          <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+        </AuthViewerProvider>,
+      );
+
+      const article = await screen.findByRole("article", { name: post.title });
+      const control =
+        action === "reaction"
+          ? within(article).getByRole("button", { name: /공감 취소/ })
+          : within(article).getByRole("button", {
+              name: `${post.title} 저장`,
+            });
+      fireEvent.click(control);
+      expect(
+        await screen.findByText(
+          "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
+      ).toBeInTheDocument();
+
+      fireEvent.click(control);
+      await waitFor(() =>
+        expect(control).toHaveAttribute(
+          "aria-pressed",
+          action === "reaction" ? "false" : "true",
+        ),
+      );
+      expect(
+        screen.queryByText(
+          "커뮤니티에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+        ),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("publishes signed-in composer drafts to the account instead of local storage", async () => {
     const existing: CommunityPost = {
@@ -688,7 +781,7 @@ describe("HomeFeed", () => {
       </AuthViewerProvider>,
     );
 
-    expect(screen.getByText("계정에 저장되는 글")).toBeInTheDocument();
+    expect(screen.queryByText("계정에 저장되는 글")).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("제목"), {
       target: { value: "계정으로 올릴 글" },
     });
@@ -722,6 +815,118 @@ describe("HomeFeed", () => {
       screen.getByRole("article", { name: "계정으로 올릴 글" }),
     ).toBeInTheDocument();
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toBeNull();
+  });
+
+  it("keeps a signed-in draft after publishing fails without exposing the provider error", async () => {
+    const existing: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "나",
+      },
+      category: "커리어 질문",
+      title: "기존 글",
+      body: "기존 본문",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(existing);
+    store.createPost.mockRejectedValueOnce(
+      new Error("provider raw insert failure"),
+    );
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed
+          communityStore={store}
+          composeMode="new"
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "실패해도 남을 제목" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "실패해도 남을 본문" },
+    });
+    const publish = screen.getByRole("button", { name: "피드에 올리기" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "글을 게시하지 못했습니다. 작성 내용은 그대로 두었습니다.",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent(
+      "provider raw insert failure",
+    );
+    expect(screen.getByLabelText("제목")).toHaveValue("실패해도 남을 제목");
+    expect(screen.getByLabelText("내용")).toHaveValue("실패해도 남을 본문");
+  });
+
+  it("uses a Unicode ellipsis while a post is being published", async () => {
+    const existing: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "나",
+      },
+      category: "커리어 질문",
+      title: "기존 글",
+      body: "기존 본문",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const pending = deferred<CommunityPost>();
+    const store = serverCommunityStore(existing);
+    store.createPost.mockImplementationOnce(() => pending.promise);
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "viewer@example.com",
+        }}
+      >
+        <HomeFeed
+          communityStore={store}
+          composeMode="new"
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+    fireEvent.change(screen.getByLabelText("제목"), {
+      target: { value: "게시를 기다리는 글" },
+    });
+    fireEvent.change(screen.getByLabelText("내용"), {
+      target: { value: "게시를 기다리는 본문" },
+    });
+    const publish = screen.getByRole("button", { name: "피드에 올리기" });
+    await waitFor(() => expect(publish).toBeEnabled());
+    fireEvent.click(publish);
+
+    expect(screen.getByRole("button", { name: "게시 중…" })).toBeDisabled();
+    expect(screen.queryByText(/게시 중\.\.\./)).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve({
+        ...existing,
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        title: "게시를 기다리는 글",
+        body: "게시를 기다리는 본문",
+      });
+      await pending.promise;
+    });
   });
 
   it("explains invalid tags instead of silently dropping extras", async () => {
@@ -900,7 +1105,7 @@ describe("HomeFeed", () => {
     fireEvent.click(screen.getByRole("button", { name: "피드에 올리기" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "로그인 상태를 확인하지 못했습니다.",
+      "로그인한 뒤 다시 시도해 주세요.",
     );
     expect(sessionStorage.getItem(COMMUNITY_DRAFT_STORAGE_KEY)).toBeNull();
     expect(navigation.push).not.toHaveBeenCalled();
@@ -1038,7 +1243,7 @@ describe("HomeFeed", () => {
       screen.getByRole("dialog", { name: "커뮤니티 글쓰기" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "임시 글을 저장하지 못했습니다.",
+      "글을 게시하지 못했습니다. 작성 내용은 그대로 두었습니다.",
     );
     expect(screen.getByLabelText("제목")).toHaveValue("저장되지 않을 글");
     expect(
@@ -1093,10 +1298,10 @@ describe("HomeFeed", () => {
       />,
     );
 
-    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
+    expect(screen.getByText("일부 정보를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByText("graph offline")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "데이터 다시 불러오기" }),
+      screen.getByRole("button", { name: "다시 불러오기" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),

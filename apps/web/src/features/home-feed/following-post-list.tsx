@@ -42,7 +42,6 @@ export function FollowingPostList({
     >
       <div className={styles.railHeadingRow}>
         <h2 id="following-posts-title">팔로우 중인 글</h2>
-        <span>최대 2개</span>
       </div>
 
       <ul className={styles.followingPosts}>

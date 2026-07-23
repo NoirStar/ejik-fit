@@ -45,9 +45,11 @@ describe("LocalPostDetail", () => {
         name: "브라우저에 저장한 이직 질문",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("이전 기기 저장 글", { exact: true })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 2, name: "이 브라우저에 저장된 내 글" }),
+      screen.getAllByText("이 기기에 남은 글", { exact: true }).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("실제 공고를 비교한 다음 준비 순서가 궁금합니다."),
@@ -84,7 +86,7 @@ describe("LocalPostDetail", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: "이 브라우저에서 글을 찾지 못했습니다.",
+        name: "이 기기에서 글을 찾을 수 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" })).toHaveAttribute(
@@ -143,7 +145,7 @@ describe("LocalPostDetail", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "글을 브라우저에서 삭제하지 못했습니다.",
+      "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
     );
     expect(
       screen.getByRole("heading", {
@@ -181,7 +183,7 @@ describe("LocalPostDetail", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다.",
+      "글과 반응·댓글을 함께 삭제하지 못했습니다. 글은 그대로 두었습니다.",
     );
     expect(localStorage.getItem("ejik-fit:local-community-posts")).toContain(
       postId,

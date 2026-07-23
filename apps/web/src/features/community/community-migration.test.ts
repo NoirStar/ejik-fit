@@ -160,7 +160,8 @@ describe("local community migration", () => {
     expect(first.failures).toEqual([
       {
         localPostId: "local-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        message: "일시 오류",
+        message:
+          "이 기기에 남은 글을 계정으로 옮기지 못했습니다. 글은 그대로 두었습니다.",
       },
     ]);
     expect(readLocalCommunityPosts()).toHaveLength(1);
@@ -207,7 +208,8 @@ describe("local community migration", () => {
     expect(first.failures).toEqual([
       {
         localPostId,
-        message: "이전 중 새 활동이 확인되어 브라우저 원본을 유지했습니다.",
+        message:
+          "옮기는 동안 새 활동이 있어 이 기기에 남은 글을 그대로 두었습니다.",
       },
     ]);
     expect(readLocalCommunityPosts()).toHaveLength(1);
@@ -250,7 +252,8 @@ describe("local community migration", () => {
     expect(result.failures).toEqual([
       {
         localPostId: "local-bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-        message: "첫 글 저장 실패",
+        message:
+          "이 기기에 남은 글을 계정으로 옮기지 못했습니다. 글은 그대로 두었습니다.",
       },
     ]);
     expect(result.migratedPostIds).toEqual([

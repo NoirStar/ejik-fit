@@ -101,7 +101,7 @@ describe("Home", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "내 커리어와 가까운 이야기" }),
+      screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
@@ -120,7 +120,7 @@ describe("Home", () => {
     expect(analyzeFit).toHaveBeenCalledWith({
       owned_skills: ["Java", "Spring"],
     });
-    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
+    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
     expect(insight).toHaveTextContent("12건");
     expect(insight).toHaveTextContent("Kubernetes");
   });
@@ -173,12 +173,16 @@ describe("Home", () => {
       limit: 30,
     });
     expect(analyzeFit).not.toHaveBeenCalled();
-    expect(screen.getByText("내 스택을 추가하면 일치 공고를 계산합니다.")).toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "내 커리어 인사이트" }),
+      screen.getByText(
+        "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("region", { name: "내 기술과 맞는 공고" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기 둘러보기" }),
+      screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "둘러보기" })).toBeInTheDocument();
     const context = screen.getByRole("region", { name: "내 관심 시장" });
@@ -196,11 +200,11 @@ describe("Home", () => {
 
     render(await Home());
 
-    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다")).toBeInTheDocument();
+    expect(screen.getByText("일부 정보를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
-    expect(screen.getByText("스킬 연결 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
+    expect(screen.getByText("스킬맵을 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.queryByText("graph offline")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "데이터 다시 불러오기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "다시 불러오기" })).toBeInTheDocument();
     expect(log).toHaveBeenCalledWith(
       "[resource] request failed",
       expect.any(Error),
@@ -218,10 +222,10 @@ describe("Home", () => {
       }),
     );
 
-    expect(screen.getByText("일부 실데이터를 불러오지 못했습니다"))
+    expect(screen.getByText("일부 정보를 불러오지 못했습니다."))
       .toBeInTheDocument();
-    const insight = screen.getByRole("region", { name: "내 커리어 인사이트" });
-    expect(insight).toHaveTextContent("현재 커리어 비교를 불러오지 못했습니다.");
+    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
+    expect(insight).toHaveTextContent("맞는 공고를 불러오지 못했습니다.");
     expect(insight).not.toHaveTextContent(/\d+건/);
     expect(screen.getByText("토스")).toBeInTheDocument();
     log.mockRestore();

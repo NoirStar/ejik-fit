@@ -22,6 +22,11 @@ type CommunityMigrationStore = Pick<
   | "setPostSaved"
 >;
 
+const MIGRATION_CHANGED_COPY =
+  "옮기는 동안 새 활동이 있어 이 기기에 남은 글을 그대로 두었습니다.";
+const MIGRATION_FAILURE_COPY =
+  "이 기기에 남은 글을 계정으로 옮기지 못했습니다. 글은 그대로 두었습니다.";
+
 export type CommunityMigrationResult = {
   migratedPostIds: string[];
   failures: Array<{
@@ -64,9 +69,11 @@ function isConflict(error: unknown) {
 }
 
 function migrationFailureMessage(error: unknown) {
-  return error instanceof CommunityStoreError
-    ? error.message
-    : "계정으로 옮기지 못했습니다.";
+  return error instanceof CommunityStoreError &&
+    error.code === "conflict" &&
+    error.message === MIGRATION_CHANGED_COPY
+    ? MIGRATION_CHANGED_COPY
+    : MIGRATION_FAILURE_COPY;
 }
 
 type LocalMigrationSnapshot = {
@@ -210,7 +217,7 @@ export async function migrateLocalCommunityContent(
       ) {
         throw new CommunityStoreError(
           "conflict",
-          "이전 중 새 활동이 확인되어 브라우저 원본을 유지했습니다.",
+          MIGRATION_CHANGED_COPY,
         );
       }
 

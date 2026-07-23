@@ -341,7 +341,7 @@ describe("SearchResults", () => {
       }),
     ).toHaveAttribute("href", "/posts/local-python-search");
     expect(localResult).toHaveTextContent("나");
-    expect(localResult).toHaveTextContent("이 브라우저에서 작성");
+    expect(localResult).toHaveTextContent("이 기기에서 작성");
     expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Python Backend Engineer" }),

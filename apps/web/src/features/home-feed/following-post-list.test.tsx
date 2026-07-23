@@ -106,6 +106,7 @@ describe("FollowingPostList", () => {
     });
     const links = within(region).getAllByRole("link");
     expect(links).toHaveLength(2);
+    expect(within(region).queryByText("최대 2개")).not.toBeInTheDocument();
     expect(links[0]).toHaveAccessibleName(
       "서버정원의 글: 계정에서 팔로우한 작성자의 최신 글",
     );

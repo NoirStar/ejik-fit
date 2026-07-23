@@ -231,7 +231,7 @@ test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => 
     }),
   ).toBeVisible();
   await expect(
-    page.getByText("이전 기기 저장 글", { exact: true }),
+    page.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
   ).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(
@@ -279,7 +279,9 @@ test("keeps a guest draft for login without publishing a local post", async ({
   await expect(page).toHaveURL(
     /\/login\?next=%2F%3Fcompose%3Dresume$/,
   );
-  await expect(page.getByRole("heading", { name: "이직핏 계정" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "로그인" }),
+  ).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => ({

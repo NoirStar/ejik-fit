@@ -96,9 +96,7 @@ describe("PostDetailActions", () => {
     fireEvent.click(submit);
 
     expect(await screen.findByText("경험 공유 감사합니다.")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "이 브라우저에 댓글을 저장했습니다.",
-    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(textarea).toHaveValue("");
     expect(screen.getByText("댓글 48")).toBeInTheDocument();
   });
@@ -121,7 +119,7 @@ describe("PostDetailActions", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "댓글 등록" }));
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "브라우저 저장소를 사용할 수 없습니다.",
+      "댓글을 등록하지 못했습니다. 작성 내용은 그대로 두었습니다.",
     );
     expect(textarea).toHaveValue("저장 시도");
     expect(screen.getByRole("list", { name: "댓글 목록" })).not.toHaveTextContent(
@@ -167,7 +165,7 @@ describe("PostDetailActions", () => {
 
     expect(screen.getByText("댓글")).toBeInTheDocument();
     expect(
-      screen.getByText(/이직핏이 구성한 시작 댓글/),
+      screen.getByText("이직핏이 구성한 가이드 댓글입니다."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/예시/)).not.toBeInTheDocument();
   });
@@ -187,7 +185,7 @@ describe("PostDetailActions", () => {
       screen.getByRole("heading", { level: 2, name: "댓글" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("반응과 댓글은 이 브라우저에만 저장됩니다."),
+      screen.getByText("반응과 댓글은 이 기기에 남습니다."),
     ).toBeInTheDocument();
     expect(screen.getByText("댓글")).toBeInTheDocument();
     expect(screen.queryByText(/예시 콘텐츠/)).not.toBeInTheDocument();
