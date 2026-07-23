@@ -22,10 +22,11 @@ import styles from "./saved-search-composer.module.css";
 import { useSavedJobSearches } from "./use-saved-job-searches";
 
 const RESULT_MESSAGES = {
-  created: "검색 조건을 저장했습니다.",
-  duplicate: "이미 같은 조건을 저장했습니다.",
-  limit: "저장 검색은 최대 10개까지 만들 수 있습니다.",
-  error: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  created: "알림 조건을 저장했습니다.",
+  duplicate: "이미 같은 알림 조건을 저장했습니다.",
+  limit: "공고 알림은 최대 10개까지 만들 수 있습니다.",
+  error:
+    "알림 조건을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.",
 } as const;
 
 type ResultStatus = keyof typeof RESULT_MESSAGES;
@@ -74,9 +75,14 @@ export function SavedSearchComposer({
   const [composerFilterVersion, setComposerFilterVersion] =
     useState(filterVersion);
   const autoOpened = useRef(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const activeFilterVersion = useRef(filterVersion);
   activeFilterVersion.current = filterVersion;
   const stateMatchesFilters = composerFilterVersion === filterVersion;
+
+  useEffect(() => {
+    if (result === "error") nameInputRef.current?.focus();
+  }, [result]);
 
   useEffect(() => {
     if (stateMatchesFilters) return;
@@ -168,12 +174,12 @@ export function SavedSearchComposer({
         </div>
       ) : stateMatchesFilters && hasFilter && open && viewer ? (
         <form
-          aria-label="검색 조건 저장"
+          aria-label="알림 조건 저장"
           className={styles.form}
           onSubmit={handleSubmit}
         >
           <div className={styles.field}>
-            <label htmlFor="saved-search-name">저장 검색 이름</label>
+            <label htmlFor="saved-search-name">알림 조건 이름</label>
             <input
               id="saved-search-name"
               maxLength={MAX_SAVED_JOB_SEARCH_NAME_LENGTH}
@@ -185,13 +191,14 @@ export function SavedSearchComposer({
                   ),
                 )
               }
+              ref={nameInputRef}
               type="text"
               value={name}
             />
           </div>
           <div className={styles.formActions}>
             <button disabled={submitDisabled} type="submit">
-              {pending ? "저장 중…" : "검색 조건 저장"}
+              {pending ? "저장 중…" : "알림 조건 저장"}
             </button>
             <button onClick={closeComposer} type="button">
               취소
@@ -209,7 +216,7 @@ export function SavedSearchComposer({
         </form>
       ) : authStatus === "unauthenticated" && !viewer && hasFilter ? (
         <Link className={styles.trigger} href={loginHref(filters)}>
-          이 검색 저장
+          이 조건으로 알림 만들기
         </Link>
       ) : (
         <button
@@ -223,7 +230,7 @@ export function SavedSearchComposer({
           onClick={openComposer}
           type="button"
         >
-          이 검색 저장
+          이 조건으로 알림 만들기
         </button>
       )}
 

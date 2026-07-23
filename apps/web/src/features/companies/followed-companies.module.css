@@ -107,6 +107,13 @@
   font-weight: 820;
 }
 
+.storageError {
+  color: var(--color-danger);
+  font-size: 0.72rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
 .panelHeader > div:last-child {
   display: flex;
   align-items: center;

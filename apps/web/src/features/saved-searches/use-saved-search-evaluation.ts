@@ -15,8 +15,10 @@ import type {
   SavedJobSearchesState,
 } from "./use-saved-job-searches";
 
-const LOAD_ERROR = "저장 검색 공고를 확인하지 못했습니다.";
-const PARTIAL_ERROR = "일부 저장 검색 공고를 확인하지 못했습니다.";
+const LOAD_ERROR =
+  "공고 알림 결과를 확인하지 못했습니다. 이전 결과는 그대로 유지됩니다.";
+const PARTIAL_ERROR =
+  "일부 공고 알림 결과를 확인하지 못했습니다. 확인한 결과는 그대로 유지됩니다.";
 const CHECKPOINT_ERROR =
   "새 공고 결과는 유지했지만 확인 시각을 저장하지 못했습니다.";
 const MAX_RESPONSE_GROUPS = 10;
@@ -285,7 +287,11 @@ export function useSavedSearchEvaluation(
           (group) => group.status === "ready",
         );
         if (readyGroups.length === 0) {
-          setState({ status: "error", groups: [], error: LOAD_ERROR });
+          setState((current) => ({
+            status: "error",
+            groups: current.groups,
+            error: LOAD_ERROR,
+          }));
           return;
         }
 
@@ -325,7 +331,11 @@ export function useSavedSearchEvaluation(
           return;
         }
         pendingCheckpoint.current = null;
-        setState({ status: "error", groups: [], error: LOAD_ERROR });
+        setState((current) => ({
+          status: "error",
+          groups: current.groups,
+          error: LOAD_ERROR,
+        }));
       }
     }
 

@@ -73,6 +73,7 @@
   border-radius: var(--radius-control);
   font-size: 0.78rem;
   font-weight: 780;
+  white-space: nowrap;
 }
 
 .introActions span {
@@ -195,6 +196,7 @@
   font: inherit;
   font-size: 0.72rem;
   font-weight: 740;
+  white-space: nowrap;
   cursor: pointer;
 }
 

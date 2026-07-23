@@ -251,6 +251,36 @@ describe("AuthoredQuestions", () => {
     ).toEqual([]);
   });
 
+  it.each([
+    { expected: "기술을 이 기기에서 삭제했습니다.", id: "local-particle-1", title: "기술" },
+    { expected: "자바를 이 기기에서 삭제했습니다.", id: "local-particle-2", title: "자바" },
+    { expected: "React를 이 기기에서 삭제했습니다.", id: "local-particle-3", title: "React" },
+  ])("uses the correct object particle when deleting $title", async ({ expected, id, title }) => {
+    window.localStorage.setItem(
+      "ejik-fit:local-community-posts",
+      JSON.stringify([
+        {
+          id,
+          title,
+          body: "조사 메시지를 확인하는 글입니다.",
+          tags: [],
+          createdAt: "2026-07-14T01:00:00.000Z",
+        },
+      ]),
+    );
+    renderGuest();
+    const article = await screen.findByRole("article", { name: title });
+
+    fireEvent.click(
+      within(article).getByRole("button", { name: `${title} 삭제` }),
+    );
+    fireEvent.click(
+      within(article).getByRole("button", { name: "정말 삭제" }),
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(expected);
+  });
+
   it("keeps a question visible when interaction cleanup cannot be persisted", async () => {
     storePosts();
     const originalSetItem = Storage.prototype.setItem;

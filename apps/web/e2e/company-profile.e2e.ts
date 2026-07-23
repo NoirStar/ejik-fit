@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`keeps the actual-data company profile usable at ${width}px`, async ({
     page,
   }) => {
@@ -41,6 +41,18 @@ for (const width of [1440, 820, 390]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+
+
+    if (width === 320) {
+      const primaryAction = page.getByRole("link", {
+        name: "공고 탐색으로 돌아가기",
+      });
+      expect(
+        await primaryAction.evaluate(
+          (element) => getComputedStyle(element).whiteSpace,
+        ),
+      ).toBe("nowrap");
     }
 
     const jobs = page.getByRole("region", { name: "현재 공개 공고" });

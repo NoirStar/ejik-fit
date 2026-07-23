@@ -90,7 +90,7 @@ function mockSavedSearches(state: SavedJobSearchesState = readyState) {
 
 function loginContinuationParams() {
   const href = screen
-    .getByRole("link", { name: "이 검색 저장" })
+    .getByRole("link", { name: "이 조건으로 알림 만들기" })
     .getAttribute("href");
   if (!href) throw new Error("Expected a login continuation href");
 
@@ -117,7 +117,7 @@ describe("SavedSearchComposer", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "이 검색 저장" }),
+      screen.getByRole("link", { name: "이 조건으로 알림 만들기" }),
     ).toHaveAttribute(
       "href",
       "/login?next=%2Fjobs%3Fq%3DPython%26category%3Dbackend%26save_search%3D1",
@@ -132,7 +132,7 @@ describe("SavedSearchComposer", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "이 검색 저장" }),
+      screen.getByRole("link", { name: "이 조건으로 알림 만들기" }),
     ).toHaveAttribute(
       "href",
       "/login?next=%2Fjobs%3Fcareer_type%3Dexperienced%26save_search%3D1",
@@ -171,16 +171,18 @@ describe("SavedSearchComposer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "이 검색 저장" }));
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveValue(
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveValue(
       "Python · 백엔드",
     );
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveAttribute(
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveAttribute(
       "maxlength",
       "60",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "검색 조건 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "알림 조건 저장" }));
 
     await waitFor(() =>
       expect(create).toHaveBeenCalledWith(
@@ -189,12 +191,12 @@ describe("SavedSearchComposer", () => {
       ),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "검색 조건을 저장했습니다.",
+      "알림 조건을 저장했습니다.",
     );
     expect(
       screen.getByRole("link", { name: "공고 알림 관리" }),
     ).toHaveAttribute("href", "/career/alerts");
-    expect(screen.queryByLabelText("저장 검색 이름")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림 조건 이름")).not.toBeInTheDocument();
   });
 
   it.each<{
@@ -203,15 +205,16 @@ describe("SavedSearchComposer", () => {
   }>([
     {
       result: { status: "duplicate", item: savedSearch },
-      message: "이미 같은 조건을 저장했습니다.",
+      message: "이미 같은 알림 조건을 저장했습니다.",
     },
     {
       result: { status: "limit" },
-      message: "저장 검색은 최대 10개까지 만들 수 있습니다.",
+      message: "공고 알림은 최대 10개까지 만들 수 있습니다.",
     },
     {
       result: { status: "error" },
-      message: "검색 조건을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      message:
+        "알림 조건을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.",
     },
   ])("shows the $result.status mutation result", async ({ result, message }) => {
     mockAuth(viewer);
@@ -223,11 +226,43 @@ describe("SavedSearchComposer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "이 검색 저장" }));
-    fireEvent.click(screen.getByRole("button", { name: "검색 조건 저장" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "알림 조건 저장" }));
 
     expect(await screen.findByText(message)).toBeInTheDocument();
-    expect(screen.getByLabelText("저장 검색 이름")).toBeInTheDocument();
+    expect(screen.getByLabelText("알림 조건 이름")).toBeInTheDocument();
+  });
+
+  it("keeps the alert name and focus after a provider failure", async () => {
+    mockAuth(viewer);
+    create.mockRejectedValueOnce(new Error("raw provider insert failure"));
+    render(
+      <SavedSearchComposer
+        filters={{ query: "Python", category: "backend", careerType: "" }}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
+    const nameInput = screen.getByLabelText("알림 조건 이름");
+    fireEvent.change(nameInput, { target: { value: "재시도할 알림" } });
+    const submit = screen.getByRole("button", { name: "알림 조건 저장" });
+    submit.focus();
+    fireEvent.click(submit);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "알림 조건을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다.",
+    );
+    expect(alert).not.toHaveTextContent("raw provider insert failure");
+    expect(nameInput).toHaveValue("재시도할 알림");
+    await waitFor(() => expect(nameInput).toHaveFocus());
+    expect(screen.getByRole("form", { name: "알림 조건 저장" })).not.toHaveTextContent(
+      /저장 검색|저장된 검색|새 검색 만들기/,
+    );
   });
 
   it("keeps filterless saving disabled", () => {
@@ -240,9 +275,9 @@ describe("SavedSearchComposer", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "이 검색 저장" }),
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
     ).toBeDisabled();
-    expect(screen.queryByLabelText("저장 검색 이름")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림 조건 이름")).not.toBeInTheDocument();
   });
 
   it("keeps submission disabled until the saved-search list is ready", () => {
@@ -255,10 +290,12 @@ describe("SavedSearchComposer", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "이 검색 저장" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
 
     expect(
-      screen.getByRole("button", { name: "검색 조건 저장" }),
+      screen.getByRole("button", { name: "알림 조건 저장" }),
     ).toBeDisabled();
   });
 
@@ -271,7 +308,7 @@ describe("SavedSearchComposer", () => {
         openOnReady
       />,
     );
-    expect(screen.queryByLabelText("저장 검색 이름")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림 조건 이름")).not.toBeInTheDocument();
 
     mockAuth(viewer);
     rerender(
@@ -280,7 +317,7 @@ describe("SavedSearchComposer", () => {
         openOnReady
       />,
     );
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveValue(
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveValue(
       "백엔드 · 경력",
     );
   });
@@ -293,8 +330,10 @@ describe("SavedSearchComposer", () => {
         filters={{ query: "Python", category: "backend", careerType: "" }}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "이 검색 저장" }));
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveValue(
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveValue(
       "Python · 백엔드",
     );
 
@@ -303,10 +342,12 @@ describe("SavedSearchComposer", () => {
         filters={{ query: "Go", category: "backend", careerType: "" }}
       />,
     );
-    expect(screen.queryByLabelText("저장 검색 이름")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림 조건 이름")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "이 검색 저장" }));
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveValue(
+    fireEvent.click(
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
+    );
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveValue(
       "Go · 백엔드",
     );
 
@@ -315,9 +356,9 @@ describe("SavedSearchComposer", () => {
         filters={{ query: "", category: "", careerType: "" }}
       />,
     );
-    expect(screen.queryByLabelText("저장 검색 이름")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("알림 조건 이름")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "이 검색 저장" }),
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
     ).toBeDisabled();
   });
 });

@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { AccountSyncStatus } from "@/features/auth/use-account-state-sync";
 import type { CommunityStore } from "@/features/community/community-store";
 import type {
   CommunityCursor,
@@ -16,6 +17,10 @@ import type {
   CommunityViewerState,
 } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
+import {
+  APPLICATION_STAGES,
+  type JobApplicationStageValue,
+} from "@/lib/job-application-stages";
 import type { PostingDetail } from "@/lib/types";
 
 import { buildSavedJobItem } from "./model";
@@ -161,6 +166,52 @@ describe("SavedLibrary", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it.each<{
+    expected: string;
+    status: AccountSyncStatus;
+    viewer: { id: string; email: string } | null;
+  }>([
+    { expected: "이 기기에 저장됨", status: "local", viewer: null },
+    {
+      expected: "계정에 저장 중…",
+      status: "syncing",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+    {
+      expected: "계정에 저장됨",
+      status: "synced",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+    {
+      expected: "이 기기에 저장됨",
+      status: "error",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+  ])("shows truthful $status library storage", ({ expected, status, viewer }) => {
+    render(
+      <AuthViewerProvider
+        accountSyncStatus={status}
+        ready
+        viewer={viewer}
+      >
+        <SavedLibrary />
+      </AuthViewerProvider>,
+    );
+
+    const intro = screen
+      .getByRole("heading", { level: 1, name: "저장 목록" })
+      .closest("header");
+    expect(intro).not.toBeNull();
+    expect(within(intro!).getByText(expected)).toBeInTheDocument();
+    if (status === "error") {
+      expect(screen.getByText("계정에 저장하지 못했습니다.")).toBeInTheDocument();
+    } else {
+      expect(
+        screen.queryByText("계정에 저장하지 못했습니다."),
+      ).not.toBeInTheDocument();
+    }
   });
 
   it("ignores old browser saves for read-only starter guidance", async () => {
@@ -430,6 +481,35 @@ describe("SavedLibrary", () => {
     );
   });
 
+  it.each(
+    APPLICATION_STAGES.map((stage) => ({
+      expected: stage.value
+        ? `지원 단계를 ‘${stage.label}’로 저장했습니다.`
+        : "지원 단계 기록을 삭제했습니다.",
+      label: stage.label,
+      value: stage.value as JobApplicationStageValue,
+    })),
+  )("announces the $label stage without particle guessing", async ({ expected, value }) => {
+    saveBrowserItems(
+      ["job-python"],
+      [],
+      value === "" ? { "job-python": "applied" } : {},
+    );
+    render(<SavedLibrary />);
+    const job = await screen.findByRole("article", {
+      name: "Python Backend Engineer",
+    });
+
+    fireEvent.change(
+      within(job).getByRole("combobox", {
+        name: "Python Backend Engineer 지원 단계",
+      }),
+      { target: { value } },
+    );
+
+    expect(screen.getByText(expected)).toBeInTheDocument();
+  });
+
   it("reports a blocked stage write without announcing a false success", async () => {
     saveBrowserItems();
     render(<SavedLibrary />);
@@ -496,6 +576,28 @@ describe("SavedLibrary", () => {
         window.localStorage.getItem("ejik-fit:social-interactions")!,
       ).savedPostIds,
     ).toEqual(["kubernetes-experience"]);
+  });
+
+  it.each([
+    { expected: "기술을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "기술" },
+    { expected: "자바를 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "자바" },
+    { expected: "React를 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "React" },
+  ])("uses the correct object particle when removing $title", async ({ expected, title }) => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        ...savedJobResponse,
+        items: [buildSavedJobItem({ ...posting, title })],
+      }),
+    );
+    saveBrowserItems([posting.id], []);
+    render(<SavedLibrary />);
+    const job = await screen.findByRole("article", { name: title });
+
+    fireEvent.click(
+      within(job).getByRole("button", { name: `${title} 저장 해제` }),
+    );
+
+    expect(screen.getByText(expected)).toBeInTheDocument();
   });
 
   it("shows an honest empty state without making an API request", async () => {

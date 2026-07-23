@@ -5,7 +5,7 @@ import {
   signInCommunityViewer,
 } from "./fixtures/community-auth";
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`keeps official jobs usable and ignores retired starter saves at ${width}px`, async ({
     page,
   }) => {
@@ -78,6 +78,15 @@ for (const width of [1440, 820, 390]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+
+    if (width === 320) {
+      const primaryAction = page.getByRole("link", { name: "내 기술 비교" });
+      expect(
+        await primaryAction.evaluate(
+          (element) => getComputedStyle(element).whiteSpace,
+        ),
+      ).toBe("nowrap");
     }
 
     await stageSelect.selectOption("interview");

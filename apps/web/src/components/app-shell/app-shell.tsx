@@ -474,8 +474,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                         ? accountSyncStatus === "synced"
                           ? "내 기술과 저장 항목을 계정에 저장했습니다."
                           : accountSyncStatus === "error"
-                            ? "계정 데이터를 동기화하지 못했습니다."
-                            : "내 커리어 정보를 동기화하고 있습니다."
+                            ? "계정에 저장하지 못했습니다. 이 기기의 데이터는 그대로 유지됩니다."
+                            : accountSyncStatus === "syncing"
+                              ? "내 커리어 정보를 계정에 저장 중입니다."
+                              : "내 커리어 정보는 이 기기에 저장됩니다."
                         : "내 기술은 이 기기에 저장됩니다."}
                     </span>
                   </div>
@@ -499,7 +501,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </Suspense>
                   )}
                   <Link href="/career/account" onClick={closeUtilityMenus}>
-                    계정 및 동기화
+                    계정
                   </Link>
                   <Link href="/career" onClick={closeUtilityMenus}>
                     내 커리어
@@ -615,6 +617,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <AuthViewerProvider
+      accountSyncStatus={accountSyncStatus}
       error={authError}
       ready={ready}
       status={authStatus}

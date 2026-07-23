@@ -221,7 +221,7 @@ function SavedSearchRow({
           </span>
         </div>
 
-        <ul aria-label={`${search.name} 검색 조건`} className={styles.filterList}>
+        <ul aria-label={`${search.name} 알림 조건`} className={styles.filterList}>
           {labels.map((label) => (
             <li key={label}>{label}</li>
           ))}
@@ -261,7 +261,7 @@ function SavedSearchRow({
         {editing && (
           <form className={styles.renameForm} onSubmit={submitRename}>
             <label htmlFor={`saved-search-name-${search.id}`}>
-              저장 검색 이름
+              알림 조건 이름
             </label>
             <div>
               <input
@@ -337,7 +337,7 @@ function SavedSearchRow({
         </button>
         {confirmingDelete ? (
           <div
-            aria-label="저장 검색 삭제 확인"
+            aria-label="알림 조건 삭제 확인"
             className={styles.deleteConfirm}
             role="group"
           >
@@ -433,7 +433,8 @@ export function SavedSearchManager() {
     if (!saved) {
       setMutationErrors((current) => ({
         ...current,
-        [id]: "이름을 변경하지 못했습니다. 다시 시도해 주세요.",
+        [id]:
+          "이름을 변경하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 다시 시도해 주세요.",
       }));
     }
     return saved;
@@ -477,7 +478,8 @@ export function SavedSearchManager() {
     if (!removed) {
       setMutationErrors((current) => ({
         ...current,
-        [id]: "저장 검색을 삭제하지 못했습니다. 다시 시도해 주세요.",
+        [id]:
+          "알림 조건을 삭제하지 못했습니다. 기존 알림은 그대로 유지됩니다. 다시 시도해 주세요.",
       }));
     }
     return removed;
@@ -513,7 +515,7 @@ export function SavedSearchManager() {
           <div>
             <h1>공고 알림</h1>
             <p>
-              검색 조건을 계정에 저장하고 새로 확인된 공식 공고를 관리할 수
+              알림 조건을 계정에 저장하고 새로 확인된 공식 공고를 관리할 수
               있습니다.
             </p>
           </div>
@@ -563,7 +565,7 @@ export function SavedSearchManager() {
         <header className={styles.intro}>
           <p className={styles.eyebrow}>내 커리어</p>
           <h1>공고 알림</h1>
-          <p>저장한 검색 조건과 새로 확인된 공식 공고를 관리합니다.</p>
+          <p>알림 조건과 새로 확인된 공식 공고를 관리합니다.</p>
         </header>
         <section className={styles.statePanel}>
           <BellRinging aria-hidden="true" size={26} />
@@ -590,11 +592,11 @@ export function SavedSearchManager() {
         <p className={styles.eyebrow}>내 커리어</p>
         <h1>공고 알림</h1>
         <p>
-          저장한 검색 조건과 이직핏이 새로 확인한 기업 공식 공고를
+          알림 조건과 이직핏이 새로 확인한 기업 공식 공고를
           관리합니다.
         </p>
         <Link href="/jobs">
-          새 검색 만들기
+          공고에서 알림 만들기
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
       </header>
@@ -605,7 +607,7 @@ export function SavedSearchManager() {
       >
         <header className={styles.listHeader}>
           <div>
-            <p>저장 검색</p>
+            <p>공고 알림</p>
             <h2 id="saved-search-list-title">알림 조건</h2>
           </div>
           <span data-numeric>

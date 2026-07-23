@@ -1,7 +1,7 @@
 "use client";
 
 import { EnvelopeSimple, FloppyDisk, UserCircle } from "@phosphor-icons/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { validateNickname } from "@/features/auth/auth-credentials";
 import type { AuthViewer } from "@/features/auth/use-auth-viewer";
@@ -17,6 +17,7 @@ type ProfileEditorProps = {
 type LoadState = "loading" | "ready" | "error";
 
 export function ProfileEditor({ viewer }: ProfileEditorProps) {
+  const nicknameInputRef = useRef<HTMLInputElement>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [nickname, setNickname] = useState("");
@@ -25,6 +26,10 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
   const [saveError, setSaveError] = useState("");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (saveError) nicknameInputRef.current?.focus();
+  }, [saveError]);
 
   const loadProfile = useCallback(async () => {
     const client = createBrowserSupabaseClient();
@@ -65,7 +70,9 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
 
     const client = createBrowserSupabaseClient();
     if (!client) {
-      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setSaveError(
+        "닉네임을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.",
+      );
       return;
     }
 
@@ -79,7 +86,9 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
       setSavedNickname(validated.value);
       setStatus("닉네임을 저장했습니다.");
     } catch {
-      setSaveError("닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+      setSaveError(
+        "닉네임을 저장하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       setSaving(false);
     }
@@ -136,6 +145,7 @@ export function ProfileEditor({ viewer }: ProfileEditorProps) {
                 setStatus("");
               }}
               placeholder={loadState === "loading" ? "불러오는 중…" : "2-20자 닉네임"}
+              ref={nicknameInputRef}
               type="text"
               value={nickname}
             />

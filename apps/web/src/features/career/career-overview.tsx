@@ -14,7 +14,10 @@ import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 
-import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import {
+  accountStorageStatusCopy,
+  useAuthViewerContext,
+} from "@/features/auth/auth-viewer-context";
 import {
   EMPTY_CAREER_PREFERENCES,
   readCareerPreferences,
@@ -73,8 +76,6 @@ const CAREER_COPY = {
   pageTitle: "내 커리어",
   pageDescription: "내 기술과 채용공고를 비교해 다음에 준비할 기술을 찾습니다.",
   ownedSkills: PRODUCT_TERMS.ownedSkills,
-  guestStorage: "이 기기에 저장됨",
-  accountStorage: "계정에 저장됨",
   emptyTitle: "먼저 내 기술을 추가해 주세요.",
   emptyBody: "기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
   quickAdd: "추천 기술",
@@ -317,7 +318,9 @@ export function CareerOverview({
   domainSuggestions = [],
   domainSuggestionsUnavailable = false,
 }: CareerOverviewProps) {
-  const { viewer } = useAuthViewerContext();
+  const { accountSyncStatus, viewer } = useAuthViewerContext();
+  const effectiveAccountSyncStatus = viewer ? accountSyncStatus : "local";
+  const storageStatus = accountStorageStatusCopy(effectiveAccountSyncStatus);
   const inputId = useId();
   const inputErrorId = useId();
   const catalogHintId = useId();
@@ -551,7 +554,7 @@ export function CareerOverview({
         <div className={styles.introMeta}>
           <span className={styles.privacyBadge}>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            {viewer ? CAREER_COPY.accountStorage : CAREER_COPY.guestStorage}
+            {storageStatus.label}
           </span>
           <Link className={styles.savedLibraryLink} href="/career/saved">
             <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
@@ -566,6 +569,11 @@ export function CareerOverview({
             채용 일정
           </Link>
         </div>
+        {storageStatus.error && (
+          <p className={styles.localNote} role="alert">
+            {storageStatus.error}
+          </p>
+        )}
       </header>
 
       <div aria-live="polite" className={styles.srOnly}>
@@ -586,8 +594,12 @@ export function CareerOverview({
           </header>
 
           <p className={styles.localNote}>
-            {viewer
-              ? "내 기술과 비교 조건을 계정에 저장합니다."
+            {effectiveAccountSyncStatus === "synced"
+              ? "내 기술과 비교 조건을 이 기기와 계정에 저장합니다."
+              : effectiveAccountSyncStatus === "syncing"
+                ? "내 기술과 비교 조건은 이 기기에 저장되어 있고, 계정에 저장 중입니다."
+                : viewer
+                  ? "내 기술과 비교 조건은 이 기기에 저장됩니다."
               : "내 기술과 비교 조건은 이 기기에 저장됩니다. 로그인하면 계정 데이터와 합칩니다."}
           </p>
 

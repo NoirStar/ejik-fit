@@ -11,7 +11,10 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import {
+  accountStorageStatusCopy,
+  useAuthViewerContext,
+} from "@/features/auth/auth-viewer-context";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import {
   clearFollowedCompanies,
@@ -132,7 +135,10 @@ export function FollowedCompanies({
   directory: SourceDirectoryResponse | null;
   directoryUnavailable: boolean;
 }) {
-  const { viewer } = useAuthViewerContext();
+  const { accountSyncStatus, viewer } = useAuthViewerContext();
+  const storageStatus = accountStorageStatusCopy(
+    viewer ? accountSyncStatus : "local",
+  );
   const [hydrated, setHydrated] = useState(false);
   const [followedSlugs, setFollowedSlugs] = useState<string[]>([]);
   const directoryBySlug = useMemo(
@@ -174,8 +180,13 @@ export function FollowedCompanies({
       <section aria-labelledby="followed-company-list-title" className={styles.panel}>
         <header className={styles.panelHeader}>
           <div>
-            <p>{viewer ? "계정에 저장됨" : "이 기기에 저장됨"}</p>
+            <p>{storageStatus.label}</p>
             <h2 id="followed-company-list-title">저장한 기업</h2>
+            {storageStatus.error && (
+              <small className={styles.storageError} role="alert">
+                {storageStatus.error}
+              </small>
+            )}
           </div>
           <div>
             <span>{followedSlugs.length}개</span>

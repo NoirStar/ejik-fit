@@ -129,7 +129,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           <span className={styles.controlCopy}>
             <strong>새 공고 알림</strong>
             <small>
-              저장 검색과 관심 기업에 맞는 새 공고를 알림 센터에서 받습니다.
+              알림 조건과 관심 기업에 맞는 새 공고를 알림 센터에서 받습니다.
             </small>
           </span>
           <button
@@ -167,7 +167,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           <span className={styles.controlCopy}>
             <strong>내 데이터 내보내기</strong>
             <small>
-              프로필, 기술, 저장 공고, 지원 기록, 저장 검색과 알림을 JSON 파일로
+              프로필, 기술, 저장 공고, 지원 기록, 알림 조건과 알림을 JSON 파일로
               받습니다.
             </small>
           </span>
@@ -188,7 +188,7 @@ export function AccountControls({ viewer }: AccountControlsProps) {
           <span className={styles.controlCopy}>
             <strong>계정 삭제</strong>
             <small>
-              계정과 서버에 저장된 커리어 데이터는 복구할 수 없게 삭제됩니다.
+              계정에 보관된 커리어 데이터는 복구할 수 없게 삭제됩니다.
             </small>
           </span>
           <button

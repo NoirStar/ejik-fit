@@ -188,12 +188,12 @@ export function notificationReason(notification: ActivityNotification) {
 
   const names = notification.metadata.savedSearchNames;
   if (names.length > 0 && notification.metadata.followedCompany) {
-    return `저장 검색 · ${names[0]} · 관심 기업`;
+    return `공고 알림 · ${names[0]} · 관심 기업`;
   }
   if (names.length > 0) {
     return names.length > 1
-      ? `저장 검색 · ${names[0]} 외 ${names.length - 1}개`
-      : `저장 검색 · ${names[0]}`;
+      ? `공고 알림 · ${names[0]} 외 ${names.length - 1}개`
+      : `공고 알림 · ${names[0]}`;
   }
   return notification.metadata.followedCompany
     ? "관심 기업 새 공고"

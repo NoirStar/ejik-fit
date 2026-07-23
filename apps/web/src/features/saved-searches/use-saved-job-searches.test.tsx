@@ -102,6 +102,33 @@ describe("useSavedJobSearches", () => {
 
     expect(result.current.state.items[0]?.enabled).toBe(true);
     expect(result.current.state.status).toBe("error");
+    expect(result.current.state.error).toBe(
+      "공고 알림을 변경하지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+    );
+    expect(result.current.state.error).not.toContain("offline");
+  });
+
+  it("keeps loaded alerts and hides provider details when reload fails", async () => {
+    const store = fakeStore({
+      list: vi
+        .fn()
+        .mockResolvedValueOnce([existing])
+        .mockRejectedValueOnce(new Error("raw provider list failure")),
+    });
+    const { result } = renderHook(() =>
+      useSavedJobSearches(viewer, store),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+
+    await act(() => result.current.reload());
+
+    expect(result.current.state).toEqual({
+      status: "error",
+      items: [existing],
+      error:
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+    });
+    expect(result.current.state.error).not.toContain("raw provider list failure");
   });
 
   it("ignores an old-account mutation success after logout", async () => {

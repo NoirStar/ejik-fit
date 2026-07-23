@@ -460,6 +460,50 @@ describe("useSavedSearchEvaluation", () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps the previous result and hides provider details after refresh fails", async () => {
+    const response: SavedSearchEvaluationResponse = {
+      evaluatedAt,
+      groups: [
+        {
+          searchId: "search-1",
+          status: "ready",
+          total: 1,
+          items: [posting("job-1")],
+        },
+      ],
+    };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(response))
+      .mockResolvedValueOnce(
+        jsonResponse({ error: "raw provider evaluation failure" }, 503),
+      );
+    const markChecked =
+      vi.fn<SavedJobSearchesController["markChecked"]>()
+        .mockResolvedValue(true);
+    const { result } = renderHook(() =>
+      useSavedSearchEvaluation(
+        [savedSearch("search-1", true)],
+        "ready",
+        markChecked,
+        { fetcher },
+      ),
+    );
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    const previousGroups = result.current.state.groups;
+
+    act(() => result.current.refresh());
+
+    await waitFor(() => expect(result.current.state.status).toBe("error"));
+    expect(result.current.state.groups).toEqual(previousGroups);
+    expect(result.current.state.error).toBe(
+      "공고 알림 결과를 확인하지 못했습니다. 이전 결과는 그대로 유지됩니다.",
+    );
+    expect(result.current.state.error).not.toContain(
+      "raw provider evaluation failure",
+    );
+  });
+
   it("starts one request for one signature in StrictMode", async () => {
     const response: SavedSearchEvaluationResponse = {
       evaluatedAt,

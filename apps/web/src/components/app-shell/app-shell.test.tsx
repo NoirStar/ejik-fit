@@ -1,8 +1,16 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
 import { useSavedJobSearches } from "@/features/saved-searches/use-saved-job-searches";
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 
 import { AppShell } from "./app-shell";
 
@@ -218,7 +226,7 @@ describe("AppShell", () => {
     );
 
     expect(
-      screen.getByRole("button", { name: "이 검색 저장" }),
+      screen.getByRole("button", { name: "이 조건으로 알림 만들기" }),
     ).toBeEnabled();
     expect(authViewer.subscribe).toHaveBeenCalledTimes(1);
     expect(legacyMigration.observe).toHaveBeenCalledWith(authViewer.state.viewer);
@@ -229,6 +237,46 @@ describe("AppShell", () => {
       screen.getByText("내 기술과 저장 항목을 계정에 저장했습니다."),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    ["local", "내 커리어 정보는 이 기기에 저장됩니다."],
+    ["syncing", "내 커리어 정보를 계정에 저장 중입니다."],
+    ["synced", "내 기술과 저장 항목을 계정에 저장했습니다."],
+    [
+      "error",
+      "계정에 저장하지 못했습니다. 이 기기의 데이터는 그대로 유지됩니다.",
+    ],
+  ] as const)(
+    "shares the %s account state without implementation terms",
+    (status, expected) => {
+      authViewer.state.viewer = {
+        id: "viewer-1",
+        email: "developer@example.com",
+      };
+      accountSync.status = status;
+
+      function AccountSyncProbe() {
+        const value = useAuthViewerContext();
+        return <output aria-label="계정 저장 상태">{value.accountSyncStatus}</output>;
+      }
+
+      render(
+        <AppShell>
+          <AccountSyncProbe />
+        </AppShell>,
+      );
+
+      expect(screen.getByLabelText("계정 저장 상태")).toHaveTextContent(status);
+      fireEvent.click(screen.getByRole("button", { name: "사용자 메뉴 열기" }));
+      const menu = screen.getByLabelText("사용자 메뉴");
+      expect(within(menu).getByText(expected)).toBeInTheDocument();
+      expect(menu).not.toHaveTextContent(/브라우저|서버|동기화|병합|저장 검색/);
+      expect(within(menu).getByRole("link", { name: "계정" })).toHaveAttribute(
+        "href",
+        "/career/account",
+      );
+    },
+  );
 
   it("offers a retry when legacy community records could not move", () => {
     authViewer.state.viewer = {
@@ -304,7 +352,7 @@ describe("AppShell", () => {
       "href",
       "/career/questions",
     );
-    expect(screen.getByRole("link", { name: "계정 및 동기화" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "계정" })).toHaveAttribute(
       "href",
       "/career/account",
     );

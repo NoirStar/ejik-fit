@@ -331,7 +331,7 @@ export function ActivityNotificationCenter({
             />
             <span className={styles.savedSearchCopy}>
               <span className={styles.savedSearchName}>
-                저장 검색 · {searchName}
+                공고 알림 · {searchName}
               </span>
               <strong>
                 {notification.job.company_name} · {notification.job.title}
@@ -431,7 +431,7 @@ export function ActivityNotificationCenter({
       )}
       {savedSearchesLoading && (
         <p className={styles.jobAlertStatus} role="status">
-          저장 검색의 새 공고를 불러오는 중…
+          공고 알림의 새 공고를 불러오는 중…
         </p>
       )}
       {savedSearches.state.status === "error" && (

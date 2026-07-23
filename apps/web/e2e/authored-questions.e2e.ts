@@ -59,12 +59,29 @@ test("keeps an account-authored question available after reload and safely delet
     question = page.getByRole("article", { name: title });
     await expect(question).toBeVisible();
 
+    await page.setViewportSize({ height: 900, width: 320 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+    ).toBe(false);
+
     const deleteButton = question.getByRole("button", {
       name: `${title} 삭제`,
     });
-    const deleteButtonBox = await deleteButton.boundingBox();
-    expect(deleteButtonBox?.width).toBeGreaterThanOrEqual(44);
-    expect(deleteButtonBox?.height).toBeGreaterThanOrEqual(44);
+    const writeAction = page
+      .getByRole("main")
+      .getByRole("link", { name: "글쓰기" });
+    for (const target of [writeAction, deleteButton]) {
+      const box = await target.boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+      expect(
+        await target.evaluate(
+          (element) => getComputedStyle(element).whiteSpace,
+        ),
+      ).toBe("nowrap");
+    }
     await deleteButton.click();
     await expect(
       question.getByText("삭제하면 글에 남아 있는 댓글과 반응도 함께 지워집니다."),

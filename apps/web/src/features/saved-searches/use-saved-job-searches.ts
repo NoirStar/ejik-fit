@@ -21,8 +21,10 @@ import {
   type SavedJobSearchStore,
 } from "./saved-job-search-store";
 
-const LOAD_ERROR = "저장된 검색을 불러오지 못했습니다.";
-const MUTATION_ERROR = "저장된 검색을 변경하지 못했습니다.";
+const LOAD_ERROR =
+  "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.";
+const MUTATION_ERROR =
+  "공고 알림을 변경하지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.";
 
 export type SavedJobSearchesState =
   | { status: "idle" | "loading"; items: SavedJobSearch[]; error: "" }

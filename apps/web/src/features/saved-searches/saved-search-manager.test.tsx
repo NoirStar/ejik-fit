@@ -118,6 +118,7 @@ function readyGroup(
 
 function mockAuth(activeViewer: AuthViewer | null, ready = true) {
   vi.mocked(useAuthViewerContext).mockReturnValue({
+    accountSyncStatus: activeViewer ? "synced" : "local",
     error: "",
     viewer: activeViewer,
     ready,
@@ -173,6 +174,9 @@ describe("SavedSearchManager", () => {
   it("manages an active saved search and links to its exact jobs filter", async () => {
     render(<SavedSearchManager />);
 
+    expect(
+      screen.getByRole("list", { name: "Python 백엔드 알림 조건" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Python 백엔드")).toBeInTheDocument();
     expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
     expect(screen.getByText("새로 확인 2건")).toBeInTheDocument();
@@ -199,7 +203,7 @@ describe("SavedSearchManager", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "이름 수정" }));
-    const nameInput = screen.getByLabelText("저장 검색 이름");
+    const nameInput = screen.getByLabelText("알림 조건 이름");
     expect(nameInput).toHaveFocus();
     fireEvent.change(nameInput, {
       target: { value: "Python 서버 개발" },
@@ -213,7 +217,7 @@ describe("SavedSearchManager", () => {
     );
     await waitFor(() =>
       expect(
-        screen.queryByLabelText("저장 검색 이름"),
+        screen.queryByLabelText("알림 조건 이름"),
       ).not.toBeInTheDocument(),
     );
     expect(
@@ -315,29 +319,33 @@ describe("SavedSearchManager", () => {
   });
 
   it("keeps a failed rename editable and associates the error with its input", async () => {
-    rename.mockResolvedValue(false);
+    rename.mockRejectedValueOnce(new Error("raw provider rename failure"));
 
     render(<SavedSearchManager />);
 
     fireEvent.click(screen.getByRole("button", { name: "이름 수정" }));
-    fireEvent.change(screen.getByLabelText("저장 검색 이름"), {
+    fireEvent.change(screen.getByLabelText("알림 조건 이름"), {
       target: { value: "새 알림 이름" },
     });
     fireEvent.click(screen.getByRole("button", { name: "이름 저장" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent(
-      "이름을 변경하지 못했습니다. 다시 시도해 주세요.",
+      "이름을 변경하지 못했습니다. 입력한 내용은 그대로 유지됩니다. 다시 시도해 주세요.",
     );
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveAttribute(
+    expect(alert).not.toHaveTextContent("raw provider rename failure");
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveValue(
+      "새 알림 이름",
+    );
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveAttribute(
       "aria-invalid",
       "true",
     );
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveAttribute(
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveAttribute(
       "aria-describedby",
       alert.id,
     );
-    expect(screen.getByLabelText("저장 검색 이름")).toHaveFocus();
+    expect(screen.getByLabelText("알림 조건 이름")).toHaveFocus();
   });
 
   it("restores delete-button focus after cancellation and a failed deletion", async () => {
@@ -362,7 +370,7 @@ describe("SavedSearchManager", () => {
 
     expect(
       await screen.findByText(
-        "저장 검색을 삭제하지 못했습니다. 다시 시도해 주세요.",
+        "알림 조건을 삭제하지 못했습니다. 기존 알림은 그대로 유지됩니다. 다시 시도해 주세요.",
       ),
     ).toBeInTheDocument();
     await waitFor(() =>
@@ -388,6 +396,7 @@ describe("SavedSearchManager", () => {
 
   it("shows an authentication error without presenting a login action", () => {
     vi.mocked(useAuthViewerContext).mockReturnValue({
+      accountSyncStatus: "local",
       error: "인증 서버 응답을 확인하지 못했습니다.",
       viewer: null,
       ready: true,
@@ -422,14 +431,17 @@ describe("SavedSearchManager", () => {
     mockSearches({
       status: "error",
       items: [],
-      error: "저장된 검색을 불러오지 못했습니다.",
+      error:
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
     });
     mockEvaluation({ status: "idle", groups: [], error: "" });
 
     render(<SavedSearchManager />);
 
     expect(
-      screen.getByText("저장된 검색을 불러오지 못했습니다."),
+      screen.getByText(
+        "공고 알림을 불러오지 못했습니다. 기존 알림 조건은 그대로 유지됩니다.",
+      ),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     await waitFor(() => expect(reload).toHaveBeenCalledTimes(1));
@@ -452,18 +464,35 @@ describe("SavedSearchManager", () => {
           items: [],
         },
       ],
-      error: "일부 저장 검색 공고를 확인하지 못했습니다.",
+      error:
+        "일부 공고 알림 결과를 확인하지 못했습니다. 확인한 결과는 그대로 유지됩니다.",
     });
 
     render(<SavedSearchManager />);
 
     expect(
-      screen.getByText("일부 저장 검색 공고를 확인하지 못했습니다."),
+      screen.getByText(
+        "일부 공고 알림 결과를 확인하지 못했습니다. 확인한 결과는 그대로 유지됩니다.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
     expect(screen.getByText("새로 확인 1건")).toBeInTheDocument();
     expect(screen.getByText("공고 수 확인 실패")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "공고 수 다시 확인" }));
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses only the public alert vocabulary in the alert manager", () => {
+    render(<SavedSearchManager />);
+
+    const main = screen.getByRole("main");
+    expect(main).toHaveTextContent("공고 알림");
+    expect(main).toHaveTextContent("알림 조건");
+    expect(main).not.toHaveTextContent(
+      /저장 검색|저장된 검색|새 검색 만들기/,
+    );
+    expect(
+      screen.getByRole("link", { name: "공고에서 알림 만들기" }),
+    ).toHaveAttribute("href", "/jobs");
   });
 });

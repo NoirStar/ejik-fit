@@ -252,7 +252,7 @@ describe("ActivityNotificationCenter", () => {
     );
 
     expect(
-      await screen.findByText("저장 검색 · Python 백엔드"),
+      await screen.findByText("공고 알림 · Python 백엔드"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("NAVER · Backend Engineer").closest("a"),
@@ -325,7 +325,7 @@ describe("ActivityNotificationCenter", () => {
     );
 
     const notification = await screen.findByText("테스트랩 새 공고");
-    expect(screen.getByText("저장 검색 · Python 경력 · 관심 기업")).toBeInTheDocument();
+    expect(screen.getByText("공고 알림 · Python 경력 · 관심 기업")).toBeInTheDocument();
     expect(screen.getByText("커뮤니티 · 새 댓글")).toBeInTheDocument();
     expect(screen.getByText("새 댓글이 달렸어요").closest("a")).toHaveAttribute(
       "href",
@@ -364,7 +364,8 @@ describe("ActivityNotificationCenter", () => {
           items: [],
         },
       ],
-      error: "일부 저장 검색 공고를 확인하지 못했습니다.",
+      error:
+        "일부 공고 알림 결과를 확인하지 못했습니다. 확인한 결과는 그대로 유지됩니다.",
     });
 
     render(

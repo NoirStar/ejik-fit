@@ -9,6 +9,8 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
+import type { AccountSyncStatus } from "@/features/auth/use-account-state-sync";
 import { writeOwnedSkills } from "@/lib/owned-skills";
 import { writeCareerPreferences } from "@/lib/career-preferences";
 import type { FitAnalyzeResponse } from "@/lib/types";
@@ -68,6 +70,55 @@ describe("CareerOverview", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it.each<{
+    expected: string;
+    status: AccountSyncStatus;
+    viewer: { id: string; email: string } | null;
+  }>([
+    { expected: "이 기기에 저장됨", status: "local", viewer: null },
+    {
+      expected: "계정에 저장 중…",
+      status: "syncing",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+    {
+      expected: "계정에 저장됨",
+      status: "synced",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+    {
+      expected: "이 기기에 저장됨",
+      status: "error",
+      viewer: { id: "viewer-1", email: "viewer@example.com" },
+    },
+  ])("shows truthful $status career storage", ({ expected, status, viewer }) => {
+    render(
+      <AuthViewerProvider
+        accountSyncStatus={status}
+        ready
+        viewer={viewer}
+      >
+        <CareerOverview
+          suggestions={suggestions}
+          suggestionsUnavailable={false}
+        />
+      </AuthViewerProvider>,
+    );
+
+    const intro = screen
+      .getByRole("heading", { level: 1, name: "내 커리어" })
+      .closest("header");
+    expect(intro).not.toBeNull();
+    expect(within(intro!).getByText(expected)).toBeInTheDocument();
+    if (status === "error") {
+      expect(screen.getByText("계정에 저장하지 못했습니다.")).toBeInTheDocument();
+    } else {
+      expect(
+        screen.queryByText("계정에 저장하지 못했습니다."),
+      ).not.toBeInTheDocument();
+    }
   });
 
   it("starts with an honest empty state and API-backed quick suggestions", async () => {

@@ -30,6 +30,7 @@ import {
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
+import { withObjectParticle } from "@/lib/korean-particles";
 
 import styles from "./authored-questions.module.css";
 
@@ -274,7 +275,7 @@ export function AuthoredQuestions({
     removeRecentCommunityTopic(post.id);
     setPendingDeleteId(null);
     setError("");
-    setAnnouncement(`${post.title}을 계정에서 삭제했습니다.`);
+    setAnnouncement(`${withObjectParticle(post.title)} 계정에서 삭제했습니다.`);
   }
 
   function deleteLegacyQuestion(post: CommunityPostFeedItem) {
@@ -292,7 +293,7 @@ export function AuthoredQuestions({
     removeRecentCommunityTopic(post.id);
     setPendingDeleteId(null);
     setError("");
-    setAnnouncement(`${post.title}을 이 기기에서 삭제했습니다.`);
+    setAnnouncement(`${withObjectParticle(post.title)} 이 기기에서 삭제했습니다.`);
   }
 
   const visibleError =

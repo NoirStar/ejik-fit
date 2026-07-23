@@ -14,7 +14,10 @@ import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import {
+  accountStorageStatusCopy,
+  useAuthViewerContext,
+} from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { CompanyMark } from "@/features/home-feed/company-mark";
@@ -43,6 +46,7 @@ import {
   toggleSavedJob,
 } from "@/lib/saved-jobs";
 import { PRODUCT_TERMS } from "@/lib/labels";
+import { withObjectParticle } from "@/lib/korean-particles";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
@@ -204,11 +208,15 @@ export function SavedLibrary({
   initialScope?: SavedScope;
 }) {
   const {
+    accountSyncStatus,
     error: authError,
     ready: authReady,
     status: authStatus,
     viewer,
   } = useAuthViewerContext();
+  const storageStatus = accountStorageStatusCopy(
+    viewer ? accountSyncStatus : "local",
+  );
   const accountCommunity = useCommunityFeed({
     authReady,
     enabled: Boolean(viewer),
@@ -357,7 +365,7 @@ export function SavedLibrary({
     setSavedJobIds(toggleSavedJob(item.id));
     setApplicationStages(removeJobApplicationStage(item.id));
     setAnnouncement(
-      `${item.title}을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
+      `${withObjectParticle(item.title)} 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
     );
   }
 
@@ -375,8 +383,8 @@ export function SavedLibrary({
     }
     setAnnouncement(
       stage
-        ? `${item.title}의 지원 단계를 ${applicationStageLabel(stage)}으로 저장했습니다.`
-        : `${item.title}의 지원 단계 기록을 삭제했습니다.`,
+        ? `지원 단계를 ‘${applicationStageLabel(stage)}’로 저장했습니다.`
+        : "지원 단계 기록을 삭제했습니다.",
     );
   }
 
@@ -385,7 +393,7 @@ export function SavedLibrary({
     const removed = await accountCommunity.toggleSaved(item.id);
     setAnnouncement(
       removed
-        ? `${item.title}을 계정 저장 목록에서 제거했습니다.`
+        ? `${withObjectParticle(item.title)} 계정 저장 목록에서 제거했습니다.`
         : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
     );
   }
@@ -440,11 +448,16 @@ export function SavedLibrary({
             데이터와 합칩니다. 커뮤니티 글은 계정에 저장한 글만 여러 기기에서
             불러옵니다. 이전 기기에 남은 글은 별도 복구 영역에 표시합니다.
           </p>
+          {storageStatus.error && (
+            <p className={styles.description} role="alert">
+              {storageStatus.error}
+            </p>
+          )}
         </div>
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            {viewer ? "계정에 저장됨" : "이 기기에 저장됨"}
+            {storageStatus.label}
           </span>
           <Link href="/career">
             내 기술 비교

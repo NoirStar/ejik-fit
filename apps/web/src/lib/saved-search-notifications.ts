@@ -33,7 +33,11 @@ export type SavedSearchEvaluationState =
       groups: SavedSearchEvaluationGroup[];
       error: string;
     }
-  | { status: "error"; groups: []; error: string };
+  | {
+      status: "error";
+      groups: SavedSearchEvaluationGroup[];
+      error: string;
+    };
 
 export type SavedSearchNotification = {
   job: PostingSummary;

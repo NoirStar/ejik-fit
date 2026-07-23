@@ -15,6 +15,10 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import {
+  accountStorageStatusCopy,
+  useAuthViewerContext,
+} from "@/features/auth/auth-viewer-context";
 import { useAuthViewer } from "@/features/auth/use-auth-viewer";
 import {
   EMPTY_ACCOUNT_CAREER_STATE,
@@ -38,6 +42,10 @@ type AccountSummaryItem = {
 
 export function AccountOverview() {
   const { viewer, ready, status, signingOut, error, signOut } = useAuthViewer();
+  const { accountSyncStatus } = useAuthViewerContext();
+  const storageStatus = accountStorageStatusCopy(
+    viewer ? accountSyncStatus : "local",
+  );
   const [careerState, setCareerState] = useState<AccountCareerState>(
     EMPTY_ACCOUNT_CAREER_STATE,
   );
@@ -74,8 +82,8 @@ export function AccountOverview() {
       href: "/career/alerts",
       icon: Bell,
       label: "공고 알림",
-      value: viewer ? "계정에 저장됨" : "로그인 필요",
-      description: "저장 검색과 새 공고",
+      value: viewer ? "계정에서 관리" : "로그인 필요",
+      description: viewer ? "계정의 알림 조건과 새 공고" : "알림 조건과 새 공고",
     },
     {
       href: "/career/companies",
@@ -110,10 +118,14 @@ export function AccountOverview() {
           </h2>
           <p>
             {viewer
-              ? "내 기술, 저장 목록, 지원 기록과 관심 기업을 계정에 저장합니다."
+              ? accountSyncStatus === "synced"
+                ? "내 기술, 저장 목록, 지원 기록과 관심 기업을 이 기기와 계정에 저장합니다."
+                : accountSyncStatus === "syncing"
+                  ? "커리어 데이터는 이 기기에 저장되어 있고, 계정에 저장 중입니다."
+                  : "커리어 데이터는 이 기기에 저장됩니다."
               : status === "error"
-                ? "현재 브라우저 데이터는 그대로 유지됩니다. 연결이 복구되면 로그인 상태를 다시 확인합니다."
-              : "로그인하면 현재 브라우저의 커리어 데이터를 계정에 병합합니다."}
+                ? "현재 이 기기의 데이터는 그대로 유지됩니다. 연결이 복구되면 로그인 상태를 다시 확인합니다."
+              : "로그인하면 현재 이 기기의 커리어 데이터를 계정에 합칩니다."}
           </p>
         </div>
         <div className={styles.identityAction}>
@@ -145,7 +157,11 @@ export function AccountOverview() {
             <h2 id="account-data-title">내 커리어 데이터</h2>
             <p>
               {viewer
-                ? "현재 계정과 이 기기에 합쳐진 값을 표시합니다."
+                ? accountSyncStatus === "synced"
+                  ? "현재 이 기기와 계정에 저장된 값을 표시합니다."
+                  : accountSyncStatus === "syncing"
+                    ? "현재 이 기기에 저장된 값을 표시하며 계정에도 저장 중입니다."
+                    : "현재 이 기기에 저장된 값을 표시합니다."
                 : "현재 이 기기에 저장된 값을 표시합니다."}
             </p>
           </div>
@@ -155,9 +171,15 @@ export function AccountOverview() {
             ) : (
               <LockKey aria-hidden="true" size={15} />
             )}
-            {viewer ? "계정에 저장됨" : "이 기기에 저장됨"}
+            {storageStatus.label}
           </span>
         </div>
+
+        {storageStatus.error && (
+          <p className={styles.error} role="alert">
+            {storageStatus.error}
+          </p>
+        )}
 
         <div className={styles.summaryGrid}>
           {summary.map((item) => {
@@ -190,7 +212,7 @@ export function AccountOverview() {
           </strong>
           <p>
             {viewer
-              ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 서버에 저장됩니다. 작성 중인 임시 글과 최근 본 주제만 현재 탭 또는 브라우저에 남습니다."
+              ? "계정으로 작성한 글과 댓글, 공감·저장·팔로우는 계정에 보관합니다. 작성 중인 임시 글과 최근 본 주제만 현재 탭 또는 이 기기에 남습니다."
               : "게시 전 작성 내용은 현재 탭의 임시 글로만 보관합니다. 이전 버전에서 이 기기에 남긴 글은 별도 복구 대상으로 표시하고 로그인 후 계정 이전을 시도합니다."}
           </p>
         </div>
