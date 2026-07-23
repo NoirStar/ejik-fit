@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const COMMUNITY_DISCLOSURE =
-  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.";
+  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은 계정 글과 구분해 표시합니다.";
 
 for (const width of [1440, 820, 390, 320]) {
   test(`searches verified data without overflow at ${width}px`, async ({
@@ -228,10 +228,10 @@ test("finds a legacy browser post as recovery data after reload", async ({
     ),
   ).toHaveLength(1);
   await expect(
-    page.getByRole("region", { name: "이전 기기 저장 글" }),
+    page.getByRole("region", { name: "이 기기에 남은 글" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("article", { name: title }).getByText("이전 저장 글"),
+    page.getByRole("article", { name: title }).getByText("이 기기에 남은 글"),
   ).toBeVisible();
 
   const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
@@ -244,12 +244,10 @@ test("finds a legacy browser post as recovery data after reload", async ({
 
   let localResult = page.getByRole("article", { name: title });
   await expect(localResult).toBeVisible();
-  await expect(localResult.getByText("이전 저장 글")).toBeVisible();
+  await expect(localResult.getByText("이 기기에 남은 글")).toBeVisible();
   await expect(page.getByRole("link", { name: /커뮤니티.*1/ })).toBeVisible();
   await expect(page.getByText("검색 결과가 없습니다.")).toHaveCount(0);
-  await expect(
-    page.getByText(/이전 저장 글은 이 브라우저에서만 복구할 수 있고/),
-  ).toBeVisible();
+  await expect(page.getByText(COMMUNITY_DISCLOSURE)).toBeVisible();
 
   const resultLink = localResult.getByRole("link", { exact: true, name: title });
   await expect(resultLink).toHaveAttribute("href", `/posts/${localPostId}`);
@@ -270,12 +268,8 @@ test("finds a legacy browser post as recovery data after reload", async ({
   await expect(
     page.getByRole("heading", { exact: true, level: 1, name: title }),
   ).toBeVisible();
-  await expect(page.getByText("이전 기기 저장 글", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("heading", {
-      level: 2,
-      name: "이 브라우저에 저장된 내 글",
-    }),
+    page.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
   ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);
   expect(browserErrors).toEqual([]);

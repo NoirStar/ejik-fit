@@ -15,9 +15,10 @@ for (const viewport of [
     await page.goto("/");
 
     const heading = page.getByRole("heading", {
-      name: "커리어 이야기 둘러보기",
+      name: "커리어 이야기",
     });
-    const firstArticle = page.getByRole("article").first();
+    const feedPanel = page.getByRole("tabpanel", { name: "둘러보기" });
+    const firstArticle = feedPanel.getByRole("article").first();
     await expect(heading).toBeVisible();
     await expect(firstArticle).toBeVisible();
 
@@ -31,14 +32,17 @@ for (const viewport of [
     );
     expect(bodyFamily).toContain("Pretendard");
 
-    const firstBox = await firstArticle.boundingBox();
-    expect(firstBox).not.toBeNull();
-    expect(firstBox!.y).toBeLessThan(viewport.height);
+    const articlePositions = await feedPanel.evaluate((element) =>
+      [...element.querySelectorAll<HTMLElement>(":scope > article")]
+        .slice(0, 2)
+        .map((article) => article.getBoundingClientRect().top),
+    );
+    expect(articlePositions.length).toBeGreaterThan(0);
+    expect(articlePositions[0]).toBeLessThan(viewport.height);
 
     if (viewport.label === "desktop") {
-      const secondBox = await page.getByRole("article").nth(1).boundingBox();
-      expect(secondBox).not.toBeNull();
-      expect(secondBox!.y).toBeLessThan(900);
+      expect(articlePositions.length).toBeGreaterThan(1);
+      expect(articlePositions[1]).toBeLessThan(900);
     }
 
     const overflows = await page.evaluate(
