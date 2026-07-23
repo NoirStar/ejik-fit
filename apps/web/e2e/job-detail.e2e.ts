@@ -83,7 +83,7 @@ for (const width of [1440, 820, 600, 390]) {
       const actions = page.getByRole("region", { name: "지원 준비" });
       const primaryActions = page.getByRole("group", { name: "지원 및 저장" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
-      const skills = page.getByRole("heading", { name: "요구 기술 근거" });
+      const skills = page.getByRole("heading", { name: "기술 요건" });
       const trust = page.getByRole("region", { name: "공고 신뢰 정보" });
       const navigation = page.getByRole("navigation", {
         name: "모바일 주요 탐색",
@@ -151,6 +151,15 @@ test("keeps a long Korean job title grouped by words on mobile", async ({
     name: "플랫폼 데이터 서비스 개발자 채용",
   });
   await expect(title).toBeVisible();
+  const apply = page.getByRole("link", {
+    name: "공식 채용페이지에서 지원",
+  });
+  await expect(apply).toBeVisible();
+  expect(
+    await apply.evaluate(
+      (element) => getComputedStyle(element).whiteSpace === "nowrap",
+    ),
+  ).toBe(true);
   expect(
     await title.evaluate((element) => getComputedStyle(element).wordBreak),
   ).toBe("keep-all");

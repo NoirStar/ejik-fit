@@ -91,8 +91,12 @@ describe("JobDetailActions", () => {
     render(<JobDetailActions {...props} />);
 
     expect(
-      screen.getByRole("link", { name: "내 기술 저장하기" }),
+      screen.getByText("내 기술을 추가하면 공고의 기술 요건과 비교합니다."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "내 기술 추가" }),
     ).toHaveAttribute("href", "/career");
+    expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
   });
 
   it("does not claim a save succeeded when browser storage rejects it", () => {

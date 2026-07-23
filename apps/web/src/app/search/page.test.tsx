@@ -72,6 +72,10 @@ describe("SearchPage", () => {
     expect(
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("검색어를 입력해 주세요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
+    ).toBeInTheDocument();
   });
 
   it("loads normalized actual posting and skill evidence in parallel", async () => {
@@ -198,8 +202,7 @@ describe("SearchPage", () => {
       }),
     ).resolves.toMatchObject({
       title: "“Python” 검색",
-      description:
-        "“Python”와 관련된 공식 채용공고, 기업, 기술 수요와 전체 공개 커뮤니티 글을 구분해 확인합니다.",
+      description: "공고와 커뮤니티 글을 나누어 보여줍니다.",
       alternates: { canonical: "/search" },
       robots: { index: false, follow: true },
     });

@@ -70,8 +70,14 @@ describe("JobList", () => {
     expect(screen.getByLabelText("공고 검색")).toHaveValue("backend");
     expect(screen.getByLabelText("경력 조건")).toHaveValue("experienced");
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "채용공고" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다."),
+    ).toBeInTheDocument();
     expect(screen.getByText("전체 공식 공고 2건")).toBeInTheDocument();
-    expect(screen.getByText("이번 페이지 기업 2곳")).toBeInTheDocument();
+    expect(screen.getByText("현재 목록")).toBeInTheDocument();
     expect(screen.getByTitle("네이버 로고")).toBeInTheDocument();
 
     const job = screen
@@ -96,6 +102,13 @@ describe("JobList", () => {
       "href",
       "https://recruit.navercorp.com/job-1",
     );
+    expect(
+      screen.getAllByRole("link", { name: "기술 요건 보기" }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("필수·우대 미표기").parentElement).toHaveTextContent(
+      "Linux",
+    );
+    expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "필터 초기화" })).toHaveAttribute(
       "href",
       "/jobs",
@@ -105,6 +118,21 @@ describe("JobList", () => {
     expect(
       await screen.findByRole("button", { name: "Backend Engineer 저장" }),
     ).toHaveAttribute("aria-pressed", "false");
+
+    const sourceNotice = screen.getByText(
+      "지원하기 전에 기업 채용페이지에서 최신 내용을 확인해 주세요.",
+    );
+    expect(
+      screen.getAllByText(
+        "지원하기 전에 기업 채용페이지에서 최신 내용을 확인해 주세요.",
+      ),
+    ).toHaveLength(1);
+    expect(
+      screen
+        .getByRole("link", { name: "Go Platform Engineer" })
+        .closest("ul")!
+        .compareDocumentPosition(sourceNotice) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("keeps a plain company label for an older response without a slug", () => {
@@ -143,6 +171,9 @@ describe("JobList", () => {
       /^저장\s*0$/,
     );
     expect(screen.queryByText("이 페이지")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "저장한 공고 0" }));
+    expect(screen.getByText("저장한 공고가 없습니다.")).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("button", { name: "내 기술 겹침 1" }),
@@ -253,8 +284,11 @@ describe("JobList", () => {
       />,
     );
 
-    expect(screen.getByText("조건에 맞는 공식 공고가 없습니다.")).toBeInTheDocument();
-    expect(screen.getByText("검색 조건을 조정해 주세요.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText("공고 데이터를 불러오지 못했습니다.")).not.toBeInTheDocument();
 
     rerender(
@@ -264,6 +298,9 @@ describe("JobList", () => {
       await screen.findByRole("button", { name: "내 기술 겹침 0" }),
     );
     expect(screen.getByText("먼저 내 기술을 저장해 주세요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("내 기술을 추가하면 공고의 기술 요건과 비교합니다."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "내 커리어에서 기술 추가" })).toHaveAttribute(
       "href",
       "/career",
@@ -277,6 +314,10 @@ describe("JobList", () => {
       />,
     );
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.queryByText("조건에 맞는 공식 공고가 없습니다.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+      ),
+    ).not.toBeInTheDocument();
   });
 });

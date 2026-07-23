@@ -26,6 +26,13 @@ describe("JobCard", () => {
     expect(screen.getByText("테스트 기업")).toBeInTheDocument();
     expect(screen.getByText("신입")).toBeInTheDocument();
     expect(screen.getByText("정규직")).toBeInTheDocument();
-    expect(screen.getByText(/마지막 확인/)).toBeInTheDocument();
+    expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "신입 백엔드 개발자" }),
+    ).toHaveAttribute("href", "/jobs/1");
+    expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
+      "href",
+      job.source_url,
+    );
   });
 });

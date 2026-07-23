@@ -1,10 +1,11 @@
+import { PRODUCT_TERMS } from "@/lib/labels";
 import type { SkillDetail } from "@/lib/types";
 
 
 const GROUPS = [
   { type: "required", label: "필수 기술" },
   { type: "preferred", label: "우대 기술" },
-  { type: "unspecified", label: "공고에 언급된 기술" },
+  { type: "unspecified", label: PRODUCT_TERMS.unspecifiedRequirement },
 ] as const;
 
 
@@ -14,7 +15,7 @@ export function SkillEvidence({ skills }: { skills: SkillDetail[] }) {
   }
 
   return (
-    <section className="skill-evidence" aria-label="요구 기술 근거">
+    <section className="skill-evidence" aria-label="기술 요건">
       {GROUPS.map((group) => {
         const items = skills.filter(
           (skill) => skill.requirement_type === group.type,

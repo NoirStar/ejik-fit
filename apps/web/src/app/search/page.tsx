@@ -60,9 +60,7 @@ export async function generateMetadata({
 
   return {
     title: query ? `“${query}” 검색` : "통합 검색",
-    description: query
-      ? `“${query}”와 관련된 공식 채용공고, 기업, 기술 수요와 전체 공개 커뮤니티 글을 구분해 확인합니다.`
-      : "공식 채용공고, 기업, 기술 수요와 전체 공개 커뮤니티 글을 한곳에서 검색합니다.",
+    description: "공고와 커뮤니티 글을 나누어 보여줍니다.",
     alternates: { canonical: "/search" },
     robots: { index: false, follow: true },
   };

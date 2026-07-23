@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 390]) {
+for (const width of [1440, 820, 390, 320]) {
   test(`searches verified data without overflow at ${width}px`, async ({
     page,
   }) => {
@@ -42,6 +42,17 @@ for (const width of [1440, 820, 390]) {
       pageContent.getByText("공식 공고", { exact: true }),
     ).toBeVisible();
     await expect(pageContent.getByText("공고 통계 표본")).toBeVisible();
+    await expect(
+      pageContent.getByRole("link", { name: "공고 보기" }),
+    ).toBeVisible();
+    await expect(
+      pageContent.getByText(/필수 \d+ · 우대 \d+ · 미표기 \d+/),
+    ).toBeVisible();
+    await expect(
+      pageContent.getByText(
+        "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
+      ),
+    ).toBeVisible();
 
     expect(
       await page.evaluate(
@@ -67,6 +78,24 @@ for (const width of [1440, 820, 390]) {
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
+
+    if (width === 320) {
+      const scopeLinks = pageContent
+        .getByRole("navigation", { name: "검색 범위" })
+        .getByRole("link");
+      await expect(scopeLinks).toHaveCount(5);
+      const noWrapTargets = [pageContent.getByRole("button", { name: "검색" })];
+      for (let index = 0; index < (await scopeLinks.count()); index += 1) {
+        noWrapTargets.push(scopeLinks.nth(index));
+      }
+      for (const target of noWrapTargets) {
+        expect(
+          await target.evaluate(
+            (element) => getComputedStyle(element).whiteSpace === "nowrap",
+          ),
+        ).toBe(true);
+      }
+    }
   });
 }
 
@@ -86,7 +115,13 @@ test("moves between actual result scopes and clearly labeled guidance", async ({
     }),
   ).toBeVisible();
   const guide = page.getByRole("region", { name: "커뮤니티 활용 가이드" });
-  await expect(guide.getByText("활용 가이드", { exact: true })).toBeVisible();
+  await expect(
+    guide.getByText("활용 가이드는 실제 사용자 글이 아닙니다."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("활용 가이드는 실제 사용자 글이 아닙니다."),
+  ).toHaveCount(1);
+  await expect(guide.getByText("활용 가이드", { exact: true })).toHaveCount(0);
   await expect(
     page.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
   ).toBeVisible();

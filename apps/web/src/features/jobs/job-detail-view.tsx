@@ -11,7 +11,7 @@ import styles from "@/app/jobs/[id]/job-detail.module.css";
 import { SourceMeta } from "@/components/source-meta";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { formatCareerRange } from "@/features/jobs/model";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import type { PostingDetail, SkillDetail } from "@/lib/types";
 
 import { JobDetailActions } from "./job-detail-actions";
@@ -88,7 +88,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
     <main className={styles.main}>
       <Link className={styles.backLink} href="/jobs">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        공고 탐색으로 돌아가기
+        채용공고로 돌아가기
       </Link>
 
       <article className={styles.article}>
@@ -173,8 +173,8 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             className={styles.skills}
           >
             <header className={styles.sectionHeader}>
-              <p>공식 원문에서 확정된 표현</p>
-              <h2 id="job-skills-title">요구 기술 근거</h2>
+              <p>기업 채용페이지에서 확인한 표현</p>
+              <h2 id="job-skills-title">기술 요건</h2>
             </header>
             {skillDetails.length > 0 ? (
               <div className={styles.skillGroups}>
@@ -189,14 +189,14 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
                   tone="preferred"
                 />
                 <SkillGroup
-                  label="공고 언급"
+                  label={PRODUCT_TERMS.unspecifiedRequirement}
                   skills={groups.unspecified}
                   tone="mentioned"
                 />
               </div>
             ) : (
               <p className={styles.emptyEvidence}>
-                확정 임계값을 통과한 기술 요구사항이 없습니다.
+                확인된 기술 요건이 없습니다.
               </p>
             )}
           </section>
@@ -214,7 +214,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               <ShieldCheck aria-hidden="true" size={21} weight="fill" />
               <div>
                 <h2>출처와 검증</h2>
-                <p>공식 원문과 검증 시각을 함께 확인하세요.</p>
+                <p>기업 채용페이지와 확인 시각을 함께 확인해 주세요.</p>
                 <SourceMeta
                   lastVerifiedAt={job.last_verified_at}
                   sourceUrl={job.source_url}

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 600, 390]) {
+for (const width of [1440, 820, 600, 390, 320]) {
   test(`keeps verified jobs usable without overflow at ${width}px`, async ({
     page,
   }) => {
@@ -21,7 +21,7 @@ for (const width of [1440, 820, 600, 390]) {
     ).toBe(false);
 
     const pageTitleSize = await page
-      .getByRole("heading", { level: 1, name: "공고 탐색" })
+      .getByRole("heading", { level: 1, name: "채용공고" })
       .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
     expect(pageTitleSize).toBeLessThanOrEqual(width <= 760 ? 28 : 32);
 
@@ -38,10 +38,31 @@ for (const width of [1440, 820, 600, 390]) {
     for (const target of [
       page.getByRole("button", { name: "검색", exact: true }),
       page.getByRole("link", { name: "Python 스킬맵" }),
+      page.getByRole("link", { name: "기술 요건 보기" }).first(),
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+
+    await expect(
+      page.getByText(
+        "지원하기 전에 기업 채용페이지에서 최신 내용을 확인해 주세요.",
+      ),
+    ).toHaveCount(1);
+    if (width === 320) {
+      for (const target of [
+        page.getByRole("button", { name: "전체 공고 2" }),
+        page.getByRole("button", { name: "내 기술 겹침 0" }),
+        page.getByRole("button", { name: "저장한 공고 0" }),
+        page.getByRole("link", { name: "기술 요건 보기" }).first(),
+      ]) {
+        expect(
+          await target.evaluate(
+            (element) => getComputedStyle(element).whiteSpace === "nowrap",
+          ),
+        ).toBe(true);
+      }
     }
 
     for (const textLink of [
@@ -105,7 +126,11 @@ test("combines query and career filters like the production API", async ({
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
   ).not.toBeVisible();
-  await expect(page.getByText("조건에 맞는 공식 공고가 없습니다.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+    ),
+  ).toBeVisible();
 });
 
 test("keeps category filter actions together at tablet width", async ({

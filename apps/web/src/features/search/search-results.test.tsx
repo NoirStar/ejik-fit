@@ -16,6 +16,10 @@ import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 import type { SearchSnapshot } from "./model";
 import { SearchResults } from "./search-results";
 
+const EMPTY_SEARCH_COPY =
+  "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.";
+const GUIDE_DISCLOSURE = "활용 가이드는 실제 사용자 글이 아닙니다.";
+
 const serverSearchPost: CommunityPost = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   author: {
@@ -195,7 +199,10 @@ describe("SearchResults", () => {
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "검색어" })).toHaveValue("");
-    expect(screen.getByText("검색어를 입력하면 결과를 나눠 보여드려요.")).toBeInTheDocument();
+    expect(screen.getByText("검색어를 입력해 주세요.")).toBeInTheDocument();
+    expect(
+      screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/전체 결과 \d+건/)).not.toBeInTheDocument();
   });
 
@@ -230,28 +237,41 @@ describe("SearchResults", () => {
       "href",
       "https://recruit.navercorp.com/job-python",
     );
+    expect(within(job).getByRole("link", { name: "공고 보기" })).toHaveAttribute(
+      "href",
+      "/jobs/job-python",
+    );
 
     const skill = screen
       .getByRole("link", { name: "Python 스킬맵 보기" })
       .closest("article")!;
     expect(within(skill).getByText("공고 통계 표본")).toBeInTheDocument();
     expect(within(skill).getByText("18건 공고")).toBeInTheDocument();
-    expect(within(skill).getByText("필수 12 · 우대 4 · 미분류 2")).toBeInTheDocument();
+    expect(within(skill).getByText("필수 12 · 우대 4 · 미표기 2")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
+      ),
+    ).toBeInTheDocument();
 
     const community = screen
       .getByRole("link", { name: "Python에서 Go로 옮긴 경험이 궁금해요" })
       .closest("article")!;
-    expect(within(community).getByText("활용 가이드")).toBeInTheDocument();
+    expect(within(community).queryByText("활용 가이드")).not.toBeInTheDocument();
+    const guide = screen.getByRole("region", { name: "커뮤니티 활용 가이드" });
     expect(
-      within(screen.getByRole("region", { name: "커뮤니티 활용 가이드" }))
-        .getByRole("article", { name: "Python에서 Go로 옮긴 경험이 궁금해요" }),
+      within(guide).getByRole("article", {
+        name: "Python에서 Go로 옮긴 경험이 궁금해요",
+      }),
     ).toBeInTheDocument();
+    expect(within(guide).getByText(GUIDE_DISCLOSURE)).toBeInTheDocument();
+    expect(screen.getAllByText(GUIDE_DISCLOSURE)).toHaveLength(1);
     expect(
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
     expect(
       screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
-    ).toHaveTextContent("활용 가이드는 실제 사용자 글이 아닙니다");
+    ).not.toHaveTextContent(GUIDE_DISCLOSURE);
   });
 
   it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
@@ -281,7 +301,7 @@ describe("SearchResults", () => {
       screen.getByRole("article", {
         name: "Python에서 Go로 옮긴 경험이 궁금해요",
       }),
-    ).toHaveTextContent("활용 가이드");
+    ).not.toHaveTextContent("활용 가이드");
     expect(
       screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
     ).toBeInTheDocument();
@@ -334,6 +354,22 @@ describe("SearchResults", () => {
     ).toBeInTheDocument();
   });
 
+  it("uses one direct community-search error while keeping other results", async () => {
+    const store = serverSearchStore();
+    store.searchPosts.mockRejectedValueOnce(new Error("server unavailable"));
+
+    render(<SearchResults communityStore={store} snapshot={snapshot()} />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(
+      "커뮤니티 검색 결과를 불러오지 못했습니다.",
+    );
+    expect(alert).not.toHaveTextContent("server unavailable");
+    expect(
+      screen.getByRole("link", { name: "Python Backend Engineer" }),
+    ).toBeInTheDocument();
+  });
+
   it("does not announce an empty search while recent public community posts are loading", async () => {
     const store = serverSearchStore();
     let resolvePosts:
@@ -365,7 +401,7 @@ describe("SearchResults", () => {
       name: "전체 공개 커뮤니티 글까지 검색하고 있습니다.",
     });
     expect(loadingHeading.closest('[role="status"]')).not.toBeNull();
-    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
 
     await act(async () => {
       resolvePosts?.({ items: [serverSearchPost], nextCursor: null });
@@ -403,7 +439,7 @@ describe("SearchResults", () => {
         name: "로컬 검색으로 다시 찾는 내 질문",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
   });
 
@@ -463,7 +499,7 @@ describe("SearchResults", () => {
     expect(screen.getByText("공고 검색 결과를 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
     expect(
-      screen.queryByText("검색 결과가 없습니다."),
+      screen.queryByText(EMPTY_SEARCH_COPY),
     ).not.toBeInTheDocument();
   });
 
@@ -483,7 +519,7 @@ describe("SearchResults", () => {
         })}
       />,
     );
-    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
+    expect(await screen.findByText(EMPTY_SEARCH_COPY)).toBeInTheDocument();
 
     rerender(
       <SearchResults
@@ -508,6 +544,6 @@ describe("SearchResults", () => {
     expect(
       screen.getByText("실제 검색 데이터를 불러오지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
   });
 });

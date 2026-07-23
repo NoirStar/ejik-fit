@@ -9,8 +9,8 @@ import { normalizeSkillCategory } from "@/lib/skill-categories";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "공고 탐색",
-  description: "한국 기술기업의 공식 채용페이지에서 확인한 개발 직군 공고를 검색합니다.",
+  title: "채용공고",
+  description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;

@@ -43,6 +43,7 @@
   font-weight: 600;
   text-align: center;
   word-break: keep-all;
+  white-space: nowrap;
 }
 
 .apply {

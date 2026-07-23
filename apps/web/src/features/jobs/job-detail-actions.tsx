@@ -27,6 +27,7 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import type { SkillDetail } from "@/lib/types";
 
 import { matchOwnedJobSkills } from "./job-detail-model";
@@ -182,11 +183,11 @@ export function JobDetailActions({
       <div aria-live="polite" className={styles.overlap}>
         <StackSimple aria-hidden="true" size={19} weight="bold" />
         <div>
-          <h3>내 기술 비교</h3>
+          <h3>{PRODUCT_TERMS.ownedSkills} 비교</h3>
           {ownedSkills.length === 0 ? (
             <>
-              <p>저장한 기술이 없어 아직 비교하지 않았습니다.</p>
-              <Link href="/career">내 기술 저장하기</Link>
+              <p>내 기술을 추가하면 공고의 기술 요건과 비교합니다.</p>
+              <Link href="/career">내 기술 추가</Link>
             </>
           ) : (
             <>

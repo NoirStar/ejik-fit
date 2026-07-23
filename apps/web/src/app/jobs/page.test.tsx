@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getPostings } from "@/lib/api";
 import type { PostingListResponse } from "@/lib/types";
 
-import JobsPage from "./page";
+import JobsPage, { metadata } from "./page";
 
 vi.mock("@/lib/api", () => ({
   getPostings: vi.fn(),
@@ -62,9 +62,26 @@ describe("JobsPage", () => {
       limit: 20,
       offset: 0,
     });
+    expect(
+      screen.getByRole("heading", { level: 1, name: "채용공고" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python Engineer" })).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("link", { name: "기술 요건 보기" }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Python 스킬맵" })).toBeInTheDocument();
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
+  });
+
+  it("uses the same job name and purpose in page metadata", () => {
+    expect(metadata).toMatchObject({
+      title: "채용공고",
+      description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
+    });
   });
 
   it("requests the selected server page instead of stopping at 100 jobs", async () => {
@@ -136,7 +153,11 @@ describe("JobsPage", () => {
     render(await JobsPage());
 
     expect(screen.getByText("공고 데이터를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.queryByText("조건에 맞는 공식 공고가 없습니다.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+      ),
+    ).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 

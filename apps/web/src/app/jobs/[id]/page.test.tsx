@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPosting } from "@/lib/api";
 
+import JobDetailError from "./error";
 import JobDetail, { generateMetadata } from "./page";
 
 vi.mock("@/lib/api", async () => {
@@ -69,12 +70,12 @@ describe("JobDetail", () => {
       await JobDetail({ params: Promise.resolve({ id: "job-1" }) }),
     );
 
-    expect(screen.getByRole("link", { name: "공식 공고 열기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
       "href",
       job.source_url,
     );
-    expect(screen.getByText(/마지막 확인/)).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "요구 기술 근거" })).toBeInTheDocument();
+    expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "기술 요건" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "분석 방법" })).toHaveAttribute(
       "href",
       "/methodology",
@@ -91,7 +92,7 @@ describe("JobDetail", () => {
       screen.getByRole("heading", { level: 2, name: "채용 조건" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 2, name: "요구 기술 근거" }),
+      screen.getByRole("heading", { level: 2, name: "기술 요건" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go 스킬맵" })).toHaveAttribute(
       "href",
@@ -120,7 +121,7 @@ describe("JobDetail", () => {
     expect(JSON.stringify(jsonLd.jobLocation)).toContain("서울");
 
     const trust = screen.getByRole("region", { name: "공고 신뢰 정보" });
-    const skills = screen.getByRole("region", { name: "요구 기술 근거" });
+    const skills = screen.getByRole("region", { name: "기술 요건" });
     const description = screen.getByRole("region", { name: "공고 원문" });
     expect(
       skills.compareDocumentPosition(trust) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -175,7 +176,7 @@ describe("JobDetail", () => {
     render(await JobDetail({ params: Promise.resolve({ id: "job-1" }) }));
 
     expect(
-      screen.getByText("확정 임계값을 통과한 기술 요구사항이 없습니다."),
+      screen.getByText("확인된 기술 요건이 없습니다."),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -197,5 +198,17 @@ describe("JobDetail", () => {
     await expect(
       JobDetail({ params: Promise.resolve({ id: "job-1" }) }),
     ).rejects.toThrow("Invalid source_url");
+  });
+
+  it("returns from a detail error to the job list with the shared job name", () => {
+    render(<JobDetailError reset={vi.fn()} />);
+
+    expect(
+      screen.getByText("잠시 후 다시 시도하거나 채용공고로 돌아가 주세요."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "채용공고" })).toHaveAttribute(
+      "href",
+      "/jobs",
+    );
   });
 });

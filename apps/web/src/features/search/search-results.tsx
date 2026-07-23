@@ -22,7 +22,7 @@ import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "@/features/home-feed/model";
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import {
   readLocalCommunityPosts,
   subscribeLocalCommunityPosts,
@@ -64,6 +64,13 @@ const ALL_SCOPE_LIMITS = {
   jobs: 6,
   skills: 8,
   community: 4,
+} as const;
+
+const SEARCH_COPY = {
+  prompt: "검색어를 입력해 주세요.",
+  description: "공고와 커뮤니티 글을 나누어 보여줍니다.",
+  empty: "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.",
+  communityError: "커뮤니티 검색 결과를 불러오지 못했습니다.",
 } as const;
 
 function formatVerifiedDate(value: string | null) {
@@ -209,7 +216,7 @@ function JobResult({ job }: { job: JobSearchResult }) {
       )}
       <footer className={styles.resultActions}>
         <Link href={job.href}>
-          공고 분석
+          공고 보기
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
         <a href={job.sourceUrl} rel="noreferrer" target="_blank">
@@ -225,7 +232,7 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
   const requirementCounts = [
     ["필수", skill.requiredCount],
     ["우대", skill.preferredCount],
-    ["미분류", skill.unspecifiedCount],
+    [PRODUCT_TERMS.unspecifiedRequirementCompact, skill.unspecifiedCount],
   ] as const;
   const hasRequirementBreakdown = requirementCounts.some(
     ([, count]) => count !== null,
@@ -270,13 +277,11 @@ function CommunityResult({
   return (
     <article aria-label={item.title} className={styles.communityResult}>
       <div className={styles.resultTopline}>
-        <span className={styles.exampleBadge} data-source={item.source}>
-          {item.source === "local"
-            ? "이전 저장 글"
-            : item.source === "server"
-              ? "커뮤니티"
-              : "활용 가이드"}
-        </span>
+        {item.source !== "mock" && (
+          <span className={styles.exampleBadge} data-source={item.source}>
+            {item.source === "local" ? "이전 저장 글" : "커뮤니티"}
+          </span>
+        )}
         <span>{item.createdLabel}</span>
       </div>
       <p className={styles.communityAuthor}>
@@ -390,9 +395,7 @@ export function SearchResults({
             "무엇을 찾고 있나요?"
           )}
         </h1>
-        <p className={styles.description}>
-          공식 채용 데이터와 전체 공개 커뮤니티 글을 출처별로 나눠 확인하세요.
-        </p>
+        <p className={styles.description}>{SEARCH_COPY.description}</p>
         <form action="/search" className={styles.searchForm} method="get" role="search">
           <MagnifyingGlass aria-hidden="true" size={20} />
           <input
@@ -413,7 +416,7 @@ export function SearchResults({
         <section className={styles.startState}>
           <MagnifyingGlass aria-hidden="true" size={28} />
           <div>
-            <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
+            <h2>{SEARCH_COPY.prompt}</h2>
             <p>
               기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 서버의 공개
               계정 글 전체와 이 브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.
@@ -486,8 +489,7 @@ export function SearchResults({
               !communityUnavailable ? (
               <section className={styles.noResults}>
                 <MagnifyingGlass aria-hidden="true" size={27} />
-                <h2>검색 결과가 없습니다.</h2>
-                <p>표현을 줄이거나 기술·기업 이름으로 다시 검색해 보세요.</p>
+                <h2>{SEARCH_COPY.empty}</h2>
                 <Link href="/search">검색어 지우기</Link>
               </section>
             ) : (
@@ -549,7 +551,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="skill-results-title">기술</span>
                     <SectionHeader
                       count={snapshot.counts.skills}
-                      description="현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다."
+                      description="공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다."
                       query={query}
                       scope="skills"
                       title="기술"
@@ -582,8 +584,7 @@ export function SearchResults({
                     />
                     <p className={styles.mockDisclosure}>
                       공개 커뮤니티 결과는 서버 전체 글에서 찾습니다. 이전 저장 글은
-                      이 브라우저에서만 복구할 수 있고, 활용 가이드는 실제 사용자 글이
-                      아닙니다.
+                      이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
@@ -592,7 +593,7 @@ export function SearchResults({
                     )}
                     {accountCommunity.state.error && (
                       <div className={styles.communityLoadNote} data-error="true" role="alert">
-                        <span>{accountCommunity.state.error} 이전 저장 글과 활용 가이드는 계속 표시합니다.</span>
+                        <span>{SEARCH_COPY.communityError}</span>
                         <button
                           onClick={() =>
                             void (accountCommunity.state.status === "error"
@@ -668,7 +669,8 @@ export function SearchResults({
                           >
                             <header>
                               <h3>커뮤니티 활용 가이드</h3>
-                              <p>검색과 질문 작성을 돕기 위해 이직핏이 구성한 예시입니다.</p>
+                              <p>활용 가이드는 실제 사용자 글이 아닙니다.</p>
+                              <p>검색과 질문 작성을 돕는 읽기 전용 예시입니다.</p>
                             </header>
                             <div className={styles.communityList}>
                               {guideCommunityResults.map((item) => (

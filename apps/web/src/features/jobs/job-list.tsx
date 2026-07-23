@@ -22,7 +22,7 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import { SKILL_CATEGORIES } from "@/lib/skill-categories";
 import type { PostingListResponse, PostingSummary } from "@/lib/types";
 
@@ -37,6 +37,20 @@ import {
   type JobView,
 } from "./model";
 import styles from "./job-list.module.css";
+
+const JOB_COPY = {
+  title: "채용공고",
+  description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
+  currentList: "현재 목록",
+  details: "공고 보기",
+  requirements: "기술 요건 보기",
+  empty: "조건에 맞는 공고가 없습니다. 검색어나 필터를 줄여 주세요.",
+  savedEmpty: "저장한 공고가 없습니다.",
+  addSkills: "내 기술을 추가하면 공고의 기술 요건과 비교합니다.",
+} as const;
+
+const SOURCE_NOTICE =
+  "지원하기 전에 기업 채용페이지에서 최신 내용을 확인해 주세요.";
 
 export type JobListFilters = {
   query: string;
@@ -184,14 +198,14 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
             tone="preferred"
           />
           <SkillGroup
-            label="공고 언급"
+            label={PRODUCT_TERMS.unspecifiedRequirement}
             skills={evidence.unspecifiedSkills}
             tone="mentioned"
           />
         </div>
       ) : (
         <p className={styles.noEvidence}>
-          확정 임계값을 통과한 기술 요구사항이 아직 없습니다.
+          확인된 기술 요건이 없습니다.
         </p>
       )}
 
@@ -205,7 +219,7 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
             href={`/jobs/${encodeURIComponent(job.id)}`}
             prefetch={false}
           >
-            분석 보기
+            {JOB_COPY.requirements}
           </Link>
           <a href={job.source_url} rel="noreferrer" target="_blank">
             공식 원문
@@ -227,7 +241,7 @@ function ViewEmptyState({ view, hasOwnedSkills }: {
         <StackSimple aria-hidden="true" size={24} />
         <div>
           <h3>먼저 내 기술을 저장해 주세요.</h3>
-          <p>내 스택에 저장한 기술과 확정된 공고 기술을 직접 비교합니다.</p>
+          <p>{JOB_COPY.addSkills}</p>
         </div>
         <Link href="/career">내 커리어에서 기술 추가</Link>
       </div>
@@ -239,7 +253,7 @@ function ViewEmptyState({ view, hasOwnedSkills }: {
         <StackSimple aria-hidden="true" size={24} />
         <div>
           <h3>현재 결과에서 겹치는 기술이 없습니다.</h3>
-          <p>검색 조건을 넓히거나 내 기술을 추가해 다시 확인해 보세요.</p>
+          <p>검색 조건을 넓히거나 내 기술을 추가해 주세요.</p>
         </div>
         <Link href="/career">내 기술 관리</Link>
       </div>
@@ -249,8 +263,8 @@ function ViewEmptyState({ view, hasOwnedSkills }: {
     <div className={styles.emptyState}>
       <BookmarkSimple aria-hidden="true" size={24} />
       <div>
-        <h3>현재 결과에 저장한 공고가 없습니다.</h3>
-        <p>공고 오른쪽의 저장 버튼을 누르면 이 브라우저에서 다시 볼 수 있습니다.</p>
+        <h3>{JOB_COPY.savedEmpty}</h3>
+        <p>공고를 저장하면 저장 목록에서 다시 볼 수 있습니다.</p>
       </div>
     </div>
   );
@@ -345,7 +359,7 @@ export function JobList({
   const retryQuery = retryParams.toString();
   const retryHref = `/jobs${retryQuery ? `?${retryQuery}` : ""}`;
   const resultAnnouncement = !hydrated
-    ? "저장한 공고와 기술을 확인하고 있습니다."
+    ? "저장한 공고와 내 기술을 확인하고 있습니다."
     : visibleJobs.length
       ? view === "all"
         ? `전체 ${total}개 공고 중 ${pageStart + 1}번부터 ${pageEnd}번까지 표시합니다.`
@@ -370,11 +384,8 @@ export function JobList({
   return (
     <main className={styles.main}>
       <header className={styles.intro}>
-        <h1>공고 탐색</h1>
-        <p className={styles.description}>
-          기업 채용페이지의 공개 공고를 검색하고, 확정된 기술 요구사항과 내 기술의
-          겹치는 근거를 확인하세요.
-        </p>
+        <h1>{JOB_COPY.title}</h1>
+        <p className={styles.description}>{JOB_COPY.description}</p>
         <ul className={styles.summary} aria-label="현재 공고 데이터 범위" role="list">
           {error ? (
             <>
@@ -398,8 +409,8 @@ export function JobList({
                 <span>{filtering ? "현재 검색 조건" : "이직핏 확인 범위"}</span>
               </li>
               <li>
-                <strong>이번 페이지 기업 {summary.companyCount}곳</strong>
-                <span>{items.length}개 공고 표시</span>
+                <strong>{JOB_COPY.currentList}</strong>
+                <span>{summary.companyCount}개 기업 · {items.length}개 공고</span>
               </li>
               <li>
                 <strong>{summary.latestVerifiedLabel}</strong>
@@ -490,16 +501,6 @@ export function JobList({
               openOnReady={saveSearchRequested}
             />
           </div>
-          <div className={styles.trustNote}>
-            <ShieldCheck aria-hidden="true" size={19} weight="fill" />
-            <p>
-              지원 전 공식 원문에서 최신 조건을 확인해 주세요. 저장 공고와 내
-              기술은 브라우저에, 저장 검색은 로그인 계정에 남습니다.
-            </p>
-            <Link href="/data-policy" prefetch={false}>
-              데이터 정책
-            </Link>
-          </div>
         </aside>
 
         <section
@@ -565,10 +566,9 @@ export function JobList({
             <div className={styles.emptyState}>
               <MagnifyingGlass aria-hidden="true" size={24} />
               <div>
-                <h3>조건에 맞는 공식 공고가 없습니다.</h3>
-                <p>검색 조건을 조정해 주세요.</p>
+                <h3>{JOB_COPY.empty}</h3>
               </div>
-              <Link href="/jobs">전체 공고 보기</Link>
+              <Link href="/jobs">{JOB_COPY.details}</Link>
             </div>
           ) : visibleJobs.length === 0 ? (
             <ViewEmptyState
@@ -645,6 +645,10 @@ export function JobList({
                   )}
                 </nav>
               )}
+              <div className={styles.sourceNotice}>
+                <ShieldCheck aria-hidden="true" size={18} weight="fill" />
+                <p>{SOURCE_NOTICE}</p>
+              </div>
             </>
           )}
         </section>

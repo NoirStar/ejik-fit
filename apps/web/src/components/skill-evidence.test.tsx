@@ -40,7 +40,8 @@ describe("SkillEvidence", () => {
 
     expect(screen.getByText("필수 기술")).toBeInTheDocument();
     expect(screen.getByText("우대 기술")).toBeInTheDocument();
-    expect(screen.getByText("공고에 언급된 기술")).toBeInTheDocument();
+    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "기술 요건" })).toBeInTheDocument();
     expect(
       screen.getByText("Go 기반 백엔드 개발 경험"),
     ).toBeInTheDocument();
@@ -51,7 +52,7 @@ describe("SkillEvidence", () => {
 
     expect(screen.queryByText("우대 기술")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("공고에 언급된 기술"),
+      screen.queryByText("필수·우대 미표기"),
     ).not.toBeInTheDocument();
   });
 
