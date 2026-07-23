@@ -432,8 +432,8 @@ export function SearchResults({
           <div>
             <h2>{SEARCH_COPY.prompt}</h2>
             <p>
-              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 서버의 공개
-              계정 글 전체와 이 브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.
+              기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이
+              브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -496,7 +496,10 @@ export function SearchResults({
               <section className={styles.noResults} role="status">
                 <MagnifyingGlass aria-hidden="true" size={27} />
                 <h2>전체 공개 커뮤니티 글까지 검색하고 있습니다.</h2>
-                <p>공식 데이터 검색 결과는 유지한 채 서버 검색 결과를 합치는 중입니다.</p>
+                <p>
+                  공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는
+                  중입니다.
+                </p>
               </section>
             ) : snapshot.dataStatus === "ready" &&
               !snapshot.hasAnyResults &&
@@ -603,8 +606,8 @@ export function SearchResults({
                       title="커뮤니티"
                     />
                     <p className={styles.mockDisclosure}>
-                      공개 커뮤니티 결과는 서버 전체 글에서 찾습니다. 이전 저장 글은
-                      이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.
+                      커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이
+                      브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
@@ -648,7 +651,9 @@ export function SearchResults({
                                 ))}
                             </div>
                           ) : accountCommunity.state.status === "ready" ? (
-                            <SectionState>서버 전체 글에서 일치하는 결과가 없습니다.</SectionState>
+                            <SectionState>
+                              공개 계정 글에서 일치하는 결과가 없습니다.
+                            </SectionState>
                           ) : null}
                           {scope === "community" &&
                             accountCommunity.state.nextCursor && (

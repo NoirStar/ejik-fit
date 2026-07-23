@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+const COMMUNITY_DISCLOSURE =
+  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.";
+
 for (const width of [1440, 820, 390, 320]) {
   test(`searches verified data without overflow at ${width}px`, async ({
     page,
@@ -156,9 +159,9 @@ test("moves between actual result scopes and clearly labeled guidance", async ({
     page.getByText("활용 가이드는 실제 사용자 글이 아닙니다."),
   ).toHaveCount(1);
   await expect(guide.getByText("활용 가이드", { exact: true })).toHaveCount(0);
-  await expect(
-    page.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
-  ).toBeVisible();
+  const disclosure = page.getByText(COMMUNITY_DISCLOSURE);
+  await expect(disclosure).toBeVisible();
+  await expect(disclosure).not.toContainText(/API|서버|응답/);
   const communityTag = page.getByRole("link", {
     name: "Kubernetes 커뮤니티 검색",
   });

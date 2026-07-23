@@ -19,6 +19,15 @@ import { SearchResults } from "./search-results";
 const EMPTY_SEARCH_COPY =
   "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.";
 const GUIDE_DISCLOSURE = "활용 가이드는 실제 사용자 글이 아닙니다.";
+const START_DISCLOSURE =
+  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 브라우저의 이전 저장 글, 활용 가이드에서 찾습니다.";
+const COMMUNITY_DISCLOSURE =
+  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이전 저장 글은 이 브라우저에서만 복구할 수 있고, 계정 글과 구분해 표시합니다.";
+const COMMUNITY_MERGE_COPY =
+  "공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는 중입니다.";
+const COMMUNITY_EMPTY_COPY =
+  "공개 계정 글에서 일치하는 결과가 없습니다.";
+const IMPLEMENTATION_JARGON = /API|서버|응답/;
 
 const serverSearchPost: CommunityPost = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -199,7 +208,11 @@ describe("SearchResults", () => {
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "검색어" })).toHaveValue("");
-    expect(screen.getByText("검색어를 입력해 주세요.")).toBeInTheDocument();
+    const startState = screen
+      .getByText("검색어를 입력해 주세요.")
+      .closest("section")!;
+    expect(startState).toHaveTextContent(START_DISCLOSURE);
+    expect(startState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
     expect(
       screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
     ).toBeInTheDocument();
@@ -284,9 +297,9 @@ describe("SearchResults", () => {
     expect(
       within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
     ).toHaveAttribute("href", "/search?q=Python&scope=community");
-    expect(
-      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
-    ).not.toHaveTextContent(GUIDE_DISCLOSURE);
+    const disclosure = screen.getByText(COMMUNITY_DISCLOSURE);
+    expect(disclosure).not.toHaveTextContent(GUIDE_DISCLOSURE);
+    expect(disclosure).not.toHaveTextContent(IMPLEMENTATION_JARGON);
   });
 
   it("uses the full unspecified requirement label on a search job card", () => {
@@ -338,9 +351,7 @@ describe("SearchResults", () => {
         name: "Python에서 Go로 옮긴 경험이 궁금해요",
       }),
     ).not.toHaveTextContent("활용 가이드");
-    expect(
-      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
 
     deleteLocalCommunityPost("local-python-search");
 
@@ -354,7 +365,7 @@ describe("SearchResults", () => {
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
   });
 
-  it("searches the full public server community in its own result group", async () => {
+  it("searches all public account posts in their own result group", async () => {
     const store = serverSearchStore();
     render(
       <AuthViewerProvider
@@ -385,9 +396,17 @@ describe("SearchResults", () => {
       within(serverResult).getByRole("link", { name: serverSearchPost.title }),
     ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
     expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
-    expect(
-      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
+  });
+
+  it("describes an empty public account result without implementation jargon", async () => {
+    const store = serverSearchStore();
+    store.searchPosts.mockResolvedValue({ items: [], nextCursor: null });
+
+    render(<SearchResults communityStore={store} snapshot={snapshot()} />);
+
+    const emptyState = await screen.findByText(COMMUNITY_EMPTY_COPY);
+    expect(emptyState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
   });
 
   it("uses one direct community-search error while keeping other results", async () => {
@@ -436,7 +455,9 @@ describe("SearchResults", () => {
     const loadingHeading = await screen.findByRole("heading", {
       name: "전체 공개 커뮤니티 글까지 검색하고 있습니다.",
     });
-    expect(loadingHeading.closest('[role="status"]')).not.toBeNull();
+    const loadingState = loadingHeading.closest('[role="status"]')!;
+    expect(loadingState).toHaveTextContent(COMMUNITY_MERGE_COPY);
+    expect(loadingState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
     expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
 
     await act(async () => {
