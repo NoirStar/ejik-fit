@@ -1,3 +1,5 @@
+import { PRODUCT_TERMS } from "@/lib/labels";
+
 import type { MarketSkill } from "./model";
 import styles from "./market-overview.module.css";
 
@@ -17,8 +19,9 @@ export function ExplicitDemandBar({
       <span className={styles.srOnly} id={descriptionId}>
         {skill.categoryLabel}, 명시 요구 {skill.explicitCount}건, 필수{" "}
         {skill.requiredCount}건, 우대 {skill.preferredCount}건, 전체 등장{" "}
-        {skill.postingCount}건, 구분 안 됨 {skill.unspecifiedCount}건, 현재 1위
-        대비 막대 길이 {skill.relativeExplicitDemand}%
+        {skill.postingCount}건, {PRODUCT_TERMS.unspecifiedRequirement}{" "}
+        {skill.unspecifiedCount}건, 1위 대비 막대 길이{" "}
+        {skill.relativeExplicitDemand}%
       </span>
       <span aria-hidden="true" className={styles.explicitDemandTrack}>
         <span
@@ -43,7 +46,10 @@ export function ExplicitDemandBar({
       <span aria-hidden="true" className={styles.requirementCounts}>
         <span>필수 {skill.requiredCount.toLocaleString("ko-KR")}건</span>
         <span>우대 {skill.preferredCount.toLocaleString("ko-KR")}건</span>
-        <span>구분 안 됨 {skill.unspecifiedCount.toLocaleString("ko-KR")}건</span>
+        <span>
+          {PRODUCT_TERMS.unspecifiedRequirementCompact}{" "}
+          {skill.unspecifiedCount.toLocaleString("ko-KR")}건
+        </span>
       </span>
     </div>
   );

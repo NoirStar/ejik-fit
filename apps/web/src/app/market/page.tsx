@@ -12,8 +12,8 @@ import { getPostings, getSkillStats } from "@/lib/api";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "채용 시장",
-  description: "공식 채용페이지의 현재 공개 공고에서 확인한 기술 수요를 살펴봅니다.",
+  title: "채용 시장 기술 동향",
+  description: "기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.",
 };
 
 type MarketSearchParams = Record<string, string | string[] | undefined>;

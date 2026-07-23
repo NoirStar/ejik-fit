@@ -25,8 +25,8 @@ export default function MarketLoading() {
       className={`${styles.page} ${styles.loadingPage}`}
     >
       <header className={styles.intro}>
-        <h1>지금 채용 시장의 기술 흐름</h1>
-        <p>기업 공식 채용 공고의 기술 수요를 정리하고 있습니다.</p>
+        <h1>채용 시장 기술 동향</h1>
+        <p>기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.</p>
       </header>
 
       <div aria-hidden="true">

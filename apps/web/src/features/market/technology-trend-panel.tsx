@@ -24,6 +24,16 @@ type TrendSkillOption = {
   name: string;
 };
 
+const TREND_COPY = {
+  loading: "주간 추세를 불러오고 있습니다.",
+  insufficient: (collectedWeeks: number, requiredWeeks: number) =>
+    `${collectedWeeks}주치 데이터가 쌓였습니다. ${requiredWeeks}주부터 변화선을 표시합니다.`,
+  error:
+    "주간 추세를 불러오지 못했습니다. 기술 수요와 관련 공고는 정상적으로 표시됩니다.",
+  errorWithoutRelatedJobs:
+    "주간 추세를 불러오지 못했습니다. 기술 수요는 정상적으로 표시됩니다.",
+};
+
 function formatWeek(value: string) {
   const date = new Date(`${value}T00:00:00+09:00`);
   if (Number.isNaN(date.getTime())) return value;
@@ -203,6 +213,7 @@ export function TechnologyTrendPanel({
   onAddSkill,
   onRemoveSkill,
   onRetry,
+  relatedJobsAvailable,
   resource,
 }: {
   availableSkills: TrendSkillOption[];
@@ -211,6 +222,7 @@ export function TechnologyTrendPanel({
   onAddSkill: (skill: string) => void;
   onRemoveSkill: (skill: string) => void;
   onRetry: () => void;
+  relatedJobsAvailable: boolean;
   resource: MarketTrendResource;
 }) {
   const categories = useMemo(
@@ -240,7 +252,7 @@ export function TechnologyTrendPanel({
       <header className={styles.sideHeader}>
         <div>
           <h2 id="technology-trend-title">기술 수요 추세</h2>
-          <span>최근 12주 · 주간 공개 공고 스냅샷</span>
+          <span>최근 12주 · 주간 공고</span>
         </div>
         <span
           className={styles.collectingBadge}
@@ -307,8 +319,11 @@ export function TechnologyTrendPanel({
       ) : resource.status === "error" ? (
         <div className={styles.collectingState}>
           <WarningCircle aria-hidden="true" size={24} weight="duotone" />
-          <strong>추세 수집 상태를 불러오지 못했어요.</strong>
-          <p>현재 수요 순위와 공고는 계속 확인할 수 있습니다.</p>
+          <strong>
+            {relatedJobsAvailable
+              ? TREND_COPY.error
+              : TREND_COPY.errorWithoutRelatedJobs}
+          </strong>
           <button onClick={onRetry} type="button">
             다시 시도
           </button>
@@ -316,17 +331,18 @@ export function TechnologyTrendPanel({
       ) : (
         <div className={styles.collectingState}>
           <ChartLine aria-hidden="true" size={24} weight="duotone" />
-          <strong>주간 데이터를 수집하고 있어요.</strong>
-          <p>
+          <strong>
             {resource.status === "ready"
-              ? `현재 ${resource.data.collected_weeks}/${resource.data.minimum_weeks}주차입니다. 최소 ${resource.data.minimum_weeks}주가 쌓이면 실제 변화선을 표시합니다.`
-              : "현재 수집 주차를 확인하고 있습니다."}
-          </p>
+              ? TREND_COPY.insufficient(
+                  resource.data.collected_weeks,
+                  resource.data.minimum_weeks,
+                )
+              : TREND_COPY.loading}
+          </strong>
         </div>
       )}
       <p className={styles.panelFootnote}>
-        실제 공식 공고 스냅샷만 사용하며, 누락된 주차나 예시 수치를 채워 넣지
-        않습니다.
+        수집된 공고만 사용하며 빠진 주차를 임의로 채우지 않습니다.
       </p>
     </section>
   );

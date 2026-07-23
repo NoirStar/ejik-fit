@@ -2,6 +2,7 @@ import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
+import { PRODUCT_TERMS } from "@/lib/labels";
 
 import type {
   MarketJob,
@@ -49,7 +50,7 @@ export function SelectedTechnologyEvidence({
           <dd>{selected.preferredCount.toLocaleString("ko-KR")}건</dd>
         </div>
         <div>
-          <dt>구분 안 됨</dt>
+          <dt>{PRODUCT_TERMS.unspecifiedRequirement}</dt>
           <dd>{selected.unspecifiedCount.toLocaleString("ko-KR")}건</dd>
         </div>
       </dl>
@@ -57,7 +58,7 @@ export function SelectedTechnologyEvidence({
       {error ? (
         <div className={styles.compactState} role="alert">
           <strong>{error}</strong>
-          <p>전체 시장 수요 수치는 계속 확인할 수 있습니다.</p>
+          <p>기술 수요는 정상적으로 표시됩니다.</p>
         </div>
       ) : (
         <>
@@ -80,12 +81,12 @@ export function SelectedTechnologyEvidence({
                 })}
               </ul>
             ) : (
-              <p>현재 불러온 범위에서 반복 관계를 확인하지 못했습니다.</p>
+              <p>반복해서 함께 나온 기술이 없습니다.</p>
             )}
           </div>
 
           <div className={styles.evidenceSection}>
-            <h3>관련 공식 공고</h3>
+            <h3>관련 공고</h3>
             {jobs.length > 0 ? (
               <ul className={styles.recentJobList}>
                 {jobs.map((job) => (
@@ -113,7 +114,7 @@ export function SelectedTechnologyEvidence({
                 ))}
               </ul>
             ) : (
-              <p>현재 불러온 범위에 관련 공고가 없습니다.</p>
+              <p>관련 공고가 없습니다.</p>
             )}
           </div>
         </>
@@ -128,8 +129,7 @@ export function SelectedTechnologyEvidence({
         </Link>
       </div>
       <p className={styles.panelFootnote}>
-        함께 확인된 기술과 공고 예시는 현재 불러온 최대 100개 공식 공고
-        기준입니다.
+        함께 나온 기술과 공고 예시는 최대 100개 공고를 기준으로 합니다.
       </p>
     </section>
   );

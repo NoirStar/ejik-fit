@@ -4,6 +4,8 @@ import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
+import { PRODUCT_TERMS } from "@/lib/labels";
+
 import { ExplicitDemandBar } from "./explicit-demand-bar";
 import {
   sortMarketSkills,
@@ -51,18 +53,21 @@ export function TechnologyDemandChart({
     >
       <header className={styles.sectionHeader}>
         <div>
-          <h2 id="skill-demand-title">현재 기술 수요</h2>
+          <h2 id="skill-demand-title">기술 수요</h2>
           <p>필수·우대 명시 공고 · 1위 대비 길이</p>
         </div>
         <div aria-label="요구 조건 범례" className={styles.legend}>
           <span data-legend="required">필수</span>
           <span data-legend="preferred">우대</span>
+          <span data-legend="unspecified">
+            {PRODUCT_TERMS.unspecifiedRequirementCompact}
+          </span>
         </div>
       </header>
       <div aria-hidden="true" className={styles.tableHeader}>
         <span>순위 · 기술</span>
         <span>명시 요구</span>
-        <span>필수 · 우대 · 구분 안 됨</span>
+        <span>필수 · 우대 · {PRODUCT_TERMS.unspecifiedRequirementCompact}</span>
         <span />
       </div>
       <ol className={styles.skillList} ref={listRef}>

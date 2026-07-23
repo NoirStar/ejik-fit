@@ -36,12 +36,13 @@ describe("SelectedTechnologyEvidence", () => {
     expect(screen.getByText("명시 요구").closest("div")).toHaveTextContent(
       "명시 요구9건",
     );
-    expect(screen.getByText("구분 안 됨").closest("div")).toHaveTextContent(
-      "구분 안 됨3건",
+    expect(screen.getByText("필수·우대 미표기").closest("div")).toHaveTextContent(
+      "필수·우대 미표기3건",
     );
     expect(
-      screen.getByText(/현재 불러온 최대 100개 공식 공고 기준/),
+      screen.getByText(/최대 100개 공고를 기준/),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/구분 안 됨/)).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "관련 공고 전체 보기" }),
     ).toHaveAttribute("href", "/jobs?q=Kubernetes");

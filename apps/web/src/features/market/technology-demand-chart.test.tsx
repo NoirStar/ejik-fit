@@ -33,7 +33,7 @@ describe("TechnologyDemandChart", () => {
       />,
     );
 
-    const region = screen.getByRole("region", { name: "현재 기술 수요" });
+    const region = screen.getByRole("region", { name: "기술 수요" });
     expect(region.querySelectorAll("[data-skill-row]")).toHaveLength(8);
     expect(region.querySelector("[data-demand-fill]")).toHaveStyle({
       transform: "scaleX(1)",
@@ -41,7 +41,9 @@ describe("TechnologyDemandChart", () => {
     expect(region.querySelector("[data-demand-fill]")).not.toHaveStyle({
       width: "100%",
     });
-    expect(within(region).getAllByText("구분 안 됨 2건")).toHaveLength(8);
+    expect(within(region).getByText("미표기")).toBeInTheDocument();
+    expect(within(region).getAllByText("미표기 2건")).toHaveLength(8);
+    expect(within(region).queryByText(/구분 안 됨/)).not.toBeInTheDocument();
     expect(
       within(region).getByRole("button", { name: "전체 10개 기술 보기" }),
     ).toBeInTheDocument();

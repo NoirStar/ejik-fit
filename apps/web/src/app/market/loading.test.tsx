@@ -13,8 +13,13 @@ describe("MarketLoading", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "지금 채용 시장의 기술 흐름",
+        name: "채용 시장 기술 동향",
       }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.",
+      ),
     ).toBeInTheDocument();
     expect(container.querySelectorAll("[data-skeleton-skill-row]")).toHaveLength(8);
     expect(container.querySelector("[data-skeleton-side-panel]")).not.toBeNull();

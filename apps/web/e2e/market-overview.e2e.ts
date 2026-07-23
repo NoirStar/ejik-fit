@@ -24,7 +24,7 @@ for (const { height, width } of viewports) {
 
     const title = page.getByRole("heading", {
       level: 1,
-      name: "지금 채용 시장의 기술 흐름",
+      name: "채용 시장 기술 동향",
     });
     await expect(title).toBeVisible();
     await expect
@@ -50,7 +50,10 @@ for (const { height, width } of viewports) {
       page.getByRole("region", { name: "채용 시장 데이터 요약" }),
     ).toHaveCount(0);
 
-    const demand = page.getByRole("region", { name: "현재 기술 수요" });
+    const demand = page.getByRole("region", {
+      exact: true,
+      name: "기술 수요",
+    });
     await expect(demand).toBeVisible();
     await expect(
       demand.getByRole("button", { name: "LLM 기술 선택" }),
@@ -58,6 +61,7 @@ for (const { height, width } of viewports) {
     await expect(
       demand.getByText(/1위 대비 길이/),
     ).toBeVisible();
+    await expect(demand.getByText("미표기", { exact: true })).toBeVisible();
     await expect(demand.locator('[data-technology-icon="python"]')).toBeVisible();
     await expect(demand.locator('[data-technology-icon="cpu"]').first()).toBeVisible();
     await expect(demand.locator("[data-skill-row]")).toHaveCount(8);
@@ -67,7 +71,9 @@ for (const { height, width } of viewports) {
 
     const trend = page.getByRole("region", { name: "기술 수요 추세" });
     await expect(trend.getByText("추세 수집 중")).toBeVisible();
-    await expect(trend.getByText(/주간 데이터를 수집하고 있어요/)).toBeVisible();
+    await expect(
+      trend.getByText(/1주치 데이터가 쌓였습니다. 4주부터 변화선을 표시합니다./),
+    ).toBeVisible();
     await expect(trend.getByText("전체 경력·전체 분야 기준")).toBeVisible();
     await expect(trend.locator("path[data-trend-line]")).toHaveCount(0);
 
@@ -79,8 +85,11 @@ for (const { height, width } of viewports) {
     await expect(
       page
         .getByLabel("데이터를 읽는 기준")
-        .getByText(/기술은 확인됐지만 원문에서 필수·우대 여부/),
+        .getByText(
+          "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
+        ),
     ).toBeVisible();
+    await expect(page.getByText(/구분 안 됨/)).toHaveCount(0);
     await expect(page.getByText(/내 기술을 저장하면|다음 학습 후보/)).toHaveCount(
       0,
     );
@@ -196,7 +205,10 @@ test("carries selected market evidence into the jobs explorer", async ({
   page,
 }) => {
   await page.goto("/market?category=infra&career_type=experienced");
-  const demand = page.getByRole("region", { name: "현재 기술 수요" });
+  const demand = page.getByRole("region", {
+    exact: true,
+    name: "기술 수요",
+  });
   await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
   await expect(
     demand.getByRole("button", { name: "Python 기술 선택" }),
@@ -219,7 +231,10 @@ test("applies career filters to the fixture with production API semantics", asyn
 }) => {
   await page.goto("/market?career_type=new_comer");
 
-  const demand = page.getByRole("region", { name: "현재 기술 수요" });
+  const demand = page.getByRole("region", {
+    exact: true,
+    name: "기술 수요",
+  });
   await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
   await expect(
     demand.getByRole("button", { name: "Go 기술 선택" }),

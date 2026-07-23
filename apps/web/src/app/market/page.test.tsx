@@ -45,10 +45,12 @@ describe("MarketPage", () => {
       limit: 100,
     });
     expect(
-      screen.getByRole("heading", {
-        name: "지금 채용 시장의 기술 흐름",
-        level: 1,
-      }),
+      screen.getByRole("heading", { level: 1, name: "채용 시장 기술 동향" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "인프라" })).toHaveAttribute(
       "aria-current",

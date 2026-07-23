@@ -4,6 +4,8 @@ import { Info, WarningCircle } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { PRODUCT_TERMS } from "@/lib/labels";
+
 import { MarketFilters } from "./market-filters";
 import { MarketPulseSummary } from "./market-pulse-summary";
 import {
@@ -80,8 +82,8 @@ export function MarketOverview({
   return (
     <main className={styles.page}>
       <header className={styles.intro}>
-        <h1>지금 채용 시장의 기술 흐름</h1>
-        <p>기업 공식 채용 공고를 분석해 현재 기술 수요와 요구 조건을 확인합니다.</p>
+        <h1>채용 시장 기술 동향</h1>
+        <p>기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.</p>
       </header>
 
       <section aria-label="데이터 범위 안내" className={styles.dataNotice}>
@@ -134,14 +136,12 @@ export function MarketOverview({
                 <WarningCircle aria-hidden="true" size={22} weight="duotone" />
                 <div>
                   <h3>{snapshot.skillError}</h3>
-                  <p>최근 공식 공고는 확인 가능한 범위에서 계속 제공합니다.</p>
                 </div>
               </section>
             ) : snapshot.skills.length === 0 ? (
               <section className={styles.largeState}>
                 <div>
                   <h3>선택한 조건에 해당하는 기술 데이터가 없습니다.</h3>
-                  <p>전체 조건으로 돌아가 현재 수집된 기술 수요를 확인해 보세요.</p>
                 </div>
                 <Link href="/market">필터 초기화</Link>
               </section>
@@ -166,6 +166,7 @@ export function MarketOverview({
               onAddSkill={trend.addSkill}
               onRemoveSkill={trend.removeSkill}
               onRetry={trend.retry}
+              relatedJobsAvailable={!snapshot.postingError}
               resource={trend.resource}
             />
             <SelectedTechnologyEvidence
@@ -181,9 +182,12 @@ export function MarketOverview({
       <section aria-label="데이터를 읽는 기준" className={styles.methodNote}>
         <strong>데이터를 읽는 기준</strong>
         <p>
-          막대와 주간 변화는 필수·우대로 명시된 공고 수를 사용합니다. 구분 안 됨은
-          기술은 확인됐지만 원문에서 필수·우대 여부를 확인할 수 없는 공고입니다.
-          막대 길이는 현재 1위 대비 비교이며 시장점유율이 아닙니다.
+          막대와 주간 변화는 필수 또는 우대로 명시된 공고 수를 기준으로 합니다.{" "}
+          <span>
+            공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.
+          </span>{" "}
+          {PRODUCT_TERMS.unspecifiedRequirement}로 표시합니다. 막대는 1위와의
+          상대적인 차이이며 시장점유율이 아닙니다.
         </p>
         <div>
           <Link href="/methodology">분석 방법</Link>
