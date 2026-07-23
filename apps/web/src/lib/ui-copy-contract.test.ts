@@ -40,8 +40,7 @@ function collectSourceFiles(directory: string): string[] {
   });
 }
 
-function visibleStringNodes(fileName: string) {
-  const sourceText = readFileSync(fileName, "utf8");
+function visibleStringNodes(fileName: string, sourceText: string) {
   const sourceFile = ts.createSourceFile(
     fileName,
     sourceText,
@@ -64,7 +63,7 @@ function visibleStringNodes(fileName: string) {
     ) {
       value = node.text;
     }
-    if (/[가-힣]/u.test(value)) {
+    if (/[가-힣]/u.test(value) || value.includes("...")) {
       values.push({
         line:
           sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile))
@@ -79,7 +78,49 @@ function visibleStringNodes(fileName: string) {
   return values;
 }
 
+function forbiddenCopyDiagnostics(fileName: string, sourceText: string) {
+  const violations: string[] = [];
+
+  for (const item of visibleStringNodes(fileName, sourceText)) {
+    for (const phrase of forbidden) {
+      if (item.value.includes(phrase)) {
+        violations.push(
+          `${fileName}:${item.line} contains ${JSON.stringify(phrase)}`,
+        );
+      }
+    }
+  }
+
+  return violations;
+}
+
 describe("first-party Korean UX copy", () => {
+  it("reports pure ASCII ellipses in each supported visible node", () => {
+    const sourceText = [
+      'const literal = "...";',
+      "const jsx = <span>...</span>;",
+      'const tail = `count ${count}...`;',
+    ].join("\n");
+
+    expect(forbiddenCopyDiagnostics("virtual-copy.tsx", sourceText)).toEqual([
+      'virtual-copy.tsx:1 contains "..."',
+      'virtual-copy.tsx:2 contains "..."',
+      'virtual-copy.tsx:3 contains "..."',
+    ]);
+  });
+
+  it("allows the Unicode ellipsis in visible strings", () => {
+    const sourceText = [
+      'const literal = "…";',
+      "const jsx = <span>…</span>;",
+      'const tail = `count ${count}…`;',
+    ].join("\n");
+
+    expect(forbiddenCopyDiagnostics("virtual-copy.tsx", sourceText)).toEqual(
+      [],
+    );
+  });
+
   it("does not reintroduce rejected or inconsistent phrases", () => {
     const violations: string[] = [];
 
@@ -87,15 +128,9 @@ describe("first-party Korean UX copy", () => {
       const relative = path.relative(sourceRoot, fileName).split(path.sep).join("/");
       if (ignoredSourceFiles.has(relative)) continue;
 
-      for (const item of visibleStringNodes(fileName)) {
-        for (const phrase of forbidden) {
-          if (item.value.includes(phrase)) {
-            violations.push(
-              `${relative}:${item.line} contains ${JSON.stringify(phrase)}`,
-            );
-          }
-        }
-      }
+      violations.push(
+        ...forbiddenCopyDiagnostics(relative, readFileSync(fileName, "utf8")),
+      );
     }
 
     expect(violations).toEqual([]);

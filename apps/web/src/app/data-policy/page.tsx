@@ -98,8 +98,8 @@ export default async function DataPolicyPage() {
           <SourceDirectory directory={directory} />
         ) : (
           <div className={styles.directoryError} role="status">
-            <strong>수집 기업 목록을 불러오지 못했습니다.</strong>
-            <span>공고 화면에는 영향이 없습니다. 잠시 후 다시 확인해 주세요.</span>
+            <strong>수집 현황을 불러오지 못했습니다.</strong>
+            <span>잠시 후 다시 확인해 주세요.</span>
           </div>
         )}
       </section>

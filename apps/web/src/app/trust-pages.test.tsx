@@ -8,6 +8,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSourceDirectory } from "@/lib/api";
+import { ApiTimeoutError } from "@/lib/api-request";
 import { COMMUNITY_DRAFT_STORAGE_KEY } from "@/features/community/community-draft";
 
 import CorrectionsPage from "./corrections/page";
@@ -133,18 +134,25 @@ describe("public trust pages", () => {
     expect(screen.getByText(/0.80/)).toBeInTheDocument();
   });
 
-  it("limits a source-directory failure to the directory branch", async () => {
-    vi.mocked(getSourceDirectory).mockRejectedValueOnce(
-      new Error("directory unavailable"),
-    );
+  it.each([
+    ["a TypeError", new TypeError("fetch failed")],
+    [
+      "a timeout",
+      new ApiTimeoutError("https://api.example/sources", 8_000),
+    ],
+  ])("uses neutral source-directory copy for %s", async (_label, error) => {
+    vi.mocked(getSourceDirectory).mockRejectedValueOnce(error);
 
     render(await DataPolicyPage());
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("수집 기업 목록을 불러오지 못했습니다.");
-    expect(status).toHaveTextContent(
-      "공고 화면에는 영향이 없습니다. 잠시 후 다시 확인해 주세요.",
-    );
+    expect(
+      within(status).getByText("수집 현황을 불러오지 못했습니다."),
+    ).toBeInTheDocument();
+    expect(
+      within(status).getByText("잠시 후 다시 확인해 주세요."),
+    ).toBeInTheDocument();
+    expect(status).not.toHaveTextContent("공고 화면에는 영향이 없습니다");
   });
 
   it("reveals a large source directory in compact increments", async () => {
