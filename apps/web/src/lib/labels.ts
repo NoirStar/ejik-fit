@@ -1,3 +1,12 @@
+export const PRODUCT_TERMS = {
+  ownedSkills: "내 기술",
+  skillMap: "스킬맵",
+  unspecifiedRequirement: "필수·우대 미표기",
+  unspecifiedRequirementCompact: "미표기",
+  savedItems: "저장 목록",
+  lastChecked: "최근 확인",
+} as const;
+
 const CAREER_LABELS: Record<string, string> = {
   new_comer: "신입",
   newcomer: "신입",
