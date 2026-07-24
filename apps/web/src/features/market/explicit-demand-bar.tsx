@@ -17,9 +17,10 @@ export function ExplicitDemandBar({
   return (
     <div className={styles.explicitDemand}>
       <span className={styles.srOnly} id={descriptionId}>
-        {skill.categoryLabel}, 명시 요구 {skill.explicitCount}건, 필수{" "}
-        {skill.requiredCount}건, 우대 {skill.preferredCount}건, 전체 등장{" "}
-        {skill.postingCount}건, {PRODUCT_TERMS.unspecifiedRequirement}{" "}
+        {skill.categoryLabel}, 요구 기업 {skill.companyCount}곳, 공고{" "}
+        {skill.postingCount}건, 명시 요구 {skill.explicitCount}건, 필수{" "}
+        {skill.requiredCount}건, 우대 {skill.preferredCount}건,{" "}
+        {PRODUCT_TERMS.unspecifiedRequirement}{" "}
         {skill.unspecifiedCount}건, 1위 대비 막대 길이{" "}
         {skill.relativeExplicitDemand}%
       </span>

@@ -52,15 +52,16 @@ for (const { height, width } of viewports) {
 
     const demand = page.getByRole("region", {
       exact: true,
-      name: "기술 수요",
+      name: "시장 기술 확산",
     });
     await expect(demand).toBeVisible();
-    await expect(
-      demand.getByRole("button", { name: "LLM 기술 선택" }),
-    ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      demand.getByText(/1위 대비 길이/),
-    ).toBeVisible();
+    await expect(page.getByLabel("기술 정렬 기준")).toHaveValue("companies");
+    const pythonDemand = demand.getByRole("button", {
+      name: "Python 기술 선택",
+    });
+    await expect(pythonDemand).toHaveAttribute("aria-pressed", "true");
+    await expect(pythonDemand).toContainText("요구 기업 22곳");
+    await expect(pythonDemand).toContainText("공고 63건");
     await expect(demand.getByText("미표기", { exact: true })).toBeVisible();
     await expect(demand.locator('[data-technology-icon="python"]')).toBeVisible();
     await expect(demand.locator('[data-technology-icon="cpu"]').first()).toBeVisible();
@@ -77,7 +78,7 @@ for (const { height, width } of viewports) {
     await expect(trend.getByText("전체 경력·전체 분야 기준")).toBeVisible();
     await expect(trend.locator("path[data-trend-line]")).toHaveCount(0);
 
-    const evidence = page.getByRole("region", { name: "LLM 시장 근거" });
+    const evidence = page.getByRole("region", { name: "Python 시장 근거" });
     await expect(evidence).toBeVisible();
     await expect(
       evidence.getByRole("link", { name: "내 스킬맵에서 보기" }),
@@ -117,7 +118,7 @@ for (const { height, width } of viewports) {
     expect(categoryFilterBox?.height).toBe(width <= 575 ? 44 : 32);
 
     for (const target of [
-      demand.getByRole("link", { name: "LLM 관련 공고 보기" }),
+      demand.getByRole("link", { name: "Python 관련 공고 보기" }),
       evidence.getByRole("link", { name: "내 스킬맵에서 보기" }),
       page
         .getByLabel("데이터를 읽는 기준")
@@ -142,8 +143,8 @@ for (const { height, width } of viewports) {
       });
       const mobileNavigationBox = await mobileNavigation.boundingBox();
       const firstDemandLabelBox = await demand
-        .getByRole("button", { name: "LLM 기술 선택" })
-        .getByText("LLM", { exact: true })
+        .getByRole("button", { name: "Python 기술 선택" })
+        .getByText("Python", { exact: true })
         .boundingBox();
       expect(mobileNavigationBox).not.toBeNull();
       expect(firstDemandRowBox?.y).toBeLessThan(mobileNavigationBox!.y);
@@ -207,7 +208,7 @@ test("carries selected market evidence into the jobs explorer", async ({
   await page.goto("/market?category=infra&career_type=experienced");
   const demand = page.getByRole("region", {
     exact: true,
-    name: "기술 수요",
+    name: "시장 기술 확산",
   });
   await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
   await expect(
@@ -233,7 +234,7 @@ test("applies career filters to the fixture with production API semantics", asyn
 
   const demand = page.getByRole("region", {
     exact: true,
-    name: "기술 수요",
+    name: "시장 기술 확산",
   });
   await expect(demand.locator("[data-skill-row]")).toHaveCount(3);
   await expect(

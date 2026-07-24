@@ -66,6 +66,7 @@ export type SkillStat = {
   skill: string;
   category: string;
   count: number;
+  company_count?: number;
   required_count?: number;
   preferred_count?: number;
   unspecified_count?: number;

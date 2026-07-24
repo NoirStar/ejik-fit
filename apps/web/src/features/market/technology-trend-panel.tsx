@@ -258,7 +258,7 @@ export function TechnologyTrendPanel({
       <header className={styles.sideHeader}>
         <div>
           <h2 id="technology-trend-title">기술 수요 추세</h2>
-          <span>최근 12주 · 주간 공고</span>
+          <span>주간 변화 · 공고 기준</span>
         </div>
         <span
           className={styles.collectingBadge}

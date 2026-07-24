@@ -61,11 +61,12 @@ const skillStats: SkillStatsResponse = {
       skill: "Kubernetes",
       category: "infra",
       count: 12,
+      company_count: 6,
       required_count: 5,
       preferred_count: 4,
       unspecified_count: 3,
     },
-    { skill: "Go", category: "language", count: 8 },
+    { skill: "Go", category: "language", count: 8, company_count: 4 },
   ],
 };
 
@@ -76,6 +77,7 @@ const explicitLeader: SkillStatsResponse = {
       skill: "Python",
       category: "language",
       count: 20,
+      company_count: 2,
       required_count: 3,
       preferred_count: 2,
       unspecified_count: 15,
@@ -83,7 +85,8 @@ const explicitLeader: SkillStatsResponse = {
     {
       skill: "AWS",
       category: "infra",
-      count: 15,
+      count: 12,
+      company_count: 8,
       required_count: 7,
       preferred_count: 3,
       unspecified_count: 5,
@@ -92,6 +95,7 @@ const explicitLeader: SkillStatsResponse = {
       skill: "Go",
       category: "language",
       count: 10,
+      company_count: 1,
       required_count: 0,
       preferred_count: 0,
       unspecified_count: 10,
@@ -149,11 +153,13 @@ describe("market overview model", () => {
       id: "infra:kubernetes",
       name: "Kubernetes",
       postingCount: 12,
+      companyCount: 6,
       explicitCount: 9,
       requiredCount: 5,
       preferredCount: 4,
       unspecifiedCount: 3,
       relativeExplicitDemand: 100,
+      relativeCompanyBreadth: 100,
       jobsHref:
         "/jobs?q=Kubernetes&category=infra&career_type=experienced",
     });
@@ -245,6 +251,82 @@ describe("market overview model", () => {
     expect(
       sortMarketSkills(snapshot.skills, "demand").map((skill) => skill.name),
     ).toEqual(["Python", "AWS", "Go"]);
+  });
+
+  it("ranks by company breadth before explicit and posting demand", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: explicitLeader },
+    });
+
+    expect(snapshot.skills.find(({ name }) => name === "AWS")).toMatchObject({
+      companyCount: 8,
+      postingCount: 12,
+      relativeCompanyBreadth: 100,
+    });
+    expect(
+      sortMarketSkills(snapshot.skills, "companies").map(({ name }) => name),
+    ).toEqual(["AWS", "Python", "Go"]);
+  });
+
+  it("breaks company-breadth ties by explicit demand, postings, then name", () => {
+    const skills = [
+      {
+        id: "a",
+        name: "Zulu",
+        category: "language",
+        categoryLabel: "언어",
+        companyCount: 4,
+        postingCount: 5,
+        explicitCount: 3,
+        requiredCount: 3,
+        preferredCount: 0,
+        unspecifiedCount: 2,
+        relativeCompanyBreadth: 100,
+        relativeExplicitDemand: 100,
+        skillHref: "/skill-map?skill=Zulu",
+        jobsHref: "/jobs?q=Zulu",
+      },
+      {
+        id: "b",
+        name: "Alpha",
+        category: "language",
+        categoryLabel: "언어",
+        companyCount: 4,
+        postingCount: 6,
+        explicitCount: 3,
+        requiredCount: 3,
+        preferredCount: 0,
+        unspecifiedCount: 3,
+        relativeCompanyBreadth: 100,
+        relativeExplicitDemand: 100,
+        skillHref: "/skill-map?skill=Alpha",
+        jobsHref: "/jobs?q=Alpha",
+      },
+      {
+        id: "c",
+        name: "Beta",
+        category: "language",
+        categoryLabel: "언어",
+        companyCount: 4,
+        postingCount: 6,
+        explicitCount: 4,
+        requiredCount: 4,
+        preferredCount: 0,
+        unspecifiedCount: 2,
+        relativeCompanyBreadth: 100,
+        relativeExplicitDemand: 100,
+        skillHref: "/skill-map?skill=Beta",
+        jobsHref: "/jobs?q=Beta",
+      },
+    ];
+
+    expect(sortMarketSkills(skills, "companies").map(({ name }) => name)).toEqual([
+      "Beta",
+      "Alpha",
+      "Zulu",
+    ]);
   });
 
   it("filters recent jobs by the selected technology", () => {

@@ -10,6 +10,7 @@ import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
 
 export type MarketCareerType = "" | "new_comer" | "experienced" | "mixed";
 export type MarketSort =
+  | "companies"
   | "explicit"
   | "demand"
   | "required"
@@ -21,11 +22,13 @@ export type MarketSkill = {
   name: string;
   category: string;
   categoryLabel: string;
+  companyCount: number;
   postingCount: number;
   explicitCount: number;
   requiredCount: number;
   preferredCount: number;
   unspecifiedCount: number;
+  relativeCompanyBreadth: number;
   relativeExplicitDemand: number;
   skillHref: string;
   jobsHref: string;
@@ -163,6 +166,14 @@ export function sortMarketSkills(
     if (sort === "name") {
       return compareName(left, right);
     }
+    if (sort === "companies") {
+      return (
+        right.companyCount - left.companyCount ||
+        right.explicitCount - left.explicitCount ||
+        right.postingCount - left.postingCount ||
+        compareName(left, right)
+      );
+    }
     if (sort === "explicit") {
       return (
         right.explicitCount - left.explicitCount ||
@@ -258,6 +269,10 @@ export function buildMarketOverviewSnapshot(input: {
       (item) => (item.required_count ?? 0) + (item.preferred_count ?? 0),
     ),
   );
+  const maxCompanyCount = Math.max(
+    1,
+    ...orderedSkills.map((item) => item.company_count ?? 0),
+  );
 
   return {
     careerType: input.careerType,
@@ -286,11 +301,15 @@ export function buildMarketOverviewSnapshot(input: {
         name: item.skill,
         category: item.category,
         categoryLabel: skillCategoryLabel(normalizeSkillCategory(item.category)),
+        companyCount: item.company_count ?? 0,
         postingCount: item.count,
         explicitCount,
         requiredCount,
         preferredCount,
         unspecifiedCount: item.unspecified_count ?? 0,
+        relativeCompanyBreadth: Math.round(
+          ((item.company_count ?? 0) / maxCompanyCount) * 100,
+        ),
         relativeExplicitDemand: Math.round(
           (explicitCount / maxExplicitDemand) * 100,
         ),

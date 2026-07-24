@@ -15,6 +15,7 @@ import type { SkillCategory } from "@/lib/skill-categories";
 import styles from "./market-overview.module.css";
 
 const SORT_OPTIONS: Array<{ value: MarketSort; label: string }> = [
+  { value: "companies", label: "요구 기업 많은 순" },
   { value: "explicit", label: "명시 요구 많은 순" },
   { value: "demand", label: "전체 등장 많은 순" },
   { value: "required", label: "필수 요구 많은 순" },

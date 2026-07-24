@@ -39,15 +39,19 @@ export function MarketOverview({
     () => sortMarketSkills(snapshot.skills, "explicit").slice(0, 3),
     [snapshot.skills],
   );
-  const [sort, setSort] = useState<MarketSort>("explicit");
+  const topCompanySkills = useMemo(
+    () => sortMarketSkills(snapshot.skills, "companies").slice(0, 3),
+    [snapshot.skills],
+  );
+  const [sort, setSort] = useState<MarketSort>("companies");
   const [selectedSkill, setSelectedSkill] = useState(
-    topExplicitSkills[0]?.name ?? "",
+    topCompanySkills[0]?.name ?? "",
   );
   const effectiveSkill = snapshot.skills.some(
     (skill) => skill.name === selectedSkill,
   )
     ? selectedSkill
-    : (topExplicitSkills[0]?.name ?? "");
+    : (topCompanySkills[0]?.name ?? "");
   const selected = snapshot.skills.find(
     (skill) => skill.name === effectiveSkill,
   );
@@ -186,7 +190,8 @@ export function MarketOverview({
       <section aria-label="데이터를 읽는 기준" className={styles.methodNote}>
         <strong>데이터를 읽는 기준</strong>
         <p>
-          막대와 주간 변화는 필수 또는 우대로 명시된 공고 수를 기준으로 합니다.{" "}
+          순위는 기술을 요구한 기업 수를 먼저 봅니다. 막대와 주간 변화는 필수
+          또는 우대로 명시된 공고 수를 기준으로 합니다.{" "}
           <span>
             공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.
           </span>{" "}

@@ -55,6 +55,7 @@ function marketSkill(
     skill,
     category,
     count,
+    company_count: Math.max(1, Math.min(count, Math.round(count * 0.35))),
     required_count: requiredCount,
     preferred_count: preferredCount,
     unspecified_count: Math.max(0, count - requiredCount - preferredCount),
@@ -515,11 +516,13 @@ function skillStatsForRequest(requestUrl) {
           skill: detail.skill,
           category: detail.category,
           postingIds: new Set(),
+          companyIds: new Set(),
           requiredPostingIds: new Set(),
           preferredPostingIds: new Set(),
           unspecifiedPostingIds: new Set(),
         };
         entry.postingIds.add(posting.id);
+        entry.companyIds.add(posting.company_slug);
         if (detail.requirement_type === "required") {
           entry.requiredPostingIds.add(posting.id);
         } else if (detail.requirement_type === "preferred") {
@@ -534,6 +537,7 @@ function skillStatsForRequest(requestUrl) {
       skill: entry.skill,
       category: entry.category,
       count: entry.postingIds.size,
+      company_count: entry.companyIds.size,
       required_count: entry.requiredPostingIds.size,
       preferred_count: entry.preferredPostingIds.size,
       unspecified_count: entry.unspecifiedPostingIds.size,

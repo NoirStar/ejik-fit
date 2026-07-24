@@ -126,6 +126,7 @@ const skillStats: SkillStatsResponse = {
       skill: "Kubernetes",
       category: "infra",
       count: 12,
+      company_count: 8,
       required_count: 5,
       preferred_count: 4,
       unspecified_count: 3,
@@ -134,6 +135,7 @@ const skillStats: SkillStatsResponse = {
       skill: "Docker",
       category: "infra",
       count: 9,
+      company_count: 6,
       required_count: 4,
       preferred_count: 3,
       unspecified_count: 2,
@@ -142,6 +144,7 @@ const skillStats: SkillStatsResponse = {
       skill: "LLM",
       category: "ai",
       count: 7,
+      company_count: 3,
       required_count: 5,
       preferred_count: 1,
       unspecified_count: 1,
@@ -221,13 +224,21 @@ describe("MarketOverview", () => {
     expect(screen.queryByText(/한국 개발자 채용시장/)).not.toBeInTheDocument();
   });
 
-  it("renders ranked explicit demand with brand and neutral icons", () => {
+  it("ranks market spread by company breadth and keeps demand evidence", () => {
     renderReadyMarket();
 
-    const demand = screen.getByRole("region", { name: "기술 수요" });
     expect(
-      within(demand).getByRole("heading", { level: 2, name: "기술 수요" }),
+      screen.getByRole("combobox", { name: "기술 정렬 기준" }),
+    ).toHaveValue("companies");
+    const demand = screen.getByRole("region", { name: "시장 기술 확산" });
+    expect(
+      within(demand).getByRole("heading", { level: 2, name: "시장 기술 확산" }),
     ).toBeInTheDocument();
+    const firstRow = demand.querySelector<HTMLElement>("[data-skill-row]");
+    expect(firstRow).not.toBeNull();
+    expect(within(firstRow!).getByText("Kubernetes")).toBeInTheDocument();
+    expect(within(firstRow!).getByText("요구 기업 8곳")).toBeInTheDocument();
+    expect(within(firstRow!).getByText("공고 12건")).toBeInTheDocument();
     expect(within(demand).getByText("미표기")).toBeInTheDocument();
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
@@ -235,7 +246,7 @@ describe("MarketOverview", () => {
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAccessibleDescription(
-      "인프라, 명시 요구 9건, 필수 5건, 우대 4건, 전체 등장 12건, 필수·우대 미표기 3건, 1위 대비 막대 길이 100%",
+      "인프라, 요구 기업 8곳, 공고 12건, 명시 요구 9건, 필수 5건, 우대 4건, 필수·우대 미표기 3건, 1위 대비 막대 길이 100%",
     );
     expect(
       within(demand).getByRole("button", { name: "Docker 기술 선택" }),
@@ -254,7 +265,7 @@ describe("MarketOverview", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/구분 안 됨/)).not.toBeInTheDocument();
-    expect(within(demand).getByText(/1위 대비 길이/)).toBeInTheDocument();
+    expect(within(demand).getByText(/요구한 기업 수를 먼저/)).toBeInTheDocument();
     expect(
       demand.querySelector('[data-technology-icon="kubernetes"]'),
     ).not.toBeNull();
@@ -392,7 +403,7 @@ describe("MarketOverview", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("region", { name: "기술 수요" }),
+      screen.getByRole("region", { name: "시장 기술 확산" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /플랫폼 엔지니어/ }),
@@ -487,6 +498,7 @@ describe("MarketOverview", () => {
     );
 
     const trend = screen.getByRole("region", { name: "기술 수요 추세" });
+    expect(within(trend).getByText("주간 변화 · 공고 기준")).toBeInTheDocument();
     expect(
       await within(trend).findByText(
         "주간 추세를 불러오지 못했습니다. 기술 수요는 정상적으로 표시됩니다.",

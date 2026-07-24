@@ -482,7 +482,7 @@
   font-weight: 650;
 }
 
-.explicitCount {
+.breadthCount {
   display: grid;
   justify-items: end;
   gap: 0.125rem;
@@ -490,12 +490,12 @@
   white-space: nowrap;
 }
 
-.explicitCount strong {
+.breadthCount strong {
   font-size: 0.8125rem;
   font-weight: 760;
 }
 
-.explicitCount small {
+.breadthCount small {
   color: var(--color-muted);
   font-size: 0.75rem;
 }
@@ -1459,7 +1459,7 @@
     padding: 0.625rem;
   }
 
-  .explicitCount {
+  .breadthCount {
     width: 100%;
     grid-template-columns: auto auto;
     align-items: baseline;

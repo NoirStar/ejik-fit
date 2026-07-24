@@ -53,8 +53,8 @@ export function TechnologyDemandChart({
     >
       <header className={styles.sectionHeader}>
         <div>
-          <h2 id="skill-demand-title">기술 수요</h2>
-          <p>필수·우대 명시 공고 · 1위 대비 길이</p>
+          <h2 id="skill-demand-title">시장 기술 확산</h2>
+          <p>요구한 기업 수를 먼저 보고, 필수·우대 공고 규모를 함께 비교합니다.</p>
         </div>
         <div aria-label="요구 조건 범례" className={styles.legend}>
           <span data-legend="required">필수</span>
@@ -66,7 +66,7 @@ export function TechnologyDemandChart({
       </header>
       <div aria-hidden="true" className={styles.tableHeader}>
         <span>순위 · 기술</span>
-        <span>명시 요구</span>
+        <span>요구 기업 · 공고</span>
         <span>필수 · 우대 · {PRODUCT_TERMS.unspecifiedRequirementCompact}</span>
         <span />
       </div>
@@ -94,11 +94,11 @@ export function TechnologyDemandChart({
                   <small>{skill.categoryLabel}</small>
                 </span>
               </span>
-              <span className={styles.explicitCount}>
-                <strong>{skill.explicitCount.toLocaleString("ko-KR")}건</strong>
-                <small>
-                  전체 등장 {skill.postingCount.toLocaleString("ko-KR")}건
-                </small>
+              <span className={styles.breadthCount}>
+                <strong>
+                  요구 기업 {skill.companyCount.toLocaleString("ko-KR")}곳
+                </strong>
+                <small>공고 {skill.postingCount.toLocaleString("ko-KR")}건</small>
               </span>
               <ExplicitDemandBar
                 descriptionId={descriptionId(skill)}
