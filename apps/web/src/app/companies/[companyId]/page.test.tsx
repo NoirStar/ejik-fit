@@ -52,6 +52,7 @@ describe("CompanyPage", () => {
           homepage_url: "https://example.com",
           careers_url: "https://careers.example.com",
           collection_status: "collecting",
+          activity_status: "active",
           preparation_reason: null,
           open_postings: 1,
           last_success_at: "2026-07-14T03:00:00Z",
@@ -104,6 +105,25 @@ describe("CompanyPage", () => {
 
   it("keeps the company identity and official source when there are no open jobs", async () => {
     vi.mocked(getPostings).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(getSourceDirectory).mockResolvedValue({
+      items: [
+        {
+          company_name: "검증 기업",
+          company_slug: "verified-company",
+          homepage_url: "https://example.com",
+          careers_url: "https://careers.example.com",
+          collection_status: "collecting",
+          activity_status: "quiet",
+          preparation_reason: null,
+          open_postings: 0,
+          last_success_at: "2026-07-14T03:00:00Z",
+        },
+      ],
+      total: 1,
+      collecting_count: 1,
+      preparing_count: 0,
+      open_postings: 0,
+    });
 
     render(
       await CompanyPage({
@@ -116,10 +136,50 @@ describe("CompanyPage", () => {
         name: "검증 기업의 현재 공개 공고가 없습니다.",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("최근 정상 확인 결과 공개 공고가 없습니다."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "검증 기업 공식 채용페이지" })).toHaveAttribute(
       "href",
       "https://careers.example.com",
     );
+  });
+
+  it("does not report zero jobs when source activity needs attention", async () => {
+    vi.mocked(getPostings).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(getSourceDirectory).mockResolvedValue({
+      items: [
+        {
+          company_name: "검증 기업",
+          company_slug: "verified-company",
+          homepage_url: "https://example.com",
+          careers_url: "https://careers.example.com",
+          collection_status: "collecting",
+          activity_status: "attention",
+          preparation_reason: null,
+          open_postings: 0,
+          last_success_at: "2026-07-01T03:00:00Z",
+        },
+      ],
+      total: 1,
+      collecting_count: 1,
+      preparing_count: 0,
+      open_postings: 0,
+    });
+
+    render(
+      await CompanyPage({
+        params: Promise.resolve({ companyId: "verified-company" }),
+      }),
+    );
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("검증 기업의 수집 상태를 점검하고 있습니다.");
+    expect(alert).toHaveTextContent(
+      "최근 수집 상태를 점검 중이므로 0건으로 단정하지 않습니다.",
+    );
+    expect(alert).not.toHaveTextContent("현재 공개 공고가 없습니다");
   });
 
   it("renders an honest error state instead of claiming zero jobs", async () => {

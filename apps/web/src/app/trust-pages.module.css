@@ -1,3 +1,4 @@
+/* Hallmark · genre: modern-minimal · tone: Korean product workbench · macrostructure: evidence directory · designed-as-app */
 .main {
   width: min(100%, 68rem);
   margin: 0 auto;
@@ -389,6 +390,22 @@
   border-radius: 50%;
   background: var(--color-source-ready);
   content: "";
+}
+
+.collectionStatus[data-status="quiet"] {
+  color: var(--color-muted);
+}
+
+.collectionStatus[data-status="quiet"]::before {
+  background: var(--color-faint);
+}
+
+.collectionStatus[data-status="attention"] {
+  color: var(--color-status-warm-ink);
+}
+
+.collectionStatus[data-status="attention"]::before {
+  background: var(--color-warning);
 }
 
 .collectionStatus[data-status="preparing"] {

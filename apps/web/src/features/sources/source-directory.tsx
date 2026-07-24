@@ -7,17 +7,21 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "@/app/trust-pages.module.css";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import type {
+  SourceActivityStatus,
   SourceDirectoryItem,
   SourceDirectoryResponse,
 } from "@/lib/types";
-import { getSourcePreparationCopy } from "@/lib/source-status";
+import {
+  getSourceActivityCopy,
+  getSourcePreparationCopy,
+} from "@/lib/source-status";
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "medium",
   timeZone: "Asia/Seoul",
 });
 
-type SourceStatusFilter = "all" | SourceDirectoryItem["collection_status"];
+type SourceStatusFilter = "all" | SourceActivityStatus;
 
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 const SOURCE_PAGE_SIZE = 24;
@@ -28,7 +32,21 @@ const STATUS_FILTERS: ReadonlyArray<{
   value: SourceStatusFilter;
 }> = [
   { label: "전체", accessibleLabel: "전체 보기", value: "all" },
-  { label: "수집 중", accessibleLabel: "수집 중만 보기", value: "collecting" },
+  {
+    label: "공고 수집 정상",
+    accessibleLabel: "공고 수집 정상만 보기",
+    value: "active",
+  },
+  {
+    label: "공개 공고 없음",
+    accessibleLabel: "공개 공고 없음만 보기",
+    value: "quiet",
+  },
+  {
+    label: "점검 필요",
+    accessibleLabel: "점검 필요만 보기",
+    value: "attention",
+  },
   {
     label: "연결 준비",
     accessibleLabel: "연결 준비만 보기",
@@ -36,16 +54,20 @@ const STATUS_FILTERS: ReadonlyArray<{
   },
 ];
 
+const INITIAL_VISIBLE_COUNTS: Readonly<Record<SourceActivityStatus, number>> = {
+  active: SOURCE_PAGE_SIZE,
+  quiet: SOURCE_PAGE_SIZE,
+  attention: SOURCE_PAGE_SIZE,
+  preparing: SOURCE_PAGE_SIZE,
+};
+
 function normalizedSearchValue(value: string) {
   return value.normalize("NFKC").toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
 }
 
-function lastCollectedLabel(
-  value: string | null,
-  status: SourceDirectoryItem["collection_status"],
-) {
+function lastCollectedLabel(value: string | null) {
   if (!value) {
-    return status === "collecting" ? "최근 수집 시각 없음" : "첫 수집 준비 중";
+    return "최근 수집 시각 없음";
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "확인 시각 점검 중";
@@ -53,8 +75,12 @@ function lastCollectedLabel(
 }
 
 function SourceRow({ item }: { item: SourceDirectoryItem }) {
-  const isCollecting = item.collection_status === "collecting";
+  const isConnected = item.collection_status === "collecting";
+  const activity = getSourceActivityCopy(item.activity_status);
   const preparation = getSourcePreparationCopy(item.preparation_reason);
+  const detail =
+    item.activity_status === "preparing" ? preparation.detail : activity.detail;
+  const lastCollected = lastCollectedLabel(item.last_success_at);
 
   return (
     <li className={styles.sourceRow}>
@@ -65,7 +91,7 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
           sourceUrl={item.careers_url}
         />
         <div>
-          {isCollecting ? (
+          {isConnected ? (
             <Link
               aria-label={`${item.company_name} 공고 보기`}
               href={`/companies/${encodeURIComponent(item.company_slug)}`}
@@ -75,23 +101,24 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
           ) : (
             <strong>{item.company_name}</strong>
           )}
-          <small title={isCollecting ? undefined : preparation.detail}>
-            {isCollecting
-              ? lastCollectedLabel(item.last_success_at, item.collection_status)
-              : preparation.detail}
+          <small title={detail}>
+            {isConnected ? `${detail} · ${lastCollected}` : detail}
           </small>
         </div>
       </div>
       <div className={styles.sourceMeta}>
         <span
           className={styles.collectionStatus}
-          data-status={item.collection_status}
+          data-status={item.activity_status}
           data-reason={item.preparation_reason ?? undefined}
         >
-          {isCollecting ? "수집 중" : preparation.label}
+          {activity.label}
         </span>
-        {isCollecting && (
+        {item.activity_status === "active" && (
           <span className={styles.openCount}>열린 공고 {item.open_postings}건</span>
+        )}
+        {item.activity_status === "preparing" && (
+          <span className={styles.openCount}>{preparation.label}</span>
         )}
         <a
           aria-label={`${item.company_name} 공식 수집 출처`}
@@ -161,10 +188,9 @@ export function SourceDirectory({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<SourceStatusFilter>("all");
-  const [visibleCounts, setVisibleCounts] = useState({
-    collecting: SOURCE_PAGE_SIZE,
-    preparing: SOURCE_PAGE_SIZE,
-  });
+  const [visibleCounts, setVisibleCounts] = useState<
+    Record<SourceActivityStatus, number>
+  >(() => ({ ...INITIAL_VISIBLE_COUNTS }));
   useEffect(() => {
     const refresh = () => router.refresh();
     const refreshWhenVisible = () => {
@@ -186,7 +212,7 @@ export function SourceDirectory({
     return directory.items.filter((item) => {
       if (
         statusFilter !== "all" &&
-        item.collection_status !== statusFilter
+        item.activity_status !== statusFilter
       ) {
         return false;
       }
@@ -196,30 +222,37 @@ export function SourceDirectory({
       );
     });
   }, [directory.items, query, statusFilter]);
-  const collecting = filteredItems.filter(
-    (item) => item.collection_status === "collecting",
+  const active = filteredItems.filter(
+    (item) => item.activity_status === "active",
+  );
+  const quiet = filteredItems.filter(
+    (item) => item.activity_status === "quiet",
+  );
+  const attention = filteredItems.filter(
+    (item) => item.activity_status === "attention",
   );
   const preparing = filteredItems.filter(
-    (item) => item.collection_status === "preparing",
+    (item) => item.activity_status === "preparing",
+  );
+  const activityCounts = directory.items.reduce(
+    (counts, item) => {
+      counts[item.activity_status] += 1;
+      return counts;
+    },
+    { active: 0, quiet: 0, attention: 0, preparing: 0 },
   );
 
   const resetFilters = () => {
     setQuery("");
     setStatusFilter("all");
-    setVisibleCounts({
-      collecting: SOURCE_PAGE_SIZE,
-      preparing: SOURCE_PAGE_SIZE,
-    });
+    setVisibleCounts({ ...INITIAL_VISIBLE_COUNTS });
   };
 
   const resetVisibleCounts = () => {
-    setVisibleCounts({
-      collecting: SOURCE_PAGE_SIZE,
-      preparing: SOURCE_PAGE_SIZE,
-    });
+    setVisibleCounts({ ...INITIAL_VISIBLE_COUNTS });
   };
 
-  const showMore = (status: SourceDirectoryItem["collection_status"]) => {
+  const showMore = (status: SourceActivityStatus) => {
     setVisibleCounts((current) => ({
       ...current,
       [status]: current[status] + SOURCE_PAGE_SIZE,
@@ -229,8 +262,10 @@ export function SourceDirectory({
   return (
     <>
       <div aria-label="수집 현황" className={styles.directorySummary}>
-        <span>수집 중 {directory.collecting_count}개 기업</span>
-        <span>연결 준비 {directory.preparing_count}개 기업</span>
+        <span>정상 {activityCounts.active}개 기업</span>
+        <span>공고 없음 {activityCounts.quiet}개 기업</span>
+        <span>점검 필요 {activityCounts.attention}개 기업</span>
+        <span>연결 준비 {activityCounts.preparing}개 기업</span>
         <span>열린 공고 {directory.open_postings}건</span>
         <span>서비스 반영 데이터 · 1분마다 갱신</span>
       </div>
@@ -277,17 +312,31 @@ export function SourceDirectory({
       {filteredItems.length > 0 ? (
         <>
           <SourceGroup
-            description="정기 수집 대상이며, 확인된 열린 공고를 서비스에 반영하는 출처입니다."
-            items={collecting}
-            onShowMore={() => showMore("collecting")}
-            title="현재 수집 중"
-            visibleCount={visibleCounts.collecting}
+            description="최근 수집이 정상이며, 확인된 공개 공고를 서비스에 반영합니다."
+            items={active}
+            onShowMore={() => showMore("active")}
+            title="공고 수집 정상"
+            visibleCount={visibleCounts.active}
+          />
+          <SourceGroup
+            description="최근 수집은 정상이며 현재 공식 채용페이지에 공개된 공고가 없습니다."
+            items={quiet}
+            onShowMore={() => showMore("quiet")}
+            title="현재 공개 공고 없음"
+            visibleCount={visibleCounts.quiet}
+          />
+          <SourceGroup
+            description="최근 정상 수집 시각이 오래되어 다시 확인 중입니다. 공고 수를 0건으로 단정하지 않습니다."
+            items={attention}
+            onShowMore={() => showMore("attention")}
+            title="수집 상태 점검 필요"
+            visibleCount={visibleCounts.attention}
           />
           <SourceGroup
             description="연결 방식 또는 수집 정책을 더 확인 중이며, 공고 수에는 포함하지 않습니다."
             items={preparing}
             onShowMore={() => showMore("preparing")}
-            title="연결 준비 중"
+            title="연결 준비"
             visibleCount={visibleCounts.preparing}
           />
         </>

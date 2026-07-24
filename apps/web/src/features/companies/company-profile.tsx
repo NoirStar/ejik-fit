@@ -9,6 +9,10 @@ import Link from "next/link";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { buildJobEvidence, formatCareerRange, formatClosingDate, formatVerifiedDate } from "@/features/jobs/model";
 import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
+import {
+  getSourceActivityCopy,
+  getSourcePreparationCopy,
+} from "@/lib/source-status";
 import type {
   PostingListResponse,
   PostingSummary,
@@ -40,6 +44,34 @@ function CompanyState({
   source?: SourceDirectoryItem | null;
 }) {
   const companyName = source?.company_name;
+  const activity = source
+    ? getSourceActivityCopy(source.activity_status)
+    : null;
+  const preparation = source
+    ? getSourcePreparationCopy(source.preparation_reason)
+    : null;
+  const needsAttention = source?.activity_status === "attention";
+  const preparing = source?.activity_status === "preparing";
+
+  const heading = error
+    ? "기업 공고 데이터를 불러오지 못했습니다."
+    : needsAttention
+      ? `${companyName ?? "기업"}의 수집 상태를 점검하고 있습니다.`
+      : preparing
+        ? `${companyName ?? "기업"}의 공식 채용페이지 연결을 준비하고 있습니다.`
+        : companyName
+          ? `${companyName}의 현재 공개 공고가 없습니다.`
+          : "현재 확인되는 공개 공고가 없습니다.";
+
+  const detail = error
+    ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
+    : needsAttention || source?.activity_status === "quiet"
+      ? activity?.detail
+      : preparing
+        ? preparation?.detail ?? activity?.detail
+        : source?.activity_status === "active"
+          ? "공고 목록과 수집 현황의 반영 시점이 다를 수 있습니다. 공식 채용페이지에서 최신 상태를 확인해 주세요."
+          : "최근 확인 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다.";
 
   return (
     <main className={styles.page}>
@@ -47,20 +79,13 @@ function CompanyState({
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
         공고 탐색으로 돌아가기
       </Link>
-      <section className={styles.state} role={error ? "alert" : undefined}>
+      <section
+        className={styles.state}
+        role={error || needsAttention ? "alert" : undefined}
+      >
         <p className={styles.eyebrow}>공식 채용 공고 기준</p>
-        <h1>
-          {error
-            ? "기업 공고 데이터를 불러오지 못했습니다."
-            : companyName
-              ? `${companyName}의 현재 공개 공고가 없습니다.`
-              : "현재 확인되는 공개 공고가 없습니다."}
-        </h1>
-        <p>
-          {error
-            ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
-            : "최근 확인 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다."}
-        </p>
+        <h1>{heading}</h1>
+        <p>{detail}</p>
         <nav aria-label="기업 공고 상태 안내">
           {error && (
             <Link href={`/companies/${encodeURIComponent(companySlug)}`}>

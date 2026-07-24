@@ -111,12 +111,19 @@ export type SkillTrendResponse = {
   series: SkillTrendSeries[];
 };
 
+export type SourceActivityStatus =
+  | "active"
+  | "quiet"
+  | "attention"
+  | "preparing";
+
 export type SourceDirectoryItem = {
   company_name: string;
   company_slug: string;
   homepage_url: string | null;
   careers_url: string;
   collection_status: "collecting" | "preparing";
+  activity_status: SourceActivityStatus;
   preparation_reason?:
     | "access_limited"
     | "connector_pending"

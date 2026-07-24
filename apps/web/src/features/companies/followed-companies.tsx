@@ -27,7 +27,10 @@ import type {
   SourceDirectoryItem,
   SourceDirectoryResponse,
 } from "@/lib/types";
-import { getSourcePreparationCopy } from "@/lib/source-status";
+import {
+  getSourceActivityCopy,
+  getSourcePreparationCopy,
+} from "@/lib/source-status";
 
 import styles from "./followed-companies.module.css";
 
@@ -50,7 +53,8 @@ function FollowedCompanyRow({
   item: SourceDirectoryItem;
   onRemove: () => void;
 }) {
-  const collecting = item.collection_status === "collecting";
+  const connected = item.collection_status === "collecting";
+  const activity = getSourceActivityCopy(item.activity_status);
   const preparation = getSourcePreparationCopy(item.preparation_reason);
 
   return (
@@ -65,21 +69,19 @@ function FollowedCompanyRow({
           {item.company_name}
         </Link>
         <span>
-          {collecting ? collectedLabel(item.last_success_at) : preparation.detail}
+          {connected ? collectedLabel(item.last_success_at) : preparation.detail}
         </span>
       </div>
       <div className={styles.companyStatus}>
-        <strong>
-          {collecting ? `열린 공고 ${item.open_postings}건` : preparation.label}
-        </strong>
+        <strong>{activity.label}</strong>
         <span>
-          {collecting
-            ? "이직핏이 공식 채용페이지를 정기 확인합니다."
-            : preparation.detail}
+          {item.activity_status === "active"
+            ? `열린 공고 ${item.open_postings}건 · ${activity.detail}`
+            : activity.detail}
         </span>
       </div>
       <div className={styles.companyActions}>
-        {collecting && (
+        {connected && (
           <Link href={`/companies/${encodeURIComponent(item.company_slug)}`}>
             공고 보기
             <ArrowRight aria-hidden="true" size={15} weight="bold" />

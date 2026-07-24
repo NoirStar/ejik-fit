@@ -34,19 +34,32 @@ describe("public trust pages", () => {
           homepage_url: "https://www.navercorp.com",
           careers_url: "https://recruit.navercorp.com",
           collection_status: "collecting",
+          activity_status: "active",
           preparation_reason: null,
           open_postings: 12,
           last_success_at: "2026-07-15T03:20:00Z",
         },
         {
-          company_name: "현대자동차",
-          company_slug: "hyundai-motor",
-          homepage_url: "https://www.hyundai.com",
-          careers_url: "https://talent.hyundai.com",
-          collection_status: "preparing",
-          preparation_reason: "connector_pending",
+          company_name: "카카오",
+          company_slug: "kakao",
+          homepage_url: "https://www.kakaocorp.com",
+          careers_url: "https://careers.kakao.com",
+          collection_status: "collecting",
+          activity_status: "quiet",
+          preparation_reason: null,
           open_postings: 0,
-          last_success_at: null,
+          last_success_at: "2026-07-15T03:20:00Z",
+        },
+        {
+          company_name: "쿠팡",
+          company_slug: "coupang",
+          homepage_url: "https://www.coupang.jobs",
+          careers_url: "https://www.coupang.jobs/kr/jobs/",
+          collection_status: "collecting",
+          activity_status: "attention",
+          preparation_reason: null,
+          open_postings: 0,
+          last_success_at: "2026-07-01T03:20:00Z",
         },
         {
           company_name: "넥슨",
@@ -54,14 +67,15 @@ describe("public trust pages", () => {
           homepage_url: "https://www.nexon.com",
           careers_url: "https://careers.nexon.com/",
           collection_status: "preparing",
+          activity_status: "preparing",
           preparation_reason: "access_limited",
           open_postings: 0,
           last_success_at: null,
         },
       ],
-      total: 3,
-      collecting_count: 1,
-      preparing_count: 2,
+      total: 4,
+      collecting_count: 3,
+      preparing_count: 1,
       open_postings: 12,
     });
   });
@@ -83,12 +97,18 @@ describe("public trust pages", () => {
       "href",
       "/companies/naver",
     );
-    expect(screen.getByRole("link", { name: "현대자동차 공식 수집 출처" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "넥슨 공식 수집 출처" })).toHaveAttribute(
       "href",
-      "https://talent.hyundai.com",
+      "https://careers.nexon.com/",
     );
-    expect(screen.getByText("수집 중 1개 기업")).toBeInTheDocument();
-    expect(screen.getByText("연결 준비 2개 기업")).toBeInTheDocument();
+    expect(screen.getAllByText("공고 수집 정상").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("현재 공개 공고 없음").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("수집 상태 점검 필요").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("연결 준비").length).toBeGreaterThan(0);
+    expect(screen.getByText("정상 1개 기업")).toBeInTheDocument();
+    expect(screen.getByText("공고 없음 1개 기업")).toBeInTheDocument();
+    expect(screen.getByText("점검 필요 1개 기업")).toBeInTheDocument();
+    expect(screen.getByText("연결 준비 1개 기업")).toBeInTheDocument();
     expect(screen.getByLabelText("수집 현황")).toHaveTextContent(
       "서비스 반영 데이터 · 1분마다 갱신",
     );
@@ -101,20 +121,34 @@ describe("public trust pages", () => {
       screen.getByText("보안 확인을 우회하지 않아 자동 수집을 보류했습니다."),
     ).toBeInTheDocument();
 
+    const quietRow = screen.getByText("카카오").closest("li");
+    expect(quietRow).not.toBeNull();
+    expect(within(quietRow!).getByText("현재 공개 공고 없음")).toBeInTheDocument();
+    expect(within(quietRow!).queryByRole("alert")).not.toBeInTheDocument();
+
+    const attentionRow = screen.getByText("쿠팡").closest("li");
+    expect(attentionRow).not.toBeNull();
+    expect(
+      within(attentionRow!).getByText("수집 상태 점검 필요"),
+    ).toBeInTheDocument();
+    expect(attentionRow).not.toHaveTextContent("upstream timeout");
+
     fireEvent.change(
       screen.getByRole("searchbox", { name: "수집 기업 검색" }),
-      { target: { value: "현대" } },
+      { target: { value: "넥슨" } },
     );
     expect(screen.queryByRole("link", { name: "네이버 공고 보기" })).not.toBeInTheDocument();
-    expect(screen.getByText("현대자동차")).toBeInTheDocument();
+    expect(screen.getByText("넥슨")).toBeInTheDocument();
 
     fireEvent.change(
       screen.getByRole("searchbox", { name: "수집 기업 검색" }),
       { target: { value: "" } },
     );
-    fireEvent.click(screen.getByRole("button", { name: "수집 중만 보기" }));
+    fireEvent.click(screen.getByRole("button", { name: "공고 수집 정상만 보기" }));
     expect(screen.getByRole("link", { name: "네이버 공고 보기" })).toBeInTheDocument();
-    expect(screen.queryByText("현대자동차")).not.toBeInTheDocument();
+    expect(screen.queryByText("카카오")).not.toBeInTheDocument();
+    expect(screen.queryByText("쿠팡")).not.toBeInTheDocument();
+    expect(screen.queryByText("넥슨")).not.toBeInTheDocument();
 
     fireEvent.change(
       screen.getByRole("searchbox", { name: "수집 기업 검색" }),
@@ -164,6 +198,7 @@ describe("public trust pages", () => {
         homepage_url: `https://company-${number}.example.com`,
         careers_url: `https://company-${number}.example.com/careers`,
         collection_status: "collecting" as const,
+        activity_status: "active" as const,
         preparation_reason: null,
         open_postings: index + 1,
         last_success_at: "2026-07-20T03:20:00Z",
