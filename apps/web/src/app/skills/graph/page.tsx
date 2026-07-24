@@ -69,6 +69,7 @@ export default async function SkillGraphPage({
       ...(seed ? { seed } : {}),
       owned_skills: ownedSkills,
       limit: 30,
+      include_evidence: false,
     });
   } catch {
     failed = true;

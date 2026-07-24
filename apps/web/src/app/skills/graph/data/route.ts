@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       owned_skills: owned,
       career_type: url.searchParams.get("career_type") ?? undefined,
       limit: graphLimit(url.searchParams.get("limit")),
+      include_evidence: false,
     });
     return NextResponse.json(result);
   } catch (error) {

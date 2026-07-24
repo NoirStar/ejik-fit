@@ -134,6 +134,7 @@ describe("SkillGraphPage", () => {
       seed: "Kubernetes",
       owned_skills: [],
       limit: 30,
+      include_evidence: false,
     });
   });
 

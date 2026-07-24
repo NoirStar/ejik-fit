@@ -178,6 +178,11 @@ export type SkillGraphResponse = {
   };
 };
 
+export type SkillGraphEvidenceResponse = {
+  items: SkillGraphEvidence[];
+  total: number;
+};
+
 export type FitAnalyzeRequest = {
   owned_skills: string[];
   career_type?: string;

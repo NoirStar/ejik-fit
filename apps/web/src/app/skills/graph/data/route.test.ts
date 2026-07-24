@@ -44,6 +44,7 @@ describe("skill graph data route", () => {
       owned_skills: ["C++"],
       career_type: "experienced",
       limit: 5,
+      include_evidence: false,
     });
   });
 
@@ -62,6 +63,7 @@ describe("skill graph data route", () => {
       owned_skills: [],
       career_type: undefined,
       limit: 30,
+      include_evidence: false,
     });
   });
 

@@ -6,6 +6,7 @@ import type {
   PostingListResponse,
   SkillCatalogResponse,
   SkillGraphResponse,
+  SkillGraphEvidenceResponse,
   SkillStatsResponse,
   SkillTrendResponse,
   SourceDirectoryResponse,
@@ -177,6 +178,7 @@ export function getSkillGraph(filters: {
   owned_skills?: string[];
   career_type?: string;
   limit?: number;
+  include_evidence?: boolean;
 } = {}): Promise<SkillGraphResponse> {
   const params = new URLSearchParams();
   if (filters.seed) {
@@ -191,11 +193,39 @@ export function getSkillGraph(filters: {
   if (filters.limit) {
     params.set("limit", String(filters.limit));
   }
+  if (filters.include_evidence !== undefined) {
+    params.set("include_evidence", String(filters.include_evidence));
+  }
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<SkillGraphResponse>(`/api/graph/skills${query}`, {
     policy: "public",
     tags: ["skill-graph"],
   });
+}
+
+export function getSkillGraphEvidence(
+  filters: {
+    skill: string;
+    career_type?: string;
+    limit?: number;
+  },
+  signal?: AbortSignal,
+): Promise<SkillGraphEvidenceResponse> {
+  const params = new URLSearchParams({ skill: filters.skill });
+  if (filters.career_type) {
+    params.set("career_type", filters.career_type);
+  }
+  if (filters.limit) {
+    params.set("limit", String(filters.limit));
+  }
+  return request<SkillGraphEvidenceResponse>(
+    `/api/graph/skills/evidence?${params.toString()}`,
+    {
+      policy: "public",
+      signal,
+      tags: ["skill-graph-evidence"],
+    },
+  );
 }
 
 export function analyzeFit(

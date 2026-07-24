@@ -9,7 +9,15 @@ import type {
 } from "./types";
 
 
-export type SkillGraphViewMode = "overview" | "focus" | "all";
+export type SkillGraphViewMode =
+  | "overview"
+  | "focus"
+  | "all"
+  | "global"
+  | "local";
+
+
+type NormalizedSkillGraphViewMode = "overview" | "focus" | "all";
 
 
 export type SkillGraphViewOptions = {
@@ -72,7 +80,7 @@ export type SkillGraphViewData = {
 
 
 const DEFAULT_LIMITS: Record<
-  SkillGraphViewMode,
+  NormalizedSkillGraphViewMode,
   { nodes: number; links: number }
 > = {
   overview: { nodes: 12, links: 18 },
@@ -331,7 +339,13 @@ export function buildSkillGraphView(
   graph: SkillGraphResponse,
   options: SkillGraphViewOptions = {},
 ): SkillGraphViewData {
-  const mode = options.mode ?? "overview";
+  const requestedMode = options.mode ?? "overview";
+  const mode: NormalizedSkillGraphViewMode =
+    requestedMode === "local"
+      ? "focus"
+      : requestedMode === "global"
+        ? "all"
+        : requestedMode;
   const defaults = DEFAULT_LIMITS[mode];
   const nodeLimit = boundedLimit(options.nodeLimit, defaults.nodes);
   const linkLimit = boundedLimit(options.linkLimit, defaults.links);
