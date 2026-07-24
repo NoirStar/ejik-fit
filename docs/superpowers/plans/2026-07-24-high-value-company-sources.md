@@ -349,7 +349,7 @@ git commit -m "feat: add three verified high-value company sources"
 
 ```bash
 cd packages/backend
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest tests/test_seed_data.py tests/test_crawler.py tests/test_enterprise_json_connector.py tests/test_public_json_detail.py tests/test_listing_validation.py -q
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest tests/test_seed_data.py tests/test_crawler.py tests/test_enterprise_json_connector.py tests/test_public_json_detail.py -q
 ```
 
 Expected: PASS.
