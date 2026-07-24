@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
+from ejikfit.api.graph import DatabaseSkillGraphReader
 from ejikfit.models import (
     Base,
     CareerSource,
@@ -196,3 +197,86 @@ def test_build_skill_graph_canonicalizes_seed_and_owned_skill_inputs() -> None:
     assert graph.node_by_id("Python").seed is True
     assert graph.node_by_id("Python").owned is True
     assert graph.node_by_id("Kubernetes").owned is True
+
+
+def test_build_skill_graph_can_skip_evidence_without_changing_topology() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _source(session)
+        _posting(
+            session,
+            company,
+            source,
+            "evidence-toggle",
+            title="Python 플랫폼 엔지니어",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("Kubernetes", "infra", "preferred", 1.0),
+            ],
+        )
+        session.commit()
+
+        with_evidence = build_skill_graph(session, seed="Python", limit=10)
+        without_evidence = build_skill_graph(
+            session,
+            seed="Python",
+            limit=10,
+            include_evidence=False,
+        )
+
+    assert without_evidence.nodes == with_evidence.nodes
+    assert without_evidence.edges == with_evidence.edges
+    assert len(with_evidence.evidence) == 1
+    assert without_evidence.evidence == ()
+
+
+def test_database_skill_graph_reader_returns_bounded_selected_skill_evidence() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+    with factory() as session:
+        company, source = _source(session)
+        _posting(
+            session,
+            company,
+            source,
+            "experienced-python",
+            title="Python Backend Engineer",
+            career_type="experienced",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("FastAPI", "framework", "preferred", 1.0),
+            ],
+        )
+        _posting(
+            session,
+            company,
+            source,
+            "new-python",
+            title="Python 신입 엔지니어",
+            career_type="new_comer",
+            skills=[("Python", "language", "required", 1.0)],
+        )
+        session.commit()
+
+    response = DatabaseSkillGraphReader(factory).evidence(
+        "python",
+        career_type="experienced",
+        limit=6,
+    )
+
+    assert response == {
+        "items": [
+            {
+                "posting_id": response["items"][0]["posting_id"],
+                "title": "Python Backend Engineer",
+                "company_name": "테스트 기업",
+                "skills": ["FastAPI", "Python"],
+                "required": ["Python"],
+                "preferred": ["FastAPI"],
+                "unspecified": [],
+            }
+        ],
+        "total": 1,
+    }

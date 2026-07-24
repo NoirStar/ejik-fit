@@ -187,6 +187,11 @@ class SkillGraphResponse(BaseModel):
     meta: SkillGraphMeta
 
 
+class SkillGraphEvidenceResponse(BaseModel):
+    items: list[SkillGraphEvidence]
+    total: int
+
+
 class FitAnalyzeRequest(BaseModel):
     owned_skills: list[str]
     career_type: str | None = None

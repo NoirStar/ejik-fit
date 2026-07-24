@@ -155,6 +155,7 @@ def build_skill_graph(
     owned_skills: Sequence[str] = (),
     career_type: str | None = None,
     limit: int = 30,
+    include_evidence: bool = True,
 ) -> SkillGraph:
     bounded_limit = max(5, min(limit, 60))
     seed = canonicalize_skill_input(seed) if seed else None
@@ -204,15 +205,16 @@ def build_skill_graph(
         required = tuple(sorted(name for name, value in skills.items() if value == "required"))
         preferred = tuple(sorted(name for name, value in skills.items() if value == "preferred"))
         unspecified = tuple(sorted(name for name, value in skills.items() if value == "unspecified"))
-        evidence_by_posting[str(posting.id)] = SkillGraphEvidence(
-            posting_id=str(posting.id),
-            title=posting.title,
-            company_name=posting.company.name,
-            skills=tuple(sorted(skills)),
-            required=required,
-            preferred=preferred,
-            unspecified=unspecified,
-        )
+        if include_evidence:
+            evidence_by_posting[str(posting.id)] = SkillGraphEvidence(
+                posting_id=str(posting.id),
+                title=posting.title,
+                company_name=posting.company.name,
+                skills=tuple(sorted(skills)),
+                required=required,
+                preferred=preferred,
+                unspecified=unspecified,
+            )
 
     scored_edges: list[SkillGraphEdge] = []
     for pair, support in pair_counts.items():
@@ -266,10 +268,14 @@ def build_skill_graph(
     visible_posting_ids = {
         posting_id for edge in visible_edges for posting_id in edge.supporting_posting_ids
     }
-    evidence = tuple(
-        evidence_by_posting[posting_id]
-        for posting_id in sorted(visible_posting_ids)
-        if posting_id in evidence_by_posting
+    evidence = (
+        tuple(
+            evidence_by_posting[posting_id]
+            for posting_id in sorted(visible_posting_ids)
+            if posting_id in evidence_by_posting
+        )
+        if include_evidence
+        else ()
     )
     nodes = tuple(
         _node(
