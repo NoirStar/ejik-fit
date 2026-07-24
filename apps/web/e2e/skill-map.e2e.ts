@@ -116,7 +116,9 @@ async function waitForPaintedCanvas(canvas: Locator) {
   return readCanvasFingerprint(canvas);
 }
 
-async function waitForZoomStability(canvas: Locator) {
+async function waitForZoomStability(
+  canvas: Locator,
+): Promise<CanvasZoom | null> {
   let lastZoom: CanvasZoom | null = null;
   let stableSamples = 0;
 
@@ -142,7 +144,7 @@ async function waitForZoomStability(canvas: Locator) {
   return lastZoom;
 }
 
-async function dispatchTouchPan(
+async function dispatchTouchScroll(
   session: CDPSession,
   start: CanvasPoint,
 ) {
@@ -166,8 +168,8 @@ async function dispatchTouchPan(
         id: 1,
         radiusX: 4,
         radiusY: 4,
-        x: start.x + 48,
-        y: start.y + 24,
+        x: start.x,
+        y: start.y - 160,
       },
     ],
     type: "touchMove",
@@ -344,7 +346,7 @@ async function tapSkillNode(
         }
         return false;
       },
-      { intervals: [100, 200, 400, 800], timeout: 3_000 },
+      { intervals: [100, 200, 400, 800, 1_200], timeout: 8_000 },
     )
     .toBe(true);
   await session.send("Input.dispatchTouchEvent", {
@@ -377,6 +379,7 @@ async function tapSkillNode(
       .locator('button[aria-pressed="true"]')
       .filter({ hasText: "선택 주변" }),
   ).toHaveCount(1);
+  return selectedSkill!;
 }
 
 test("keeps fixture graph scope aligned with the production API contract", async ({
@@ -665,7 +668,9 @@ for (const width of [1440, 820, 390, 320]) {
 
       for (const overlay of [
         graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-        graphFrame.getByText("이동 · 두 손가락으로 확대 · 탭하여 선택"),
+        graphFrame.getByText(
+          "한 손가락으로 화면 스크롤 · 두 손가락으로 확대 · 탭하여 선택",
+        ),
       ]) {
         const overlayBox = await overlay.boundingBox();
         expect(overlayBox).not.toBeNull();
@@ -694,7 +699,7 @@ for (const width of [1440, 820, 390, 320]) {
   });
 }
 
-test("supports touch pan, pinch zoom, and node selection", async ({ browser }) => {
+test("supports page scroll, pinch zoom, and node selection on touch", async ({ browser }) => {
   const context = await browser.newContext({
     baseURL: "http://127.0.0.1:3102",
     deviceScaleFactor: 3,
@@ -716,22 +721,30 @@ test("supports touch pan, pinch zoom, and node selection", async ({ browser }) =
   expect(graphBox).not.toBeNull();
 
   const canvas = forceCanvas.locator("canvas");
-  const beforePan = await readCanvasZoom(canvas);
   await waitForPaintedCanvas(canvas);
-  await dispatchTouchPan(session, {
-    x: graphBox!.x + 72,
-    y: graphBox!.y + 72,
+  const beforeScrollZoom = await waitForZoomStability(canvas);
+  const beforeScrollY = await page.evaluate(() => window.scrollY);
+  await dispatchTouchScroll(session, {
+    x: graphBox!.x + graphBox!.width - 24,
+    y: graphBox!.y + graphBox!.height - 80,
   });
   await expect
-    .poll(async () => (await readCanvasZoom(canvas))?.x)
-    .not.toBe(beforePan?.x);
-  const afterPan = await readCanvasZoom(canvas);
-  expect(beforePan).not.toBeNull();
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(beforeScrollY);
+  const afterScrollZoom = await readCanvasZoom(canvas);
+  expect(beforeScrollZoom).not.toBeNull();
+  expect(afterScrollZoom?.x).toBeCloseTo(beforeScrollZoom?.x ?? 0, 1);
+  expect(afterScrollZoom?.y).toBeCloseTo(beforeScrollZoom?.y ?? 0, 1);
 
-  await graphFrame.getByRole("button", { name: "그래프 확대" }).click();
+  await graphFrame.evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
+  await graphFrame.getByRole("button", { name: "그래프 확대" }).click({
+    force: true,
+  });
   await expect
     .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
-    .toBeGreaterThan(afterPan?.k ?? 0);
+    .toBeGreaterThan(afterScrollZoom?.k ?? 0);
   const afterButtonZoom = await readCanvasZoom(canvas);
 
   const canvasBox = await canvas.boundingBox();
@@ -746,7 +759,12 @@ test("supports touch pan, pinch zoom, and node selection", async ({ browser }) =
 
   await graphFrame.getByRole("button", { name: "그래프 전체 맞춤" }).click();
   await waitForZoomStability(canvas);
-  await tapSkillNode(page, session, canvas);
+  const selectedSkill = await tapSkillNode(page, session, canvas);
+  await expect(page).toHaveURL(
+    new RegExp(`\\bseed=${encodeURIComponent(selectedSkill)}(?:&|$)`),
+  );
+  await expect(graphFrame.locator(".force-canvas--ready")).toBeVisible();
+  await expect(graphFrame.locator(".graph-node")).toHaveCount(0);
   await context.close();
 });
 
@@ -777,21 +795,31 @@ test("keeps a static, painted, touch-controllable graph with reduced motion", as
   const initialCanvas = await waitForCanvasStability(canvas);
   expect(initialCanvas.paintedPixels).toBeGreaterThan(0);
   const initialZoom = await readCanvasZoom(canvas);
-  const canvasBox = await canvas.boundingBox();
+  let canvasBox = await canvas.boundingBox();
   expect(initialZoom).not.toBeNull();
   expect(canvasBox).not.toBeNull();
 
-  await dispatchTouchPan(session, {
-    x: canvasBox!.x + 72,
-    y: canvasBox!.y + 72,
+  const beforeScrollY = await page.evaluate(() => window.scrollY);
+  await dispatchTouchScroll(session, {
+    x: canvasBox!.x + canvasBox!.width - 24,
+    y: canvasBox!.y + canvasBox!.height - 80,
   });
   await expect
-    .poll(async () => (await readCanvasZoom(canvas))?.x)
-    .not.toBe(initialZoom?.x);
+    .poll(async () => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(beforeScrollY);
+  const afterScrollZoom = await readCanvasZoom(canvas);
+  expect(afterScrollZoom?.x).toBeCloseTo(initialZoom?.x ?? 0, 1);
+  expect(afterScrollZoom?.y).toBeCloseTo(initialZoom?.y ?? 0, 1);
   const afterPanCanvas = await waitForCanvasStability(canvas);
-  expect(afterPanCanvas.hash).not.toBe(initialCanvas.hash);
+  expect(afterPanCanvas.hash).toBe(initialCanvas.hash);
 
+  await graphFrame.evaluate((element) =>
+    element.scrollIntoView({ block: "center" }),
+  );
+  await page.waitForTimeout(300);
   const beforePinch = await readCanvasZoom(canvas);
+  canvasBox = await canvas.boundingBox();
+  expect(canvasBox).not.toBeNull();
   await dispatchPinch(page, session, {
     x: canvasBox!.x + canvasBox!.width / 2,
     y: canvasBox!.y + canvasBox!.height / 2,

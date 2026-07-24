@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
 import { getSkillGraph } from "@/lib/api";
+import { normalizeCareerPreferences } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
 import type { SkillGraphResponse } from "@/lib/types";
@@ -60,6 +61,10 @@ export default async function SkillGraphPage({
 }: SkillGraphPageProps = {}) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const seed = firstValue(resolvedSearchParams.seed)?.trim() || undefined;
+  const careerType = normalizeCareerPreferences({
+    careerCondition: firstValue(resolvedSearchParams.career_type),
+    targetDomain: "",
+  }).careerCondition;
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
   let graph = emptyGraph();
   let failed = false;
@@ -67,6 +72,7 @@ export default async function SkillGraphPage({
   try {
     graph = await getSkillGraph({
       ...(seed ? { seed } : {}),
+      ...(careerType ? { career_type: careerType } : {}),
       owned_skills: ownedSkills,
       limit: 30,
       include_evidence: false,
@@ -79,6 +85,7 @@ export default async function SkillGraphPage({
     <SkillGraphExperience
       initialGraph={graph}
       initialOwnedSkills={ownedSkills}
+      careerType={careerType || undefined}
       loadFailed={failed}
       retryHref={buildRetryHref(resolvedSearchParams)}
     />

@@ -192,7 +192,7 @@ def create_skills_router(
     def skill_stats(
         career_type: str | None = Query(default=None, max_length=100),
         category: str | None = Query(default=None, max_length=64),
-        limit: int = Query(default=30, ge=1, le=100),
+        limit: int = Query(default=30, ge=1, le=500),
     ) -> dict:
         items = reader.stats(
             career_type=career_type,

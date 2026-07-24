@@ -175,6 +175,9 @@ class DatabaseSourceDirectoryReader:
                     "preparation_reason": preparation_reason,
                     "open_postings": source_count,
                     "last_success_at": source.last_success_at,
+                    "_runnable_success_at": (
+                        source.last_success_at if collecting else None
+                    ),
                 }
                 preferred_source_counts[company.slug] = source_count
                 continue
@@ -186,6 +189,13 @@ class DatabaseSourceDirectoryReader:
                 or source.last_success_at > previous_success
             ):
                 item["last_success_at"] = source.last_success_at
+
+            runnable_success = item["_runnable_success_at"]
+            if collecting and source.last_success_at is not None and (
+                runnable_success is None
+                or source.last_success_at > runnable_success
+            ):
+                item["_runnable_success_at"] = source.last_success_at
 
             should_prefer_source = (
                 collecting and item["collection_status"] != "collecting"
@@ -204,12 +214,20 @@ class DatabaseSourceDirectoryReader:
         now = self.now_factory()
         items = list(companies.values())
         for item in items:
+            activity_success_at = (
+                item["_runnable_success_at"]
+                if item["collection_status"] == "collecting"
+                else item["last_success_at"]
+            )
+            if item["collection_status"] == "collecting":
+                item["last_success_at"] = activity_success_at
             item["activity_status"] = source_activity_status(
                 collection_status=item["collection_status"],
                 open_postings=item["open_postings"],
-                last_success_at=item["last_success_at"],
+                last_success_at=activity_success_at,
                 now=now,
             )
+            item.pop("_runnable_success_at", None)
 
         return sorted(
             items,

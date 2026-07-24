@@ -68,6 +68,17 @@ type HighlightState = SkillGraphHighlight & {
 };
 
 
+type LabelBounds = {
+  bottom: number;
+  left: number;
+  right: number;
+  top: number;
+};
+
+
+const MAX_VISIBLE_LABELS = 12;
+
+
 function emptyHighlight(): HighlightState {
   return {
     ...buildSkillGraphHighlight(null, new Map()),
@@ -133,6 +144,16 @@ function relatedToHighlight(
 }
 
 
+function labelBoundsOverlap(left: LabelBounds, right: LabelBounds) {
+  return !(
+    left.right <= right.left ||
+    right.right <= left.left ||
+    left.bottom <= right.top ||
+    right.bottom <= left.top
+  );
+}
+
+
 function drawNode(
   node: SkillForceNode,
   ctx: CanvasRenderingContext2D,
@@ -140,6 +161,8 @@ function drawNode(
   display: SkillGraphDisplaySettings,
   selectedId: string | null,
   highlight: HighlightState,
+  labelEligibleIds: ReadonlySet<string>,
+  renderedLabelBounds: LabelBounds[],
 ) {
   const nodeId = String(node.id);
   const isSelected = selectedId === nodeId;
@@ -157,7 +180,11 @@ function drawNode(
     node.seed ||
     isSelected ||
     isHovered ||
-    (isRelated && globalScale >= display.labelThreshold);
+    (
+      labelEligibleIds.has(nodeId) &&
+      isRelated &&
+      globalScale >= display.labelThreshold
+    );
   const dimmed = highlight.nodeIds.size > 0 && !isRelated;
   const paint = skillGraphNodePaint(node, isSelected);
 
@@ -196,14 +223,30 @@ function drawNode(
     const textX = node.x ?? 0;
     const textY = (node.y ?? 0) + radius + fontSize * 1.1;
     ctx.font = `700 ${fontSize}px ${SKILL_GRAPH_LABEL_FONT_FAMILY}`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.lineWidth = 2.8;
-    ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
-    ctx.shadowBlur = 0;
-    ctx.strokeText(text, textX, textY);
-    ctx.fillStyle = GRAPH_CANVAS_COLORS.skillLabel;
-    ctx.fillText(text, textX, textY);
+    const horizontalPadding = 3 / Math.max(globalScale, 0.01);
+    const verticalPadding = 2 / Math.max(globalScale, 0.01);
+    const textWidth = ctx.measureText(text).width;
+    const bounds = {
+      bottom: textY + fontSize / 2 + verticalPadding,
+      left: textX - textWidth / 2 - horizontalPadding,
+      right: textX + textWidth / 2 + horizontalPadding,
+      top: textY - fontSize / 2 - verticalPadding,
+    };
+    const priorityLabel = node.seed || isSelected || isHovered;
+    const collides = renderedLabelBounds.some((existing) =>
+      labelBoundsOverlap(existing, bounds),
+    );
+    if (priorityLabel || !collides) {
+      renderedLabelBounds.push(bounds);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
+      ctx.shadowBlur = 0;
+      ctx.strokeText(text, textX, textY);
+      ctx.fillStyle = GRAPH_CANVAS_COLORS.skillLabel;
+      ctx.fillText(text, textX, textY);
+    }
   }
 
   ctx.restore();
@@ -363,14 +406,29 @@ export function SkillGraphForceCanvas({
     () => buildSkillGraphAdjacency(data.links),
     [data.links],
   );
+  const labelEligibleIds = useMemo(
+    () => new Set(
+      [...data.nodes]
+        .sort(
+          (left, right) =>
+            right.demandCount - left.demandCount ||
+            left.id.localeCompare(right.id, "en"),
+        )
+        .slice(0, MAX_VISIBLE_LABELS)
+        .map(({ id }) => id),
+    ),
+    [data.nodes],
+  );
   const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
   const highlightRef = useRef<HighlightState>(emptyHighlight());
+  const renderedLabelBoundsRef = useRef<LabelBounds[]>([]);
   const hoveredIdRef = useRef<string | null>(null);
   const selectedIdRef = useRef<string | null>(selectedId);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
   const initialViewReadyRef = useRef(false);
   const readyRef = useRef(false);
+  const revealGenerationRef = useRef(0);
   const revealGraphRef = useRef<() => void>(() => undefined);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
@@ -387,17 +445,66 @@ export function SkillGraphForceCanvas({
     let cancelled = false;
     let mountedGraph: ForceGraphInstance | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let touchCanvas: HTMLCanvasElement | null = null;
+    let pinchStart: { distance: number; zoom: number } | null = null;
     let revealFrame = 0;
     let resizeFrame = 0;
+
+    function touchDistance(event: TouchEvent) {
+      const first = event.touches.item(0);
+      const second = event.touches.item(1);
+      if (!first || !second) {
+        return 0;
+      }
+      return Math.hypot(
+        second.clientX - first.clientX,
+        second.clientY - first.clientY,
+      );
+    }
+
+    function startPinch(event: TouchEvent) {
+      if (event.touches.length !== 2 || !graphRef.current) {
+        return;
+      }
+      pinchStart = {
+        distance: touchDistance(event),
+        zoom: graphRef.current.zoom(),
+      };
+    }
+
+    function movePinch(event: TouchEvent) {
+      if (event.touches.length !== 2 || !pinchStart || !graphRef.current) {
+        return;
+      }
+      const distance = touchDistance(event);
+      if (pinchStart.distance <= 0 || distance <= 0) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const nextZoom = Math.min(
+        9,
+        Math.max(0.18, pinchStart.zoom * (distance / pinchStart.distance)),
+      );
+      graphRef.current.zoom(nextZoom);
+    }
+
+    function endPinch(event: TouchEvent) {
+      if (event.touches.length < 2) {
+        pinchStart = null;
+      }
+    }
 
     setMounted(false);
     setReady(false);
     initialViewReadyRef.current = false;
     readyRef.current = false;
+    revealGenerationRef.current += 1;
     onReadyChange?.(false);
 
     const revealGraph = () => {
       const graph = graphRef.current;
+      const generation = revealGenerationRef.current;
       if (
         cancelled ||
         readyRef.current ||
@@ -409,7 +516,13 @@ export function SkillGraphForceCanvas({
       }
       window.cancelAnimationFrame(revealFrame);
       revealFrame = window.requestAnimationFrame(() => {
-        if (cancelled || readyRef.current || graphRef.current !== graph) {
+        if (
+          cancelled ||
+          readyRef.current ||
+          !initialViewReadyRef.current ||
+          graphRef.current !== graph ||
+          revealGenerationRef.current !== generation
+        ) {
           return;
         }
         readyRef.current = true;
@@ -450,8 +563,11 @@ export function SkillGraphForceCanvas({
         .minZoom(0.18)
         .maxZoom(9)
         .enableNodeDrag(!touchInputRef.current)
-        .enablePanInteraction(true)
+        .enablePanInteraction(!touchInputRef.current)
         .enableZoomInteraction(true)
+        .onRenderFramePre(() => {
+          renderedLabelBoundsRef.current = [];
+        })
         .onEngineTick(revealGraph)
         .onEngineStop(revealGraph)
         .showPointerCursor((object) => Boolean(object))
@@ -492,9 +608,25 @@ export function SkillGraphForceCanvas({
         });
 
       graphRef.current = mountedGraph;
+      touchCanvas = containerRef.current.querySelector("canvas");
+      touchCanvas?.addEventListener("touchstart", startPinch, {
+        passive: true,
+      });
+      touchCanvas?.addEventListener("touchmove", movePinch, {
+        passive: false,
+      });
+      touchCanvas?.addEventListener("touchend", endPinch, {
+        passive: true,
+      });
+      touchCanvas?.addEventListener("touchcancel", endPinch, {
+        passive: true,
+      });
       setMounted(true);
 
       resizeObserver = new ResizeObserver(() => {
+        if (document.visibilityState === "hidden") {
+          return;
+        }
         window.cancelAnimationFrame(resizeFrame);
         resizeFrame = window.requestAnimationFrame(() => {
           if (!containerRef.current || !graphRef.current) {
@@ -520,6 +652,10 @@ export function SkillGraphForceCanvas({
       window.cancelAnimationFrame(revealFrame);
       window.cancelAnimationFrame(resizeFrame);
       resizeObserver?.disconnect();
+      touchCanvas?.removeEventListener("touchstart", startPinch);
+      touchCanvas?.removeEventListener("touchmove", movePinch);
+      touchCanvas?.removeEventListener("touchend", endPinch);
+      touchCanvas?.removeEventListener("touchcancel", endPinch);
       mountedGraph?._destructor();
       graphRef.current = null;
       revealGraphRef.current = () => undefined;
@@ -527,6 +663,7 @@ export function SkillGraphForceCanvas({
       highlightRef.current = emptyHighlight();
       initialViewReadyRef.current = false;
       readyRef.current = false;
+      revealGenerationRef.current += 1;
       setMounted(false);
       setReady(false);
       onReadyChange?.(false);
@@ -539,6 +676,11 @@ export function SkillGraphForceCanvas({
       return;
     }
 
+    initialViewReadyRef.current = false;
+    readyRef.current = false;
+    revealGenerationRef.current += 1;
+    setReady(false);
+    onReadyChange?.(false);
     graph.graphData(cloneGraphData(data));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
@@ -574,7 +716,7 @@ export function SkillGraphForceCanvas({
     return () => {
       window.clearTimeout(initialFitTimer);
     };
-  }, [data, display.animate, forces, mounted]);
+  }, [data, display.animate, forces, mounted, onReadyChange]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -602,6 +744,8 @@ export function SkillGraphForceCanvas({
           display,
           selectedIdRef.current,
           highlightRef.current,
+          labelEligibleIds,
+          renderedLabelBoundsRef.current,
         ),
       )
       .nodeCanvasObjectMode(() => "replace")
@@ -637,7 +781,7 @@ export function SkillGraphForceCanvas({
       .linkCurvature(0.02);
 
     requestGraphRedraw(graph);
-  }, [display, mounted]);
+  }, [display, labelEligibleIds, mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -659,6 +803,10 @@ export function SkillGraphForceCanvas({
       if (document.visibilityState === "hidden") {
         graph.pauseAnimation();
       } else {
+        if (containerRef.current) {
+          const nextSize = resolveContainerSize(containerRef.current);
+          graph.width(nextSize.width).height(nextSize.height);
+        }
         graph.resumeAnimation();
         requestGraphRedraw(graph);
       }

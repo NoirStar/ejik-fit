@@ -231,6 +231,46 @@ def test_build_skill_graph_can_skip_evidence_without_changing_topology() -> None
     assert without_evidence.evidence == ()
 
 
+def test_unseeded_graph_starts_with_global_demand_leaders() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _source(session)
+        for index in range(6):
+            _posting(
+                session,
+                company,
+                source,
+                f"solo-{index}",
+                title="Python 단독 수요",
+                skills=[("Python", "language", "required", 1.0)],
+            )
+        for index, pair in enumerate(
+            [
+                ("Go", "Docker"),
+                ("Go", "Kubernetes"),
+                ("Docker", "Kubernetes"),
+            ]
+        ):
+            _posting(
+                session,
+                company,
+                source,
+                f"pair-{index}",
+                title="연결 중심 공고",
+                skills=[
+                    (pair[0], "infra", "required", 1.0),
+                    (pair[1], "infra", "required", 1.0),
+                ],
+            )
+        session.commit()
+
+        graph = build_skill_graph(session, limit=5, include_evidence=False)
+
+    assert graph.nodes[0].id == "Python"
+    assert graph.nodes[0].demand_count == 6
+
+
 def test_database_skill_graph_reader_returns_bounded_selected_skill_evidence() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

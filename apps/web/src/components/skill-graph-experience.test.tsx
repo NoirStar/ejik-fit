@@ -131,6 +131,7 @@ describe("SkillGraphExperience", () => {
 
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState(null, "", "/skills/graph");
     navigation.push.mockReset();
     fetchMock.mockReset();
     fetchMock.mockImplementation(async () => jsonResponse(fitResponse));
@@ -234,6 +235,147 @@ describe("SkillGraphExperience", () => {
       await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
     expect(screen.getByText("1건")).toBeInTheDocument();
+  });
+
+  it("keeps career scope in fit, evidence, and selection URLs", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/skills/graph?career_type=experienced&owned_skills=Linux",
+    );
+    fetchMock.mockImplementation((input) => {
+      if (String(input).startsWith("/skills/graph/evidence")) {
+        return Promise.resolve(evidenceResponse(selectedEvidence));
+      }
+      return Promise.resolve(jsonResponse(fitResponse));
+    });
+
+    render(
+      <SkillGraphExperience
+        careerType="experienced"
+        initialGraph={graph}
+        initialOwnedSkills={["Linux"]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/fit",
+        expect.objectContaining({
+          body: JSON.stringify({
+            owned_skills: ["Linux"],
+            career_type: "experienced",
+          }),
+        }),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/evidence?skill=C%2B%2B&career_type=experienced&limit=6",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+    expect(window.location.pathname).toBe("/skills/graph");
+    expect(window.location.search).toContain("career_type=experienced");
+    expect(window.location.search).toContain("owned_skills=Linux");
+    expect(window.location.search).toContain("seed=C%2B%2B");
+  });
+
+  it("isolates evidence cache entries by career scope", async () => {
+    fetchMock.mockResolvedValue(evidenceResponse(selectedEvidence));
+    const { rerender } = render(
+      <SkillGraphExperience
+        careerType="experienced"
+        initialGraph={graph}
+        initialOwnedSkills={[]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ });
+
+    rerender(
+      <SkillGraphExperience
+        careerType="new_comer"
+        initialGraph={graph}
+        initialOwnedSkills={[]}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/evidence?skill=C%2B%2B&career_type=new_comer&limit=6",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/skills/graph/evidence"),
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("restores selection when browser history changes", () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    window.history.pushState(null, "", "/skills/graph?seed=ROS2");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(
+      screen.getByRole("complementary", { name: "선택 기술 분석" }),
+    ).toHaveTextContent("ROS2");
+  });
+
+  it("moves repeated selection to the detail panel", () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    const node = screen.getByRole("button", { name: "C++" });
+    fireEvent.click(node);
+    fireEvent.click(node);
+
+    const inspector = screen.getByRole("complementary", {
+      name: "선택 기술 분석",
+    });
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
+    expect(inspector).toHaveFocus();
+  });
+
+  it("keeps every displayed skill in the keyboard-accessible quick list", () => {
+    const expandedGraph: SkillGraphResponse = {
+      ...graph,
+      nodes: Array.from({ length: 10 }, (_, index) => ({
+        ...graph.nodes[index % graph.nodes.length]!,
+        id: `skill-${index}`,
+        label: `Skill ${index}`,
+        demand_count: 20 - index,
+      })),
+      edges: [],
+    };
+    render(
+      <SkillGraphExperience
+        initialGraph={expandedGraph}
+        initialOwnedSkills={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 기술" }));
+
+    const quickSkills = screen.getByRole("navigation", {
+      name: "빠른 기술 선택",
+    });
+    expect(within(quickSkills).getAllByRole("link")).toHaveLength(10);
   });
 
   it("does not replace newer evidence with a late response", async () => {

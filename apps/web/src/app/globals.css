@@ -1029,7 +1029,7 @@ main[aria-busy="true"] {
   .force-canvas__surface,
   .force-canvas__surface canvas {
     overscroll-behavior: contain;
-    touch-action: none;
+    touch-action: pan-y;
   }
 }
 

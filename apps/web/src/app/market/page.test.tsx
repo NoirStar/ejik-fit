@@ -42,7 +42,7 @@ describe("MarketPage", () => {
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
       category: "infra",
-      limit: 100,
+      limit: 500,
     });
     expect(
       screen.getByRole("heading", { level: 1, name: "채용 시장 기술 동향" }),
@@ -72,7 +72,7 @@ describe("MarketPage", () => {
     );
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
-    expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 500 });
     expect(
       within(
         screen.getByRole("navigation", { name: "포함 기술 분야" }),

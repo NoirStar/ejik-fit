@@ -118,6 +118,18 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
     ]
 
 
+def test_skill_stats_endpoint_allows_complete_catalog_page() -> None:
+    reader = FakeSkillStatsReader()
+    client = TestClient(create_app(skill_stats_reader=reader))
+
+    response = client.get("/api/skills/stats?limit=500")
+
+    assert response.status_code == 200
+    assert reader.calls == [
+        {"career_type": None, "category": None, "limit": 500}
+    ]
+
+
 def test_skill_catalog_endpoint_returns_canonical_metadata() -> None:
     client = TestClient(create_app())
 

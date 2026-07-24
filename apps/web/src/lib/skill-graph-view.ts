@@ -330,6 +330,39 @@ function sparseBackbone(
 }
 
 
+function focusBackbone(
+  edges: SkillGraphEdge[],
+  visibleIds: Set<string>,
+  selectedId: string | null | undefined,
+  limit: number,
+) {
+  if (!selectedId || !visibleIds.has(selectedId)) {
+    return sparseBackbone(edges, visibleIds, limit);
+  }
+
+  const visibleEdges = edges.filter(
+    (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target),
+  );
+  const directEdges = visibleEdges
+    .filter(
+      (edge) => edge.source === selectedId || edge.target === selectedId,
+    )
+    .sort(compareEdges)
+    .slice(0, limit);
+  if (directEdges.length >= limit) {
+    return directEdges;
+  }
+
+  const directIds = new Set(directEdges.map(({ id }) => id));
+  const contextualEdges = sparseBackbone(
+    visibleEdges.filter((edge) => !directIds.has(edge.id)),
+    visibleIds,
+    limit - directEdges.length,
+  );
+  return [...directEdges, ...contextualEdges];
+}
+
+
 export function buildSkillGraphView(
   graph: SkillGraphResponse,
   options: SkillGraphViewOptions = {},
@@ -365,7 +398,14 @@ export function buildSkillGraphView(
   }
 
   const visibleIds = new Set(selectedNodes.map(({ id }) => id));
-  const selectedEdges = sparseBackbone(candidateEdges, visibleIds, linkLimit);
+  const selectedEdges = mode === "focus"
+    ? focusBackbone(
+        candidateEdges,
+        visibleIds,
+        options.selectedId,
+        linkLimit,
+      )
+    : sparseBackbone(candidateEdges, visibleIds, linkLimit);
   const maximumDemand = Math.max(
     1,
     ...graph.nodes.map((node) => safeCount(node.demand_count)),

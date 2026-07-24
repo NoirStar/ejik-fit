@@ -99,6 +99,64 @@ describe("buildSkillGraphView", () => {
     ).toBe(true);
   });
 
+  it("keeps every visible selected-to-neighbor edge before contextual edges", () => {
+    const graph = denseGraph(6);
+    graph.edges = [
+      {
+        ...graph.edges[0]!,
+        id: "selected-a",
+        source: "skill-05",
+        target: "skill-00",
+        score: 0.2,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "selected-b",
+        source: "skill-05",
+        target: "skill-01",
+        score: 0.19,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "selected-c",
+        source: "skill-05",
+        target: "skill-02",
+        score: 0.18,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "context-a",
+        source: "skill-00",
+        target: "skill-01",
+        score: 0.99,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "context-b",
+        source: "skill-01",
+        target: "skill-02",
+        score: 0.98,
+      },
+    ];
+
+    const view = buildSkillGraphView(graph, {
+      mode: "focus",
+      selectedId: "skill-05",
+      nodeLimit: 4,
+      linkLimit: 3,
+    });
+
+    expect(view.nodes.map(({ id }) => id)).toEqual([
+      "skill-05",
+      "skill-00",
+      "skill-01",
+      "skill-02",
+    ]);
+    expect(new Set(view.links.map(({ id }) => id))).toEqual(
+      new Set(["selected-a", "selected-b", "selected-c"]),
+    );
+  });
+
   it("keeps the full mode readable with a sparse 30-node backbone", () => {
     const view = buildSkillGraphView(denseGraph(40), { mode: "all" });
 

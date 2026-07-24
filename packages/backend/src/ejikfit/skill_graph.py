@@ -245,19 +245,25 @@ def build_skill_graph(
     scored_edges.sort(key=lambda edge: (-edge.score, -edge.cooccurrence_count, edge.id))
 
     selected_skills: list[str] = []
-    if seed and skill_counts[seed] > 0:
-        selected_skills.append(seed)
-    for skill in canonical_owned_skills:
-        if skill_counts[skill] > 0 and skill not in selected_skills:
-            selected_skills.append(skill)
-    for edge in scored_edges:
-        for skill in (edge.source, edge.target):
-            if skill not in selected_skills:
+    if not seed and not canonical_owned_skills:
+        selected_skills = sorted(
+            skill_counts,
+            key=lambda skill: (-skill_counts[skill], skill.casefold()),
+        )[:bounded_limit]
+    else:
+        if seed and skill_counts[seed] > 0:
+            selected_skills.append(seed)
+        for skill in canonical_owned_skills:
+            if skill_counts[skill] > 0 and skill not in selected_skills:
                 selected_skills.append(skill)
+        for edge in scored_edges:
+            for skill in (edge.source, edge.target):
+                if skill not in selected_skills:
+                    selected_skills.append(skill)
+                if len(selected_skills) >= bounded_limit:
+                    break
             if len(selected_skills) >= bounded_limit:
                 break
-        if len(selected_skills) >= bounded_limit:
-            break
     if not selected_skills:
         selected_skills = [skill for skill, _count in skill_counts.most_common(bounded_limit)]
 

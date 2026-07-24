@@ -157,6 +157,51 @@ describe("SkillGraphPage", () => {
     });
   });
 
+  it("normalizes and forwards the selected career scope", async () => {
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: "Kubernetes",
+      nodes: [],
+      edges: [],
+      evidence: [],
+      meta: { limit: 30, min_confidence: 0.8 },
+    });
+
+    await SkillGraphPage({
+      searchParams: Promise.resolve({
+        seed: "Kubernetes",
+        career_type: "experienced",
+      }),
+    });
+
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      seed: "Kubernetes",
+      owned_skills: [],
+      career_type: "experienced",
+      limit: 30,
+      include_evidence: false,
+    });
+  });
+
+  it("drops an unsupported career scope", async () => {
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: null,
+      nodes: [],
+      edges: [],
+      evidence: [],
+      meta: { limit: 30, min_confidence: 0.8 },
+    });
+
+    await SkillGraphPage({
+      searchParams: Promise.resolve({ career_type: "executive" }),
+    });
+
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      owned_skills: [],
+      limit: 30,
+      include_evidence: false,
+    });
+  });
+
   it("keeps an API failure honest instead of filling the graph", async () => {
     vi.mocked(getSkillGraph).mockRejectedValue(new Error("backend unavailable"));
 

@@ -294,3 +294,47 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "last_success_at": None,
         },
     ]
+
+
+def test_company_activity_uses_only_runnable_source_success_time() -> None:
+    from ejikfit.api.sources import DatabaseSourceDirectoryReader
+
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    now = datetime(2026, 7, 24, tzinfo=timezone.utc)
+    runnable_success = now - timedelta(hours=72)
+
+    with Session(engine) as session:
+        company = Company(name="복수 소스 기업", slug="multi-source")
+        session.add_all(
+            [
+                CareerSource(
+                    company=company,
+                    base_url="https://a.example.com/jobs",
+                    source_type=SourceType.JSON_LD,
+                    status=SourceStatus.ALLOWED,
+                    policy_status=PolicyStatus.ALLOWED,
+                    last_success_at=runnable_success,
+                ),
+                CareerSource(
+                    company=company,
+                    base_url="https://b.example.com/jobs",
+                    source_type=SourceType.HTML_LISTING_DETAIL,
+                    status=SourceStatus.NEEDS_CONNECTOR,
+                    policy_status=PolicyStatus.ALLOWED,
+                    last_success_at=now,
+                ),
+            ]
+        )
+        session.commit()
+
+    items = DatabaseSourceDirectoryReader(
+        session_factory=factory,
+        now_factory=lambda: now,
+    ).list()
+
+    assert len(items) == 1
+    assert items[0]["collection_status"] == "collecting"
+    assert items[0]["activity_status"] == "attention"
+    assert items[0]["last_success_at"] == runnable_success.replace(tzinfo=None)

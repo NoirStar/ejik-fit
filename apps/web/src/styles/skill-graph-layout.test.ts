@@ -35,6 +35,9 @@ describe("skill graph layout CSS", () => {
     expect(css).not.toContain("#080b12");
     expect(css).not.toContain("filter: saturate(1.05) contrast(1.04);");
     expect(css).toMatch(
+      /@media \(pointer: coarse\)[\s\S]*?touch-action: pan-y;/,
+    );
+    expect(css).not.toMatch(
       /@media \(pointer: coarse\)[\s\S]*?touch-action: none;/,
     );
     expect(shellCss).toContain('.content[data-immersive="true"] > :first-child');

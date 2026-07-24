@@ -6,6 +6,7 @@ import { MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { PRODUCT_TERMS } from "@/lib/labels";
+import type { CareerCondition } from "@/lib/career-preferences";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
 import { buildSkillGraphHref } from "@/lib/product-routes";
 import { summarizeGraph } from "@/lib/skill-graph";
@@ -45,6 +46,7 @@ type PositionedNode = SkillGraphViewNode & {
 
 
 type SkillGraphExperienceProps = {
+  careerType?: Exclude<CareerCondition, "">;
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
   loadFailed?: boolean;
@@ -68,7 +70,7 @@ const SKILL_MAP_COPY = {
   recommendation: "다음에 배울 기술",
   related: "함께 요구되는 기술",
   desktopControls: "드래그 · 확대 · 선택",
-  mobileControls: "이동 · 두 손가락으로 확대 · 탭하여 선택",
+  mobileControls: "한 손가락으로 화면 스크롤 · 두 손가락으로 확대 · 탭하여 선택",
 };
 
 
@@ -195,6 +197,7 @@ function chooseInitialSelection(
 
 
 export function SkillGraphExperience({
+  careerType,
   initialGraph,
   initialOwnedSkills,
   loadFailed = false,
@@ -225,6 +228,13 @@ export function SkillGraphExperience({
   const [announcement, setAnnouncement] = useState("");
   const [controlsOpen, setControlsOpen] = useState(true);
   const evidenceCache = useRef(new Map<string, SkillGraphEvidenceResponse>());
+  const inspectorRef = useRef<HTMLElement>(null);
+  const selectedIdRef = useRef<string | null>(initialSelection);
+  const careerTypeRef = useRef(careerType);
+  const ownedSkillsRef = useRef(ownedSkills);
+  selectedIdRef.current = selectedId;
+  careerTypeRef.current = careerType;
+  ownedSkillsRef.current = ownedSkills;
 
   const graphNodeMap = useMemo(
     () => new Map(initialGraph.nodes.map((node) => [node.id, node])),
@@ -317,14 +327,12 @@ export function SkillGraphExperience({
         : 0,
     [initialGraph.edges, selectedId],
   );
-  const quickSkills = useMemo(() => {
-    const graphIds = new Set(initialGraph.nodes.map((node) => node.id));
-    const suggested = [
-      ...ownedSkills.filter((skill) => graphIds.has(skill)),
-      ...initialGraph.nodes.map((node) => node.id),
-    ];
-    return Array.from(new Set(suggested)).slice(0, 8);
-  }, [initialGraph.nodes, ownedSkills]);
+  const quickSkills = useMemo(
+    () => viewData.nodes
+      .filter((node) => node.kind === "skill")
+      .map((node) => node.id),
+    [viewData.nodes],
+  );
   const topNextSkill =
     fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
   const isFilteredEmpty = initialGraph.nodes.length > 0 && viewData.nodes.length === 0;
@@ -377,9 +385,31 @@ export function SkillGraphExperience({
 
   useEffect(() => {
     setSelectedId(initialSelection);
+    selectedIdRef.current = initialSelection;
     setGraphMode(initialSelection ? "focus" : "overview");
     setForceReady(false);
   }, [initialGraph.seed, initialSelection]);
+
+  useEffect(() => {
+    function restoreSelectionFromHistory() {
+      const requested = new URL(window.location.href).searchParams
+        .get("seed")
+        ?.trim();
+      const nextSelection = requested
+        ? initialGraph.nodes.find(
+            (node) => node.id.toLocaleLowerCase("en-US") ===
+              requested.toLocaleLowerCase("en-US"),
+          )?.id ?? null
+        : null;
+      selectedIdRef.current = nextSelection;
+      setSelectedId(nextSelection);
+      setGraphMode(nextSelection ? "focus" : "overview");
+      setForceReady(false);
+    }
+
+    window.addEventListener("popstate", restoreSelectionFromHistory);
+    return () => window.removeEventListener("popstate", restoreSelectionFromHistory);
+  }, [initialGraph.nodes]);
 
   useEffect(() => {
     let cancelled = false;
@@ -399,7 +429,10 @@ export function SkillGraphExperience({
           headers: {
             "content-type": "application/json",
           },
-          body: JSON.stringify({ owned_skills: ownedSkills }),
+          body: JSON.stringify({
+            owned_skills: ownedSkills,
+            ...(careerType ? { career_type: careerType } : {}),
+          }),
         });
         if (!response.ok) {
           throw new Error("fit request failed");
@@ -422,7 +455,7 @@ export function SkillGraphExperience({
     return () => {
       cancelled = true;
     };
-  }, [ownedSkills]);
+  }, [careerType, ownedSkills]);
 
   useEffect(() => {
     if (!selectedId) {
@@ -431,7 +464,8 @@ export function SkillGraphExperience({
     }
     const evidenceSkill = selectedId;
 
-    const cached = evidenceCache.current.get(evidenceSkill);
+    const cacheKey = `${careerType ?? "all"}:${evidenceSkill}`;
+    const cached = evidenceCache.current.get(cacheKey);
     if (cached) {
       setEvidence({
         status: cached.items.length > 0 ? "ready" : "empty",
@@ -446,8 +480,13 @@ export function SkillGraphExperience({
 
     async function requestEvidence() {
       try {
+        const params = new URLSearchParams({ skill: evidenceSkill });
+        if (careerType) {
+          params.set("career_type", careerType);
+        }
+        params.set("limit", "6");
         const response = await fetch(
-          `/skills/graph/evidence?skill=${encodeURIComponent(evidenceSkill)}&limit=6`,
+          `/skills/graph/evidence?${params.toString()}`,
           { signal: controller.signal },
         );
         if (!response.ok) {
@@ -461,7 +500,7 @@ export function SkillGraphExperience({
           items: Array.isArray(payload.items) ? payload.items.slice(0, 6) : [],
           total: Number.isFinite(payload.total) ? Math.max(0, payload.total) : 0,
         };
-        evidenceCache.current.set(evidenceSkill, normalized);
+        evidenceCache.current.set(cacheKey, normalized);
         setEvidence({
           status: normalized.items.length > 0 ? "ready" : "empty",
           items: normalized.items,
@@ -480,16 +519,53 @@ export function SkillGraphExperience({
 
     requestEvidence();
     return () => controller.abort();
-  }, [evidenceRetryKey, selectedId]);
+  }, [careerType, evidenceRetryKey, selectedId]);
+
+  const writeSelectionUrl = useCallback((nodeId: string | null, mode: "push" | "replace") => {
+    const url = new URL(window.location.href);
+    url.pathname = "/skills/graph";
+    if (nodeId) {
+      url.searchParams.set("seed", nodeId);
+    } else {
+      url.searchParams.delete("seed");
+    }
+    if (careerTypeRef.current) {
+      url.searchParams.set("career_type", careerTypeRef.current);
+    }
+    url.searchParams.delete("owned_skills");
+    ownedSkillsRef.current.forEach((skill) => {
+      url.searchParams.append("owned_skills", skill);
+    });
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    if (mode === "push") {
+      window.history.pushState(null, "", nextUrl);
+    } else {
+      window.history.replaceState(null, "", nextUrl);
+    }
+  }, []);
 
   const selectSkill = useCallback(
     (nodeId: string) => {
+      if (selectedIdRef.current === nodeId) {
+        const inspector = inspectorRef.current;
+        inspector?.scrollIntoView({
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ? "auto"
+            : "smooth",
+          block: "start",
+        });
+        inspector?.focus({ preventScroll: true });
+        setAnnouncement(`${nodeId} 기술의 상세 정보를 표시했습니다.`);
+        return;
+      }
+      selectedIdRef.current = nodeId;
       setSelectedId(nodeId);
       setGraphMode("focus");
       setForceReady(false);
+      writeSelectionUrl(nodeId, "push");
       setAnnouncement(`${nodeId} 중심의 기술 관계를 표시합니다.`);
     },
-    [],
+    [writeSelectionUrl],
   );
 
   function addSkill(nextSkill = input.trim()) {
@@ -518,9 +594,11 @@ export function SkillGraphExperience({
   function resetGraphView() {
     setGraphMode(initialSelection ? "focus" : "overview");
     setSelectedId(initialSelection);
+    selectedIdRef.current = initialSelection;
     setFilterQuery("");
     setDisabledDomains([]);
     setForceReady(false);
+    writeSelectionUrl(initialSelection, "replace");
   }
 
   return (
@@ -591,6 +669,7 @@ export function SkillGraphExperience({
                 href={buildSkillGraphHref({
                   skill,
                   owned_skills: ownedSkills,
+                  ...(careerType ? { career_type: careerType } : {}),
                 })}
                 key={skill}
               >
@@ -912,7 +991,11 @@ export function SkillGraphExperience({
                   {fitState === "idle" &&
                     (fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
                       <Link
-                        href={`/skill-map?skill=${encodeURIComponent(skill.skill)}`}
+                        href={`/skill-map?skill=${encodeURIComponent(skill.skill)}${
+                          careerType
+                            ? `&career_type=${encodeURIComponent(careerType)}`
+                            : ""
+                        }`}
                         key={skill.skill}
                       >
                         <strong>{skill.skill}</strong>
@@ -952,7 +1035,12 @@ export function SkillGraphExperience({
             </section>
           </section>
 
-          <aside aria-label="선택 기술 분석" className={styles.inspector}>
+          <aside
+            aria-label="선택 기술 분석"
+            className={styles.inspector}
+            ref={inspectorRef}
+            tabIndex={-1}
+          >
             <section className={styles.selectedSkill}>
               <p className={styles.eyebrow}>선택 기술</p>
               <h2>{selected?.label ?? "기술을 선택해 주세요"}</h2>
