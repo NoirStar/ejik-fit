@@ -190,6 +190,54 @@ def _is_talent_pool_title(title: str) -> bool:
     return "인재pool" in compact or "talentpool" in compact
 
 
+def _normalized_company_label(opening: ParsedOpening) -> str:
+    description = opening.description_text or ""
+    for line in description.splitlines():
+        marker, separator, value = line.partition(":")
+        if separator and marker.strip().casefold() == "department":
+            return " ".join(value.casefold().split())
+
+    normalized = " ".join(description.casefold().split())
+    for company in ("kt cloud", "kt"):
+        if normalized == company or normalized.startswith(f"{company} "):
+            return company
+    return ""
+
+
+def _is_kt_cloud_technical_opening(opening: ParsedOpening) -> bool:
+    searchable = f"{opening.title} {opening.description_text or ''}"
+    normalized = searchable.casefold()
+    construction_markers = (
+        "bim",
+        "공조",
+        "기계",
+        "소방",
+        "시공",
+        "시설",
+        "안전관리",
+        "전기",
+    )
+    strong_software_markers = (
+        "ai ",
+        "backend",
+        "cloud platform",
+        "data ",
+        "developer",
+        "devops",
+        "security",
+        "software",
+        "개발",
+        "데이터",
+        "보안",
+        "소프트웨어",
+    )
+    if any(marker in normalized for marker in construction_markers) and not any(
+        marker in normalized for marker in strong_software_markers
+    ):
+        return False
+    return is_technical_role(searchable)
+
+
 def _apply_source_opening_filters(
     source: CareerSource,
     openings: list[ParsedOpening],
@@ -202,6 +250,28 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "hyundai_mobis_html_tech":
         return openings
+    if source.connector_family == "skcareers_ax_tech":
+        return [
+            opening
+            for opening in openings
+            if is_technical_role(opening.title, opening.description_text)
+        ]
+    if source.connector_family == "kt_core_enterprise_json_tech":
+        return [
+            opening
+            for opening in openings
+            if _normalized_company_label(opening) == "kt"
+            and opening.title.casefold().lstrip().startswith("[kt]")
+            and is_technical_role(opening.title, opening.description_text)
+        ]
+    if source.connector_family == "kt_cloud_enterprise_json_tech":
+        return [
+            opening
+            for opening in openings
+            if _normalized_company_label(opening) == "kt cloud"
+            and opening.title.casefold().lstrip().startswith("[kt cloud]")
+            and _is_kt_cloud_technical_opening(opening)
+        ]
     if source.connector_family == "skcareers_intellix_tech":
         return [
             opening

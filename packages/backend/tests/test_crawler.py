@@ -2292,6 +2292,132 @@ def test_sk_company_filters_use_official_digital_job_groups() -> None:
     ) == [ai_platform]
 
 
+def _enterprise_filter_opening(
+    external_id: str,
+    title: str,
+    company: str,
+    job_group: str,
+) -> ParsedOpening:
+    return ParsedOpening(
+        external_id=external_id,
+        url=f"https://careers.example/jobs/{external_id}",
+        title=title,
+        status="open",
+        description_html="",
+        description_text=f"{company} {job_group}",
+        employment_type=None,
+        career_type=None,
+        career_min=None,
+        career_max=None,
+        location="대한민국",
+        opens_at=None,
+        closes_at=None,
+    )
+
+
+def test_sk_ax_filter_keeps_technical_infrastructure_and_rejects_sales() -> None:
+    source = CareerSource(
+        company=Company(name="SK AX", slug="sk-ax"),
+        base_url="https://www.skcareers.com/Recruit/GetRecruitList#sk-ax",
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="skcareers_ax_tech",
+    )
+    openings = [
+        _enterprise_filter_opening(
+            "ax-infra",
+            "Cloud Infrastructure Engineer",
+            "SK inc.(AX)",
+            "Infra Engineering",
+        ),
+        _enterprise_filter_opening(
+            "ax-sales",
+            "Discrete제조 AX Offering 사업개발 영업대표 영입",
+            "SK inc.(AX)",
+            "B2B Sales",
+        ),
+    ]
+
+    assert [
+        item.external_id
+        for item in crawler._apply_source_opening_filters(source, openings)
+    ] == ["ax-infra"]
+
+
+def test_kt_core_filter_keeps_only_exact_kt_technical_roles() -> None:
+    source = CareerSource(
+        company=Company(name="KT", slug="kt"),
+        base_url="https://recruit.kt.com/api/recruit#kt",
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="kt_core_enterprise_json_tech",
+    )
+    openings = [
+        _enterprise_filter_opening(
+            "kt-ai",
+            "[KT] AI Platform Engineer",
+            "KT",
+            "AI Engineering",
+        ),
+        _enterprise_filter_opening(
+            "affiliate-cloud",
+            "[kt cloud] Cloud Platform Engineer",
+            "kt cloud",
+            "Cloud Engineering",
+        ),
+    ]
+
+    assert [
+        item.external_id
+        for item in crawler._apply_source_opening_filters(source, openings)
+    ] == ["kt-ai"]
+
+
+def test_kt_cloud_filter_rejects_construction_only_roles() -> None:
+    source = CareerSource(
+        company=Company(name="kt cloud", slug="kt-cloud"),
+        base_url="https://recruit.kt.com/api/recruit#kt-cloud",
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="kt_cloud_enterprise_json_tech",
+    )
+    construction_only = [
+        _enterprise_filter_opening(
+            "cloud-construction",
+            "[kt cloud] 2026년 영등포 데이터센터 시공관리 프로젝트 계약직 채용",
+            "kt cloud",
+            "데이터센터 전기 기계 BIM 안전관리",
+        )
+    ]
+
+    assert crawler._apply_source_opening_filters(source, construction_only) == []
+
+
+def test_kt_cloud_filter_keeps_explicit_software_roles_for_exact_company() -> None:
+    source = CareerSource(
+        company=Company(name="kt cloud", slug="kt-cloud"),
+        base_url="https://recruit.kt.com/api/recruit#kt-cloud",
+        source_type=SourceType.ENTERPRISE_JSON,
+        connector_family="kt_cloud_enterprise_json_tech",
+    )
+    mixed = [
+        _enterprise_filter_opening(
+            "cloud-platform",
+            "[kt cloud] Cloud Platform Engineer",
+            "kt cloud",
+            "Cloud Platform Engineering",
+        ),
+        _enterprise_filter_opening(
+            "kt-platform",
+            "[KT] Cloud Platform Engineer",
+            "KT",
+            "Cloud Platform Engineering",
+        ),
+    ]
+
+    assert [
+        item.external_id
+        for item in crawler._apply_source_opening_filters(source, mixed)
+    ] == ["cloud-platform"]
+
+
 def test_fetch_listing_page_collects_every_apple_korea_page() -> None:
     listing_url = (
         "https://jobs.apple.com/en-us/search?location=korea-republic-of-KOR"
