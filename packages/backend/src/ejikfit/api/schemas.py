@@ -124,6 +124,7 @@ class SourceDirectoryItem(BaseModel):
     homepage_url: str | None = None
     careers_url: str
     collection_status: Literal["collecting", "preparing"]
+    activity_status: Literal["active", "quiet", "attention", "preparing"]
     preparation_reason: Literal[
         "access_limited",
         "connector_pending",

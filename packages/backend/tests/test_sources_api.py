@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi.testclient import TestClient
@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from ejikfit.api.app import create_app
-from ejikfit.api.sources import OfficialDunamuJobsReader
+from ejikfit.api.sources import OfficialDunamuJobsReader, source_activity_status
 from ejikfit.models import (
     Base,
     CareerSource,
@@ -28,6 +28,7 @@ class FakeSourceDirectoryReader:
                 "homepage_url": "https://www.navercorp.com",
                 "careers_url": "https://recruit.navercorp.com",
                 "collection_status": "collecting",
+                "activity_status": "active",
                 "preparation_reason": None,
                 "open_postings": 12,
                 "last_success_at": datetime(
@@ -78,6 +79,7 @@ def test_public_source_directory_exposes_only_safe_company_fields() -> None:
                 "homepage_url": "https://www.navercorp.com",
                 "careers_url": "https://recruit.navercorp.com",
                 "collection_status": "collecting",
+                "activity_status": "active",
                 "preparation_reason": None,
                 "open_postings": 12,
                 "last_success_at": "2026-07-15T03:20:00Z",
@@ -88,6 +90,47 @@ def test_public_source_directory_exposes_only_safe_company_fields() -> None:
         "preparing_count": 0,
         "open_postings": 12,
     }
+
+
+def test_source_activity_status_distinguishes_quiet_and_stale_sources() -> None:
+    now = datetime(2026, 7, 24, 3, 0, tzinfo=timezone.utc)
+
+    assert source_activity_status(
+        collection_status="collecting",
+        open_postings=4,
+        last_success_at=now - timedelta(hours=2),
+        now=now,
+    ) == "active"
+    assert source_activity_status(
+        collection_status="collecting",
+        open_postings=0,
+        last_success_at=now - timedelta(hours=2),
+        now=now,
+    ) == "quiet"
+    assert source_activity_status(
+        collection_status="collecting",
+        open_postings=0,
+        last_success_at=now - timedelta(hours=48),
+        now=now,
+    ) == "quiet"
+    assert source_activity_status(
+        collection_status="collecting",
+        open_postings=0,
+        last_success_at=now - timedelta(hours=49),
+        now=now,
+    ) == "attention"
+    assert source_activity_status(
+        collection_status="collecting",
+        open_postings=1,
+        last_success_at=(now - timedelta(hours=49)).replace(tzinfo=None),
+        now=now,
+    ) == "attention"
+    assert source_activity_status(
+        collection_status="preparing",
+        open_postings=0,
+        last_success_at=None,
+        now=now,
+    ) == "preparing"
 
 
 def test_dunamu_current_jobs_proxy_exposes_only_fixed_official_payload() -> None:
@@ -210,7 +253,10 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
         )
         session.commit()
 
-    items = DatabaseSourceDirectoryReader(session_factory=factory).list()
+    items = DatabaseSourceDirectoryReader(
+        session_factory=factory,
+        now_factory=lambda: now + timedelta(hours=2),
+    ).list()
 
     assert items == [
         {
@@ -219,6 +265,7 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "homepage_url": "https://www.navercorp.com",
             "careers_url": "https://recruit.navercorp.com/rcrt/list.do",
             "collection_status": "collecting",
+            "activity_status": "active",
             "preparation_reason": None,
             "open_postings": 1,
             # SQLite drops timezone information for DateTime columns.
@@ -230,6 +277,7 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "homepage_url": "https://www.nexon.com",
             "careers_url": "https://careers.nexon.com/",
             "collection_status": "preparing",
+            "activity_status": "preparing",
             "preparation_reason": "access_limited",
             "open_postings": 0,
             "last_success_at": None,
@@ -240,6 +288,7 @@ def test_database_source_directory_groups_companies_and_hides_blocked_sources() 
             "homepage_url": "https://www.hyundai.com",
             "careers_url": "https://talent.hyundai.com/apply/list.hc",
             "collection_status": "preparing",
+            "activity_status": "preparing",
             "preparation_reason": "connector_pending",
             "open_postings": 0,
             "last_success_at": None,

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
 import httpx
@@ -31,6 +33,7 @@ DUNAMU_OFFICIAL_JOBS_URL = (
     "https://careers.dunamu.com/api/job-boards/"
     "jd0wjv/job-notices?lang=ko"
 )
+SOURCE_ACTIVITY_FRESHNESS = timedelta(hours=48)
 
 
 class DunamuJobsReader(Protocol):
@@ -83,9 +86,42 @@ def _preparation_reason(source: CareerSource) -> str | None:
     return "policy_review"
 
 
+def source_activity_status(
+    *,
+    collection_status: str,
+    open_postings: int,
+    last_success_at: datetime | None,
+    now: datetime,
+) -> str:
+    if collection_status == "preparing":
+        return "preparing"
+    if last_success_at is None:
+        return "attention"
+    comparable = (
+        last_success_at.replace(tzinfo=timezone.utc)
+        if last_success_at.tzinfo is None
+        else last_success_at.astimezone(timezone.utc)
+    )
+    comparable_now = (
+        now.replace(tzinfo=timezone.utc)
+        if now.tzinfo is None
+        else now.astimezone(timezone.utc)
+    )
+    if comparable_now - comparable > SOURCE_ACTIVITY_FRESHNESS:
+        return "attention"
+    return "active" if open_postings > 0 else "quiet"
+
+
 class DatabaseSourceDirectoryReader:
-    def __init__(self, session_factory=SessionLocal) -> None:
+    def __init__(
+        self,
+        session_factory=SessionLocal,
+        now_factory: Callable[[], datetime] | None = None,
+    ) -> None:
         self.session_factory = session_factory
+        self.now_factory = now_factory or (
+            lambda: datetime.now(timezone.utc)
+        )
 
     def list(self) -> list[dict]:
         hidden_statuses = {SourceStatus.BLOCKED, SourceStatus.STOPPED}
@@ -165,8 +201,18 @@ class DatabaseSourceDirectoryReader:
                 item["collection_status"] = "collecting"
                 item["preparation_reason"] = None
 
+        now = self.now_factory()
+        items = list(companies.values())
+        for item in items:
+            item["activity_status"] = source_activity_status(
+                collection_status=item["collection_status"],
+                open_postings=item["open_postings"],
+                last_success_at=item["last_success_at"],
+                now=now,
+            )
+
         return sorted(
-            companies.values(),
+            items,
             key=lambda item: (
                 item["collection_status"] != "collecting",
                 -item["open_postings"],
