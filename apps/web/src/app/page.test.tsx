@@ -2,6 +2,8 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
+import { loadInitialCommunityFeed } from "@/features/community/server-community-feed";
+import type { CommunityPost } from "@/lib/community-contract";
 
 import Home from "./page";
 
@@ -17,6 +19,25 @@ vi.mock("@/lib/api", () => ({
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
+
+vi.mock("@/features/community/server-community-feed", () => ({
+  loadInitialCommunityFeed: vi.fn(),
+}));
+
+const communityPost: CommunityPost = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  author: {
+    id: "22222222-2222-4222-8222-222222222222",
+    nickname: "서버작성자",
+  },
+  category: "커리어 질문",
+  title: "서버 첫 HTML 글",
+  body: "공고보다 먼저 렌더링되는 실제 커뮤니티 글입니다.",
+  tags: ["백엔드"],
+  metrics: { reactions: 1, comments: 0, saves: 0 },
+  createdAt: "2026-07-24T04:00:00.000Z",
+  updatedAt: "2026-07-24T04:00:00.000Z",
+};
 
 function mockHomeApi() {
   vi.mocked(analyzeFit).mockResolvedValue({
@@ -91,6 +112,41 @@ describe("Home", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHomeApi();
+    vi.mocked(loadInitialCommunityFeed).mockResolvedValue({
+      status: "ready",
+      page: { items: [], nextCursor: null },
+    });
+  });
+
+  it("renders the public community page before jobs in the first home tree", async () => {
+    vi.mocked(loadInitialCommunityFeed).mockResolvedValue({
+      status: "ready",
+      page: { items: [communityPost], nextCursor: null },
+    });
+
+    render(await Home());
+
+    const activity = screen.getByRole("tabpanel");
+    const articles = within(activity).getAllByRole("article");
+    expect(articles[0]).toHaveAccessibleName(communityPost.title);
+    expect(articles[1]).toHaveAccessibleName("Backend Engineer");
+    expect(loadInitialCommunityFeed).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps jobs visible when the server community request fails", async () => {
+    vi.mocked(loadInitialCommunityFeed).mockResolvedValue({
+      status: "error",
+      error: "커뮤니티 글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+
+    render(await Home());
+
+    expect(
+      screen.getByRole("article", { name: "Backend Engineer" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("새 커뮤니티 글을 불러오지 못했습니다"),
+    ).toBeInTheDocument();
   });
 
   it("renders mock community beside API-backed jobs and skill counts", async () => {

@@ -33,6 +33,7 @@ import {
   COMMUNITY_FAILURE_COPY,
   type CommunityStore,
 } from "@/features/community/community-store";
+import type { InitialCommunityFeed } from "@/features/community/community-feed-initial";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
@@ -82,6 +83,7 @@ import type {
 export type HomeFeedProps = {
   snapshot: HomeFeedSnapshot;
   composeMode?: "new" | "resume" | null;
+  initialCommunityFeed?: InitialCommunityFeed;
   communityStore?: CommunityStore;
 };
 
@@ -682,6 +684,7 @@ function FeedCard({
 export function HomeFeed({
   composeMode = null,
   communityStore,
+  initialCommunityFeed,
   snapshot,
 }: HomeFeedProps) {
   const router = useRouter();
@@ -695,6 +698,7 @@ export function HomeFeed({
   const community = useCommunityFeed({
     authReady,
     followingOnly: activeTab === "following",
+    initialFeed: initialCommunityFeed,
     store: communityStore,
     viewer,
   });

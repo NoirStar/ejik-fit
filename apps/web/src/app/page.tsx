@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { loadInitialCommunityFeed } from "@/features/community/server-community-feed";
 import { HomeFeed } from "@/features/home-feed/home-feed";
 import { buildHomeFeedSnapshot } from "@/features/home-feed/model";
 import { settledResource } from "@/features/home-feed/resource-state";
@@ -51,7 +52,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       )
     : Promise.resolve(null);
 
-  const [postings, skillStats, graph, fit] = await Promise.all([
+  const [postings, skillStats, graph, fit, initialCommunityFeed] = await Promise.all([
     settledResource(
       getPostings({ ...careerFilter, limit: 40 }),
       "공고를 불러오지 못했습니다.",
@@ -70,11 +71,13 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       "스킬맵을 불러오지 못했습니다.",
     ),
     fitRequest,
+    loadInitialCommunityFeed(),
   ]);
 
   return (
     <HomeFeed
       composeMode={composeMode}
+      initialCommunityFeed={initialCommunityFeed}
       snapshot={buildHomeFeedSnapshot({
         postings,
         skillStats,
