@@ -42,6 +42,7 @@ class FakeSkillStatsReader:
                 "skill": "Python",
                 "category": "language",
                 "count": 12,
+                "company_count": 4,
                 "required_count": 7,
                 "preferred_count": 3,
                 "unspecified_count": 2,
@@ -103,6 +104,7 @@ def test_skill_stats_endpoint_returns_ranked_items() -> None:
         "skill": "Python",
         "category": "language",
         "count": 12,
+        "company_count": 4,
         "required_count": 7,
         "preferred_count": 3,
         "unspecified_count": 2,
@@ -217,13 +219,20 @@ def test_database_reader_counts_and_filters() -> None:
 
     with factory() as session:
         company = Company(name="기업", slug="company")
+        second_company = Company(name="두번째 기업", slug="second-company")
         source = CareerSource(
             company=company,
             base_url="https://example.com",
             source_type=SourceType.JSON_LD,
             status=SourceStatus.ALLOWED,
         )
-        session.add(source)
+        second_source = CareerSource(
+            company=second_company,
+            base_url="https://second.example.com",
+            source_type=SourceType.JSON_LD,
+            status=SourceStatus.ALLOWED,
+        )
+        session.add_all([source, second_source])
         session.flush()
         _add_posting(
             session, company, source, "1",
@@ -244,17 +253,23 @@ def test_database_reader_counts_and_filters() -> None:
             career_type="new_comer", status=PostingStatus.CLOSED,
             skills=[("Python", "language", "required", 1.0)],
         )
+        _add_posting(
+            session, second_company, second_source, "4",
+            career_type="experienced", status=PostingStatus.OPEN,
+            skills=[("Python", "language", "required", 1.0)],
+        )
         session.commit()
 
     reader = DatabaseSkillStatsReader(session_factory=factory)
 
-    # closed posting is excluded, so Python appears in 2 open postings.
+    # Closed postings are excluded; Python appears in 3 postings from 2 companies.
     everything = reader.stats()
     assert everything[0] == {
         "skill": "Python",
         "category": "language",
-        "count": 2,
-        "required_count": 1,
+        "count": 3,
+        "company_count": 2,
+        "required_count": 2,
         "preferred_count": 1,
         "unspecified_count": 0,
     }
@@ -262,6 +277,7 @@ def test_database_reader_counts_and_filters() -> None:
         "skill": "AWS",
         "category": "infra",
         "count": 1,
+        "company_count": 1,
         "required_count": 0,
         "preferred_count": 0,
         "unspecified_count": 1,
@@ -276,6 +292,7 @@ def test_database_reader_counts_and_filters() -> None:
         "skill": "Python",
         "category": "language",
         "count": 1,
+        "company_count": 1,
         "required_count": 1,
         "preferred_count": 0,
         "unspecified_count": 0,
@@ -284,10 +301,22 @@ def test_database_reader_counts_and_filters() -> None:
         "skill": "AWS",
         "category": "infra",
         "count": 1,
+        "company_count": 1,
         "required_count": 0,
         "preferred_count": 0,
         "unspecified_count": 1,
     } in newcomer
+
+    experienced = reader.stats(career_type="experienced")
+    assert {
+        "skill": "Python",
+        "category": "language",
+        "count": 2,
+        "company_count": 2,
+        "required_count": 1,
+        "preferred_count": 1,
+        "unspecified_count": 0,
+    } in experienced
 
     # Category selects postings containing confirmed infra evidence, then
     # aggregates every confirmed skill from those postings.
@@ -296,6 +325,7 @@ def test_database_reader_counts_and_filters() -> None:
         "skill": "Python",
         "category": "language",
         "count": 1,
+        "company_count": 1,
         "required_count": 1,
         "preferred_count": 0,
         "unspecified_count": 0,
@@ -304,6 +334,7 @@ def test_database_reader_counts_and_filters() -> None:
         "skill": "AWS",
         "category": "infra",
         "count": 1,
+        "company_count": 1,
         "required_count": 0,
         "preferred_count": 0,
         "unspecified_count": 1,

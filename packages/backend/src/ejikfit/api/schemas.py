@@ -73,6 +73,7 @@ class SkillStat(BaseModel):
     skill: str
     category: str
     count: int
+    company_count: int
     required_count: int
     preferred_count: int
     unspecified_count: int

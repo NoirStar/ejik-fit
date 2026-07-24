@@ -57,6 +57,7 @@ class DatabaseSkillStatsReader:
         limit: int = 30,
     ) -> list[dict]:
         count_expr = func.count(func.distinct(PostingSkill.posting_id))
+        company_count = func.count(func.distinct(JobPosting.company_id))
         required_count = func.count(
             func.distinct(
                 case(
@@ -93,6 +94,7 @@ class DatabaseSkillStatsReader:
                     PostingSkill.skill,
                     PostingSkill.category,
                     count_expr.label("count"),
+                    company_count.label("company_count"),
                     required_count.label("required_count"),
                     preferred_count.label("preferred_count"),
                     unspecified_count.label("unspecified_count"),
@@ -110,6 +112,7 @@ class DatabaseSkillStatsReader:
                     "skill": skill,
                     "category": category,
                     "count": count,
+                    "company_count": companies,
                     "required_count": required,
                     "preferred_count": preferred,
                     "unspecified_count": unspecified,
@@ -118,6 +121,7 @@ class DatabaseSkillStatsReader:
                     skill,
                     category,
                     count,
+                    companies,
                     required,
                     preferred,
                     unspecified,
