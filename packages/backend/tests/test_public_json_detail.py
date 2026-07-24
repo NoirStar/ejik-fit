@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from ejikfit.connectors.public_json_detail import (
     discover_public_json_detail_refs,
     elice_listing_request_body,
@@ -1241,6 +1243,101 @@ def test_ahnlab_recruiter_filters_current_technical_and_security_roles() -> None
     assert opening.career_type == "experienced"
     assert opening.career_min == 3
     assert opening.location == "경기도 성남시 분당구"
+
+
+def test_lig_recruiter_keeps_only_explicit_technical_titles() -> None:
+    rows = [
+        {
+            "jobnoticeSn": 260001,
+            "jobnoticeName": "LIG D&A SW(AI/사이버보안) 상시채용",
+            "receiptState": "접수중",
+            "recruitClassName": "상시",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 260002,
+            "jobnoticeName": "2026 LIG D&A 상시채용 인재DB(R&D/사업/관리)",
+            "receiptState": "접수중",
+            "recruitClassName": "상시",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 260003,
+            "jobnoticeName": "(구미) 소방안전관리 직무 경력 수시채용",
+            "receiptState": "접수중",
+            "recruitClassName": "수시",
+            "systemKindCode": "MRS2",
+        },
+        {
+            "jobnoticeSn": 260004,
+            "jobnoticeName": "2026년 상반기 기술직 수시채용",
+            "receiptState": "접수중",
+            "recruitClassName": "수시",
+            "systemKindCode": "MRS2",
+        },
+    ]
+    listing = json.dumps(
+        {
+            "pageUtil": {
+                "currentPage": 1,
+                "lastPage": 1,
+                "maxRows": 100,
+                "recordCount": len(rows),
+            },
+            "list": rows,
+        },
+        ensure_ascii=False,
+    )
+
+    refs = discover_public_json_detail_refs(
+        listing,
+        "https://ligdna.recruiter.co.kr/app/jobnotice/list.json",
+        "lig_recruiter_public_api_tech",
+    )
+    filtered = filter_public_detail_refs(
+        refs,
+        "lig_recruiter_public_api_tech",
+    )
+
+    assert [ref.external_id for ref in filtered] == ["260001"]
+    assert [ref.title for ref in filtered] == [
+        "LIG D&A SW(AI/사이버보안) 상시채용"
+    ]
+    assert public_detail_listing_is_self_validated(
+        "lig_recruiter_public_api_tech"
+    )
+
+
+def test_lig_recruiter_accepts_a_complete_empty_page() -> None:
+    listing = json.dumps(
+        {
+            "pageUtil": {
+                "currentPage": 1,
+                "lastPage": 1,
+                "maxRows": 100,
+                "recordCount": 0,
+            },
+            "list": [],
+        }
+    )
+
+    assert (
+        discover_public_json_detail_refs(
+            listing,
+            "https://ligdna.recruiter.co.kr/app/jobnotice/list.json",
+            "lig_recruiter_public_api_tech",
+        )
+        == []
+    )
+
+
+def test_lig_recruiter_rejects_a_listing_without_page_metadata() -> None:
+    with pytest.raises(ValueError, match="jobs page"):
+        discover_public_json_detail_refs(
+            json.dumps({"list": []}),
+            "https://ligdna.recruiter.co.kr/app/jobnotice/list.json",
+            "lig_recruiter_public_api_tech",
+        )
 
 
 def test_woowahan_public_api_discovers_and_parses_a_full_detail() -> None:

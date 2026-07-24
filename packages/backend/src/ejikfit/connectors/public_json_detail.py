@@ -62,6 +62,7 @@ RECRUITER_LEGACY_CONNECTOR_FAMILIES = frozenset(
     {
         "recruiter_legacy_public_api_tech",
         "ahnlab_recruiter_public_api_tech",
+        "lig_recruiter_public_api_tech",
     }
 )
 NETMARBLE_LISTING_API = (
@@ -1637,6 +1638,13 @@ def filter_public_detail_refs(
             )
             and not (ref.category == "AI" and "아티스트" in ref.title)
             and not (ref.category == "인프라" and "기획" in ref.title)
+        ]
+    if connector_family == "lig_recruiter_public_api_tech":
+        return [
+            ref
+            for ref in refs
+            if "인재db" not in "".join(ref.title.casefold().split())
+            and is_technical_role(ref.title)
         ]
     if connector_family == "recruiter_legacy_public_api_tech":
         return [
