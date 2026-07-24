@@ -263,6 +263,22 @@ def test_unseeded_graph_starts_with_global_demand_leaders() -> None:
                     (pair[1], "infra", "required", 1.0),
                 ],
             )
+        _posting(
+            session,
+            company,
+            source,
+            "preferred-alpha",
+            title="우대 기술 수요",
+            skills=[("Alpha", "language", "preferred", 1.0)],
+        )
+        _posting(
+            session,
+            company,
+            source,
+            "required-zulu",
+            title="필수 기술 수요",
+            skills=[("Zulu", "language", "required", 1.0)],
+        )
         session.commit()
 
         graph = build_skill_graph(
@@ -273,6 +289,8 @@ def test_unseeded_graph_starts_with_global_demand_leaders() -> None:
         )
 
     assert graph.nodes[0].id == "Python"
+    assert "Zulu" in {node.id for node in graph.nodes}
+    assert "Alpha" not in {node.id for node in graph.nodes}
     assert graph.nodes[0].demand_count == 6
 
 

@@ -244,7 +244,11 @@ def build_skill_graph(
 
     demand_ranked_skills = sorted(
         skill_counts,
-        key=lambda skill: (-skill_counts[skill], skill.casefold()),
+        key=lambda skill: (
+            -skill_counts[skill],
+            -required_counts[skill],
+            skill.casefold(),
+        ),
     )
     selected_skills: list[str] = []
     if not seed:

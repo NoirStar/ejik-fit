@@ -340,6 +340,51 @@ describe("SkillGraphExperience", () => {
     );
   });
 
+  it("retries a failed topology request without changing the selection", async () => {
+    let topologyRequests = 0;
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        topologyRequests += 1;
+        if (topologyRequests === 1) {
+          return jsonResponse({ detail: "graph unavailable" }, 503);
+        }
+        return topologyResponse(graph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    expect(await screen.findByText("이전 관계망 표시 중")).toHaveAttribute(
+      "role",
+      "alert",
+    );
+    expect(
+      screen.getByRole("heading", { level: 2, name: "C++" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "관계망 다시 시도" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText("이전 관계망 표시 중"),
+      ).not.toBeInTheDocument();
+    });
+    expect(topologyRequests).toBe(2);
+    expect(
+      screen.getByRole("heading", { level: 2, name: "C++" }),
+    ).toBeInTheDocument();
+  });
+
   it("keeps career scope in fit, evidence, and selection URLs", async () => {
     window.history.replaceState(
       null,

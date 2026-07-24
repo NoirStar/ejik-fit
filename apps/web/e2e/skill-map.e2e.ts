@@ -236,7 +236,7 @@ async function dispatchPinch(
   });
 }
 
-async function findNeutralNodePoints(canvas: Locator) {
+async function findNeutralNodeOffsets(canvas: Locator) {
   return canvas.evaluate(
     (element, [red, green, blue]) => {
       const canvasElement = element as HTMLCanvasElement;
@@ -250,7 +250,6 @@ async function findNeutralNodePoints(canvas: Locator) {
         canvasElement.width,
         canvasElement.height,
       ).data;
-      const rect = canvasElement.getBoundingClientRect();
       const step = 2;
       const gridWidth = Math.ceil(canvasElement.width / step);
       const matchingPixels = new Set<number>();
@@ -296,6 +295,7 @@ async function findNeutralNodePoints(canvas: Locator) {
           components.push(component);
         }
       }
+      const rect = canvasElement.getBoundingClientRect();
       return components
         .sort((left, right) => right.length - left.length)
         .map((component) => {
@@ -309,8 +309,8 @@ async function findNeutralNodePoints(canvas: Locator) {
           const x = center.x / component.length;
           const y = center.y / component.length;
           return {
-            x: rect.left + x * (rect.width / canvasElement.width),
-            y: rect.top + y * (rect.height / canvasElement.height),
+            x: x * (rect.width / canvasElement.width),
+            y: y * (rect.height / canvasElement.height),
           };
         });
     },
@@ -328,8 +328,32 @@ async function tapSkillNode(
   await expect
     .poll(
       async () => {
-        const points = await findNeutralNodePoints(canvas);
-        point = points[0] ?? null;
+        const offsets = await findNeutralNodeOffsets(canvas);
+        for (const offset of offsets) {
+          const visiblePoint = await canvas.evaluate((element, nodeOffset) => {
+            const canvasElement = element as HTMLCanvasElement;
+            const beforeRect = canvasElement.getBoundingClientRect();
+            const root = document.documentElement;
+            const previousScrollBehavior = root.style.scrollBehavior;
+            root.style.scrollBehavior = "auto";
+            window.scrollBy(
+              0,
+              beforeRect.top + nodeOffset.y - window.innerHeight / 2,
+            );
+            root.style.scrollBehavior = previousScrollBehavior;
+
+            const rect = canvasElement.getBoundingClientRect();
+            const x = rect.left + nodeOffset.x;
+            const y = rect.top + nodeOffset.y;
+            return document.elementFromPoint(x, y) === canvasElement
+              ? { x, y }
+              : null;
+          }, offset);
+          if (visiblePoint) {
+            point = visiblePoint;
+            break;
+          }
+        }
         return point !== null;
       },
       { intervals: [100, 200, 400, 800, 1_200], timeout: 8_000 },

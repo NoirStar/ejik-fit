@@ -1021,7 +1021,16 @@ export function SkillGraphExperience({
                   <span aria-live="polite" role="status">관계망을 불러오는 중</span>
                 )}
                 {topologyState === "error" && (
-                  <span role="alert">이전 관계망 표시 중</span>
+                  <span role="alert">
+                    이전 관계망 표시 중
+                    <button
+                      aria-label="관계망 다시 시도"
+                      onClick={() => void loadTopology(selectedIdRef.current)}
+                      type="button"
+                    >
+                      다시 시도
+                    </button>
+                  </span>
                 )}
               </div>
 
