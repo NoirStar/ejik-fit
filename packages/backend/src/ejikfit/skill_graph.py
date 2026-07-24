@@ -219,8 +219,6 @@ def build_skill_graph(
     scored_edges: list[SkillGraphEdge] = []
     for pair, support in pair_counts.items():
         left, right = pair
-        if seed and seed not in pair:
-            continue
         average_requirement = pair_weight_sum[pair] / support
         score = _edge_score(
             left=left,
@@ -244,32 +242,35 @@ def build_skill_graph(
 
     scored_edges.sort(key=lambda edge: (-edge.score, -edge.cooccurrence_count, edge.id))
 
+    demand_ranked_skills = sorted(
+        skill_counts,
+        key=lambda skill: (-skill_counts[skill], skill.casefold()),
+    )
     selected_skills: list[str] = []
-    if not seed and not canonical_owned_skills:
-        selected_skills = sorted(
-            skill_counts,
-            key=lambda skill: (-skill_counts[skill], skill.casefold()),
-        )[:bounded_limit]
-    else:
-        if seed and skill_counts[seed] > 0:
-            selected_skills.append(seed)
-        for skill in canonical_owned_skills:
-            if skill_counts[skill] > 0 and skill not in selected_skills:
-                selected_skills.append(skill)
+    if not seed:
+        selected_skills = demand_ranked_skills[:bounded_limit]
+    elif skill_counts[seed] > 0:
+        selected_skills.append(seed)
         for edge in scored_edges:
-            for skill in (edge.source, edge.target):
-                if skill not in selected_skills:
-                    selected_skills.append(skill)
-                if len(selected_skills) >= bounded_limit:
-                    break
+            if seed not in {edge.source, edge.target}:
+                continue
+            neighbor = edge.target if edge.source == seed else edge.source
+            if neighbor not in selected_skills:
+                selected_skills.append(neighbor)
             if len(selected_skills) >= bounded_limit:
                 break
     if not selected_skills:
-        selected_skills = [skill for skill, _count in skill_counts.most_common(bounded_limit)]
+        selected_skills = demand_ranked_skills[:bounded_limit]
 
     selected = set(selected_skills[:bounded_limit])
-    visible_edges = tuple(
-        edge for edge in scored_edges if edge.source in selected and edge.target in selected
+    visible_edges = (
+        ()
+        if seed and skill_counts[seed] == 0
+        else tuple(
+            edge
+            for edge in scored_edges
+            if edge.source in selected and edge.target in selected
+        )
     )
     visible_posting_ids = {
         posting_id for edge in visible_edges for posting_id in edge.supporting_posting_ids

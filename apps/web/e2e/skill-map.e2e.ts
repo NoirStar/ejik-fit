@@ -324,27 +324,13 @@ async function tapSkillNode(
   canvas: Locator,
 ) {
   let point: CanvasPoint | null = null;
-  let selectedSkill: string | null = null;
   const selectableBackendSkills = ["Docker", "Go", "Linux", "Python"];
-  const tooltip = canvas.locator("xpath=..").locator(".float-tooltip-kap");
   await expect
     .poll(
       async () => {
         const points = await findNeutralNodePoints(canvas);
-        for (const candidate of points) {
-          await page.mouse.move(candidate.x, candidate.y);
-          await page.waitForTimeout(20);
-          const tooltipText = await tooltip.textContent();
-          const skill = selectableBackendSkills.find((item) =>
-            tooltipText?.startsWith(`${item} ·`),
-          );
-          if (skill) {
-            point = candidate;
-            selectedSkill = skill;
-            return true;
-          }
-        }
-        return false;
+        point = points[0] ?? null;
+        return point !== null;
       },
       { intervals: [100, 200, 400, 800, 1_200], timeout: 8_000 },
     )
@@ -368,18 +354,19 @@ async function tapSkillNode(
     type: "touchEnd",
   });
 
-  expect(selectedSkill).not.toBeNull();
-  await expect(
-    page
-      .getByRole("complementary", { name: "선택 기술 분석" })
-      .getByRole("heading", { name: selectedSkill!, exact: true }),
-  ).toBeVisible();
+  const selectedHeading = page
+    .getByRole("complementary", { name: "선택 기술 분석" })
+    .getByRole("heading", { level: 2 })
+    .first();
+  await expect(selectedHeading).not.toHaveText("Kubernetes");
+  const selectedSkill = (await selectedHeading.textContent())?.trim() ?? "";
+  expect(selectableBackendSkills).toContain(selectedSkill);
   await expect(
     page
       .locator('button[aria-pressed="true"]')
       .filter({ hasText: "선택 주변" }),
   ).toHaveCount(1);
-  return selectedSkill!;
+  return selectedSkill;
 }
 
 test("keeps fixture graph scope aligned with the production API contract", async ({
@@ -736,12 +723,14 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
   expect(afterScrollZoom?.x).toBeCloseTo(beforeScrollZoom?.x ?? 0, 1);
   expect(afterScrollZoom?.y).toBeCloseTo(beforeScrollZoom?.y ?? 0, 1);
 
-  await graphFrame.evaluate((element) =>
-    element.scrollIntoView({ block: "center" }),
-  );
-  await graphFrame.getByRole("button", { name: "그래프 확대" }).click({
-    force: true,
+  await graphFrame.evaluate((element) => {
+    const root = document.documentElement;
+    const previousScrollBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+    element.scrollIntoView({ block: "center" });
+    root.style.scrollBehavior = previousScrollBehavior;
   });
+  await graphFrame.getByRole("button", { name: "그래프 확대" }).click();
   await expect
     .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
     .toBeGreaterThan(afterScrollZoom?.k ?? 0);

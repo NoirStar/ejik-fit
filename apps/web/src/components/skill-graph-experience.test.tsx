@@ -94,11 +94,41 @@ const fitResponse: FitAnalyzeResponse = {
   ],
 };
 
-function jsonResponse(body: FitAnalyzeResponse, status = 200) {
+function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+function topologyResponse(
+  sourceGraph: SkillGraphResponse,
+  input: RequestInfo | URL,
+  status = 200,
+) {
+  const url = new URL(String(input), "http://localhost");
+  const requestedSeed = url.searchParams.get("seed");
+  const canonicalSeed = requestedSeed
+    ? sourceGraph.nodes.find(
+        (node) =>
+          node.id.toLocaleLowerCase("en-US") ===
+          requestedSeed.toLocaleLowerCase("en-US"),
+      )?.id ?? requestedSeed
+    : null;
+  return new Response(
+    JSON.stringify({
+      ...sourceGraph,
+      seed: canonicalSeed,
+      nodes: sourceGraph.nodes.map((node) => ({
+        ...node,
+        seed: node.id === canonicalSeed,
+      })),
+    }),
+    {
+      status,
+      headers: { "content-type": "application/json" },
+    },
+  );
 }
 
 function evidenceResponse(
@@ -134,7 +164,16 @@ describe("SkillGraphExperience", () => {
     window.history.replaceState(null, "", "/skills/graph");
     navigation.push.mockReset();
     fetchMock.mockReset();
-    fetchMock.mockImplementation(async () => jsonResponse(fitResponse));
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(graph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
     vi.stubGlobal("fetch", fetchMock);
   });
 
@@ -205,7 +244,11 @@ describe("SkillGraphExperience", () => {
   it("loads official job evidence only after a skill is selected", async () => {
     let resolveEvidence: ((response: Response) => void) | undefined;
     fetchMock.mockImplementation((input) => {
-      if (String(input).startsWith("/skills/graph/evidence")) {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return Promise.resolve(topologyResponse(graph, input));
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
         return new Promise<Response>((resolve) => {
           resolveEvidence = resolve;
         });
@@ -237,6 +280,66 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("1건")).toBeInTheDocument();
   });
 
+  it("replaces the overview with server-backed topology after selection", async () => {
+    const focusedGraph: SkillGraphResponse = {
+      ...graph,
+      seed: "C++",
+      nodes: [
+        { ...graph.nodes[0]!, seed: true },
+        ...graph.nodes.slice(1),
+        {
+          ...graph.nodes[0]!,
+          id: "Python",
+          label: "Python",
+          demand_count: 14,
+          seed: false,
+        },
+      ],
+      edges: [
+        ...graph.edges,
+        {
+          ...graph.edges[0]!,
+          id: "C++:Python",
+          target: "Python",
+          score: 0.76,
+        },
+        {
+          ...graph.edges[0]!,
+          id: "Python:ROS2",
+          source: "Python",
+          target: "ROS2",
+          score: 0.68,
+        },
+      ],
+    };
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(focusedGraph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    const quickSkills = screen.getByRole("navigation", {
+      name: "빠른 기술 선택",
+    });
+    expect(
+      await within(quickSkills).findByRole("link", { name: "Python" }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/skills/graph/data?limit=30&seed=C%2B%2B",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
   it("keeps career scope in fit, evidence, and selection URLs", async () => {
     window.history.replaceState(
       null,
@@ -244,7 +347,11 @@ describe("SkillGraphExperience", () => {
       "/skills/graph?career_type=experienced&owned_skills=Linux",
     );
     fetchMock.mockImplementation((input) => {
-      if (String(input).startsWith("/skills/graph/evidence")) {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return Promise.resolve(topologyResponse(graph, input));
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
         return Promise.resolve(evidenceResponse(selectedEvidence));
       }
       return Promise.resolve(jsonResponse(fitResponse));
@@ -274,6 +381,10 @@ describe("SkillGraphExperience", () => {
         "/skills/graph/evidence?skill=C%2B%2B&career_type=experienced&limit=6",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/data?limit=30&seed=C%2B%2B&career_type=experienced",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
     });
     expect(window.location.pathname).toBe("/skills/graph");
     expect(window.location.search).toContain("career_type=experienced");
@@ -282,7 +393,16 @@ describe("SkillGraphExperience", () => {
   });
 
   it("isolates evidence cache entries by career scope", async () => {
-    fetchMock.mockResolvedValue(evidenceResponse(selectedEvidence));
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(graph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse(selectedEvidence);
+      }
+      return jsonResponse(fitResponse);
+    });
     const { rerender } = render(
       <SkillGraphExperience
         careerType="experienced"
@@ -296,7 +416,7 @@ describe("SkillGraphExperience", () => {
     rerender(
       <SkillGraphExperience
         careerType="new_comer"
-        initialGraph={graph}
+        initialGraph={{ ...graph, seed: "C++" }}
         initialOwnedSkills={[]}
       />,
     );
@@ -314,7 +434,7 @@ describe("SkillGraphExperience", () => {
     ).toHaveLength(2);
   });
 
-  it("restores selection when browser history changes", () => {
+  it("restores selection and topology when browser history changes", async () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -326,6 +446,12 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.getByRole("complementary", { name: "선택 기술 분석" }),
     ).toHaveTextContent("ROS2");
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/data?limit=30&seed=ROS2",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
   });
 
   it("moves repeated selection to the detail panel", () => {
@@ -345,11 +471,12 @@ describe("SkillGraphExperience", () => {
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
+    const firstAction = within(inspector).getByRole("button", { name: /ROS2/ });
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
       block: "start",
     });
-    expect(inspector).toHaveFocus();
+    expect(firstAction).toHaveFocus();
   });
 
   it("keeps every displayed skill in the keyboard-accessible quick list", () => {
@@ -402,6 +529,9 @@ describe("SkillGraphExperience", () => {
     let resolveCpp: ((response: Response) => void) | undefined;
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return Promise.resolve(topologyResponse(raceGraph, input));
+      }
       if (url.includes("skill=C%2B%2B")) {
         return new Promise<Response>((resolve) => {
           resolveCpp = resolve;
@@ -449,9 +579,21 @@ describe("SkillGraphExperience", () => {
   });
 
   it("shows an evidence failure and retries the selected skill", async () => {
-    fetchMock
-      .mockRejectedValueOnce(new Error("evidence unavailable"))
-      .mockResolvedValueOnce(evidenceResponse({ items: [], total: 0 }));
+    let evidenceRequests = 0;
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(graph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        evidenceRequests += 1;
+        if (evidenceRequests === 1) {
+          throw new Error("evidence unavailable");
+        }
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
 
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
@@ -466,7 +608,11 @@ describe("SkillGraphExperience", () => {
     expect(
       await screen.findByText("현재 공개된 근거 공고가 없습니다."),
     ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/skills/graph/evidence"),
+      ),
+    ).toHaveLength(2);
   });
 
   it("links quick skills to a newly seeded graph", () => {

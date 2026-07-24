@@ -76,7 +76,7 @@ type LabelBounds = {
 };
 
 
-const MAX_VISIBLE_LABELS = 12;
+const MAX_VISIBLE_LABELS = 8;
 
 
 function emptyHighlight(): HighlightState {
@@ -402,6 +402,11 @@ export function SkillGraphForceCanvas({
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
+  const graphDataSignature = JSON.stringify({
+    links: data.links,
+    nodes: data.nodes,
+  });
+  const stableData = useMemo(() => data, [graphDataSignature]);
   const adjacency = useMemo(
     () => buildSkillGraphAdjacency(data.links),
     [data.links],
@@ -445,10 +450,71 @@ export function SkillGraphForceCanvas({
     let cancelled = false;
     let mountedGraph: ForceGraphInstance | null = null;
     let resizeObserver: ResizeObserver | null = null;
-    let touchCanvas: HTMLCanvasElement | null = null;
     let pinchStart: { distance: number; zoom: number } | null = null;
+    let touchTapStart: { moved: boolean; x: number; y: number } | null = null;
+    let lastTouchSelection = { id: "", time: 0 };
     let revealFrame = 0;
     let resizeFrame = 0;
+
+    function selectGraphNode(node: SkillForceNode, directTouch = false) {
+      if (node.kind !== "skill") {
+        return;
+      }
+      const nodeId = String(node.id);
+      const now = window.performance.now();
+      if (
+        !directTouch &&
+        lastTouchSelection.id === nodeId &&
+        now - lastTouchSelection.time < 300
+      ) {
+        return;
+      }
+      if (directTouch) {
+        lastTouchSelection = { id: nodeId, time: now };
+      }
+      selectedIdRef.current = nodeId;
+      highlightRef.current = focusedHighlight(
+        nodeId,
+        hoveredIdRef.current,
+        adjacencyRef.current,
+      );
+      onNodeSelect(nodeId);
+      if (typeof node.x === "number" && typeof node.y === "number") {
+        graphRef.current
+          ?.centerAt(node.x, node.y)
+          .zoom(touchInputRef.current ? 1.72 : 2.15);
+      }
+    }
+
+    function selectTouchNode(clientX: number, clientY: number) {
+      const graph = graphRef.current;
+      const canvas = containerRef.current?.querySelector("canvas");
+      if (!graph || !canvas) {
+        return;
+      }
+      const bounds = canvas.getBoundingClientRect();
+      const point = graph.screen2GraphCoords(
+        clientX - bounds.left,
+        clientY - bounds.top,
+      );
+      const nearest = graph
+        .graphData()
+        .nodes
+        .filter(
+          (node) =>
+            node.kind === "skill" &&
+            typeof node.x === "number" &&
+            typeof node.y === "number",
+        )
+        .map((node) => ({
+          distance: Math.hypot(node.x! - point.x, node.y! - point.y),
+          node,
+        }))
+        .sort((left, right) => left.distance - right.distance)[0];
+      if (nearest && nearest.distance <= 26) {
+        selectGraphNode(nearest.node, true);
+      }
+    }
 
     function touchDistance(event: TouchEvent) {
       const first = event.touches.item(0);
@@ -462,8 +528,53 @@ export function SkillGraphForceCanvas({
       );
     }
 
-    function startPinch(event: TouchEvent) {
-      if (event.touches.length !== 2 || !graphRef.current) {
+    function touchesStartInsideGraph(event: TouchEvent) {
+      const canvas = containerRef.current?.querySelector("canvas");
+      if (!canvas) {
+        return false;
+      }
+      const bounds = canvas.getBoundingClientRect();
+      return Array.from(event.touches).every(
+        (touch) =>
+          touch.clientX >= bounds.left &&
+          touch.clientX <= bounds.right &&
+          touch.clientY >= bounds.top &&
+          touch.clientY <= bounds.bottom,
+      );
+    }
+
+    function startsOnGraphSurface(event: TouchEvent) {
+      const target = event.target;
+      if (target instanceof Element) {
+        if (target === document.body || target === document.documentElement) {
+          return true;
+        }
+        return (
+          !target.closest("a, button, input, select, summary, textarea") &&
+          Boolean(containerRef.current?.contains(target))
+        );
+      }
+      return target === document;
+    }
+
+    function startTouch(event: TouchEvent) {
+      if (!graphRef.current) {
+        return;
+      }
+      if (
+        event.touches.length === 1 &&
+        startsOnGraphSurface(event) &&
+        touchesStartInsideGraph(event)
+      ) {
+        const touch = event.touches.item(0);
+        touchTapStart = touch
+          ? { moved: false, x: touch.clientX, y: touch.clientY }
+          : null;
+        pinchStart = null;
+        return;
+      }
+      touchTapStart = null;
+      if (event.touches.length !== 2 || !touchesStartInsideGraph(event)) {
         return;
       }
       pinchStart = {
@@ -472,7 +583,20 @@ export function SkillGraphForceCanvas({
       };
     }
 
-    function movePinch(event: TouchEvent) {
+    function moveTouch(event: TouchEvent) {
+      if (event.touches.length === 1 && touchTapStart) {
+        const touch = event.touches.item(0);
+        if (
+          touch &&
+          Math.hypot(
+            touch.clientX - touchTapStart.x,
+            touch.clientY - touchTapStart.y,
+          ) > 10
+        ) {
+          touchTapStart.moved = true;
+        }
+        return;
+      }
       if (event.touches.length !== 2 || !pinchStart || !graphRef.current) {
         return;
       }
@@ -480,8 +604,6 @@ export function SkillGraphForceCanvas({
       if (pinchStart.distance <= 0 || distance <= 0) {
         return;
       }
-      event.preventDefault();
-      event.stopPropagation();
       const nextZoom = Math.min(
         9,
         Math.max(0.18, pinchStart.zoom * (distance / pinchStart.distance)),
@@ -489,10 +611,24 @@ export function SkillGraphForceCanvas({
       graphRef.current.zoom(nextZoom);
     }
 
-    function endPinch(event: TouchEvent) {
+    function endTouch(event: TouchEvent) {
       if (event.touches.length < 2) {
         pinchStart = null;
       }
+      if (event.touches.length > 0 || !touchTapStart) {
+        return;
+      }
+      const start = touchTapStart;
+      touchTapStart = null;
+      const touch = event.changedTouches.item(0);
+      if (!start.moved && touch) {
+        selectTouchNode(touch.clientX, touch.clientY);
+      }
+    }
+
+    function cancelTouch() {
+      pinchStart = null;
+      touchTapStart = null;
     }
 
     setMounted(false);
@@ -581,23 +717,7 @@ export function SkillGraphForceCanvas({
           );
           requestGraphRedraw(graphRef.current);
         })
-        .onNodeClick((node) => {
-          if (node.kind === "skill") {
-            const nodeId = String(node.id);
-            selectedIdRef.current = nodeId;
-            highlightRef.current = focusedHighlight(
-              nodeId,
-              hoveredIdRef.current,
-              adjacencyRef.current,
-            );
-            onNodeSelect(nodeId);
-            if (typeof node.x === "number" && typeof node.y === "number") {
-              graphRef.current
-                ?.centerAt(node.x, node.y, 420)
-                .zoom(touchInputRef.current ? 1.72 : 2.15, 420);
-            }
-          }
-        })
+        .onNodeClick((node) => selectGraphNode(node))
         .onNodeDrag((node) => {
           node.fx = node.x;
           node.fy = node.y;
@@ -608,17 +728,20 @@ export function SkillGraphForceCanvas({
         });
 
       graphRef.current = mountedGraph;
-      touchCanvas = containerRef.current.querySelector("canvas");
-      touchCanvas?.addEventListener("touchstart", startPinch, {
+      window.addEventListener("touchstart", startTouch, {
+        capture: true,
         passive: true,
       });
-      touchCanvas?.addEventListener("touchmove", movePinch, {
-        passive: false,
-      });
-      touchCanvas?.addEventListener("touchend", endPinch, {
+      window.addEventListener("touchmove", moveTouch, {
+        capture: true,
         passive: true,
       });
-      touchCanvas?.addEventListener("touchcancel", endPinch, {
+      window.addEventListener("touchend", endTouch, {
+        capture: true,
+        passive: true,
+      });
+      window.addEventListener("touchcancel", cancelTouch, {
+        capture: true,
         passive: true,
       });
       setMounted(true);
@@ -652,10 +775,10 @@ export function SkillGraphForceCanvas({
       window.cancelAnimationFrame(revealFrame);
       window.cancelAnimationFrame(resizeFrame);
       resizeObserver?.disconnect();
-      touchCanvas?.removeEventListener("touchstart", startPinch);
-      touchCanvas?.removeEventListener("touchmove", movePinch);
-      touchCanvas?.removeEventListener("touchend", endPinch);
-      touchCanvas?.removeEventListener("touchcancel", endPinch);
+      window.removeEventListener("touchstart", startTouch, true);
+      window.removeEventListener("touchmove", moveTouch, true);
+      window.removeEventListener("touchend", endTouch, true);
+      window.removeEventListener("touchcancel", cancelTouch, true);
       mountedGraph?._destructor();
       graphRef.current = null;
       revealGraphRef.current = () => undefined;
@@ -681,7 +804,7 @@ export function SkillGraphForceCanvas({
     revealGenerationRef.current += 1;
     setReady(false);
     onReadyChange?.(false);
-    graph.graphData(cloneGraphData(data));
+    graph.graphData(cloneGraphData(stableData));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
     hoveredIdRef.current = null;
@@ -698,12 +821,21 @@ export function SkillGraphForceCanvas({
     }
 
     let initialFitTimer = 0;
-    if (data.nodes.length > 0) {
+    if (stableData.nodes.length > 0) {
       initialFitTimer = window.setTimeout(() => {
         if (!graphRef.current) {
           return;
         }
-        if (data.nodes.length <= 3) {
+        const selected = graphRef.current
+          .graphData()
+          .nodes.find((node) => node.id === selectedIdRef.current);
+        if (
+          selected &&
+          typeof selected.x === "number" &&
+          typeof selected.y === "number"
+        ) {
+          graphRef.current.centerAt(selected.x, selected.y).zoom(2.05);
+        } else if (stableData.nodes.length <= 3) {
           graphRef.current.centerAt(0, 0).zoom(1.35);
         } else {
           graphRef.current.zoomToFit(0, touchInputRef.current ? 64 : 92);
@@ -716,7 +848,7 @@ export function SkillGraphForceCanvas({
     return () => {
       window.clearTimeout(initialFitTimer);
     };
-  }, [data, display.animate, forces, mounted, onReadyChange]);
+  }, [display.animate, forces, mounted, onReadyChange, stableData]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -818,14 +950,14 @@ export function SkillGraphForceCanvas({
 
   useEffect(() => {
     const graph = graphRef.current;
-    if (!graph || !selectedId) {
+    if (!graph || !selectedId || !readyRef.current) {
       return;
     }
     const selected = graph.graphData().nodes.find((node) => node.id === selectedId);
     if (selected && typeof selected.x === "number" && typeof selected.y === "number") {
-      graph.centerAt(selected.x, selected.y, 420).zoom(2.05, 420);
+      graph.centerAt(selected.x, selected.y).zoom(2.05);
     }
-  }, [selectedId, ready]);
+  }, [selectedId]);
 
   function changeZoom(multiplier: number) {
     const graph = graphRef.current;
@@ -833,11 +965,11 @@ export function SkillGraphForceCanvas({
       return;
     }
     const nextZoom = Math.min(9, Math.max(0.18, graph.zoom() * multiplier));
-    graph.zoom(nextZoom, 220);
+    graph.zoom(nextZoom);
   }
 
   function fitGraph() {
-    graphRef.current?.zoomToFit(360, touchInputRef.current ? 64 : 92);
+    graphRef.current?.zoomToFit(0, touchInputRef.current ? 64 : 92);
   }
 
   return (

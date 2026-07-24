@@ -265,10 +265,68 @@ def test_unseeded_graph_starts_with_global_demand_leaders() -> None:
             )
         session.commit()
 
-        graph = build_skill_graph(session, limit=5, include_evidence=False)
+        graph = build_skill_graph(
+            session,
+            owned_skills=["Go"],
+            limit=5,
+            include_evidence=False,
+        )
 
     assert graph.nodes[0].id == "Python"
     assert graph.nodes[0].demand_count == 6
+
+
+def test_seeded_graph_retains_context_between_selected_neighbors() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _source(session)
+        _posting(
+            session,
+            company,
+            source,
+            "seed-a",
+            title="Python과 Docker",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("Docker", "infra", "required", 1.0),
+            ],
+        )
+        _posting(
+            session,
+            company,
+            source,
+            "seed-b",
+            title="Python과 Kubernetes",
+            skills=[
+                ("Python", "language", "required", 1.0),
+                ("Kubernetes", "infra", "required", 1.0),
+            ],
+        )
+        _posting(
+            session,
+            company,
+            source,
+            "context",
+            title="Docker와 Kubernetes",
+            skills=[
+                ("Docker", "infra", "required", 1.0),
+                ("Kubernetes", "infra", "required", 1.0),
+            ],
+        )
+        session.commit()
+
+        graph = build_skill_graph(
+            session,
+            seed="Python",
+            limit=5,
+            include_evidence=False,
+        )
+
+    assert graph.node_by_id("Python").seed is True
+    assert graph.edge_between("Python", "Docker") is not None
+    assert graph.edge_between("Python", "Kubernetes") is not None
+    assert graph.edge_between("Docker", "Kubernetes") is not None
 
 
 def test_database_skill_graph_reader_returns_bounded_selected_skill_evidence() -> None:
