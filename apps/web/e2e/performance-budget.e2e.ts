@@ -114,3 +114,61 @@ test("/market keeps initial JavaScript within budget", async ({ page }) => {
       .join("\n")}`,
   ).toBeLessThanOrEqual(275 * 1024);
 });
+
+test("/skills/graph stops sustained work after its finite layout", async ({
+  page,
+}) => {
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+  await session.send("Performance.enable");
+
+  await page.goto("/skills/graph?seed=Kubernetes");
+  const graphFrame = page.locator('[data-testid="skill-graph-frame"]:visible');
+  const forceCanvas = graphFrame.locator(".force-canvas--ready");
+  await expect(forceCanvas).toBeVisible({ timeout: 20_000 });
+  await expect(forceCanvas.locator("canvas")).toBeVisible();
+
+  // The renderer has a 2.4s hard cooldown; this starts the measurement after it.
+  await page.waitForTimeout(3_000);
+  const readTaskDuration = async () => {
+    const { metrics } = await session.send("Performance.getMetrics");
+    return metrics.find((metric) => metric.name === "TaskDuration")?.value ?? 0;
+  };
+  const before = await readTaskDuration();
+  await page.waitForTimeout(4_000);
+  const idleTaskMilliseconds = ((await readTaskDuration()) - before) * 1_000;
+
+  expect(
+    idleTaskMilliseconds,
+    `Post-layout TaskDuration was ${idleTaskMilliseconds.toFixed(1)}ms`,
+  ).toBeLessThanOrEqual(800);
+
+  await page.evaluate(() => {
+    const target = window as Window & { __skillGraphLongTasks?: number[] };
+    target.__skillGraphLongTasks = [];
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        target.__skillGraphLongTasks?.push(entry.duration);
+      }
+    }).observe({ entryTypes: ["longtask"] });
+  });
+
+  await graphFrame.getByRole("button", { name: "그래프 확대" }).click();
+  await graphFrame.getByRole("button", { name: "그래프 축소" }).click();
+  const canvasBox = await forceCanvas.locator("canvas").boundingBox();
+  expect(canvasBox).not.toBeNull();
+  await page.mouse.move(
+    canvasBox!.x + canvasBox!.width / 2,
+    canvasBox!.y + canvasBox!.height / 2,
+  );
+  await page.waitForTimeout(750);
+
+  const longestInteractionTask = await page.evaluate(() =>
+    Math.max(
+      0,
+      ...((window as Window & { __skillGraphLongTasks?: number[] })
+        .__skillGraphLongTasks ?? []),
+    ),
+  );
+  expect(longestInteractionTask).toBeLessThan(200);
+});

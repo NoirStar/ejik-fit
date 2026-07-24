@@ -24,6 +24,20 @@ type CanvasZoom = {
   y: number;
 };
 
+type Rect = CanvasPoint & {
+  height: number;
+  width: number;
+};
+
+function rectanglesOverlap(left: Rect, right: Rect) {
+  return !(
+    left.x + left.width <= right.x ||
+    right.x + right.width <= left.x ||
+    left.y + left.height <= right.y ||
+    right.y + right.height <= left.y
+  );
+}
+
 const backendNodeRgb = [
   Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
   Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
@@ -321,7 +335,7 @@ async function tapBackendNode(
         return (
           clickable &&
           selectableBackendSkills.some((skill) =>
-            tooltipText?.startsWith(`${skill} /`),
+            tooltipText?.startsWith(`${skill} ·`),
           )
         );
       },
@@ -481,6 +495,21 @@ for (const width of [1440, 820, 390, 320]) {
     await expect(
       graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
     ).toBeVisible();
+    const legend = graphFrame.getByRole("note", { name: "스킬맵 범례" });
+    const graphControls = graphFrame.getByRole("group", {
+      name: "그래프 보기 조절",
+    });
+    await expect(legend).toBeVisible();
+    await expect(legend).toContainText("색: 분야");
+    await expect(legend).toContainText("크기: 언급 공고");
+    await expect(legend).toContainText("선: 함께 등장");
+    const [legendBox, graphControlsBox] = await Promise.all([
+      legend.boundingBox(),
+      graphControls.boundingBox(),
+    ]);
+    expect(legendBox).not.toBeNull();
+    expect(graphControlsBox).not.toBeNull();
+    expect(rectanglesOverlap(legendBox!, graphControlsBox!)).toBe(false);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,

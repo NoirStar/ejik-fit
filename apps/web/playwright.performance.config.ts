@@ -21,7 +21,7 @@ export default defineConfig({
     },
     {
       command:
-        "API_BASE_URL=http://127.0.0.1:8011 node e2e/fixtures/start-standalone.mjs",
+        "API_BASE_URL=http://127.0.0.1:8011 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:8011 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable-key node e2e/fixtures/start-standalone.mjs",
       url: "http://127.0.0.1:3103/privacy",
       reuseExistingServer: false,
       timeout: 30_000,
