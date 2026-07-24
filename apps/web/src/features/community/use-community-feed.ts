@@ -17,6 +17,7 @@ import {
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
+import type { InitialCommunityFeed } from "./community-feed-initial";
 
 const EMPTY_VIEWER_STATE: CommunityViewerState = {
   reactedPostIds: [],
@@ -57,6 +58,7 @@ type UseCommunityFeedOptions = {
   authorId?: string;
   enabled?: boolean;
   followingOnly?: boolean;
+  initialFeed?: InitialCommunityFeed;
   limit?: number;
   savedOnly?: boolean;
   viewer: AuthViewer | null;
@@ -73,6 +75,25 @@ const INITIAL_STATE: CommunityFeedState = {
   loadingMore: false,
   pendingKeys: [],
 };
+
+function stateFromInitial(
+  initialFeed: InitialCommunityFeed | undefined,
+): CommunityFeedState {
+  if (!initialFeed) return INITIAL_STATE;
+  if (initialFeed.status === "error") {
+    return {
+      ...INITIAL_STATE,
+      status: "error",
+      error: initialFeed.error,
+    };
+  }
+  return {
+    ...INITIAL_STATE,
+    status: "ready",
+    posts: initialFeed.page.items,
+    nextCursor: initialFeed.page.nextCursor,
+  };
+}
 
 function membershipWith(
   values: string[],
@@ -120,14 +141,19 @@ export function useCommunityFeed({
   authorId,
   enabled = true,
   followingOnly = false,
+  initialFeed,
   limit = 20,
   savedOnly = false,
   store: injectedStore,
   viewer,
 }: UseCommunityFeedOptions): CommunityFeedController {
   const viewerId = viewer?.id;
-  const [state, setState] = useState<CommunityFeedState>(INITIAL_STATE);
+  const [state, setState] = useState<CommunityFeedState>(() =>
+    stateFromInitial(initialFeed),
+  );
   const stateRef = useRef(state);
+  const originalInitialFeedRef = useRef(initialFeed);
+  const pendingInitialFeedRef = useRef(initialFeed);
   const requestRef = useRef(0);
   const viewerIdRef = useRef(viewerId);
   const pendingRef = useRef(new Set<string>());
@@ -162,13 +188,85 @@ export function useCommunityFeed({
     async (keepPosts: boolean) => {
       const request = requestRef.current + 1;
       requestRef.current = request;
-      if (!authReady || !enabled) {
+      const publicScope = !authorId && !followingOnly && !savedOnly;
+      if (!enabled) {
         commit(INITIAL_STATE);
+        return;
+      }
+
+      if (!authReady) {
+        commit(
+          publicScope
+            ? stateFromInitial(originalInitialFeedRef.current)
+            : INITIAL_STATE,
+        );
         return;
       }
 
       if ((savedOnly || followingOnly) && !viewerId) {
         commit({ ...INITIAL_STATE, status: "ready" });
+        return;
+      }
+
+      const initialPublicFeed =
+        !keepPosts && publicScope
+          ? pendingInitialFeedRef.current
+          : undefined;
+      if (initialPublicFeed) {
+        pendingInitialFeedRef.current = undefined;
+        if (initialPublicFeed.status === "error") {
+          commit(stateFromInitial(initialPublicFeed));
+          return;
+        }
+
+        const page = initialPublicFeed.page;
+        if (!viewerId) {
+          commit(stateFromInitial(initialPublicFeed));
+          return;
+        }
+
+        const resolvedStore = resolveStore();
+        if (!resolvedStore) {
+          commit(stateFromInitial(initialPublicFeed));
+          return;
+        }
+
+        const activeViewerId = viewerId;
+        try {
+          const viewerState = await resolvedStore.loadViewerState(
+            activeViewerId,
+            {
+              postIds: page.items.map((post) => post.id),
+              authorIds: page.items.map((post) => post.author.id),
+            },
+          );
+          if (
+            requestRef.current !== request ||
+            viewerIdRef.current !== activeViewerId
+          ) {
+            return;
+          }
+          commit({
+            ...INITIAL_STATE,
+            status: "ready",
+            posts: page.items,
+            viewerState,
+            nextCursor: page.nextCursor,
+          });
+        } catch (error) {
+          if (
+            requestRef.current === request &&
+            viewerIdRef.current === activeViewerId
+          ) {
+            commit({
+              ...stateFromInitial(initialPublicFeed),
+              actionError: communityFailureMessage(
+                error,
+                COMMUNITY_FAILURE_COPY.authCheck,
+              ),
+            });
+          }
+        }
         return;
       }
 

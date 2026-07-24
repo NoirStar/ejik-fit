@@ -106,6 +106,110 @@ describe("useCommunityFeed", () => {
     expect(store.loadViewerState).not.toHaveBeenCalled();
   });
 
+  it("shows the server page before auth is ready without starting a browser request", async () => {
+    const store = storeWith();
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: false,
+        initialFeed: {
+          status: "ready",
+          page: { items: [post()], nextCursor: null },
+        },
+        store,
+        viewer: null,
+      }),
+    );
+
+    expect(result.current.state.status).toBe("ready");
+    expect(result.current.state.posts).toEqual([post()]);
+    await act(async () => Promise.resolve());
+    expect(store.listPostPage).not.toHaveBeenCalled();
+    expect(store.loadViewerState).not.toHaveBeenCalled();
+  });
+
+  it("consumes a ready server page without listing public posts again", async () => {
+    const store = storeWith();
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        initialFeed: {
+          status: "ready",
+          page: { items: [post()], nextCursor: null },
+        },
+        store,
+        viewer: null,
+      }),
+    );
+
+    expect(result.current.state.status).toBe("ready");
+    expect(result.current.state.posts).toEqual([post()]);
+    await act(async () => Promise.resolve());
+    expect(store.listPostPage).not.toHaveBeenCalled();
+    expect(store.loadViewerState).not.toHaveBeenCalled();
+  });
+
+  it("adds viewer membership to the server page without changing its order", async () => {
+    const second = post({
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      title: "서버 두 번째 글",
+    });
+    const store = storeWith([post(), second]);
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        initialFeed: {
+          status: "ready",
+          page: { items: [post(), second], nextCursor: null },
+        },
+        store,
+        viewer: { id: USER_ID, email: "viewer@example.com" },
+      }),
+    );
+
+    await waitFor(() =>
+      expect(result.current.state.viewerState.reactedPostIds).toEqual([POST_ID]),
+    );
+    expect(store.listPostPage).not.toHaveBeenCalled();
+    expect(store.loadViewerState).toHaveBeenCalledWith(USER_ID, {
+      postIds: [POST_ID, second.id],
+      authorIds: [AUTHOR_ID, AUTHOR_ID],
+    });
+    expect(result.current.state.posts.map((item) => item.id)).toEqual([
+      POST_ID,
+      second.id,
+    ]);
+  });
+
+  it("keeps a server error until an explicit retry loads the public page", async () => {
+    const store = storeWith();
+    const { result } = renderHook(() =>
+      useCommunityFeed({
+        authReady: true,
+        initialFeed: {
+          status: "error",
+          error: "서버에서 커뮤니티 글을 불러오지 못했습니다.",
+        },
+        store,
+        viewer: null,
+      }),
+    );
+
+    expect(result.current.state.status).toBe("error");
+    expect(result.current.state.error).toBe(
+      "서버에서 커뮤니티 글을 불러오지 못했습니다.",
+    );
+    await act(async () => Promise.resolve());
+    expect(store.listPostPage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 20 });
+    expect(result.current.state.status).toBe("ready");
+    expect(result.current.state.posts).toEqual([post()]);
+  });
+
   it("loads the signed-in viewer saved collection without falling back to the public feed", async () => {
     const store = storeWith([post()], {
       reactedPostIds: [],
