@@ -172,6 +172,33 @@ def test_initial_sources_include_coinone_and_ahnlab_official_sources() -> None:
     assert ahnlab.status == SourceStatus.ALLOWED
 
 
+def test_high_value_official_sources_are_isolated_and_runnable() -> None:
+    sources = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
+
+    sk_ax = sources["sk-ax"]
+    assert sk_ax.connector_family == "skcareers_ax_tech"
+    assert sk_ax.request_body is not None
+    assert sk_ax.request_body["corpCode"] == "10018"
+    assert sk_ax.base_url.endswith("#sk-ax")
+
+    assert sources["kt"].connector_family == "kt_core_enterprise_json_tech"
+    kt_cloud = sources["kt-cloud"]
+    assert kt_cloud.connector_family == "kt_cloud_enterprise_json_tech"
+    assert kt_cloud.base_url.endswith("#kt-cloud")
+
+    lig = sources["lig-nex1"]
+    assert lig.connector_family == "lig_recruiter_public_api_tech"
+    assert lig.request_method == "POST"
+    assert lig.request_body is not None
+    assert lig.request_body["pageSize"] == "100"
+
+    assert all(
+        source.status == SourceStatus.ALLOWED
+        and source.policy_status == PolicyStatus.ALLOWED
+        for source in (sk_ax, kt_cloud, lig)
+    )
+
+
 def test_initial_sources_include_bear_robotics_and_atlassian_official_sources() -> None:
     sources = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
@@ -370,7 +397,7 @@ def test_initial_sources_include_phase_three_game_content_sources() -> None:
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
     assert game_content_slugs <= set(catalog_by_slug)
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 196
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 199
     assert all(
         catalog_by_slug[slug].sector == "game_content"
         for slug in game_content_slugs
@@ -550,7 +577,7 @@ def test_initial_sources_include_verified_fintech_and_ai_greeting_sources() -> N
     }
     catalog_by_slug = {item.slug: item for item in seed_data.INITIAL_SOURCE_CATALOG}
 
-    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 196
+    assert len(seed_data.INITIAL_SOURCE_CATALOG) == 199
     assert verified_sources.keys() <= catalog_by_slug.keys()
     assert all(
         catalog_by_slug[slug].base_url == url
@@ -1253,7 +1280,7 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
 
         kt = sources_by_slug["kt"]
         assert kt.status == SourceStatus.ALLOWED
-        assert kt.connector_family == "enterprise_json"
+        assert kt.connector_family == "kt_core_enterprise_json_tech"
         assert kt.base_url == (
             "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
             "&isContainsContents=0"

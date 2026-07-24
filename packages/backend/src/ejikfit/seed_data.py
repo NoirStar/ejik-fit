@@ -1908,6 +1908,37 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="LIG넥스원",
+        slug="lig-nex1",
+        base_url="https://ligdna.recruiter.co.kr/app/jobnotice/list.json",
+        source_type=SourceType.PUBLIC_JSON_DETAIL,
+        homepage_url="https://www.lignex1.com",
+        sector="defense_technology",
+        connector_family="lig_recruiter_public_api_tech",
+        request_method="POST",
+        request_body={
+            "recruitClassSn": "",
+            "recruitClassName": "",
+            "jobnoticeStateCode": "10",
+            "pageSize": "100",
+            "searchByNameOnly": True,
+            "currentPage": "1",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=6,
+        notes=(
+            "Official LIG Recruiter listing and detail pages; limited to "
+            "titles that explicitly identify software, AI, data, security, "
+            "infrastructure, developer, or engineering roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="쏘카",
         slug="socar",
         base_url="https://www.socarcorp.kr/careers/jobs",
@@ -3169,6 +3200,37 @@ INITIAL_SOURCE_CATALOG = (
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
+        name="SK AX",
+        slug="sk-ax",
+        base_url="https://www.skcareers.com/Recruit/GetRecruitList#sk-ax",
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.skax.co.kr",
+        sector="enterprise_ai",
+        connector_family="skcareers_ax_tech",
+        request_method="POST",
+        request_body={
+            "sort": "2",
+            "searchText": "",
+            "corpCode": "10018",
+            "jobRole": "0",
+            "recruitType": "",
+            "workingType": "",
+            "workingRegion": "",
+        },
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=6,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=4,
+        notes=(
+            "Official SK Careers feed filtered to SK inc. (AX) technical "
+            "roles."
+        ),
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
         name="티맵모빌리티",
         slug="tmap-mobility",
         base_url=(
@@ -3345,7 +3407,7 @@ INITIAL_SOURCE_CATALOG = (
         source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://corp.kt.com",
         sector="enterprise_it",
-        connector_family="enterprise_json",
+        connector_family="kt_core_enterprise_json_tech",
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=5,
@@ -3354,6 +3416,30 @@ INITIAL_SOURCE_CATALOG = (
         policy_risk=0,
         non_tech_noise=3,
         notes="Official KT Group careers JSON listing.",
+        status=SourceStatus.ALLOWED,
+    ),
+    SeedSource(
+        name="kt cloud",
+        slug="kt-cloud",
+        base_url=(
+            "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
+            "&isContainsContents=0#kt-cloud"
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
+        homepage_url="https://www.ktcloud.com",
+        sector="cloud_infrastructure",
+        connector_family="kt_cloud_enterprise_json_tech",
+        policy_status=PolicyStatus.ALLOWED,
+        brand_tier_weight=5,
+        tech_job_priority=6,
+        expected_job_volume=2,
+        connector_reuse_score=5,
+        policy_risk=0,
+        non_tech_noise=5,
+        notes=(
+            "Official KT Group careers JSON listing restricted to kt cloud; "
+            "construction and facilities-only roles are excluded."
+        ),
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
