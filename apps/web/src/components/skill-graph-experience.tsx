@@ -306,6 +306,16 @@ export function SkillGraphExperience({
       )
       .slice(0, 6);
   }, [graphNodeMap, initialGraph.edges, ownedSkills, selectedId]);
+  const directConnectionCount = useMemo(
+    () =>
+      selectedId
+        ? initialGraph.edges.filter(
+            (edge) =>
+              edge.source === selectedId || edge.target === selectedId,
+          ).length
+        : 0,
+    [initialGraph.edges, selectedId],
+  );
   const quickSkills = useMemo(() => {
     const graphIds = new Set(initialGraph.nodes.map((node) => node.id));
     const suggested = [
@@ -733,6 +743,18 @@ export function SkillGraphExperience({
                 selectedId={selectedId}
               />
 
+              <p
+                aria-label="스킬맵 범례"
+                className={styles.graphLegend}
+                role="note"
+              >
+                <span><b>색</b>: 분야</span>
+                <i aria-hidden="true" />
+                <span><b>크기</b>: 언급 공고</span>
+                <i aria-hidden="true" />
+                <span><b>선</b>: 함께 등장</span>
+              </p>
+
               <div className={styles.graphStatus}>
                 <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
                 <span className={styles.pointerHint}>
@@ -908,6 +930,10 @@ export function SkillGraphExperience({
                 <div>
                   <dt>{PRODUCT_TERMS.unspecifiedRequirement}</dt>
                   <dd>{selected ? `${selected.unspecified_count}건` : "—"}</dd>
+                </div>
+                <div>
+                  <dt>직접 연결</dt>
+                  <dd>{selected ? `${directConnectionCount}개` : "—"}</dd>
                 </div>
               </dl>
             </section>

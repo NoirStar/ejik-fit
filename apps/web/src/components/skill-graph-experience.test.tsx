@@ -152,6 +152,15 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.queryByText(/내 스택|기술 맵|다음 준비|미분류/),
     ).not.toBeInTheDocument();
+    const legend = screen.getByRole("note", { name: "스킬맵 범례" });
+    expect(legend).toHaveTextContent("색: 분야");
+    expect(legend).toHaveTextContent("크기: 언급 공고");
+    expect(legend).toHaveTextContent("선: 함께 등장");
+    const inspector = screen.getByRole("complementary", {
+      name: "선택 기술 분석",
+    });
+    expect(within(inspector).getByText("직접 연결").parentElement)
+      .toHaveTextContent("1개");
   });
 
   it("links quick skills to a newly seeded graph", () => {

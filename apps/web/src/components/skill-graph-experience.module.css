@@ -614,6 +614,38 @@
   color: var(--color-text);
 }
 
+.graphLegend {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 5;
+  display: inline-flex;
+  min-height: 1.875rem;
+  align-items: center;
+  gap: 0.4375rem;
+  margin: 0;
+  padding: 0 0.625rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.graphLegend b {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.graphLegend i {
+  width: 1px;
+  height: 0.75rem;
+  background: var(--color-line);
+}
+
 .graphStatus {
   position: absolute;
   right: 0.75rem;
@@ -778,6 +810,13 @@
   font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
+}
+
+.evidenceMetrics div:last-child:nth-child(odd) {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 .connectionList,
@@ -1037,6 +1076,15 @@
     bottom: calc(
       var(--mobile-nav-height) + var(--mobile-safe-area-bottom) + 0.75rem
     );
+  }
+
+  .graphLegend {
+    top: 0.625rem;
+    left: 0.625rem;
+    max-width: calc(100% - 1.25rem);
+    min-height: 2rem;
+    flex-wrap: wrap;
+    padding: 0.25rem 0.5rem;
   }
 
   .graphFrame :global(.force-canvas__controls) {
