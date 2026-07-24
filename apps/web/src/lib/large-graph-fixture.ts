@@ -54,13 +54,15 @@ function addLink(
   if (source === target) {
     return;
   }
+  const cooccurrenceCount = Math.max(1, Math.round(score * 10));
   links.push({
     id,
     source,
     target,
     kind: "skill",
+    cooccurrenceCount,
     score,
-    value: Math.max(0.4, Math.min(4.5, 0.4 + score * 4)),
+    value: Math.max(0.55, Math.min(4.5, 0.55 + Math.sqrt(cooccurrenceCount) * 0.72)),
   });
 }
 
@@ -103,7 +105,7 @@ export function buildLargeSkillGraphViewFixture({
         domain,
         domains: [domain],
         color: domainColor(domain),
-        val: hub ? 12 : 3.2 + Math.sqrt(demandCount) * 0.72,
+        val: Math.min(10, 3.2 + Math.sqrt(demandCount) * 1.15),
         demandCount,
         owned: index < 8,
         seed: index === 0,

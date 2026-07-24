@@ -44,6 +44,7 @@ export type SkillGraphViewLink = {
   source: string;
   target: string;
   kind: "skill" | "evidence";
+  cooccurrenceCount: number;
   score: number;
   value: number;
 };
@@ -85,16 +86,23 @@ function formatDomainLabel(domain: string) {
 }
 
 
-function skillNodeValue(node: SkillGraphNode) {
-  if (node.seed) {
-    return 12;
-  }
-  return Math.max(3.2, Math.min(10, 3.2 + Math.sqrt(Math.max(0, node.demand_count)) * 1.15));
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.max(minimum, Math.min(maximum, value));
 }
 
 
-function linkValue(score: number) {
-  return Math.max(0.3, Math.min(4.5, 0.4 + Math.max(0, score) * 4));
+function safeCount(value: number) {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+
+function skillNodeValue(node: SkillGraphNode) {
+  return clamp(3.2 + Math.sqrt(safeCount(node.demand_count)) * 1.15, 3.2, 10);
+}
+
+
+function linkValue(cooccurrenceCount: number) {
+  return clamp(0.55 + Math.sqrt(safeCount(cooccurrenceCount)) * 0.72, 0.55, 4.5);
 }
 
 
@@ -271,8 +279,9 @@ export function buildSkillGraphView(
       source: edge.source,
       target: edge.target,
       kind: "skill",
+      cooccurrenceCount: safeCount(edge.cooccurrence_count),
       score: edge.score,
-      value: linkValue(edge.score),
+      value: linkValue(edge.cooccurrence_count),
     }));
 
   const evidenceNodes: SkillGraphViewNode[] = [];
@@ -307,6 +316,7 @@ export function buildSkillGraphView(
           source: id,
           target: skill,
           kind: "evidence",
+          cooccurrenceCount: 0,
           score: 0.16,
           value: 0.35,
         });

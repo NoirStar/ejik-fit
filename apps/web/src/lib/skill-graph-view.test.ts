@@ -130,6 +130,42 @@ const graph: SkillGraphResponse = {
 
 
 describe("buildSkillGraphView", () => {
+  it("uses posting demand for every node and raw cooccurrence for edge width", () => {
+    const semanticGraph: SkillGraphResponse = {
+      ...graph,
+      nodes: graph.nodes.map((node) =>
+        node.id === "C++"
+          ? { ...node, demand_count: 1 }
+          : node.id === "ROS2"
+            ? { ...node, demand_count: 36 }
+            : node,
+      ),
+      edges: graph.edges.map((edge) =>
+        edge.id === "C++:ROS2"
+          ? { ...edge, score: 0.1, cooccurrence_count: 7 }
+          : edge.id === "CAN:RTOS"
+            ? { ...edge, score: 0.95, cooccurrence_count: 3 }
+            : edge,
+      ),
+    };
+    const view = buildSkillGraphView(semanticGraph, {
+      mode: "global",
+      showEvidence: false,
+      showIsolated: true,
+    });
+    const seed = view.nodes.find((node) => node.id === "C++")!;
+    const highDemand = view.nodes.find((node) => node.id === "ROS2")!;
+    const strongCount = view.links.find((link) => link.id === "C++:ROS2")!;
+    const weakCount = view.links.find((link) => link.id === "CAN:RTOS")!;
+
+    expect(seed.val).toBeCloseTo(3.2 + Math.sqrt(1) * 1.15);
+    expect(highDemand.val).toBe(10);
+    expect(highDemand.val).toBeGreaterThan(seed.val);
+    expect(strongCount.cooccurrenceCount).toBe(7);
+    expect(weakCount.cooccurrenceCount).toBe(3);
+    expect(strongCount.value).toBeGreaterThan(weakCount.value);
+  });
+
   it("adds posting evidence nodes and evidence links when enabled", () => {
     const view = buildSkillGraphView(graph, {
       showEvidence: true,

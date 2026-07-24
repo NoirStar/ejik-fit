@@ -45,6 +45,7 @@ const view: SkillGraphViewData = {
       source: "C++",
       target: "ROS2",
       kind: "skill",
+      cooccurrenceCount: 8,
       score: 0.8,
       value: 3.6,
     },
