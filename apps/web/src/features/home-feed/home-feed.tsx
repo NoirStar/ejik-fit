@@ -181,8 +181,6 @@ function SocialCard({
 }) {
   const titleId = `feed-${item.id}-title`;
   const body = item.type === "community_post" ? item.body : item.summary;
-  const visibleTags = item.tags.slice(0, 3);
-  const hiddenTagCount = item.tags.length - visibleTags.length;
   const persistedMetrics = item.source === "server";
   const reactionCount =
     item.metrics.reactions + (persistedMetrics ? 0 : reacted ? 1 : 0);
@@ -255,25 +253,18 @@ function SocialCard({
       </div>
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
-        {visibleTags.map((tag) => (
+        {item.tags.map((tag) => (
           <li key={tag}>
             <Link
               aria-label={`${tag} 커뮤니티 검색`}
               href={buildSearchScopeHref(tag, "community")}
               prefetch={false}
+              title={tag}
             >
-              {tag}
+              <span>{tag}</span>
             </Link>
           </li>
         ))}
-        {hiddenTagCount > 0 && (
-          <li
-            aria-label={`태그 ${hiddenTagCount}개 더 있음`}
-            className={styles.moreTag}
-          >
-            +{hiddenTagCount}
-          </li>
-        )}
       </ul>
 
       <footer className={styles.cardActions}>

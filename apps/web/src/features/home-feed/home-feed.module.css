@@ -121,6 +121,7 @@
   z-index: 0;
   display: inline-flex;
   min-width: var(--touch-target);
+  max-width: 100%;
   min-height: var(--touch-target);
   isolation: isolate;
   align-items: center;
@@ -130,6 +131,17 @@
   font-size: 0.75rem;
   font-weight: 650;
   text-decoration: none;
+}
+
+.tags li {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tags a span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tags a::before {
@@ -1034,18 +1046,6 @@
 
 .tags {
   margin-top: 0.5rem;
-}
-
-.moreTag {
-  display: inline-flex;
-  min-height: 1.75rem;
-  align-items: center;
-  padding: 0 0.5rem;
-  border-radius: 0.4375rem;
-  background: var(--color-surface-muted);
-  color: var(--color-muted);
-  font-size: 0.71875rem;
-  font-weight: 750;
 }
 
 .cardActions,

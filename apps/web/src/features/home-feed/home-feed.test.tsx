@@ -294,6 +294,47 @@ describe("HomeFeed", () => {
     expect(within(example).queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("shows all four community tags as consistent search links", async () => {
+    const post: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "22222222-2222-4222-8222-222222222222",
+        nickname: "태그작성자",
+      },
+      category: "커리어 질문",
+      title: "태그 네 개가 있는 글",
+      body: "허용된 태그를 모두 확인합니다.",
+      tags: ["백엔드", "Kubernetes", "성능 최적화", "아주 긴 기술 태그 이름"],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+
+    render(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed
+          communityStore={serverCommunityStore(post)}
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    const article = await screen.findByRole("article", { name: post.title });
+    const tags = within(article).getByRole("list", {
+      name: `${post.title} 태그`,
+    });
+    expect(within(tags).getAllByRole("link")).toHaveLength(4);
+    expect(
+      within(tags).getByRole("link", {
+        name: "아주 긴 기술 태그 이름 커뮤니티 검색",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/search?q=%EC%95%84%EC%A3%BC+%EA%B8%B4+%EA%B8%B0%EC%88%A0+%ED%83%9C%EA%B7%B8+%EC%9D%B4%EB%A6%84&scope=community",
+    );
+    expect(within(tags).queryByText("+1")).not.toBeInTheDocument();
+  });
+
   it("keeps previous-browser posts in a recovery-only section", async () => {
     createLocalCommunityPost(
       {
