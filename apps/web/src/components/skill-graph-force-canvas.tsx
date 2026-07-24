@@ -14,6 +14,12 @@ import type { GraphData, NodeObject } from "force-graph";
 import { formatDomainLabel } from "@/features/career/model";
 import { skillGraphAnimationProfile } from "@/lib/skill-graph-animation";
 import {
+  SKILL_GRAPH_LABEL_FONT_FAMILY,
+  skillGraphLinkColor,
+  skillGraphLinkWidth,
+  skillGraphNodePaint,
+} from "@/lib/skill-graph-canvas-style";
+import {
   buildSkillGraphAdjacency,
   buildSkillGraphHighlight,
   type SkillGraphAdjacency,
@@ -106,21 +112,6 @@ function getNodeId(node: string | number | SkillForceNode | undefined) {
 }
 
 
-function rgba(hexOrRgba: string, alpha: number) {
-  if (hexOrRgba.startsWith("rgba") || hexOrRgba.startsWith("rgb")) {
-    return hexOrRgba;
-  }
-  const hex = hexOrRgba.replace("#", "");
-  const bigint = Number.parseInt(hex.length === 3
-    ? hex.split("").map((char) => char + char).join("")
-    : hex, 16);
-  const red = (bigint >> 16) & 255;
-  const green = (bigint >> 8) & 255;
-  const blue = bigint & 255;
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-}
-
-
 function resolveContainerSize(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   return {
@@ -159,43 +150,44 @@ function drawNode(
       ? 1 + (highlight.relationRatios.get(nodeId) ?? 0) * 0.22
       : 1;
   const radius = Math.max(
-    node.kind === "posting" ? 2.2 : 3.4,
+    3.4,
     (node.val ?? 4) * display.nodeScale * relationScale,
   );
   const shouldLabel =
-    node.kind === "posting"
-      ? isHovered
-      : node.seed ||
-        isSelected ||
-        isHovered ||
-        (isRelated && globalScale >= display.labelThreshold);
+    node.seed ||
+    isSelected ||
+    isHovered ||
+    (isRelated && globalScale >= display.labelThreshold);
   const dimmed = highlight.nodeIds.size > 0 && !isRelated;
+  const paint = skillGraphNodePaint(node, isSelected);
 
   ctx.save();
-  ctx.globalAlpha = dimmed ? 0.16 : node.kind === "posting" ? 0.7 : 0.96;
+  ctx.globalAlpha = dimmed ? 0.16 : 0.96;
 
-  if (isSelected) {
+  if (paint.ring) {
     ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 5, 0, Math.PI * 2);
-    ctx.fillStyle = rgba(node.color, 0.11);
-    ctx.fill();
+    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 2.1, 0, Math.PI * 2);
+    ctx.setLineDash(node.recommended && !node.owned ? [2.4, 1.6] : []);
+    ctx.strokeStyle = paint.ring;
+    ctx.lineWidth = Math.max(0.8, 1.35 / globalScale);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   if (isSelected || isHovered) {
     ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 2.5, 0, Math.PI * 2);
-    ctx.strokeStyle = rgba(node.color, isSelected ? 0.78 : 0.58);
+    ctx.arc(node.x ?? 0, node.y ?? 0, radius + (paint.ring ? 4.2 : 2.5), 0, Math.PI * 2);
+    ctx.strokeStyle = isSelected
+      ? GRAPH_CANVAS_COLORS.selectedNode
+      : GRAPH_CANVAS_COLORS.hoverRing;
     ctx.lineWidth = Math.max(0.7, 1.3 / globalScale);
     ctx.stroke();
   }
 
   ctx.beginPath();
   ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);
-  ctx.fillStyle = node.kind === "posting" ? GRAPH_CANVAS_COLORS.postingNode : node.color;
-  ctx.shadowBlur = node.kind === "posting" ? 0 : isSelected || isHovered ? 8 : 0;
-  ctx.shadowColor = node.kind === "posting"
-    ? GRAPH_CANVAS_COLORS.postingShadow
-    : rgba(node.color, 0.2);
+  ctx.fillStyle = paint.fill;
+  ctx.shadowBlur = 0;
   ctx.fill();
 
   if (shouldLabel) {
@@ -203,16 +195,14 @@ function drawNode(
     const text = node.label;
     const textX = node.x ?? 0;
     const textY = (node.y ?? 0) + radius + fontSize * 1.1;
-    ctx.font = `700 ${fontSize}px var(--font-geist), Arial, sans-serif`;
+    ctx.font = `700 ${fontSize}px ${SKILL_GRAPH_LABEL_FONT_FAMILY}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineWidth = 2.8;
     ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
     ctx.shadowBlur = 0;
     ctx.strokeText(text, textX, textY);
-    ctx.fillStyle = node.kind === "posting"
-      ? GRAPH_CANVAS_COLORS.postingLabel
-      : GRAPH_CANVAS_COLORS.skillLabel;
+    ctx.fillStyle = GRAPH_CANVAS_COLORS.skillLabel;
     ctx.fillText(text, textX, textY);
   }
 
@@ -227,12 +217,8 @@ function paintPointerArea(
   touchInput: boolean,
 ) {
   const minimumRadius = touchInput
-    ? node.kind === "posting"
-      ? 15
-      : 18
-    : node.kind === "posting"
-      ? 8
-      : 12;
+    ? 18
+    : 12;
   const radius = Math.max(
     minimumRadius,
     (node.val ?? 4) + 7,
@@ -256,16 +242,8 @@ function configureForces(
     SkillForceLink
   > | undefined;
   link
-    ?.distance((edge) =>
-      edge.kind === "evidence"
-        ? Math.max(18, forces.linkDistance * 0.52)
-        : forces.linkDistance,
-    )
-    .strength((edge) =>
-      edge.kind === "evidence"
-        ? Math.max(0.02, forces.link * 0.28)
-        : Math.max(0.04, forces.link),
-    )
+    ?.distance(forces.linkDistance)
+    .strength(Math.max(0.04, forces.link))
     .iterations(1);
 
   graph
@@ -275,7 +253,7 @@ function configureForces(
     .d3Force(
       "collide",
       forceCollide<SkillForceNode>((node) =>
-        Math.max(node.kind === "posting" ? 5 : 8, (node.val ?? 4) * 1.7),
+        Math.max(8, (node.val ?? 4) * 1.7),
       ).strength(0.22),
     );
 }
@@ -303,7 +281,7 @@ function nudgeGraph(graph: ForceGraphInstance, seed: number) {
       return;
     }
     const angle = (((index + 1) * 137.508 + seed * 41) % 360) * (Math.PI / 180);
-    const strength = node.kind === "posting" ? 1.6 : 3.8;
+    const strength = 3.8;
     node.vx = (node.vx ?? 0) + Math.cos(angle) * strength;
     node.vy = (node.vy ?? 0) + Math.sin(angle) * strength;
   });
@@ -336,10 +314,6 @@ function nodeTooltip(
   adjacency: SkillGraphAdjacency,
   selectedId: string | null,
 ) {
-  if (node.kind === "posting") {
-    return `${node.evidence?.company_name ?? node.label} · ${node.evidence?.title ?? "공고"}`;
-  }
-
   const relation = adjacency.get(String(node.id));
   const parts = [
     node.label,
@@ -371,15 +345,6 @@ function linkRelationRatio(
     return highlight.relationRatios.get(source) ?? 0;
   }
   return 0;
-}
-
-
-function skillLinkColor(score: number, emphasized: boolean) {
-  const safeScore = Number.isFinite(score)
-    ? Math.max(0, Math.min(1, score))
-    : 0;
-  const alpha = Math.min(0.76, 0.18 + safeScore * 0.42 + (emphasized ? 0.12 : 0));
-  return `rgba(86, 56, 198, ${alpha})`;
 }
 
 
@@ -423,6 +388,7 @@ export function SkillGraphForceCanvas({
     let mountedGraph: ForceGraphInstance | null = null;
     let resizeObserver: ResizeObserver | null = null;
     let revealFrame = 0;
+    let resizeFrame = 0;
 
     setMounted(false);
     setReady(false);
@@ -529,11 +495,14 @@ export function SkillGraphForceCanvas({
       setMounted(true);
 
       resizeObserver = new ResizeObserver(() => {
-        if (!containerRef.current || !graphRef.current) {
-          return;
-        }
-        const nextSize = resolveContainerSize(containerRef.current);
-        graphRef.current.width(nextSize.width).height(nextSize.height);
+        window.cancelAnimationFrame(resizeFrame);
+        resizeFrame = window.requestAnimationFrame(() => {
+          if (!containerRef.current || !graphRef.current) {
+            return;
+          }
+          const nextSize = resolveContainerSize(containerRef.current);
+          graphRef.current.width(nextSize.width).height(nextSize.height);
+        });
       });
       resizeObserver.observe(containerRef.current);
     }
@@ -549,6 +518,7 @@ export function SkillGraphForceCanvas({
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(revealFrame);
+      window.cancelAnimationFrame(resizeFrame);
       resizeObserver?.disconnect();
       mountedGraph?._destructor();
       graphRef.current = null;
@@ -614,7 +584,9 @@ export function SkillGraphForceCanvas({
 
     graph
       .nodeVal((node) => (node.val ?? 3) * display.nodeScale)
-      .nodeColor((node) => node.color)
+      .nodeColor((node) =>
+        skillGraphNodePaint(node, selectedIdRef.current === node.id).fill,
+      )
       .nodeLabel((node) =>
         nodeTooltip(
           node,
@@ -640,22 +612,20 @@ export function SkillGraphForceCanvas({
         const highlight = highlightRef.current;
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
-        const base = Math.max(0.18, link.value * display.linkThickness);
-        if (!focused) return Math.max(0.05, base * 0.2);
-        return Math.min(6, base * (1 + linkRelationRatio(link, highlight) * 0.35));
+        return skillGraphLinkWidth(
+          link.value,
+          display.linkThickness,
+          focused,
+          linkRelationRatio(link, highlight),
+        );
       })
       .linkColor((link) => {
         const highlight = highlightRef.current;
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
-        if (!focused) {
-          return GRAPH_CANVAS_COLORS.dimmedLink;
-        }
-        if (link.kind === "evidence") {
-          return GRAPH_CANVAS_COLORS.evidenceLink;
-        }
-        return skillLinkColor(
+        return skillGraphLinkColor(
           link.score,
+          focused,
           highlight.linkIds.size > 0 && highlight.linkIds.has(link.id),
         );
       })
@@ -664,7 +634,7 @@ export function SkillGraphForceCanvas({
       )
       .linkDirectionalArrowColor(() => GRAPH_CANVAS_COLORS.skillLink)
       .linkDirectionalArrowRelPos(0.94)
-      .linkCurvature((link) => (link.kind === "evidence" ? 0.08 : 0.02));
+      .linkCurvature(0.02);
 
     requestGraphRedraw(graph);
   }, [display, mounted]);

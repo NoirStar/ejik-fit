@@ -414,7 +414,7 @@ const skillGraph = {
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
-function skillGraphForSeed(requestedSeed, ownedSkills) {
+function skillGraphForSeed(requestedSeed, ownedSkills, includeEvidence) {
   const knownSeed = skillGraph.nodes.some((node) => node.id === requestedSeed);
   if (!requestedSeed || !knownSeed) {
     return {
@@ -426,7 +426,7 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
         seed: false,
       })),
       edges: requestedSeed ? [] : skillGraph.edges,
-      evidence: requestedSeed ? [] : skillGraph.evidence,
+      evidence: includeEvidence && !requestedSeed ? skillGraph.evidence : [],
     };
   }
 
@@ -449,7 +449,20 @@ function skillGraphForSeed(requestedSeed, ownedSkills) {
         visibleSkills.has(edge.target) &&
         (edge.source === seed || edge.target === seed),
     ),
-    evidence,
+    evidence: includeEvidence ? evidence : [],
+  };
+}
+
+function skillGraphEvidenceForRequest(requestUrl) {
+  const skill = requestUrl.searchParams.get("skill")?.trim();
+  const parsedLimit = Number.parseInt(requestUrl.searchParams.get("limit") ?? "6", 10);
+  const limit = Number.isFinite(parsedLimit) ? Math.max(1, parsedLimit) : 6;
+  const matching = skill
+    ? skillGraph.evidence.filter((item) => item.skills.includes(skill))
+    : [];
+  return {
+    items: matching.slice(0, limit),
+    total: matching.length,
   };
 }
 
@@ -1337,12 +1350,15 @@ function apiBody(request, requestUrl) {
             ? skillTrends
             : pathname === "/api/fit/analyze" && request.method === "POST"
               ? fitAnalysis
-              : pathname === "/api/graph/skills"
-                ? skillGraphForSeed(
-                    requestUrl.searchParams.get("seed"),
-                    requestUrl.searchParams.getAll("owned_skills"),
-                  )
-                : null;
+              : pathname === "/api/graph/skills/evidence"
+                ? skillGraphEvidenceForRequest(requestUrl)
+                : pathname === "/api/graph/skills"
+                  ? skillGraphForSeed(
+                      requestUrl.searchParams.get("seed"),
+                      requestUrl.searchParams.getAll("owned_skills"),
+                      requestUrl.searchParams.get("include_evidence") === "true",
+                    )
+                  : null;
 }
 
 const server = createServer(async (request, response) => {

@@ -33,6 +33,11 @@ export const GRAPH_PREVIEW_COLORS = {
 } as const;
 
 export const GRAPH_CANVAS_COLORS = {
+  neutralNode: GRAPH_DEFAULT_COLOR,
+  selectedNode: "#6d4be8",
+  ownedRing: "#2f80ed",
+  recommendedRing: "#d97706",
+  hoverRing: "rgba(109, 75, 232, 0.62)",
   postingNode: "rgba(113, 116, 130, 0.58)",
   postingShadow: "rgba(61, 57, 77, 0.14)",
   nodeHighlight: "rgba(255, 255, 255, 0.44)",
@@ -41,10 +46,21 @@ export const GRAPH_CANVAS_COLORS = {
   skillLabel: "#25252c",
   transparent: "rgba(0, 0, 0, 0)",
   dimmedLink: "rgba(86, 56, 198, 0.06)",
+  restingLink: "rgba(86, 56, 198, 0.18)",
+  focusedLink: "rgba(86, 56, 198, 0.58)",
   evidenceLink: "rgba(98, 98, 112, 0.2)",
   skillLink: "rgba(86, 56, 198, 0.28)",
   evidenceNode: "rgba(218, 224, 236, 0.76)",
 } as const;
+
+const GRAPH_CANVAS_SKILL_LINK_RGB = "86, 56, 198";
+
+export function graphCanvasSkillLinkColor(alpha: number) {
+  const safeAlpha = Number.isFinite(alpha)
+    ? Math.max(0, Math.min(1, alpha))
+    : 0;
+  return `rgba(${GRAPH_CANVAS_SKILL_LINK_RGB}, ${safeAlpha})`;
+}
 
 export const MARKET_TREND_COLORS = ["#67a2c5", "#9bcec1", "#ff9f8b"] as const;
 

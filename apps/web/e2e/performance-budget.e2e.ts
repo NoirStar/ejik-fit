@@ -128,8 +128,8 @@ test("/skills/graph stops sustained work after its finite layout", async ({
   await expect(forceCanvas).toBeVisible({ timeout: 20_000 });
   await expect(forceCanvas.locator("canvas")).toBeVisible();
 
-  // The renderer has a 2.4s hard cooldown; this starts the measurement after it.
-  await page.waitForTimeout(3_000);
+  // The renderer has a 1.2s hard cooldown; this starts the measurement after it.
+  await page.waitForTimeout(2_000);
   const readTaskDuration = async () => {
     const { metrics } = await session.send("Performance.getMetrics");
     return metrics.find((metric) => metric.name === "TaskDuration")?.value ?? 0;

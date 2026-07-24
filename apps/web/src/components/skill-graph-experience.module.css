@@ -612,6 +612,16 @@
     0 0.875rem 2.25rem color-mix(in srgb, var(--color-text) 14%, transparent);
 }
 
+.graphFrame :global(.graph-node[data-owned="true"]) {
+  outline: 2px solid var(--node-ring);
+  outline-offset: 2px;
+}
+
+.graphFrame :global(.graph-node[data-owned="false"][data-recommended="true"]) {
+  outline: 2px dashed var(--node-ring);
+  outline-offset: 2px;
+}
+
 .graphFrame :global(.graph-node) {
   border-color: color-mix(in srgb, var(--node-color) 48%, var(--color-line));
   background: color-mix(in srgb, var(--node-color) 14%, var(--color-surface));

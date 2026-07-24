@@ -17,7 +17,9 @@ export type SkillGraphViewOptions = {
   linkLimit?: number;
   mode?: SkillGraphViewMode;
   nodeLimit?: number;
+  ownedIds?: readonly string[];
   query?: string;
+  recommendedIds?: readonly string[];
   selectedId?: string | null;
 };
 
@@ -33,6 +35,7 @@ export type SkillGraphViewNode = {
   val: number;
   demandCount: number;
   owned: boolean;
+  recommended: boolean;
   seed: boolean;
   evidence?: SkillGraphEvidence;
   skill?: SkillGraphNode;
@@ -367,6 +370,8 @@ export function buildSkillGraphView(
     1,
     ...graph.nodes.map((node) => safeCount(node.demand_count)),
   );
+  const recommendedIds = new Set(options.recommendedIds ?? []);
+  const ownedIds = options.ownedIds ? new Set(options.ownedIds) : null;
   const nodes = selectedNodes.map<SkillGraphViewNode>((node) => {
     const domain = primaryDomain(node);
     return {
@@ -379,7 +384,8 @@ export function buildSkillGraphView(
       color: GRAPH_DEFAULT_COLOR,
       val: skillNodeValue(node, maximumDemand),
       demandCount: safeCount(node.demand_count),
-      owned: node.owned,
+      owned: ownedIds ? ownedIds.has(node.id) : node.owned,
+      recommended: recommendedIds.has(node.id),
       seed: node.seed,
       skill: node,
     };

@@ -8,9 +8,16 @@ import Link from "next/link";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
 import { buildSkillGraphHref } from "@/lib/product-routes";
-import { domainColor, summarizeGraph } from "@/lib/skill-graph";
+import { summarizeGraph } from "@/lib/skill-graph";
+import {
+  skillGraphLinkColor,
+  skillGraphLinkWidth,
+} from "@/lib/skill-graph-canvas-style";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
-import type { SkillGraphViewMode } from "@/lib/skill-graph-view";
+import type {
+  SkillGraphViewMode,
+  SkillGraphViewNode,
+} from "@/lib/skill-graph-view";
 import type {
   FitAnalyzeResponse,
   SkillGraphEvidence,
@@ -18,7 +25,10 @@ import type {
   SkillGraphNode,
   SkillGraphResponse,
 } from "@/lib/types";
-import { GRAPH_PREVIEW_COLORS } from "@/styles/design-tokens";
+import {
+  GRAPH_CANVAS_COLORS,
+  GRAPH_PREVIEW_COLORS,
+} from "@/styles/design-tokens";
 
 import { SkillGraphForceCanvas } from "./skill-graph-force-canvas";
 import type {
@@ -28,7 +38,7 @@ import type {
 import styles from "./skill-graph-experience.module.css";
 
 
-type PositionedNode = SkillGraphNode & {
+type PositionedNode = SkillGraphViewNode & {
   x: number;
   y: number;
 };
@@ -106,7 +116,7 @@ const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
   animate: true,
   arrows: false,
   labelThreshold: 1.08,
-  linkThickness: 0.76,
+  linkThickness: 1,
   nodeScale: 0.9,
 };
 
@@ -119,7 +129,7 @@ const DEFAULT_FORCES: SkillGraphForceSettings = {
 };
 
 
-function positionNodes(nodes: SkillGraphNode[]): PositionedNode[] {
+function positionNodes(nodes: SkillGraphViewNode[]): PositionedNode[] {
   if (nodes.length === 0) {
     return [];
   }
@@ -232,6 +242,13 @@ export function SkillGraphExperience({
         .filter((domain) => !disabledDomains.includes(domain)),
     [allDomains, disabledDomains],
   );
+  const recommendedIds = useMemo(
+    () =>
+      fitState === "idle"
+        ? (fit?.recommended_next_skills ?? []).map(({ skill }) => skill)
+        : [],
+    [fit, fitState],
+  );
   const viewData = useMemo(
     () =>
       buildSkillGraphView(initialGraph, {
@@ -239,7 +256,9 @@ export function SkillGraphExperience({
         linkLimit: compactGraph ? 10 : undefined,
         mode: graphMode,
         nodeLimit: compactGraph ? 8 : undefined,
+        ownedIds: ownedSkills,
         query: filterQuery,
+        recommendedIds,
         selectedId,
       }),
     [
@@ -249,19 +268,14 @@ export function SkillGraphExperience({
       filterQuery,
       graphMode,
       initialGraph,
+      ownedSkills,
+      recommendedIds,
       selectedId,
     ],
   );
-  const visibleSkillNodes = useMemo(
-    () =>
-      viewData.nodes.flatMap((node) =>
-        node.kind === "skill" && node.skill ? [node.skill] : [],
-      ),
-    [viewData.nodes],
-  );
   const nodes = useMemo(
-    () => positionNodes(visibleSkillNodes),
-    [visibleSkillNodes],
+    () => positionNodes(viewData.nodes.filter((node) => node.kind === "skill")),
+    [viewData.nodes],
   );
   const nodeMap = useMemo(
     () => new Map(nodes.map((node) => [node.id, node])),
@@ -766,6 +780,8 @@ export function SkillGraphExperience({
                 <i aria-hidden="true" />
                 <span><b>테두리</b>: 내 기술</span>
                 <i aria-hidden="true" />
+                <span><b>점선</b>: 추천 기술</span>
+                <i aria-hidden="true" />
                 <span><b>선 농도</b>: 함께 요구</span>
               </p>
 
@@ -832,9 +848,13 @@ export function SkillGraphExperience({
                         return (
                           <line
                             key={edge.id}
-                            stroke={domainColor(target.domains[0])}
-                            strokeOpacity={Math.min(0.72, 0.24 + edge.score)}
-                            strokeWidth={Math.max(0.2, Math.min(1.4, edge.score))}
+                            stroke={skillGraphLinkColor(edge.score, true, false)}
+                            strokeWidth={skillGraphLinkWidth(
+                              edge.value,
+                              DEFAULT_DISPLAY.linkThickness,
+                              true,
+                              0,
+                            )}
                             x1={source.x}
                             x2={target.x}
                             y1={source.y}
@@ -848,11 +868,18 @@ export function SkillGraphExperience({
                       className={`graph-node ${node.seed ? "graph-node--seed" : ""} ${
                         selectedId === node.id ? "is-selected" : ""
                       }`}
+                      data-owned={node.owned ? "true" : "false"}
+                      data-recommended={node.recommended ? "true" : "false"}
                       key={node.id}
                       onClick={() => selectSkill(node.id)}
                       style={
                         {
-                          "--node-color": domainColor(node.domains[0]),
+                          "--node-color": selectedId === node.id
+                            ? GRAPH_CANVAS_COLORS.selectedNode
+                            : GRAPH_CANVAS_COLORS.neutralNode,
+                          "--node-ring": node.owned
+                            ? GRAPH_CANVAS_COLORS.ownedRing
+                            : GRAPH_CANVAS_COLORS.recommendedRing,
                           left: `${node.x}%`,
                           top: `${node.y}%`,
                         } as CSSProperties

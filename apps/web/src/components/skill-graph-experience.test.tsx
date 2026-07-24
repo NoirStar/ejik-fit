@@ -379,6 +379,38 @@ describe("SkillGraphExperience", () => {
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([]);
   });
 
+  it("reflects owned and recommended states on graph nodes", async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({
+        ...fitResponse,
+        recommended_next_skills: [
+          {
+            ...fitResponse.recommended_next_skills[0]!,
+            skill: "ROS2",
+          },
+        ],
+      }),
+    );
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={["C++"]} />,
+    );
+
+    expect(screen.getByRole("button", { name: "C++" })).toHaveAttribute(
+      "data-owned",
+      "true",
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "ROS2" })).toHaveAttribute(
+        "data-recommended",
+        "true",
+      );
+    });
+    expect(screen.getByRole("note", { name: "스킬맵 범례" })).toHaveTextContent(
+      "점선: 추천 기술",
+    );
+  });
+
   it("explains an empty filter result and restores the graph", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,

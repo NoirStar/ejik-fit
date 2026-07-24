@@ -6,7 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 
-import { GRAPH_DOMAIN_COLORS } from "../src/styles/design-tokens";
+import { GRAPH_CANVAS_COLORS } from "../src/styles/design-tokens";
 
 type CanvasFingerprint = {
   hash: number;
@@ -38,10 +38,10 @@ function rectanglesOverlap(left: Rect, right: Rect) {
   );
 }
 
-const backendNodeRgb = [
-  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
-  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
-  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(5, 7), 16),
+const neutralNodeRgb = [
+  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(1, 3), 16),
+  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(3, 5), 16),
+  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(5, 7), 16),
 ] as const;
 
 async function readCanvasFingerprint(
@@ -234,14 +234,14 @@ async function dispatchPinch(
   });
 }
 
-async function findBackendNodePoint(canvas: Locator) {
+async function findNeutralNodePoints(canvas: Locator) {
   return canvas.evaluate(
     (element, [red, green, blue]) => {
       const canvasElement = element as HTMLCanvasElement;
       const context = canvasElement.getContext("2d", {
         willReadFrequently: true,
       });
-      if (!context) return null;
+      if (!context) return [];
       const pixels = context.getImageData(
         0,
         0,
@@ -266,7 +266,7 @@ async function findBackendNodePoint(canvas: Locator) {
         }
       }
 
-      let largestComponent: number[] = [];
+      const components: number[][] = [];
       while (matchingPixels.size > 0) {
         const first = matchingPixels.values().next().value;
         if (typeof first !== "number") break;
@@ -290,54 +290,59 @@ async function findBackendNodePoint(canvas: Locator) {
             }
           }
         }
-        if (component.length > largestComponent.length) {
-          largestComponent = component;
+        if (component.length >= 2) {
+          components.push(component);
         }
       }
-      if (largestComponent.length === 0) return null;
-
-      const center = largestComponent.reduce(
-        (sum, point) => ({
-          x: sum.x + (point % gridWidth) * step,
-          y: sum.y + Math.floor(point / gridWidth) * step,
-        }),
-        { x: 0, y: 0 },
-      );
-      const x = center.x / largestComponent.length;
-      const y = center.y / largestComponent.length;
-      return {
-        x: rect.left + x * (rect.width / canvasElement.width),
-        y: rect.top + y * (rect.height / canvasElement.height),
-      };
+      return components
+        .sort((left, right) => right.length - left.length)
+        .map((component) => {
+          const center = component.reduce(
+            (sum, point) => ({
+              x: sum.x + (point % gridWidth) * step,
+              y: sum.y + Math.floor(point / gridWidth) * step,
+            }),
+            { x: 0, y: 0 },
+          );
+          const x = center.x / component.length;
+          const y = center.y / component.length;
+          return {
+            x: rect.left + x * (rect.width / canvasElement.width),
+            y: rect.top + y * (rect.height / canvasElement.height),
+          };
+        });
     },
-    backendNodeRgb,
+    neutralNodeRgb,
   );
 }
 
-async function tapBackendNode(
+async function tapSkillNode(
   page: Page,
   session: CDPSession,
   canvas: Locator,
 ) {
   let point: CanvasPoint | null = null;
+  let selectedSkill: string | null = null;
   const selectableBackendSkills = ["Docker", "Go", "Linux", "Python"];
   const tooltip = canvas.locator("xpath=..").locator(".float-tooltip-kap");
   await expect
     .poll(
       async () => {
-        point = await findBackendNodePoint(canvas);
-        if (!point) return false;
-        await page.mouse.move(point.x, point.y);
-        const clickable = await canvas.evaluate((element) =>
-          element.classList.contains("clickable"),
-        );
-        const tooltipText = await tooltip.textContent();
-        return (
-          clickable &&
-          selectableBackendSkills.some((skill) =>
-            tooltipText?.startsWith(`${skill} ·`),
-          )
-        );
+        const points = await findNeutralNodePoints(canvas);
+        for (const candidate of points) {
+          await page.mouse.move(candidate.x, candidate.y);
+          await page.waitForTimeout(20);
+          const tooltipText = await tooltip.textContent();
+          const skill = selectableBackendSkills.find((item) =>
+            tooltipText?.startsWith(`${item} ·`),
+          );
+          if (skill) {
+            point = candidate;
+            selectedSkill = skill;
+            return true;
+          }
+        }
+        return false;
       },
       { intervals: [100, 200, 400, 800], timeout: 3_000 },
     )
@@ -361,21 +366,17 @@ async function tapBackendNode(
     type: "touchEnd",
   });
 
-  await expect
-    .poll(() => {
-      const selected = new URL(page.url()).searchParams.get("seed");
-      return selected && selectableBackendSkills.includes(selected)
-        ? selected
-        : null;
-    })
-    .not.toBeNull();
-  const selected = new URL(page.url()).searchParams.get("seed");
-  expect(selectableBackendSkills).toContain(selected);
+  expect(selectedSkill).not.toBeNull();
   await expect(
     page
       .getByRole("complementary", { name: "선택 기술 분석" })
-      .getByRole("heading", { name: selected!, exact: true }),
+      .getByRole("heading", { name: selectedSkill!, exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .locator('button[aria-pressed="true"]')
+      .filter({ hasText: "선택 주변" }),
+  ).toHaveCount(1);
 }
 
 test("keeps fixture graph scope aligned with the production API contract", async ({
@@ -387,20 +388,26 @@ test("keeps fixture graph scope aligned with the production API contract", async
   const unknownResponse = await request.get(
     "http://127.0.0.1:8011/api/graph/skills?seed=UnknownSkill&limit=30",
   );
+  const evidenceResponse = await request.get(
+    "http://127.0.0.1:8011/api/graph/skills/evidence?skill=Kubernetes&limit=6",
+  );
   const fitResponse = await request.post(
     "http://127.0.0.1:8011/api/fit/analyze",
     { data: { owned_skills: ["Rust"] } },
   );
   const unseeded = await unseededResponse.json();
   const unknown = await unknownResponse.json();
+  const evidence = await evidenceResponse.json();
   const fit = await fitResponse.json();
 
   expect(unseeded.seed).toBeNull();
-  expect(unseeded.evidence).toHaveLength(2);
+  expect(unseeded.evidence).toEqual([]);
   expect(unseeded.nodes.map((node: { id: string }) => node.id)).toContain("Go");
   expect(unknown.seed).toBe("UnknownSkill");
   expect(unknown.edges).toEqual([]);
   expect(unknown.evidence).toEqual([]);
+  expect(evidence).toMatchObject({ total: 1 });
+  expect(evidence.items).toHaveLength(1);
   expect(fitResponse.status()).toBe(200);
   expect(fit).toEqual({
     coverage: {
@@ -495,14 +502,27 @@ for (const width of [1440, 820, 390, 320]) {
     await expect(
       graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
     ).toBeVisible();
+    const graphMetrics = page.getByRole("group", { name: "현재 그래프 규모" });
+    const displayedSkills = Number(
+      await graphMetrics.getByText("표시 기술").locator("..").locator("dd").textContent(),
+    );
+    const displayedLinks = Number(
+      await graphMetrics.getByText("표시 관계").locator("..").locator("dd").textContent(),
+    );
+    expect(displayedSkills).toBeLessThanOrEqual(width <= 640 ? 8 : 9);
+    expect(displayedLinks).toBeLessThanOrEqual(width <= 640 ? 10 : 12);
+    await expect(
+      page.getByRole("checkbox", { name: "관련 공고" }),
+    ).toHaveCount(0);
     const legend = graphFrame.getByRole("note", { name: "스킬맵 범례" });
     const graphControls = graphFrame.getByRole("group", {
       name: "그래프 보기 조절",
     });
     await expect(legend).toBeVisible();
-    await expect(legend).toContainText("색: 분야");
-    await expect(legend).toContainText("크기: 언급 공고");
-    await expect(legend).toContainText("선: 함께 등장");
+    await expect(legend).toContainText("크기: 시장 수요");
+    await expect(legend).toContainText("테두리: 내 기술");
+    await expect(legend).toContainText("점선: 추천 기술");
+    await expect(legend).toContainText("선 농도: 함께 요구");
     const [legendBox, graphControlsBox] = await Promise.all([
       legend.boundingBox(),
       graphControls.boundingBox(),
@@ -591,7 +611,7 @@ for (const width of [1440, 820, 390, 320]) {
           disclosure.getByRole("button", { name: "추가", exact: true }),
           disclosure.getByRole("button", { name: "초기화" }),
           disclosure.getByRole("button", { name: "선택 주변" }),
-          disclosure.getByRole("button", { name: "현재 범위" }),
+          disclosure.getByRole("button", { name: "전체 기술" }),
         ]) {
           const lineCount = await target.evaluate((element) => {
             const range = document.createRange();
@@ -612,7 +632,7 @@ for (const width of [1440, 820, 390, 320]) {
           page.getByRole("button", { name: "Rust 제거" }),
           page.getByRole("button", { name: "초기화" }),
           page.getByRole("button", { name: "선택 주변" }),
-          page.getByRole("checkbox", { name: "관련 공고" }).locator(".."),
+          page.getByRole("button", { name: "전체 기술" }),
           page.getByRole("button", { name: /클라우드/ }),
         ]) {
           const box = await target.boundingBox();
@@ -726,7 +746,7 @@ test("supports touch pan, pinch zoom, and node selection", async ({ browser }) =
 
   await graphFrame.getByRole("button", { name: "그래프 전체 맞춤" }).click();
   await waitForZoomStability(canvas);
-  await tapBackendNode(page, session, canvas);
+  await tapSkillNode(page, session, canvas);
   await context.close();
 });
 
@@ -784,6 +804,6 @@ test("keeps a static, painted, touch-controllable graph with reduced motion", as
 
   await graphFrame.getByRole("button", { name: "그래프 전체 맞춤" }).click();
   await waitForCanvasStability(canvas);
-  await tapBackendNode(page, session, canvas);
+  await tapSkillNode(page, session, canvas);
   await context.close();
 });

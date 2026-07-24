@@ -23,6 +23,7 @@ const view: SkillGraphViewData = {
       val: 12,
       demandCount: 12,
       owned: true,
+      recommended: false,
       seed: true,
     },
     {
@@ -36,6 +37,7 @@ const view: SkillGraphViewData = {
       val: 8,
       demandCount: 7,
       owned: false,
+      recommended: true,
       seed: false,
     },
   ],

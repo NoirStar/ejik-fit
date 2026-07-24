@@ -175,6 +175,22 @@ describe("buildSkillGraphView", () => {
     expect(view.links.find(({ score }) => score === 1)?.value).toBe(1);
   });
 
+  it("marks recommendation nodes independently from owned skills", () => {
+    const view = buildSkillGraphView(denseGraph(), {
+      mode: "overview",
+      recommendedIds: ["skill-02", "skill-07"],
+    });
+
+    expect(view.nodes.find(({ id }) => id === "skill-02")).toMatchObject({
+      owned: false,
+      recommended: true,
+    });
+    expect(view.nodes.find(({ id }) => id === "skill-00")).toMatchObject({
+      owned: true,
+      recommended: false,
+    });
+  });
+
   it("applies domain filters before ranking and sparsifying", () => {
     const view = buildSkillGraphView(denseGraph(), {
       mode: "overview",

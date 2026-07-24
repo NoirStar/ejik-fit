@@ -9,13 +9,13 @@ export function skillGraphAnimationProfile(
 ): SkillGraphAnimationProfile {
   return reduceMotion
     ? {
-        warmupTicks: 72,
+        warmupTicks: 36,
         cooldownTicks: 0,
         cooldownTime: 0,
       }
     : {
-        warmupTicks: 24,
-        cooldownTicks: 72,
-        cooldownTime: 2_400,
+        warmupTicks: 12,
+        cooldownTicks: 36,
+        cooldownTime: 1_200,
       };
 }

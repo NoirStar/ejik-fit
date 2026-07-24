@@ -8,15 +8,15 @@ import { skillGraphAnimationProfile } from "./skill-graph-animation";
 describe("skillGraphAnimationProfile", () => {
   it("uses a finite layout budget for the default graph", () => {
     expect(skillGraphAnimationProfile(false)).toEqual({
-      warmupTicks: 24,
-      cooldownTicks: 72,
-      cooldownTime: 2_400,
+      warmupTicks: 12,
+      cooldownTicks: 36,
+      cooldownTime: 1_200,
     });
   });
 
   it("precomputes positions and stops immediately for reduced motion", () => {
     expect(skillGraphAnimationProfile(true)).toEqual({
-      warmupTicks: 72,
+      warmupTicks: 36,
       cooldownTicks: 0,
       cooldownTime: 0,
     });
