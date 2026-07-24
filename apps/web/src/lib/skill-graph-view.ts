@@ -1,24 +1,24 @@
-import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
+import { GRAPH_DEFAULT_COLOR } from "@/styles/design-tokens";
 
 import { domainColor } from "./skill-graph";
 import type {
+  SkillGraphEdge,
   SkillGraphEvidence,
   SkillGraphNode,
   SkillGraphResponse,
 } from "./types";
 
 
-export type SkillGraphViewMode = "global" | "local";
+export type SkillGraphViewMode = "overview" | "focus" | "all";
 
 
 export type SkillGraphViewOptions = {
   enabledDomains?: string[];
-  localDepth?: number;
+  linkLimit?: number;
   mode?: SkillGraphViewMode;
+  nodeLimit?: number;
   query?: string;
   selectedId?: string | null;
-  showEvidence?: boolean;
-  showIsolated?: boolean;
 };
 
 
@@ -71,8 +71,18 @@ export type SkillGraphViewData = {
 };
 
 
+const DEFAULT_LIMITS: Record<
+  SkillGraphViewMode,
+  { nodes: number; links: number }
+> = {
+  overview: { nodes: 12, links: 18 },
+  focus: { nodes: 9, links: 12 },
+  all: { nodes: 30, links: 45 },
+};
+
+
 function normalizeQuery(query: string | undefined) {
-  return query?.trim().toLowerCase() ?? "";
+  return query?.trim().toLocaleLowerCase("ko-KR") ?? "";
 }
 
 
@@ -96,13 +106,46 @@ function safeCount(value: number) {
 }
 
 
-function skillNodeValue(node: SkillGraphNode) {
-  return clamp(3.2 + Math.sqrt(safeCount(node.demand_count)) * 1.15, 3.2, 10);
+function boundedLimit(value: number | undefined, fallback: number) {
+  if (value === undefined || !Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.max(1, Math.floor(value));
 }
 
 
-function linkValue(cooccurrenceCount: number) {
-  return clamp(0.55 + Math.sqrt(safeCount(cooccurrenceCount)) * 0.72, 0.55, 4.5);
+function compareNames(left: string, right: string) {
+  return left.localeCompare(right, "en");
+}
+
+
+function compareNodes(left: SkillGraphNode, right: SkillGraphNode) {
+  return (
+    safeCount(right.demand_count) - safeCount(left.demand_count) ||
+    safeCount(right.required_count) - safeCount(left.required_count) ||
+    compareNames(left.id, right.id)
+  );
+}
+
+
+function compareEdges(left: SkillGraphEdge, right: SkillGraphEdge) {
+  return (
+    clamp(right.score, 0, 1) - clamp(left.score, 0, 1) ||
+    safeCount(right.cooccurrence_count) - safeCount(left.cooccurrence_count) ||
+    compareNames(left.id, right.id)
+  );
+}
+
+
+function skillNodeValue(node: SkillGraphNode, maximumDemand: number) {
+  const denominator = Math.log1p(Math.max(1, maximumDemand));
+  const ratio = Math.log1p(safeCount(node.demand_count)) / denominator;
+  return clamp(4.5 + ratio * 4.5, 4.5, 9);
+}
+
+
+function linkValue(score: number) {
+  return clamp(0.6 + clamp(Number.isFinite(score) ? score : 0, 0, 1) * 0.4, 0.6, 1);
 }
 
 
@@ -118,7 +161,7 @@ function buildDomainStats(
 
   const enabledSet = enabledDomains === undefined ? null : new Set(enabledDomains);
   return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .sort((left, right) => right[1] - left[1] || compareNames(left[0], right[0]))
     .map(([domain, count]) => ({
       domain,
       label: formatDomainLabel(domain),
@@ -133,57 +176,154 @@ function matchesQuery(node: SkillGraphNode, query: string) {
   if (!query) {
     return true;
   }
-  const searchable = [
-    node.id,
-    node.label,
-    node.category,
-    node.kind,
-    ...node.domains,
-  ].join(" ");
-  return searchable.toLowerCase().includes(query);
+  return [node.id, node.label, node.category, node.kind, ...node.domains]
+    .join(" ")
+    .toLocaleLowerCase("ko-KR")
+    .includes(query);
 }
 
 
-function collectLocalIds(
-  selectedId: string,
-  depth: number,
-  allowedIds: Set<string>,
-  links: Array<{ source: string; target: string }>,
+function selectFocusNodes(
+  candidates: SkillGraphNode[],
+  edges: SkillGraphEdge[],
+  selectedId: string | null | undefined,
+  limit: number,
 ) {
-  if (!allowedIds.has(selectedId)) {
-    return new Set<string>();
+  const byId = new Map(candidates.map((node) => [node.id, node]));
+  const selected = selectedId ? byId.get(selectedId) : undefined;
+  if (!selected) {
+    return [...candidates].sort(compareNodes).slice(0, limit);
   }
 
-  const adjacency = new Map<string, Set<string>>();
-  links.forEach((link) => {
-    if (!allowedIds.has(link.source) || !allowedIds.has(link.target)) {
-      return;
-    }
-    if (!adjacency.has(link.source)) {
-      adjacency.set(link.source, new Set());
-    }
-    if (!adjacency.has(link.target)) {
-      adjacency.set(link.target, new Set());
-    }
-    adjacency.get(link.source)?.add(link.target);
-    adjacency.get(link.target)?.add(link.source);
-  });
+  const incident = edges
+    .filter((edge) => edge.source === selected.id || edge.target === selected.id)
+    .map((edge) => {
+      const neighborId = edge.source === selected.id ? edge.target : edge.source;
+      return { edge, neighbor: byId.get(neighborId) };
+    })
+    .filter(
+      (item): item is { edge: SkillGraphEdge; neighbor: SkillGraphNode } =>
+        item.neighbor !== undefined,
+    )
+    .sort(
+      (left, right) =>
+        compareEdges(left.edge, right.edge) ||
+        compareNodes(left.neighbor, right.neighbor),
+    );
 
-  const visible = new Set<string>([selectedId]);
-  let frontier = new Set<string>([selectedId]);
-  for (let level = 0; level < Math.max(0, depth); level += 1) {
-    const next = new Set<string>();
-    frontier.forEach((id) => {
-      adjacency.get(id)?.forEach((neighbor) => {
-        if (!visible.has(neighbor)) {
-          visible.add(neighbor);
-          next.add(neighbor);
-        }
-      });
-    });
-    frontier = next;
+  const result = [selected];
+  const seen = new Set([selected.id]);
+  for (const { neighbor } of incident) {
+    if (seen.has(neighbor.id)) {
+      continue;
+    }
+    result.push(neighbor);
+    seen.add(neighbor.id);
+    if (result.length >= limit) {
+      break;
+    }
   }
-  return visible;
+  return result;
+}
+
+
+function selectQueryNodes(
+  candidates: SkillGraphNode[],
+  edges: SkillGraphEdge[],
+  query: string,
+  limit: number,
+) {
+  const byId = new Map(candidates.map((node) => [node.id, node]));
+  const matches = candidates.filter((node) => matchesQuery(node, query)).sort(compareNodes);
+  const result = matches.slice(0, limit);
+  const seen = new Set(result.map(({ id }) => id));
+  const matchIds = new Set(matches.map(({ id }) => id));
+
+  for (const edge of [...edges].sort(compareEdges)) {
+    const sourceMatches = matchIds.has(edge.source);
+    const targetMatches = matchIds.has(edge.target);
+    if (sourceMatches === targetMatches) {
+      continue;
+    }
+    const neighborId = sourceMatches ? edge.target : edge.source;
+    const neighbor = byId.get(neighborId);
+    if (!neighbor || seen.has(neighbor.id)) {
+      continue;
+    }
+    result.push(neighbor);
+    seen.add(neighbor.id);
+    if (result.length >= limit) {
+      break;
+    }
+  }
+  return result;
+}
+
+
+class DisjointSet {
+  private readonly parents = new Map<string, string>();
+
+  constructor(ids: Set<string>) {
+    ids.forEach((id) => this.parents.set(id, id));
+  }
+
+  find(id: string): string {
+    const parent = this.parents.get(id) ?? id;
+    if (parent === id) {
+      return id;
+    }
+    const root = this.find(parent);
+    this.parents.set(id, root);
+    return root;
+  }
+
+  join(left: string, right: string) {
+    const leftRoot = this.find(left);
+    const rightRoot = this.find(right);
+    if (leftRoot === rightRoot) {
+      return false;
+    }
+    this.parents.set(rightRoot, leftRoot);
+    return true;
+  }
+}
+
+
+function sparseBackbone(
+  edges: SkillGraphEdge[],
+  visibleIds: Set<string>,
+  limit: number,
+) {
+  const ranked = edges
+    .filter(
+      (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target),
+    )
+    .sort(compareEdges);
+  const disjointSet = new DisjointSet(visibleIds);
+  const selected: SkillGraphEdge[] = [];
+  const selectedIds = new Set<string>();
+
+  for (const edge of ranked) {
+    if (!disjointSet.join(edge.source, edge.target)) {
+      continue;
+    }
+    selected.push(edge);
+    selectedIds.add(edge.id);
+    if (selected.length >= limit) {
+      return selected;
+    }
+  }
+
+  for (const edge of ranked) {
+    if (selectedIds.has(edge.id)) {
+      continue;
+    }
+    selected.push(edge);
+    if (selected.length >= limit) {
+      break;
+    }
+  }
+  return selected;
 }
 
 
@@ -191,149 +331,76 @@ export function buildSkillGraphView(
   graph: SkillGraphResponse,
   options: SkillGraphViewOptions = {},
 ): SkillGraphViewData {
-  const query = normalizeQuery(options.query);
+  const mode = options.mode ?? "overview";
+  const defaults = DEFAULT_LIMITS[mode];
+  const nodeLimit = boundedLimit(options.nodeLimit, defaults.nodes);
+  const linkLimit = boundedLimit(options.linkLimit, defaults.links);
   const enabledSet =
     options.enabledDomains === undefined ? null : new Set(options.enabledDomains);
-  const mode = options.mode ?? "global";
-  const showEvidence = options.showEvidence ?? true;
-  const showIsolated = options.showIsolated ?? true;
-  const localDepth = options.localDepth ?? 1;
-
-  const domainCandidates = graph.nodes.filter((node) => {
+  const candidates = graph.nodes.filter((node) => {
     const domain = primaryDomain(node);
     return enabledSet ? enabledSet.has(domain) : true;
   });
-  const domainCandidateIds = new Set(domainCandidates.map((node) => node.id));
-  const domainSkillLinks = graph.edges.filter(
-    (edge) =>
-      domainCandidateIds.has(edge.source) && domainCandidateIds.has(edge.target),
+  const candidateIds = new Set(candidates.map(({ id }) => id));
+  const candidateEdges = graph.edges.filter(
+    (edge) => candidateIds.has(edge.source) && candidateIds.has(edge.target),
   );
-  const queryMatchIds = new Set(
-    domainCandidates
-      .filter((node) => matchesQuery(node, query))
-      .map((node) => node.id),
-  );
+  const query = normalizeQuery(options.query);
 
-  let visibleSkillIds: Set<string>;
+  let selectedNodes: SkillGraphNode[];
   if (query) {
-    visibleSkillIds = new Set<string>();
-    queryMatchIds.forEach((matchId) => {
-      collectLocalIds(
-        matchId,
-        mode === "local" ? Math.max(1, localDepth) : 1,
-        domainCandidateIds,
-        domainSkillLinks,
-      ).forEach((id) => visibleSkillIds.add(id));
-    });
+    selectedNodes = selectQueryNodes(candidates, candidateEdges, query, nodeLimit);
+  } else if (mode === "focus") {
+    selectedNodes = selectFocusNodes(
+      candidates,
+      candidateEdges,
+      options.selectedId,
+      nodeLimit,
+    );
   } else {
-    visibleSkillIds =
-      mode === "local" && options.selectedId
-        ? collectLocalIds(
-            options.selectedId,
-            localDepth,
-            domainCandidateIds,
-            domainSkillLinks,
-          )
-        : new Set(domainCandidateIds);
+    selectedNodes = [...candidates].sort(compareNodes).slice(0, nodeLimit);
   }
 
-  if (!showIsolated) {
-    const connectedIds = new Set<string>();
-    domainSkillLinks.forEach((edge) => {
-      if (!visibleSkillIds.has(edge.source) || !visibleSkillIds.has(edge.target)) {
-        return;
-      }
-      connectedIds.add(edge.source);
-      connectedIds.add(edge.target);
-    });
-    if (query) {
-      queryMatchIds.forEach((id) => connectedIds.add(id));
-    }
-    visibleSkillIds = connectedIds;
-  }
-
-  const skillNodes = domainCandidates
-    .filter((node) => visibleSkillIds.has(node.id))
-    .map<SkillGraphViewNode>((node) => {
-      const domain = primaryDomain(node);
-      return {
-        id: node.id,
-        label: node.label,
-        kind: "skill",
-        category: node.category,
-        domain,
-        domains: node.domains,
-        color: domainColor(domain),
-        val: skillNodeValue(node),
-        demandCount: node.demand_count,
-        owned: node.owned,
-        seed: node.seed,
-        skill: node,
-      };
-    });
-
-  const skillLinks = domainSkillLinks
-    .filter((edge) => visibleSkillIds.has(edge.source) && visibleSkillIds.has(edge.target))
-    .map<SkillGraphViewLink>((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
+  const visibleIds = new Set(selectedNodes.map(({ id }) => id));
+  const selectedEdges = sparseBackbone(candidateEdges, visibleIds, linkLimit);
+  const maximumDemand = Math.max(
+    1,
+    ...graph.nodes.map((node) => safeCount(node.demand_count)),
+  );
+  const nodes = selectedNodes.map<SkillGraphViewNode>((node) => {
+    const domain = primaryDomain(node);
+    return {
+      id: node.id,
+      label: node.label,
       kind: "skill",
-      cooccurrenceCount: safeCount(edge.cooccurrence_count),
-      score: edge.score,
-      value: linkValue(edge.cooccurrence_count),
-    }));
-
-  const evidenceNodes: SkillGraphViewNode[] = [];
-  const evidenceLinks: SkillGraphViewLink[] = [];
-
-  if (showEvidence) {
-    graph.evidence.forEach((item) => {
-      const linkedSkills = item.skills.filter((skill) => visibleSkillIds.has(skill));
-      if (linkedSkills.length === 0) {
-        return;
-      }
-
-      const id = `posting:${item.posting_id}`;
-      evidenceNodes.push({
-        id,
-        label: item.company_name,
-        kind: "posting",
-        category: "posting",
-        domain: "posting",
-        domains: ["posting"],
-        color: GRAPH_CANVAS_COLORS.evidenceNode,
-        val: Math.max(1.8, Math.min(4.4, 1.8 + linkedSkills.length * 0.36)),
-        demandCount: linkedSkills.length,
-        owned: false,
-        seed: false,
-        evidence: item,
-      });
-
-      linkedSkills.forEach((skill) => {
-        evidenceLinks.push({
-          id: `${id}:${skill}`,
-          source: id,
-          target: skill,
-          kind: "evidence",
-          cooccurrenceCount: 0,
-          score: 0.16,
-          value: 0.35,
-        });
-      });
-    });
-  }
-
-  const nodes = [...skillNodes, ...evidenceNodes];
-  const links = [...skillLinks, ...evidenceLinks];
+      category: node.category,
+      domain,
+      domains: node.domains,
+      color: GRAPH_DEFAULT_COLOR,
+      val: skillNodeValue(node, maximumDemand),
+      demandCount: safeCount(node.demand_count),
+      owned: node.owned,
+      seed: node.seed,
+      skill: node,
+    };
+  });
+  const links = selectedEdges.map<SkillGraphViewLink>((edge) => ({
+    id: edge.id,
+    source: edge.source,
+    target: edge.target,
+    kind: "skill",
+    cooccurrenceCount: safeCount(edge.cooccurrence_count),
+    score: clamp(Number.isFinite(edge.score) ? edge.score : 0, 0, 1),
+    value: linkValue(edge.score),
+  }));
 
   return {
     nodes,
     links,
     domains: buildDomainStats(graph, options.enabledDomains),
     stats: {
-      skillCount: skillNodes.length,
-      evidenceCount: evidenceNodes.length,
+      skillCount: nodes.length,
+      evidenceCount: 0,
       linkCount: links.length,
     },
   };

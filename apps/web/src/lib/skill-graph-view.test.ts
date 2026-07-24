@@ -4,278 +4,191 @@ import { buildSkillGraphView } from "./skill-graph-view";
 import type { SkillGraphResponse } from "./types";
 
 
-const graph: SkillGraphResponse = {
-  seed: "C++",
-  nodes: [
-    {
-      id: "C++",
-      label: "C++",
-      category: "language",
-      kind: "language",
-      domains: ["embedded", "game"],
-      demand_count: 18,
-      required_count: 12,
-      preferred_count: 4,
-      unspecified_count: 2,
-      owned: true,
-      seed: true,
-    },
-    {
-      id: "ROS2",
-      label: "ROS2",
-      category: "robotics",
-      kind: "framework",
-      domains: ["robotics"],
-      demand_count: 9,
-      required_count: 7,
-      preferred_count: 2,
-      unspecified_count: 0,
-      owned: false,
-      seed: false,
-    },
-    {
-      id: "CAN",
-      label: "CAN",
-      category: "protocol",
-      kind: "protocol",
-      domains: ["embedded"],
-      demand_count: 7,
-      required_count: 4,
-      preferred_count: 2,
-      unspecified_count: 1,
-      owned: false,
-      seed: false,
-    },
-    {
-      id: "RTOS",
-      label: "RTOS",
-      category: "os",
-      kind: "platform",
-      domains: ["embedded"],
-      demand_count: 6,
-      required_count: 3,
-      preferred_count: 2,
-      unspecified_count: 1,
-      owned: false,
-      seed: false,
-    },
-    {
-      id: "Kubernetes",
-      label: "Kubernetes",
-      category: "platform",
-      kind: "platform",
-      domains: ["devops"],
-      demand_count: 3,
-      required_count: 0,
-      preferred_count: 2,
-      unspecified_count: 1,
-      owned: false,
-      seed: false,
-    },
-  ],
-  edges: [
-    {
-      id: "C++:ROS2",
-      source: "C++",
-      target: "ROS2",
-      score: 0.84,
-      cooccurrence_count: 7,
-      required_pair_count: 5,
-      supporting_posting_ids: ["job-1"],
-    },
-    {
-      id: "ROS2:CAN",
-      source: "ROS2",
-      target: "CAN",
-      score: 0.58,
-      cooccurrence_count: 4,
-      required_pair_count: 2,
-      supporting_posting_ids: ["job-1"],
-    },
-    {
-      id: "CAN:RTOS",
-      source: "CAN",
-      target: "RTOS",
-      score: 0.46,
-      cooccurrence_count: 3,
-      required_pair_count: 2,
-      supporting_posting_ids: ["job-2"],
-    },
-  ],
-  evidence: [
-    {
-      posting_id: "job-1",
-      title: "자율주행 SW 엔지니어",
-      company_name: "네이버랩스",
-      skills: ["C++", "ROS2", "CAN"],
-      required: ["C++", "ROS2"],
-      preferred: ["CAN"],
-      unspecified: [],
-    },
-    {
-      posting_id: "job-2",
-      title: "임베디드 플랫폼 개발자",
-      company_name: "현대오토에버",
-      skills: ["CAN", "RTOS"],
-      required: ["CAN"],
-      preferred: ["RTOS"],
-      unspecified: [],
-    },
-  ],
-  meta: {
-    limit: 30,
-    min_confidence: 0.8,
-  },
-};
+function denseGraph(nodeCount = 30): SkillGraphResponse {
+  const nodes = Array.from({ length: nodeCount }, (_, index) => ({
+    id: `skill-${index.toString().padStart(2, "0")}`,
+    label: `Skill ${index}`,
+    category: index % 2 === 0 ? "language" : "platform",
+    kind: index % 2 === 0 ? "language" : "platform",
+    domains: [index % 3 === 0 ? "backend" : "cloud"],
+    demand_count: nodeCount - index,
+    required_count: Math.max(0, nodeCount - index - 2),
+    preferred_count: index % 4,
+    unspecified_count: 0,
+    owned: index < 2,
+    seed: index === 0,
+  }));
+  const edges = nodes.flatMap((left, leftIndex) =>
+    nodes.slice(leftIndex + 1).map((right, offset) => {
+      const rightIndex = leftIndex + offset + 1;
+      const distance = rightIndex - leftIndex;
+      const score = Number(Math.max(0.05, 1 - distance / nodeCount).toFixed(4));
+      return {
+        id: `${left.id}::${right.id}`,
+        source: left.id,
+        target: right.id,
+        score,
+        cooccurrence_count: Math.max(1, nodeCount - distance),
+        required_pair_count: Math.max(0, nodeCount - distance - 2),
+        supporting_posting_ids: [`posting-${leftIndex}-${rightIndex}`],
+      };
+    }),
+  );
+
+  return {
+    seed: nodes[0]?.id ?? null,
+    nodes,
+    edges,
+    evidence: [
+      {
+        posting_id: "evidence-1",
+        title: "그래프에 그리지 않을 공고",
+        company_name: "검증 기업",
+        skills: nodes.slice(0, 3).map(({ id }) => id),
+        required: nodes.slice(0, 2).map(({ id }) => id),
+        preferred: [nodes[2]?.id ?? ""],
+        unspecified: [],
+      },
+    ],
+    meta: { limit: nodeCount, min_confidence: 0.8 },
+  };
+}
 
 
 describe("buildSkillGraphView", () => {
-  it("uses posting demand for every node and raw cooccurrence for edge width", () => {
-    const semanticGraph: SkillGraphResponse = {
-      ...graph,
-      nodes: graph.nodes.map((node) =>
-        node.id === "C++"
-          ? { ...node, demand_count: 1 }
-          : node.id === "ROS2"
-            ? { ...node, demand_count: 36 }
-            : node,
-      ),
-      edges: graph.edges.map((edge) =>
-        edge.id === "C++:ROS2"
-          ? { ...edge, score: 0.1, cooccurrence_count: 7 }
-          : edge.id === "CAN:RTOS"
-            ? { ...edge, score: 0.95, cooccurrence_count: 3 }
-            : edge,
-      ),
-    };
-    const view = buildSkillGraphView(semanticGraph, {
-      mode: "global",
-      showEvidence: false,
-      showIsolated: true,
-    });
-    const seed = view.nodes.find((node) => node.id === "C++")!;
-    const highDemand = view.nodes.find((node) => node.id === "ROS2")!;
-    const strongCount = view.links.find((link) => link.id === "C++:ROS2")!;
-    const weakCount = view.links.find((link) => link.id === "CAN:RTOS")!;
+  it("bounds the desktop overview and never renders posting evidence", () => {
+    const view = buildSkillGraphView(denseGraph(), { mode: "overview" });
 
-    expect(seed.val).toBeCloseTo(3.2 + Math.sqrt(1) * 1.15);
-    expect(highDemand.val).toBe(10);
-    expect(highDemand.val).toBeGreaterThan(seed.val);
-    expect(strongCount.cooccurrenceCount).toBe(7);
-    expect(weakCount.cooccurrenceCount).toBe(3);
-    expect(strongCount.value).toBeGreaterThan(weakCount.value);
-  });
-
-  it("adds posting evidence nodes and evidence links when enabled", () => {
-    const view = buildSkillGraphView(graph, {
-      showEvidence: true,
-      showIsolated: true,
-      mode: "global",
-    });
-
-    expect(view.nodes.map((node) => node.id)).toContain("posting:job-1");
-    expect(view.nodes.map((node) => node.id)).toContain("posting:job-2");
-    expect(view.links).toContainEqual(
-      expect.objectContaining({
-        id: "posting:job-1:C++",
-        source: "posting:job-1",
-        target: "C++",
-        kind: "evidence",
-      }),
-    );
-    expect(view.stats.evidenceCount).toBe(2);
-  });
-
-  it("hides posting nodes and keeps only skill links when evidence is disabled", () => {
-    const view = buildSkillGraphView(graph, {
-      showEvidence: false,
-      showIsolated: true,
-      mode: "global",
-    });
-
-    expect(view.nodes.some((node) => node.kind === "posting")).toBe(false);
+    expect(view.nodes).toHaveLength(12);
+    expect(view.links.length).toBeLessThanOrEqual(18);
+    expect(view.nodes.every((node) => node.kind === "skill")).toBe(true);
     expect(view.links.every((link) => link.kind === "skill")).toBe(true);
+    expect(view.stats).toEqual({
+      skillCount: 12,
+      evidenceCount: 0,
+      linkCount: view.links.length,
+    });
   });
 
-  it("builds a local graph by breadth-first depth from the selected skill", () => {
-    const depthOne = buildSkillGraphView(graph, {
-      showEvidence: false,
-      showIsolated: true,
-      mode: "local",
-      selectedId: "C++",
-      localDepth: 1,
-    });
-    const depthTwo = buildSkillGraphView(graph, {
-      showEvidence: false,
-      showIsolated: true,
-      mode: "local",
-      selectedId: "C++",
-      localDepth: 2,
+  it("accepts the smaller mobile overview budget", () => {
+    const view = buildSkillGraphView(denseGraph(), {
+      mode: "overview",
+      nodeLimit: 8,
+      linkLimit: 10,
     });
 
-    expect(depthOne.nodes.map((node) => node.id).sort()).toEqual(["C++", "ROS2"]);
-    expect(depthTwo.nodes.map((node) => node.id).sort()).toEqual([
-      "C++",
-      "CAN",
-      "ROS2",
-    ]);
+    expect(view.nodes).toHaveLength(8);
+    expect(view.links.length).toBeLessThanOrEqual(10);
   });
 
-  it("filters skill nodes by enabled domain groups before links are emitted", () => {
+  it("puts the selected skill first and keeps only eight strongest neighbors", () => {
+    const view = buildSkillGraphView(denseGraph(), {
+      mode: "focus",
+      selectedId: "skill-15",
+    });
+
+    expect(view.nodes[0]?.id).toBe("skill-15");
+    expect(view.nodes.length).toBeLessThanOrEqual(9);
+    expect(view.links.length).toBeLessThanOrEqual(12);
+    expect(
+      view.links.every(
+        ({ source, target }) =>
+          view.nodes.some(({ id }) => id === source) &&
+          view.nodes.some(({ id }) => id === target),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the full mode readable with a sparse 30-node backbone", () => {
+    const view = buildSkillGraphView(denseGraph(40), { mode: "all" });
+
+    expect(view.nodes).toHaveLength(30);
+    expect(view.links.length).toBeLessThanOrEqual(45);
+  });
+
+  it("is deterministic when API nodes and edges arrive in another order", () => {
+    const graph = denseGraph();
+    const reversed: SkillGraphResponse = {
+      ...graph,
+      nodes: [...graph.nodes].reverse(),
+      edges: [...graph.edges].reverse(),
+      evidence: [...graph.evidence].reverse(),
+    };
+
+    const first = buildSkillGraphView(graph, { mode: "overview" });
+    const second = buildSkillGraphView(reversed, { mode: "overview" });
+
+    expect(second.nodes.map(({ id }) => id)).toEqual(
+      first.nodes.map(({ id }) => id),
+    );
+    expect(second.links.map(({ id }) => id)).toEqual(
+      first.links.map(({ id }) => id),
+    );
+  });
+
+  it("retains a maximum-spanning forest across disconnected components", () => {
+    const graph = denseGraph(6);
+    graph.edges = [
+      { ...graph.edges[0]!, id: "a", source: "skill-00", target: "skill-01", score: 0.9 },
+      { ...graph.edges[0]!, id: "b", source: "skill-01", target: "skill-02", score: 0.8 },
+      { ...graph.edges[0]!, id: "c", source: "skill-03", target: "skill-04", score: 0.7 },
+      { ...graph.edges[0]!, id: "d", source: "skill-04", target: "skill-05", score: 0.6 },
+      { ...graph.edges[0]!, id: "cycle", source: "skill-00", target: "skill-02", score: 0.5 },
+    ];
+
     const view = buildSkillGraphView(graph, {
-      enabledDomains: ["robotics"],
-      showEvidence: false,
-      showIsolated: true,
-      mode: "global",
+      mode: "all",
+      nodeLimit: 6,
+      linkLimit: 4,
     });
 
-    expect(view.nodes.map((node) => node.id)).toEqual(["ROS2"]);
-    expect(view.links).toEqual([]);
-    expect(view.domains.find((domain) => domain.domain === "robotics")).toMatchObject({
+    expect(view.links.map(({ id }) => id)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("promotes a search match before its strongest direct neighbors", () => {
+    const view = buildSkillGraphView(denseGraph(), {
+      mode: "overview",
+      query: "Skill 29",
+    });
+
+    expect(view.nodes[0]?.id).toBe("skill-29");
+    expect(view.nodes).toHaveLength(12);
+    expect(view.links.length).toBeLessThanOrEqual(18);
+  });
+
+  it("uses compressed demand size and relationship score for thin links", () => {
+    const graph = denseGraph();
+    graph.edges = graph.edges.map((edge, index) => ({
+      ...edge,
+      score: index === 0 ? 1 : 0,
+      cooccurrence_count: index === 0 ? 1 : 999,
+    }));
+
+    const view = buildSkillGraphView(graph, { mode: "overview" });
+    const sizes = view.nodes.map(({ val }) => val);
+    const widths = view.links.map(({ value }) => value);
+
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(4.5);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(9);
+    expect(Math.min(...widths)).toBeGreaterThanOrEqual(0.6);
+    expect(Math.max(...widths)).toBeLessThanOrEqual(1);
+    expect(view.links.find(({ score }) => score === 1)?.value).toBe(1);
+  });
+
+  it("applies domain filters before ranking and sparsifying", () => {
+    const view = buildSkillGraphView(denseGraph(), {
+      mode: "overview",
+      enabledDomains: ["backend"],
+    });
+
+    expect(view.nodes.every(({ domain }) => domain === "backend")).toBe(true);
+    expect(view.domains.find(({ domain }) => domain === "backend")).toMatchObject({
       enabled: true,
-      count: 1,
+      count: 10,
     });
-  });
-
-  it("keeps matching skills and their nearby relationships visible during search", () => {
-    const connectedMatch = buildSkillGraphView(graph, {
-      query: "ROS2",
-      showEvidence: false,
-      showIsolated: false,
-      mode: "local",
-      selectedId: "C++",
-      localDepth: 1,
+    expect(view.domains.find(({ domain }) => domain === "cloud")).toMatchObject({
+      enabled: false,
+      count: 20,
     });
-    const isolatedMatch = buildSkillGraphView(graph, {
-      query: "Kubernetes",
-      showEvidence: false,
-      showIsolated: false,
-      mode: "local",
-      selectedId: "C++",
-      localDepth: 1,
-    });
-
-    expect(connectedMatch.nodes.map((node) => node.id).sort()).toEqual([
-      "C++",
-      "CAN",
-      "ROS2",
-    ]);
-    expect(connectedMatch.links.map((link) => link.id).sort()).toEqual([
-      "C++:ROS2",
-      "ROS2:CAN",
-    ]);
-    expect(isolatedMatch.nodes.map((node) => node.id)).toEqual(["Kubernetes"]);
-  });
-
-  it("does not expand a local view when no search query is active", () => {
-    const view = buildSkillGraphView(graph, {
-      showEvidence: false,
-      showIsolated: false,
-      mode: "local",
-      selectedId: "C++",
-      localDepth: 1,
-    });
-
-    expect(view.nodes.map((node) => node.id).sort()).toEqual(["C++", "ROS2"]);
   });
 });

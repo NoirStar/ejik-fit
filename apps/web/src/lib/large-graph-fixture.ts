@@ -5,6 +5,7 @@ import type {
   SkillGraphViewLink,
   SkillGraphViewNode,
 } from "./skill-graph-view";
+import type { SkillGraphResponse } from "./types";
 
 
 export const LARGE_GRAPH_FIXTURE_SIZES = [5_000, 20_000, 50_000] as const;
@@ -81,6 +82,53 @@ function buildDomains(nodeCount: number): SkillGraphViewDomain[] {
     color: domainColor(domain),
     enabled: true,
   }));
+}
+
+
+export function buildDenseSkillGraphResponseFixture({
+  nodeCount,
+}: Pick<LargeGraphFixtureOptions, "nodeCount">): SkillGraphResponse {
+  const safeNodeCount = Math.max(0, Math.floor(nodeCount));
+  const nodes = Array.from({ length: safeNodeCount }, (_, index) => {
+    const domain = domainFor(index);
+    const demandCount = Math.max(1, safeNodeCount - index);
+    return {
+      id: `skill:${index}`,
+      label: labelFor(index),
+      category: index % 2 === 0 ? "language" : "platform",
+      kind: index % 2 === 0 ? "language" : "platform",
+      domains: [domain],
+      demand_count: demandCount,
+      required_count: Math.max(0, demandCount - 2),
+      preferred_count: Math.min(2, demandCount),
+      unspecified_count: 0,
+      owned: index < 3,
+      seed: index === 0,
+    };
+  });
+  const edges = nodes.flatMap((left, leftIndex) =>
+    nodes.slice(leftIndex + 1).map((right, offset) => {
+      const distance = offset + 1;
+      const score = Math.max(0.05, 1 - distance / Math.max(1, safeNodeCount));
+      return {
+        id: `${left.id}::${right.id}`,
+        source: left.id,
+        target: right.id,
+        score,
+        cooccurrence_count: Math.max(1, safeNodeCount - distance),
+        required_pair_count: Math.max(0, safeNodeCount - distance - 2),
+        supporting_posting_ids: [`posting:${leftIndex}:${leftIndex + distance}`],
+      };
+    }),
+  );
+
+  return {
+    seed: nodes[0]?.id ?? null,
+    nodes,
+    edges,
+    evidence: [],
+    meta: { limit: safeNodeCount, min_confidence: 0.8 },
+  };
 }
 
 
