@@ -23,9 +23,34 @@ describe("SkillGraphPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     navigation.push.mockReset();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            items: [
+              {
+                posting_id: "job-1",
+                title: "자율주행 SW 엔지니어",
+                company_name: "네이버랩스",
+                skills: ["C++", "ROS2"],
+                required: ["C++", "ROS2"],
+                preferred: [],
+                unspecified: [],
+              },
+            ],
+            total: 1,
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("renders the skill graph product shell with initial evidence", async () => {
     vi.mocked(getSkillGraph).mockResolvedValue({
@@ -69,17 +94,7 @@ describe("SkillGraphPage", () => {
           supporting_posting_ids: ["job-1"],
         },
       ],
-      evidence: [
-        {
-          posting_id: "job-1",
-          title: "자율주행 SW 엔지니어",
-          company_name: "네이버랩스",
-          skills: ["C++", "ROS2"],
-          required: ["C++", "ROS2"],
-          preferred: [],
-          unspecified: [],
-        },
-      ],
+      evidence: [],
       meta: {
         limit: 30,
         min_confidence: 0.8,
@@ -99,7 +114,7 @@ describe("SkillGraphPage", () => {
     expect(screen.getAllByText("C++").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ROS2").length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: /자율주행 SW 엔지니어/ }),
+      await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
     expect(screen.getByText("내 기술")).toBeInTheDocument();
     expect(screen.getByText("그래프 범위")).toBeInTheDocument();
@@ -114,7 +129,11 @@ describe("SkillGraphPage", () => {
     expect(
       screen.queryByRole("link", { name: "이직핏 기술 맵 홈" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByLabelText("주변 깊이")).toBeInTheDocument();
+    expect(screen.queryByLabelText("주변 깊이")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "선택 주변" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("loads the graph with the requested seed", async () => {

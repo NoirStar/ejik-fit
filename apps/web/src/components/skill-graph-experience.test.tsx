@@ -8,7 +8,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { FitAnalyzeResponse, SkillGraphResponse } from "@/lib/types";
+import type {
+  FitAnalyzeResponse,
+  SkillGraphEvidenceResponse,
+  SkillGraphResponse,
+} from "@/lib/types";
 
 import { SkillGraphExperience } from "./skill-graph-experience";
 
@@ -21,7 +25,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const graph: SkillGraphResponse = {
-  seed: "C++",
+  seed: null,
   nodes: [
     {
       id: "C++",
@@ -34,7 +38,7 @@ const graph: SkillGraphResponse = {
       preferred_count: 4,
       unspecified_count: 2,
       owned: true,
-      seed: true,
+      seed: false,
     },
     {
       id: "ROS2",
@@ -61,17 +65,7 @@ const graph: SkillGraphResponse = {
       supporting_posting_ids: ["job-1"],
     },
   ],
-  evidence: [
-    {
-      posting_id: "job-1",
-      title: "자율주행 SW 엔지니어",
-      company_name: "네이버랩스",
-      skills: ["C++", "ROS2"],
-      required: ["C++", "ROS2"],
-      preferred: [],
-      unspecified: [],
-    },
-  ],
+  evidence: [],
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
@@ -107,6 +101,31 @@ function jsonResponse(body: FitAnalyzeResponse, status = 200) {
   });
 }
 
+function evidenceResponse(
+  body: SkillGraphEvidenceResponse,
+  status = 200,
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+const selectedEvidence: SkillGraphEvidenceResponse = {
+  items: [
+    {
+      posting_id: "job-1",
+      title: "자율주행 SW 엔지니어",
+      company_name: "네이버랩스",
+      skills: ["C++", "ROS2"],
+      required: ["C++", "ROS2"],
+      preferred: [],
+      unspecified: [],
+    },
+  ],
+  total: 1,
+};
+
 describe("SkillGraphExperience", () => {
   const fetchMock = vi.fn<typeof fetch>();
 
@@ -123,7 +142,7 @@ describe("SkillGraphExperience", () => {
     vi.unstubAllGlobals();
   });
 
-  it("makes the next learning decision clear", () => {
+  it("starts with a sparse market overview and removes density controls", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -138,9 +157,22 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
+    expect(screen.queryByLabelText("주변 깊이")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("checkbox", { name: "관련 공고" }),
-    ).toBeChecked();
+      screen.queryByRole("checkbox", { name: "관련 공고" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: "연결 없는 기술" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "시장 핵심" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "선택 주변" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "전체 기술" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
     expect(
       screen.queryByText("공고 근거 노드", { exact: true }),
     ).not.toBeInTheDocument();
@@ -153,14 +185,146 @@ describe("SkillGraphExperience", () => {
       screen.queryByText(/내 스택|기술 맵|다음 준비|미분류/),
     ).not.toBeInTheDocument();
     const legend = screen.getByRole("note", { name: "스킬맵 범례" });
-    expect(legend).toHaveTextContent("색: 분야");
-    expect(legend).toHaveTextContent("크기: 언급 공고");
-    expect(legend).toHaveTextContent("선: 함께 등장");
+    expect(legend).toHaveTextContent("크기: 시장 수요");
+    expect(legend).toHaveTextContent("테두리: 내 기술");
+    expect(legend).toHaveTextContent("선 농도: 함께 요구");
+    expect(screen.getByText("표시 기술")).toBeInTheDocument();
+    expect(screen.getByText("표시 관계")).toBeInTheDocument();
+    expect(screen.getByText("전체 근거")).toBeInTheDocument();
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
     expect(within(inspector).getByText("직접 연결").parentElement)
-      .toHaveTextContent("1개");
+      .toHaveTextContent("—");
+    expect(
+      screen.getByText("기술을 선택하면 관련 공고를 확인할 수 있습니다."),
+    ).toBeInTheDocument();
+  });
+
+  it("loads official job evidence only after a skill is selected", async () => {
+    let resolveEvidence: ((response: Response) => void) | undefined;
+    fetchMock.mockImplementation((input) => {
+      if (String(input).startsWith("/skills/graph/evidence")) {
+        return new Promise<Response>((resolve) => {
+          resolveEvidence = resolve;
+        });
+      }
+      return Promise.resolve(jsonResponse(fitResponse));
+    });
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    expect(screen.getByRole("button", { name: "선택 주변" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("관련 공고를 불러오는 중입니다.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/skills/graph/evidence?skill=C%2B%2B&limit=6",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    resolveEvidence?.(evidenceResponse(selectedEvidence));
+
+    expect(
+      await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
+    ).toHaveAttribute("href", "/jobs/job-1");
+    expect(screen.getByText("1건")).toBeInTheDocument();
+  });
+
+  it("does not replace newer evidence with a late response", async () => {
+    const raceGraph: SkillGraphResponse = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        {
+          ...graph.nodes[0]!,
+          id: "Python",
+          label: "Python",
+          demand_count: 12,
+        },
+      ],
+      edges: [
+        ...graph.edges,
+        {
+          ...graph.edges[0]!,
+          id: "C++:Python",
+          target: "Python",
+        },
+      ],
+    };
+    let resolveCpp: ((response: Response) => void) | undefined;
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("skill=C%2B%2B")) {
+        return new Promise<Response>((resolve) => {
+          resolveCpp = resolve;
+        });
+      }
+      if (url.includes("skill=Python")) {
+        return Promise.resolve(
+          evidenceResponse({
+            items: [
+              {
+                ...selectedEvidence.items[0]!,
+                posting_id: "python-job",
+                title: "Python Backend Engineer",
+                skills: ["Python"],
+                required: ["Python"],
+              },
+            ],
+            total: 1,
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse(fitResponse));
+    });
+
+    render(
+      <SkillGraphExperience initialGraph={raceGraph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "Python" }));
+
+    expect(
+      await screen.findByRole("link", { name: /Python Backend Engineer/ }),
+    ).toBeInTheDocument();
+
+    resolveCpp?.(evidenceResponse(selectedEvidence));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("link", { name: /자율주행 SW 엔지니어/ }),
+      ).not.toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("link", { name: /Python Backend Engineer/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an evidence failure and retries the selected skill", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error("evidence unavailable"))
+      .mockResolvedValueOnce(evidenceResponse({ items: [], total: 0 }));
+
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+
+    expect(
+      await screen.findByText("근거 공고를 불러오지 못했습니다."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+
+    expect(
+      await screen.findByText("현재 공개된 근거 공고가 없습니다."),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("links quick skills to a newly seeded graph", () => {
@@ -257,7 +421,9 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.getByRole("heading", { name: "기술을 선택해 주세요" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("확인 가능한 관련 공고가 없습니다.")).toBeInTheDocument();
+    expect(
+      screen.getByText("기술을 선택하면 관련 공고를 확인할 수 있습니다."),
+    ).toBeInTheDocument();
   });
 
   it("clears an earlier recommendation while an updated stack fails to load", async () => {

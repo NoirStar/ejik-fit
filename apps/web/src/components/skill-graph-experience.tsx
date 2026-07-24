@@ -1,10 +1,9 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowClockwise, MagnifyingGlass } from "@phosphor-icons/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
@@ -15,6 +14,7 @@ import type { SkillGraphViewMode } from "@/lib/skill-graph-view";
 import type {
   FitAnalyzeResponse,
   SkillGraphEvidence,
+  SkillGraphEvidenceResponse,
   SkillGraphNode,
   SkillGraphResponse,
 } from "@/lib/types";
@@ -39,6 +39,13 @@ type SkillGraphExperienceProps = {
   initialOwnedSkills: string[];
   loadFailed?: boolean;
   retryHref?: string;
+};
+
+
+type EvidenceState = {
+  status: "idle" | "loading" | "ready" | "empty" | "error";
+  items: SkillGraphEvidence[];
+  total: number;
 };
 
 
@@ -172,27 +179,8 @@ function displayDomain(domain: string) {
 
 function chooseInitialSelection(
   graph: SkillGraphResponse,
-  initialOwnedSkills: string[],
 ) {
-  const ids = new Set(graph.nodes.map((node) => node.id));
-  return (
-    graph.seed ??
-    initialOwnedSkills.find((skill) => ids.has(skill)) ??
-    graph.nodes[0]?.id ??
-    null
-  );
-}
-
-
-function skillEvidenceFor(
-  evidence: SkillGraphEvidence[],
-  selectedId: string | null,
-) {
-  if (!selectedId) {
-    return [];
-  }
-  const direct = evidence.filter((item) => item.skills.includes(selectedId));
-  return direct.slice(0, 6);
+  return graph.seed ?? null;
 }
 
 
@@ -202,26 +190,31 @@ export function SkillGraphExperience({
   loadFailed = false,
   retryHref = "/skills/graph",
 }: SkillGraphExperienceProps) {
-  const router = useRouter();
   const initialSelection = useMemo(
-    () => chooseInitialSelection(initialGraph, initialOwnedSkills),
-    [initialGraph, initialOwnedSkills],
+    () => chooseInitialSelection(initialGraph),
+    [initialGraph],
   );
   const [ownedSkills, setOwnedSkills] = useState(initialOwnedSkills);
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
   const [forceReady, setForceReady] = useState(false);
-  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("local");
-  const [localDepth, setLocalDepth] = useState(2);
+  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>(
+    initialSelection ? "focus" : "overview",
+  );
   const [filterQuery, setFilterQuery] = useState("");
-  const [showEvidence, setShowEvidence] = useState(true);
-  const [showIsolated, setShowIsolated] = useState(false);
   const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
-  const [reheatKey, setReheatKey] = useState(0);
+  const [compactGraph, setCompactGraph] = useState(false);
   const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
   const [fitState, setFitState] = useState<"idle" | "loading" | "error">("idle");
+  const [evidence, setEvidence] = useState<EvidenceState>({
+    status: "idle",
+    items: [],
+    total: 0,
+  });
+  const [evidenceRetryKey, setEvidenceRetryKey] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const [controlsOpen, setControlsOpen] = useState(true);
+  const evidenceCache = useRef(new Map<string, SkillGraphEvidenceResponse>());
 
   const graphNodeMap = useMemo(
     () => new Map(initialGraph.nodes.map((node) => [node.id, node])),
@@ -243,23 +236,20 @@ export function SkillGraphExperience({
     () =>
       buildSkillGraphView(initialGraph, {
         enabledDomains: allDomains.length > 0 ? enabledDomains : undefined,
-        localDepth,
+        linkLimit: compactGraph ? 10 : undefined,
         mode: graphMode,
+        nodeLimit: compactGraph ? 8 : undefined,
         query: filterQuery,
         selectedId,
-        showEvidence,
-        showIsolated,
       }),
     [
       allDomains.length,
+      compactGraph,
       enabledDomains,
       filterQuery,
       graphMode,
       initialGraph,
-      localDepth,
       selectedId,
-      showEvidence,
-      showIsolated,
     ],
   );
   const visibleSkillNodes = useMemo(
@@ -277,10 +267,7 @@ export function SkillGraphExperience({
     () => new Map(nodes.map((node) => [node.id, node])),
     [nodes],
   );
-  const relatedEvidence = useMemo(
-    () => skillEvidenceFor(initialGraph.evidence, selectedId),
-    [initialGraph.evidence, selectedId],
-  );
+  const relatedEvidence = evidence.items;
   const strongestConnections = useMemo(() => {
     const focusIds = new Set(selectedId ? [selectedId] : ownedSkills);
     return initialGraph.edges
@@ -328,20 +315,25 @@ export function SkillGraphExperience({
     fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
   const isFilteredEmpty = initialGraph.nodes.length > 0 && viewData.nodes.length === 0;
   const showFallbackGraph = nodes.length > 0 && !forceReady;
-  const isLargeGraph = viewData.nodes.length > 1500;
+  const totalEvidenceCount = useMemo(
+    () =>
+      new Set(
+        initialGraph.edges.flatMap((edge) => edge.supporting_posting_ids),
+      ).size,
+    [initialGraph.edges],
+  );
   const display = useMemo<SkillGraphDisplaySettings>(
     () => ({
       ...DEFAULT_DISPLAY,
-      animate: !isLargeGraph,
-      labelThreshold: graphMode === "global" ? 1.28 : DEFAULT_DISPLAY.labelThreshold,
+      labelThreshold: graphMode === "all" ? 1.28 : DEFAULT_DISPLAY.labelThreshold,
     }),
-    [graphMode, isLargeGraph],
+    [graphMode],
   );
   const forces = useMemo<SkillGraphForceSettings>(
     () => ({
       ...DEFAULT_FORCES,
-      linkDistance: graphMode === "global" ? 62 : DEFAULT_FORCES.linkDistance,
-      repel: graphMode === "global" ? 190 : DEFAULT_FORCES.repel,
+      linkDistance: graphMode === "all" ? 62 : DEFAULT_FORCES.linkDistance,
+      repel: graphMode === "all" ? 190 : DEFAULT_FORCES.repel,
     }),
     [graphMode],
   );
@@ -362,8 +354,16 @@ export function SkillGraphExperience({
   }, []);
 
   useEffect(() => {
+    const compactLayout = window.matchMedia("(max-width: 640px)");
+    const syncGraphBudget = () => setCompactGraph(compactLayout.matches);
+    syncGraphBudget();
+    compactLayout.addEventListener("change", syncGraphBudget);
+    return () => compactLayout.removeEventListener("change", syncGraphBudget);
+  }, []);
+
+  useEffect(() => {
     setSelectedId(initialSelection);
-    setGraphMode("local");
+    setGraphMode(initialSelection ? "focus" : "overview");
     setForceReady(false);
   }, [initialGraph.seed, initialSelection]);
 
@@ -410,22 +410,72 @@ export function SkillGraphExperience({
     };
   }, [ownedSkills]);
 
+  useEffect(() => {
+    if (!selectedId) {
+      setEvidence({ status: "idle", items: [], total: 0 });
+      return;
+    }
+    const evidenceSkill = selectedId;
+
+    const cached = evidenceCache.current.get(evidenceSkill);
+    if (cached) {
+      setEvidence({
+        status: cached.items.length > 0 ? "ready" : "empty",
+        items: cached.items,
+        total: cached.total,
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    setEvidence({ status: "loading", items: [], total: 0 });
+
+    async function requestEvidence() {
+      try {
+        const response = await fetch(
+          `/skills/graph/evidence?skill=${encodeURIComponent(evidenceSkill)}&limit=6`,
+          { signal: controller.signal },
+        );
+        if (!response.ok) {
+          throw new Error("evidence request failed");
+        }
+        const payload = (await response.json()) as SkillGraphEvidenceResponse;
+        if (controller.signal.aborted) {
+          return;
+        }
+        const normalized = {
+          items: Array.isArray(payload.items) ? payload.items.slice(0, 6) : [],
+          total: Number.isFinite(payload.total) ? Math.max(0, payload.total) : 0,
+        };
+        evidenceCache.current.set(evidenceSkill, normalized);
+        setEvidence({
+          status: normalized.items.length > 0 ? "ready" : "empty",
+          items: normalized.items,
+          total: normalized.total,
+        });
+      } catch (error) {
+        if (
+          controller.signal.aborted ||
+          (error instanceof DOMException && error.name === "AbortError")
+        ) {
+          return;
+        }
+        setEvidence({ status: "error", items: [], total: 0 });
+      }
+    }
+
+    requestEvidence();
+    return () => controller.abort();
+  }, [evidenceRetryKey, selectedId]);
+
   const selectSkill = useCallback(
     (nodeId: string) => {
-      if (nodeId === initialGraph.seed) {
-        setSelectedId(nodeId);
-        setGraphMode("local");
-        return;
-      }
-      setAnnouncement(`${nodeId} 중심의 공고 관계를 불러옵니다.`);
-      router.push(
-        buildSkillGraphHref({
-          skill: nodeId,
-          owned_skills: ownedSkills,
-        }),
-      );
+      setSelectedId(nodeId);
+      setGraphMode("focus");
+      setForceReady(false);
+      setAnnouncement(`${nodeId} 중심의 기술 관계를 표시합니다.`);
     },
-    [initialGraph.seed, ownedSkills, router],
+    [],
   );
 
   function addSkill(nextSkill = input.trim()) {
@@ -452,13 +502,11 @@ export function SkillGraphExperience({
   }
 
   function resetGraphView() {
-    setGraphMode("local");
+    setGraphMode(initialSelection ? "focus" : "overview");
     setSelectedId(initialSelection);
     setFilterQuery("");
-    setShowEvidence(true);
-    setShowIsolated(false);
     setDisabledDomains([]);
-    setLocalDepth(2);
+    setForceReady(false);
   }
 
   return (
@@ -495,16 +543,16 @@ export function SkillGraphExperience({
               role="group"
             >
               <div>
-                <dt>스킬</dt>
+                <dt>표시 기술</dt>
                 <dd>{loadFailed ? "확인 불가" : viewData.stats.skillCount}</dd>
               </div>
               <div>
-                <dt>연결</dt>
+                <dt>표시 관계</dt>
                 <dd>{loadFailed ? "확인 불가" : viewData.stats.linkCount}</dd>
               </div>
               <div>
-                <dt>근거 공고</dt>
-                <dd>{loadFailed ? "확인 불가" : viewData.stats.evidenceCount}</dd>
+                <dt>전체 근거</dt>
+                <dd>{loadFailed ? "확인 불가" : totalEvidenceCount}</dd>
               </div>
             </dl>
           </div>
@@ -557,7 +605,13 @@ export function SkillGraphExperience({
                   {SKILL_MAP_COPY.ownedSkills}과 {SKILL_MAP_COPY.filters}
                 </span>
                 <small>
-                  {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "현재 범위"}
+                  {ownedSkills.length}개 · {
+                    graphMode === "overview"
+                      ? "시장 핵심"
+                      : graphMode === "focus"
+                        ? "선택 주변"
+                        : "전체 기술"
+                  }
                 </small>
               </summary>
 
@@ -627,57 +681,30 @@ export function SkillGraphExperience({
 
                   <div aria-label="그래프 범위" className={styles.segmented}>
                     <button
-                      aria-pressed={graphMode === "local"}
-                      data-active={graphMode === "local" ? "true" : undefined}
-                      onClick={() => setGraphMode("local")}
+                      aria-pressed={graphMode === "overview"}
+                      data-active={graphMode === "overview" ? "true" : undefined}
+                      onClick={() => setGraphMode("overview")}
+                      type="button"
+                    >
+                      시장 핵심
+                    </button>
+                    <button
+                      aria-pressed={graphMode === "focus"}
+                      data-active={graphMode === "focus" ? "true" : undefined}
+                      disabled={!selectedId}
+                      onClick={() => setGraphMode("focus")}
                       type="button"
                     >
                       선택 주변
                     </button>
                     <button
-                      aria-pressed={graphMode === "global"}
-                      data-active={graphMode === "global" ? "true" : undefined}
-                      onClick={() => setGraphMode("global")}
+                      aria-pressed={graphMode === "all"}
+                      data-active={graphMode === "all" ? "true" : undefined}
+                      onClick={() => setGraphMode("all")}
                       type="button"
                     >
-                      현재 범위
+                      전체 기술
                     </button>
-                  </div>
-
-                  <label className={styles.range} htmlFor="graph-local-depth">
-                    <span>
-                      주변 깊이 <b>{localDepth}</b>
-                    </span>
-                    <input
-                      aria-label="주변 깊이"
-                      disabled={graphMode !== "local"}
-                      id="graph-local-depth"
-                      max="3"
-                      min="1"
-                      onChange={(event) => setLocalDepth(Number(event.target.value))}
-                      step="1"
-                      type="range"
-                      value={localDepth}
-                    />
-                  </label>
-
-                  <div className={styles.checks}>
-                    <label>
-                      <input
-                        checked={showEvidence}
-                        onChange={(event) => setShowEvidence(event.target.checked)}
-                        type="checkbox"
-                      />
-                      관련 공고
-                    </label>
-                    <label>
-                      <input
-                        checked={showIsolated}
-                        onChange={(event) => setShowIsolated(event.target.checked)}
-                        type="checkbox"
-                      />
-                      연결 없는 기술
-                    </label>
                   </div>
                 </section>
 
@@ -714,19 +741,6 @@ export function SkillGraphExperience({
                   </div>
                 </section>
 
-                <section className={styles.layoutControl}>
-                  <div>
-                    <strong>그래프 배치</strong>
-                    <span>{isLargeGraph ? "대용량 안정 모드" : "관계에 따라 자동 배치"}</span>
-                  </div>
-                  <button
-                    onClick={() => setReheatKey((current) => current + 1)}
-                    type="button"
-                  >
-                    <ArrowClockwise aria-hidden="true" size={17} />
-                    다시 배치
-                  </button>
-                </section>
               </div>
             </details>
           </aside>
@@ -739,7 +753,7 @@ export function SkillGraphExperience({
                 forces={forces}
                 onNodeSelect={selectSkill}
                 onReadyChange={setForceReady}
-                reheatKey={reheatKey}
+                reheatKey={0}
                 selectedId={selectedId}
               />
 
@@ -748,15 +762,21 @@ export function SkillGraphExperience({
                 className={styles.graphLegend}
                 role="note"
               >
-                <span><b>색</b>: 분야</span>
+                <span><b>크기</b>: 시장 수요</span>
                 <i aria-hidden="true" />
-                <span><b>크기</b>: 언급 공고</span>
+                <span><b>테두리</b>: 내 기술</span>
                 <i aria-hidden="true" />
-                <span><b>선</b>: 함께 등장</span>
+                <span><b>선 농도</b>: 함께 요구</span>
               </p>
 
               <div className={styles.graphStatus}>
-                <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
+                <span>
+                  {graphMode === "overview"
+                    ? "시장 핵심"
+                    : graphMode === "focus"
+                      ? "선택 주변"
+                      : "전체 기술"}
+                </span>
                 <span className={styles.pointerHint}>
                   {SKILL_MAP_COPY.desktopControls}
                 </span>
@@ -968,10 +988,16 @@ export function SkillGraphExperience({
                   <p>공식 원문 기반</p>
                   <h2>관련 공고</h2>
                 </div>
-                <span>{relatedEvidence.length}건</span>
+                <span>
+                  {evidence.status === "ready" && evidence.total > 6
+                    ? `전체 ${evidence.total}건 중 최대 6건`
+                    : evidence.status === "ready" || evidence.status === "empty"
+                      ? `${evidence.total}건`
+                      : "선택 후 확인"}
+                </span>
               </header>
               <ul className={styles.jobEvidence}>
-                {relatedEvidence.length > 0 ? (
+                {evidence.status === "ready" && relatedEvidence.length > 0 &&
                   relatedEvidence.map((item) => (
                     <li key={item.posting_id}>
                       <Link href={`/jobs/${encodeURIComponent(item.posting_id)}`}>
@@ -980,9 +1006,32 @@ export function SkillGraphExperience({
                         <small>공고 분석 보기</small>
                       </Link>
                     </li>
-                  ))
-                ) : (
-                  <li className={styles.emptyCopy}>확인 가능한 관련 공고가 없습니다.</li>
+                  ))}
+                {evidence.status === "idle" && (
+                  <li className={styles.evidenceState}>
+                    기술을 선택하면 관련 공고를 확인할 수 있습니다.
+                  </li>
+                )}
+                {evidence.status === "loading" && (
+                  <li className={styles.evidenceState} role="status">
+                    관련 공고를 불러오는 중입니다.
+                  </li>
+                )}
+                {evidence.status === "empty" && (
+                  <li className={styles.evidenceState}>
+                    현재 공개된 근거 공고가 없습니다.
+                  </li>
+                )}
+                {evidence.status === "error" && (
+                  <li className={styles.evidenceState} role="alert">
+                    <span>근거 공고를 불러오지 못했습니다.</span>
+                    <button
+                      onClick={() => setEvidenceRetryKey((current) => current + 1)}
+                      type="button"
+                    >
+                      다시 시도
+                    </button>
+                  </li>
                 )}
               </ul>
             </section>
