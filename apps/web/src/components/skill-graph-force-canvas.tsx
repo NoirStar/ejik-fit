@@ -7,10 +7,18 @@ import type {
   ForceManyBody,
   SimulationLinkDatum,
 } from "d3-force";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type ForceGraph from "force-graph";
 import type { GraphData, NodeObject } from "force-graph";
 
+import { formatDomainLabel } from "@/features/career/model";
+import { skillGraphAnimationProfile } from "@/lib/skill-graph-animation";
+import {
+  buildSkillGraphAdjacency,
+  buildSkillGraphHighlight,
+  type SkillGraphAdjacency,
+  type SkillGraphHighlight,
+} from "@/lib/skill-graph-relations";
 import type {
   SkillGraphViewData,
   SkillGraphViewLink,
@@ -49,11 +57,17 @@ type SkillGraphForceCanvasProps = GraphRendererProps;
 type ForceGraphInstance = ForceGraph<SkillForceNode, SkillForceLink>;
 
 
-type HighlightState = {
-  nodeId: string | null;
-  nodes: Set<string>;
-  links: Set<string>;
+type HighlightState = SkillGraphHighlight & {
+  hoveredId: string | null;
 };
+
+
+function emptyHighlight(): HighlightState {
+  return {
+    ...buildSkillGraphHighlight(null, new Map()),
+    hoveredId: null,
+  };
+}
 
 
 function canUseCanvas() {
@@ -121,8 +135,8 @@ function relatedToHighlight(
   selectedId: string | null,
   highlight: HighlightState,
 ) {
-  if (highlight.nodes.size > 0) {
-    return highlight.nodes.has(nodeId);
+  if (highlight.nodeIds.size > 0) {
+    return highlight.nodeIds.has(nodeId);
   }
   return !selectedId || nodeId === selectedId;
 }
@@ -138,11 +152,15 @@ function drawNode(
 ) {
   const nodeId = String(node.id);
   const isSelected = selectedId === nodeId;
-  const isHovered = highlight.nodeId === nodeId;
+  const isHovered = highlight.hoveredId === nodeId;
   const isRelated = relatedToHighlight(nodeId, selectedId, highlight);
+  const relationScale =
+    highlight.focusId && highlight.focusId !== nodeId
+      ? 1 + (highlight.relationRatios.get(nodeId) ?? 0) * 0.22
+      : 1;
   const radius = Math.max(
     node.kind === "posting" ? 2.2 : 3.4,
-    (node.val ?? 4) * display.nodeScale * (isHovered ? 1.18 : 1),
+    (node.val ?? 4) * display.nodeScale * relationScale,
   );
   const shouldLabel =
     node.kind === "posting"
@@ -151,19 +169,22 @@ function drawNode(
         isSelected ||
         isHovered ||
         (isRelated && globalScale >= display.labelThreshold);
-  const dimmed = highlight.nodes.size > 0 && !isRelated;
+  const dimmed = highlight.nodeIds.size > 0 && !isRelated;
 
   ctx.save();
   ctx.globalAlpha = dimmed ? 0.16 : node.kind === "posting" ? 0.7 : 0.96;
 
+  if (isSelected) {
+    ctx.beginPath();
+    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 5, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(node.color, 0.11);
+    ctx.fill();
+  }
+
   if (isSelected || isHovered) {
     ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 7, 0, Math.PI * 2);
-    ctx.fillStyle = rgba(node.color, 0.16);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 3, 0, Math.PI * 2);
-    ctx.strokeStyle = rgba(node.color, 0.82);
+    ctx.arc(node.x ?? 0, node.y ?? 0, radius + 2.5, 0, Math.PI * 2);
+    ctx.strokeStyle = rgba(node.color, isSelected ? 0.78 : 0.58);
     ctx.lineWidth = Math.max(0.7, 1.3 / globalScale);
     ctx.stroke();
   }
@@ -171,19 +192,11 @@ function drawNode(
   ctx.beginPath();
   ctx.arc(node.x ?? 0, node.y ?? 0, radius, 0, Math.PI * 2);
   ctx.fillStyle = node.kind === "posting" ? GRAPH_CANVAS_COLORS.postingNode : node.color;
-  ctx.shadowBlur = node.kind === "posting" ? 3 : isSelected || isHovered ? 20 : 9;
+  ctx.shadowBlur = node.kind === "posting" ? 0 : isSelected || isHovered ? 8 : 0;
   ctx.shadowColor = node.kind === "posting"
     ? GRAPH_CANVAS_COLORS.postingShadow
-    : rgba(node.color, 0.28);
+    : rgba(node.color, 0.2);
   ctx.fill();
-
-  if (node.kind === "skill") {
-    ctx.beginPath();
-    ctx.arc(node.x ?? 0, node.y ?? 0, Math.max(1.2, radius * 0.28), 0, Math.PI * 2);
-    ctx.fillStyle = GRAPH_CANVAS_COLORS.nodeHighlight;
-    ctx.shadowBlur = 0;
-    ctx.fill();
-  }
 
   if (shouldLabel) {
     const fontSize = isSelected || isHovered ? 7.2 : node.seed ? 6.8 : 6.2;
@@ -264,8 +277,7 @@ function configureForces(
       forceCollide<SkillForceNode>((node) =>
         Math.max(node.kind === "posting" ? 5 : 8, (node.val ?? 4) * 1.7),
       ).strength(0.22),
-    )
-    .d3ReheatSimulation();
+    );
 }
 
 
@@ -274,38 +286,14 @@ function configureAnimation(
   animate: boolean,
   reduceMotion: boolean,
 ) {
-  if (reduceMotion) {
-    graph
-      .warmupTicks(80)
-      .cooldownTicks(0)
-      .cooldownTime(0)
-      .autoPauseRedraw(true)
-      .resumeAnimation();
-    return;
-  }
-
-  if (animate) {
-    graph
-      .warmupTicks(10)
-      .cooldownTicks(Infinity)
-      .cooldownTime(Infinity)
-      .d3AlphaDecay(0.012)
-      .d3VelocityDecay(0.35)
-      .autoPauseRedraw(false)
-      .resumeAnimation()
-      .d3ReheatSimulation();
-    return;
-  }
-
+  const profile = skillGraphAnimationProfile(reduceMotion);
   graph
-    .warmupTicks(30)
-    .cooldownTicks(90)
-    .cooldownTime(3200)
-    .d3AlphaDecay(0.045)
-    .d3VelocityDecay(0.46)
-    .autoPauseRedraw(true)
-    .resumeAnimation()
-    .d3ReheatSimulation();
+    .warmupTicks(profile.warmupTicks)
+    .cooldownTicks(profile.cooldownTicks)
+    .cooldownTime(profile.cooldownTime)
+    .d3AlphaDecay(animate ? 0.045 : 0.06)
+    .d3VelocityDecay(animate ? 0.46 : 0.52)
+    .autoPauseRedraw(true);
 }
 
 
@@ -319,7 +307,79 @@ function nudgeGraph(graph: ForceGraphInstance, seed: number) {
     node.vx = (node.vx ?? 0) + Math.cos(angle) * strength;
     node.vy = (node.vy ?? 0) + Math.sin(angle) * strength;
   });
-  graph.d3ReheatSimulation();
+}
+
+
+function requestGraphRedraw(graph: ForceGraphInstance | null) {
+  if (!graph) return;
+  const currentZoom = graph.zoom();
+  if (Number.isFinite(currentZoom)) {
+    graph.zoom(currentZoom);
+  }
+}
+
+
+function focusedHighlight(
+  focusId: string | null,
+  hoveredId: string | null,
+  adjacency: SkillGraphAdjacency,
+): HighlightState {
+  return {
+    ...buildSkillGraphHighlight(focusId, adjacency),
+    hoveredId,
+  };
+}
+
+
+function nodeTooltip(
+  node: SkillForceNode,
+  adjacency: SkillGraphAdjacency,
+  selectedId: string | null,
+) {
+  if (node.kind === "posting") {
+    return `${node.evidence?.company_name ?? node.label} · ${node.evidence?.title ?? "공고"}`;
+  }
+
+  const relation = adjacency.get(String(node.id));
+  const parts = [
+    node.label,
+    formatDomainLabel(node.domain),
+    `언급 공고 ${node.demandCount}건`,
+    `직접 연결 ${relation?.neighborSkillCount ?? 0}개`,
+  ];
+  if (selectedId && selectedId !== node.id) {
+    const count = adjacency
+      .get(selectedId)
+      ?.cooccurrenceByNode.get(String(node.id));
+    if (count) parts.push(`선택 기술과 함께 ${count}건`);
+  }
+  return parts.join(" · ");
+}
+
+
+function linkRelationRatio(
+  link: SkillForceLink,
+  highlight: HighlightState,
+) {
+  if (!highlight.focusId || link.kind !== "skill") return 0;
+  const source = getNodeId(link.source);
+  const target = getNodeId(link.target);
+  if (source === highlight.focusId) {
+    return highlight.relationRatios.get(target) ?? 0;
+  }
+  if (target === highlight.focusId) {
+    return highlight.relationRatios.get(source) ?? 0;
+  }
+  return 0;
+}
+
+
+function skillLinkColor(score: number, emphasized: boolean) {
+  const safeScore = Number.isFinite(score)
+    ? Math.max(0, Math.min(1, score))
+    : 0;
+  const alpha = Math.min(0.76, 0.18 + safeScore * 0.42 + (emphasized ? 0.12 : 0));
+  return `rgba(86, 56, 198, ${alpha})`;
 }
 
 
@@ -334,11 +394,13 @@ export function SkillGraphForceCanvas({
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
-  const highlightRef = useRef<HighlightState>({
-    nodeId: null,
-    nodes: new Set(),
-    links: new Set(),
-  });
+  const adjacency = useMemo(
+    () => buildSkillGraphAdjacency(data.links),
+    [data.links],
+  );
+  const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
+  const highlightRef = useRef<HighlightState>(emptyHighlight());
+  const hoveredIdRef = useRef<string | null>(null);
   const selectedIdRef = useRef<string | null>(selectedId);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
@@ -347,10 +409,14 @@ export function SkillGraphForceCanvas({
   const revealGraphRef = useRef<() => void>(() => undefined);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
+  adjacencyRef.current = adjacency;
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
-  }, [selectedId]);
+    if (hoveredIdRef.current) return;
+    highlightRef.current = focusedHighlight(selectedId, null, adjacency);
+    requestGraphRedraw(graphRef.current);
+  }, [adjacency, selectedId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -421,51 +487,42 @@ export function SkillGraphForceCanvas({
         .enablePanInteraction(true)
         .enableZoomInteraction(true)
         .onEngineTick(revealGraph)
+        .onEngineStop(revealGraph)
         .showPointerCursor((object) => Boolean(object))
         .onNodeHover((node) => {
-          const graph = graphRef.current;
-          const highlight: HighlightState = {
-            nodeId: node ? String(node.id) : null,
-            nodes: new Set(),
-            links: new Set(),
-          };
-
-          if (node && graph) {
-            highlight.nodes.add(String(node.id));
-            graph.graphData().links.forEach((link) => {
-              const source = getNodeId(link.source);
-              const target = getNodeId(link.target);
-              if (source === node.id || target === node.id) {
-                highlight.links.add(link.id);
-                highlight.nodes.add(source);
-                highlight.nodes.add(target);
-              }
-            });
-          }
-
-          highlightRef.current = highlight;
-          graph?.d3ReheatSimulation();
+          const hoveredId = node ? String(node.id) : null;
+          hoveredIdRef.current = hoveredId;
+          highlightRef.current = focusedHighlight(
+            hoveredId ?? selectedIdRef.current,
+            hoveredId,
+            adjacencyRef.current,
+          );
+          requestGraphRedraw(graphRef.current);
         })
         .onNodeClick((node) => {
           if (node.kind === "skill") {
-            onNodeSelect(String(node.id));
+            const nodeId = String(node.id);
+            selectedIdRef.current = nodeId;
+            highlightRef.current = focusedHighlight(
+              nodeId,
+              hoveredIdRef.current,
+              adjacencyRef.current,
+            );
+            onNodeSelect(nodeId);
             if (typeof node.x === "number" && typeof node.y === "number") {
               graphRef.current
                 ?.centerAt(node.x, node.y, 420)
                 .zoom(touchInputRef.current ? 1.72 : 2.15, 420);
             }
-            graphRef.current?.d3ReheatSimulation();
           }
         })
         .onNodeDrag((node) => {
           node.fx = node.x;
           node.fy = node.y;
-          graphRef.current?.d3ReheatSimulation();
         })
         .onNodeDragEnd((node) => {
           node.fx = node.x;
           node.fy = node.y;
-          graphRef.current?.d3ReheatSimulation();
         });
 
       graphRef.current = mountedGraph;
@@ -496,6 +553,8 @@ export function SkillGraphForceCanvas({
       mountedGraph?._destructor();
       graphRef.current = null;
       revealGraphRef.current = () => undefined;
+      hoveredIdRef.current = null;
+      highlightRef.current = emptyHighlight();
       initialViewReadyRef.current = false;
       readyRef.current = false;
       setMounted(false);
@@ -513,6 +572,18 @@ export function SkillGraphForceCanvas({
     graph.graphData(cloneGraphData(data));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
+    hoveredIdRef.current = null;
+    highlightRef.current = focusedHighlight(
+      selectedIdRef.current,
+      null,
+      adjacencyRef.current,
+    );
+    graph.d3ReheatSimulation();
+    if (document.visibilityState === "hidden") {
+      graph.pauseAnimation();
+    } else {
+      graph.resumeAnimation();
+    }
 
     let initialFitTimer = 0;
     if (data.nodes.length > 0) {
@@ -545,9 +616,11 @@ export function SkillGraphForceCanvas({
       .nodeVal((node) => (node.val ?? 3) * display.nodeScale)
       .nodeColor((node) => node.color)
       .nodeLabel((node) =>
-        node.kind === "posting"
-          ? `${node.evidence?.company_name ?? node.label} / ${node.evidence?.title ?? ""}`
-          : `${node.label} / ${node.domain} / ${node.demandCount} postings`,
+        nodeTooltip(
+          node,
+          adjacencyRef.current,
+          selectedIdRef.current,
+        ),
       )
       .nodeCanvasObject((node, ctx, globalScale) =>
         drawNode(
@@ -564,20 +637,27 @@ export function SkillGraphForceCanvas({
         paintPointerArea(node, color, ctx, touchInputRef.current),
       )
       .linkWidth((link) => {
+        const highlight = highlightRef.current;
         const focused =
-          highlightRef.current.links.size === 0 || highlightRef.current.links.has(link.id);
+          highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
         const base = Math.max(0.18, link.value * display.linkThickness);
-        return focused ? base : Math.max(0.05, base * 0.24);
+        if (!focused) return Math.max(0.05, base * 0.2);
+        return Math.min(6, base * (1 + linkRelationRatio(link, highlight) * 0.35));
       })
       .linkColor((link) => {
+        const highlight = highlightRef.current;
         const focused =
-          highlightRef.current.links.size === 0 || highlightRef.current.links.has(link.id);
+          highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
         if (!focused) {
           return GRAPH_CANVAS_COLORS.dimmedLink;
         }
-        return link.kind === "evidence"
-          ? GRAPH_CANVAS_COLORS.evidenceLink
-          : GRAPH_CANVAS_COLORS.skillLink;
+        if (link.kind === "evidence") {
+          return GRAPH_CANVAS_COLORS.evidenceLink;
+        }
+        return skillLinkColor(
+          link.score,
+          highlight.linkIds.size > 0 && highlight.linkIds.has(link.id),
+        );
       })
       .linkDirectionalArrowLength((link) =>
         display.arrows && link.kind === "skill" ? Math.max(2, display.linkThickness * 3.4) : 0,
@@ -586,49 +666,37 @@ export function SkillGraphForceCanvas({
       .linkDirectionalArrowRelPos(0.94)
       .linkCurvature((link) => (link.kind === "evidence" ? 0.08 : 0.02));
 
+    requestGraphRedraw(graph);
+  }, [display, mounted]);
+
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph || data.nodes.length === 0 || reheatKey === 0) {
+      return;
+    }
+    nudgeGraph(graph, reheatKey);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
     graph.d3ReheatSimulation();
-  }, [display, selectedId, mounted]);
+    if (document.visibilityState !== "hidden") {
+      graph.resumeAnimation();
+    }
+  }, [reheatKey, mounted]);
 
   useEffect(() => {
-    const graph = graphRef.current;
-    if (!graph) {
-      return;
-    }
-    configureForces(graph, forces);
-    configureAnimation(graph, display.animate, reduceMotionRef.current);
-  }, [forces, display.animate, mounted]);
-
-  useEffect(() => {
-    const graph = graphRef.current;
-    if (!graph || data.nodes.length === 0) {
-      return;
-    }
-    configureAnimation(graph, display.animate, reduceMotionRef.current);
-    if (!display.animate && reheatKey === 0) {
-      return;
-    }
-    if (reduceMotionRef.current) {
-      graph.d3ReheatSimulation();
-      return;
+    function syncVisibility() {
+      const graph = graphRef.current;
+      if (!graph) return;
+      if (document.visibilityState === "hidden") {
+        graph.pauseAnimation();
+      } else {
+        graph.resumeAnimation();
+        requestGraphRedraw(graph);
+      }
     }
 
-    let frame = 0;
-    let animationFrame = 0;
-    const pulse = () => {
-      nudgeGraph(graph, reheatKey + frame);
-      frame += 1;
-      if (frame < 18) {
-        animationFrame = window.requestAnimationFrame(pulse);
-      }
-    };
-    pulse();
-    return () => {
-      if (animationFrame) {
-        window.cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [reheatKey, data.nodes.length, display.animate, mounted]);
+    document.addEventListener("visibilitychange", syncVisibility);
+    return () => document.removeEventListener("visibilitychange", syncVisibility);
+  }, [mounted]);
 
   useEffect(() => {
     const graph = graphRef.current;
