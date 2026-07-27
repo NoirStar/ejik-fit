@@ -68,6 +68,14 @@ function insight(id: string): MarketInsightFeedItem {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((next) => {
+    resolve = next;
+  });
+  return { promise, resolve };
+}
+
 describe("useHomeFeedPagination", () => {
   it("continues updating after React's development effect replay", async () => {
     const loadJobs = vi.fn(async () => ({ items: [job("job-1")], total: 1 }));
@@ -224,5 +232,45 @@ describe("useHomeFeedPagination", () => {
 
     act(() => result.current.remove("post-2"));
     expect(result.current.items.map(({ id }) => id)).toEqual(["post-1"]);
+  });
+
+  it("ignores a page that finishes after its feed controller is disabled", async () => {
+    const pending = deferred<{
+      items: CommunityPostFeedItem[];
+      hasMore: boolean;
+    }>();
+    const loadCommunity = vi.fn(() => pending.promise);
+    const { result, rerender } = renderHook(
+      ({ enabled }) =>
+        useHomeFeedPagination({
+          activeTab: "popular",
+          enabled,
+          initialCommunity: [],
+          initialCommunityHasMore: true,
+          initialInsights: [],
+          initialJobs: [],
+          jobTotal: 0,
+          loadCommunity,
+          ownedSkills: [],
+        }),
+      { initialProps: { enabled: true } },
+    );
+
+    let operation!: Promise<void>;
+    act(() => {
+      operation = result.current.loadNext("popular");
+    });
+    expect(result.current.loading).toBe(true);
+
+    rerender({ enabled: false });
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => {
+      pending.resolve({ items: [community("stale-post")], hasMore: false });
+      await operation;
+    });
+
+    expect(result.current.items).toEqual([]);
+    expect(result.current.error).toBe("");
   });
 });

@@ -52,3 +52,29 @@ export function itemsForTab(
     .filter(isSocialItem)
     .sort((left, right) => engagementScore(right) - engagementScore(left));
 }
+
+export function appendOnlyItemsForTab(
+  items: FeedItem[],
+  tab: FeedTab,
+  previousOrderIds: string[],
+  followedAuthorIds: string[] = [],
+) {
+  const ranked = itemsForTab(items, tab, followedAuthorIds);
+  const byId = new Map(ranked.map((item) => [item.id, item]));
+  const orderIds = previousOrderIds.filter((id) => byId.has(id));
+  const retained = new Set(orderIds);
+
+  for (const item of ranked) {
+    if (retained.has(item.id)) continue;
+    orderIds.push(item.id);
+    retained.add(item.id);
+  }
+
+  return {
+    items: orderIds.flatMap((id) => {
+      const item = byId.get(id);
+      return item ? [item] : [];
+    }),
+    orderIds,
+  };
+}

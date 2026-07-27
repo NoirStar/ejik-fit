@@ -51,6 +51,29 @@ def test_reparses_encoded_block_html_without_exposing_tags() -> None:
     assert "alert" not in result
 
 
+def test_removes_standalone_encoded_hidden_html() -> None:
+    result = structured_plain_text(
+        "&lt;script&gt;alert('never expose')&lt;/script&gt;",
+        "저장된 공고 원문",
+    )
+
+    assert result == "저장된 공고 원문"
+    assert "script" not in result
+    assert "alert" not in result
+
+
+def test_removes_multiply_encoded_hidden_html() -> None:
+    result = structured_plain_text(
+        "&amp;lt;style&amp;gt;.job { display: none }"
+        "&amp;lt;/style&amp;gt;",
+        "저장된 공고 원문",
+    )
+
+    assert result == "저장된 공고 원문"
+    assert "style" not in result
+    assert "display" not in result
+
+
 def test_keeps_literal_encoded_comparison_text() -> None:
     assert structured_plain_text("<p>지연 시간은 a &lt; b 조건입니다.</p>") == (
         "지연 시간은 a < b 조건입니다."

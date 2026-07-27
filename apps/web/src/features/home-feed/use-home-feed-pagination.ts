@@ -52,6 +52,7 @@ export type HomeFeedPaginationController = {
 type UseHomeFeedPaginationOptions = {
   activeTab: FeedTab;
   careerType?: string;
+  enabled?: boolean;
   initialCommunity: CommunityPostFeedItem[];
   initialCommunityHasMore: boolean;
   initialInsights: MarketInsightFeedItem[];
@@ -167,6 +168,7 @@ export function useHomeFeedPagination(
   const optionsRef = useRef(options);
   const inFlightRef = useRef<Promise<void> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
   const mountedRef = useRef(true);
   optionsRef.current = options;
 
@@ -183,12 +185,27 @@ export function useHomeFeedPagination(
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      generationRef.current += 1;
       abortRef.current?.abort();
     };
   }, []);
 
   useEffect(() => {
-    if (!options.initialCommunityHasMore) return;
+    generationRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    inFlightRef.current = null;
+    if (options.enabled === false) {
+      commit((current) => ({
+        ...current,
+        error: "",
+        loading: false,
+      }));
+    }
+  }, [commit, options.enabled]);
+
+  useEffect(() => {
+    if (options.enabled === false || !options.initialCommunityHasMore) return;
     commit((current) =>
       current.sourceEnded.community
         ? {
@@ -197,7 +214,7 @@ export function useHomeFeedPagination(
           }
         : current,
     );
-  }, [commit, options.initialCommunityHasMore]);
+  }, [commit, options.enabled, options.initialCommunityHasMore]);
 
   useEffect(() => {
     const liveCommunity = options.liveCommunity;
@@ -220,6 +237,9 @@ export function useHomeFeedPagination(
 
   const runNext = useCallback(
     async (tab: FeedTab) => {
+      const activeOptions = optionsRef.current;
+      if (activeOptions.enabled === false) return;
+      const generation = generationRef.current;
       const current = stateRef.current;
       const buffered = takeBufferedPage(current.buffer, current.seenIds, tab);
       if (buffered.items.length > 0) {
@@ -237,7 +257,6 @@ export function useHomeFeedPagination(
         return;
       }
 
-      const activeOptions = optionsRef.current;
       const loadCommunity = activeOptions.loadCommunity;
       const loadJobs = activeOptions.loadJobs ?? defaultLoadJobs;
       const wantsCommunity = !current.sourceEnded.community;
@@ -278,7 +297,13 @@ export function useHomeFeedPagination(
         communityRequest,
         jobRequest,
       ]);
-      if (controller.signal.aborted || !mountedRef.current) return;
+      if (
+        controller.signal.aborted ||
+        generationRef.current !== generation ||
+        !mountedRef.current
+      ) {
+        return;
+      }
 
       const communityItems = communityResult.page?.items ?? [];
       const jobItems = jobResult.page?.items ?? [];
@@ -386,12 +411,19 @@ export function useHomeFeedPagination(
   );
 
   const complete = useMemo(() => {
+    if (options.enabled === false) return true;
     const communityEnded = state.sourceEnded.community &&
       !options.initialCommunityHasMore;
     const sourcesEnded = communityEnded &&
       (!includesJobs(options.activeTab) || state.sourceEnded.jobs);
     return !hasEligibleBuffer(state.buffer, options.activeTab) && sourcesEnded;
-  }, [options.activeTab, options.initialCommunityHasMore, state.buffer, state.sourceEnded]);
+  }, [
+    options.activeTab,
+    options.enabled,
+    options.initialCommunityHasMore,
+    state.buffer,
+    state.sourceEnded,
+  ]);
 
   return {
     items: state.items,

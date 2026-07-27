@@ -299,6 +299,10 @@ describe("HomeFeed", () => {
     expect(within(marketContext).getByRole("link", {
       name: "기술 관리 · 조건 수정",
     })).toHaveAttribute("href", "/career");
+    expect(screen.getByText("모든 글을 확인했습니다.")).toHaveAttribute(
+      "role",
+      "status",
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "인기" }));
     expect(
@@ -661,6 +665,80 @@ describe("HomeFeed", () => {
     expect(store.listFollowingPostPage).toHaveBeenCalledWith({ limit: 10 });
     expect(
       screen.queryByRole("article", { name: publicPost.title }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not reuse the public cursor after a completed following feed loads", async () => {
+    const observer = installIntersectionObserver();
+    const publicPost: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "22222222-2222-4222-8222-222222222222",
+        nickname: "공개작성자",
+      },
+      category: "일반",
+      title: "다음 페이지가 있는 공개 글",
+      body: "공개 피드에는 다음 페이지가 있습니다.",
+      tags: [],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const followedPost: CommunityPost = {
+      ...publicPost,
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      author: {
+        id: "33333333-3333-4333-8333-333333333333",
+        nickname: "팔로우작성자",
+      },
+      title: "마지막 팔로잉 글",
+    };
+    const store = serverCommunityStore(publicPost);
+    store.listPostPage.mockResolvedValue({
+      items: [publicPost],
+      nextCursor: { createdAt: publicPost.createdAt, id: publicPost.id },
+    });
+    store.listFollowingPostPage.mockResolvedValue({
+      items: [followedPost],
+      nextCursor: null,
+    });
+    store.loadViewerState.mockImplementation(async (_viewerId, targets) => ({
+      reactedPostIds: [],
+      savedPostIds: [],
+      followedAuthorIds: targets.authorIds.includes(followedPost.author.id)
+        ? [followedPost.author.id]
+        : [],
+    }));
+
+    render(
+      <AuthViewerProvider
+        ready
+        viewer={{
+          id: "11111111-1111-4111-8111-111111111111",
+          email: "reader@example.com",
+        }}
+      >
+        <HomeFeed communityStore={store} snapshot={buildSnapshot()} />
+      </AuthViewerProvider>,
+    );
+
+    expect(
+      await screen.findByRole("article", { name: publicPost.title }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(observer.observe).toHaveBeenCalled());
+    const publicObserverCount = observer.observe.mock.calls.length;
+
+    fireEvent.click(screen.getByRole("tab", { name: "팔로잉" }));
+
+    expect(
+      await screen.findByRole("article", { name: followedPost.title }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(store.listFollowingPostPage).toHaveBeenCalledTimes(1),
+    );
+    expect(observer.observe).toHaveBeenCalledTimes(publicObserverCount);
+    expect(
+      screen.queryByText("피드를 더 불러오지 못했습니다."),
     ).not.toBeInTheDocument();
   });
 

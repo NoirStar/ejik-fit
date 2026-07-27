@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { itemsForTab } from "./feed-order";
+import { appendOnlyItemsForTab, itemsForTab } from "./feed-order";
 import type { FeedItem } from "./types";
 
 const items: FeedItem[] = [
@@ -118,5 +118,52 @@ describe("itemsForTab", () => {
     const before = items.map(({ id }) => id);
     itemsForTab(items, "latest");
     expect(items.map(({ id }) => id)).toEqual(before);
+  });
+});
+
+describe("appendOnlyItemsForTab", () => {
+  it("appends a newly loaded latest item without moving visible cards", () => {
+    const first = appendOnlyItemsForTab(items, "latest", []);
+    const newerCommunity = {
+      ...items[0],
+      id: "community-new",
+      createdAt: "2026-07-13T12:00:00.000Z",
+    } as FeedItem;
+    const next = appendOnlyItemsForTab(
+      [...items, newerCommunity],
+      "latest",
+      first.orderIds,
+    );
+
+    expect(first.items.map(({ id }) => id)).toEqual([
+      "community-1",
+      "job-1",
+      "market-1",
+    ]);
+    expect(next.items.map(({ id }) => id)).toEqual([
+      "community-1",
+      "job-1",
+      "market-1",
+      "community-new",
+    ]);
+  });
+
+  it("keeps the popular ledger stable when a stronger post arrives", () => {
+    const first = appendOnlyItemsForTab(items, "popular", []);
+    const popularCommunity = {
+      ...items[0],
+      id: "community-popular",
+      metrics: { reactions: 100, comments: 50, saves: 20 },
+    } as FeedItem;
+    const next = appendOnlyItemsForTab(
+      [...items, popularCommunity],
+      "popular",
+      first.orderIds,
+    );
+
+    expect(next.items.map(({ id }) => id)).toEqual([
+      "community-1",
+      "community-popular",
+    ]);
   });
 });

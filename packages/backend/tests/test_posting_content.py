@@ -22,6 +22,24 @@ def test_extracts_sparse_same_host_description_images() -> None:
     ]
 
 
+def test_uses_valid_lazy_image_when_placeholder_src_is_rejected() -> None:
+    html = (
+        '<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yw=" '
+        'data-src="/upload/detail.png" alt="직무 상세">'
+    )
+
+    assert posting_description_images(
+        html,
+        "짧은 공고",
+        "https://example.com/jobs/1",
+    ) == [
+        {
+            "url": "https://example.com/upload/detail.png",
+            "alt": "직무 상세",
+        }
+    ]
+
+
 def test_skips_images_for_text_rich_posting() -> None:
     assert posting_description_images(
         '<img src="/detail.png">',

@@ -43,7 +43,8 @@ _EXPLICIT_HEADING = re.compile(r"^#{2,4}\s+")
 _EXPLICIT_LIST_ITEM = re.compile(r"^[*•◦-]\s+")
 _SOURCE_MARKER = re.compile(r"(?:^|\s)(?:#{2,4}|[*•◦-])(?=\s)")
 _ENCODED_BLOCK_TAG = re.compile(
-    r"&lt;/?(?:address|article|aside|blockquote|div|h[1-6]|li|ol|p|section|table|td|th|tr|ul|br)\b",
+    r"&(?:amp;)*lt;/?(?:address|article|aside|blockquote|div|h[1-6]|li|ol|p|"
+    r"section|table|td|th|tr|ul|br|script|style|noscript|template)\b",
     re.IGNORECASE,
 )
 

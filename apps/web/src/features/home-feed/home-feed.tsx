@@ -60,7 +60,7 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { CompanyMark } from "./company-mark";
-import { itemsForTab } from "./feed-order";
+import { appendOnlyItemsForTab, itemsForTab } from "./feed-order";
 import { FollowingPostList } from "./following-post-list";
 import {
   localCommunityPostToFeedItem,
@@ -696,14 +696,25 @@ export function HomeFeed({
     viewer,
   } = useAuthViewerContext();
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
-  const community = useCommunityFeed({
+  const publicCommunityDirtyRef = useRef(false);
+  const publicCommunity = useCommunityFeed({
     authReady,
-    followingOnly: activeTab === "following",
     initialFeed: initialCommunityFeed,
     limit: 10,
     store: communityStore,
     viewer,
   });
+  const followingCommunity = useCommunityFeed({
+    authReady,
+    enabled: activeTab === "following",
+    followingOnly: true,
+    limit: 10,
+    store: communityStore,
+    viewer,
+  });
+  const community = activeTab === "following"
+    ? followingCommunity
+    : publicCommunity;
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
@@ -715,6 +726,7 @@ export function HomeFeed({
   const composerTitleRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLElement>(null);
   const feedSentinelRef = useRef<HTMLDivElement>(null);
+  const tabOrderRef = useRef<Partial<Record<FeedTab, string[]>>>({});
   const hasPersonalization =
     snapshot.careerContext.configured || snapshot.ownedSkills.length > 0;
 
@@ -785,31 +797,83 @@ export function HomeFeed({
     () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
     [localPosts],
   );
-  const serverFeedItems = useMemo(
-    () => community.state.posts.map((post) => serverCommunityPostToFeedItem(post)),
-    [community.state.posts],
+  const publicServerFeedItems = useMemo(
+    () =>
+      publicCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [publicCommunity.state.posts],
   );
-  const loadMoreCommunity = community.loadMore;
-  const loadNextCommunityPage = useCallback(async () => {
-    const page = await loadMoreCommunity();
+  const followingServerFeedItems = useMemo(
+    () =>
+      followingCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [followingCommunity.state.posts],
+  );
+  const serverFeedItems = activeTab === "following"
+    ? followingServerFeedItems
+    : publicServerFeedItems;
+  const loadMorePublicCommunity = publicCommunity.loadMore;
+  const loadNextPublicCommunityPage = useCallback(async () => {
+    const page = await loadMorePublicCommunity();
     if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
     return {
       items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
       hasMore: page.nextCursor !== null,
     };
-  }, [loadMoreCommunity]);
-  const pagination = useHomeFeedPagination({
-    activeTab,
+  }, [loadMorePublicCommunity]);
+  const loadMoreFollowingCommunity = followingCommunity.loadMore;
+  const loadNextFollowingCommunityPage = useCallback(async () => {
+    const page = await loadMoreFollowingCommunity();
+    if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
+    return {
+      items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
+      hasMore: page.nextCursor !== null,
+    };
+  }, [loadMoreFollowingCommunity]);
+  const publicPagination = useHomeFeedPagination({
+    activeTab: activeTab === "following" ? "recommended" : activeTab,
     careerType: snapshot.careerContext.careerCondition,
-    initialCommunity: serverFeedItems,
-    initialCommunityHasMore: community.state.nextCursor !== null,
+    enabled: activeTab !== "following",
+    initialCommunity: publicServerFeedItems,
+    initialCommunityHasMore:
+      activeTab !== "following" &&
+      publicCommunity.state.nextCursor !== null,
     initialInsights: snapshot.marketInsights,
     initialJobs: snapshot.recommendedJobs,
     jobTotal: snapshot.postingCount,
-    liveCommunity: serverFeedItems,
-    loadCommunity: loadNextCommunityPage,
+    liveCommunity: publicServerFeedItems,
+    loadCommunity:
+      activeTab !== "following" ? loadNextPublicCommunityPage : undefined,
     ownedSkills: snapshot.ownedSkills,
   });
+  const followingPagination = useHomeFeedPagination({
+    activeTab: "following",
+    enabled: activeTab === "following",
+    initialCommunity: [],
+    initialCommunityHasMore:
+      activeTab === "following" &&
+      followingCommunity.state.nextCursor !== null,
+    initialInsights: [],
+    initialJobs: [],
+    jobTotal: 0,
+    liveCommunity: followingServerFeedItems,
+    loadCommunity:
+      activeTab === "following"
+        ? loadNextFollowingCommunityPage
+        : undefined,
+    ownedSkills: snapshot.ownedSkills,
+  });
+  const pagination = activeTab === "following"
+    ? followingPagination
+    : publicPagination;
+
+  useEffect(() => {
+    if (activeTab === "following" || !publicCommunityDirtyRef.current) return;
+    publicCommunityDirtyRef.current = false;
+    void publicCommunity.reload();
+  }, [activeTab, publicCommunity.reload]);
   const followingRailItems = useMemo(
     () => serverFeedItems,
     [serverFeedItems],
@@ -821,19 +885,19 @@ export function HomeFeed({
       ? pagination.items
       : mergeLiveFeedItems(pagination.items, serverFeedItems);
   }, [activeTab, initialCommunityFeed?.status, pagination.items, serverFeedItems]);
-  const visibleItems = useMemo(
-    () =>
-      itemsForTab(
-        paginationItems,
-        activeTab,
-        followedAuthorIds,
-      ),
-    [
-      activeTab,
-      followedAuthorIds,
+  const visibleItems = useMemo(() => {
+    if (activeTab === "recommended") {
+      return itemsForTab(paginationItems, activeTab, followedAuthorIds);
+    }
+    const result = appendOnlyItemsForTab(
       paginationItems,
-    ],
-  );
+      activeTab,
+      tabOrderRef.current[activeTab] ?? [],
+      followedAuthorIds,
+    );
+    tabOrderRef.current[activeTab] = result.orderIds;
+    return result.items;
+  }, [activeTab, followedAuthorIds, paginationItems]);
 
   useEffect(() => {
     const target = feedSentinelRef.current;
@@ -889,7 +953,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleFollowed(item.authorId);
+    const changed = await community.toggleFollowed(item.authorId);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   function handleTabKeyDown(
@@ -936,7 +1003,11 @@ export function HomeFeed({
 
   async function deleteServerPost(post: CommunityPostFeedItem) {
     const deleted = await community.deletePost(post.id);
-    if (deleted) pagination.remove(post.id);
+    if (deleted) {
+      if (activeTab === "following") publicCommunityDirtyRef.current = true;
+      publicPagination.remove(post.id);
+      followingPagination.remove(post.id);
+    }
     setAnnouncement(
       deleted
         ? "글을 삭제했습니다."
@@ -951,7 +1022,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleReaction(item.id);
+    const changed = await community.toggleReaction(item.id);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function handleSocialSave(item: SocialItem) {
@@ -961,7 +1035,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleSaved(item.id);
+    const changed = await community.toggleSaved(item.id);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -993,7 +1070,7 @@ export function HomeFeed({
     }
 
     if (viewer) {
-      const result = await community.createPost({
+      const result = await publicCommunity.createPost({
         category: draft.category,
         title,
         body,
@@ -1005,7 +1082,7 @@ export function HomeFeed({
         });
         return;
       }
-      pagination.prepend(serverCommunityPostToFeedItem(result.post));
+      publicPagination.prepend(serverCommunityPostToFeedItem(result.post));
       setActiveTab("recommended");
       setDraft(EMPTY_DRAFT);
       if (typeof window !== "undefined") {
@@ -1287,7 +1364,9 @@ export function HomeFeed({
             {pagination.complete &&
               visibleItems.length > 0 &&
               !pagination.error && (
-                <p className={styles.feedComplete}>모든 글을 확인했습니다.</p>
+                <p className={styles.feedComplete} role="status">
+                  모든 글을 확인했습니다.
+                </p>
               )}
           </div>
 
@@ -1495,12 +1574,14 @@ export function HomeFeed({
                   disabled={
                     !authReady ||
                     !localPostsHydrated ||
-                    Boolean(viewer && community.state.status !== "ready") ||
-                    community.state.pendingKeys.includes("create:post")
+                    Boolean(
+                      viewer && publicCommunity.state.status !== "ready",
+                    ) ||
+                    publicCommunity.state.pendingKeys.includes("create:post")
                   }
                   type="submit"
                 >
-                  {community.state.pendingKeys.includes("create:post")
+                  {publicCommunity.state.pendingKeys.includes("create:post")
                     ? "게시 중…"
                     : "피드에 올리기"}
                 </button>
