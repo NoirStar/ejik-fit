@@ -169,6 +169,7 @@ def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:
     body = response.json()
     assert body["company_slug"] == "test-company"
     assert body["skills"] == ["Go"]
+    assert body["description_images"] == []
     assert body["skill_details"] == [
         {
             "skill": "Go",

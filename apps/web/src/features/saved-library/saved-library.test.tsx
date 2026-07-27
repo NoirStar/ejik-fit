@@ -46,6 +46,7 @@ const posting: PostingDetail = {
   unspecified_skills: [],
   description_html: "",
   description_text: "",
+  description_images: [],
   skills: ["Python", "Docker"],
 };
 

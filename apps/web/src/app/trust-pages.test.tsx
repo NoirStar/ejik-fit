@@ -277,7 +277,7 @@ describe("public trust pages", () => {
     expect(
       screen.getByText(/ejik-fit:job-application-stages/),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/ejik-fit:social-interactions/)).toHaveLength(2);
+    expect(screen.getAllByText(/ejik-fit:social-interactions/)).toHaveLength(1);
     expect(screen.getByText(/ejik-fit:career-preferences/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:followed-company-slugs/)).toBeInTheDocument();
     expect(screen.getByText(/ejik-fit:local-community-posts/)).toBeInTheDocument();
@@ -312,7 +312,7 @@ describe("public trust pages", () => {
       .getByRole("heading", { level: 2, name: "커뮤니티 상호작용" })
       .closest("section");
     expect(interactionSection).not.toBeNull();
-    expect(interactionSection?.querySelectorAll("p")).toHaveLength(2);
+    expect(interactionSection?.querySelectorAll("p")).toHaveLength(1);
 
     const deletionSection = screen
       .getByRole("heading", { level: 2, name: "저장 데이터 삭제" })

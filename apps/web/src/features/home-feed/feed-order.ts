@@ -2,19 +2,27 @@ import type {
   CommunityPostFeedItem,
   FeedItem,
   FeedTab,
-  InterviewReviewFeedItem,
 } from "./types";
 
 function isSocialItem(
   item: FeedItem,
-): item is CommunityPostFeedItem | InterviewReviewFeedItem {
-  return item.type === "community_post" || item.type === "interview_review";
+): item is CommunityPostFeedItem {
+  return item.type === "community_post";
 }
 
-function engagementScore(
-  item: CommunityPostFeedItem | InterviewReviewFeedItem,
-) {
+function engagementScore(item: CommunityPostFeedItem) {
   return item.metrics.reactions + item.metrics.comments * 2 + item.metrics.saves;
+}
+
+function itemTime(item: FeedItem) {
+  const value = isSocialItem(item)
+    ? item.createdAt
+    : item.type === "recommended_job"
+      ? item.firstSeenAt
+      : null;
+  if (!value) return 0;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 export function itemsForTab(
@@ -37,14 +45,36 @@ export function itemsForTab(
   }
 
   if (tab === "latest") {
-    return [...realItems].sort((left, right) => {
-      const rightTime = isSocialItem(right) ? Date.parse(right.createdAt) : 0;
-      const leftTime = isSocialItem(left) ? Date.parse(left.createdAt) : 0;
-      return rightTime - leftTime;
-    });
+    return [...realItems].sort((left, right) => itemTime(right) - itemTime(left));
   }
 
   return realItems
     .filter(isSocialItem)
     .sort((left, right) => engagementScore(right) - engagementScore(left));
+}
+
+export function appendOnlyItemsForTab(
+  items: FeedItem[],
+  tab: FeedTab,
+  previousOrderIds: string[],
+  followedAuthorIds: string[] = [],
+) {
+  const ranked = itemsForTab(items, tab, followedAuthorIds);
+  const byId = new Map(ranked.map((item) => [item.id, item]));
+  const orderIds = previousOrderIds.filter((id) => byId.has(id));
+  const retained = new Set(orderIds);
+
+  for (const item of ranked) {
+    if (retained.has(item.id)) continue;
+    orderIds.push(item.id);
+    retained.add(item.id);
+  }
+
+  return {
+    items: orderIds.flatMap((id) => {
+      const item = byId.get(id);
+      return item ? [item] : [];
+    }),
+    orderIds,
+  };
 }

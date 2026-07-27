@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
@@ -17,6 +18,7 @@ import { AppShell } from "./app-shell";
 const navigation = vi.hoisted(() => ({
   pathname: "/",
   search: "",
+  suspendSearchParams: false,
   replace: vi.fn(),
   refresh: vi.fn(),
 }));
@@ -48,7 +50,12 @@ const legacyMigration = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => navigation.pathname,
-  useSearchParams: () => new URLSearchParams(navigation.search),
+  useSearchParams: () => {
+    if (navigation.suspendSearchParams) {
+      throw new Promise<never>(() => undefined);
+    }
+    return new URLSearchParams(navigation.search);
+  },
   useRouter: () => ({
     replace: navigation.replace,
     refresh: navigation.refresh,
@@ -91,6 +98,7 @@ describe("AppShell", () => {
     vi.clearAllMocks();
     navigation.pathname = "/";
     navigation.search = "";
+    navigation.suspendSearchParams = false;
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
     localStorage.clear();
@@ -176,6 +184,21 @@ describe("AppShell", () => {
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveValue(
       "Python",
     );
+  });
+
+  it("disables the fallback search field until route parameters are ready", () => {
+    navigation.suspendSearchParams = true;
+
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    expect(
+      within(container).getByRole("searchbox", { name: "통합 검색" }),
+    ).toBeDisabled();
   });
 
   it("derives the current destination from the pathname", () => {

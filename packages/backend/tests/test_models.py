@@ -177,3 +177,28 @@ def test_server_community_models_store_public_content_and_private_membership() -
         assert post.reaction_count == 0
         assert post.comment_count == 0
         assert post.save_count == 0
+
+
+def test_server_community_post_accepts_general_category() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    author_id = uuid.uuid4()
+    post_id = uuid.uuid4()
+
+    with Session(engine) as session:
+        session.add(UserProfile(user_id=author_id, nickname="작성자"))
+        session.add(
+            models.CommunityPost(
+                id=post_id,
+                author_id=author_id,
+                category="일반",
+                title="그냥 나누는 이야기",
+                body="질문이나 후기가 아니어도 작성할 수 있습니다.",
+                tags=[],
+            )
+        )
+        session.commit()
+
+        saved = session.get(models.CommunityPost, post_id)
+        assert saved is not None
+        assert saved.category == "일반"

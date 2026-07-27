@@ -51,7 +51,8 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   com2us:
     "https://infra1-static.recruiter.co.kr/builder/2025/03/24/a0e8387d-0ad0-4b6a-b918-a0cbbd55e79d.png",
   cohere: "https://cohere.com/apple-touch-icon.png",
-  coupang: "https://www.coupang.jobs/favicon.ico",
+  coupang:
+    "https://www.aboutcoupang.com/wp-content/themes/aboutcp/assets/images/logo.svg",
   coxwave:
     "https://assets.roundhr.com/upload/user/organization/1942/temp/1739167556302/Logo_Coxwave.png",
   crowdworks:
@@ -144,12 +145,16 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://profiles.greetinghr.com/group/c07bd211-094a-404a-817b-d79769903216",
   kbank:
     "https://kbank.recruiter.co.kr/upload/68209/site/etc/202503/497f32e9-e4f6-43c7-9bfc-2282d565b7d8.png",
+  "kt-cloud":
+    "https://www.ktcloud.com/static/img/common/svg/ico_logo_black.svg",
   kurly:
     "https://profiles.greetinghr.com/group/3e0a29fa-27a0-457f-be78-2e617e9cb86f",
   lambda256:
     "https://profiles.greetinghr.com/group/ca2fcf93-ab3c-41d1-8920-1c76d354fe7c",
   lablup: "https://www.lablup.com/favicon.ico",
   liner: "https://liner.com/favicon.ico?v=20250605",
+  "lig-nex1":
+    "https://www.ligdefenseaerospace.com/res/img/img_ci-logo_m.jpg",
   watcha: "https://watcha.com/favicon.ico",
   estfamily:
     "https://profiles.greetinghr.com/group/afb477e2-0ac7-49b4-9797-fb177531be92",
@@ -281,6 +286,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
   "sk-telecom": "https://www.sktelecom.com/favicon1.ico",
   "sk-hynix":
     "https://mis-prod-koce-skhynixhomepage-cdn-01-ep.azureedge.net/img/favicon.ico",
+  "sk-ax": "https://www.skax.co.kr/wp-content/uploads/logo-1.svg",
   "sk-intellix":
     "https://www.skintellix.com/assets/img/common/apple-touch-icon.png",
   "sk-keyfoundry": "https://www.skkeyfoundry.com/img/favicon.ico",

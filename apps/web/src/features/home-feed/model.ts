@@ -16,14 +16,12 @@ import type { CommunityPost } from "@/lib/community-contract";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
+  PostingSummary,
   SkillGraphEvidence,
   SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
-import {
-  STARTER_COMMUNITY_GUIDE_ITEMS,
-} from "./mock-community";
 import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
@@ -166,20 +164,20 @@ function evidenceByPostingId(graph: SkillGraphResponse | null) {
 }
 
 function skillMatches(
-  evidence: SkillGraphEvidence | undefined,
+  required: string[],
+  preferred: string[],
   ownedSet: ReadonlySet<string>,
 ) {
-  if (!evidence) {
-    return {
-      matchedRequiredSkills: [],
-      missingRequiredSkills: [],
-      matchedPreferredSkills: [],
-    };
-  }
   return {
-    matchedRequiredSkills: evidence.required.filter((skill) => ownedSet.has(normalize(skill))),
-    missingRequiredSkills: evidence.required.filter((skill) => !ownedSet.has(normalize(skill))),
-    matchedPreferredSkills: evidence.preferred.filter((skill) => ownedSet.has(normalize(skill))),
+    matchedRequiredSkills: required.filter((skill) =>
+      ownedSet.has(normalize(skill)),
+    ),
+    missingRequiredSkills: required.filter(
+      (skill) => !ownedSet.has(normalize(skill)),
+    ),
+    matchedPreferredSkills: preferred.filter((skill) =>
+      ownedSet.has(normalize(skill)),
+    ),
   };
 }
 
@@ -213,6 +211,38 @@ function postingFitScore(
   );
 }
 
+export function postingSummaryToFeedItem(
+  posting: PostingSummary,
+  ownedSkills: string[],
+  evidence?: SkillGraphEvidence,
+): RecommendedJobFeedItem {
+  const ownedSet = new Set(ownedSkills.map(normalize));
+  const required = posting.required_skills ?? evidence?.required ?? [];
+  const preferred = posting.preferred_skills ?? evidence?.preferred ?? [];
+  return {
+    id: `job-${posting.id}`,
+    postingId: posting.id,
+    type: "recommended_job",
+    companyName: posting.company_name,
+    ...(posting.company_slug
+      ? {
+          companyHref: `/companies/${encodeURIComponent(posting.company_slug)}`,
+          companySlug: posting.company_slug,
+        }
+      : {}),
+    title: posting.title,
+    location: posting.location ?? "근무지 미기재",
+    careerLabel: formatCareer(posting.career_type),
+    employmentLabel: formatEmployment(posting.employment_type),
+    sourceUrl: posting.source_url,
+    firstSeenAt: posting.first_seen_at ?? null,
+    verifiedLabel: formatVerifiedDate(posting.last_verified_at),
+    ...skillMatches(required, preferred, ownedSet),
+    href: `/jobs/${encodeURIComponent(posting.id)}`,
+    source: "api",
+  };
+}
+
 function buildJobs(
   postings: PostingListResponse | null,
   graph: SkillGraphResponse | null,
@@ -234,29 +264,15 @@ function buildJobs(
       if (right.score === null) return -1;
       return right.score - left.score || left.index - right.index;
     })
-    .slice(0, 2)
     .map(({ posting }) => posting);
 
-  return rankedPostings.map((posting) => ({
-    id: `job-${posting.id}`,
-    postingId: posting.id,
-    type: "recommended_job",
-    companyName: posting.company_name,
-    ...(posting.company_slug
-      ? {
-          companyHref: `/companies/${encodeURIComponent(posting.company_slug)}`,
-        }
-      : {}),
-    title: posting.title,
-    location: posting.location ?? "근무지 미기재",
-    careerLabel: formatCareer(posting.career_type),
-    employmentLabel: formatEmployment(posting.employment_type),
-    sourceUrl: posting.source_url,
-    verifiedLabel: formatVerifiedDate(posting.last_verified_at),
-    ...skillMatches(evidenceMap.get(posting.id), ownedSet),
-    href: `/jobs/${encodeURIComponent(posting.id)}`,
-    source: "api",
-  }));
+  return rankedPostings.map((posting) =>
+    postingSummaryToFeedItem(
+      posting,
+      ownedSkills,
+      evidenceMap.get(posting.id),
+    ),
+  );
 }
 
 function buildSkillDemand(skillStats: SkillStatsResponse | null): SkillDemandSummary[] {
@@ -394,14 +410,13 @@ export function buildHomeFeedSnapshot(
       hasVerifiedData,
     ),
     feedItems: mergeFeed(recommendedJobs, marketInsights),
-    starterGuideItems: STARTER_COMMUNITY_GUIDE_ITEMS,
     recommendedJobs,
     marketInsights,
     skillDemand,
     careerInsight: buildCareerInsight(input.fit, ownedSkills),
     careerContext: buildCareerContext(input.careerPreferences),
     ownedSkills,
-    postingCount: postings?.items.length ?? 0,
+    postingCount: postings?.total ?? 0,
     sourceCount: new Set(
       (postings?.items ?? []).map((posting) => safeHostname(posting.source_url)),
     ).size,

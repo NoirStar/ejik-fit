@@ -87,6 +87,7 @@ function SourceRow({ item }: { item: SourceDirectoryItem }) {
       <div className={styles.sourceIdentity}>
         <CompanyMark
           companyName={item.company_name}
+          companySlug={item.company_slug}
           size={32}
           sourceUrl={item.careers_url}
         />

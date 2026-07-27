@@ -52,3 +52,4 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "list_community_saved_posts" in sql
     assert "SECURITY INVOKER" in sql
     assert "ix_community_posts_title_trgm" in sql
+    assert "'일반', '커리어 질문', '커리어 고민', '면접 후기'" in sql

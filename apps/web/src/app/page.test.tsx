@@ -130,7 +130,7 @@ describe("Home", () => {
     const articles = within(activity).getAllByRole("article");
     expect(articles[0]).toHaveAccessibleName(communityPost.title);
     expect(articles[1]).toHaveAccessibleName("Backend Engineer");
-    expect(loadInitialCommunityFeed).toHaveBeenCalledTimes(1);
+    expect(loadInitialCommunityFeed).toHaveBeenCalledWith(10);
   });
 
   it("keeps jobs visible when the server community request fails", async () => {
@@ -149,7 +149,7 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders mock community beside API-backed jobs and skill counts", async () => {
+  it("renders only API-backed jobs and skill counts when community is empty", async () => {
     render(
       await Home({
         searchParams: Promise.resolve({ owned_skills: ["Java", "Spring"] }),
@@ -160,13 +160,13 @@ describe("Home", () => {
       screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
-    ).toBeInTheDocument();
+      screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
     expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.queryByText(/지난주 대비|합격 가능성|\d+\.\d+점/)).not.toBeInTheDocument();
-    expect(getPostings).toHaveBeenCalledWith({ limit: 40 });
+    expect(getPostings).toHaveBeenCalledWith({ limit: 20 });
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Java",
@@ -194,7 +194,7 @@ describe("Home", () => {
 
     expect(getPostings).toHaveBeenCalledWith({
       career_type: "experienced",
-      limit: 40,
+      limit: 20,
     });
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
@@ -219,6 +219,19 @@ describe("Home", () => {
       name: "기술 관리 · 조건 수정",
     }))
       .toHaveAttribute("href", "/career");
+  });
+
+  it("remounts the feed when the saved career scope changes", async () => {
+    const defaultFeed = await Home();
+    const scopedFeed = await Home({
+      searchParams: Promise.resolve({
+        owned_skills: "Python",
+        career_type: "experienced",
+        target_domain: "backend",
+      }),
+    });
+
+    expect(scopedFeed.key).not.toBe(defaultFeed.key);
   });
 
   it("does not inject default skills for a first visit", async () => {

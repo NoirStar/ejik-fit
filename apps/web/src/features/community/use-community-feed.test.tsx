@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
+  CommunityPage,
   CommunityPost,
   CommunityViewerState,
 } from "@/lib/community-contract";
@@ -312,15 +313,16 @@ describe("useCommunityFeed", () => {
       updatedAt: "2026-07-20T04:00:00.000Z",
     });
     const store = storeWith();
+    const returnedPage = {
+      items: [post(), nextPost],
+      nextCursor: null,
+    };
     store.listPostPage
       .mockResolvedValueOnce({
         items: [post()],
         nextCursor: { createdAt: post().createdAt, id: POST_ID },
       })
-      .mockResolvedValueOnce({
-        items: [post(), nextPost],
-        nextCursor: null,
-      });
+      .mockResolvedValueOnce(returnedPage);
     const { result } = renderHook(() =>
       useCommunityFeed({ authReady: true, store, viewer: null }),
     );
@@ -330,8 +332,9 @@ describe("useCommunityFeed", () => {
       createdAt: post().createdAt,
       id: POST_ID,
     });
+    let loadedPage: CommunityPage<CommunityPost> | null | undefined;
     await act(async () => {
-      await result.current.loadMore();
+      loadedPage = await result.current.loadMore();
     });
 
     expect(store.listPostPage).toHaveBeenLastCalledWith({
@@ -344,6 +347,7 @@ describe("useCommunityFeed", () => {
     ]);
     expect(result.current.state.nextCursor).toBeNull();
     expect(result.current.state.loadingMore).toBe(false);
+    expect(loadedPage).toEqual(returnedPage);
   });
 
   it("ignores an older load-more response after a reload starts", async () => {
@@ -369,7 +373,7 @@ describe("useCommunityFeed", () => {
     );
     await waitFor(() => expect(result.current.state.status).toBe("ready"));
 
-    let pendingLoadMore!: Promise<void>;
+    let pendingLoadMore!: Promise<CommunityPage<CommunityPost> | null>;
     act(() => {
       pendingLoadMore = result.current.loadMore();
     });

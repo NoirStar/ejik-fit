@@ -1,5 +1,6 @@
 import { validatedHttpUrl } from "./safe-url";
 import type {
+  PostingDescriptionImage,
   PostingDetail,
   PostingListResponse,
   PostingSummary,
@@ -145,6 +146,22 @@ function normalizeSkillDetail(value: unknown): SkillDetail {
   };
 }
 
+function descriptionImages(value: unknown): PostingDescriptionImage[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new TypeError("Invalid description_images");
+  }
+  return value.map((item) => {
+    if (!isRecord(item)) {
+      throw new TypeError("Invalid description image");
+    }
+    return {
+      url: validatedHttpUrl(item.url, "description image url"),
+      alt: stringField(item, "alt", true),
+    };
+  });
+}
+
 export function normalizePostingDetail(value: unknown): PostingDetail {
   if (!isRecord(value)) throw new Error("Invalid posting detail");
   const summary = normalizePostingSummary(value);
@@ -157,6 +174,7 @@ export function normalizePostingDetail(value: unknown): PostingDetail {
     ...summary,
     description_html: stringField(value, "description_html", true),
     description_text: stringField(value, "description_text", true),
+    description_images: descriptionImages(value.description_images),
     opens_at: summary.opens_at ?? null,
     closes_at: summary.closes_at ?? null,
     skills: strings(value, "skills"),

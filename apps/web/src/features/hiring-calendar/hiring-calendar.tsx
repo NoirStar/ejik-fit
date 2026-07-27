@@ -216,6 +216,7 @@ function UpcomingDeadline({
         <span className={styles.upcomingIdentity}>
           <CompanyMark
             companyName={deadline.company_name}
+            companySlug={deadline.company_slug}
             size={34}
             sourceUrl={deadline.source_url}
           />

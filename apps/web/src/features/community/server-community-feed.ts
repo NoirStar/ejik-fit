@@ -8,7 +8,7 @@ import {
 } from "./community-store";
 
 export async function loadInitialCommunityFeed(
-  limit = 20,
+  limit = 10,
 ): Promise<InitialCommunityFeed> {
   const client = await createServerSupabaseClient();
   if (!client) {

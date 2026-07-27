@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "scanned_at": "2026-07-21",
-  "framework": "Next.js 16.2.10 App Router with React 19.2",
+  "scanned_at": "2026-07-27",
+  "framework": "Next.js 16.2.11 App Router with React 19.2",
   "font_stack": [
     "Pretendard Variable",
     "Geist variable for isolated monospace metadata"
   ],
   "palette_source": "apps/web/src/styles/tokens.css",
-  "motion": "GSAP installed; product UI uses restrained CSS transitions",
+  "motion": "GSAP 3.15 installed; locked product UI uses restrained CSS transitions and reduced-motion overrides",
   "spacing": "4px-compatible named rem scale in apps/web/src/styles/tokens.css",
   "design_contract": "design.md",
   "scope": "multi-page product app"

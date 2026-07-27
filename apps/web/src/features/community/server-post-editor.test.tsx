@@ -93,6 +93,16 @@ describe("ServerPostEditor", () => {
     expect(screen.getByRole("region", { name: "글 수정" })).toBeInTheDocument();
   });
 
+  it("offers general first alongside the specific categories", () => {
+    renderEditor();
+
+    expect(
+      screen
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["일반", "커리어 질문", "커리어 고민", "면접 후기"]);
+  });
+
   it("validates normalized title, body, and tags before mutation", () => {
     const { store } = renderEditor();
 

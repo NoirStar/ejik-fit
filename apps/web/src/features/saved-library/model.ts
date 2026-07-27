@@ -1,7 +1,4 @@
-import type {
-  CommunityPostFeedItem,
-  InterviewReviewFeedItem,
-} from "@/features/home-feed/types";
+import type { CommunityPostFeedItem } from "@/features/home-feed/types";
 import {
   buildJobEvidence,
   formatCareerRange,
@@ -18,15 +15,13 @@ import type { PostingDetail } from "@/lib/types";
 
 export const MAX_SAVED_JOB_LOOKUPS = MAX_SAVED_JOB_IDS;
 
-type CommunityItem = CommunityPostFeedItem | InterviewReviewFeedItem;
-type DurableCommunityItem = CommunityPostFeedItem & {
-  source: "local" | "server";
-};
+type CommunityItem = CommunityPostFeedItem;
 
 export type SavedJobItem = {
   id: string;
   title: string;
   companyName: string;
+  companySlug?: string;
   companyHref: string | null;
   detailHref: string;
   sourceUrl: string;
@@ -77,6 +72,7 @@ export function buildSavedJobItem(posting: PostingDetail): SavedJobItem {
     id: posting.id,
     title: posting.title,
     companyName: posting.company_name,
+    ...(posting.company_slug ? { companySlug: posting.company_slug } : {}),
     companyHref: posting.company_slug
       ? `/companies/${encodeURIComponent(posting.company_slug)}`
       : null,
@@ -181,6 +177,14 @@ function savedJobItem(value: unknown): SavedJobItem {
   ) {
     throw new TypeError("Invalid saved job company href");
   }
+  const companySlug = value.companySlug;
+  if (
+    companySlug !== undefined &&
+    (typeof companySlug !== "string" ||
+      !/^[a-z0-9][a-z0-9-]{0,119}$/.test(companySlug))
+  ) {
+    throw new TypeError("Invalid saved job company slug");
+  }
   const detailHref = requiredString(value, "detailHref");
   if (detailHref !== `/jobs/${encodeURIComponent(id)}`) {
     throw new TypeError("Invalid saved job detail href");
@@ -197,6 +201,7 @@ function savedJobItem(value: unknown): SavedJobItem {
     id,
     title: requiredString(value, "title"),
     companyName: requiredString(value, "companyName"),
+    ...(typeof companySlug === "string" ? { companySlug } : {}),
     companyHref,
     detailHref,
     sourceUrl,
@@ -233,11 +238,11 @@ export function normalizeSavedJobDataResponse(value: unknown): SavedJobData {
 
 function isDurableCommunityItem(
   item: CommunityItem,
-): item is DurableCommunityItem {
-  return item.type === "community_post" && item.source !== "mock";
+): item is CommunityPostFeedItem {
+  return item.type === "community_post";
 }
 
-function toSavedCommunityItem(item: DurableCommunityItem): SavedCommunityItem {
+function toSavedCommunityItem(item: CommunityPostFeedItem): SavedCommunityItem {
   return {
     id: item.id,
     category: item.category,

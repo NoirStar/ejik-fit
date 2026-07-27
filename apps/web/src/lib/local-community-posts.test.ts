@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { COMMUNITY_CATEGORIES } from "./community-contract";
 import {
+  DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   MAX_LOCAL_COMMUNITY_POSTS,
   clearLocalCommunityPosts,
   createLocalCommunityPost,
@@ -72,12 +74,38 @@ describe("local community post storage", () => {
     expect(normalized).toHaveLength(MAX_LOCAL_COMMUNITY_POSTS);
     expect(normalized[0]).toEqual({
       ...post(40),
+      category: "일반",
       tags: ["Java", "백엔드", "Kubernetes", "Docker"],
     });
     expect(normalized.filter((item) => item.id === "local-post-31")).toEqual([
-      post(31),
+      { ...post(31), category: "일반" },
     ]);
     expect(normalized.some((item) => item.id === "server-owned-id")).toBe(false);
+  });
+
+  it("shares the server category order and defaults uncategorized posts to general", () => {
+    expect(COMMUNITY_CATEGORIES).toEqual([
+      "일반",
+      "커리어 질문",
+      "커리어 고민",
+      "면접 후기",
+    ]);
+    expect(DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY).toBe("일반");
+
+    const result = createLocalCommunityPost(
+      {
+        title: "그냥 쓰는 글",
+        body: "종류를 고르지 않은 글입니다.",
+        tags: [],
+      },
+      {
+        id: "local-general",
+        createdAt: "2026-07-27T00:00:00.000Z",
+        storage: storage(),
+      },
+    );
+
+    expect(result.post?.category).toBe("일반");
   });
 
   it("recovers from malformed and blocked storage", () => {
@@ -179,6 +207,7 @@ describe("local community post storage", () => {
       posts: [
         {
           id: "local-stays",
+          category: "일반",
           title: "남아야 할 글",
           body: "본문",
           tags: [],
@@ -255,6 +284,7 @@ describe("local community post storage", () => {
     expect(listener).toHaveBeenCalledWith([
       {
         id: "local-sync",
+        category: "일반",
         title: "동기화",
         body: "본문",
         tags: [],

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, contains_eager, joinedload, selectinload
 from ejikfit.db import SessionLocal
 from ejikfit.html_text import structured_plain_text
 from ejikfit.models import Company, JobPosting, PostingSkill, PostingStatus
+from ejikfit.posting_content import posting_description_images
 from ejikfit.search import MeiliPostingIndex
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 from ejikfit.skills import confirmed_skill_groups
@@ -98,12 +99,18 @@ def _detail(posting: JobPosting) -> dict:
             skill.skill,
         ),
     )
+    description_text = structured_plain_text(
+        posting.description_html,
+        posting.description_text,
+    )
     return {
         **_summary(posting),
         "description_html": posting.description_html,
-        "description_text": structured_plain_text(
+        "description_text": description_text,
+        "description_images": posting_description_images(
             posting.description_html,
-            posting.description_text,
+            description_text,
+            posting.url,
         ),
         "opens_at": posting.opens_at,
         "closes_at": posting.closes_at,

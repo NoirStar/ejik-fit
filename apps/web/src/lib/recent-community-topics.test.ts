@@ -29,7 +29,7 @@ function topic(index: number) {
     postId: `topic-${index}`,
     title: `커뮤니티 글 ${index}`,
     topicLabel: `주제 ${index}`,
-    source: "mock" as const,
+    source: "local" as const,
     viewedAt: new Date(Date.UTC(2026, 6, 1, index)).toISOString(),
   };
 }
@@ -69,6 +69,21 @@ describe("recent community topic storage", () => {
     expect(normalized.at(-1)?.postId).toBe("topic-2");
   });
 
+  it("discards stored mock topics while preserving real local topics", () => {
+    const base = topic(1);
+
+    expect(
+      normalizeRecentCommunityTopics([
+        { ...base, source: "mock" },
+        {
+          ...base,
+          postId: "local-real",
+          source: "local",
+        },
+      ]),
+    ).toEqual([expect.objectContaining({ postId: "local-real" })]);
+  });
+
   it("moves a revisited post to the front and stores no arbitrary href", () => {
     const fake = storage();
     recordRecentCommunityTopic(
@@ -76,7 +91,7 @@ describe("recent community topic storage", () => {
         postId: "career-move-3y-backend",
         title: "처음 본 글",
         topicLabel: "백엔드",
-        source: "mock",
+        source: "local",
       },
       { storage: fake, viewedAt: "2026-07-14T01:00:00.000Z" },
     );
@@ -85,7 +100,7 @@ describe("recent community topic storage", () => {
         postId: "kubernetes-experience",
         title: "두 번째 글",
         topicLabel: "Kubernetes",
-        source: "mock",
+        source: "server",
       },
       { storage: fake, viewedAt: "2026-07-14T02:00:00.000Z" },
     );
@@ -94,7 +109,7 @@ describe("recent community topic storage", () => {
         postId: "career-move-3y-backend",
         title: "다시 본 글",
         topicLabel: "백엔드",
-        source: "mock",
+        source: "local",
       },
       { storage: fake, viewedAt: "2026-07-14T03:00:00.000Z" },
     );
@@ -129,7 +144,7 @@ describe("recent community topic storage", () => {
           postId: "javascript:alert-1",
           title: "위험한 값",
           topicLabel: "보안",
-          source: "mock",
+          source: "local",
         },
         { storage: malformed },
       ),
@@ -140,7 +155,7 @@ describe("recent community topic storage", () => {
           postId: "safe-post",
           title: "저장 실패",
           topicLabel: "백엔드",
-          source: "mock",
+          source: "local",
         },
         { storage: blocked, viewedAt: "2026-07-14T04:00:00.000Z" },
       ),
@@ -155,7 +170,7 @@ describe("recent community topic storage", () => {
         postId: "career-move-3y-backend",
         title: "최근 글",
         topicLabel: "백엔드",
-        source: "mock",
+        source: "local",
       },
       { viewedAt: "2026-07-14T05:00:00.000Z" },
     );
@@ -164,7 +179,7 @@ describe("recent community topic storage", () => {
         postId: "career-move-3y-backend",
         title: "최근 글",
         topicLabel: "백엔드",
-        source: "mock",
+        source: "local",
         viewedAt: "2026-07-14T05:00:00.000Z",
       },
     ]);
@@ -189,7 +204,7 @@ describe("recent community topic storage", () => {
         postId: "career-move-3y-backend",
         title: "남길 글",
         topicLabel: "백엔드",
-        source: "mock",
+        source: "server",
       },
       { viewedAt: "2026-07-14T01:00:00.000Z" },
     );

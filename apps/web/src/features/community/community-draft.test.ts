@@ -40,6 +40,27 @@ describe("community draft", () => {
     ).toEqual(saved);
   });
 
+  it("keeps a general post draft", () => {
+    const saved = saveCommunityDraft(
+      {
+        category: "일반",
+        title: "오늘 나누고 싶은 이야기",
+        body: "질문이나 후기가 아닌 글도 임시 저장합니다.",
+        tags: [],
+      },
+      sessionStorage,
+      new Date("2026-07-27T01:00:00.000Z"),
+    );
+
+    expect(saved.category).toBe("일반");
+    expect(
+      readCommunityDraft(
+        sessionStorage,
+        new Date("2026-07-27T02:00:00.000Z"),
+      )?.category,
+    ).toBe("일반");
+  });
+
   it("removes malformed or contract-invalid stored values", () => {
     sessionStorage.setItem(COMMUNITY_DRAFT_STORAGE_KEY, "{broken");
     expect(readCommunityDraft(sessionStorage)).toBeNull();

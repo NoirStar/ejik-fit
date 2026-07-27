@@ -33,6 +33,7 @@ const posting: PostingDetail = {
   unspecified_skills: [],
   description_html: "<p>민감하지 않지만 불필요한 원문</p>",
   description_text: "불필요한 원문",
+  description_images: [],
   skills: ["Python", "Docker"],
 };
 

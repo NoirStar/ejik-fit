@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizePostingSummary } from "./posting-contract";
+import {
+  normalizePostingDetail,
+  normalizePostingSummary,
+} from "./posting-contract";
 
 const posting = {
   id: "job-1",
@@ -41,4 +44,47 @@ describe("posting contract company slug", () => {
       ).toBeUndefined();
     },
   );
+});
+
+describe("posting detail image contract", () => {
+  const detail = {
+    ...posting,
+    description_html: '<img src="/detail.png">',
+    description_text: "상시 채용입니다.",
+    skills: [],
+  };
+
+  it("preserves validated description images", () => {
+    expect(
+      normalizePostingDetail({
+        ...detail,
+        description_images: [
+          {
+            url: "https://ligdna.recruiter.co.kr/upload/full.png",
+            alt: "채용 공고 상세 내용 이미지 1",
+          },
+        ],
+      }).description_images,
+    ).toEqual([
+      {
+        url: "https://ligdna.recruiter.co.kr/upload/full.png",
+        alt: "채용 공고 상세 내용 이미지 1",
+      },
+    ]);
+  });
+
+  it("defaults an older response without description images to an empty list", () => {
+    expect(normalizePostingDetail(detail).description_images).toEqual([]);
+  });
+
+  it.each([
+    null,
+    {},
+    [{ url: "javascript:alert(1)", alt: "공고 이미지" }],
+    [{ url: "https://example.com/detail.png", alt: 42 }],
+  ])("rejects an invalid description image payload: %o", (description_images) => {
+    expect(() =>
+      normalizePostingDetail({ ...detail, description_images }),
+    ).toThrow();
+  });
 });

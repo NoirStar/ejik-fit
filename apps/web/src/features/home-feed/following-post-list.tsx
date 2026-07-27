@@ -2,17 +2,14 @@ import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import styles from "./home-feed.module.css";
-import type {
-  CommunityPostFeedItem,
-  InterviewReviewFeedItem,
-} from "./types";
+import type { CommunityPostFeedItem } from "./types";
 
 const VISIBLE_FOLLOWING_POSTS = 2;
 
 type FollowingPostListProps = {
   followedAuthorIds: string[];
   hydrated: boolean;
-  items: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
+  items: CommunityPostFeedItem[];
   onShowFollowing(): void;
 };
 

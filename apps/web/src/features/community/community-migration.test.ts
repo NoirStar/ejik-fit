@@ -148,6 +148,28 @@ describe("local community migration", () => {
     expect(readSocialInteractions().commentsByPostId).toEqual({});
   });
 
+  it("migrates an uncategorized local post as general", async () => {
+    createLocalCommunityPost(
+      {
+        title: "예전 브라우저 글",
+        body: "종류를 저장하지 않았던 글입니다.",
+        tags: [],
+      },
+      {
+        id: "local-cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        createdAt: "2026-07-27T01:00:00.000Z",
+      },
+    );
+    const store = createStore();
+
+    await migrateLocalCommunityContent(store, USER_ID);
+
+    expect(store.createPost).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ category: "일반" }),
+    );
+  });
+
   it("keeps browser content on partial failure and safely resumes conflicts", async () => {
     seedBrowserContent();
     const store = createStore();

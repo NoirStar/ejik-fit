@@ -5,10 +5,15 @@ import {
   COMMUNITY_TEST_EMAIL,
   COMMUNITY_TEST_PASSWORD,
   resetCommunityFixture,
+  seedFollowingFixture,
 } from "./fixtures/community-auth";
 
 const communityTitle = "첫 화면부터 보이는 커뮤니티 글";
 const communityTags = ["SSR", "피드", "안정성", "모바일"];
+
+test.afterEach(async ({ request }) => {
+  await resetCommunityFixture(request);
+});
 
 test("renders community posts before hydration without reordering the home feed", async ({
   page,
@@ -91,4 +96,30 @@ test("renders community posts before hydration without reordering the home feed"
       () => document.documentElement.scrollWidth > window.innerWidth,
     ),
   ).toBe(false);
+});
+
+test("continues the mixed home feed when the user reaches its end", async ({
+  page,
+  request,
+}) => {
+  await resetCommunityFixture(request);
+  await seedFollowingFixture(request);
+  await page.setViewportSize({ height: 844, width: 390 });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const panel = page.getByRole("tabpanel");
+  await expect(
+    panel.getByRole("article", { exact: true, name: "최신 공개 글 1" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "커뮤니티 글 더 보기" }),
+  ).toHaveCount(0);
+
+  await page.getByTestId("home-feed-sentinel").scrollIntoViewIfNeeded();
+  await expect(
+    panel.getByRole("article", { exact: true, name: "최신 공개 글 15" }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("article", { exact: true, name: "최신 공개 글 1" }),
+  ).toHaveCount(1);
 });

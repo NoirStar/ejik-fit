@@ -1,3 +1,5 @@
+import type { CommunityCategory } from "@/lib/community-contract";
+
 export type FeedTab = "recommended" | "following" | "latest" | "popular";
 export type DataStatus = "ready" | "partial" | "empty" | "error";
 
@@ -12,12 +14,7 @@ export type AuthorTone = "violet" | "blue" | "green" | "orange";
 export type CommunityPostFeedItem = {
   id: string;
   type: "community_post";
-  category:
-    | "이직 고민"
-    | "커리어 질문"
-    | "커리어 고민"
-    | "업무 이야기"
-    | "면접 후기";
+  category: CommunityCategory;
   authorId: string;
   authorName: string;
   authorHeadline: string;
@@ -29,28 +26,7 @@ export type CommunityPostFeedItem = {
   tags: string[];
   href: string;
   metrics: SocialMetrics;
-  source: "mock" | "local" | "server";
-};
-
-export type InterviewReviewFeedItem = {
-  id: string;
-  type: "interview_review";
-  category: "면접 후기";
-  authorId: string;
-  authorName: string;
-  authorHeadline: string;
-  authorTone: AuthorTone;
-  createdAt: string;
-  createdLabel: string;
-  companyType: string;
-  role: string;
-  stage: string;
-  title: string;
-  summary: string;
-  tags: string[];
-  href: string;
-  metrics: SocialMetrics;
-  source: "mock";
+  source: "local" | "server";
 };
 
 export type MarketInsightFeedItem = {
@@ -75,11 +51,13 @@ export type RecommendedJobFeedItem = {
   type: "recommended_job";
   companyName: string;
   companyHref?: string;
+  companySlug?: string;
   title: string;
   location: string;
   careerLabel: string;
   employmentLabel: string;
   sourceUrl: string;
+  firstSeenAt: string | null;
   verifiedLabel: string;
   matchedRequiredSkills: string[];
   missingRequiredSkills: string[];
@@ -121,14 +99,12 @@ export type CareerContextSummary = {
 
 export type FeedItem =
   | CommunityPostFeedItem
-  | InterviewReviewFeedItem
   | MarketInsightFeedItem
   | RecommendedJobFeedItem;
 
 export type HomeFeedSnapshot = {
   dataStatus: DataStatus;
   feedItems: FeedItem[];
-  starterGuideItems: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
   recommendedJobs: RecommendedJobFeedItem[];
   marketInsights: MarketInsightFeedItem[];
   skillDemand: SkillDemandSummary[];

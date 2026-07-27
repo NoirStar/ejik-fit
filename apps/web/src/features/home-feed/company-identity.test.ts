@@ -4,6 +4,44 @@ import { companyIdentity } from "./company-identity";
 
 describe("companyIdentity", () => {
   it.each([
+    ["쿠팡", "coupang", "https://www.coupang.jobs/kr/jobs/1", "coupang"],
+    [
+      "LIG넥스원",
+      "lig-nex1",
+      "https://ligdna.recruiter.co.kr/app/jobnotice/view?id=1",
+      "lig-nex1",
+    ],
+    ["SK AX", "sk-ax", "https://www.skax.co.kr/recruit/1", "sk-ax"],
+    [
+      "kt cloud",
+      "kt-cloud",
+      "https://www.ktcloud.com/careers/1",
+      "kt-cloud",
+    ],
+  ])("uses the official %s identity", (name, slug, sourceUrl, key) => {
+    expect(companyIdentity(name, sourceUrl, slug)).toMatchObject({
+      kind: "logo",
+      src: `/company-logo-assets/${key}`,
+    });
+  });
+
+  it("uses a verified slug without allowing it to bypass source trust", () => {
+    expect(
+      companyIdentity(
+        "쿠팡 주식회사",
+        "https://www.coupang.jobs/kr/jobs/1",
+        "coupang",
+      ),
+    ).toMatchObject({
+      kind: "logo",
+      src: "/company-logo-assets/coupang",
+    });
+    expect(
+      companyIdentity("쿠팡 주식회사", "https://example.com/jobs/1", "coupang"),
+    ).toMatchObject({ kind: "initials" });
+  });
+
+  it.each([
     ["넥슨코리아", "nexon-korea"],
     ["네오플", "neople"],
     ["넥슨게임즈", "nexon-games"],

@@ -38,6 +38,7 @@ import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import {
+  COMMUNITY_CATEGORIES,
   MAX_COMMUNITY_POST_TAGS,
   MAX_COMMUNITY_TAG_LENGTH,
 } from "@/lib/community-contract";
@@ -59,15 +60,15 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { CompanyMark } from "./company-mark";
-import { itemsForTab } from "./feed-order";
+import { appendOnlyItemsForTab, itemsForTab } from "./feed-order";
 import { FollowingPostList } from "./following-post-list";
 import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
 import { RecentTopicList } from "./recent-topic-list";
-import { StarterCommunityGuide } from "./starter-community-guide";
 import styles from "./home-feed.module.css";
+import { useHomeFeedPagination } from "./use-home-feed-pagination";
 import type {
   CareerContextSummary,
   CareerInsightSummary,
@@ -75,7 +76,6 @@ import type {
   FeedItem,
   FeedTab,
   HomeFeedSnapshot,
-  InterviewReviewFeedItem,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
 } from "./types";
@@ -96,7 +96,7 @@ type LocalPostDraft = {
 type DraftErrors = Partial<
   Record<"title" | "body" | "storage" | "tags", string>
 >;
-type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
+type SocialItem = CommunityPostFeedItem;
 
 const TABS: Array<{
   id: FeedTab;
@@ -109,14 +109,10 @@ const TABS: Array<{
   { id: "popular", label: "인기" },
 ];
 
-const POST_KIND_OPTIONS: ReadonlyArray<{
-  label: string;
-  value: LocalCommunityPostCategory;
-}> = [
-  { label: "질문", value: "커리어 질문" },
-  { label: "커리어 고민", value: "커리어 고민" },
-  { label: "면접 후기", value: "면접 후기" },
-];
+const POST_KIND_OPTIONS = COMMUNITY_CATEGORIES.map((value) => ({
+  label: value,
+  value,
+}));
 
 const EMPTY_DRAFT: LocalPostDraft = {
   category: DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
@@ -151,7 +147,19 @@ function draftTags(value: string) {
 }
 
 function isSocialItem(item: FeedItem): item is SocialItem {
-  return item.type === "community_post" || item.type === "interview_review";
+  return item.type === "community_post";
+}
+
+function mergeLiveFeedItems(primary: FeedItem[], live: CommunityPostFeedItem[]) {
+  const merged: FeedItem[] = [...live];
+  const seen = new Set(live.map(({ id }) => id));
+  for (const item of primary) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      merged.push(item);
+    }
+  }
+  return merged;
 }
 
 function SocialCard({
@@ -182,7 +190,6 @@ function SocialCard({
   saved: boolean;
 }) {
   const titleId = `feed-${item.id}-title`;
-  const body = item.type === "community_post" ? item.body : item.summary;
   const persistedMetrics = item.source === "server";
   const reactionCount =
     item.metrics.reactions + (persistedMetrics ? 0 : reacted ? 1 : 0);
@@ -244,14 +251,7 @@ function SocialCard({
             </Link>
           </h2>
         </div>
-        {item.type === "interview_review" && (
-          <div className={styles.reviewMeta}>
-            <span>{item.companyType}</span>
-            <span>{item.role}</span>
-            <span>{item.stage}</span>
-          </div>
-        )}
-        <p>{body}</p>
+        <p>{item.body}</p>
       </div>
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
@@ -343,6 +343,7 @@ function JobCard({
       <div className={styles.jobIdentity}>
         <CompanyMark
           companyName={item.companyName}
+          companySlug={item.companySlug}
           priority
           size={52}
           sourceUrl={item.sourceUrl}
@@ -695,13 +696,25 @@ export function HomeFeed({
     viewer,
   } = useAuthViewerContext();
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
-  const community = useCommunityFeed({
+  const publicCommunityDirtyRef = useRef(false);
+  const publicCommunity = useCommunityFeed({
     authReady,
-    followingOnly: activeTab === "following",
     initialFeed: initialCommunityFeed,
+    limit: 10,
     store: communityStore,
     viewer,
   });
+  const followingCommunity = useCommunityFeed({
+    authReady,
+    enabled: activeTab === "following",
+    followingOnly: true,
+    limit: 10,
+    store: communityStore,
+    viewer,
+  });
+  const community = activeTab === "following"
+    ? followingCommunity
+    : publicCommunity;
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
@@ -712,6 +725,8 @@ export function HomeFeed({
   const [announcement, setAnnouncement] = useState("");
   const composerTitleRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLElement>(null);
+  const feedSentinelRef = useRef<HTMLDivElement>(null);
+  const tabOrderRef = useRef<Partial<Record<FeedTab, string[]>>>({});
   const hasPersonalization =
     snapshot.careerContext.configured || snapshot.ownedSkills.length > 0;
 
@@ -782,29 +797,144 @@ export function HomeFeed({
     () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
     [localPosts],
   );
-  const serverFeedItems = useMemo(
-    () => community.state.posts.map((post) => serverCommunityPostToFeedItem(post)),
-    [community.state.posts],
+  const publicServerFeedItems = useMemo(
+    () =>
+      publicCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [publicCommunity.state.posts],
   );
+  const followingServerFeedItems = useMemo(
+    () =>
+      followingCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [followingCommunity.state.posts],
+  );
+  const serverFeedItems = activeTab === "following"
+    ? followingServerFeedItems
+    : publicServerFeedItems;
+  const loadMorePublicCommunity = publicCommunity.loadMore;
+  const loadNextPublicCommunityPage = useCallback(async () => {
+    const page = await loadMorePublicCommunity();
+    if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
+    return {
+      items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
+      hasMore: page.nextCursor !== null,
+    };
+  }, [loadMorePublicCommunity]);
+  const loadMoreFollowingCommunity = followingCommunity.loadMore;
+  const loadNextFollowingCommunityPage = useCallback(async () => {
+    const page = await loadMoreFollowingCommunity();
+    if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
+    return {
+      items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
+      hasMore: page.nextCursor !== null,
+    };
+  }, [loadMoreFollowingCommunity]);
+  const publicPagination = useHomeFeedPagination({
+    activeTab: activeTab === "following" ? "recommended" : activeTab,
+    careerType: snapshot.careerContext.careerCondition,
+    communityStatus: publicCommunity.state.status,
+    enabled: activeTab !== "following",
+    initialCommunity: publicServerFeedItems,
+    initialCommunityHasMore:
+      activeTab !== "following" &&
+      publicCommunity.state.nextCursor !== null,
+    initialInsights: snapshot.marketInsights,
+    initialJobs: snapshot.recommendedJobs,
+    jobTotal: snapshot.postingCount,
+    liveCommunity: publicServerFeedItems,
+    loadCommunity:
+      activeTab !== "following" ? loadNextPublicCommunityPage : undefined,
+    ownedSkills: snapshot.ownedSkills,
+  });
+  const followingPagination = useHomeFeedPagination({
+    activeTab: "following",
+    communityStatus: followingCommunity.state.status,
+    enabled: activeTab === "following",
+    initialCommunity: [],
+    initialCommunityHasMore:
+      activeTab === "following" &&
+      followingCommunity.state.nextCursor !== null,
+    initialInsights: [],
+    initialJobs: [],
+    jobTotal: 0,
+    liveCommunity: followingServerFeedItems,
+    loadCommunity:
+      activeTab === "following"
+        ? loadNextFollowingCommunityPage
+        : undefined,
+    ownedSkills: snapshot.ownedSkills,
+  });
+  const pagination = activeTab === "following"
+    ? followingPagination
+    : publicPagination;
+
+  useEffect(() => {
+    if (activeTab === "following" || !publicCommunityDirtyRef.current) return;
+    publicCommunityDirtyRef.current = false;
+    void publicCommunity.reload();
+  }, [activeTab, publicCommunity.reload]);
   const followingRailItems = useMemo(
     () => serverFeedItems,
     [serverFeedItems],
   );
   const followedAuthorIds = community.state.viewerState.followedAuthorIds;
-  const visibleItems = useMemo(
-    () =>
-      itemsForTab(
-        [...serverFeedItems, ...snapshot.feedItems],
-        activeTab,
-        followedAuthorIds,
-      ),
-    [
+  const paginationItems = useMemo(() => {
+    const hasServerRenderedCommunity = initialCommunityFeed?.status === "ready";
+    return activeTab === "recommended" && hasServerRenderedCommunity
+      ? pagination.items
+      : mergeLiveFeedItems(pagination.items, serverFeedItems);
+  }, [activeTab, initialCommunityFeed?.status, pagination.items, serverFeedItems]);
+  const visibleItems = useMemo(() => {
+    if (activeTab === "recommended") {
+      return itemsForTab(paginationItems, activeTab, followedAuthorIds);
+    }
+    const result = appendOnlyItemsForTab(
+      paginationItems,
       activeTab,
-      serverFeedItems,
-      snapshot.feedItems,
+      tabOrderRef.current[activeTab] ?? [],
       followedAuthorIds,
-    ],
-  );
+    );
+    tabOrderRef.current[activeTab] = result.orderIds;
+    return result.items;
+  }, [activeTab, followedAuthorIds, paginationItems]);
+
+  useEffect(() => {
+    const target = feedSentinelRef.current;
+    if (
+      !target ||
+      typeof IntersectionObserver === "undefined" ||
+      pagination.complete ||
+      pagination.error ||
+      pagination.loading ||
+      community.state.status === "idle" ||
+      community.state.status === "loading" ||
+      (activeTab === "following" && community.state.status !== "ready")
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void pagination.loadNext(activeTab);
+        }
+      },
+      { root: null, rootMargin: "800px 0px", threshold: 0 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    activeTab,
+    community.state.status,
+    pagination.complete,
+    pagination.error,
+    pagination.items.length,
+    pagination.loadNext,
+    pagination.loading,
+  ]);
 
   function requestLoginForCommunity(nextPath = "/") {
     if (authStatus !== "unauthenticated") {
@@ -827,7 +957,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleFollowed(item.authorId);
+    const changed = await community.toggleFollowed(item.authorId);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   function handleTabKeyDown(
@@ -874,6 +1007,11 @@ export function HomeFeed({
 
   async function deleteServerPost(post: CommunityPostFeedItem) {
     const deleted = await community.deletePost(post.id);
+    if (deleted) {
+      if (activeTab === "following") publicCommunityDirtyRef.current = true;
+      publicPagination.remove(post.id);
+      followingPagination.remove(post.id);
+    }
     setAnnouncement(
       deleted
         ? "글을 삭제했습니다."
@@ -888,7 +1026,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleReaction(item.id);
+    const changed = await community.toggleReaction(item.id);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function handleSocialSave(item: SocialItem) {
@@ -898,7 +1039,10 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("");
-    await community.toggleSaved(item.id);
+    const changed = await community.toggleSaved(item.id);
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -930,7 +1074,7 @@ export function HomeFeed({
     }
 
     if (viewer) {
-      const result = await community.createPost({
+      const result = await publicCommunity.createPost({
         category: draft.category,
         title,
         body,
@@ -942,6 +1086,7 @@ export function HomeFeed({
         });
         return;
       }
+      publicPagination.prepend(serverCommunityPostToFeedItem(result.post));
       setActiveTab("recommended");
       setDraft(EMPTY_DRAFT);
       if (typeof window !== "undefined") {
@@ -1199,27 +1344,35 @@ export function HomeFeed({
             )}
           </div>
 
-          {(community.state.nextCursor || community.state.actionError) && (
-            <div className={styles.feedPagination}>
-              {community.state.nextCursor && (
+          <div
+            aria-busy={pagination.loading}
+            className={styles.feedPagination}
+            data-testid="home-feed-sentinel"
+            ref={feedSentinelRef}
+          >
+            {pagination.loading && <p role="status">새 글을 불러오는 중…</p>}
+            {pagination.error && (
+              <div className={styles.feedPaginationError}>
+                <p role="alert">{pagination.error}</p>
                 <button
-                  aria-busy={community.state.loadingMore}
-                  disabled={community.state.loadingMore}
-                  onClick={() => void community.loadMore()}
+                  onClick={() => void pagination.retry(activeTab)}
                   type="button"
                 >
-                  {community.state.loadingMore
-                    ? "커뮤니티 글 불러오는 중…"
-                    : "커뮤니티 글 더 보기"}
+                  다시 시도
                 </button>
+              </div>
+            )}
+            {community.state.actionError && (
+              <p role="alert">{community.state.actionError}</p>
+            )}
+            {pagination.complete &&
+              visibleItems.length > 0 &&
+              !pagination.error && (
+                <p className={styles.feedComplete} role="status">
+                  모든 글을 확인했습니다.
+                </p>
               )}
-              {community.state.actionError && (
-                <p role="alert">{community.state.actionError}</p>
-              )}
-            </div>
-          )}
-
-          <StarterCommunityGuide items={snapshot.starterGuideItems} />
+          </div>
 
           {localPostsHydrated && (
             <LegacyPostRecovery
@@ -1425,12 +1578,14 @@ export function HomeFeed({
                   disabled={
                     !authReady ||
                     !localPostsHydrated ||
-                    Boolean(viewer && community.state.status !== "ready") ||
-                    community.state.pendingKeys.includes("create:post")
+                    Boolean(
+                      viewer && publicCommunity.state.status !== "ready",
+                    ) ||
+                    publicCommunity.state.pendingKeys.includes("create:post")
                   }
                   type="submit"
                 >
-                  {community.state.pendingKeys.includes("create:post")
+                  {publicCommunity.state.pendingKeys.includes("create:post")
                     ? "게시 중…"
                     : "피드에 올리기"}
                 </button>

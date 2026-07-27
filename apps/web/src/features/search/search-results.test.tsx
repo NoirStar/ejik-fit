@@ -19,15 +19,12 @@ import { SearchResults } from "./search-results";
 
 const EMPTY_SEARCH_COPY =
   "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.";
-const GUIDE_DISCLOSURE = "활용 가이드는 실제 사용자 글이 아닙니다.";
 const START_DISCLOSURE =
-  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 기기에 남은 글, 활용 가이드에서 찾습니다.";
+  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 기기에 남은 글에서 찾습니다.";
 const COMMUNITY_DISCLOSURE =
   "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은 계정 글과 구분해 표시합니다.";
 const COMMUNITY_MERGE_COPY =
   "공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는 중입니다.";
-const COMMUNITY_EMPTY_COPY =
-  "공개 계정 글에서 일치하는 결과가 없습니다.";
 const IMPLEMENTATION_JARGON = /API|서버|응답/;
 
 function deferred<T>() {
@@ -146,21 +143,8 @@ function snapshot(
         jobsHref: "/jobs?q=Python",
       },
     ],
-    community: [
-      {
-        id: "python-career",
-        category: "커리어 질문",
-        title: "Python에서 Go로 옮긴 경험이 궁금해요",
-        summary: "언어 전환을 준비하는 질문입니다.",
-        tags: ["Python", "커리어 전환"],
-        href: "/posts/python-career",
-        authorName: "코드산책",
-        authorHeadline: "백엔드 개발자 · 4년차",
-        createdLabel: "1시간 전",
-        source: "mock",
-      },
-    ],
-    counts: { companies: 1, jobs: 1, skills: 1, community: 1 },
+    community: [],
+    counts: { companies: 1, jobs: 1, skills: 1, community: 0 },
     errors: [],
     hasAnyResults: true,
     ...overrides,
@@ -237,7 +221,7 @@ describe("SearchResults", () => {
     expect(screen.queryByText(/전체 결과 \d+건/)).not.toBeInTheDocument();
   });
 
-  it("separates official evidence from Ejikfit starting community posts", () => {
+  it("renders official evidence without built-in community examples", () => {
     render(<SearchResults snapshot={snapshot()} />);
 
     expect(
@@ -300,23 +284,10 @@ describe("SearchResults", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/API/)).not.toBeInTheDocument();
 
-    const community = screen
-      .getByRole("link", { name: "Python에서 Go로 옮긴 경험이 궁금해요" })
-      .closest("article")!;
-    expect(within(community).queryByText("활용 가이드")).not.toBeInTheDocument();
-    const guide = screen.getByRole("region", { name: "커뮤니티 활용 가이드" });
     expect(
-      within(guide).getByRole("article", {
-        name: "Python에서 Go로 옮긴 경험이 궁금해요",
-      }),
-    ).toBeInTheDocument();
-    expect(within(guide).getByText(GUIDE_DISCLOSURE)).toBeInTheDocument();
-    expect(screen.getAllByText(GUIDE_DISCLOSURE)).toHaveLength(1);
-    expect(
-      within(community).getByRole("link", { name: "Python 커뮤니티 검색" }),
-    ).toHaveAttribute("href", "/search?q=Python&scope=community");
+      screen.queryByRole("region", { name: "커뮤니티 활용 가이드" }),
+    ).not.toBeInTheDocument();
     const disclosure = screen.getByText(COMMUNITY_DISCLOSURE);
-    expect(disclosure).not.toHaveTextContent(GUIDE_DISCLOSURE);
     expect(disclosure).not.toHaveTextContent(IMPLEMENTATION_JARGON);
   });
 
@@ -341,7 +312,7 @@ describe("SearchResults", () => {
     expect(within(job).queryByText("언급 Linux")).not.toBeInTheDocument();
   });
 
-  it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
+  it("hydrates browser-owned posts and keeps counts synchronized", async () => {
     saveLocalSearchPost();
     const { container } = render(<SearchResults snapshot={snapshot()} />);
 
@@ -361,15 +332,10 @@ describe("SearchResults", () => {
     ).toHaveAttribute("href", "/posts/local-python-search");
     expect(localResult).toHaveTextContent("나");
     expect(localResult).toHaveTextContent("이 기기에서 작성");
-    expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("article", {
-        name: "Python에서 Go로 옮긴 경험이 궁금해요",
-      }),
-    ).not.toHaveTextContent("활용 가이드");
     expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
     expect(productCopyWithoutAuthoredContent(container))
       .not.toHaveTextContent(/브라우저|원본|\.\.\./);
@@ -383,7 +349,7 @@ describe("SearchResults", () => {
         }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /커뮤니티.*0/ })).toBeInTheDocument();
   });
 
   it("searches all public account posts in their own result group", async () => {
@@ -416,7 +382,7 @@ describe("SearchResults", () => {
     expect(
       within(serverResult).getByRole("link", { name: serverSearchPost.title }),
     ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
-    expect(screen.getByRole("link", { name: /커뮤니티.*2/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
     expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
   });
 
@@ -464,7 +430,9 @@ describe("SearchResults", () => {
 
     render(<SearchResults communityStore={store} snapshot={snapshot()} />);
 
-    const emptyState = await screen.findByText(COMMUNITY_EMPTY_COPY);
+    const emptyState = await screen.findByText(
+      "일치하는 커뮤니티 글이 없습니다.",
+    );
     expect(emptyState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
   });
 
@@ -604,7 +572,7 @@ describe("SearchResults", () => {
           dataStatus: "partial",
           companies: [],
           jobs: [],
-          counts: { companies: null, jobs: null, skills: 1, community: 1 },
+          counts: { companies: null, jobs: null, skills: 1, community: 0 },
           errors: ["공고 검색 결과를 불러오지 못했습니다."],
         })}
       />,

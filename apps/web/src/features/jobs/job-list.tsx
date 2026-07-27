@@ -117,6 +117,7 @@ function JobItem({ job, ownedSkills, saved, onToggleSaved }: JobItemProps) {
       <header className={styles.jobHeader}>
         <CompanyMark
           companyName={job.company_name}
+          companySlug={job.company_slug}
           size={40}
           sourceUrl={job.source_url}
         />

@@ -1,9 +1,51 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
-import { CompanyMark } from "./company-mark";
+import { CompanyMark, hasEnoughLogoPixels } from "./company-mark";
 
 describe("CompanyMark", () => {
+  afterEach(() => cleanup());
+
+  it("rejects tiny favicons but keeps sufficiently detailed wide logos", () => {
+    expect(
+      hasEnoughLogoPixels({
+        naturalWidth: 16,
+        naturalHeight: 16,
+        boxSize: 56,
+        devicePixelRatio: 2,
+      }),
+    ).toBe(false);
+    expect(
+      hasEnoughLogoPixels({
+        naturalWidth: 117,
+        naturalHeight: 27,
+        boxSize: 56,
+        devicePixelRatio: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it("falls back to initials after a low-resolution logo loads", () => {
+    const { container } = render(
+      <CompanyMark
+        companyName="NAVER"
+        size={56}
+        sourceUrl="https://recruit.navercorp.com/jobs/1"
+      />,
+    );
+    const image = container.querySelector("img");
+    expect(image).not.toBeNull();
+    Object.defineProperties(image!, {
+      naturalHeight: { configurable: true, value: 16 },
+      naturalWidth: { configurable: true, value: 16 },
+    });
+
+    fireEvent.load(image!);
+
+    expect(container.querySelector("img")).toBeNull();
+    expect(container).toHaveTextContent("NA");
+  });
+
   it("falls back to initials when a verified local image fails", () => {
     const { container } = render(
       <CompanyMark
