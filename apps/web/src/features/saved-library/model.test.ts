@@ -41,6 +41,7 @@ describe("saved library model", () => {
       title: "Python Backend Engineer",
       companyName: "NAVER",
       companyHref: "/companies/naver",
+      companySlug: "naver",
       detailHref: "/jobs/job-python",
       sourceUrl: "https://recruit.navercorp.com/job-python",
       careerLabel: "경력 3~7년",

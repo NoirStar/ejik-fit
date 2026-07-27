@@ -96,6 +96,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
         <header className={styles.hero}>
           <CompanyMark
             companyName={job.company_name}
+            companySlug={job.company_slug}
             size={56}
             sourceUrl={job.source_url}
           />

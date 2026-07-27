@@ -98,6 +98,7 @@ export function SelectedTechnologyEvidence({
                     >
                       <CompanyMark
                         companyName={job.companyName}
+                        companySlug={job.companySlug}
                         size={34}
                         sourceUrl={job.sourceUrl}
                       />

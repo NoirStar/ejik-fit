@@ -41,6 +41,7 @@ export type JobSearchResult = {
   id: string;
   title: string;
   companyName: string;
+  companySlug?: string;
   companyHref: string | null;
   href: string;
   sourceUrl: string;
@@ -216,6 +217,7 @@ function buildJobs(postings: PostingSummary[]): JobSearchResult[] {
     id: posting.id,
     title: posting.title,
     companyName: posting.company_name,
+    ...(posting.company_slug ? { companySlug: posting.company_slug } : {}),
     companyHref: safeCompanyHref(posting.company_slug),
     href: `/jobs/${encodeURIComponent(posting.id)}`,
     sourceUrl: posting.source_url,

@@ -136,6 +136,7 @@ function CompanyResult({ company }: { company: CompanySearchResult }) {
     <article className={styles.companyResult}>
       <CompanyMark
         companyName={company.name}
+        companySlug={company.slug}
         size={52}
         sourceUrl={company.sourceUrl}
       />
@@ -183,7 +184,12 @@ function JobResult({ job }: { job: JobSearchResult }) {
         <span>{formatVerifiedDate(job.lastVerifiedAt)}</span>
       </div>
       <div className={styles.jobIdentity}>
-        <CompanyMark companyName={job.companyName} size={48} sourceUrl={job.sourceUrl} />
+        <CompanyMark
+          companyName={job.companyName}
+          companySlug={job.companySlug}
+          size={48}
+          sourceUrl={job.sourceUrl}
+        />
         <div>
           <p>
             {job.companyHref ? (

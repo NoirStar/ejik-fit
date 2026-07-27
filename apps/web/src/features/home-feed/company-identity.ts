@@ -9,6 +9,7 @@ export type CompanyIdentity = {
 type VerifiedLogo = {
   aliases: string[];
   hosts: string[];
+  slugs?: string[];
   src: string;
   displayName: string;
   surface?: "dark";
@@ -623,8 +624,30 @@ const VERIFIED_LOGOS: VerifiedLogo[] = [
       "job-boards.greenhouse.io",
       "coupang.jobs",
     ],
+    slugs: ["coupang"],
     src: "/company-logo-assets/coupang",
     displayName: "쿠팡",
+  },
+  {
+    aliases: ["LIG넥스원", "LIG Nex1", "LIGNex1"],
+    hosts: ["ligdna.recruiter.co.kr", "lignex1.com"],
+    slugs: ["lig-nex1"],
+    src: "/company-logo-assets/lig-nex1",
+    displayName: "LIG넥스원",
+  },
+  {
+    aliases: ["SK AX", "SK주식회사 AX", "SK inc. AX"],
+    hosts: ["skcareers.com", "skax.co.kr"],
+    slugs: ["sk-ax"],
+    src: "/company-logo-assets/sk-ax",
+    displayName: "SK AX",
+  },
+  {
+    aliases: ["kt cloud", "KT클라우드", "KT Cloud"],
+    hosts: ["recruit.kt.com", "ktcloud.com"],
+    slugs: ["kt-cloud"],
+    src: "/company-logo-assets/kt-cloud",
+    displayName: "kt cloud",
   },
   {
     aliases: ["현대자동차", "hyundai motor", "hyundai"],
@@ -1345,13 +1368,20 @@ function hasTrustedSource(sourceUrl: string | undefined, hosts: string[]) {
 export function companyIdentity(
   companyName: string,
   sourceUrl?: string,
+  companySlug?: string,
 ): CompanyIdentity {
-  const normalized = normalize(companyName);
-  const verified = VERIFIED_LOGOS.find(
-    (logo) =>
-      logo.aliases.some((alias) => normalize(alias) === normalized) &&
-      hasTrustedSource(sourceUrl, logo.hosts),
-  );
+  const normalizedName = normalize(companyName);
+  const normalizedSlug = companySlug ? normalize(companySlug) : "";
+  const verified = VERIFIED_LOGOS.find((logo) => {
+    if (!hasTrustedSource(sourceUrl, logo.hosts)) return false;
+    const slugMatch =
+      normalizedSlug &&
+      logo.slugs?.some((slug) => normalize(slug) === normalizedSlug);
+    const aliasMatch = logo.aliases.some(
+      (alias) => normalize(alias) === normalizedName,
+    );
+    return Boolean(slugMatch || aliasMatch);
+  });
   const initials = initialsFor(companyName);
 
   if (verified) {

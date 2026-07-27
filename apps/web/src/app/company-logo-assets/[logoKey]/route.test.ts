@@ -5,6 +5,46 @@ import { GET } from "./route";
 describe("company logo asset proxy", () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each([
+    [
+      "coupang",
+      "https://www.aboutcoupang.com/wp-content/themes/aboutcp/assets/images/logo.svg",
+      "svg",
+    ],
+    [
+      "lig-nex1",
+      "https://www.ligdefenseaerospace.com/res/img/img_ci-logo_m.jpg",
+      "jpeg",
+    ],
+    [
+      "sk-ax",
+      "https://www.skax.co.kr/wp-content/uploads/logo-1.svg",
+      "svg",
+    ],
+    [
+      "kt-cloud",
+      "https://www.ktcloud.com/static/img/common/svg/ico_logo_black.svg",
+      "svg",
+    ],
+  ])("proxies the official %s logo", async (logoKey, expectedUrl, format) => {
+    const body =
+      format === "svg"
+        ? new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+        : new Uint8Array([255, 216, 255]);
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(body, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request(`http://localhost/company-logo-assets/${logoKey}`),
+      { params: Promise.resolve({ logoKey }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
+  });
+
   it("rejects an unknown logo key without making a network request", async () => {
     const fetchMock = vi.fn<typeof fetch>();
     vi.stubGlobal("fetch", fetchMock);

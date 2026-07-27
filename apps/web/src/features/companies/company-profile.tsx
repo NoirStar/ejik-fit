@@ -273,6 +273,7 @@ export function CompanyProfile({
       <header className={styles.hero}>
         <CompanyMark
           companyName={companyName}
+          companySlug={companySlug}
           size={76}
           sourceUrl={primarySource}
         />

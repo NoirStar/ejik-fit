@@ -51,6 +51,7 @@ export type RecommendedJobFeedItem = {
   type: "recommended_job";
   companyName: string;
   companyHref?: string;
+  companySlug?: string;
   title: string;
   location: string;
   careerLabel: string;

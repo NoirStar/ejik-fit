@@ -102,6 +102,7 @@ function SavedJobCard({
       <div className={styles.jobIdentity}>
         <CompanyMark
           companyName={item.companyName}
+          companySlug={item.companySlug}
           size={48}
           sourceUrl={item.sourceUrl}
         />

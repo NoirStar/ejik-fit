@@ -37,6 +37,7 @@ export type MarketSkill = {
 export type MarketJob = {
   id: string;
   companyName: string;
+  companySlug?: string;
   title: string;
   careerLabel: string;
   employmentLabel: string;
@@ -324,6 +325,7 @@ export function buildMarketOverviewSnapshot(input: {
     jobs: (postings?.items ?? []).map((item): MarketJob => ({
       id: item.id,
       companyName: item.company_name,
+      ...(item.company_slug ? { companySlug: item.company_slug } : {}),
       title: item.title,
       careerLabel: formatCareer(item.career_type),
       employmentLabel: formatEmployment(item.employment_type),

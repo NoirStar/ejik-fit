@@ -242,6 +242,7 @@ function buildJobs(
     ...(posting.company_slug
       ? {
           companyHref: `/companies/${encodeURIComponent(posting.company_slug)}`,
+          companySlug: posting.company_slug,
         }
       : {}),
     title: posting.title,

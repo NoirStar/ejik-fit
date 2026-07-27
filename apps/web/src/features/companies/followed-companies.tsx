@@ -61,6 +61,7 @@ function FollowedCompanyRow({
     <li className={styles.companyRow}>
       <CompanyMark
         companyName={item.company_name}
+        companySlug={item.company_slug}
         size={42}
         sourceUrl={item.careers_url}
       />

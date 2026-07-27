@@ -326,6 +326,7 @@ export function ActivityNotificationCenter({
           >
             <CompanyMark
               companyName={notification.job.company_name}
+              companySlug={notification.job.company_slug}
               size={32}
               sourceUrl={notification.job.source_url}
             />

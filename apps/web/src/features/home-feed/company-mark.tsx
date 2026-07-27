@@ -7,6 +7,7 @@ import styles from "./company-mark.module.css";
 
 type CompanyMarkProps = {
   companyName: string;
+  companySlug?: string;
   priority?: boolean;
   sourceUrl?: string;
   size?: number;
@@ -14,11 +15,12 @@ type CompanyMarkProps = {
 
 export function CompanyMark({
   companyName,
+  companySlug,
   priority = false,
   sourceUrl,
   size = 44,
 }: CompanyMarkProps) {
-  const identity = companyIdentity(companyName, sourceUrl);
+  const identity = companyIdentity(companyName, sourceUrl, companySlug);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const showLogo =

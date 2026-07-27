@@ -330,6 +330,7 @@ function JobCard({
       <div className={styles.jobIdentity}>
         <CompanyMark
           companyName={item.companyName}
+          companySlug={item.companySlug}
           priority
           size={52}
           sourceUrl={item.sourceUrl}
