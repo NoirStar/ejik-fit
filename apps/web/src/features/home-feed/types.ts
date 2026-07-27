@@ -57,6 +57,7 @@ export type RecommendedJobFeedItem = {
   careerLabel: string;
   employmentLabel: string;
   sourceUrl: string;
+  firstSeenAt: string | null;
   verifiedLabel: string;
   matchedRequiredSkills: string[];
   missingRequiredSkills: string[];

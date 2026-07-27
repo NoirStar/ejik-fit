@@ -310,12 +310,35 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.recommendedJobs.map((job) => job.postingId)).toEqual([
       "job-3",
       "job-1",
+      "job-2",
     ]);
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       matchedRequiredSkills: ["Java"],
       missingRequiredSkills: ["Spring"],
       matchedPreferredSkills: ["Kafka"],
     });
+  });
+
+  it("keeps every fetched posting while reporting the backend total", () => {
+    const manyPostings: PostingListResponse = {
+      total: 125,
+      items: Array.from({ length: 25 }, (_, index) => ({
+        ...postings.items[0],
+        id: `job-${index + 1}`,
+        title: `Backend Engineer ${index + 1}`,
+      })),
+    };
+
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(manyPostings),
+      skillStats: ready(skillStats),
+      graph: ready({ ...graph, evidence: [] }),
+      fit: null,
+      ownedSkills: [],
+    });
+
+    expect(snapshot.recommendedJobs).toHaveLength(25);
+    expect(snapshot.postingCount).toBe(125);
   });
 
   it("keeps verified posting content when graph loading fails", () => {

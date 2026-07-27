@@ -48,6 +48,7 @@ const items: FeedItem[] = [
     careerLabel: "경력",
     employmentLabel: "정규직",
     sourceUrl: "https://example.com/job-1",
+    firstSeenAt: "2026-07-13T08:00:00.000Z",
     verifiedLabel: "7월 13일",
     matchedRequiredSkills: [],
     missingRequiredSkills: [],
