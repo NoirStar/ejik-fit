@@ -221,6 +221,19 @@ describe("Home", () => {
       .toHaveAttribute("href", "/career");
   });
 
+  it("remounts the feed when the saved career scope changes", async () => {
+    const defaultFeed = await Home();
+    const scopedFeed = await Home({
+      searchParams: Promise.resolve({
+        owned_skills: "Python",
+        career_type: "experienced",
+        target_domain: "backend",
+      }),
+    });
+
+    expect(scopedFeed.key).not.toBe(defaultFeed.key);
+  });
+
   it("does not inject default skills for a first visit", async () => {
     render(await Home());
 

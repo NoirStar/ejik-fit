@@ -11,6 +11,10 @@ import {
 const communityTitle = "첫 화면부터 보이는 커뮤니티 글";
 const communityTags = ["SSR", "피드", "안정성", "모바일"];
 
+test.afterEach(async ({ request }) => {
+  await resetCommunityFixture(request);
+});
+
 test("renders community posts before hydration without reordering the home feed", async ({
   page,
   request,

@@ -25,8 +25,13 @@ for (const width of [1440, 820, 390, 320]) {
       ),
     ).toBe(false);
 
-    const response = await page.goto("/posts/career-move-3y-backend");
-    expect(response?.status()).toBe(404);
+    await page.goto("/posts/career-move-3y-backend");
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "페이지를 찾을 수 없습니다.",
+      }),
+    ).toBeVisible();
     expect(browserErrors).toEqual([]);
   });
 }

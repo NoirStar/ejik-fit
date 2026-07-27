@@ -40,6 +40,11 @@ export default async function Home({ searchParams }: HomeProps = {}) {
   const careerFilter = careerCondition
     ? { career_type: careerCondition }
     : {};
+  const feedScopeKey = JSON.stringify([
+    careerCondition,
+    targetDomain,
+    ownedSkills,
+  ]);
 
   const fitRequest = ownedSkills.length > 0
     ? settledResource(
@@ -78,6 +83,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
     <HomeFeed
       composeMode={composeMode}
       initialCommunityFeed={initialCommunityFeed}
+      key={feedScopeKey}
       snapshot={buildHomeFeedSnapshot({
         postings,
         skillStats,
