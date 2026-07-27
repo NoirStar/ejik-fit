@@ -59,7 +59,7 @@ describe("loadInitialCommunityFeed", () => {
       page: { items: [post], nextCursor: null },
     });
     expect(createSupabaseCommunityStore).toHaveBeenCalledWith(client);
-    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 20 });
+    expect(store.listPostPage).toHaveBeenCalledWith({ limit: 10 });
   });
 
   it("returns a safe error when public Supabase configuration is unavailable", async () => {

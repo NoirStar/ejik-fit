@@ -584,6 +584,8 @@
 .socialCard,
 .jobCard,
 .marketCard {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 15rem;
   min-width: 0;
   padding: 1rem 1.125rem;
   border: 0;
@@ -607,7 +609,14 @@
   display: grid;
   justify-items: center;
   gap: var(--space-2xs);
+  min-height: 3.5rem;
   padding: var(--space-sm) 0;
+}
+
+.feedPaginationError {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2xs);
 }
 
 .feedPagination button {
@@ -637,9 +646,17 @@
 
 .feedPagination p {
   margin: 0;
-  color: var(--color-danger);
+  color: var(--color-muted);
   font-size: var(--type-meta);
   line-height: 1.5;
+}
+
+.feedPagination p[role="alert"] {
+  color: var(--color-danger);
+}
+
+.feedPagination .feedComplete {
+  color: var(--color-muted);
 }
 
 .legacyRecovery {

@@ -54,7 +54,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
 
   const [postings, skillStats, graph, fit, initialCommunityFeed] = await Promise.all([
     settledResource(
-      getPostings({ ...careerFilter, limit: 40 }),
+      getPostings({ ...careerFilter, limit: 20 }),
       "공고를 불러오지 못했습니다.",
     ),
     settledResource(
@@ -71,7 +71,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       "스킬맵을 불러오지 못했습니다.",
     ),
     fitRequest,
-    loadInitialCommunityFeed(),
+    loadInitialCommunityFeed(10),
   ]);
 
   return (

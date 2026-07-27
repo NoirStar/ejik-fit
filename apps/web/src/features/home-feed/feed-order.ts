@@ -14,6 +14,17 @@ function engagementScore(item: CommunityPostFeedItem) {
   return item.metrics.reactions + item.metrics.comments * 2 + item.metrics.saves;
 }
 
+function itemTime(item: FeedItem) {
+  const value = isSocialItem(item)
+    ? item.createdAt
+    : item.type === "recommended_job"
+      ? item.firstSeenAt
+      : null;
+  if (!value) return 0;
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 export function itemsForTab(
   items: FeedItem[],
   tab: FeedTab,
@@ -34,11 +45,7 @@ export function itemsForTab(
   }
 
   if (tab === "latest") {
-    return [...realItems].sort((left, right) => {
-      const rightTime = isSocialItem(right) ? Date.parse(right.createdAt) : 0;
-      const leftTime = isSocialItem(left) ? Date.parse(left.createdAt) : 0;
-      return rightTime - leftTime;
-    });
+    return [...realItems].sort((left, right) => itemTime(right) - itemTime(left));
   }
 
   return realItems

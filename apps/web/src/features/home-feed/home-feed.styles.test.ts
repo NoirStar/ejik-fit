@@ -31,6 +31,12 @@ describe("home feed density", () => {
     );
   });
 
+  it("skips off-screen card layout while reserving a stable height", () => {
+    expect(css).toMatch(
+      /\.socialCard,\s*\.jobCard,\s*\.marketCard\s*\{[^}]*content-visibility: auto;[^}]*contain-intrinsic-size: auto 15rem;/,
+    );
+  });
+
   it("keeps editorial item type and tabs restrained", () => {
     expect(css).toMatch(
       /\.cardCopy h2,\s*\.jobIdentity h2,\s*\.marketBody h2\s*\{[^}]*font-size: var\(--type-item-title\);/,

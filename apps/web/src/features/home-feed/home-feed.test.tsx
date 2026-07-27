@@ -125,6 +125,42 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function installIntersectionObserver() {
+  let callback!: IntersectionObserverCallback;
+  const observe = vi.fn();
+  const disconnect = vi.fn();
+
+  class MockIntersectionObserver {
+    constructor(next: IntersectionObserverCallback) {
+      callback = next;
+    }
+
+    observe = observe;
+    disconnect = disconnect;
+    unobserve = vi.fn();
+    takeRecords = vi.fn(() => []);
+    root = null;
+    rootMargin = "800px 0px";
+    thresholds = [0];
+  }
+
+  vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+  return {
+    disconnect,
+    observe,
+    async enter() {
+      const target = observe.mock.calls.at(-1)?.[0] as Element;
+      await act(async () => {
+        callback(
+          [{ isIntersecting: true, target } as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+        await Promise.resolve();
+      });
+    },
+  };
+}
+
 function buildSnapshot() {
   return buildHomeFeedSnapshot({
     postings: ready(postings),
@@ -196,6 +232,7 @@ describe("HomeFeed", () => {
     sessionStorage.clear();
     navigation.push.mockReset();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders verified market content without built-in community examples", () => {
@@ -356,7 +393,8 @@ describe("HomeFeed", () => {
     expect(within(recovery).queryByText(/공감|댓글|저장 [0-9]/)).not.toBeInTheDocument();
   });
 
-  it("loads the next page of real community posts without replacing the first page", async () => {
+  it("loads the next page at the feed sentinel without replacing the first page", async () => {
+    const observer = installIntersectionObserver();
     const first: CommunityPost = {
       id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       author: {
@@ -401,9 +439,8 @@ describe("HomeFeed", () => {
     expect(
       await screen.findByRole("article", { name: "첫 페이지 실제 글" }),
     ).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "커뮤니티 글 더 보기" }),
-    );
+    await waitFor(() => expect(observer.observe).toHaveBeenCalledTimes(1));
+    await observer.enter();
 
     expect(
       await screen.findByRole("article", { name: "다음 페이지 실제 글" }),
@@ -411,6 +448,9 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("article", { name: "첫 페이지 실제 글" }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "커뮤니티 글 더 보기" }),
+    ).not.toBeInTheDocument();
   });
 
   it("uses the shell write action without repeating a central write button", () => {
@@ -618,7 +658,7 @@ describe("HomeFeed", () => {
     expect(
       await screen.findByRole("article", { name: followedPost.title }),
     ).toBeInTheDocument();
-    expect(store.listFollowingPostPage).toHaveBeenCalledWith({ limit: 20 });
+    expect(store.listFollowingPostPage).toHaveBeenCalledWith({ limit: 10 });
     expect(
       screen.queryByRole("article", { name: publicPost.title }),
     ).not.toBeInTheDocument();

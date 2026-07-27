@@ -130,7 +130,7 @@ describe("Home", () => {
     const articles = within(activity).getAllByRole("article");
     expect(articles[0]).toHaveAccessibleName(communityPost.title);
     expect(articles[1]).toHaveAccessibleName("Backend Engineer");
-    expect(loadInitialCommunityFeed).toHaveBeenCalledTimes(1);
+    expect(loadInitialCommunityFeed).toHaveBeenCalledWith(10);
   });
 
   it("keeps jobs visible when the server community request fails", async () => {
@@ -166,7 +166,7 @@ describe("Home", () => {
     expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.queryByText(/지난주 대비|합격 가능성|\d+\.\d+점/)).not.toBeInTheDocument();
-    expect(getPostings).toHaveBeenCalledWith({ limit: 40 });
+    expect(getPostings).toHaveBeenCalledWith({ limit: 20 });
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Java",
@@ -194,7 +194,7 @@ describe("Home", () => {
 
     expect(getPostings).toHaveBeenCalledWith({
       career_type: "experienced",
-      limit: 40,
+      limit: 20,
     });
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",

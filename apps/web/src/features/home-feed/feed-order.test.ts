@@ -97,6 +97,17 @@ describe("itemsForTab", () => {
     ]);
   });
 
+  it("uses a job's first collection time in the latest tab", () => {
+    const newerJob = {
+      ...items[2],
+      firstSeenAt: "2026-07-13T10:00:00.000Z",
+    } as FeedItem;
+
+    expect(
+      itemsForTab([items[0], newerJob, items[3]], "latest").map(({ id }) => id),
+    ).toEqual(["job-1", "community-1", "market-1"]);
+  });
+
   it("ranks only social content by visible engagement for popular", () => {
     expect(itemsForTab(items, "popular").map(({ id }) => id)).toEqual([
       "community-1",
