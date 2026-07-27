@@ -366,7 +366,7 @@ class CommunityPost(Base):
             name="uq_community_posts_author_origin",
         ),
         CheckConstraint(
-            "category IN ('커리어 질문', '커리어 고민', '면접 후기')",
+            "category IN ('일반', '커리어 질문', '커리어 고민', '면접 후기')",
             name="ck_community_posts_category",
         ),
         CheckConstraint(
