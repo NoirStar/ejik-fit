@@ -7,7 +7,7 @@ from ejikfit.connectors.hyundai_mobis import (
 def test_listing_uses_official_sw_job_category_and_specific_title() -> None:
     html = """
     <main>
-      <span id="schCnt">2</span>
+      <span id="schCnt">3</span>
       <div id="jobList" class="job-list">
         <a href="/jobs-view?seq=3904" class="job-item">
           <div class="info-wrap01">
@@ -28,6 +28,17 @@ def test_listing_uses_official_sw_job_category_and_specific_title() -> None:
           <p class="tit">로봇 액추에이터 제어기 회로 설계</p>
           <div class="info-wrap02">
             <p>로보틱스사업실</p><p>HW</p><p>회로설계</p><p>의왕연구소</p>
+          </div>
+          <p class="date">2026-07-06 - 2026-07-20 10:00</p>
+        </a>
+        <a href="/jobs-view?seq=3906" class="job-item">
+          <div class="info-wrap01">
+            <p class="career">신입-관리직</p>
+            <p class="integrated">[구매담당] 26년 7월 관리직 신입채용</p>
+          </div>
+          <p class="tit">칵핏모듈부품 개발</p>
+          <div class="info-wrap02">
+            <p>구매담당</p><p>구매/구매개발</p><p>역삼본사</p>
           </div>
           <p class="date">2026-07-06 - 2026-07-20 10:00</p>
         </a>
