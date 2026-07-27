@@ -14,7 +14,7 @@ export type AuthorTone = "violet" | "blue" | "green" | "orange";
 export type CommunityPostFeedItem = {
   id: string;
   type: "community_post";
-  category: CommunityCategory | "이직 고민" | "업무 이야기";
+  category: CommunityCategory;
   authorId: string;
   authorName: string;
   authorHeadline: string;
@@ -26,28 +26,7 @@ export type CommunityPostFeedItem = {
   tags: string[];
   href: string;
   metrics: SocialMetrics;
-  source: "mock" | "local" | "server";
-};
-
-export type InterviewReviewFeedItem = {
-  id: string;
-  type: "interview_review";
-  category: "면접 후기";
-  authorId: string;
-  authorName: string;
-  authorHeadline: string;
-  authorTone: AuthorTone;
-  createdAt: string;
-  createdLabel: string;
-  companyType: string;
-  role: string;
-  stage: string;
-  title: string;
-  summary: string;
-  tags: string[];
-  href: string;
-  metrics: SocialMetrics;
-  source: "mock";
+  source: "local" | "server";
 };
 
 export type MarketInsightFeedItem = {
@@ -118,14 +97,12 @@ export type CareerContextSummary = {
 
 export type FeedItem =
   | CommunityPostFeedItem
-  | InterviewReviewFeedItem
   | MarketInsightFeedItem
   | RecommendedJobFeedItem;
 
 export type HomeFeedSnapshot = {
   dataStatus: DataStatus;
   feedItems: FeedItem[];
-  starterGuideItems: Array<CommunityPostFeedItem | InterviewReviewFeedItem>;
   recommendedJobs: RecommendedJobFeedItem[];
   marketInsights: MarketInsightFeedItem[];
   skillDemand: SkillDemandSummary[];

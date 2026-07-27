@@ -1,7 +1,4 @@
-import type {
-  CommunityPostFeedItem,
-  InterviewReviewFeedItem,
-} from "@/features/home-feed/types";
+import type { CommunityPostFeedItem } from "@/features/home-feed/types";
 import type { ResourceState } from "@/features/home-feed/resource-state";
 import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
 import type { LocalCommunityPost } from "@/lib/local-community-posts";
@@ -28,7 +25,7 @@ export const SEARCH_SCOPES = [
   { value: "community", label: "커뮤니티" },
 ] as const satisfies ReadonlyArray<{ value: SearchScope; label: string }>;
 
-type CommunityItem = CommunityPostFeedItem | InterviewReviewFeedItem;
+type CommunityItem = CommunityPostFeedItem;
 
 export type CompanySearchResult = {
   slug: string;
@@ -77,7 +74,7 @@ export type CommunitySearchResult = {
   authorName: string;
   authorHeadline: string;
   createdLabel: string;
-  source: "mock" | "local" | "server";
+  source: "local" | "server";
 };
 
 export type SearchSnapshot = {
@@ -272,8 +269,7 @@ function communitySearchText(item: CommunityItem) {
     item.title,
     ...item.tags,
   ];
-  if (item.type === "community_post") shared.push(item.body);
-  else shared.push(item.summary, item.companyType, item.role, item.stage);
+  shared.push(item.body);
   return searchable(shared.join(" "));
 }
 
@@ -305,8 +301,7 @@ export function buildCommunitySearchResults(
         id: item.id,
         category: item.category,
         title: item.title,
-        summary:
-          item.type === "community_post" ? item.body : item.summary,
+        summary: item.body,
         tags: item.tags,
         href: item.href,
         authorName: item.authorName,

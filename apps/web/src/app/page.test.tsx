@@ -149,7 +149,7 @@ describe("Home", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders mock community beside API-backed jobs and skill counts", async () => {
+  it("renders only API-backed jobs and skill counts when community is empty", async () => {
     render(
       await Home({
         searchParams: Promise.resolve({ owned_skills: ["Java", "Spring"] }),
@@ -160,8 +160,8 @@ describe("Home", () => {
       screen.getByRole("heading", { name: "커리어 이야기" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("article", { name: /3년차 백엔드 개발자/ }),
-    ).toBeInTheDocument();
+      screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("토스")).toBeInTheDocument();
     expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
     expect(screen.getByText("필수 8건")).toBeInTheDocument();

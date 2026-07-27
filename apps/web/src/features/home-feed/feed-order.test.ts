@@ -22,21 +22,21 @@ const items: FeedItem[] = [
     source: "server",
   },
   {
-    id: "starter-community-1",
+    id: "local-community-1",
     type: "community_post",
-    category: "커리어 질문",
+    category: "일반",
     authorId: "server-garden",
-    authorName: "가이드 작성자",
-    authorHeadline: "읽기 전용",
+    authorName: "나",
+    authorHeadline: "이 기기에서 작성",
     authorTone: "blue",
     createdAt: "2026-07-13T11:00:00.000Z",
-    createdLabel: "가이드",
-    title: "실제 팔로잉에 섞이면 안 되는 가이드",
-    body: "가이드 본문",
-    tags: ["가이드"],
-    href: "/posts/starter-community-1",
-    metrics: { reactions: 99, comments: 99, saves: 99 },
-    source: "mock",
+    createdLabel: "방금 전",
+    title: "복구 영역에만 있어야 하는 로컬 글",
+    body: "로컬 본문",
+    tags: ["로컬"],
+    href: "/posts/local-community-1",
+    metrics: { reactions: 0, comments: 0, saves: 0 },
+    source: "local",
   },
   {
     id: "job-1",
@@ -56,26 +56,6 @@ const items: FeedItem[] = [
     source: "api",
   },
   {
-    id: "review-1",
-    type: "interview_review",
-    category: "면접 후기",
-    authorId: "night-builder",
-    authorName: "빌드하는밤",
-    authorHeadline: "서버 개발자",
-    authorTone: "green",
-    createdAt: "2026-07-13T10:00:00.000Z",
-    createdLabel: "1시간 전",
-    companyType: "플랫폼 기업",
-    role: "백엔드",
-    stage: "1차 면접",
-    title: "면접 후기",
-    summary: "요약",
-    tags: ["면접"],
-    href: "/posts/review-1",
-    metrics: { reactions: 20, comments: 7, saves: 4 },
-    source: "mock",
-  },
-  {
     id: "market-1",
     type: "market_insight",
     skillName: "Kubernetes",
@@ -93,7 +73,7 @@ const items: FeedItem[] = [
 ];
 
 describe("itemsForTab", () => {
-  it("keeps the curated order while excluding read-only guidance", () => {
+  it("keeps the curated order while excluding recovery-only local posts", () => {
     expect(itemsForTab(items, "recommended").map(({ id }) => id)).toEqual([
       "community-1",
       "job-1",

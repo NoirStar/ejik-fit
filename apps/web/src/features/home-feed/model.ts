@@ -21,9 +21,6 @@ import type {
   SkillStatsResponse,
 } from "@/lib/types";
 
-import {
-  STARTER_COMMUNITY_GUIDE_ITEMS,
-} from "./mock-community";
 import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
@@ -394,7 +391,6 @@ export function buildHomeFeedSnapshot(
       hasVerifiedData,
     ),
     feedItems: mergeFeed(recommendedJobs, marketInsights),
-    starterGuideItems: STARTER_COMMUNITY_GUIDE_ITEMS,
     recommendedJobs,
     marketInsights,
     skillDemand,

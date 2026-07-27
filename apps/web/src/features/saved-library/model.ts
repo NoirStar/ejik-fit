@@ -1,7 +1,4 @@
-import type {
-  CommunityPostFeedItem,
-  InterviewReviewFeedItem,
-} from "@/features/home-feed/types";
+import type { CommunityPostFeedItem } from "@/features/home-feed/types";
 import {
   buildJobEvidence,
   formatCareerRange,
@@ -18,10 +15,7 @@ import type { PostingDetail } from "@/lib/types";
 
 export const MAX_SAVED_JOB_LOOKUPS = MAX_SAVED_JOB_IDS;
 
-type CommunityItem = CommunityPostFeedItem | InterviewReviewFeedItem;
-type DurableCommunityItem = CommunityPostFeedItem & {
-  source: "local" | "server";
-};
+type CommunityItem = CommunityPostFeedItem;
 
 export type SavedJobItem = {
   id: string;
@@ -233,11 +227,11 @@ export function normalizeSavedJobDataResponse(value: unknown): SavedJobData {
 
 function isDurableCommunityItem(
   item: CommunityItem,
-): item is DurableCommunityItem {
-  return item.type === "community_post" && item.source !== "mock";
+): item is CommunityPostFeedItem {
+  return item.type === "community_post";
 }
 
-function toSavedCommunityItem(item: DurableCommunityItem): SavedCommunityItem {
+function toSavedCommunityItem(item: CommunityPostFeedItem): SavedCommunityItem {
   return {
     id: item.id,
     category: item.category,

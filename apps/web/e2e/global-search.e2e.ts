@@ -11,15 +11,9 @@ for (const width of [1440, 820, 390, 320]) {
     await page.goto("/");
 
     const pageContent = page.locator("#main-content");
-    const guideLink = pageContent
-      .getByRole("region", { name: "이직핏 커뮤니티 가이드" })
-      .getByRole("link", {
-        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요? 예시 읽기",
-      });
-    await expect(guideLink).toBeVisible();
-    const guideLinkBox = await guideLink.boundingBox();
-    expect(guideLinkBox?.width).toBeGreaterThanOrEqual(44);
-    expect(guideLinkBox?.height).toBeGreaterThanOrEqual(44);
+    await expect(
+      pageContent.getByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+    ).toHaveCount(0);
 
     const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
     await globalSearch.fill("Python");
@@ -136,38 +130,24 @@ for (const width of [1440, 820, 390, 320]) {
   });
 }
 
-test("moves between actual result scopes and clearly labeled guidance", async ({
+test("moves between actual result scopes without built-in community examples", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/search?q=Kubernetes");
 
-  await page.getByRole("link", { name: /커뮤니티.*1/ }).click();
-  await expect(page).toHaveURL(
-    "/search?q=Kubernetes&scope=community",
-  );
+  await page.goto("/search?q=Kubernetes&scope=community");
   await expect(
     page.getByRole("link", {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     }),
-  ).toBeVisible();
-  const guide = page.getByRole("region", { name: "커뮤니티 활용 가이드" });
+  ).toHaveCount(0);
   await expect(
-    guide.getByText("활용 가이드는 실제 사용자 글이 아닙니다."),
-  ).toBeVisible();
-  await expect(
-    page.getByText("활용 가이드는 실제 사용자 글이 아닙니다."),
-  ).toHaveCount(1);
-  await expect(guide.getByText("활용 가이드", { exact: true })).toHaveCount(0);
+    page.getByRole("region", { name: "커뮤니티 활용 가이드" }),
+  ).toHaveCount(0);
   const disclosure = page.getByText(COMMUNITY_DISCLOSURE);
   await expect(disclosure).toBeVisible();
   await expect(disclosure).not.toContainText(/API|서버|응답/);
-  const communityTag = page.getByRole("link", {
-    name: "Kubernetes 커뮤니티 검색",
-  });
-  const communityTagBox = await communityTag.boundingBox();
-  expect(communityTagBox?.width).toBeGreaterThanOrEqual(44);
-  expect(communityTagBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByRole("link", { name: /기술.*1/ }).click();
   await expect(page).toHaveURL("/search?q=Kubernetes&scope=skills");

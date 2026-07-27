@@ -6,8 +6,6 @@ import { describe, expect, it } from "vitest";
 const sourceRoot = path.resolve(process.cwd(), "src");
 const ignoredSourceFiles = new Set([
   "features/home-feed/company-identity.ts",
-  "features/home-feed/mock-community.ts",
-  "features/home-feed/mock-post-details.ts",
 ]);
 
 const forbidden = [

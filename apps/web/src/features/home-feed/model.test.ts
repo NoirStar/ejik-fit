@@ -177,7 +177,7 @@ describe("buildHomeFeedSnapshot", () => {
     });
   });
 
-  it("keeps starter guidance out of the verified action feed", () => {
+  it("builds the action feed only from verified data", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
@@ -195,10 +195,7 @@ describe("buildHomeFeedSnapshot", () => {
       "market_insight",
     ]);
     expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
-    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
-    expect(
-      snapshot.starterGuideItems.every((item) => item.source === "mock"),
-    ).toBe(true);
+    expect(JSON.stringify(snapshot)).not.toContain('"mock"');
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       companyName: "토스",
       companyHref: "/companies/toss",
@@ -321,7 +318,7 @@ describe("buildHomeFeedSnapshot", () => {
     });
   });
 
-  it("keeps verified posting content and separate guidance when graph loading fails", () => {
+  it("keeps verified posting content when graph loading fails", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
@@ -331,7 +328,6 @@ describe("buildHomeFeedSnapshot", () => {
     });
 
     expect(snapshot.dataStatus).toBe("partial");
-    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
     expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
     expect(snapshot.recommendedJobs).toHaveLength(1);
     expect(snapshot.recommendedJobs[0].matchedRequiredSkills).toEqual([]);
@@ -353,7 +349,7 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.skillDemand).toEqual([]);
     expect(snapshot.careerInsight).toEqual({ status: "needs_skills" });
     expect(snapshot.feedItems).toEqual([]);
-    expect(snapshot.starterGuideItems.length).toBeGreaterThan(0);
+    expect(JSON.stringify(snapshot)).not.toContain('"mock"');
   });
 
   it("marks only the personalized insight unavailable when fit analysis fails", () => {

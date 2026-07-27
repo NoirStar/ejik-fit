@@ -98,7 +98,7 @@ describe("SearchPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps skill and mock results when posting search fails", async () => {
+  it("keeps skill results without inventing community posts when posting search fails", async () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -123,10 +123,10 @@ describe("SearchPage", () => {
       screen.getByRole("link", { name: "Kubernetes 스킬맵 보기" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", {
+      screen.queryByRole("link", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/internal-api|503/)).not.toBeInTheDocument();
     consoleError.mockRestore();
   });

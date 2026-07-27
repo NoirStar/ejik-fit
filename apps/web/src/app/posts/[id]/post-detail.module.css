@@ -51,20 +51,6 @@
   font-weight: 850;
 }
 
-.mockBadge {
-  display: inline-grid;
-  min-height: 1.5rem;
-  place-items: center;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, var(--color-line));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--color-warning) 7%, var(--color-surface));
-  color: var(--color-warning);
-  font-size: 0.6875rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-
 .localBadge {
   display: inline-grid;
   min-height: 1.5rem;

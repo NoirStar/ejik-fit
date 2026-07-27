@@ -651,8 +651,8 @@ export function SavedLibrary({
                 <div className={styles.sourceNotice}>
                   <ShieldCheck aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    계정에 저장한 게시물만 표시합니다. 읽기 전용 안내와 이전
-                    기기에 남은 글은 이 개수에 포함하지 않습니다.
+                    계정에 저장한 게시물만 표시합니다. 이 기기에만 남은 글은 이
+                    개수에 포함하지 않습니다.
                   </p>
                 </div>
 

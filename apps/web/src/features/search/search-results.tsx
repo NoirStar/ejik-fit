@@ -291,11 +291,9 @@ function CommunityResult({
   return (
     <article aria-label={item.title} className={styles.communityResult}>
       <div className={styles.resultTopline}>
-        {item.source !== "mock" && (
-          <span className={styles.exampleBadge} data-source={item.source}>
-            {item.source === "local" ? "이 기기에 남은 글" : "커뮤니티"}
-          </span>
-        )}
+        <span className={styles.exampleBadge} data-source={item.source}>
+          {item.source === "local" ? "이 기기에 남은 글" : "커뮤니티"}
+        </span>
         <span>{item.createdLabel}</span>
       </div>
       <p className={styles.communityAuthor}>
@@ -359,16 +357,10 @@ export function SearchResults({
       ),
     [localPosts, serverSnapshot.query],
   );
-  const guideCommunityResults = useMemo(
-    () =>
-      serverSnapshot.community.filter((item) => item.source === "mock"),
-    [serverSnapshot.community],
-  );
   const snapshot = useMemo(() => {
     const community = [
       ...serverCommunityResults,
       ...localCommunityResults,
-      ...guideCommunityResults,
     ];
     return {
       ...serverSnapshot,
@@ -382,7 +374,6 @@ export function SearchResults({
         0,
     };
   }, [
-    guideCommunityResults,
     localCommunityResults,
     serverCommunityResults,
     serverSnapshot,
@@ -433,7 +424,7 @@ export function SearchResults({
             <h2>{SEARCH_COPY.prompt}</h2>
             <p>
               기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이
-              기기에 남은 글, 활용 가이드에서 찾습니다.
+              기기에 남은 글에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -600,12 +591,12 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="전체 공개 계정 글을 검색하고, 이 기기에 남은 글과 활용 가이드는 별도로 보여줍니다."
+                      description="전체 공개 계정 글을 검색하고, 이 기기에 남은 글은 별도로 보여줍니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
-                    <p className={styles.mockDisclosure}>
+                    <p className={styles.communityDisclosure}>
                       커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은
                       계정 글과 구분해 표시합니다.
                     </p>
@@ -687,23 +678,6 @@ export function SearchResults({
                           </section>
                         )}
 
-                        {guideCommunityResults.length > 0 && (
-                          <section
-                            aria-label="커뮤니티 활용 가이드"
-                            className={styles.communitySourceGroup}
-                          >
-                            <header>
-                              <h3>커뮤니티 활용 가이드</h3>
-                              <p>활용 가이드는 실제 사용자 글이 아닙니다.</p>
-                              <p>검색과 질문 작성을 돕는 읽기 전용 예시입니다.</p>
-                            </header>
-                            <div className={styles.communityList}>
-                              {guideCommunityResults.map((item) => (
-                                <CommunityResult item={item} key={item.id} />
-                              ))}
-                            </div>
-                          </section>
-                        )}
                       </>
                     )}
                   </section>

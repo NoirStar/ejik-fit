@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
 import { localCommunityPostToFeedItem } from "@/features/home-feed/model";
 import type { PostingDetail } from "@/lib/types";
 
@@ -101,7 +100,7 @@ describe("saved library model", () => {
     ).toThrow(TypeError);
   });
 
-  it("selects durable local records but ignores read-only starter saves", () => {
+  it("selects durable local records and reports removed example saves unavailable", () => {
     const localPost = localCommunityPostToFeedItem(
       {
         id: "local-browser-question",
@@ -119,7 +118,7 @@ describe("saved library model", () => {
         "local-missing",
         "career-move-3y-backend",
       ],
-      [...MOCK_SOCIAL_ITEMS, localPost],
+      [localPost],
     );
 
     expect(selected.items.map((item) => item.id)).toEqual([
@@ -131,6 +130,10 @@ describe("saved library model", () => {
       authorName: "나",
       createdLabel: "5분 전",
     });
-    expect(selected.unavailableIds).toEqual(["local-missing"]);
+    expect(selected.unavailableIds).toEqual([
+      "kubernetes-experience",
+      "local-missing",
+      "career-move-3y-backend",
+    ]);
   });
 });

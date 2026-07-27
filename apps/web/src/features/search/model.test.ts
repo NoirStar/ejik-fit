@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
 import type { ResourceState } from "@/features/home-feed/resource-state";
+import type { CommunityPostFeedItem } from "@/features/home-feed/types";
 import type {
   PostingListResponse,
   SkillStatsResponse,
@@ -126,6 +126,26 @@ const skillStats: ResourceState<SkillStatsResponse> = {
   },
 };
 
+const communityItems: CommunityPostFeedItem[] = [
+  {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    type: "community_post",
+    category: "커리어 질문",
+    authorId: "22222222-2222-4222-8222-222222222222",
+    authorName: "코드산책",
+    authorHeadline: "커뮤니티 회원",
+    authorTone: "blue",
+    createdAt: "2026-07-21T05:00:00.000Z",
+    createdLabel: "1시간 전",
+    title: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
+    body: "Kubernetes 공고를 비교하며 계정에 작성한 공개 질문입니다.",
+    tags: ["Kubernetes", "인프라"],
+    href: "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    metrics: { reactions: 2, comments: 1, saves: 0 },
+    source: "server",
+  },
+];
+
 describe("global search model", () => {
   it("normalizes external query and scope values", () => {
     expect(normalizeSearchQuery(["  Python   backend  ", "ignored"])).toBe(
@@ -143,7 +163,7 @@ describe("global search model", () => {
       scope: "all",
       postings,
       skillStats,
-      communityItems: MOCK_SOCIAL_ITEMS,
+      communityItems,
     });
 
     expect(snapshot.companies).toHaveLength(2);
@@ -207,33 +227,33 @@ describe("global search model", () => {
     });
   });
 
-  it("searches mock community copy while keeping its example source explicit", () => {
+  it("searches real server community copy", () => {
     const snapshot = buildSearchSnapshot({
       query: "Kubernetes",
       scope: "community",
       postings,
       skillStats,
-      communityItems: MOCK_SOCIAL_ITEMS,
+      communityItems,
     });
 
     expect(snapshot.community).toHaveLength(1);
     expect(snapshot.community[0]).toMatchObject({
-      id: "kubernetes-experience",
-      source: "mock",
-      href: "/posts/kubernetes-experience",
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      source: "server",
+      href: "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     });
     expect(buildSearchScopeHref("연봉 협상", "community")).toBe(
       "/search?q=%EC%97%B0%EB%B4%89+%ED%98%91%EC%83%81&scope=community",
     );
   });
 
-  it("merges matching browser-owned posts ahead of mock results without mutating API evidence", () => {
+  it("merges matching browser-owned posts ahead of server results without mutating API evidence", () => {
     const serverSnapshot = buildSearchSnapshot({
       query: "Kubernetes",
       scope: "all",
       postings,
       skillStats,
-      communityItems: MOCK_SOCIAL_ITEMS,
+      communityItems,
     });
     const merged = mergeLocalCommunitySearchResults(
       serverSnapshot,
@@ -258,7 +278,7 @@ describe("global search model", () => {
 
     expect(merged.community.map((item) => item.id)).toEqual([
       "local-kubernetes-question",
-      "kubernetes-experience",
+      "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     ]);
     expect(merged.community[0]).toMatchObject({
       source: "local",
@@ -279,7 +299,7 @@ describe("global search model", () => {
       scope: "all",
       postings: { status: "error", message: "공고 검색 실패" },
       skillStats: { status: "error", message: "기술 검색 실패" },
-      communityItems: MOCK_SOCIAL_ITEMS,
+      communityItems,
     });
     const merged = mergeLocalCommunitySearchResults(serverSnapshot, [
       {
@@ -313,7 +333,7 @@ describe("global search model", () => {
         scope: "all",
         postings: null,
         skillStats: null,
-        communityItems: MOCK_SOCIAL_ITEMS,
+        communityItems,
       }).dataStatus,
     ).toBe("idle");
 
@@ -322,7 +342,7 @@ describe("global search model", () => {
       scope: "all",
       postings: { status: "ready", data: { items: [], total: 0 } },
       skillStats: { status: "ready", data: { items: [], total: 0 } },
-      communityItems: MOCK_SOCIAL_ITEMS,
+      communityItems,
     });
     expect(ready.dataStatus).toBe("ready");
     expect(ready.hasAnyResults).toBe(false);

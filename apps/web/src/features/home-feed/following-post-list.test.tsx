@@ -75,21 +75,21 @@ describe("FollowingPostList", () => {
         source: "server",
       },
       {
-        id: "legacy-guide",
+        id: "local-recovery",
         type: "community_post",
-        category: "커리어 질문",
+        category: "일반",
         authorId: "22222222-2222-4222-8222-222222222222",
         authorName: "서버정원",
-        authorHeadline: "읽기 전용",
+        authorHeadline: "이 기기에서 작성",
         authorTone: "violet",
         createdAt: "2026-07-22T05:00:00.000Z",
-        createdLabel: "가이드",
-        title: "오래된 팔로우 상태로 노출되면 안 되는 가이드",
-        body: "가이드 본문",
-        tags: ["가이드"],
-        href: "/posts/legacy-guide",
-        metrics: { reactions: 10, comments: 10, saves: 10 },
-        source: "mock",
+        createdLabel: "방금 전",
+        title: "팔로잉 영역에 노출되면 안 되는 로컬 글",
+        body: "로컬 본문",
+        tags: ["로컬"],
+        href: "/posts/local-recovery",
+        metrics: { reactions: 0, comments: 0, saves: 0 },
+        source: "local",
       },
     ];
     render(
@@ -118,7 +118,7 @@ describe("FollowingPostList", () => {
       "서버정원의 글: 계정에서 팔로우한 작성자의 이전 글",
     );
     expect(region).not.toHaveTextContent(
-      "오래된 팔로우 상태로 노출되면 안 되는 가이드",
+      "팔로잉 영역에 노출되면 안 되는 로컬 글",
     );
 
     fireEvent.click(

@@ -67,7 +67,6 @@ import {
   serverCommunityPostToFeedItem,
 } from "./model";
 import { RecentTopicList } from "./recent-topic-list";
-import { StarterCommunityGuide } from "./starter-community-guide";
 import styles from "./home-feed.module.css";
 import type {
   CareerContextSummary,
@@ -76,7 +75,6 @@ import type {
   FeedItem,
   FeedTab,
   HomeFeedSnapshot,
-  InterviewReviewFeedItem,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
 } from "./types";
@@ -97,7 +95,7 @@ type LocalPostDraft = {
 type DraftErrors = Partial<
   Record<"title" | "body" | "storage" | "tags", string>
 >;
-type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
+type SocialItem = CommunityPostFeedItem;
 
 const TABS: Array<{
   id: FeedTab;
@@ -148,7 +146,7 @@ function draftTags(value: string) {
 }
 
 function isSocialItem(item: FeedItem): item is SocialItem {
-  return item.type === "community_post" || item.type === "interview_review";
+  return item.type === "community_post";
 }
 
 function SocialCard({
@@ -179,7 +177,6 @@ function SocialCard({
   saved: boolean;
 }) {
   const titleId = `feed-${item.id}-title`;
-  const body = item.type === "community_post" ? item.body : item.summary;
   const persistedMetrics = item.source === "server";
   const reactionCount =
     item.metrics.reactions + (persistedMetrics ? 0 : reacted ? 1 : 0);
@@ -241,14 +238,7 @@ function SocialCard({
             </Link>
           </h2>
         </div>
-        {item.type === "interview_review" && (
-          <div className={styles.reviewMeta}>
-            <span>{item.companyType}</span>
-            <span>{item.role}</span>
-            <span>{item.stage}</span>
-          </div>
-        )}
-        <p>{body}</p>
+        <p>{item.body}</p>
       </div>
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
@@ -1215,8 +1205,6 @@ export function HomeFeed({
               )}
             </div>
           )}
-
-          <StarterCommunityGuide items={snapshot.starterGuideItems} />
 
           {localPostsHydrated && (
             <LegacyPostRecovery

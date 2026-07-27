@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { MOCK_SOCIAL_ITEMS } from "@/features/home-feed/mock-community";
 import { settledResource } from "@/features/home-feed/resource-state";
 import {
   buildSearchSnapshot,
@@ -81,7 +80,7 @@ export default async function SearchPage({
           scope,
           postings: null,
           skillStats: null,
-          communityItems: MOCK_SOCIAL_ITEMS,
+          communityItems: [],
         })}
       />
     );
@@ -105,7 +104,7 @@ export default async function SearchPage({
         scope,
         postings,
         skillStats,
-        communityItems: MOCK_SOCIAL_ITEMS,
+        communityItems: [],
       })}
     />
   );

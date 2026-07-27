@@ -2,18 +2,15 @@ import type {
   CommunityPostFeedItem,
   FeedItem,
   FeedTab,
-  InterviewReviewFeedItem,
 } from "./types";
 
 function isSocialItem(
   item: FeedItem,
-): item is CommunityPostFeedItem | InterviewReviewFeedItem {
-  return item.type === "community_post" || item.type === "interview_review";
+): item is CommunityPostFeedItem {
+  return item.type === "community_post";
 }
 
-function engagementScore(
-  item: CommunityPostFeedItem | InterviewReviewFeedItem,
-) {
+function engagementScore(item: CommunityPostFeedItem) {
   return item.metrics.reactions + item.metrics.comments * 2 + item.metrics.saves;
 }
 
