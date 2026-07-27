@@ -71,10 +71,12 @@ function insight(id: string): MarketInsightFeedItem {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((next) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((next, fail) => {
     resolve = next;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 }
 
 describe("useHomeFeedPagination", () => {
@@ -345,6 +347,102 @@ describe("useHomeFeedPagination", () => {
     ]);
     expect(result.current.error).toBe("");
     expect(loadCommunity).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not continue a queued community request while its scope is reloading", async () => {
+    const pending = deferred<{
+      items: CommunityPostFeedItem[];
+      hasMore: boolean;
+    }>();
+    const loadCommunity = vi
+      .fn()
+      .mockImplementationOnce(() => pending.promise)
+      .mockRejectedValue(new Error("already loading"));
+    const { result, rerender } = renderHook(
+      ({ activeTab, communityStatus }) =>
+        useHomeFeedPagination({
+          activeTab,
+          communityStatus,
+          initialCommunity: [],
+          initialCommunityHasMore: true,
+          initialInsights: [],
+          initialJobs: [],
+          jobTotal: 0,
+          loadCommunity,
+          ownedSkills: [],
+        }),
+      {
+        initialProps: {
+          activeTab: "latest" as FeedTab,
+          communityStatus: "ready" as "loading" | "ready",
+        },
+      },
+    );
+
+    let latestOperation!: Promise<void>;
+    act(() => {
+      latestOperation = result.current.loadNext("latest");
+    });
+    rerender({
+      activeTab: "popular",
+      communityStatus: "loading",
+    });
+    let popularOperation!: Promise<void>;
+    act(() => {
+      popularOperation = result.current.loadNext("popular");
+    });
+
+    await act(async () => {
+      pending.reject(new Error("scope changed"));
+      await Promise.all([latestOperation, popularOperation]);
+    });
+
+    expect(loadCommunity).toHaveBeenCalledTimes(1);
+    expect(result.current.error).toBe("");
+  });
+
+  it("drains eligible buffered cards while another tab request is pending", async () => {
+    const pending = deferred<{
+      items: CommunityPostFeedItem[];
+      hasMore: boolean;
+    }>();
+    const loadCommunity = vi.fn(() => pending.promise);
+    const initialJobs = Array.from({ length: 11 }, (_, index) =>
+      job(`job-${index + 1}`),
+    );
+    const { result, rerender } = renderHook(
+      ({ activeTab }) =>
+        useHomeFeedPagination({
+          activeTab,
+          communityStatus: "ready",
+          initialCommunity: [],
+          initialCommunityHasMore: true,
+          initialInsights: [],
+          initialJobs,
+          jobTotal: initialJobs.length,
+          loadCommunity,
+          ownedSkills: [],
+        }),
+      { initialProps: { activeTab: "popular" as FeedTab } },
+    );
+
+    let popularOperation!: Promise<void>;
+    act(() => {
+      popularOperation = result.current.loadNext("popular");
+    });
+    rerender({ activeTab: "latest" });
+
+    let latestOperation!: Promise<void>;
+    act(() => {
+      latestOperation = result.current.loadNext("latest");
+    });
+
+    expect(result.current.items.map(({ id }) => id)).toContain("job-11");
+
+    await act(async () => {
+      pending.resolve({ items: [], hasMore: false });
+      await Promise.all([popularOperation, latestOperation]);
+    });
   });
 
   it("discards a latest request after switching to another public tab", async () => {

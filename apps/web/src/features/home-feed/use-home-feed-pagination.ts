@@ -209,7 +209,12 @@ export function useHomeFeedPagination(
         ? { ...current, error: "", loading: false }
         : current,
     );
-  }, [commit, options.activeTab, options.enabled]);
+  }, [
+    commit,
+    options.activeTab,
+    options.communityStatus,
+    options.enabled,
+  ]);
 
   useEffect(() => {
     if (options.communityStatus) {
@@ -270,31 +275,51 @@ export function useHomeFeedPagination(
     });
   }, [commit, options.liveCommunity]);
 
+  const drainBufferedPage = useCallback(
+    (tab: FeedTab) => {
+      const current = stateRef.current;
+      const buffered = takeBufferedPage(
+        current.buffer,
+        current.seenIds,
+        tab,
+      );
+      if (buffered.items.length === 0) return false;
+
+      commit((value) => {
+        const page = takeBufferedPage(
+          value.buffer,
+          value.seenIds,
+          tab,
+        );
+        if (page.items.length === 0) return value;
+        const seenIds = new Set(value.seenIds);
+        for (const item of page.items) seenIds.add(item.id);
+        return {
+          ...value,
+          items: [...value.items, ...page.items],
+          buffer: page.remaining,
+          error: "",
+          seenIds,
+        };
+      });
+      return true;
+    },
+    [commit],
+  );
+
   const runNext = useCallback(
     async (tab: FeedTab) => {
       const activeOptions = optionsRef.current;
       if (activeOptions.enabled === false) return;
       const generation = generationRef.current;
       const current = stateRef.current;
-      const buffered = takeBufferedPage(current.buffer, current.seenIds, tab);
-      if (buffered.items.length > 0) {
-        commit((value) => {
-          const seenIds = new Set(value.seenIds);
-          for (const item of buffered.items) seenIds.add(item.id);
-          return {
-            ...value,
-            items: [...value.items, ...buffered.items],
-            buffer: buffered.remaining,
-            error: "",
-            seenIds,
-          };
-        });
-        return;
-      }
-
       const loadCommunity = activeOptions.loadCommunity;
       const loadJobs = activeOptions.loadJobs ?? defaultLoadJobs;
-      const wantsCommunity = !current.sourceEnded.community;
+      const communityCanLoad =
+        activeOptions.communityStatus === undefined ||
+        activeOptions.communityStatus === "ready";
+      const wantsCommunity =
+        communityCanLoad && !current.sourceEnded.community;
       const wantsJobs = includesJobs(tab) && !current.sourceEnded.jobs;
 
       if (!wantsCommunity && !wantsJobs) {
@@ -410,6 +435,7 @@ export function useHomeFeedPagination(
   const loadNext = useCallback(
     (tab: FeedTab) => {
       if (optionsRef.current.enabled === false) return Promise.resolve();
+      if (drainBufferedPage(tab)) return Promise.resolve();
       if (inFlightRef.current) return inFlightRef.current;
       const operation = runNext(tab).finally(async () => {
         if (inFlightRef.current !== operation) return;
@@ -428,7 +454,7 @@ export function useHomeFeedPagination(
       inFlightRef.current = operation;
       return operation;
     },
-    [runNext],
+    [drainBufferedPage, runNext],
   );
   loadNextRef.current = loadNext;
 
