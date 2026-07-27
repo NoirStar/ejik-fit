@@ -122,7 +122,7 @@ def downgrade() -> None:
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 1 Step 2의 명령.  
+Run: Task 1 Step 2의 명령.
 Expected: `2 passed` 이상, failure 0.
 
 - [ ] **Step 5: 커밋**
@@ -236,7 +236,7 @@ Home composer 옵션은 `COMMUNITY_CATEGORIES`로 만들고 `EMPTY_DRAFT.categor
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 2 Step 2의 명령.  
+Run: Task 2 Step 2의 명령.
 Expected: 지정 test files 모두 pass.
 
 - [ ] **Step 5: 커밋**
@@ -477,7 +477,7 @@ return _unique_join(values)
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 4 Step 2의 명령.  
+Run: Task 4 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -639,7 +639,7 @@ return {
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 5 Step 2의 명령.  
+Run: Task 5 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -776,7 +776,7 @@ export function JobDescriptionImages({ images }: {
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 6 Step 2의 명령.  
+Run: Task 6 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -890,7 +890,7 @@ export function companyIdentity(
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 7 Step 2의 명령.  
+Run: Task 7 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -979,7 +979,7 @@ export function hasEnoughLogoPixels({
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 8 Step 2의 명령.  
+Run: Task 8 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -1136,7 +1136,7 @@ export function postingSummaryToFeedItem(
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 9 Step 2의 명령.  
+Run: Task 9 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
@@ -1247,7 +1247,7 @@ export async function GET(request: Request) {
 
 - [ ] **Step 4: 집중 테스트 통과 확인**
 
-Run: Task 10 Step 2의 명령.  
+Run: Task 10 Step 2의 명령.
 Expected: all pass.
 
 - [ ] **Step 5: 커밋**
