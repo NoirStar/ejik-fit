@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 from ejikfit.connectors.types import ParsedOpening
+from ejikfit.html_text import structured_plain_text
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -146,7 +147,7 @@ def _greenhouse_description(item: dict[str, Any]) -> str:
     tech_stack = _greenhouse_metadata_value(item, {"tech stack", "skills"})
     if tech_stack:
         values.extend(["Tech Stack", tech_stack])
-    values.append(_html_text(item.get("content")))
+    values.append(structured_plain_text(_text(item.get("content")) or ""))
     return _unique_join(values)
 
 

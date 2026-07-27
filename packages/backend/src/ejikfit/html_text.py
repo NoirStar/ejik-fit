@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html as html_module
 import re
 
 from bs4 import BeautifulSoup
@@ -41,6 +42,10 @@ _HIDDEN_TAGS = ("script", "style", "noscript", "template")
 _EXPLICIT_HEADING = re.compile(r"^#{2,4}\s+")
 _EXPLICIT_LIST_ITEM = re.compile(r"^[*•◦-]\s+")
 _SOURCE_MARKER = re.compile(r"(?:^|\s)(?:#{2,4}|[*•◦-])(?=\s)")
+_ENCODED_BLOCK_TAG = re.compile(
+    r"&lt;/?(?:address|article|aside|blockquote|div|h[1-6]|li|ol|p|section|table|td|th|tr|ul|br)\b",
+    re.IGNORECASE,
+)
 
 
 def _normalized_lines(text: str) -> str:
@@ -57,13 +62,25 @@ def _visible_comparison_text(text: str) -> str:
     return re.sub(r"\s+", " ", without_markers).strip()
 
 
+def _unwrap_encoded_html(value: str) -> str:
+    current = value
+    for _ in range(2):
+        if _ENCODED_BLOCK_TAG.search(current) is None:
+            break
+        decoded = html_module.unescape(current)
+        if decoded == current:
+            break
+        current = decoded
+    return current
+
+
 def structured_plain_text(html: str, fallback: str = "") -> str:
     """Keep source block boundaries while returning text that is safe to render."""
 
     if not html.strip():
         return _normalized_lines(fallback)
 
-    soup = BeautifulSoup(html, "lxml")
+    soup = BeautifulSoup(_unwrap_encoded_html(html), "lxml")
     for tag in soup.find_all(_HIDDEN_TAGS):
         tag.decompose()
 

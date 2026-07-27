@@ -68,7 +68,10 @@ def test_parse_lever_greenhouse_openings_maps_greenhouse_jobs() -> None:
                     {"name": "Employment Type", "value": "Full-time"},
                     {"name": "Tech Stack", "value": "Python"},
                 ],
-                "content": "<p>Build model serving systems.</p>",
+                "content": (
+                    "&lt;h4&gt;Build model serving systems.&lt;/h4&gt;"
+                    "&lt;ul&gt;&lt;li&gt;KraftonEncodedMarker&lt;/li&gt;&lt;/ul&gt;"
+                ),
                 "updated_at": "2026-07-09T10:00:00+09:00",
             },
             {
@@ -93,7 +96,12 @@ def test_parse_lever_greenhouse_openings_maps_greenhouse_jobs() -> None:
     assert opening.status == "open"
     assert opening.employment_type == "Full-time"
     assert opening.location == "Seoul, Korea"
-    assert opening.description_text == "AI Seoul Tech Stack Python Build model serving systems."
+    assert opening.description_text == (
+        "AI Seoul Tech Stack Python ### Build model serving systems.\n"
+        "• KraftonEncodedMarker"
+    )
+    assert "<h4>" not in opening.description_text
+    assert "<li>" not in opening.description_text
     assert opening.opens_at is not None
 
 
