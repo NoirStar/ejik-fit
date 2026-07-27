@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AuthViewer } from "@/features/auth/use-auth-viewer";
 import {
   type CommunityCursor,
+  type CommunityPage,
   type CommunityPost,
   type CommunityViewerState,
   type CreateCommunityPostInput,
@@ -42,7 +43,7 @@ export type CommunityFeedState = {
 export type CommunityFeedController = {
   state: CommunityFeedState;
   reload(): Promise<void>;
-  loadMore(): Promise<void>;
+  loadMore(): Promise<CommunityPage<CommunityPost> | null>;
   createPost(input: CreateCommunityPostInput): Promise<{
     error: string;
     post: CommunityPost | null;
@@ -365,7 +366,9 @@ export function useCommunityFeed({
     };
   }, [load]);
 
-  const loadMore = useCallback(async () => {
+  const loadMore = useCallback(async (): Promise<
+    CommunityPage<CommunityPost> | null
+  > => {
     const current = stateRef.current;
     const before = current.nextCursor;
     if (
@@ -373,10 +376,10 @@ export function useCommunityFeed({
       current.loadingMore ||
       current.status !== "ready"
     ) {
-      return;
+      return null;
     }
     const resolvedStore = resolveStore();
-    if (!resolvedStore) return;
+    if (!resolvedStore) return null;
     const request = requestRef.current;
     const activeViewerId = viewerIdRef.current;
     commit((value) => ({ ...value, loadingMore: true, actionError: "" }));
@@ -401,7 +404,7 @@ export function useCommunityFeed({
         requestRef.current !== request ||
         viewerIdRef.current !== activeViewerId
       ) {
-        return;
+        return null;
       }
       commit((value) => ({
         ...value,
@@ -423,6 +426,7 @@ export function useCommunityFeed({
         nextCursor: page.nextCursor,
         loadingMore: false,
       }));
+      return page;
     } catch (error) {
       if (
         requestRef.current === request &&
@@ -434,6 +438,7 @@ export function useCommunityFeed({
           actionError: communityFailureMessage(error, LOAD_ERROR),
         }));
       }
+      return null;
     }
   }, [authorId, commit, followingOnly, limit, resolveStore, savedOnly]);
 
