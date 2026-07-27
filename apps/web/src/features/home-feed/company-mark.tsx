@@ -13,6 +13,39 @@ type CompanyMarkProps = {
   size?: number;
 };
 
+export function hasEnoughLogoPixels({
+  naturalWidth,
+  naturalHeight,
+  boxSize,
+  devicePixelRatio,
+}: {
+  naturalWidth: number;
+  naturalHeight: number;
+  boxSize: number;
+  devicePixelRatio: number;
+}) {
+  if (
+    !Number.isFinite(naturalWidth) ||
+    !Number.isFinite(naturalHeight) ||
+    !Number.isFinite(boxSize) ||
+    naturalWidth <= 0 ||
+    naturalHeight <= 0 ||
+    boxSize <= 0
+  ) {
+    return false;
+  }
+  const ratio = naturalWidth / naturalHeight;
+  const drawnWidth = ratio >= 1 ? boxSize : boxSize * ratio;
+  const drawnHeight = ratio >= 1 ? boxSize / ratio : boxSize;
+  const scale = Math.min(
+    Math.max(Number.isFinite(devicePixelRatio) ? devicePixelRatio : 1, 1),
+    2,
+  );
+  return (
+    naturalWidth >= drawnWidth * scale && naturalHeight >= drawnHeight * scale
+  );
+}
+
 export function CompanyMark({
   companyName,
   companySlug,
@@ -28,14 +61,18 @@ export function CompanyMark({
 
   useEffect(() => {
     const image = imageRef.current;
+    if (!showLogo || !image?.complete) return;
     if (
-      showLogo &&
-      image?.complete &&
-      image.naturalWidth === 0
+      !hasEnoughLogoPixels({
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+        boxSize: size * 0.76,
+        devicePixelRatio: window.devicePixelRatio,
+      })
     ) {
       setFailedSrc(identity.src ?? null);
     }
-  }, [identity.src, showLogo]);
+  }, [identity.src, showLogo, size]);
 
   return (
     <span
@@ -53,6 +90,18 @@ export function CompanyMark({
           decoding="async"
           loading={priority ? "eager" : "lazy"}
           onError={() => setFailedSrc(identity.src ?? null)}
+          onLoad={(event) => {
+            if (
+              !hasEnoughLogoPixels({
+                naturalWidth: event.currentTarget.naturalWidth,
+                naturalHeight: event.currentTarget.naturalHeight,
+                boxSize: size * 0.76,
+                devicePixelRatio: window.devicePixelRatio,
+              })
+            ) {
+              setFailedSrc(identity.src ?? null);
+            }
+          }}
           ref={imageRef}
           src={identity.src}
         />
