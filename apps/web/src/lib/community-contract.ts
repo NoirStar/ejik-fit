@@ -1,4 +1,5 @@
 export const COMMUNITY_CATEGORIES = [
+  "일반",
   "커리어 질문",
   "커리어 고민",
   "면접 후기",

@@ -1,5 +1,6 @@
 import { CommunityStoreError } from "@/lib/community-contract";
 import {
+  DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   deleteLocalCommunityPost,
   readLocalCommunityPosts,
 } from "@/lib/local-community-posts";
@@ -125,7 +126,7 @@ async function ensurePost(
   try {
     return await store.createPost(userId, {
       id: serverId,
-      category: localPost.category ?? "커리어 질문",
+      category: localPost.category ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
       title: localPost.title,
       body: localPost.body,
       tags: localPost.tags,

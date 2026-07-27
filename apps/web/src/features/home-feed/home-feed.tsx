@@ -38,6 +38,7 @@ import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import {
+  COMMUNITY_CATEGORIES,
   MAX_COMMUNITY_POST_TAGS,
   MAX_COMMUNITY_TAG_LENGTH,
 } from "@/lib/community-contract";
@@ -109,14 +110,10 @@ const TABS: Array<{
   { id: "popular", label: "인기" },
 ];
 
-const POST_KIND_OPTIONS: ReadonlyArray<{
-  label: string;
-  value: LocalCommunityPostCategory;
-}> = [
-  { label: "질문", value: "커리어 질문" },
-  { label: "커리어 고민", value: "커리어 고민" },
-  { label: "면접 후기", value: "면접 후기" },
-];
+const POST_KIND_OPTIONS = COMMUNITY_CATEGORIES.map((value) => ({
+  label: value,
+  value,
+}));
 
 const EMPTY_DRAFT: LocalPostDraft = {
   category: DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,

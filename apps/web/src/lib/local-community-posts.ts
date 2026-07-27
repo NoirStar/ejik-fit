@@ -2,6 +2,10 @@ import {
   readSocialInteractions,
   removePostSocialInteractions,
 } from "./social-interactions";
+import {
+  COMMUNITY_CATEGORIES,
+  type CommunityCategory,
+} from "./community-contract";
 
 const KEY = "ejik-fit:local-community-posts";
 const CHANGE_EVENT = "ejik-fit:local-community-posts-change";
@@ -12,15 +16,9 @@ export const MAX_LOCAL_COMMUNITY_POST_BODY_LENGTH = 1200;
 export const MAX_LOCAL_COMMUNITY_POST_TAGS = 4;
 const MAX_TAG_LENGTH = 40;
 
-export const LOCAL_COMMUNITY_POST_CATEGORIES = [
-  "커리어 질문",
-  "커리어 고민",
-  "면접 후기",
-] as const;
-export type LocalCommunityPostCategory =
-  (typeof LOCAL_COMMUNITY_POST_CATEGORIES)[number];
-export const DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY: LocalCommunityPostCategory =
-  "커리어 질문";
+export const LOCAL_COMMUNITY_POST_CATEGORIES = COMMUNITY_CATEGORIES;
+export type LocalCommunityPostCategory = CommunityCategory;
+export const DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY = "일반" as const;
 
 export type LocalCommunityPost = {
   id: string;
@@ -96,10 +94,10 @@ function normalizePost(value: unknown): LocalCommunityPost | null {
   ) {
     return null;
   }
-  const category = normalizeCategory(value.category);
   return {
     id: value.id,
-    ...(category ? { category } : {}),
+    category:
+      normalizeCategory(value.category) ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
     title,
     body,
     tags: normalizeTags(value.tags),

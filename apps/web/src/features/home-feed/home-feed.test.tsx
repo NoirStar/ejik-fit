@@ -899,6 +899,12 @@ describe("HomeFeed", () => {
     );
 
     expect(screen.queryByText("계정에 저장되는 글")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "일반" })).toBeChecked();
+    expect(
+      screen
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["일반", "커리어 질문", "커리어 고민", "면접 후기"]);
     fireEvent.change(screen.getByLabelText("제목"), {
       target: { value: "계정으로 올릴 글" },
     });
@@ -916,7 +922,7 @@ describe("HomeFeed", () => {
       expect(store.createPost).toHaveBeenCalledWith(
         "11111111-1111-4111-8111-111111111111",
         {
-          category: "커리어 질문",
+          category: "일반",
           title: "계정으로 올릴 글",
           body: "브라우저가 아닌 계정에 저장할 본문입니다.",
           tags: ["백엔드", "Java"],

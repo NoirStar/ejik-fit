@@ -1,3 +1,5 @@
+import type { CommunityCategory } from "@/lib/community-contract";
+
 export type FeedTab = "recommended" | "following" | "latest" | "popular";
 export type DataStatus = "ready" | "partial" | "empty" | "error";
 
@@ -12,12 +14,7 @@ export type AuthorTone = "violet" | "blue" | "green" | "orange";
 export type CommunityPostFeedItem = {
   id: string;
   type: "community_post";
-  category:
-    | "이직 고민"
-    | "커리어 질문"
-    | "커리어 고민"
-    | "업무 이야기"
-    | "면접 후기";
+  category: CommunityCategory | "이직 고민" | "업무 이야기";
   authorId: string;
   authorName: string;
   authorHeadline: string;
