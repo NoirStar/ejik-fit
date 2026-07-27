@@ -3,6 +3,20 @@ import { expect, test } from "@playwright/test";
 for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified job detail usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ height: width === 390 ? 844 : 900, width });
+    await page.route(
+      "https://recruit.navercorp.com/job-detail.svg",
+      async (route) => {
+        await route.fulfill({
+          body: [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="1128" height="4486" viewBox="0 0 1128 4486">',
+            '<rect width="1128" height="4486" fill="white"/>',
+            '<text x="80" y="160" font-size="54">기업이 제공한 공고 상세 이미지</text>',
+            "</svg>",
+          ].join(""),
+          contentType: "image/svg+xml",
+        });
+      },
+    );
     if (width === 390) {
       const session = await page.context().newCDPSession(page);
       await session.send("Emulation.setSafeAreaInsetsOverride", {
@@ -31,6 +45,20 @@ for (const width of [1440, 820, 600, 390]) {
     await expect(
       page.getByRole("heading", { level: 3, name: "주요 업무" }),
     ).toBeVisible();
+    const sourceImage = page.getByRole("img", {
+      name: "채용 공고 상세 내용 이미지 1",
+    });
+    await expect(sourceImage).toBeVisible();
+    await expect(sourceImage).toHaveAttribute("loading", "lazy");
+    await expect(sourceImage).toHaveAttribute("decoding", "async");
+    await expect(sourceImage).toHaveAttribute("referrerpolicy", "no-referrer");
+    const [sourceImageBox, descriptionBox] = await Promise.all([
+      sourceImage.boundingBox(),
+      page.getByRole("region", { name: "공고 원문" }).boundingBox(),
+    ]);
+    expect(sourceImageBox).not.toBeNull();
+    expect(descriptionBox).not.toBeNull();
+    expect(sourceImageBox!.width).toBeLessThanOrEqual(descriptionBox!.width + 1);
     await expect(page.getByText("Do not render this HTML")).toHaveCount(0);
 
     const title = page.getByRole("heading", {

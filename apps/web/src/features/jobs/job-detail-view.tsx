@@ -17,6 +17,7 @@ import type { PostingDetail, SkillDetail } from "@/lib/types";
 import { JobDetailActions } from "./job-detail-actions";
 import { groupJobSkills } from "./job-detail-model";
 import { PostingDescription } from "./job-description";
+import { JobDescriptionImages } from "./job-description-images";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -243,6 +244,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               <h2 id="job-description-title">공고 원문</h2>
             </header>
             <PostingDescription text={job.description_text} />
+            <JobDescriptionImages images={job.description_images} />
             <a
               className={styles.continueLink}
               href={job.source_url}

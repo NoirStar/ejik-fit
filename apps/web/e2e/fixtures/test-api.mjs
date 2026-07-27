@@ -167,6 +167,12 @@ const postingDetails = {
       "## 우대 사항",
       "• Kubernetes 운영 경험",
     ].join("\n"),
+    description_images: [
+      {
+        url: "https://recruit.navercorp.com/job-detail.svg",
+        alt: "채용 공고 상세 내용 이미지 1",
+      },
+    ],
     skills: ["Python", "Docker", "Kubernetes"],
     skill_details: [
       {

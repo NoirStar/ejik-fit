@@ -28,9 +28,15 @@ export type SkillDetail = {
   match_reason: string;
 };
 
+export type PostingDescriptionImage = {
+  url: string;
+  alt: string;
+};
+
 export type PostingDetail = PostingSummary & {
   description_html: string;
   description_text: string;
+  description_images: PostingDescriptionImage[];
   opens_at: string | null;
   closes_at: string | null;
   skills: string[];

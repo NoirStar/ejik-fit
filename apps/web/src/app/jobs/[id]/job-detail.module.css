@@ -386,6 +386,30 @@
   background: var(--color-surface-subtle);
 }
 
+.sourceImages {
+  display: grid;
+  max-width: 74ch;
+  gap: 0.875rem;
+  margin-top: 1.5rem;
+}
+
+.sourceImages > p {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.sourceImages img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: min(80vh, 40rem);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  object-fit: contain;
+}
+
 .continueLink {
   display: inline-flex;
   min-width: var(--touch-target);

@@ -33,6 +33,12 @@ const job = {
   description_html: "<p>서버 개발</p>",
   description_text:
     "제품 소개입니다. ### 주요 업무 * 안정적인 서버를 개발합니다. * 장애 원인을 분석합니다.",
+  description_images: [
+    {
+      url: "https://careers.toss.im/job-1/detail.png",
+      alt: "채용 공고 상세 내용 이미지 1",
+    },
+  ],
   opens_at: "2026-07-01T00:00:00.000Z",
   closes_at: "2026-07-31T14:59:59.000Z",
   skills: ["Go"],
@@ -121,6 +127,9 @@ describe("JobDetail", () => {
       screen.getByRole("heading", { level: 3, name: "주요 업무" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("img", { name: "채용 공고 상세 내용 이미지 1" }),
+    ).toHaveAttribute("loading", "lazy");
+    expect(
       screen.getByRole("region", { name: "지원 준비" }),
     ).toBeInTheDocument();
 
@@ -184,6 +193,7 @@ describe("JobDetail", () => {
       ...job,
       description_html: "<script>alert('never render')</script>",
       description_text: "",
+      description_images: [],
       skills: [],
       skill_details: [],
     });

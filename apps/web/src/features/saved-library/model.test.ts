@@ -30,6 +30,7 @@ const posting: PostingDetail = {
   unspecified_skills: ["Linux", "Docker"],
   description_html: "<p>보관함 응답에 포함하면 안 됩니다.</p>",
   description_text: "보관함 응답에 포함하면 안 됩니다.",
+  description_images: [],
   skills: ["Python", "Docker", "Kubernetes", "Linux"],
 };
 
