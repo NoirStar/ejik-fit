@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type {
   CommunityPostFeedItem,
+  FeedTab,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
 } from "./types";
@@ -234,26 +235,35 @@ describe("useHomeFeedPagination", () => {
     expect(result.current.items.map(({ id }) => id)).toEqual(["post-1"]);
   });
 
-  it("ignores a page that finishes after its feed controller is disabled", async () => {
+  it("retains a late community page without showing it in a disabled feed", async () => {
     const pending = deferred<{
       items: CommunityPostFeedItem[];
       hasMore: boolean;
     }>();
     const loadCommunity = vi.fn(() => pending.promise);
+    const stalePost = community("stale-post");
     const { result, rerender } = renderHook(
-      ({ enabled }) =>
+      ({ enabled, hasMore, liveCommunity }) =>
         useHomeFeedPagination({
           activeTab: "popular",
+          communityStatus: "ready",
           enabled,
           initialCommunity: [],
-          initialCommunityHasMore: true,
+          initialCommunityHasMore: hasMore,
           initialInsights: [],
           initialJobs: [],
           jobTotal: 0,
+          liveCommunity,
           loadCommunity,
           ownedSkills: [],
         }),
-      { initialProps: { enabled: true } },
+      {
+        initialProps: {
+          enabled: true,
+          hasMore: true,
+          liveCommunity: [] as CommunityPostFeedItem[],
+        },
+      },
     );
 
     let operation!: Promise<void>;
@@ -262,15 +272,73 @@ describe("useHomeFeedPagination", () => {
     });
     expect(result.current.loading).toBe(true);
 
-    rerender({ enabled: false });
+    rerender({ enabled: false, hasMore: true, liveCommunity: [] });
     expect(result.current.loading).toBe(false);
 
     await act(async () => {
-      pending.resolve({ items: [community("stale-post")], hasMore: false });
+      pending.resolve({ items: [stalePost], hasMore: false });
       await operation;
     });
 
     expect(result.current.items).toEqual([]);
     expect(result.current.error).toBe("");
+
+    rerender({
+      enabled: false,
+      hasMore: false,
+      liveCommunity: [stalePost],
+    });
+    rerender({
+      enabled: true,
+      hasMore: false,
+      liveCommunity: [stalePost],
+    });
+    await act(async () => {
+      await result.current.loadNext("popular");
+    });
+
+    expect(result.current.items.map(({ id }) => id)).toEqual(["stale-post"]);
+    expect(loadCommunity).toHaveBeenCalledTimes(1);
+    expect(result.current.complete).toBe(true);
+  });
+
+  it("discards a latest request after switching to another public tab", async () => {
+    const gate = deferred<void>();
+    const loadJobs = vi.fn(async () => {
+      await gate.promise;
+      throw new Error("offline");
+    });
+    const { result, rerender } = renderHook(
+      ({ activeTab }) =>
+        useHomeFeedPagination({
+          activeTab,
+          initialCommunity: [],
+          initialCommunityHasMore: false,
+          initialInsights: [],
+          initialJobs: [],
+          jobTotal: 1,
+          loadJobs,
+          ownedSkills: [],
+        }),
+      { initialProps: { activeTab: "latest" as FeedTab } },
+    );
+
+    let operation!: Promise<void>;
+    act(() => {
+      operation = result.current.loadNext("latest");
+    });
+    expect(result.current.loading).toBe(true);
+
+    rerender({ activeTab: "popular" });
+    expect(result.current.loading).toBe(false);
+
+    await act(async () => {
+      gate.resolve();
+      await operation;
+    });
+
+    expect(result.current.error).toBe("");
+    expect(result.current.items).toEqual([]);
+    expect(loadJobs).toHaveBeenCalledTimes(1);
   });
 });

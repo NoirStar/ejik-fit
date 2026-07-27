@@ -835,6 +835,7 @@ export function HomeFeed({
   const publicPagination = useHomeFeedPagination({
     activeTab: activeTab === "following" ? "recommended" : activeTab,
     careerType: snapshot.careerContext.careerCondition,
+    communityStatus: publicCommunity.state.status,
     enabled: activeTab !== "following",
     initialCommunity: publicServerFeedItems,
     initialCommunityHasMore:
@@ -850,6 +851,7 @@ export function HomeFeed({
   });
   const followingPagination = useHomeFeedPagination({
     activeTab: "following",
+    communityStatus: followingCommunity.state.status,
     enabled: activeTab === "following",
     initialCommunity: [],
     initialCommunityHasMore:
@@ -907,6 +909,8 @@ export function HomeFeed({
       pagination.complete ||
       pagination.error ||
       pagination.loading ||
+      community.state.status === "idle" ||
+      community.state.status === "loading" ||
       (activeTab === "following" && community.state.status !== "ready")
     ) {
       return;

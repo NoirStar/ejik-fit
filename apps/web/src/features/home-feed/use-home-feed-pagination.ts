@@ -52,6 +52,7 @@ export type HomeFeedPaginationController = {
 type UseHomeFeedPaginationOptions = {
   activeTab: FeedTab;
   careerType?: string;
+  communityStatus?: "error" | "idle" | "loading" | "ready";
   enabled?: boolean;
   initialCommunity: CommunityPostFeedItem[];
   initialCommunityHasMore: boolean;
@@ -195,16 +196,37 @@ export function useHomeFeedPagination(
     abortRef.current?.abort();
     abortRef.current = null;
     inFlightRef.current = null;
-    if (options.enabled === false) {
-      commit((current) => ({
-        ...current,
-        error: "",
-        loading: false,
-      }));
-    }
-  }, [commit, options.enabled]);
+    commit((current) =>
+      current.error || current.loading
+        ? { ...current, error: "", loading: false }
+        : current,
+    );
+  }, [commit, options.activeTab, options.enabled]);
 
   useEffect(() => {
+    if (options.communityStatus) {
+      if (
+        options.communityStatus === "idle" ||
+        options.communityStatus === "loading"
+      ) {
+        return;
+      }
+      const communityEnded =
+        options.communityStatus === "error" ||
+        !options.initialCommunityHasMore;
+      commit((current) =>
+        current.sourceEnded.community === communityEnded
+          ? current
+          : {
+              ...current,
+              sourceEnded: {
+                ...current.sourceEnded,
+                community: communityEnded,
+              },
+            },
+      );
+      return;
+    }
     if (options.enabled === false || !options.initialCommunityHasMore) return;
     commit((current) =>
       current.sourceEnded.community
@@ -214,7 +236,12 @@ export function useHomeFeedPagination(
           }
         : current,
     );
-  }, [commit, options.enabled, options.initialCommunityHasMore]);
+  }, [
+    commit,
+    options.communityStatus,
+    options.enabled,
+    options.initialCommunityHasMore,
+  ]);
 
   useEffect(() => {
     const liveCommunity = options.liveCommunity;
@@ -297,11 +324,31 @@ export function useHomeFeedPagination(
         communityRequest,
         jobRequest,
       ]);
-      if (
+      const stale =
         controller.signal.aborted ||
-        generationRef.current !== generation ||
-        !mountedRef.current
-      ) {
+        generationRef.current !== generation;
+      if (stale || !mountedRef.current) {
+        const communityPage = communityResult.page;
+        if (stale && mountedRef.current && communityPage) {
+          commit((value) => {
+            const knownIds = new Set([
+              ...value.seenIds,
+              ...value.buffer.map((item) => item.id),
+            ]);
+            const additions = communityPage.items.filter(
+              (item) => !knownIds.has(item.id),
+            );
+            return {
+              ...value,
+              buffer: [...value.buffer, ...additions],
+              sourceEnded: {
+                ...value.sourceEnded,
+                community:
+                  !communityPage.hasMore || communityPage.items.length === 0,
+              },
+            };
+          });
+        }
         return;
       }
 
