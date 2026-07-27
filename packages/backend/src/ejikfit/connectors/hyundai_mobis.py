@@ -77,8 +77,14 @@ def _metadata(root: Tag) -> tuple[str, str, str, str]:
         for node in root.select(".info-wrap02 > p, .view-info02 > p")
         if isinstance(node, Tag)
     ]
-    if len(values) < 4 or not all(values[:4]):
+    if len(values) not in {3, 4} or not all(values):
         raise ValueError("Hyundai Mobis job metadata is incomplete")
+    if len(values) == 3:
+        # Administrative listings omit the specialty column but keep their
+        # location last. They still need to be parsed so the job-group filter
+        # can exclude them without rejecting the complete listing.
+        business, job_group, location = values
+        return business, job_group, "", location
     return values[0], values[1], values[2], values[3]
 
 
