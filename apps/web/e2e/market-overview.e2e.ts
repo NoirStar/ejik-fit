@@ -22,7 +22,10 @@ for (const { height, width } of viewports) {
     await page.setViewportSize({ height, width });
     await page.goto("/market");
 
-    const title = page.getByRole("heading", {
+    const pageContent = page
+      .locator("#main-content")
+      .filter({ visible: true });
+    const title = pageContent.getByRole("heading", {
       level: 1,
       name: "채용 시장 기술 동향",
     });
@@ -35,11 +38,14 @@ for (const { height, width } of viewports) {
       )
       .toBeLessThanOrEqual(width <= 839 ? 28 : 32);
 
+    const dataNotice = pageContent.getByRole("region", {
+      name: "데이터 범위 안내",
+    });
     await expect(
-      page.getByText(/기업 공식 채용 페이지 확인 범위/),
+      dataNotice.getByText(/기업 공식 채용 페이지 확인 범위/),
     ).toBeVisible();
     await expect(
-      page.getByText(/국내 전체 채용시장 통계가 아닙니다/),
+      dataNotice.getByText(/국내 전체 채용시장 통계가 아닙니다/),
     ).toBeVisible();
     const pulse = page.getByRole("region", { name: "현재 채용시장 요약" });
     await expect(pulse).toContainText("명시 요구 1위");
