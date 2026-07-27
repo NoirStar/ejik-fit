@@ -168,6 +168,10 @@ export function useHomeFeedPagination(
   const stateRef = useRef(state);
   const optionsRef = useRef(options);
   const inFlightRef = useRef<Promise<void> | null>(null);
+  const loadNextRef = useRef<
+    ((tab: FeedTab) => Promise<void>) | null
+  >(null);
+  const queuedTabRef = useRef<FeedTab | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const mountedRef = useRef(true);
@@ -187,6 +191,7 @@ export function useHomeFeedPagination(
     return () => {
       mountedRef.current = false;
       generationRef.current += 1;
+      queuedTabRef.current = null;
       abortRef.current?.abort();
     };
   }, []);
@@ -195,7 +200,10 @@ export function useHomeFeedPagination(
     generationRef.current += 1;
     abortRef.current?.abort();
     abortRef.current = null;
-    inFlightRef.current = null;
+    queuedTabRef.current =
+      inFlightRef.current && options.enabled !== false
+        ? options.activeTab
+        : null;
     commit((current) =>
       current.error || current.loading
         ? { ...current, error: "", loading: false }
@@ -401,15 +409,28 @@ export function useHomeFeedPagination(
 
   const loadNext = useCallback(
     (tab: FeedTab) => {
+      if (optionsRef.current.enabled === false) return Promise.resolve();
       if (inFlightRef.current) return inFlightRef.current;
-      const operation = runNext(tab).finally(() => {
-        if (inFlightRef.current === operation) inFlightRef.current = null;
+      const operation = runNext(tab).finally(async () => {
+        if (inFlightRef.current !== operation) return;
+        inFlightRef.current = null;
+        const queuedTab = queuedTabRef.current;
+        queuedTabRef.current = null;
+        const activeOptions = optionsRef.current;
+        if (
+          queuedTab &&
+          activeOptions.enabled !== false &&
+          activeOptions.activeTab === queuedTab
+        ) {
+          await loadNextRef.current?.(queuedTab);
+        }
       });
       inFlightRef.current = operation;
       return operation;
     },
     [runNext],
   );
+  loadNextRef.current = loadNext;
 
   const retry = useCallback(
     async (tab: FeedTab) => {

@@ -274,32 +274,77 @@ describe("useHomeFeedPagination", () => {
 
     rerender({ enabled: false, hasMore: true, liveCommunity: [] });
     expect(result.current.loading).toBe(false);
+    rerender({ enabled: true, hasMore: true, liveCommunity: [] });
+
+    let overlappingOperation!: Promise<void>;
+    act(() => {
+      overlappingOperation = result.current.loadNext("popular");
+    });
 
     await act(async () => {
       pending.resolve({ items: [stalePost], hasMore: false });
-      await operation;
+      await Promise.all([operation, overlappingOperation]);
     });
 
-    expect(result.current.items).toEqual([]);
+    expect(result.current.items.map(({ id }) => id)).toEqual(["stale-post"]);
     expect(result.current.error).toBe("");
 
-    rerender({
-      enabled: false,
-      hasMore: false,
-      liveCommunity: [stalePost],
-    });
     rerender({
       enabled: true,
       hasMore: false,
       liveCommunity: [stalePost],
     });
-    await act(async () => {
-      await result.current.loadNext("popular");
-    });
 
-    expect(result.current.items.map(({ id }) => id)).toEqual(["stale-post"]);
     expect(loadCommunity).toHaveBeenCalledTimes(1);
     expect(result.current.complete).toBe(true);
+  });
+
+  it("continues a non-abortable community request in the newly selected public tab", async () => {
+    const pending = deferred<{
+      items: CommunityPostFeedItem[];
+      hasMore: boolean;
+    }>();
+    const loadCommunity = vi.fn(() => pending.promise);
+    const { result, rerender } = renderHook(
+      ({ activeTab }) =>
+        useHomeFeedPagination({
+          activeTab,
+          communityStatus: "ready",
+          initialCommunity: [],
+          initialCommunityHasMore: true,
+          initialInsights: [],
+          initialJobs: [],
+          jobTotal: 0,
+          loadCommunity,
+          ownedSkills: [],
+        }),
+      { initialProps: { activeTab: "latest" as FeedTab } },
+    );
+
+    let latestOperation!: Promise<void>;
+    act(() => {
+      latestOperation = result.current.loadNext("latest");
+    });
+    rerender({ activeTab: "popular" });
+
+    let popularOperation!: Promise<void>;
+    act(() => {
+      popularOperation = result.current.loadNext("popular");
+    });
+
+    await act(async () => {
+      pending.resolve({
+        items: [community("continued-post")],
+        hasMore: false,
+      });
+      await Promise.all([latestOperation, popularOperation]);
+    });
+
+    expect(result.current.items.map(({ id }) => id)).toEqual([
+      "continued-post",
+    ]);
+    expect(result.current.error).toBe("");
+    expect(loadCommunity).toHaveBeenCalledTimes(1);
   });
 
   it("discards a latest request after switching to another public tab", async () => {
