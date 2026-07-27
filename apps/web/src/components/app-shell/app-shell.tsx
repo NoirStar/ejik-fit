@@ -140,9 +140,11 @@ function StoredHomeContextSync() {
 
 function HeaderSearchFormView({
   currentQuery,
+  disabled = false,
   inputRef,
 }: {
   currentQuery: string;
+  disabled?: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
   return (
@@ -151,6 +153,7 @@ function HeaderSearchFormView({
       <input
         aria-label="통합 검색"
         defaultValue={currentQuery}
+        disabled={disabled}
         key={currentQuery || "global-search-empty"}
         maxLength={200}
         name="q"
@@ -346,7 +349,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <Suspense
             fallback={
-              <HeaderSearchFormView currentQuery="" inputRef={searchInputRef} />
+              <HeaderSearchFormView
+                currentQuery=""
+                disabled
+                inputRef={searchInputRef}
+              />
             }
           >
             <HeaderSearchForm inputRef={searchInputRef} />

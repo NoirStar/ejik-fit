@@ -17,6 +17,7 @@ for (const width of [1440, 820, 390, 320]) {
 
     const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
     await globalSearch.fill("Python");
+    await expect(globalSearch).toHaveValue("Python");
     await globalSearch.press("Enter");
 
     await expect(page).toHaveURL(/\/search\?q=Python$/);
@@ -137,15 +138,18 @@ test("moves between actual result scopes without built-in community examples", a
   await page.goto("/search?q=Kubernetes");
 
   await page.goto("/search?q=Kubernetes&scope=community");
+  const pageContent = page.locator("#main-content");
   await expect(
-    page.getByRole("link", {
+    pageContent.getByRole("link", {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
     }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("region", { name: "커뮤니티 활용 가이드" }),
+    pageContent.getByRole("region", { name: "커뮤니티 활용 가이드" }),
   ).toHaveCount(0);
-  const disclosure = page.getByText(COMMUNITY_DISCLOSURE);
+  const disclosure = pageContent
+    .getByText(COMMUNITY_DISCLOSURE)
+    .filter({ visible: true });
   await expect(disclosure).toBeVisible();
   await expect(disclosure).not.toContainText(/API|서버|응답/);
 
@@ -176,6 +180,7 @@ test("finds a legacy browser post as recovery data after reload", async ({
   const query = "로컬 검색";
   const title = "로컬 검색으로 다시 찾는 내 질문";
   const localPostId = "local-search-recovery-question";
+  const pageContent = page.locator("#main-content");
   await page.setViewportSize({ height: 900, width: 390 });
   await page.addInitScript(
     ({ id, postTitle, searchQuery }) => {
@@ -227,7 +232,9 @@ test("finds a legacy browser post as recovery data after reload", async ({
   await expect(localResult.getByText("이 기기에 남은 글")).toBeVisible();
   await expect(page.getByRole("link", { name: /커뮤니티.*1/ })).toBeVisible();
   await expect(page.getByText("검색 결과가 없습니다.")).toHaveCount(0);
-  await expect(page.getByText(COMMUNITY_DISCLOSURE)).toBeVisible();
+  await expect(
+    pageContent.getByText(COMMUNITY_DISCLOSURE).filter({ visible: true }),
+  ).toBeVisible();
 
   const resultLink = localResult.getByRole("link", { exact: true, name: title });
   await expect(resultLink).toHaveAttribute("href", `/posts/${localPostId}`);
