@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PostingSummary(BaseModel):
@@ -35,9 +35,15 @@ class SkillDetail(BaseModel):
     match_reason: str
 
 
+class PostingDescriptionImage(BaseModel):
+    url: str
+    alt: str
+
+
 class PostingDetail(PostingSummary):
     description_html: str
     description_text: str
+    description_images: list[PostingDescriptionImage] = Field(default_factory=list)
     opens_at: datetime | None = None
     closes_at: datetime | None = None
     skills: list[str] = []

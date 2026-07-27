@@ -198,6 +198,7 @@ def test_database_detail_restores_plain_text_structure_from_source_html() -> Non
         posting.description_html = (
             "<h2>주요 업무</h2><ul><li>Python API 개발</li>"
             "<li>Docker 운영</li></ul>"
+            '<img data-src="/full.png" alt="">'
         )
         posting.description_text = (
             "주요 업무 Python API 개발 Docker 운영 RustUnique"
@@ -212,6 +213,12 @@ def test_database_detail_restores_plain_text_structure_from_source_html() -> Non
     assert item["description_text"] == (
         "## 주요 업무\n• Python API 개발\n• Docker 운영\nRustUnique"
     )
+    assert item["description_images"] == [
+        {
+            "url": "https://careers.example.com/full.png",
+            "alt": "채용 공고 상세 내용 이미지 1",
+        }
+    ]
 
 
 def test_search_document_keeps_the_same_confirmed_evidence_contract() -> None:
