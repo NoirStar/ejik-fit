@@ -89,3 +89,36 @@ def test_parse_official_detail_dispatches_to_naver_parser() -> None:
 
     assert "React와 TypeScript" in detailed.description_text
     assert detailed.external_id == opening.external_id
+
+
+def test_official_detail_request_uses_line_page_data_json() -> None:
+    from ejikfit.connectors.official_detail import official_detail_request
+
+    opening = ParsedOpening(
+        external_id="2100",
+        url="https://careers.linecorp.com/ko/jobs/2100",
+        title="Server Engineer, Messaging Platform",
+        status="open",
+        description_html="",
+        description_text="Engineering Backend LINE Plus Seoul Korea",
+        employment_type="Full-time",
+        career_type=None,
+        career_min=None,
+        career_max=None,
+        location="Seoul, Korea",
+        opens_at=None,
+        closes_at=None,
+    )
+
+    request = official_detail_request(
+        "line_gatsby",
+        "https://careers.linecorp.com/page-data/jobs/page-data.json",
+        opening,
+    )
+
+    assert request is not None
+    assert request.url == (
+        "https://careers.linecorp.com/page-data/ko/jobs/2100/"
+        "page-data.json"
+    )
+    assert request.method == "GET"

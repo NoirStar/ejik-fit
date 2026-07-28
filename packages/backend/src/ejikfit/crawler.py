@@ -1479,12 +1479,15 @@ async def _fetch_public_json_detail(
     connector_family: str,
     listing: FetchedPage,
     fetcher: HttpFetcher,
+    browser_renderer: BrowserRenderer | None = None,
 ) -> FetchedPage:
-    if (
-        connector_family in DUNAMU_CONNECTOR_FAMILIES
-        and listing.text.lstrip().startswith("{")
-    ):
-        return listing
+    if connector_family in DUNAMU_CONNECTOR_FAMILIES:
+        try:
+            return await fetcher.fetch(ref.detail_url)
+        except BlockedSourceError:
+            if browser_renderer is None:
+                raise
+            return await browser_renderer.render(ref.detail_url)
     if connector_family == "com2us_jobflex_tech":
         return await fetcher.fetch(
             ref.detail_url,
@@ -2233,6 +2236,7 @@ async def crawl_source(
                     source.connector_family,
                     listing,
                     fetcher,
+                    browser_renderer,
                 )
                 opening = parse_public_json_detail(
                     detail.text,

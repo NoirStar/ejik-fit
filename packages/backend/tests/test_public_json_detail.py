@@ -3,6 +3,7 @@ import json
 import pytest
 
 from ejikfit.connectors.public_json_detail import (
+    PublicJsonDetailRef,
     discover_public_json_detail_refs,
     elice_listing_request_body,
     filter_public_detail_refs,
@@ -1666,14 +1667,35 @@ def test_dunamu_public_api_discovers_and_parses_current_job_rows() -> None:
         refs,
         "dunamu_server_html_tech",
     )
+    detail = """
+    <html><body>
+      <div class="detailView_title">
+        Frontend Engineer_데이터 프로덕트 서비스 개발
+      </div>
+      <div class="detailView_information">
+        <h3>주요업무</h3>
+        <p>Python 기반 데이터 프로덕트의 API와 배치 파이프라인을 개발하고
+        대규모 트래픽에서도 안정적으로 동작하도록 운영합니다.</p>
+        <h3>자격요건</h3>
+        <p>Kafka 메시징과 분산 시스템을 이해하고 장애 분석, 테스트 자동화,
+        성능 개선을 주도한 경험이 필요합니다.</p>
+        <h3>우대사항</h3>
+        <p>Kubernetes 환경의 서비스 배포와 관측 가능성 구축 경험을
+        우대합니다.</p>
+        <ul><li>고용형태 : 정규직</li><li>채용유형 : 경력직</li></ul>
+      </div>
+    </body></html>
+    """
     opening = parse_public_json_detail(
-        listing,
+        detail,
         technical_refs[0],
         "dunamu_server_html_tech",
     )
 
     assert [ref.external_id for ref in technical_refs] == ["588", "586"]
-    assert technical_refs[0].detail_url == listing_url
+    assert technical_refs[0].detail_url == (
+        "https://careers.dunamu.com/detail/588"
+    )
     assert technical_refs[0].public_url == (
         "https://careers.dunamu.com/detail/588"
     )
@@ -1682,7 +1704,29 @@ def test_dunamu_public_api_discovers_and_parses_current_job_rows() -> None:
     assert opening.url == "https://careers.dunamu.com/detail/588"
     assert opening.career_type == "experienced"
     assert opening.employment_type == "regular"
-    assert "Engineering" in opening.description_text
+    assert "Python 기반" in opening.description_text
+    assert "Kafka 메시징" in opening.description_text
+    assert "Kubernetes 환경" in opening.description_text
+
+
+def test_dunamu_detail_rejects_sparse_content() -> None:
+    ref = PublicJsonDetailRef(
+        external_id="588",
+        detail_url="https://careers.dunamu.com/detail/588",
+        public_url="https://careers.dunamu.com/detail/588",
+        title="Frontend Engineer",
+        category="Engineering",
+    )
+
+    with pytest.raises(ValueError, match="sparse"):
+        parse_public_json_detail(
+            """
+            <div class="detailView_title">Frontend Engineer</div>
+            <div class="detailView_information"><p>Python</p></div>
+            """,
+            ref,
+            "dunamu_server_html_tech",
+        )
 
 
 def test_workable_public_api_discovers_domestic_technical_jobs_and_parses_detail() -> None:

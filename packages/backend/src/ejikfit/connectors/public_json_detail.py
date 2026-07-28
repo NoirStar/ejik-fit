@@ -14,6 +14,7 @@ from ejikfit.connectors.next_data import extract_next_data
 from ejikfit.connectors.technical_roles import is_technical_role
 from ejikfit.connectors.types import ParsedOpening
 from ejikfit.html_text import structured_plain_text
+from ejikfit.posting_content import require_substantive_posting_content
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -165,27 +166,6 @@ DUNAMU_JOB_GROUP_LABELS = {
     "T_MARKETING": "Marketing",
     "T_PEOPLE": "People",
     "T_PRODUCT": "Product",
-}
-DUNAMU_CAREER_TYPES = {
-    "EXPERIENCED": "experienced",
-    "NEWBIE": "new_comer",
-    "NONE": "mixed",
-}
-DUNAMU_CAREER_LABELS = {
-    "EXPERIENCED": "경력",
-    "NEWBIE": "신입",
-    "NONE": "경력 무관",
-}
-DUNAMU_EMPLOYMENT_TYPES = {
-    "FULL_TIME": "regular",
-    "CONTRACT": "contract",
-    "INTERN": "intern",
-}
-DUNAMU_EMPLOYMENT_LABELS = {
-    "FULL_TIME": "정규직",
-    "CONTRACT": "계약직",
-    "INTERN": "인턴",
-    "NONE": "미표기",
 }
 DUNAMU_CONNECTOR_FAMILIES = frozenset(
     {
@@ -760,11 +740,12 @@ def _dunamu_api_refs(
             group_code,
             group_code.removeprefix("T_").replace("_", " ").title(),
         )
+        detail_url = f"https://careers.dunamu.com/detail/{external_id}"
         refs.append(
             PublicJsonDetailRef(
                 external_id=external_id,
-                detail_url=listing_url,
-                public_url=f"https://careers.dunamu.com/detail/{external_id}",
+                detail_url=detail_url,
+                public_url=detail_url,
                 title=title,
                 category=category,
             )
@@ -2248,6 +2229,11 @@ def _dunamu_opening(
 
     description_html = str(information)
     description_text = structured_plain_text(description_html)
+    require_substantive_posting_content(
+        description_html,
+        description_text,
+        ref.public_url,
+    )
     employment_label = _labeled_value(description_text, "고용형태") or ""
     career_label = _labeled_value(description_text, "채용유형") or ""
     employment_type = (
@@ -2269,62 +2255,6 @@ def _dunamu_opening(
         career_min=None,
         career_max=None,
         location=_labeled_value(description_text, "근무지역"),
-        opens_at=None,
-        closes_at=None,
-    )
-
-
-def _dunamu_api_opening(
-    raw_json: str,
-    ref: PublicJsonDetailRef,
-) -> ParsedOpening:
-    matched_row: dict[str, Any] | None = None
-    for row in _dunamu_api_rows(raw_json):
-        raw_id = row.get("id")
-        if not isinstance(raw_id, bool) and str(raw_id) == ref.external_id:
-            matched_row = row
-            break
-    if matched_row is None:
-        raise ValueError("Dunamu API detail identity is missing")
-
-    title = _text(matched_row.get("name"))
-    group_code = _text(matched_row.get("jobGroupCode"))
-    career_code = _text(matched_row.get("experienceLevel")) or "NONE"
-    employment_code = _text(matched_row.get("employmentType")) or "NONE"
-    category = (
-        DUNAMU_JOB_GROUP_LABELS.get(
-            group_code,
-            group_code.removeprefix("T_").replace("_", " ").title(),
-        )
-        if group_code is not None
-        else None
-    )
-    if title != ref.title or category != ref.category:
-        raise ValueError("Dunamu API detail identity does not match its listing")
-    if career_code not in DUNAMU_CAREER_LABELS:
-        raise ValueError("Dunamu API career type is unsupported")
-    if employment_code not in DUNAMU_EMPLOYMENT_LABELS:
-        raise ValueError("Dunamu API employment type is unsupported")
-
-    description_text = "\n".join(
-        (
-            f"직군: {category}",
-            f"경력 조건: {DUNAMU_CAREER_LABELS[career_code]}",
-            f"고용 형태: {DUNAMU_EMPLOYMENT_LABELS[employment_code]}",
-        )
-    )
-    return ParsedOpening(
-        external_id=ref.external_id,
-        url=ref.public_url,
-        title=title,
-        status="open",
-        description_html="",
-        description_text=description_text,
-        employment_type=DUNAMU_EMPLOYMENT_TYPES.get(employment_code),
-        career_type=DUNAMU_CAREER_TYPES[career_code],
-        career_min=None,
-        career_max=None,
-        location=None,
         opens_at=None,
         closes_at=None,
     )
@@ -2841,8 +2771,6 @@ def parse_public_json_detail(
     connector_family: str,
 ) -> ParsedOpening:
     if connector_family in DUNAMU_CONNECTOR_FAMILIES:
-        if raw_json.lstrip().startswith("{"):
-            return _dunamu_api_opening(raw_json, ref)
         return _dunamu_opening(raw_json, ref)
     if connector_family in {
         "ably_next_ninehire_tech",

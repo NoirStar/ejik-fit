@@ -1,9 +1,12 @@
 import json
+from dataclasses import replace
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from ejikfit.connectors.types import ParsedOpening
+from ejikfit.html_text import structured_plain_text
+from ejikfit.posting_content import require_substantive_posting_content
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -118,3 +121,46 @@ def parse_line_gatsby_openings(
         )
 
     return openings
+
+
+def parse_line_gatsby_detail_opening(
+    raw_json: str,
+    detail_url: str,
+    listing_opening: ParsedOpening,
+) -> ParsedOpening:
+    """Hydrate a LINE listing from its localized Gatsby page-data."""
+
+    data = json.loads(raw_json)
+    try:
+        node = data["result"]["data"]["strapiJobs"]
+    except (KeyError, TypeError) as error:
+        raise ValueError("LINE Gatsby detail content is missing") from error
+    if not isinstance(node, dict):
+        raise ValueError("LINE Gatsby detail content is missing")
+
+    raw_id = node.get("strapiId")
+    if isinstance(raw_id, bool) or raw_id is None:
+        raise ValueError("LINE Gatsby detail identity is missing")
+    if str(raw_id) != listing_opening.external_id:
+        raise ValueError("LINE Gatsby detail identity does not match its listing")
+
+    title = _text(node.get("title"))
+    if title is None:
+        raise ValueError("LINE Gatsby detail title is missing")
+    if title != listing_opening.title:
+        raise ValueError("LINE Gatsby detail title does not match its listing")
+
+    description_html = _text(node.get("content"))
+    if description_html is None:
+        raise ValueError("LINE Gatsby detail content is missing")
+    description_text = structured_plain_text(description_html)
+    require_substantive_posting_content(
+        description_html,
+        description_text,
+        detail_url,
+    )
+    return replace(
+        listing_opening,
+        description_html=description_html,
+        description_text=description_text,
+    )

@@ -5138,21 +5138,38 @@ def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
         assert source.last_success_at is not None
 
 
-def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    listing_url = (
-        "https://careers.dunamu.com/api/job-boards/"
-        "jd0wjv/job-notices"
+def _dunamu_detail_html(
+    title: str = "Frontend Engineer_데이터 프로덕트 서비스 개발",
+    *,
+    sparse: bool = False,
+) -> str:
+    body = "Python" if sparse else (
+        "Python 기반 데이터 프로덕트 API와 배치 파이프라인을 개발하고 "
+        "대규모 트래픽에서도 안정적으로 동작하도록 운영합니다. Kafka "
+        "메시징과 분산 시스템을 이해하고 장애 분석, 테스트 자동화, 성능 "
+        "개선을 주도한 경험이 필요합니다. Kubernetes 환경의 서비스 배포와 "
+        "관측 가능성 구축 경험을 우대합니다."
     )
-    listing = json.dumps(
+    return f"""
+    <div class="detailView_title">{title}</div>
+    <div class="detailView_information">
+      <h3>주요업무와 자격요건</h3><p>{body}</p>
+      <ul><li>고용형태 : 정규직</li><li>채용유형 : 경력직</li></ul>
+    </div>
+    """
+
+
+def _dunamu_listing() -> str:
+    return json.dumps(
         {
             "content": {
                 "jobBoardName": "Dunamu",
                 "jobNoticeResponses": [
                     {
                         "id": 588,
-                        "name": "Frontend Engineer_데이터 프로덕트 서비스 개발",
+                        "name": (
+                            "Frontend Engineer_데이터 프로덕트 서비스 개발"
+                        ),
                         "jobGroupCode": "T_ENGINEERING",
                         "experienceLevel": "EXPERIENCED",
                         "employmentType": "FULL_TIME",
@@ -5171,6 +5188,17 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         ensure_ascii=False,
     )
 
+
+def test_dunamu_public_api_crawl_fetches_official_detail_html() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    listing = _dunamu_listing()
+    detail_url = "https://careers.dunamu.com/detail/588"
+
     with Session(engine) as session:
         source = CareerSource(
             company=Company(name="두나무", slug="dunamu"),
@@ -5182,7 +5210,11 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         )
         session.add(source)
         session.commit()
-        fetcher = PublicJsonDetailFetcher(listing_url, listing, {})
+        fetcher = PublicJsonDetailFetcher(
+            listing_url,
+            listing,
+            {detail_url: _dunamu_detail_html()},
+        )
 
         result = asyncio.run(
             crawler.crawl_source(
@@ -5202,7 +5234,147 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         assert posting.url == "https://careers.dunamu.com/detail/588"
         assert posting.career_type == "experienced"
         assert posting.employment_type == "regular"
-        assert fetcher.urls == [listing_url]
+        assert "Python 기반" in posting.description_text
+        assert "Kafka 메시징" in posting.description_text
+        assert "Kubernetes 환경" in posting.description_text
+        assert fetcher.urls == [listing_url, detail_url]
+
+
+class BlockedDunamuDetailFetcher:
+    def __init__(self, listing_url: str, listing: str) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        del method, json_body, form_body, headers
+        self.urls.append(url)
+        if url != self.listing_url:
+            raise crawler.BlockedSourceError("detail denied access with 403")
+        return crawler.FetchedPage(
+            url=url,
+            text=self.listing,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_dunamu_detail_block_falls_back_to_official_browser_page() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    detail_url = "https://careers.dunamu.com/detail/588"
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="두나무", slug="dunamu-browser-detail"),
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="dunamu_server_html_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = BlockedDunamuDetailFetcher(
+            listing_url,
+            _dunamu_listing(),
+        )
+        renderer = DunamuJsonBrowserRenderer(_dunamu_detail_html())
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+                browser_renderer=renderer,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert "Kafka 메시징" in posting.description_text
+        assert fetcher.urls == [listing_url, detail_url]
+        assert renderer.urls == [detail_url]
+
+
+def test_dunamu_sparse_detail_preserves_previous_good_body() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    prior_success = now - timedelta(days=1)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    detail_url = "https://careers.dunamu.com/detail/588"
+    title = "Frontend Engineer_데이터 프로덕트 서비스 개발"
+
+    with Session(engine) as session:
+        company = Company(name="두나무", slug="dunamu-detail-preservation")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="dunamu_server_html_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=prior_success,
+        )
+        previous_text = "이전에 공식 상세 페이지에서 검증한 정상 공고 본문"
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="588",
+            url=detail_url,
+            title=title,
+            description_html=f"<p>{previous_text}</p>",
+            description_text=previous_text,
+        )
+        session.add(posting)
+        session.commit()
+        fetcher = PublicJsonDetailFetcher(
+            listing_url,
+            _dunamu_listing(),
+            {detail_url: _dunamu_detail_html(sparse=True)},
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        session.refresh(posting)
+        assert result == crawler.CrawlResult(
+            discovered=1,
+            ingested=0,
+            failed=1,
+        )
+        assert posting.description_text == previous_text
+        assert posting.status == PostingStatus.OPEN
+        assert source.last_error_code == "partial_detail_failure"
+        assert _as_utc(source.last_success_at) == prior_success
 
 
 class WorkableListingFetcher:
