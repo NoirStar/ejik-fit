@@ -344,3 +344,38 @@ def test_lg_uplus_connector_uses_the_same_validated_detail_api() -> None:
     )
     assert request.method == "POST"
     assert request.json_body == {"jobNoticeId": "1001888"}
+
+
+def test_official_detail_request_builds_kia_detail_api_call() -> None:
+    from ejikfit.connectors.official_detail import official_detail_request
+
+    opening = _enterprise_opening(
+        "2026-N3-12",
+        (
+            "https://career.kia.com/apply/applyView.kc?"
+            "recuYy=2026&recuType=N3&recuCls=12"
+        ),
+        "기아 글로벌 채용전환형 인턴십 - 제조 로봇 데이터 엔지니어링",
+    )
+
+    request = official_detail_request(
+        "kia_enterprise_json_tech",
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+            "hgrCd=2&lang=ko&page=1&pageblock=100"
+        ),
+        opening,
+    )
+
+    assert request is not None
+    assert request.url == (
+        "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+        "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=12"
+    )
+    assert request.method == "GET"
+    assert request.headers == {
+        "Accept": "application/json, text/plain, */*",
+        "Referer": opening.url,
+        "X-HKMC-SERVICE": "KM",
+        "X-HKMC-TOKEN": "null",
+    }

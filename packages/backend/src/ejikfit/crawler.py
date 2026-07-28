@@ -39,6 +39,10 @@ from ejikfit.connectors.breezy import (
     parse_breezy_listing_openings,
 )
 from ejikfit.connectors.channel import parse_channel_openings
+from ejikfit.connectors.enterprise_detail import (
+    KIA_CONNECTOR_FAMILY,
+    KIA_LISTING_HEADERS,
+)
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import (
     discover_corporate_greeting_openings,
@@ -151,6 +155,7 @@ from ejikfit.connectors.synopsys import (
     parse_synopsys_korea_listing_openings,
 )
 from ejikfit.connectors.technical_roles import (
+    is_detailed_technical_role,
     is_korea_technical_role,
     is_technical_role,
 )
@@ -194,20 +199,6 @@ def _is_talent_pool_title(title: str) -> bool:
     return "인재pool" in compact or "talentpool" in compact
 
 
-def _normalized_company_label(opening: ParsedOpening) -> str:
-    description = opening.description_text or ""
-    for line in description.splitlines():
-        marker, separator, value = line.partition(":")
-        if separator and marker.strip().casefold() == "department":
-            return " ".join(value.casefold().split())
-
-    normalized = " ".join(description.casefold().split())
-    for company in ("kt cloud", "kt"):
-        if normalized == company or normalized.startswith(f"{company} "):
-            return company
-    return ""
-
-
 def _is_kt_cloud_technical_opening(opening: ParsedOpening) -> bool:
     searchable = f"{opening.title} {opening.description_text or ''}"
     normalized = searchable.casefold()
@@ -239,7 +230,10 @@ def _is_kt_cloud_technical_opening(opening: ParsedOpening) -> bool:
         marker in normalized for marker in strong_software_markers
     ):
         return False
-    return is_technical_role(searchable)
+    return is_detailed_technical_role(
+        opening.title,
+        opening.description_text,
+    )
 
 
 def _apply_source_opening_filters(
@@ -254,6 +248,10 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "hyundai_mobis_html_tech":
         return openings
+    if source.connector_family == KIA_CONNECTOR_FAMILY:
+        # Kia's official listing omits the role body. Hydrate every opening
+        # first and classify it from the complete job description below.
+        return openings
     if source.connector_family == "skcareers_ax_tech":
         return [
             opening
@@ -264,16 +262,17 @@ def _apply_source_opening_filters(
         return [
             opening
             for opening in openings
-            if _normalized_company_label(opening) == "kt"
-            and opening.title.casefold().lstrip().startswith("[kt]")
-            and is_technical_role(opening.title, opening.description_text)
+            if opening.title.casefold().lstrip().startswith("[kt]")
+            and is_detailed_technical_role(
+                opening.title,
+                opening.description_text,
+            )
         ]
     if source.connector_family == "kt_cloud_enterprise_json_tech":
         return [
             opening
             for opening in openings
-            if _normalized_company_label(opening) == "kt cloud"
-            and opening.title.casefold().lstrip().startswith("[kt cloud]")
+            if opening.title.casefold().lstrip().startswith("[kt cloud]")
             and _is_kt_cloud_technical_opening(opening)
         ]
     if source.connector_family == "skcareers_intellix_tech":
@@ -1192,6 +1191,23 @@ async def _fetch_listing_page(
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
     source_url = urlparse(source.base_url)
+    if source.connector_family == KIA_CONNECTOR_FAMILY:
+        query = parse_qs(source_url.query, keep_blank_values=True)
+        if (
+            source_url.scheme != "https"
+            or source_url.hostname != "career.kia.com"
+            or source_url.port is not None
+            or source_url.username is not None
+            or source_url.password is not None
+            or source_url.path != "/api/rec/AP-KM-FO-02700"
+            or query.get("hgrCd") != ["2"]
+            or query.get("lang") != ["ko"]
+        ):
+            raise ValueError("Kia source must use its official listing API")
+        return await fetcher.fetch(
+            source.base_url,
+            headers=KIA_LISTING_HEADERS,
+        )
     if source.connector_family == NEXON_CONNECTOR_FAMILY:
         if browser_renderer is None:
             raise ValueError("browser renderer is not configured")
@@ -2631,6 +2647,16 @@ async def crawl_source(
                     )
                 opening = detail_opening
                 opening_payload = detail.text
+            if source.connector_family == KIA_CONNECTOR_FAMILY:
+                if detail_request is None:
+                    raise ValueError("Kia official detail request is missing")
+                if not is_detailed_technical_role(
+                    opening.title,
+                    opening.description_text,
+                ):
+                    seen_external_ids.discard(opening.external_id)
+                    discovered -= 1
+                    continue
             with session.begin_nested():
                 ingest_opening(
                     session,

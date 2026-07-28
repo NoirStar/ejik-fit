@@ -21,6 +21,14 @@ HYUNDAI_DETAIL_URL = (
     "https://talent.hyundai.com/api/rec/AP-HM-FO-02800?"
     "hgrCd=1&lang=en&recuYy=2026&recuType=N2&recuCls=268"
 )
+KIA_LISTING_URL = (
+    "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+    "hgrCd=2&lang=ko&page=1&pageblock=100"
+)
+KIA_DETAIL_URL = (
+    "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+    "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=12"
+)
 LG_LISTING_URL = (
     "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
 )
@@ -242,6 +250,77 @@ def test_parse_hyundai_detail_builds_named_sections() -> None:
             HYUNDAI_DETAIL_URL,
             "enterprise_json",
             HYUNDAI_LISTING_URL,
+            listing,
+        )
+
+
+def test_parse_kia_detail_uses_shared_hkmc_fields() -> None:
+    title = (
+        "기아 글로벌 채용전환형 인턴십 - "
+        "제조 로봇 데이터 엔지니어링 (제조솔루션)"
+    )
+    listing = _opening(
+        "2026-N3-12",
+        (
+            "https://career.kia.com/apply/applyView.kc?"
+            "recuYy=2026&recuType=N3&recuCls=12"
+        ),
+        title,
+    )
+    payload = json.dumps(
+        {
+            "status": 200,
+            "message": "OK",
+            "data": {
+                "applyInfo": {
+                    "recuYy": "2026",
+                    "recuType": "N3",
+                    "recuCls": 12,
+                    "recuNoticeNm": title,
+                    "aboutTeamNtc": (
+                        "제조 로봇의 학습 데이터를 수집하고 생산 현장에 "
+                        "적용하는 데이터 엔지니어링 팀입니다."
+                    ),
+                    "privJdDtl": (
+                        "Python 기반 데이터 파이프라인을 설계하고 로봇 센서 "
+                        "데이터의 수집, 정제, 검증과 배포를 자동화합니다."
+                    ),
+                    "privMustReq": (
+                        "분산 데이터 처리와 SQL, 클라우드 스토리지 운영 및 "
+                        "장애 분석 경험이 필요합니다."
+                    ),
+                    "prefReq": (
+                        "Kafka, Kubernetes와 컴퓨터 비전 데이터셋 구축 "
+                        "경험을 우대합니다."
+                    ),
+                    "etc": "채용전환형 인턴십으로 운영합니다.",
+                }
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    opening = _parse(
+        payload,
+        KIA_DETAIL_URL,
+        "kia_enterprise_json_tech",
+        KIA_LISTING_URL,
+        listing,
+    )
+
+    assert "## 팀 소개" in opening.description_text
+    assert "Python 기반 데이터 파이프라인" in opening.description_text
+    assert "Kafka, Kubernetes" in opening.description_text
+    assert opening.url == listing.url
+
+    mismatched = json.loads(payload)
+    mismatched["data"]["applyInfo"]["recuCls"] = 99
+    with pytest.raises(ValueError, match="identity"):
+        _parse(
+            json.dumps(mismatched, ensure_ascii=False),
+            KIA_DETAIL_URL,
+            "kia_enterprise_json_tech",
+            KIA_LISTING_URL,
             listing,
         )
 

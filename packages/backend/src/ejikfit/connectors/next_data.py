@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 from ejikfit.connectors.types import ParsedOpening
+from ejikfit.html_text import structured_plain_text
+from ejikfit.posting_content import require_substantive_posting_content
 
 
 KST = ZoneInfo("Asia/Seoul")
@@ -108,6 +110,11 @@ DESCRIPTION_KEYS = (
     "corpCd",
     "corpType",
     "cntryNm",
+)
+DESCRIPTION_HTML_KEYS = (
+    "descriptionHtml",
+    "descriptionHTML",
+    "jobDescriptionHtml",
 )
 SKILL_KEYS = (
     "skillTags",
@@ -402,6 +409,14 @@ def _description_text(item: dict[str, Any]) -> str:
     return _unique_join(values)
 
 
+def _description_html(item: dict[str, Any]) -> str:
+    for key in DESCRIPTION_HTML_KEYS:
+        value = item.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
 def _opening_from_item(
     item: dict[str, Any],
     listing_url: str,
@@ -416,13 +431,26 @@ def _opening_from_item(
     if url is None:
         return None
 
+    description_html = _description_html(item)
+    description_text = (
+        structured_plain_text(description_html)
+        if description_html
+        else _description_text(item)
+    )
+    if description_html:
+        require_substantive_posting_content(
+            description_html,
+            description_text,
+            url,
+        )
+
     return ParsedOpening(
         external_id=_external_id(item, url),
         url=url,
         title=title,
         status="open",
-        description_html="",
-        description_text=_description_text(item),
+        description_html=description_html,
+        description_text=description_text,
         employment_type=_first_text(item, EMPLOYMENT_KEYS),
         career_type=_career_type(title, _first_text(item, CAREER_KEYS)),
         career_min=None,

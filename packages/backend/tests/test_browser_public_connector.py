@@ -117,3 +117,25 @@ def test_parse_browser_public_render_openings_maps_kia_apply_cards() -> None:
         "[계약직] 기아 채용운영 채용시까지 경영지원 "
         "인사관리 서울 양재본사 계약직"
     )
+
+
+def test_kia_card_shape_is_ignored_outside_the_official_listing() -> None:
+    html = """
+    <li
+      data-recuyy="2026"
+      data-recutype="N3"
+      data-recucls="12"
+      class="cont__box"
+    >
+      <a href="javascript:void(0);">
+        <h3 class="tit">제조 로봇 데이터 엔지니어링</h3>
+      </a>
+    </li>
+    """
+
+    openings = parse_browser_public_render_openings(
+        html,
+        "https://attacker.example/apply/applyList.kc",
+    )
+
+    assert openings == []

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from urllib.parse import urlencode, urljoin
+from urllib.parse import urlencode, urljoin, urlsplit
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -75,6 +75,13 @@ def _parse_kia_rendered_apply_cards(
     html: str,
     page_url: str,
 ) -> list[ParsedOpening]:
+    parsed_page = urlsplit(page_url)
+    if (
+        parsed_page.scheme != "https"
+        or parsed_page.hostname != "career.kia.com"
+        or parsed_page.path.rstrip("/") != "/apply/applyList.kc"
+    ):
+        return []
     soup = BeautifulSoup(html, "lxml")
     openings: list[ParsedOpening] = []
 

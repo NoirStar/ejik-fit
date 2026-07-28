@@ -291,6 +291,7 @@ def _kt_recruit_payload(data: dict[str, Any]) -> dict[str, Any] | None:
                 "id": str(posting_id),
                 "title": unescape(title),
                 "jobDetailUrl": item.get("recruitNoticeUrl"),
+                "descriptionHtml": item.get("contents"),
                 "employmentType": item.get("recruitClassName"),
                 "careerTypeName": item.get("recruitClassName"),
                 "startDate": item.get("receiveStartDatetime"),
@@ -393,7 +394,10 @@ def _hyundai_datetime(date_value: Any, time_value: Any) -> str | None:
     return parsed.strftime("%Y-%m-%d %H:%M")
 
 
-def _hyundai_apply_payload(data: dict[str, Any]) -> dict[str, Any] | None:
+def _hyundai_apply_payload(
+    data: dict[str, Any],
+    listing_url: str,
+) -> dict[str, Any] | None:
     payload = data.get("data")
     if not isinstance(payload, dict):
         return None
@@ -406,6 +410,16 @@ def _hyundai_apply_payload(data: dict[str, Any]) -> dict[str, Any] | None:
         and "recuNoticeNm" in item
         for item in recruit_list
     ):
+        return None
+
+    listing_host = urlparse(listing_url).hostname
+    if listing_host == "talent.hyundai.com":
+        public_detail_base = (
+            "https://talent.hyundai.com/eng/apply/applyView.hc"
+        )
+    elif listing_host == "career.kia.com":
+        public_detail_base = "https://career.kia.com/apply/applyView.kc"
+    else:
         return None
 
     jobs: list[dict[str, Any]] = []
@@ -435,7 +449,7 @@ def _hyundai_apply_payload(data: dict[str, Any]) -> dict[str, Any] | None:
                 "id": f"{recu_yy}-{recu_type}-{recu_cls}",
                 "title": unescape(title),
                 "jobDetailUrl": (
-                    f"https://talent.hyundai.com/eng/apply/applyView.hc?{query}"
+                    f"{public_detail_base}?{query}"
                 ),
                 "employmentType": item.get("channelCodeNm"),
                 "careerTypeName": item.get("channelCodeNm"),
@@ -768,7 +782,7 @@ def parse_enterprise_json_openings(
         kt_payload = _kt_recruit_payload(data)
         if kt_payload is not None:
             return parse_static_payload_openings(kt_payload, listing_url)
-        hyundai_payload = _hyundai_apply_payload(data)
+        hyundai_payload = _hyundai_apply_payload(data, listing_url)
         if hyundai_payload is not None:
             return parse_static_payload_openings(hyundai_payload, listing_url)
         hanwha_payload = _hanwha_recruit_payload(data)

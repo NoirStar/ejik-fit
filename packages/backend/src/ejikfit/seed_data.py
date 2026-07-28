@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ejikfit.connectors.asml import ASML_CONNECTOR_FAMILY
+from ejikfit.connectors.enterprise_detail import KIA_CONNECTOR_FAMILY
 from ejikfit.connectors.nexon import NEXON_CONNECTOR_FAMILY
 from ejikfit.connectors.synopsys import SYNOPSYS_CONNECTOR_FAMILY
 from ejikfit.models import (
@@ -3011,11 +3012,16 @@ INITIAL_SOURCE_CATALOG = (
     SeedSource(
         name="기아",
         slug="kia",
-        base_url="https://career.kia.com/apply/applyList.kc",
-        source_type=SourceType.BROWSER_PUBLIC_RENDER,
+        base_url=(
+            "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+            "hgrCd=2&lang=ko&page=1&pageblock=100&searchFieldList="
+            "&searchOccupList=&searchPlaceList=&searchSectorList="
+            "&searchText=&jdSec=&srcOrd="
+        ),
+        source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.kia.com",
         sector="enterprise_it",
-        connector_family="browser_public_render",
+        connector_family=KIA_CONNECTOR_FAMILY,
         policy_status=PolicyStatus.ALLOWED,
         brand_tier_weight=5,
         tech_job_priority=4,
@@ -3023,7 +3029,11 @@ INITIAL_SOURCE_CATALOG = (
         connector_reuse_score=2,
         policy_risk=0,
         non_tech_noise=3,
-        notes="Official Kia rendered careers listing.",
+        notes=(
+            "Official Kia listing and detail JSON APIs; each complete detail "
+            "is classified after hydration so technical context in the job "
+            "body is not lost."
+        ),
         status=SourceStatus.ALLOWED,
     ),
     SeedSource(
@@ -3402,7 +3412,7 @@ INITIAL_SOURCE_CATALOG = (
         slug="kt",
         base_url=(
             "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
-            "&isContainsContents=0"
+            "&isContainsContents=1"
         ),
         source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://corp.kt.com",
@@ -3423,7 +3433,7 @@ INITIAL_SOURCE_CATALOG = (
         slug="kt-cloud",
         base_url=(
             "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
-            "&isContainsContents=0#kt-cloud"
+            "&isContainsContents=1#kt-cloud"
         ),
         source_type=SourceType.ENTERPRISE_JSON,
         homepage_url="https://www.ktcloud.com",

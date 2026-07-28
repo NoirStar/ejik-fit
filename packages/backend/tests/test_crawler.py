@@ -5519,6 +5519,195 @@ def test_lg_crawl_posts_detail_request_and_ingests_full_role_content() -> None:
         ]
 
 
+def test_kia_crawl_hydrates_before_filtering_technical_roles() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+        "hgrCd=2&lang=ko&page=1&pageblock=100&searchFieldList="
+        "&searchOccupList=&searchPlaceList=&searchSectorList="
+        "&searchText=&jdSec=&srcOrd="
+    )
+    technical_title = "미래 제조 솔루션"
+    nontechnical_title = "고객 경험 운영"
+    listing = json.dumps(
+        {
+            "status": 200,
+            "message": "OK",
+            "data": {
+                "listCnt": 2,
+                "list": [
+                    {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": 12,
+                        "recuNoticeNm": technical_title,
+                        "applyStartDt": "20260720",
+                        "applyStartTm": "0900",
+                        "applyEndDt": "20260803",
+                        "applyEndTm": "1700",
+                        "secCodeNm": "제조솔루션",
+                        "fldCodeNm": "생산기술개발",
+                        "workPlaceCodeNm": "AutoLand 광명",
+                        "channelCodeNm": "인턴",
+                    },
+                    {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": 13,
+                        "recuNoticeNm": nontechnical_title,
+                        "applyStartDt": "20260720",
+                        "applyStartTm": "0900",
+                        "applyEndDt": "20260803",
+                        "applyEndTm": "1700",
+                        "secCodeNm": "고객경험",
+                        "fldCodeNm": "운영지원",
+                        "workPlaceCodeNm": "서울",
+                        "channelCodeNm": "인턴",
+                    },
+                ],
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    def detail_payload(title: str, recu_cls: int, *, technical: bool) -> str:
+        if technical:
+            fields = {
+                "aboutTeamNtc": (
+                    "스마트 제조 현장의 로봇과 센서 데이터를 안정적으로 "
+                    "수집해 생산 의사결정을 지원하는 팀입니다."
+                ),
+                "privJdDtl": (
+                    "Python과 SQL 기반 데이터 파이프라인을 설계하고 대규모 "
+                    "센서 데이터의 정제, 검증, 배포 자동화를 개발합니다."
+                ),
+                "privMustReq": (
+                    "분산 데이터 처리와 클라우드 스토리지 운영, 장애 분석 "
+                    "및 테스트 자동화 경험이 필요합니다."
+                ),
+                "prefReq": (
+                    "Kafka, Kubernetes와 컴퓨터 비전 데이터셋 구축 경험을 "
+                    "우대합니다."
+                ),
+            }
+        else:
+            fields = {
+                "aboutTeamNtc": (
+                    "전국 고객 접점의 서비스 품질을 살피고 현장 의견을 모아 "
+                    "더 편안한 방문 경험을 만드는 운영 조직입니다."
+                ),
+                "privJdDtl": (
+                    "고객 안내 절차를 점검하고 매장 운영 일정을 조율하며 "
+                    "서비스 만족도 조사와 행사 준비를 담당합니다."
+                ),
+                "privMustReq": (
+                    "원활한 의사소통과 꼼꼼한 일정 관리, 고객 응대 경험 및 "
+                    "여러 부서와 협업한 경험이 필요합니다."
+                ),
+                "prefReq": (
+                    "자동차 산업과 오프라인 고객 서비스에 관심이 있고 현장 "
+                    "운영 개선 활동을 수행한 분을 우대합니다."
+                ),
+            }
+        return json.dumps(
+            {
+                "status": 200,
+                "message": "OK",
+                "data": {
+                    "applyInfo": {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": recu_cls,
+                        "recuNoticeNm": title,
+                        **fields,
+                    }
+                },
+            },
+            ensure_ascii=False,
+        )
+
+    details = {
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+            "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=12"
+        ): detail_payload(technical_title, 12, technical=True),
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+            "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=13"
+        ): detail_payload(nontechnical_title, 13, technical=False),
+    }
+
+    class KiaFetcher:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def fetch(
+            self,
+            url: str,
+            *,
+            method: str = "GET",
+            json_body: object | None = None,
+            form_body: object | None = None,
+            headers: object | None = None,
+        ) -> crawler.FetchedPage:
+            del form_body
+            self.calls.append(
+                {
+                    "url": url,
+                    "method": method,
+                    "json_body": json_body,
+                    "headers": headers,
+                }
+            )
+            return crawler.FetchedPage(
+                url=url,
+                text=listing if url == listing_url else details[url],
+                status_code=200,
+                headers={},
+            )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="기아", slug="kia-detail-filter"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="kia_enterprise_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = KiaFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert [posting.external_id for posting in postings] == ["2026-N3-12"]
+        assert "Python과 SQL 기반" in postings[0].description_text
+        assert "Kafka, Kubernetes" in postings[0].description_text
+        assert [call["url"] for call in fetcher.calls] == [
+            listing_url,
+            *details,
+        ]
+        assert fetcher.calls[0]["headers"] == {
+            "Accept": "application/json, text/plain, */*",
+            "X-HKMC-SERVICE": "KM",
+            "X-HKMC-TOKEN": "null",
+        }
+        assert source.last_success_at is not None
+
+
 class WorkableListingFetcher:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []

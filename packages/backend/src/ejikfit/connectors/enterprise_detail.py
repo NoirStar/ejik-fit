@@ -17,9 +17,17 @@ from ejikfit.posting_content import require_substantive_posting_content
 
 CJ_PROVIDER = "cj"
 HYUNDAI_PROVIDER = "hyundai"
+KIA_PROVIDER = "kia"
 LG_PROVIDER = "lg"
 HANWHA_PROVIDER = "hanwha"
 SMILEGATE_PROVIDER = "smilegate"
+
+KIA_CONNECTOR_FAMILY = "kia_enterprise_json_tech"
+KIA_LISTING_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "X-HKMC-SERVICE": "KM",
+    "X-HKMC-TOKEN": "null",
+}
 
 LG_DETAIL_URL = (
     "https://api.careers.lg.com/rmk/job/retrieveJobNoticesDetail"
@@ -81,6 +89,12 @@ def _provider(
         ):
             return HANWHA_PROVIDER
     if (
+        connector_family == KIA_CONNECTOR_FAMILY
+        and listing.hostname == "career.kia.com"
+        and listing.path == "/api/rec/AP-KM-FO-02700"
+    ):
+        return KIA_PROVIDER
+    if (
         connector_family == "lg_careers_lguplus_tech"
         and listing.hostname == "api.careers.lg.com"
         and listing.path == "/rmk/job/retrieveJobNoticesList"
@@ -134,6 +148,26 @@ def _validate_public_opening(
             or identity != opening.external_id
         ):
             raise ValueError("Hyundai opening URL is not official")
+        return {
+            "recuYy": recu_yy or "",
+            "recuType": recu_type or "",
+            "recuCls": recu_cls or "",
+        }
+
+    if provider == KIA_PROVIDER:
+        recu_yy = _query_value(opening.url, "recuYy")
+        recu_type = _query_value(opening.url, "recuType")
+        recu_cls = _query_value(opening.url, "recuCls")
+        identity = f"{recu_yy}-{recu_type}-{recu_cls}"
+        if (
+            parsed.hostname != "career.kia.com"
+            or parsed.path != "/apply/applyView.kc"
+            or re.fullmatch(r"\d{4}", recu_yy or "") is None
+            or re.fullmatch(r"[A-Za-z0-9]{1,12}", recu_type or "") is None
+            or re.fullmatch(r"\d{1,12}", recu_cls or "") is None
+            or identity != opening.external_id
+        ):
+            raise ValueError("Kia opening URL is not official")
         return {
             "recuYy": recu_yy or "",
             "recuType": recu_type or "",
@@ -204,6 +238,25 @@ def enterprise_detail_request(
                 "Referer": opening.url,
                 "X-HKMC-SERVICE": "HM",
                 "X-HKMC-TOKEN": "null",
+            },
+        )
+    if provider == KIA_PROVIDER:
+        detail_url = (
+            "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+            + urlencode(
+                {
+                    "hgrCd": "2",
+                    "lang": "ko",
+                    **identity,
+                }
+            )
+        )
+        return EnterpriseDetailRequest(
+            provider=provider,
+            url=detail_url,
+            headers={
+                **KIA_LISTING_HEADERS,
+                "Referer": opening.url,
             },
         )
     if provider == LG_PROVIDER:
@@ -356,17 +409,21 @@ def _parse_cj(raw: str, opening: ParsedOpening) -> ParsedOpening:
     return _finish(opening, description_html, opening.url)
 
 
-def _parse_hyundai(raw: str, opening: ParsedOpening) -> ParsedOpening:
-    data = _json_object(raw, "Hyundai")
+def _parse_hkmc(
+    raw: str,
+    opening: ParsedOpening,
+    provider: str,
+) -> ParsedOpening:
+    data = _json_object(raw, provider)
     payload = data.get("data")
     info = payload.get("applyInfo") if isinstance(payload, dict) else None
     if not isinstance(info, dict):
-        raise ValueError("Hyundai detail content is missing")
+        raise ValueError(f"{provider} detail content is missing")
     identity = "-".join(
         str(info.get(key)) for key in ("recuYy", "recuType", "recuCls")
     )
-    _same_identity(identity, opening, "Hyundai")
-    _same_title(info.get("recuNoticeNm"), opening, "Hyundai")
+    _same_identity(identity, opening, provider)
+    _same_title(info.get("recuNoticeNm"), opening, provider)
     sections = "".join(
         (
             _section("팀 소개", info.get("aboutTeamNtc")),
@@ -537,7 +594,9 @@ def parse_enterprise_detail(
     if request.provider == CJ_PROVIDER:
         return _parse_cj(raw, opening)
     if request.provider == HYUNDAI_PROVIDER:
-        return _parse_hyundai(raw, opening)
+        return _parse_hkmc(raw, opening, "Hyundai")
+    if request.provider == KIA_PROVIDER:
+        return _parse_hkmc(raw, opening, "Kia")
     if request.provider == LG_PROVIDER:
         return _parse_lg(raw, opening)
     if request.provider == HANWHA_PROVIDER:
