@@ -39,22 +39,23 @@ for (const width of [1440, 390, 320]) {
       targetDomain: "backend",
     });
 
-    const context = page.getByRole("region", { name: "내 관심 시장" });
+    const context = page.getByRole("region", { name: "내 커리어 브리핑" });
     await expect(context).toContainText("경력 · 백엔드");
-    await expect(context).toContainText("내 기술 1개");
+    await expect(context).toContainText("맞는 공고");
+    await expect(context).toContainText("현재 수요 상위");
     const contextBox = await context.boundingBox();
-    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 80 : 130);
+    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 310);
     await expect(
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "커리어 이야기" }),
+      page.getByRole("heading", { name: "내 커리어 브리핑" }),
     ).toBeVisible();
     await expect(
       page.getByText("채용 시장", { exact: true }).first(),
     ).toBeVisible();
     await expect(
-      page.getByText("내 기술과 맞는 공고", { exact: true }),
+      page.getByText("맞는 공고", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(/커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/),
@@ -64,7 +65,7 @@ for (const width of [1440, 390, 320]) {
     ).toHaveCount(0);
 
     const edit = context.getByRole("link", {
-      name: "기술 관리 · 조건 수정",
+      name: "내 커리어 기준 수정",
     });
     const editBox = await edit.boundingBox();
     expect(editBox?.width).toBeGreaterThanOrEqual(44);
@@ -72,7 +73,7 @@ for (const width of [1440, 390, 320]) {
     await expect(edit).toHaveCSS("white-space", "nowrap");
     if (width === 320) {
       const tabs = page
-        .getByRole("tablist", { name: "피드 정렬" })
+        .getByRole("tablist", { name: "피드 보기" })
         .getByRole("tab");
       await expect(tabs).toHaveCount(4);
       for (let index = 0; index < (await tabs.count()); index += 1) {

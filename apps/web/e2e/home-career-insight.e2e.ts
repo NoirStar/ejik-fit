@@ -13,21 +13,20 @@ for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
 
-    const context = page.getByRole("region", { name: "내 관심 시장" });
+    const context = page.getByRole("region", { name: "내 커리어 브리핑" });
     await expect(context).toContainText("전체 경력 · 전체 기술 분야");
     const setup = context.getByRole("link", {
-      name: "기술 추가 · 조건 설정",
+      name: "내 기술 등록",
     });
     await expect(setup).toBeVisible();
     if (width === 320) {
-      await expect(setup).toHaveCSS("white-space", "nowrap");
       const setupBox = await setup.boundingBox();
       expect(setupBox?.width).toBeGreaterThanOrEqual(44);
       expect(setupBox?.height).toBeGreaterThanOrEqual(44);
     }
     await expect(
-      page.getByRole("region", { name: "내 기술과 맞는 공고" }),
-    ).toHaveCount(0);
+      page.getByRole("region", { name: "내 커리어 브리핑" }),
+    ).toHaveCount(1);
 
     if (width > 820) {
       await page.getByRole("button", { name: "내 기술 열기" }).click();
@@ -44,7 +43,7 @@ for (const width of [1440, 390, 320]) {
 
     await expect(page).toHaveURL(/owned_skills=Java/);
     const insight = page.getByRole("region", {
-      name: "내 기술과 맞는 공고",
+      name: "내 커리어 브리핑",
     });
     await expect(insight.getByText("17건", { exact: true })).toBeVisible();
     await expect(insight).toContainText("필수 기술 절반 이상 6건");
@@ -55,8 +54,8 @@ for (const width of [1440, 390, 320]) {
       "href",
       "/skill-map?skill=Kubernetes",
     );
-    await expect(insight).toContainText("겹치는 공고 10건의 부족 요구사항");
-    await expect(insight).toContainText("필수 8 · 우대 3");
+    await expect(insight).toContainText("관련 공고 10건에서 부족");
+    await expect(insight).toContainText("현재 수요 상위");
     const linkBox = await skillLink.boundingBox();
     expect(linkBox?.width).toBeGreaterThanOrEqual(44);
     expect(linkBox?.height).toBeGreaterThanOrEqual(44);

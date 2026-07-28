@@ -95,8 +95,18 @@ test("moves from a company profile to the verified job detail", async ({ page })
   ).toHaveAttribute("href", "/companies/naver");
 });
 
-test("opens a company profile from an API-backed home job", async ({ page }) => {
+test("opens a verified job and its company profile from the home feed", async ({
+  page,
+}) => {
   await page.goto("/");
+  await page
+    .getByRole("link", { name: "Python Backend Engineer 공고 보기" })
+    .click();
+
+  await expect(page).toHaveURL(/\/jobs\/job-python$/);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Python Backend Engineer" }),
+  ).toBeVisible();
   await page
     .getByRole("link", { name: "NAVER 기업 채용 현황" })
     .click();

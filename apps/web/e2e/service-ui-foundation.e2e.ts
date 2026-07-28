@@ -16,12 +16,14 @@ for (const viewport of [
 
     const heading = page.getByRole("heading", {
       exact: true,
-      name: "커리어 이야기",
+      name: "내 커리어 브리핑",
     });
     const feedPanel = page.getByRole("tabpanel", { name: "둘러보기" });
-    const firstArticle = feedPanel.getByRole("article").first();
+    const firstFeedItem = feedPanel
+      .locator(":scope > article, :scope > section")
+      .first();
     await expect(heading).toBeVisible();
-    await expect(firstArticle).toBeVisible();
+    await expect(firstFeedItem).toBeVisible();
 
     const headingSize = await heading.evaluate((element) =>
       Number.parseFloat(getComputedStyle(element).fontSize),
@@ -34,7 +36,11 @@ for (const viewport of [
     expect(bodyFamily).toContain("Pretendard");
 
     const articlePositions = await feedPanel.evaluate((element) =>
-      [...element.querySelectorAll<HTMLElement>(":scope > article")]
+      [
+        ...element.querySelectorAll<HTMLElement>(
+          ":scope > article, :scope > section",
+        ),
+      ]
         .slice(0, 2)
         .map((article) => {
           const box = article.getBoundingClientRect();
