@@ -46,7 +46,7 @@ for (const width of [1440, 390, 320]) {
       name: "내 커리어 브리핑",
     });
     await expect(insight.getByText("17건", { exact: true })).toBeVisible();
-    await expect(insight).toContainText("필수 기술 절반 이상 6건");
+    await expect(insight).toContainText("필수 기술 절반 이상 충족 6건");
     const skillLink = insight.getByRole("link", {
       name: "Kubernetes 근거 보기",
     });

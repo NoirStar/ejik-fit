@@ -26,6 +26,7 @@
 - Modify: `apps/web/src/features/home-feed/home-feed.styles.test.ts`
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/e2e/home-market-context.e2e.ts`
+- Modify: `apps/web/e2e/home-career-insight.e2e.ts`
 
 **Interfaces:**
 - Consumes: existing `HomeFeedSnapshot.lastVerifiedAt` and `matchingPostingCount`.
