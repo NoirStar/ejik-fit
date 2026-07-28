@@ -12,18 +12,25 @@ function rule(selector: string) {
 }
 
 describe("home feed density", () => {
-  it("uses the approved compact three-column service canvas", () => {
+  it("uses the approved action-oriented two-column service canvas", () => {
     expect(rule("layout")).toContain(
-      "grid-template-columns: 12rem minmax(0, 1fr) 15.75rem;",
+      "grid-template-columns: minmax(0, 1fr) 17.5rem;",
     );
     expect(rule("layout")).toContain(
-      "width: min(calc(100% - 3rem), var(--content-max));",
+      "width: min(calc(100% - 3rem), 67rem);",
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.rightRail\s*\{[^}]*order: 2;/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.feedColumn\s*\{[^}]*order: 3;/,
     );
     expect(css).not.toContain("radial-gradient");
   });
 
-  it("groups rails and feed items into quiet divided surfaces", () => {
-    expect(css).toMatch(/\.leftRail,\s*\.rightRail\s*\{[^}]*overflow: hidden;/);
+  it("groups the market rail and feed items into quiet divided surfaces", () => {
+    expect(rule("rightRail")).toContain("overflow: hidden;");
+    expect(css).not.toMatch(/\.leftRail\s*\{/);
     expect(rule("feedList")).toContain("gap: 0;");
     expect(rule("feedList")).toContain("overflow: hidden;");
     expect(css).toMatch(

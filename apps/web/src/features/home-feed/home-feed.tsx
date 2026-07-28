@@ -4,14 +4,12 @@ import {
   ArrowRight,
   ArrowSquareOut,
   BookmarkSimple,
-  Briefcase,
   ChartLineUp,
   ChatCircle,
   CheckCircle,
   Heart,
   MapPin,
   ShieldCheck,
-  Stack,
   Trash,
   UserCheck,
   UserPlus,
@@ -66,7 +64,6 @@ import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
-import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
 import { useHomeFeedPagination } from "./use-home-feed-pagination";
 import type {
@@ -78,6 +75,7 @@ import type {
   HomeFeedSnapshot,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
+  SkillDemandSummary,
 } from "./types";
 
 export type HomeFeedProps = {
@@ -122,10 +120,10 @@ const EMPTY_DRAFT: LocalPostDraft = {
 };
 
 const HOME_COPY = {
-  title: "커리어 이야기",
+  title: "추천 피드",
   market: "채용 시장",
   career: "내 기술과 맞는 공고",
-  addSkills: "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+  addSkills: "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
   graphEvidenceMissing: "이 공고에서 확인된 기술 요건이 없습니다.",
   followingEmpty: "팔로우한 작성자의 글이 없습니다.",
   followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
@@ -470,105 +468,110 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
   );
 }
 
-function CareerInsightCard({ insight }: { insight: CareerInsightSummary }) {
-  const titleId = "home-career-insight-title";
-
-  return (
-    <section
-      aria-labelledby={titleId}
-      className={`${styles.railCard} ${styles.careerInsightCard}`}
-    >
-      <div className={styles.railHeadingRow}>
-        <h2 id={titleId}>{HOME_COPY.career}</h2>
-        <Link href="/career" prefetch={false}>
-          자세히
-        </Link>
-      </div>
-
-      {insight.status === "needs_skills" ? (
-        <div className={styles.careerInsightState}>
-          <p>{HOME_COPY.addSkills}</p>
-          <Link className={styles.textLink} href="/career">
-            기술 추가하기 <ArrowRight aria-hidden="true" size={14} />
-          </Link>
-        </div>
-      ) : insight.status === "unavailable" ? (
-        <div className={styles.careerInsightState}>
-          <p>맞는 공고를 불러오지 못했습니다.</p>
-          <Link className={styles.textLink} href="/career">
-            내 커리어에서 다시 보기
-            <ArrowRight aria-hidden="true" size={14} />
-          </Link>
-        </div>
-      ) : (
-        <>
-          <div className={styles.careerCoverage}>
-            <span>내 기술과 겹치는 공개 공고</span>
-            <strong>{insight.matchingPostingCount.toLocaleString("ko-KR")}건</strong>
-            <small>
-              필수 기술 절반 이상 {insight.strongFitPostingCount.toLocaleString("ko-KR")}건
-            </small>
-          </div>
-
-          {insight.nextSkill ? (
-            <Link
-              aria-label={`${insight.nextSkill.skillName} 근거 보기`}
-              className={styles.careerNextSkill}
-              href={`/skill-map?skill=${encodeURIComponent(insight.nextSkill.skillName)}`}
-              prefetch={false}
-            >
-              <span>{PRODUCT_TERMS.nextSkill}</span>
-              <strong>{insight.nextSkill.skillName}</strong>
-              <small>
-                겹치는 공고 {insight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건의 부족 요구사항
-              </small>
-              <em>
-                필수 {insight.nextSkill.requiredCount.toLocaleString("ko-KR")} · 우대 {insight.nextSkill.preferredCount.toLocaleString("ko-KR")}
-              </em>
-              <ArrowRight aria-hidden="true" size={15} weight="bold" />
-            </Link>
-          ) : (
-            <p className={styles.careerNoRecommendation}>
-              겹치는 공고에서 반복된 추가 요구 기술이 확인되지 않았습니다.
-            </p>
-          )}
-
-          <p className={styles.careerInsightFootnote}>
-            현재 공개 상태의 공식 채용공고 요구사항만 비교합니다.
-          </p>
-        </>
-      )}
-    </section>
-  );
-}
-
-function HomeCareerContext({
+function CareerBriefing({
   context,
+  insight,
   ownedSkillCount,
+  topDemand,
 }: {
   context: CareerContextSummary;
+  insight: CareerInsightSummary;
   ownedSkillCount: number;
+  topDemand: SkillDemandSummary | null;
 }) {
-  const skillAction = ownedSkillCount > 0 ? "기술 관리" : "기술 추가";
-  const conditionAction = context.configured ? "조건 수정" : "조건 설정";
+  const titleId = "home-career-briefing-title";
+  const readyInsight =
+    ownedSkillCount > 0 && insight.status === "ready" ? insight : null;
 
   return (
-    <section aria-label="내 관심 시장" className={styles.contextBar}>
-      <div className={styles.contextIdentity}>
-        <span>내 기준</span>
-        <h2>
-          {context.careerConditionLabel} · {context.targetDomainLabel}
-        </h2>
+    <section aria-labelledby={titleId} className={styles.careerBriefing}>
+      <header className={styles.briefingHeader}>
+        <div>
+          <span>내 기준</span>
+          <h1 id={titleId}>내 커리어 브리핑</h1>
+          <p>
+            {context.careerConditionLabel} · {context.targetDomainLabel}
+          </p>
+        </div>
+        <Link
+          aria-label="내 커리어 기준 수정"
+          className={styles.briefingSettings}
+          href="/career"
+          prefetch={false}
+        >
+          기준 수정
+          <ArrowRight aria-hidden="true" size={14} weight="bold" />
+        </Link>
+      </header>
+
+      <div className={styles.briefingGrid}>
+        {readyInsight ? (
+          <>
+            <Link className={styles.briefingMetric} href="/career" prefetch={false}>
+              <span>맞는 공고</span>
+              <strong>{readyInsight.matchingPostingCount.toLocaleString("ko-KR")}건</strong>
+              <small>
+                필수 기술 절반 이상 {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
+              </small>
+            </Link>
+            {readyInsight.nextSkill ? (
+              <Link
+                aria-label={`${readyInsight.nextSkill.skillName} 근거 보기`}
+                className={styles.briefingMetric}
+                href={`/skill-map?skill=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
+                prefetch={false}
+              >
+                <span>{PRODUCT_TERMS.nextSkill}</span>
+                <strong>{readyInsight.nextSkill.skillName}</strong>
+                <small>
+                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 부족
+                </small>
+              </Link>
+            ) : (
+              <div className={styles.briefingMetric}>
+                <span>{PRODUCT_TERMS.nextSkill}</span>
+                <strong>추가 추천 없음</strong>
+                <small>현재 맞는 공고에서 반복된 부족 기술이 없습니다.</small>
+              </div>
+            )}
+          </>
+        ) : (
+          <Link
+            aria-label="내 기술 등록"
+            className={styles.briefingSetup}
+            href="/career"
+            prefetch={false}
+          >
+            <span>
+              <strong>맞춤 추천 시작하기</strong>
+              <small>{HOME_COPY.addSkills}</small>
+            </span>
+            <em>
+              내 기술 등록
+              <ArrowRight aria-hidden="true" size={15} weight="bold" />
+            </em>
+          </Link>
+        )}
+
+        {topDemand ? (
+          <Link
+            aria-label={`${topDemand.skillName} 수요 근거 보기`}
+            className={styles.briefingMetric}
+            href={`/skill-map?skill=${encodeURIComponent(topDemand.skillName)}`}
+            prefetch={false}
+          >
+            <span>현재 수요 상위</span>
+            <strong>{topDemand.skillName}</strong>
+            <small>기술 언급 공고 {topDemand.postingCount.toLocaleString("ko-KR")}건</small>
+          </Link>
+        ) : (
+          <div className={styles.briefingMetric}>
+            <span>현재 수요 상위</span>
+            <strong>확인 중</strong>
+            <small>수집된 공고를 분석하고 있습니다.</small>
+          </div>
+        )}
       </div>
-      {ownedSkillCount > 0 && (
-        <span className={styles.contextSkillCount}>
-          내 기술 {ownedSkillCount.toLocaleString("ko-KR")}개
-        </span>
-      )}
-      <Link className={styles.contextAction} href="/career" prefetch={false}>
-        {skillAction} · {conditionAction}
-        <ArrowRight aria-hidden="true" size={14} weight="bold" />
-      </Link>
     </section>
   );
 }
@@ -1114,66 +1117,17 @@ export function HomeFeed({
   return (
     <main className={styles.page}>
       <div className={styles.layout}>
-        <aside aria-label="내 커리어 바로가기" className={styles.leftRail}>
-          <section className={styles.railCard} id="my-stack">
-            <div className={styles.railHeadingRow}>
-              <div className={styles.railIconTitle}>
-                <Stack aria-hidden="true" size={19} weight="bold" />
-                <h2>내 기술</h2>
-              </div>
-              <Link href="/career" prefetch={false}>
-                관리
-              </Link>
-            </div>
-            {snapshot.ownedSkills.length > 0 ? (
-              <ul aria-label="내 기술" className={styles.ownedSkills}>
-                {snapshot.ownedSkills.map((skill) => (
-                  <li key={skill}>{skill}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.stackStatus}>아직 추가한 기술이 없습니다.</p>
-            )}
-          </section>
-
-          <section className={styles.railCard}>
-            <h2>바로가기</h2>
-            <nav aria-label="커리어 도구" className={styles.shortcutList}>
-              <Link href="/jobs" prefetch={false}>
-                <Briefcase aria-hidden="true" size={18} />
-                공식 공고 찾기
-              </Link>
-              <Link href="/career/saved" prefetch={false}>
-                <BookmarkSimple aria-hidden="true" size={18} />
-                {PRODUCT_TERMS.savedItems}
-              </Link>
-              <Link href="/career/questions" prefetch={false}>
-                <ChatCircle aria-hidden="true" size={18} />
-                내 글
-              </Link>
-              <Link href="/skill-map" prefetch={false}>
-                <ChartLineUp aria-hidden="true" size={18} />
-                스킬맵 보기
-              </Link>
-              <Link href="/data-policy" prefetch={false}>
-                <ShieldCheck aria-hidden="true" size={18} />
-                데이터 기준
-              </Link>
-            </nav>
-          </section>
-
-          <RecentTopicList />
-        </aside>
+        <CareerBriefing
+          context={snapshot.careerContext}
+          insight={snapshot.careerInsight}
+          ownedSkillCount={snapshot.ownedSkills.length}
+          topDemand={snapshot.skillDemand[0] ?? null}
+        />
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
           <header className={styles.feedHeader}>
-            <h1 id="home-feed-title">{HOME_COPY.title}</h1>
+            <h2 id="home-feed-title">{HOME_COPY.title}</h2>
           </header>
-
-          <HomeCareerContext
-            context={snapshot.careerContext}
-            ownedSkillCount={snapshot.ownedSkills.length}
-          />
 
           {snapshot.dataStatus !== "ready" && (
             <section className={styles.dataNotice} role="status">
@@ -1214,7 +1168,7 @@ export function HomeFeed({
             </section>
           )}
 
-          <div aria-label="피드 정렬" className={styles.tabs} role="tablist">
+          <div aria-label="피드 보기" className={styles.tabs} role="tablist">
             {TABS.map((tab, index) => (
               <button
                 aria-controls="home-feed-panel"
@@ -1236,7 +1190,7 @@ export function HomeFeed({
           </div>
 
           <p aria-live="polite" className={styles.srOnly}>
-            {`${visibleItems.length}개의 글을 표시합니다.`}
+            {`${visibleItems.length}개의 콘텐츠를 표시합니다.`}
           </p>
           {announcement && (
             <p aria-live="polite" className={styles.confirmation} role="status">
@@ -1369,7 +1323,7 @@ export function HomeFeed({
               visibleItems.length > 0 &&
               !pagination.error && (
                 <p className={styles.feedComplete} role="status">
-                  모든 글을 확인했습니다.
+                  모든 콘텐츠를 확인했습니다.
                 </p>
               )}
           </div>
@@ -1385,7 +1339,7 @@ export function HomeFeed({
         <aside aria-label="채용 시장 요약" className={styles.rightRail}>
           <section className={styles.railCard} id="market-insights">
             <div className={styles.railHeadingRow}>
-              <h2>주목할 기술 수요</h2>
+              <h2>현재 기술 수요</h2>
               <Link href="/market" prefetch={false}>
                 더보기
               </Link>
@@ -1419,10 +1373,6 @@ export function HomeFeed({
               </Link>
             </p>
           </section>
-
-          {snapshot.careerInsight.status !== "needs_skills" && (
-            <CareerInsightCard insight={snapshot.careerInsight} />
-          )}
 
           <FollowingPostList
             followedAuthorIds={followedAuthorIds}

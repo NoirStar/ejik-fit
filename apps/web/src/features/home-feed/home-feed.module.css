@@ -12,17 +12,19 @@
 
 .layout {
   display: grid;
-  width: min(calc(100% - 3rem), var(--content-max));
-  grid-template-columns: 12rem minmax(0, 1fr) 15.75rem;
+  width: min(calc(100% - 3rem), 67rem);
+  grid-template-columns: minmax(0, 1fr) 17.5rem;
+  grid-template-rows: auto 1fr;
   align-items: start;
   gap: 1rem;
   margin-inline: auto;
 }
 
-.leftRail,
 .rightRail {
   position: sticky;
   top: calc(var(--header-height-desktop) + 1.25rem);
+  grid-column: 2;
+  grid-row: 1 / span 2;
   display: grid;
   gap: 0;
   overflow: hidden;
@@ -45,9 +47,168 @@
   background: transparent;
 }
 
-.leftRail > :last-child,
 .rightRail > :last-child {
   border-bottom: 0;
+}
+
+.careerBriefing {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  padding: 1.125rem 1.25rem 0;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.briefingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.briefingHeader > div {
+  min-width: 0;
+}
+
+.briefingHeader span {
+  color: var(--color-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.briefingHeader h1 {
+  margin: 0.125rem 0 0;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+}
+
+.briefingHeader p {
+  margin: 0.3125rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.briefingSettings {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: -0.375rem;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-control);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.briefingSettings:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-accent-strong);
+}
+
+.briefingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-line-soft);
+}
+
+.briefingMetric,
+.briefingSetup {
+  min-width: 0;
+  min-height: 6rem;
+  padding: 0.875rem;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.briefingMetric {
+  display: grid;
+  align-content: center;
+  gap: 0.1875rem;
+}
+
+.briefingMetric + .briefingMetric {
+  border-left: 1px solid var(--color-line-soft);
+}
+
+.briefingMetric > span {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 750;
+}
+
+.briefingMetric > strong {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 1.0625rem;
+  font-weight: 820;
+  letter-spacing: -0.035em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.briefingMetric > small {
+  overflow: hidden;
+  color: var(--color-faint);
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.briefingMetric:hover {
+  background: var(--color-surface-subtle);
+}
+
+.briefingSetup {
+  display: flex;
+  grid-column: span 2;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: color-mix(in srgb, var(--color-brand-subtle) 58%, var(--color-surface));
+}
+
+.briefingSetup > span {
+  display: grid;
+  min-width: 0;
+  gap: 0.1875rem;
+}
+
+.briefingSetup strong {
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.briefingSetup small {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.briefingSetup em {
+  display: inline-flex;
+  min-height: var(--touch-target);
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.briefingSetup:hover {
+  background: color-mix(in srgb, var(--color-brand-subtle) 78%, var(--color-surface));
 }
 
 .railCard h2 {
@@ -390,6 +551,8 @@
 }
 
 .feedColumn {
+  grid-column: 1;
+  grid-row: 2;
   min-width: 0;
 }
 
@@ -402,73 +565,12 @@
   padding: 0 0.25rem 0.5rem;
 }
 
-.feedHeader h1 {
+.feedHeader h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 760;
   letter-spacing: -0.035em;
   line-height: 1.3;
-}
-
-.contextBar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
-  padding: 0 0.75rem;
-  border: 0;
-  border-radius: var(--radius-control);
-  background: color-mix(in srgb, var(--color-brand-subtle) 55%, var(--color-surface));
-}
-
-.contextIdentity {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.contextIdentity > span {
-  flex: 0 0 auto;
-  color: var(--color-accent-strong);
-  font-size: 0.6875rem;
-  font-weight: 800;
-}
-
-.contextIdentity h2 {
-  overflow: hidden;
-  margin: 0;
-  color: var(--color-text);
-  font-size: 0.875rem;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.contextSkillCount {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--color-line);
-  border-radius: 0.4375rem;
-  background: var(--color-surface);
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.contextAction {
-  display: inline-flex;
-  min-height: var(--touch-target);
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  color: var(--color-accent-strong);
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
 }
 
 .dataNotice {
@@ -1862,7 +1964,9 @@
 }
 
 .tabs button:focus-visible,
-.contextAction:focus-visible,
+.briefingSettings:focus-visible,
+.briefingMetric:focus-visible,
+.briefingSetup:focus-visible,
 .localDeleteButton:focus-visible,
 .cardActions button:focus-visible,
 .cardActions a:focus-visible,
@@ -1875,40 +1979,40 @@
 .recentTopics a:focus-visible,
 .followingPosts a:focus-visible,
 .followingAction:focus-visible,
-.careerNextSkill:focus-visible,
 .textLink:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
-}
-
-@media (max-width: 1180px) {
-  .layout {
-    width: min(calc(100% - 3rem), 67rem);
-    grid-template-columns: minmax(0, 1fr) 15.75rem;
-  }
-
-  .leftRail {
-    display: none;
-  }
 }
 
 @media (max-width: 900px) {
   .layout {
     width: min(calc(100% - 2rem), 46.5rem);
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .careerBriefing {
+    grid-column: 1;
+    grid-row: auto;
+    order: 1;
   }
 
   .rightRail {
     position: static;
+    grid-column: 1;
+    grid-row: auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .careerInsightCard {
-    grid-column: 1 / -1;
+    order: 2;
   }
 
   .followingRailCard {
     grid-column: 1 / -1;
+  }
+
+  .feedColumn {
+    grid-column: 1;
+    grid-row: auto;
+    order: 3;
   }
 }
 
@@ -1927,18 +2031,37 @@
     padding: 0.25rem 1rem 0.5rem;
   }
 
-  .feedHeader h1 {
+  .feedHeader h2 {
     font-size: 1.25rem;
   }
 
-  .contextBar {
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding-right: 1rem;
-    padding-left: 1rem;
+  .careerBriefing {
+    margin: 0 1rem;
+    padding: 1rem 1rem 0;
   }
 
-  .contextSkillCount {
-    display: none;
+  .briefingHeader h1 {
+    font-size: 1.25rem;
+  }
+
+  .briefingGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .briefingSetup,
+  .briefingMetric:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .briefingMetric:last-child {
+    border-top: 1px solid var(--color-line-soft);
+    border-left: 0;
+  }
+
+  .briefingMetric,
+  .briefingSetup {
+    min-height: 5.25rem;
+    padding: 0.75rem;
   }
 
   .tabs {

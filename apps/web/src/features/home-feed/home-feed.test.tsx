@@ -23,10 +23,6 @@ import type {
 } from "@/lib/community-contract";
 import { CommunityStoreError } from "@/lib/community-contract";
 import { createLocalCommunityPost } from "@/lib/local-community-posts";
-import {
-  readRecentCommunityTopics,
-  recordRecentCommunityTopic,
-} from "@/lib/recent-community-topics";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
@@ -239,7 +235,10 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기" }),
+      screen.getByRole("heading", { name: "내 커리어 브리핑" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "추천 피드" }),
     ).toBeInTheDocument();
     expect(screen.getByText("채용 시장")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "추천" })).toHaveAttribute(
@@ -271,35 +270,28 @@ describe("HomeFeed", () => {
     expect(
       screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "저장 목록" })).toHaveAttribute(
-      "href",
-      "/career/saved",
-    );
-    expect(screen.getByRole("link", { name: "내 글" })).toHaveAttribute(
-      "href",
-      "/career/questions",
-    );
-    expect(screen.getByRole("link", { name: "스킬맵 보기" })).toHaveAttribute(
-      "href",
-      "/skill-map",
-    );
-    expect(screen.queryByText("스킬 연결 보기")).not.toBeInTheDocument();
-    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
-    expect(within(insight).getByText("내 기술과 겹치는 공개 공고")).toBeInTheDocument();
-    expect(within(insight).getByText("12건")).toBeInTheDocument();
-    expect(within(insight).getByText("필수 기술 절반 이상 4건")).toBeInTheDocument();
-    expect(within(insight).getByRole("link", { name: "Kubernetes 근거 보기" }))
+    expect(
+      screen.queryByRole("complementary", { name: "내 커리어 바로가기" }),
+    ).not.toBeInTheDocument();
+    const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
+    expect(within(briefing).getByText("맞는 공고")).toBeInTheDocument();
+    expect(within(briefing).getByText("12건")).toBeInTheDocument();
+    expect(within(briefing).getByText("필수 기술 절반 이상 4건"))
+      .toBeInTheDocument();
+    expect(within(briefing).getByText("다음에 배울 기술")).toBeInTheDocument();
+    expect(within(briefing).getByRole("link", { name: "Kubernetes 근거 보기" }))
       .toHaveAttribute("href", "/skill-map?skill=Kubernetes");
-    expect(within(insight).getByText("필수 6 · 우대 2")).toBeInTheDocument();
-    const marketContext = screen.getByRole("region", { name: "내 관심 시장" });
-    expect(within(marketContext).getByText("경력 · 백엔드"))
+    expect(within(briefing).getByText("관련 공고 8건에서 부족"))
       .toBeInTheDocument();
-    expect(within(marketContext).getByText("내 기술 2개"))
+    expect(within(briefing).getByText("현재 수요 상위")).toBeInTheDocument();
+    expect(within(briefing).getByText("기술 언급 공고 14건"))
       .toBeInTheDocument();
-    expect(within(marketContext).getByRole("link", {
-      name: "기술 관리 · 조건 수정",
+    expect(within(briefing).getByText("경력 · 백엔드"))
+      .toBeInTheDocument();
+    expect(within(briefing).getByRole("link", {
+      name: "내 커리어 기준 수정",
     })).toHaveAttribute("href", "/career");
-    expect(screen.getByText("모든 글을 확인했습니다.")).toHaveAttribute(
+    expect(screen.getByText("모든 콘텐츠를 확인했습니다.")).toHaveAttribute(
       "role",
       "status",
     );
@@ -461,7 +453,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기" }),
+      screen.getByRole("heading", { name: "추천 피드" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "커뮤니티 글쓰기" }),
@@ -488,90 +480,21 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={snapshot} />);
 
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기" }),
+      screen.getByRole("heading", { name: "내 커리어 브리핑" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "둘러보기" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
+    const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
+    expect(within(briefing).queryByText("내 기술 0개")).not.toBeInTheDocument();
+    expect(within(briefing).getAllByRole("link", { name: "내 기술 등록" }))
+      .toHaveLength(1);
     expect(
-      screen.queryByRole("region", { name: "내 기술과 맞는 공고" }),
-    ).not.toBeInTheDocument();
-    const context = screen.getByRole("region", { name: "내 관심 시장" });
-    expect(within(context).queryByText("내 기술 0개")).not.toBeInTheDocument();
-    expect(
-      within(context).getByRole("link", {
-        name: "기술 추가 · 조건 설정",
-      }),
-    ).toHaveAttribute("href", "/career");
-    expect(
-      screen.getByRole("link", { name: "내 기술 추가" }),
-    ).toHaveAttribute("href", "/career");
-    expect(
-      screen.getByText(
-        "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+      within(briefing).getByText(
+        "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
       ),
     ).toBeInTheDocument();
-  });
-
-  it("does not spend rail space on an empty recent-topic state", () => {
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-
-    expect(
-      screen.queryByRole("region", { name: "최근 본 주제" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("restores recent topics in newest-first order and reacts to same-tab views", async () => {
-    recordRecentCommunityTopic(
-      {
-        postId: "local-career-note",
-        title: "이 기기에 남긴 커리어 기록",
-        topicLabel: "백엔드",
-        source: "local",
-      },
-      { viewedAt: "2026-07-14T01:00:00.000Z" },
-    );
-    recordRecentCommunityTopic(
-      {
-        postId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-        title: "Kubernetes 실무 경험 질문",
-        topicLabel: "Kubernetes",
-        source: "server",
-      },
-      { viewedAt: "2026-07-14T02:00:00.000Z" },
-    );
-    render(<HomeFeed snapshot={buildSnapshot()} />);
-
-    const recent = screen.getByRole("region", { name: "최근 본 주제" });
-    expect(within(recent).getByText("이 기기")).toBeInTheDocument();
-    const restoredLinks = await within(recent).findAllByRole("link", {
-      name: /다시 보기/,
-    });
-    expect(restoredLinks.map((link) => link.getAttribute("href"))).toEqual([
-      "/posts/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      "/posts/local-career-note",
-    ]);
-    expect(restoredLinks[0]).toHaveAccessibleName(
-      "Kubernetes: Kubernetes 실무 경험 질문 다시 보기",
-    );
-
-    act(() => {
-      recordRecentCommunityTopic(
-        {
-          postId: "local-salary-note",
-          title: "연봉 협상 기준 기록",
-          topicLabel: "연봉 협상",
-          source: "local",
-        },
-        { viewedAt: "2026-07-14T03:00:00.000Z" },
-      );
-    });
-    expect(
-      await within(recent).findByRole("link", {
-        name: "연봉 협상: 연봉 협상 기준 기록 다시 보기",
-      }),
-    ).toHaveAttribute("href", "/posts/local-salary-note");
   });
 
   it("does not promote old browser-only follows into real activity", () => {
