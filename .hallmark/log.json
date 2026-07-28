@@ -51,5 +51,25 @@
     "wrapped_primary_actions": 0,
     "browser_e2e_passed": 72
   },
+  "last_home_audit": {
+    "audited_at": "2026-07-29",
+    "macrostructure": "Ecosystem Index / action briefing + mixed signal stream",
+    "changes": [
+      "900px 이하에서 중복 시장 레일을 숨기고 브리핑 다음에 연속 피드를 배치",
+      "기술 매칭 문구를 실제 집계 기준에 맞게 수정",
+      "링크의 터치 영역과 키보드 포커스 상태 보강"
+    ],
+    "pre_emit_critique": {
+      "purpose": 5,
+      "hierarchy": 5,
+      "emphasis": 5,
+      "specificity": 5,
+      "responsiveness": 5,
+      "visual_quality": 4
+    },
+    "verified_widths": [320, 375, 414, 768, 1440],
+    "horizontal_overflow_failures": 0,
+    "browser_e2e_passed": 5
+  },
   "intentional_exception": null
 }

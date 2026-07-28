@@ -271,9 +271,9 @@ describe("HomeFeed", () => {
       screen.queryByRole("complementary", { name: "내 커리어 바로가기" }),
     ).not.toBeInTheDocument();
     const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
-    expect(within(briefing).getByText("맞는 공고")).toBeInTheDocument();
+    expect(within(briefing).getByText("내 기술 포함 공고")).toBeInTheDocument();
     expect(within(briefing).getByText("12건")).toBeInTheDocument();
-    expect(within(briefing).getByText("필수 기술 절반 이상 4건"))
+    expect(within(briefing).getByText("필수 기술 절반 이상 충족 4건"))
       .toBeInTheDocument();
     expect(within(briefing).getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(within(briefing).getByRole("link", { name: "Kubernetes 근거 보기" }))
@@ -288,6 +288,8 @@ describe("HomeFeed", () => {
     expect(within(briefing).getByRole("link", {
       name: "내 커리어 기준 수정",
     })).toHaveAttribute("href", "/career");
+    expect(screen.getByText("공고 1개 분석 · 최신 확인 7월 13일"))
+      .toBeInTheDocument();
     const job = screen.getByRole("article", { name: "Backend Engineer" });
     expect(within(job).getByText("필수 1/2 일치")).toBeInTheDocument();
     expect(within(job).getByRole("link", {
@@ -498,7 +500,7 @@ describe("HomeFeed", () => {
       .toHaveLength(1);
     expect(
       within(briefing).getByText(
-        "기술을 등록하면 맞는 공고와 다음에 배울 기술을 확인할 수 있습니다.",
+        "기술을 등록하면 내 기술이 포함된 공고와 다음에 배울 기술을 확인할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(

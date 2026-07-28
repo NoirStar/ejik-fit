@@ -124,10 +124,22 @@ const HOME_COPY = {
   title: "추천 피드",
   market: "채용 시장",
   addSkills:
-    "기술을 등록하면 맞는 공고와 다음에 배울 기술을 확인할 수 있습니다.",
+    "기술을 등록하면 내 기술이 포함된 공고와 다음에 배울 기술을 확인할 수 있습니다.",
   followingEmpty: "팔로우한 작성자의 글이 없습니다.",
   followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
 } as const;
+
+function formatLatestVerifiedLabel(value: string | null) {
+  if (!value) return "최신 확인 시각 미상";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "최신 확인 시각 미상";
+  const formatted = new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Seoul",
+  }).format(date);
+  return `최신 확인 ${formatted}`;
+}
 
 function draftTags(value: string) {
   const tags: string[] = [];
@@ -579,10 +591,10 @@ function CareerBriefing({
         {readyInsight ? (
           <>
             <Link className={styles.briefingMetric} href="/career" prefetch={false}>
-              <span>맞는 공고</span>
+              <span>내 기술 포함 공고</span>
               <strong>{readyInsight.matchingPostingCount.toLocaleString("ko-KR")}건</strong>
               <small>
-                필수 기술 절반 이상 {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
+                필수 기술 절반 이상 충족 {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
               </small>
             </Link>
             {readyInsight.nextSkill ? (
@@ -602,13 +614,13 @@ function CareerBriefing({
               <div className={styles.briefingMetric}>
                 <span>{PRODUCT_TERMS.nextSkill}</span>
                 <strong>추가 추천 없음</strong>
-                <small>현재 맞는 공고에서 반복된 부족 기술이 없습니다.</small>
+                <small>내 기술이 포함된 공고에서 반복된 부족 기술이 없습니다.</small>
               </div>
             )}
           </>
         ) : unavailableInsight ? (
           <div className={styles.briefingState} role="status">
-            <strong>맞는 공고를 불러오지 못했습니다.</strong>
+            <strong>내 기술이 포함된 공고를 불러오지 못했습니다.</strong>
             <small>잠시 후 다시 확인해 주세요.</small>
           </div>
         ) : (
@@ -1445,7 +1457,7 @@ export function HomeFeed({
               </Link>
             </div>
             <p className={styles.railScope}>
-              분석 공고 {snapshot.postingCount.toLocaleString("ko-KR")}개 · 최근 수집 기준
+              공고 {snapshot.postingCount.toLocaleString("ko-KR")}개 분석 · {formatLatestVerifiedLabel(snapshot.lastVerifiedAt)}
             </p>
             {snapshot.skillDemand.length > 0 ? (
               <ol className={styles.skillDemand}>
