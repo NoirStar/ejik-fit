@@ -498,7 +498,7 @@ describe("HomeFeed", () => {
       .toHaveLength(1);
     expect(
       within(briefing).getByText(
-        "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
+        "기술을 등록하면 맞는 공고와 다음에 배울 기술을 확인할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(

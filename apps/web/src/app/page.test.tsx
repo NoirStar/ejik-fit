@@ -157,7 +157,7 @@ describe("Home", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "커리어 이야기" }),
+      screen.getByRole("heading", { name: "내 커리어 브리핑" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
@@ -176,7 +176,7 @@ describe("Home", () => {
     expect(analyzeFit).toHaveBeenCalledWith({
       owned_skills: ["Java", "Spring"],
     });
-    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
+    const insight = screen.getByRole("region", { name: "내 커리어 브리핑" });
     expect(insight).toHaveTextContent("12건");
     expect(insight).toHaveTextContent("Kubernetes");
   });
@@ -212,11 +212,10 @@ describe("Home", () => {
       domains: ["backend"],
     });
 
-    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    const context = screen.getByRole("region", { name: "내 커리어 브리핑" });
     expect(within(context).getByText("경력 · 백엔드")).toBeInTheDocument();
-    expect(within(context).getByText("내 기술 1개")).toBeInTheDocument();
     expect(within(context).getByRole("link", {
-      name: "기술 관리 · 조건 수정",
+      name: "내 커리어 기준 수정",
     }))
       .toHaveAttribute("href", "/career");
   });
@@ -244,20 +243,17 @@ describe("Home", () => {
     expect(analyzeFit).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "내 기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다.",
+        "기술을 등록하면 맞는 공고와 다음에 배울 기술을 확인할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "내 기술과 맞는 공고" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "커리어 이야기" }),
+      screen.getByRole("heading", { name: "내 커리어 브리핑" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "둘러보기" })).toBeInTheDocument();
-    const context = screen.getByRole("region", { name: "내 관심 시장" });
+    const context = screen.getByRole("region", { name: "내 커리어 브리핑" });
     expect(context).toHaveTextContent("전체 경력 · 전체 기술 분야");
     expect(within(context).getByRole("link", {
-      name: "기술 추가 · 조건 설정",
+      name: "내 기술 등록",
     }))
       .toHaveAttribute("href", "/career");
     expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
@@ -293,9 +289,8 @@ describe("Home", () => {
 
     expect(screen.getByText("일부 정보를 불러오지 못했습니다."))
       .toBeInTheDocument();
-    const insight = screen.getByRole("region", { name: "내 기술과 맞는 공고" });
+    const insight = screen.getByRole("region", { name: "내 커리어 브리핑" });
     expect(insight).toHaveTextContent("맞는 공고를 불러오지 못했습니다.");
-    expect(insight).not.toHaveTextContent(/\d+건/);
     expect(screen.getByText("토스")).toBeInTheDocument();
     log.mockRestore();
   });

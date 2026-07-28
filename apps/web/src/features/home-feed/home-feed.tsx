@@ -123,7 +123,8 @@ const EMPTY_DRAFT: LocalPostDraft = {
 const HOME_COPY = {
   title: "추천 피드",
   market: "채용 시장",
-  addSkills: "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
+  addSkills:
+    "기술을 등록하면 맞는 공고와 다음에 배울 기술을 확인할 수 있습니다.",
   followingEmpty: "팔로우한 작성자의 글이 없습니다.",
   followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
 } as const;
@@ -551,6 +552,8 @@ function CareerBriefing({
   const titleId = "home-career-briefing-title";
   const readyInsight =
     ownedSkillCount > 0 && insight.status === "ready" ? insight : null;
+  const unavailableInsight =
+    ownedSkillCount > 0 && insight.status === "unavailable";
 
   return (
     <section aria-labelledby={titleId} className={styles.careerBriefing}>
@@ -603,6 +606,11 @@ function CareerBriefing({
               </div>
             )}
           </>
+        ) : unavailableInsight ? (
+          <div className={styles.briefingState} role="status">
+            <strong>맞는 공고를 불러오지 못했습니다.</strong>
+            <small>잠시 후 다시 확인해 주세요.</small>
+          </div>
         ) : (
           <Link
             aria-label="내 기술 등록"
