@@ -648,7 +648,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest \
   -p pytest_asyncio.plugin packages/backend/tests -q
 ```
 
-예상: 512개 기존 테스트와 새 테스트 모두 통과.
+예상: 기존 테스트와 새 테스트 모두 통과.
 
 ### 2. 웹 전체 테스트·타입·빌드
 
@@ -669,7 +669,18 @@ git log --oneline origin/main..HEAD
 
 설계와 달라진 구현이 있으면 이유와 최종 계약을 문서에 반영한다. 테스트를 약화하거나 결함 fixture를 삭제해 통과시키지 않는다.
 
-### 4. 검증 커밋
+### 4. 로컬 검증 결과 (2026-07-28)
+
+- 백엔드 전체: 568 passed, 기존 deprecation warning 2개
+- 웹 전체: 135 files, 1,099 passed
+- Next 타입·린트: 통과
+- Next 프로덕션 빌드: 24개 정적 페이지 생성, 통과
+- 채용 상세 Playwright: 1440/820/600/390px 및 긴 한글 제목 5개 통과
+- 정적 점검: `compileall`, `git diff --check` 통과
+- 리뷰 보강: NAVER 상세 링크 누락 시 동일 계열 호스트를 사용하고,
+  기업 상세 요청·응답의 사용자정보, 비표준 포트, 프래그먼트를 거부한다.
+
+### 5. 검증 커밋
 
 문서나 후속 수정이 있을 때만 커밋한다.
 
