@@ -39,6 +39,10 @@ from ejikfit.connectors.breezy import (
     parse_breezy_listing_openings,
 )
 from ejikfit.connectors.channel import parse_channel_openings
+from ejikfit.connectors.enterprise_detail import (
+    KIA_CONNECTOR_FAMILY,
+    KIA_LISTING_HEADERS,
+)
 from ejikfit.connectors.enterprise_json import parse_enterprise_json_openings
 from ejikfit.connectors.greeting import (
     discover_corporate_greeting_openings,
@@ -77,6 +81,10 @@ from ejikfit.connectors.microsoft import (
     pcsx_detail_api_url,
 )
 from ejikfit.connectors.naver import parse_naver_openings
+from ejikfit.connectors.official_detail import (
+    official_detail_request,
+    parse_official_detail,
+)
 from ejikfit.connectors.nexon import (
     NEXON_CONNECTOR_FAMILY,
     NEXON_CORPORATIONS_API,
@@ -147,6 +155,7 @@ from ejikfit.connectors.synopsys import (
     parse_synopsys_korea_listing_openings,
 )
 from ejikfit.connectors.technical_roles import (
+    is_detailed_technical_role,
     is_korea_technical_role,
     is_technical_role,
 )
@@ -190,20 +199,6 @@ def _is_talent_pool_title(title: str) -> bool:
     return "인재pool" in compact or "talentpool" in compact
 
 
-def _normalized_company_label(opening: ParsedOpening) -> str:
-    description = opening.description_text or ""
-    for line in description.splitlines():
-        marker, separator, value = line.partition(":")
-        if separator and marker.strip().casefold() == "department":
-            return " ".join(value.casefold().split())
-
-    normalized = " ".join(description.casefold().split())
-    for company in ("kt cloud", "kt"):
-        if normalized == company or normalized.startswith(f"{company} "):
-            return company
-    return ""
-
-
 def _is_kt_cloud_technical_opening(opening: ParsedOpening) -> bool:
     searchable = f"{opening.title} {opening.description_text or ''}"
     normalized = searchable.casefold()
@@ -235,7 +230,10 @@ def _is_kt_cloud_technical_opening(opening: ParsedOpening) -> bool:
         marker in normalized for marker in strong_software_markers
     ):
         return False
-    return is_technical_role(searchable)
+    return is_detailed_technical_role(
+        opening.title,
+        opening.description_text,
+    )
 
 
 def _apply_source_opening_filters(
@@ -250,6 +248,10 @@ def _apply_source_opening_filters(
         return openings
     if source.connector_family == "hyundai_mobis_html_tech":
         return openings
+    if source.connector_family == KIA_CONNECTOR_FAMILY:
+        # Kia's official listing omits the role body. Hydrate every opening
+        # first and classify it from the complete job description below.
+        return openings
     if source.connector_family == "skcareers_ax_tech":
         return [
             opening
@@ -260,16 +262,17 @@ def _apply_source_opening_filters(
         return [
             opening
             for opening in openings
-            if _normalized_company_label(opening) == "kt"
-            and opening.title.casefold().lstrip().startswith("[kt]")
-            and is_technical_role(opening.title, opening.description_text)
+            if opening.title.casefold().lstrip().startswith("[kt]")
+            and is_detailed_technical_role(
+                opening.title,
+                opening.description_text,
+            )
         ]
     if source.connector_family == "kt_cloud_enterprise_json_tech":
         return [
             opening
             for opening in openings
-            if _normalized_company_label(opening) == "kt cloud"
-            and opening.title.casefold().lstrip().startswith("[kt cloud]")
+            if opening.title.casefold().lstrip().startswith("[kt cloud]")
             and _is_kt_cloud_technical_opening(opening)
         ]
     if source.connector_family == "skcareers_intellix_tech":
@@ -1188,6 +1191,23 @@ async def _fetch_listing_page(
     browser_renderer: BrowserRenderer | None,
 ) -> FetchedPage:
     source_url = urlparse(source.base_url)
+    if source.connector_family == KIA_CONNECTOR_FAMILY:
+        query = parse_qs(source_url.query, keep_blank_values=True)
+        if (
+            source_url.scheme != "https"
+            or source_url.hostname != "career.kia.com"
+            or source_url.port is not None
+            or source_url.username is not None
+            or source_url.password is not None
+            or source_url.path != "/api/rec/AP-KM-FO-02700"
+            or query.get("hgrCd") != ["2"]
+            or query.get("lang") != ["ko"]
+        ):
+            raise ValueError("Kia source must use its official listing API")
+        return await fetcher.fetch(
+            source.base_url,
+            headers=KIA_LISTING_HEADERS,
+        )
     if source.connector_family == NEXON_CONNECTOR_FAMILY:
         if browser_renderer is None:
             raise ValueError("browser renderer is not configured")
@@ -1475,12 +1495,15 @@ async def _fetch_public_json_detail(
     connector_family: str,
     listing: FetchedPage,
     fetcher: HttpFetcher,
+    browser_renderer: BrowserRenderer | None = None,
 ) -> FetchedPage:
-    if (
-        connector_family in DUNAMU_CONNECTOR_FAMILIES
-        and listing.text.lstrip().startswith("{")
-    ):
-        return listing
+    if connector_family in DUNAMU_CONNECTOR_FAMILIES:
+        try:
+            return await fetcher.fetch(ref.detail_url)
+        except BlockedSourceError:
+            if browser_renderer is None:
+                raise
+            return await browser_renderer.render(ref.detail_url)
     if connector_family == "com2us_jobflex_tech":
         return await fetcher.fetch(
             ref.detail_url,
@@ -2229,21 +2252,24 @@ async def crawl_source(
                     source.connector_family,
                     listing,
                     fetcher,
+                    browser_renderer,
                 )
                 opening = parse_public_json_detail(
                     detail.text,
                     ref,
                     source.connector_family,
                 )
-                ingest_opening(
-                    session,
-                    source,
-                    opening,
-                    detail.text,
-                    store,
-                    now,
-                    posting_index,
-                )
+                with session.begin_nested():
+                    ingest_opening(
+                        session,
+                        source,
+                        opening,
+                        detail.text,
+                        store,
+                        now,
+                        posting_index,
+                        commit=False,
+                    )
                 ingested += 1
             except BlockedSourceError as error:
                 _mark_source_error(
@@ -2260,7 +2286,6 @@ async def crawl_source(
                     failed=failed + 1,
                 )
             except Exception as error:
-                session.rollback()
                 logger.exception(
                     "Public JSON detail ingestion failed for %s",
                     ref.detail_url,
@@ -2438,11 +2463,39 @@ async def crawl_source(
 
     discovered = len(openings)
     ingestion_error: Exception | None = None
+    official_detail_failed = False
     for index, opening in enumerate(openings):
         seen_external_ids.add(opening.external_id)
+        detail_request = None
         try:
+            try:
+                detail_request = official_detail_request(
+                    source.connector_family,
+                    listing.url,
+                    opening,
+                )
+            except Exception:
+                official_detail_failed = True
+                raise
             opening_payload = listing.text
-            if source.connector_family == "workday_public_api_korea_tech":
+            if detail_request is not None:
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(
+                    detail_request.url,
+                    method=detail_request.method,
+                    json_body=detail_request.json_body,
+                    headers=detail_request.headers,
+                )
+                opening = parse_official_detail(
+                    detail.text,
+                    detail.url,
+                    source.connector_family,
+                    listing.url,
+                    opening,
+                )
+                opening_payload = detail.text
+            elif source.connector_family == "workday_public_api_korea_tech":
                 if index > 0 and request_delay_seconds > 0:
                     await asyncio.sleep(request_delay_seconds)
                 detail_url = workday_detail_api_url(listing.url, opening.url)
@@ -2599,21 +2652,34 @@ async def crawl_source(
                     )
                 opening = detail_opening
                 opening_payload = detail.text
-            ingest_opening(
-                session,
-                source,
-                opening,
-                opening_payload,
-                store,
-                now,
-                posting_index,
-            )
+            if source.connector_family == KIA_CONNECTOR_FAMILY:
+                if detail_request is None:
+                    raise ValueError("Kia official detail request is missing")
+                if not is_detailed_technical_role(
+                    opening.title,
+                    opening.description_text,
+                ):
+                    seen_external_ids.discard(opening.external_id)
+                    discovered -= 1
+                    continue
+            with session.begin_nested():
+                ingest_opening(
+                    session,
+                    source,
+                    opening,
+                    opening_payload,
+                    store,
+                    now,
+                    posting_index,
+                    commit=False,
+                )
             ingested += 1
         except Exception as error:
-            session.rollback()
             logger.exception("Opening ingestion failed for %s", opening.url)
             failed += 1
             ingestion_error = error
+            if detail_request is not None:
+                official_detail_failed = True
 
     source.last_verified_at = now
     if discovered > 0:
@@ -2636,7 +2702,11 @@ async def crawl_source(
     if ingestion_error is not None:
         _mark_source_error(
             source,
-            "partial_ingestion_failure",
+            (
+                "partial_detail_failure"
+                if official_detail_failed
+                else "partial_ingestion_failure"
+            ),
             f"{type(ingestion_error).__name__}: {ingestion_error}",
         )
     else:

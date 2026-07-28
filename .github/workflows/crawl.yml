@@ -109,6 +109,10 @@ jobs:
             fi
           done
           exit "$status"
+      - name: Audit posting body quality after selected crawl
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.company_slug != '' }}
+        shell: bash
+        run: ejikfit source-monitor --format markdown >> "$GITHUB_STEP_SUMMARY"
       - name: Crawl all production sources
         if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.company_slug == '') }}
         run: ejikfit crawl-all

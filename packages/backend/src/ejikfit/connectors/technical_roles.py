@@ -117,6 +117,25 @@ NON_TECHNICAL_ROLE_MARKERS = (
     "임상연구",
 )
 
+DETAILED_TECHNICAL_MARKERS = TECHNICAL_ROLE_MARKERS + (
+    "aws",
+    "cloud",
+    "gcp",
+    "java",
+    "javascript",
+    "kafka",
+    "kubernetes",
+    "python",
+    "pytorch",
+    "react",
+    "spring",
+    "sql",
+    "terraform",
+    "typescript",
+    "데이터 파이프라인",
+    "분산 처리",
+)
+
 KOREA_LOCATION_MARKERS = (
     "gyeonggi",
     "korea",
@@ -134,6 +153,31 @@ def is_technical_role(*values: str | None) -> bool:
     if any(marker in searchable for marker in NON_TECHNICAL_ROLE_MARKERS):
         return False
     return any(marker in searchable for marker in TECHNICAL_ROLE_MARKERS)
+
+
+def is_detailed_technical_role(
+    title: str | None,
+    description: str | None,
+) -> bool:
+    """Classify a hydrated role without letting page boilerplate veto it."""
+
+    if is_technical_role(title):
+        return True
+
+    normalized_title = (title or "").casefold()
+    if any(
+        marker in normalized_title
+        for marker in NON_TECHNICAL_ROLE_MARKERS
+    ):
+        return False
+
+    normalized_description = (description or "").casefold()
+    detailed_signals = {
+        marker
+        for marker in DETAILED_TECHNICAL_MARKERS
+        if marker in normalized_description
+    }
+    return len(detailed_signals) >= 2
 
 
 def is_korea_technical_role(

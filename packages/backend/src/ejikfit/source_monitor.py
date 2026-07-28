@@ -14,6 +14,10 @@ from ejikfit.models import (
     PostingStatus,
     SourceStatus,
 )
+from ejikfit.posting_content import (
+    MIN_SUBSTANTIVE_DESCRIPTION_CHARS,
+    posting_description_images,
+)
 
 
 def _as_utc(value: datetime | None) -> datetime | None:
@@ -65,6 +69,7 @@ def _health_status(source: CareerSource, since: datetime) -> str:
 def _source_item(
     source: CareerSource,
     activity: Mapping[str, int],
+    quality: Mapping[str, Any],
     since: datetime,
 ) -> dict[str, Any]:
     open_postings = activity.get("open_postings", 0)
@@ -87,6 +92,20 @@ def _source_item(
         "closed_postings": activity.get("closed_postings", 0),
         "tech_open_postings": tech_open_postings,
         "tech_job_ratio": _ratio(tech_open_postings, open_postings),
+        "substantive_open_postings": quality.get(
+            "substantive_open_postings",
+            0,
+        ),
+        "image_only_open_postings": quality.get(
+            "image_only_open_postings",
+            0,
+        ),
+        "sparse_open_postings": quality.get("sparse_open_postings", 0),
+        "zero_skill_open_postings": quality.get(
+            "zero_skill_open_postings",
+            0,
+        ),
+        "sparse_examples": list(quality.get("sparse_examples", [])),
         "last_success_at": _iso(source.last_success_at),
         "last_error_code": source.last_error_code,
     }
@@ -156,6 +175,69 @@ def _posting_activity_by_source(
     return activity
 
 
+def _posting_quality_by_source(
+    session: Session,
+) -> dict[Any, dict[str, Any]]:
+    has_skill = (
+        select(PostingSkill.id)
+        .where(PostingSkill.posting_id == JobPosting.id)
+        .exists()
+    )
+    rows = session.execute(
+        select(
+            JobPosting.source_id,
+            JobPosting.external_id,
+            JobPosting.url,
+            JobPosting.description_html,
+            JobPosting.description_text,
+            has_skill.label("has_skill"),
+        )
+        .where(JobPosting.status == PostingStatus.OPEN)
+        .order_by(JobPosting.source_id, JobPosting.external_id)
+    )
+
+    quality_by_source: dict[Any, dict[str, Any]] = {}
+    for row in rows:
+        quality = quality_by_source.setdefault(
+            row.source_id,
+            {
+                "substantive_open_postings": 0,
+                "image_only_open_postings": 0,
+                "sparse_open_postings": 0,
+                "zero_skill_open_postings": 0,
+                "sparse_examples": [],
+            },
+        )
+        description_text = row.description_text or ""
+        normalized_text = " ".join(description_text.split())
+        image_only = False
+        if len(normalized_text) >= MIN_SUBSTANTIVE_DESCRIPTION_CHARS:
+            substantive = True
+        else:
+            image_only = bool(
+                posting_description_images(
+                    row.description_html or "",
+                    normalized_text,
+                    row.url,
+                )
+            )
+            substantive = image_only
+
+        if substantive:
+            quality["substantive_open_postings"] += 1
+        else:
+            quality["sparse_open_postings"] += 1
+            examples = quality["sparse_examples"]
+            if len(examples) < 3:
+                examples.append(row.external_id)
+        if image_only:
+            quality["image_only_open_postings"] += 1
+        if not row.has_skill:
+            quality["zero_skill_open_postings"] += 1
+
+    return quality_by_source
+
+
 def _connector_family_health(items: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in items:
@@ -190,6 +272,21 @@ def _connector_family_health(items: list[dict[str, Any]]) -> dict[str, dict[str,
                 item["changed_postings"] for item in family_items
             ),
             "tech_job_ratio": _ratio(tech_open_postings, open_postings),
+            "substantive_open_postings": sum(
+                item["substantive_open_postings"]
+                for item in family_items
+            ),
+            "image_only_open_postings": sum(
+                item["image_only_open_postings"]
+                for item in family_items
+            ),
+            "sparse_open_postings": sum(
+                item["sparse_open_postings"] for item in family_items
+            ),
+            "zero_skill_open_postings": sum(
+                item["zero_skill_open_postings"]
+                for item in family_items
+            ),
         }
     return health
 
@@ -212,11 +309,13 @@ def build_source_monitor_report(
         .all()
     )
     activity_by_source = _posting_activity_by_source(session, since)
+    quality_by_source = _posting_quality_by_source(session)
 
     items = [
         _source_item(
             source,
             activity_by_source.get(source.id, {}),
+            quality_by_source.get(source.id, {}),
             since,
         )
         for source in sources
@@ -241,6 +340,13 @@ def build_source_monitor_report(
         ],
         key=lambda item: (
             item["last_error_code"] or "",
+            item["company_name"],
+        ),
+    )[:10]
+    top_sparse_sources = sorted(
+        [item for item in items if item["sparse_open_postings"] > 0],
+        key=lambda item: (
+            -item["sparse_open_postings"],
             item["company_name"],
         ),
     )[:10]
@@ -274,10 +380,23 @@ def build_source_monitor_report(
             "changed_postings": sum(item["changed_postings"] for item in items),
             "closed_postings": sum(item["closed_postings"] for item in items),
             "tech_job_ratio": _ratio(tech_open_postings, open_postings),
+            "substantive_open_postings": sum(
+                item["substantive_open_postings"] for item in items
+            ),
+            "image_only_open_postings": sum(
+                item["image_only_open_postings"] for item in items
+            ),
+            "sparse_open_postings": sum(
+                item["sparse_open_postings"] for item in items
+            ),
+            "zero_skill_open_postings": sum(
+                item["zero_skill_open_postings"] for item in items
+            ),
         },
         "connector_family_health": _connector_family_health(items),
         "top_stale_sources": top_stale_sources,
         "top_failing_sources": top_failing_sources,
+        "top_sparse_sources": top_sparse_sources,
         "sources": items,
     }
 
@@ -306,6 +425,19 @@ def render_source_monitor_markdown(report: dict[str, Any]) -> str:
         f"| 확인 공고 | {totals['seen_postings']} |",
         f"| 변경 공고 | {totals['changed_postings']} |",
         f"| 마감 공고 | {totals['closed_postings']} |",
+        (
+            "| 정상 본문 공고 | "
+            f"{totals['substantive_open_postings']} |"
+        ),
+        (
+            "| 이미지형 본문 공고 | "
+            f"{totals['image_only_open_postings']} |"
+        ),
+        f"| 희소 본문 공고 | {totals['sparse_open_postings']} |",
+        (
+            "| 확정 기술 0개 공고 | "
+            f"{totals['zero_skill_open_postings']} |"
+        ),
         f"| 기술 공고 비율 | {_ratio_text(totals['tech_job_ratio'])} |",
         "",
         "### 커넥터 패밀리 건강도",
@@ -352,6 +484,24 @@ def render_source_monitor_markdown(report: dict[str, Any]) -> str:
             lines.append(
                 f"| {item['company_name']} | {item['source_type']} | "
                 f"{item['health_status']} | {item['last_error_code'] or ''} |"
+            )
+        lines.append("")
+
+    if report["top_sparse_sources"]:
+        lines.extend(
+            [
+                "### 희소 본문 상위 출처",
+                "",
+                "| 회사 | 희소 | 오픈 | 예시 ID |",
+                "| --- | ---: | ---: | --- |",
+            ]
+        )
+        for item in report["top_sparse_sources"]:
+            examples = ", ".join(item["sparse_examples"])
+            lines.append(
+                f"| {item['company_name']} | "
+                f"{item['sparse_open_postings']} | "
+                f"{item['open_postings']} | {examples} |"
             )
         lines.append("")
 

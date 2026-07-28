@@ -231,7 +231,7 @@ const OFFICIAL_LOGO_URLS: Readonly<Record<string, string>> = {
     "https://ssl.pstatic.net/static/ncp/img/ko/msg_logo_thumb.jpg",
   "naver-labs": "https://www.naverlabs.com/img/naver_labs_favicon.ico",
   "naver-webtoon":
-    "https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/og/webtoon_favicon_32_2025.ico",
+    "https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/logo_2025.svg",
   netmarble:
     "https://sgimage.netmarble.com/favicon/netmarble/favicon-180x180.png",
   "nvidia-korea": "https://www.nvidia.com/favicon.ico",

@@ -4,6 +4,7 @@ import type { SkillDetail } from "@/lib/types";
 
 import {
   groupJobSkills,
+  hasSubstantivePostingDetail,
   matchOwnedJobSkills,
   parsePostingDescription,
 } from "./job-detail-model";
@@ -88,5 +89,23 @@ describe("job detail model", () => {
 
   it("returns no blocks for an empty description", () => {
     expect(parsePostingDescription("  \n ")).toEqual([]);
+  });
+
+  it("distinguishes full text and image details from sparse metadata", () => {
+    expect(hasSubstantivePostingDetail("가".repeat(120), [])).toBe(true);
+    expect(
+      hasSubstantivePostingDetail("", [
+        {
+          url: "https://careers.example.com/jobs/1/detail.png",
+          alt: "채용 공고 상세 내용 이미지 1",
+        },
+      ]),
+    ).toBe(true);
+    expect(
+      hasSubstantivePostingDetail(
+        "Tech Frontend NAVER WEBTOON 경력 정규직",
+        [],
+      ),
+    ).toBe(false);
   });
 });

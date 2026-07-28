@@ -1,4 +1,5 @@
 from ejikfit.connectors.technical_roles import (
+    is_detailed_technical_role,
     is_korea_technical_role,
     is_technical_role,
 )
@@ -63,3 +64,29 @@ def test_korea_technical_filter_requires_both_role_and_domestic_location() -> No
         "[KR] FDE(SW) - Solutions Architect",
         None,
     ) is True
+
+
+def test_detailed_filter_does_not_let_boilerplate_veto_a_technical_role() -> None:
+    assert is_detailed_technical_role(
+        "AI Quality Engineer",
+        (
+            "AI 서비스의 Backend 품질 자동화를 개발합니다. 채용 절차에는 "
+            "직무 기획 안내와 커피챗이 포함될 수 있습니다."
+        ),
+    ) is True
+    assert is_detailed_technical_role(
+        "데이터센터 네트워크 기술 연구",
+        (
+            "네트워크 인프라와 데이터베이스 연동 도구를 개발합니다. "
+            "지원 전 커피챗 안내를 확인해 주세요."
+        ),
+    ) is True
+
+    assert is_detailed_technical_role(
+        "Customer Service Coordinator",
+        "고객 데이터 분석 결과를 바탕으로 서비스 운영 개선을 담당합니다.",
+    ) is False
+    assert is_detailed_technical_role(
+        "보건관리 담당자",
+        "임직원 건강 상담과 사업장 보건교육 일정을 관리합니다.",
+    ) is False

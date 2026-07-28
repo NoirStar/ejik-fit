@@ -1,12 +1,48 @@
 from __future__ import annotations
 
+import re
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 
 MAX_DESCRIPTION_IMAGES = 3
 SPARSE_DESCRIPTION_LIMIT = 600
+MIN_SUBSTANTIVE_DESCRIPTION_CHARS = 120
+_DECORATIVE_IMAGE_MARKER = re.compile(
+    r"(?:^|[\s/_.-])(?:favicon|logo|icon)(?:$|[\s/_.-])",
+    re.IGNORECASE,
+)
+
+
+def _dimension(image: Tag, name: str) -> float | None:
+    raw = str(image.get(name) or "").strip()
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)(?:px)?", raw, re.IGNORECASE)
+    if match is None:
+        return None
+    return float(match.group(1))
+
+
+def _is_decorative_image(image: Tag, url: str) -> bool:
+    marker_text = " ".join(
+        (
+            urlsplit(url).path,
+            str(image.get("id") or ""),
+            " ".join(str(value) for value in image.get("class") or ()),
+            str(image.get("alt") or ""),
+        )
+    )
+    if _DECORATIVE_IMAGE_MARKER.search(marker_text):
+        return True
+
+    width = _dimension(image, "width")
+    height = _dimension(image, "height")
+    return (
+        width is not None
+        and height is not None
+        and max(width, height) < 160
+    )
 
 
 def posting_description_images(
@@ -63,6 +99,8 @@ def posting_description_images(
                 break
         if not url:
             continue
+        if _is_decorative_image(image, url):
+            continue
         seen.add(url)
 
         raw_alt = str(image.get("alt") or "").strip()
@@ -73,3 +111,33 @@ def posting_description_images(
         if len(images) == MAX_DESCRIPTION_IMAGES:
             break
     return images
+
+
+def has_substantive_posting_content(
+    description_html: str,
+    description_text: str,
+    source_url: str,
+) -> bool:
+    normalized_text = " ".join(description_text.split())
+    if len(normalized_text) >= MIN_SUBSTANTIVE_DESCRIPTION_CHARS:
+        return True
+    return bool(
+        posting_description_images(
+            description_html,
+            normalized_text,
+            source_url,
+        )
+    )
+
+
+def require_substantive_posting_content(
+    description_html: str,
+    description_text: str,
+    source_url: str,
+) -> None:
+    if not has_substantive_posting_content(
+        description_html,
+        description_text,
+        source_url,
+    ):
+        raise ValueError("detail content is sparse")

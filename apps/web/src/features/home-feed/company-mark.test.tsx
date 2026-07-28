@@ -23,6 +23,37 @@ describe("CompanyMark", () => {
         devicePixelRatio: 2,
       }),
     ).toBe(true);
+    expect(
+      hasEnoughLogoPixels({
+        naturalWidth: 151,
+        naturalHeight: 45,
+        boxSize: 56 * 0.76,
+        devicePixelRatio: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps the official NAVER WEBTOON wordmark after it loads", () => {
+    const { container } = render(
+      <CompanyMark
+        companyName="네이버웹툰"
+        size={56}
+        sourceUrl="https://recruit.webtoonscorp.com/rcrt/view.do?annoId=1"
+      />,
+    );
+    const image = container.querySelector("img");
+    expect(image).toHaveAttribute(
+      "src",
+      "/company-logo-assets/naver-webtoon",
+    );
+    Object.defineProperties(image!, {
+      naturalHeight: { configurable: true, value: 45 },
+      naturalWidth: { configurable: true, value: 151 },
+    });
+
+    fireEvent.load(image!);
+
+    expect(container.querySelector("img")).toBe(image);
   });
 
   it("falls back to initials after a low-resolution logo loads", () => {

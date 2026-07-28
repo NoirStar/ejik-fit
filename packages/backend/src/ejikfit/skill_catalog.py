@@ -226,6 +226,43 @@ SKILLS: tuple[SkillDef, ...] = (
     SkillDef("MATLAB", "language", (distinct("matlab"),)),
     # frontend
     SkillDef(
+        "Electron",
+        "frontend",
+        (
+            distinct("electron.js"),
+            contextual(
+                "electron",
+                context_terms=(
+                    "app",
+                    "desktop",
+                    "frontend",
+                    "javascript",
+                    "node.js",
+                    "react",
+                    "renderer",
+                    "typescript",
+                    "viewer",
+                    "web",
+                    "개발",
+                    "데스크톱",
+                    "렌더링",
+                    "뷰어",
+                    "앱",
+                    "웹",
+                    "프론트엔드",
+                ),
+                negative_patterns=(
+                    r"\belectron[-\s]+beam\b",
+                    r"\belectron\s+density\b",
+                    r"\belectron\s+microscop(?:e|es|y|ic|ical)\b",
+                    r"\belectron\s+transport\b",
+                    r"\belectron\s+volt\b",
+                ),
+            ),
+        ),
+    ),
+    SkillDef("WebGL", "frontend", (distinct("webgl"),)),
+    SkillDef(
         "React",
         "frontend",
         (
@@ -1131,6 +1168,8 @@ SKILL_METADATA: dict[str, SkillMetadata] = {
     "Scala": SkillMetadata("language", ("backend", "data")),
     "SQL": SkillMetadata("language", ("data", "backend", "ai")),
     "Bash": SkillMetadata("language", ("devops", "backend", "security")),
+    "Electron": SkillMetadata("framework", ("desktop", "frontend", "web")),
+    "WebGL": SkillMetadata("api", ("graphics", "frontend", "web")),
     "React": SkillMetadata("framework", ("frontend", "web")),
     "Vue": SkillMetadata("framework", ("frontend", "web")),
     "Next.js": SkillMetadata("framework", ("frontend", "web", "backend")),

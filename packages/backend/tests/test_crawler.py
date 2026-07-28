@@ -28,6 +28,7 @@ from ejikfit.models import (
     CareerSource,
     Company,
     JobPosting,
+    PostingSkill,
     PolicyStatus,
     PostingStatus,
     SourceStatus,
@@ -1152,7 +1153,16 @@ class StaticFetcher:
     def __init__(self, text: str) -> None:
         self.text = text
 
-    async def fetch(self, url: str) -> crawler.FetchedPage:
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        del method, json_body, form_body, headers
         return crawler.FetchedPage(
             url=url,
             text=self.text,
@@ -3454,6 +3464,270 @@ def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def _naver_detail_html(
+    external_id: str,
+    title: str,
+    *,
+    body: str | None = None,
+) -> str:
+    detail_body = body or (
+        "React와 TypeScript 기반 서비스를 설계하고 Next.js 서버 렌더링과 "
+        "Node.js 실행 환경을 운영합니다. 사용자 경험과 성능 지표를 함께 "
+        "개선하고 자동화된 테스트와 안정적인 배포 체계를 구축한 경험이 "
+        "있는 개발자를 찾습니다. Docker와 Kubernetes 운영 경험을 우대합니다."
+    )
+    return f"""
+    <input name="annoId" value="{external_id}">
+    <h4 class="card_title">{title}</h4>
+    <div class="detail_wrap">
+      <div class="detail_box">
+        <h4 class="detail_title">필요 역량</h4>
+        <p class="detail_text"></p>
+        <div>{detail_body}</div>
+      </div>
+    </div>
+    """
+
+
+class NaverListingDetailFetcher:
+    def __init__(
+        self,
+        listing_url: str,
+        listing: str,
+        details: dict[str, str],
+    ) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.details = details
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append(
+            {
+                "url": url,
+                "method": method,
+                "json_body": json_body,
+                "form_body": form_body,
+                "headers": headers,
+            }
+        )
+        return crawler.FetchedPage(
+            url=url,
+            text=(
+                self.listing
+                if url == self.listing_url
+                else self.details[url]
+            ),
+            status_code=200,
+            headers={},
+        )
+
+
+def test_naver_official_details_preserve_prior_successes_and_good_content() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    prior_success = now - timedelta(days=1)
+    listing_url = (
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?"
+        "lang=ko&firstIndex=0&recordCountPerPage=500"
+    )
+    first_url = (
+        "https://recruit.navercorp.com/rcrt/view.do?annoId=30006001"
+    )
+    second_url = (
+        "https://recruit.navercorp.com/rcrt/view.do?annoId=30006002"
+    )
+    untrusted_second_url = (
+        "https://attacker.example/rcrt/view.do?annoId=30006002"
+    )
+    first_title = "[NAVER] Frontend Engineer"
+    second_title = "[NAVER] Platform Engineer"
+    listing = json.dumps(
+        {
+            "totalSize": 2,
+            "list": [
+                {
+                    "annoId": 30006001,
+                    "annoSubject": first_title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Frontend",
+                    "jobDetailLink": first_url,
+                },
+                {
+                    "annoId": 30006002,
+                    "annoSubject": second_title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Platform",
+                    "jobDetailLink": untrusted_second_url,
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    with Session(engine) as session:
+        company = Company(name="네이버", slug="naver-detail-atomicity")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_company_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=prior_success,
+        )
+        previous_text = "이전에 검증되어 정상적으로 저장된 충분한 상세 공고 본문입니다."
+        existing = JobPosting(
+            company=company,
+            source=source,
+            external_id="30006002",
+            url=second_url,
+            title=second_title,
+            status=PostingStatus.OPEN,
+            description_html=f"<p>{previous_text}</p>",
+            description_text=previous_text,
+        )
+        session.add(existing)
+        session.commit()
+        fetcher = NaverListingDetailFetcher(
+            listing_url,
+            listing,
+            {
+                first_url: _naver_detail_html("30006001", first_title),
+            },
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = {
+            posting.external_id: posting
+            for posting in session.scalars(select(JobPosting)).all()
+        }
+        assert result == crawler.CrawlResult(
+            discovered=2,
+            ingested=1,
+            failed=1,
+        )
+        assert postings["30006001"].description_text.startswith(
+            "### 필요 역량"
+        )
+        assert postings["30006002"].description_text == previous_text
+        assert postings["30006002"].status == PostingStatus.OPEN
+        assert source.last_error_code == "partial_detail_failure"
+        assert _as_utc(source.last_success_at) == prior_success
+        assert [call["url"] for call in fetcher.calls] == [
+            listing_url,
+            first_url,
+        ]
+
+
+def test_naver_official_detail_success_replaces_skill_evidence() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    listing_url = (
+        "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?"
+        "firstIndex=0&recordCountPerPage=500"
+    )
+    detail_url = (
+        "https://recruit.webtoonscorp.com/rcrt/view.do?annoId=30006003"
+    )
+    title = "[네이버웹툰] 프런트엔드 개발자"
+    listing = json.dumps(
+        {
+            "totalSize": 1,
+            "list": [
+                {
+                    "annoId": 30006003,
+                    "annoSubject": title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Frontend",
+                    "jobDetailLink": detail_url,
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    with Session(engine) as session:
+        company = Company(name="네이버웹툰", slug="naver-webtoon-detail")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_webtoon_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="partial_detail_failure",
+            last_error_reason="previous detail failure",
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="30006003",
+            url=detail_url,
+            title=title,
+            description_html="<p>Java 운영 경험</p>",
+            description_text="Java 운영 경험",
+        )
+        session.add(posting)
+        session.flush()
+        session.add(
+            PostingSkill(
+                posting_id=posting.id,
+                skill="Java",
+                category="language",
+                evidence_text="Java 운영 경험",
+            )
+        )
+        session.commit()
+        fetcher = NaverListingDetailFetcher(
+            listing_url,
+            listing,
+            {detail_url: _naver_detail_html("30006003", title)},
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        skills = {
+            row.skill: row
+            for row in session.scalars(select(PostingSkill)).all()
+        }
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert "Java" not in skills
+        assert {"React", "TypeScript"} <= set(skills)
+        assert "TypeScript" in (skills["TypeScript"].evidence_text or "")
+        assert source.last_error_code is None
+        assert _as_utc(source.last_success_at) == now
+
+
 def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -3477,7 +3751,8 @@ def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() 
             crawler.crawl_source(
                 session=session,
                 source=source,
-                fetcher=StaticFetcher(
+                fetcher=NaverListingDetailFetcher(
+                    source.base_url,
                     json.dumps(
                         {
                             "totalSize": 3,
@@ -3515,7 +3790,16 @@ def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() 
                             ],
                         },
                         ensure_ascii=False,
-                    )
+                    ),
+                    {
+                        (
+                            "https://recruit.webtoonscorp.com/rcrt/"
+                            "view.do?annoId=30005124"
+                        ): _naver_detail_html(
+                            "30005124",
+                            "[네이버웹툰] 백엔드 서버 개발 (경력)",
+                        )
+                    },
                 ),
                 store=MemorySnapshotStore(),
                 now=datetime(2026, 7, 15, tzinfo=timezone.utc),
@@ -3551,7 +3835,8 @@ def test_naver_company_crawl_requires_the_official_tech_classification() -> None
             crawler.crawl_source(
                 session=session,
                 source=source,
-                fetcher=StaticFetcher(
+                fetcher=NaverListingDetailFetcher(
+                    source.base_url,
                     json.dumps(
                         {
                             "totalSize": 3,
@@ -3583,7 +3868,19 @@ def test_naver_company_crawl_requires_the_official_tech_classification() -> None
                             ],
                         },
                         ensure_ascii=False,
-                    )
+                    ),
+                    {
+                        (
+                            "https://recruit.navercorp.com/rcrt/"
+                            "view.do?annoId=30005100"
+                        ): _naver_detail_html(
+                            "30005100",
+                            (
+                                "[NAVER] Efficient World Model Research "
+                                "(체험형 인턴)"
+                            ),
+                        )
+                    },
                 ),
                 store=MemorySnapshotStore(),
                 now=datetime(2026, 7, 15, tzinfo=timezone.utc),
@@ -4842,21 +5139,38 @@ def test_public_json_detail_crawl_fetches_only_technical_role_details() -> None:
         assert source.last_success_at is not None
 
 
-def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
-    engine = create_engine("sqlite+pysqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    listing_url = (
-        "https://careers.dunamu.com/api/job-boards/"
-        "jd0wjv/job-notices"
+def _dunamu_detail_html(
+    title: str = "Frontend Engineer_데이터 프로덕트 서비스 개발",
+    *,
+    sparse: bool = False,
+) -> str:
+    body = "Python" if sparse else (
+        "Python 기반 데이터 프로덕트 API와 배치 파이프라인을 개발하고 "
+        "대규모 트래픽에서도 안정적으로 동작하도록 운영합니다. Kafka "
+        "메시징과 분산 시스템을 이해하고 장애 분석, 테스트 자동화, 성능 "
+        "개선을 주도한 경험이 필요합니다. Kubernetes 환경의 서비스 배포와 "
+        "관측 가능성 구축 경험을 우대합니다."
     )
-    listing = json.dumps(
+    return f"""
+    <div class="detailView_title">{title}</div>
+    <div class="detailView_information">
+      <h3>주요업무와 자격요건</h3><p>{body}</p>
+      <ul><li>고용형태 : 정규직</li><li>채용유형 : 경력직</li></ul>
+    </div>
+    """
+
+
+def _dunamu_listing() -> str:
+    return json.dumps(
         {
             "content": {
                 "jobBoardName": "Dunamu",
                 "jobNoticeResponses": [
                     {
                         "id": 588,
-                        "name": "Frontend Engineer_데이터 프로덕트 서비스 개발",
+                        "name": (
+                            "Frontend Engineer_데이터 프로덕트 서비스 개발"
+                        ),
                         "jobGroupCode": "T_ENGINEERING",
                         "experienceLevel": "EXPERIENCED",
                         "employmentType": "FULL_TIME",
@@ -4875,6 +5189,17 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         ensure_ascii=False,
     )
 
+
+def test_dunamu_public_api_crawl_fetches_official_detail_html() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    listing = _dunamu_listing()
+    detail_url = "https://careers.dunamu.com/detail/588"
+
     with Session(engine) as session:
         source = CareerSource(
             company=Company(name="두나무", slug="dunamu"),
@@ -4886,7 +5211,11 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         )
         session.add(source)
         session.commit()
-        fetcher = PublicJsonDetailFetcher(listing_url, listing, {})
+        fetcher = PublicJsonDetailFetcher(
+            listing_url,
+            listing,
+            {detail_url: _dunamu_detail_html()},
+        )
 
         result = asyncio.run(
             crawler.crawl_source(
@@ -4906,7 +5235,478 @@ def test_dunamu_public_api_crawl_reuses_verified_listing_rows() -> None:
         assert posting.url == "https://careers.dunamu.com/detail/588"
         assert posting.career_type == "experienced"
         assert posting.employment_type == "regular"
-        assert fetcher.urls == [listing_url]
+        assert "Python 기반" in posting.description_text
+        assert "Kafka 메시징" in posting.description_text
+        assert "Kubernetes 환경" in posting.description_text
+        assert fetcher.urls == [listing_url, detail_url]
+
+
+class BlockedDunamuDetailFetcher:
+    def __init__(self, listing_url: str, listing: str) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.urls: list[str] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        del method, json_body, form_body, headers
+        self.urls.append(url)
+        if url != self.listing_url:
+            raise crawler.BlockedSourceError("detail denied access with 403")
+        return crawler.FetchedPage(
+            url=url,
+            text=self.listing,
+            status_code=200,
+            headers={},
+        )
+
+
+def test_dunamu_detail_block_falls_back_to_official_browser_page() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    detail_url = "https://careers.dunamu.com/detail/588"
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="두나무", slug="dunamu-browser-detail"),
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="dunamu_server_html_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = BlockedDunamuDetailFetcher(
+            listing_url,
+            _dunamu_listing(),
+        )
+        renderer = DunamuJsonBrowserRenderer(_dunamu_detail_html())
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+                browser_renderer=renderer,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert "Kafka 메시징" in posting.description_text
+        assert fetcher.urls == [listing_url, detail_url]
+        assert renderer.urls == [detail_url]
+
+
+def test_dunamu_sparse_detail_preserves_previous_good_body() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    prior_success = now - timedelta(days=1)
+    listing_url = (
+        "https://careers.dunamu.com/api/job-boards/"
+        "jd0wjv/job-notices"
+    )
+    detail_url = "https://careers.dunamu.com/detail/588"
+    title = "Frontend Engineer_데이터 프로덕트 서비스 개발"
+
+    with Session(engine) as session:
+        company = Company(name="두나무", slug="dunamu-detail-preservation")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.PUBLIC_JSON_DETAIL,
+            connector_family="dunamu_server_html_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=prior_success,
+        )
+        previous_text = "이전에 공식 상세 페이지에서 검증한 정상 공고 본문"
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="588",
+            url=detail_url,
+            title=title,
+            description_html=f"<p>{previous_text}</p>",
+            description_text=previous_text,
+        )
+        session.add(posting)
+        session.commit()
+        fetcher = PublicJsonDetailFetcher(
+            listing_url,
+            _dunamu_listing(),
+            {detail_url: _dunamu_detail_html(sparse=True)},
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        session.refresh(posting)
+        assert result == crawler.CrawlResult(
+            discovered=1,
+            ingested=0,
+            failed=1,
+        )
+        assert posting.description_text == previous_text
+        assert posting.status == PostingStatus.OPEN
+        assert source.last_error_code == "partial_detail_failure"
+        assert _as_utc(source.last_success_at) == prior_success
+
+
+def test_lg_crawl_posts_detail_request_and_ingests_full_role_content() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
+    )
+    detail_url = (
+        "https://api.careers.lg.com/rmk/job/retrieveJobNoticesDetail"
+    )
+    title = "[LG CNS] 클라우드 보안 전문가 모집(경력)"
+    listing = json.dumps(
+        {
+            "status": "S",
+            "data": {
+                "jobNoticeList": [
+                    {
+                        "jobNoticeId": 1001310,
+                        "careerTypeName": "경력",
+                        "companyCode": "CNS",
+                        "companyName": "LG CNS",
+                        "jobNoticeName": title,
+                        "noticeStatus": "POSTING",
+                        "jobGroupName": "IT서비스",
+                    }
+                ]
+            },
+        },
+        ensure_ascii=False,
+    )
+    detail = json.dumps(
+        {
+            "status": "S",
+            "data": {
+                "jobNoticesDetail": {
+                    "jobNoticesDetail": {
+                        "jobNoticeId": 1001310,
+                        "jobNoticeName": title,
+                        "qualForAppInfo": (
+                            "관련 분야의 실무 경험과 원활한 협업 역량을 "
+                            "갖춘 분을 찾습니다."
+                        ),
+                    },
+                    "recList": [
+                        {
+                            "jobNoticeId": 1001310,
+                            "orgName": "보안사업담당",
+                            "jobGroupName": "클라우드보안",
+                            "detailContext": (
+                                "<p>AWS와 Kubernetes 환경의 보안 아키텍처를 "
+                                "설계하고 Python 자동화 도구로 취약점 진단과 "
+                                "대응 프로세스를 개선합니다.</p>"
+                            ),
+                            "requiredItem": (
+                                "<p>웹 서비스, 네트워크와 IAM에 대한 깊은 "
+                                "이해 및 장애 분석 경험이 필요합니다.</p>"
+                            ),
+                            "preferredItem": (
+                                "<p>Terraform과 SIEM 운영 경험을 우대합니다.</p>"
+                            ),
+                        }
+                    ],
+                }
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    class LgDetailFetcher:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def fetch(
+            self,
+            url: str,
+            *,
+            method: str = "GET",
+            json_body: object | None = None,
+            form_body: object | None = None,
+            headers: object | None = None,
+        ) -> crawler.FetchedPage:
+            self.calls.append(
+                {
+                    "url": url,
+                    "method": method,
+                    "json_body": json_body,
+                    "headers": headers,
+                }
+            )
+            return crawler.FetchedPage(
+                url=url,
+                text=listing if url == listing_url else detail,
+                status_code=200,
+                headers={},
+            )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="LG CNS", slug="lg-cns-detail"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="enterprise_json",
+            request_method="POST",
+            request_body={"companyCodeList": ["CNS"]},
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = LgDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert "AWS와 Kubernetes" in posting.description_text
+        assert "Python 자동화" in posting.description_text
+        assert fetcher.calls == [
+            {
+                "url": listing_url,
+                "method": "POST",
+                "json_body": {"companyCodeList": ["CNS"]},
+                "headers": None,
+            },
+            {
+                "url": detail_url,
+                "method": "POST",
+                "json_body": {"jobNoticeId": "1001310"},
+                "headers": None,
+            },
+        ]
+
+
+def test_kia_crawl_hydrates_before_filtering_technical_roles() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+        "hgrCd=2&lang=ko&page=1&pageblock=100&searchFieldList="
+        "&searchOccupList=&searchPlaceList=&searchSectorList="
+        "&searchText=&jdSec=&srcOrd="
+    )
+    technical_title = "미래 제조 솔루션"
+    nontechnical_title = "고객 경험 운영"
+    listing = json.dumps(
+        {
+            "status": 200,
+            "message": "OK",
+            "data": {
+                "listCnt": 2,
+                "list": [
+                    {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": 12,
+                        "recuNoticeNm": technical_title,
+                        "applyStartDt": "20260720",
+                        "applyStartTm": "0900",
+                        "applyEndDt": "20260803",
+                        "applyEndTm": "1700",
+                        "secCodeNm": "제조솔루션",
+                        "fldCodeNm": "생산기술개발",
+                        "workPlaceCodeNm": "AutoLand 광명",
+                        "channelCodeNm": "인턴",
+                    },
+                    {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": 13,
+                        "recuNoticeNm": nontechnical_title,
+                        "applyStartDt": "20260720",
+                        "applyStartTm": "0900",
+                        "applyEndDt": "20260803",
+                        "applyEndTm": "1700",
+                        "secCodeNm": "고객경험",
+                        "fldCodeNm": "운영지원",
+                        "workPlaceCodeNm": "서울",
+                        "channelCodeNm": "인턴",
+                    },
+                ],
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    def detail_payload(title: str, recu_cls: int, *, technical: bool) -> str:
+        if technical:
+            fields = {
+                "aboutTeamNtc": (
+                    "스마트 제조 현장의 로봇과 센서 데이터를 안정적으로 "
+                    "수집해 생산 의사결정을 지원하는 팀입니다."
+                ),
+                "privJdDtl": (
+                    "Python과 SQL 기반 데이터 파이프라인을 설계하고 대규모 "
+                    "센서 데이터의 정제, 검증, 배포 자동화를 개발합니다."
+                ),
+                "privMustReq": (
+                    "분산 데이터 처리와 클라우드 스토리지 운영, 장애 분석 "
+                    "및 테스트 자동화 경험이 필요합니다."
+                ),
+                "prefReq": (
+                    "Kafka, Kubernetes와 컴퓨터 비전 데이터셋 구축 경험을 "
+                    "우대합니다."
+                ),
+            }
+        else:
+            fields = {
+                "aboutTeamNtc": (
+                    "전국 고객 접점의 서비스 품질을 살피고 현장 의견을 모아 "
+                    "더 편안한 방문 경험을 만드는 운영 조직입니다."
+                ),
+                "privJdDtl": (
+                    "고객 안내 절차를 점검하고 매장 운영 일정을 조율하며 "
+                    "서비스 만족도 조사와 행사 준비를 담당합니다."
+                ),
+                "privMustReq": (
+                    "원활한 의사소통과 꼼꼼한 일정 관리, 고객 응대 경험 및 "
+                    "여러 부서와 협업한 경험이 필요합니다."
+                ),
+                "prefReq": (
+                    "자동차 산업과 오프라인 고객 서비스에 관심이 있고 현장 "
+                    "운영 개선 활동을 수행한 분을 우대합니다."
+                ),
+            }
+        return json.dumps(
+            {
+                "status": 200,
+                "message": "OK",
+                "data": {
+                    "applyInfo": {
+                        "recuYy": "2026",
+                        "recuType": "N3",
+                        "recuCls": recu_cls,
+                        "recuNoticeNm": title,
+                        **fields,
+                    }
+                },
+            },
+            ensure_ascii=False,
+        )
+
+    details = {
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+            "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=12"
+        ): detail_payload(technical_title, 12, technical=True),
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02800?"
+            "hgrCd=2&lang=ko&recuYy=2026&recuType=N3&recuCls=13"
+        ): detail_payload(nontechnical_title, 13, technical=False),
+    }
+
+    class KiaFetcher:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def fetch(
+            self,
+            url: str,
+            *,
+            method: str = "GET",
+            json_body: object | None = None,
+            form_body: object | None = None,
+            headers: object | None = None,
+        ) -> crawler.FetchedPage:
+            del form_body
+            self.calls.append(
+                {
+                    "url": url,
+                    "method": method,
+                    "json_body": json_body,
+                    "headers": headers,
+                }
+            )
+            return crawler.FetchedPage(
+                url=url,
+                text=listing if url == listing_url else details[url],
+                status_code=200,
+                headers={},
+            )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="기아", slug="kia-detail-filter"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="kia_enterprise_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = KiaFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = session.scalars(select(JobPosting)).all()
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert [posting.external_id for posting in postings] == ["2026-N3-12"]
+        assert "Python과 SQL 기반" in postings[0].description_text
+        assert "Kafka, Kubernetes" in postings[0].description_text
+        assert [call["url"] for call in fetcher.calls] == [
+            listing_url,
+            *details,
+        ]
+        assert fetcher.calls[0]["headers"] == {
+            "Accept": "application/json, text/plain, */*",
+            "X-HKMC-SERVICE": "KM",
+            "X-HKMC-TOKEN": "null",
+        }
+        assert source.last_success_at is not None
 
 
 class WorkableListingFetcher:

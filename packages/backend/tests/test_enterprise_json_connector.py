@@ -461,6 +461,14 @@ def test_parse_enterprise_json_openings_maps_smilegate_announce_api() -> None:
 
 
 def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
+    contents = (
+        "<h2>담당 업무</h2>"
+        "<p>LLM 기반 AI Foundation 모델과 데이터 파이프라인을 개발하고 "
+        "서비스 품질 및 추론 성능을 개선합니다.</p>"
+        "<h2>필수 역량</h2>"
+        "<p>Python, PyTorch, Kubernetes 환경에서 모델 학습과 배포를 "
+        "자동화하고 운영 장애를 분석한 경험이 필요합니다.</p>"
+    )
     payload = {
         "isSuccess": True,
         "errorMessage": None,
@@ -484,6 +492,7 @@ def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
                 "receiveStartDatetime": "2026-06-25 00:00:00",
                 "receiveEndDatetime": "2026-07-12 23:55:59",
                 "company": "KT",
+                "contents": contents,
                 "title": "2026년 경력채용 (AX기술연구 및 개발)",
                 "dday": 3,
             }
@@ -493,7 +502,7 @@ def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
     openings = parse_enterprise_json_openings(
         json.dumps(payload, ensure_ascii=False),
         "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
-        "&isContainsContents=0",
+        "&isContainsContents=1",
     )
 
     assert len(openings) == 1
@@ -503,13 +512,61 @@ def test_parse_enterprise_json_openings_maps_kt_recruit_api() -> None:
     assert opening.title == "[KT] 2026년 경력채용 (AX기술연구 및 개발)"
     assert opening.employment_type == "경력"
     assert opening.career_type == "experienced"
-    assert opening.description_text == (
-        "KT AI Foundation 모델 개발 Data Governance AI Engineering"
-    )
+    assert opening.description_html == contents
+    assert opening.description_text.startswith("## 담당 업무")
+    assert "Python, PyTorch, Kubernetes" in opening.description_text
+    assert "Data Governance" not in opening.description_text
     assert opening.opens_at is not None
     assert opening.opens_at.isoformat() == "2026-06-25T00:00:00+09:00"
     assert opening.closes_at is not None
     assert opening.closes_at.isoformat() == "2026-07-12T23:55:59+09:00"
+
+
+def test_parse_enterprise_json_openings_maps_kia_apply_api() -> None:
+    payload = {
+        "status": 200,
+        "message": "OK",
+        "data": {
+            "listCnt": 1,
+            "list": [
+                {
+                    "recuYy": "2026",
+                    "recuType": "N3",
+                    "recuCls": 12,
+                    "recuNoticeNm": (
+                        "기아 글로벌 채용전환형 인턴십 - "
+                        "제조 로봇 데이터 엔지니어링 (제조솔루션)"
+                    ),
+                    "applyStartDt": "20260720",
+                    "applyStartTm": "0900",
+                    "applyEndDt": "20260803",
+                    "applyEndTm": "1700",
+                    "secCodeNm": "제조솔루션",
+                    "fldCodeNm": "생산기술개발",
+                    "workPlaceCodeNm": "AutoLand 광명",
+                    "channelCodeNm": "인턴",
+                }
+            ],
+        },
+    }
+
+    openings = parse_enterprise_json_openings(
+        json.dumps(payload, ensure_ascii=False),
+        (
+            "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+            "hgrCd=2&lang=ko&page=1&pageblock=100"
+        ),
+    )
+
+    assert len(openings) == 1
+    opening = openings[0]
+    assert opening.external_id == "2026-N3-12"
+    assert opening.url == (
+        "https://career.kia.com/apply/applyView.kc?"
+        "recuYy=2026&recuType=N3&recuCls=12"
+    )
+    assert "제조 로봇 데이터 엔지니어링" in opening.title
+    assert opening.location == "AutoLand 광명"
 
 
 def test_parse_enterprise_json_openings_maps_cj_recruit_jsonp_api() -> None:

@@ -15,8 +15,14 @@ import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import type { PostingDetail, SkillDetail } from "@/lib/types";
 
 import { JobDetailActions } from "./job-detail-actions";
-import { groupJobSkills } from "./job-detail-model";
-import { PostingDescription } from "./job-description";
+import {
+  groupJobSkills,
+  hasSubstantivePostingDetail,
+} from "./job-detail-model";
+import {
+  PostingDescription,
+  PostingDescriptionPending,
+} from "./job-description";
 import { JobDescriptionImages } from "./job-description-images";
 
 function formatDate(value: string) {
@@ -84,6 +90,12 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
   const skillDetails = job.skill_details ?? [];
   const groups = groupJobSkills(skillDetails);
   const isDelayed = job.status === "delayed";
+  const descriptionImages = job.description_images ?? [];
+  const hasDescriptionText = job.description_text.trim().length > 0;
+  const hasSubstantiveDetail = hasSubstantivePostingDetail(
+    job.description_text,
+    descriptionImages,
+  );
 
   return (
     <main className={styles.main}>
@@ -241,11 +253,25 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             className={styles.description}
           >
             <header className={styles.sectionHeader}>
-              <p>제공된 공고 원문</p>
-              <h2 id="job-description-title">공고 원문</h2>
+              <p>
+                {hasSubstantiveDetail
+                  ? "제공된 공고 원문"
+                  : "상세 내용 확인"}
+              </p>
+              <h2 id="job-description-title">
+                {hasSubstantiveDetail ? "공고 원문" : "공고 상세"}
+              </h2>
             </header>
-            <PostingDescription text={job.description_text} />
-            <JobDescriptionImages images={job.description_images} />
+            {hasSubstantiveDetail ? (
+              <>
+                {hasDescriptionText ? (
+                  <PostingDescription text={job.description_text} />
+                ) : null}
+                <JobDescriptionImages images={descriptionImages} />
+              </>
+            ) : (
+              <PostingDescriptionPending />
+            )}
             <a
               className={styles.continueLink}
               href={job.source_url}

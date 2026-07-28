@@ -92,6 +92,8 @@ def ingest_opening(
     store: SnapshotStore,
     now: datetime,
     posting_index: PostingIndex | None = None,
+    *,
+    commit: bool = True,
 ) -> IngestionResult:
     storage_key, raw_hash = store.put(
         raw_html.encode(),
@@ -165,7 +167,10 @@ def ingest_opening(
             )
         )
 
-    session.commit()
+    if commit:
+        session.commit()
+    else:
+        session.flush()
     if posting_index is not None:
         try:
             posting_index.upsert(posting)

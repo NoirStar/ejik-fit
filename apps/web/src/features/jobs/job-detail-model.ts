@@ -1,4 +1,6 @@
-import type { SkillDetail } from "@/lib/types";
+import type { PostingDescriptionImage, SkillDetail } from "@/lib/types";
+
+export const MIN_SUBSTANTIVE_POSTING_DETAIL_CHARS = 120;
 
 export type JobSkillGroups = {
   required: SkillDetail[];
@@ -10,6 +12,16 @@ export type JobDescriptionBlock =
   | { kind: "heading"; level: 2 | 3; text: string }
   | { kind: "paragraph"; text: string }
   | { kind: "list"; items: string[] };
+
+export function hasSubstantivePostingDetail(
+  text: string,
+  images: readonly PostingDescriptionImage[],
+) {
+  if (images.length > 0) return true;
+
+  const normalizedText = text.trim().replace(/\s+/g, " ");
+  return normalizedText.length >= MIN_SUBSTANTIVE_POSTING_DETAIL_CHARS;
+}
 
 export function groupJobSkills(skills: SkillDetail[]): JobSkillGroups {
   return {

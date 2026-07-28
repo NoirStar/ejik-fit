@@ -366,7 +366,10 @@ def test_initial_sources_include_phase_two_enterprise_sources_with_lg_api_enable
         "hyundai_mobis_html_tech"
     )
     assert catalog_by_slug["hyundai-mobis"].status == SourceStatus.ALLOWED
-    assert catalog_by_slug["kia"].source_type == SourceType.BROWSER_PUBLIC_RENDER
+    assert catalog_by_slug["kia"].source_type == SourceType.ENTERPRISE_JSON
+    assert catalog_by_slug["kia"].connector_family == (
+        "kia_enterprise_json_tech"
+    )
     assert catalog_by_slug["kia"].status == SourceStatus.ALLOWED
     assert catalog_by_slug["cj-olivenetworks"].source_type == (
         SourceType.ENTERPRISE_JSON
@@ -1283,7 +1286,7 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
         assert kt.connector_family == "kt_core_enterprise_json_tech"
         assert kt.base_url == (
             "https://recruit.kt.com/api/recruit?isPost=1&isInprogress=1"
-            "&isContainsContents=0"
+            "&isContainsContents=1"
         )
 
         hyundai = sources_by_slug["hyundai-motor"]
@@ -1297,8 +1300,14 @@ def test_seeding_sources_is_idempotent_and_persists_catalog_source_types() -> No
 
         kia = sources_by_slug["kia"]
         assert kia.status == SourceStatus.ALLOWED
-        assert kia.connector_family == "browser_public_render"
-        assert kia.base_url == "https://career.kia.com/apply/applyList.kc"
+        assert kia.source_type == SourceType.ENTERPRISE_JSON
+        assert kia.connector_family == "kia_enterprise_json_tech"
+        assert kia.base_url == (
+            "https://career.kia.com/api/rec/AP-KM-FO-02700?"
+            "hgrCd=2&lang=ko&page=1&pageblock=100&searchFieldList="
+            "&searchOccupList=&searchPlaceList=&searchSectorList="
+            "&searchText=&jdSec=&srcOrd="
+        )
 
         cj = sources_by_slug["cj-olivenetworks"]
         assert cj.status == SourceStatus.ALLOWED

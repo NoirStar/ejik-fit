@@ -176,6 +176,10 @@ def test_build_source_monitor_report_summarizes_recent_activity_and_health() -> 
         "changed_postings": 1,
         "closed_postings": 1,
         "tech_job_ratio": 0.5,
+        "substantive_open_postings": 0,
+        "image_only_open_postings": 0,
+        "sparse_open_postings": 2,
+        "zero_skill_open_postings": 1,
     }
 
     by_slug = {source["company_slug"]: source for source in report["sources"]}
@@ -238,7 +242,7 @@ def test_third_absence_records_closure_in_current_monitor_window() -> None:
         assert report["totals"]["closed_postings"] == 1
 
 
-def test_source_monitor_aggregates_without_loading_posting_bodies() -> None:
+def test_source_monitor_loads_open_posting_bodies_in_one_audit_query() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
     now = datetime(2026, 7, 15, 12, tzinfo=timezone.utc)
@@ -293,12 +297,101 @@ def test_source_monitor_aggregates_without_loading_posting_bodies() -> None:
             if "FROM job_postings" in statement
         ]
         assert posting_queries
-        assert all(
-            "description_html" not in statement
-            and "description_text" not in statement
-            and "LEFT OUTER JOIN posting_skills" not in statement
+        body_queries = [
+            statement
             for statement in posting_queries
+            if "description_html" in statement
+            or "description_text" in statement
+        ]
+        assert len(body_queries) == 1
+        assert "LEFT OUTER JOIN posting_skills" not in body_queries[0]
+
+
+def test_source_monitor_audits_sparse_image_and_zero_skill_postings() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, 12, tzinfo=timezone.utc)
+
+    with Session(engine) as session:
+        company = Company(name="본문 감사 기업", slug="body-audit")
+        source = CareerSource(
+            company=company,
+            base_url="https://jobs.example.com/openings",
+            source_type=SourceType.ENTERPRISE_JSON,
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            connector_family="enterprise_json",
+            last_success_at=now,
         )
+        postings = [
+            JobPosting(
+                company=company,
+                source=source,
+                external_id="text-body",
+                url="https://jobs.example.com/jobs/text-body",
+                title="Backend Engineer",
+                description_html="<p>Python 서비스 개발 본문</p>",
+                description_text="Python 서비스 개발 " + "가" * 140,
+            ),
+            JobPosting(
+                company=company,
+                source=source,
+                external_id="image-body",
+                url="https://jobs.example.com/jobs/image-body",
+                title="Frontend Engineer",
+                description_html=(
+                    '<img src="/jobs/image-body/detail.png" '
+                    'alt="채용 상세 내용">'
+                ),
+                description_text="",
+            ),
+            JobPosting(
+                company=company,
+                source=source,
+                external_id="sparse-body",
+                url="https://jobs.example.com/jobs/sparse-body",
+                title="Platform Engineer",
+                description_html="<p>짧은 목록 정보</p>",
+                description_text="짧은 목록 정보",
+            ),
+            JobPosting(
+                company=company,
+                source=source,
+                external_id="zero-skill",
+                url="https://jobs.example.com/jobs/zero-skill",
+                title="Technical Writer",
+                description_html="<p>충분한 공식 채용 본문</p>",
+                description_text="공식 채용 상세 안내 " + "나" * 140,
+            ),
+        ]
+        session.add_all(postings)
+        session.flush()
+        for posting in postings[:3]:
+            session.add(
+                PostingSkill(
+                    posting_id=posting.id,
+                    skill="Python",
+                    category="language",
+                )
+            )
+        session.commit()
+
+        report = build_source_monitor_report(session, now=now)
+
+    source_item = report["sources"][0]
+    assert source_item["substantive_open_postings"] == 3
+    assert source_item["image_only_open_postings"] == 1
+    assert source_item["sparse_open_postings"] == 1
+    assert source_item["zero_skill_open_postings"] == 1
+    assert source_item["sparse_examples"] == ["sparse-body"]
+    assert report["totals"]["substantive_open_postings"] == 3
+    assert report["totals"]["image_only_open_postings"] == 1
+    assert report["totals"]["sparse_open_postings"] == 1
+    assert report["totals"]["zero_skill_open_postings"] == 1
+    assert report["top_sparse_sources"][0]["company_slug"] == "body-audit"
+    markdown = render_source_monitor_markdown(report)
+    assert "가" * 20 not in markdown
+    assert "나" * 20 not in markdown
 
 
 def test_render_source_monitor_markdown_includes_health_tables() -> None:
@@ -319,6 +412,10 @@ def test_render_source_monitor_markdown_includes_health_tables() -> None:
             "changed_postings": 1,
             "closed_postings": 1,
             "tech_job_ratio": 0.67,
+            "substantive_open_postings": 2,
+            "image_only_open_postings": 1,
+            "sparse_open_postings": 1,
+            "zero_skill_open_postings": 1,
         },
         "connector_family_health": {
             "naver_json": {
@@ -342,6 +439,16 @@ def test_render_source_monitor_markdown_includes_health_tables() -> None:
                 "last_error_code": "temporary_fetch_error",
             }
         ],
+        "top_sparse_sources": [
+            {
+                "company_name": "네이버웹툰",
+                "company_slug": "naver-webtoon",
+                "source_type": "naver_json",
+                "open_postings": 3,
+                "sparse_open_postings": 1,
+                "sparse_examples": ["30005224"],
+            }
+        ],
         "sources": [],
     }
 
@@ -349,5 +456,8 @@ def test_render_source_monitor_markdown_includes_health_tables() -> None:
 
     assert "## 공식 출처 모니터" in markdown
     assert "| 신규 공고 | 2 |" in markdown
+    assert "| 희소 본문 공고 | 1 |" in markdown
     assert "| naver_json | 1 | 0 | 0 | 3 | 2 | 1 | 0.67 |" in markdown
     assert "| LG CNS | static_next_data | failing | temporary_fetch_error |" in markdown
+    assert "### 희소 본문 상위 출처" in markdown
+    assert "| 네이버웹툰 | 1 | 3 | 30005224 |" in markdown
