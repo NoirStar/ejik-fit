@@ -1,5 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
-/* Hallmark · genre: modern-minimal · macrostructure: action briefing + mixed signal stream · theme: 이직핏 locked system · enrichment: none */
+/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index / action briefing + mixed signal stream · theme: 이직핏 locked system · enrichment: none */
 /* Hallmark · contrast: pass (40–41) · nav: N1b · footer: Ft2 · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · icons: pass (30) · mobile: pass (34, 49–57) */
 .page {
   width: 100%;
@@ -259,10 +259,16 @@
 }
 
 .railHeadingRow > a {
+  display: inline-flex;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: center;
   color: var(--color-accent-strong);
   font-size: 0.75rem;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .ownedSkills,
@@ -365,8 +371,10 @@
 }
 
 .railFootnote a {
-  display: flex;
+  display: inline-flex;
   width: fit-content;
+  min-height: var(--touch-target);
+  align-items: center;
   margin-top: 0.35rem;
   color: var(--color-accent-strong);
   font-weight: 750;
@@ -1077,13 +1085,35 @@
 .cardCopy h2 a,
 .jobIdentity h2 a,
 .marketBody h2 a {
+  position: relative;
+  z-index: 1;
   color: var(--color-text);
   text-decoration: none;
+}
+
+.cardCopy h2 a::before,
+.marketBody h2 a::before {
+  position: absolute;
+  inset: -0.75rem -0.25rem;
+  content: "";
 }
 
 .cardCopy h2 a:hover,
 .jobIdentity h2 a:hover,
 .marketBody h2 a:hover {
+  color: var(--color-accent-strong);
+}
+
+.briefingMetric:active,
+.briefingSetup:active {
+  background: var(--color-surface-muted);
+}
+
+.railHeadingRow > a:active,
+.railFootnote a:active,
+.cardCopy h2 a:active,
+.marketBody h2 a:active,
+.marketLink:active {
   color: var(--color-accent-strong);
 }
 
@@ -1988,6 +2018,11 @@ button.jobTool:disabled {
 .jobMainLink:focus-visible,
 .jobTool:focus-visible,
 .tags a:focus-visible,
+.railHeadingRow > a:focus-visible,
+.railFootnote a:focus-visible,
+.cardCopy h2 a:focus-visible,
+.marketBody h2 a:focus-visible,
+.marketLink:focus-visible,
 .composer button:focus-visible,
 .shortcutList a:focus-visible,
 .recentTopics a:focus-visible,
@@ -2012,21 +2047,13 @@ button.jobTool:disabled {
   }
 
   .rightRail {
-    position: static;
-    grid-column: 1;
-    grid-row: auto;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    order: 2;
-  }
-
-  .followingRailCard {
-    grid-column: 1 / -1;
+    display: none;
   }
 
   .feedColumn {
     grid-column: 1;
     grid-row: auto;
-    order: 3;
+    order: 2;
   }
 }
 
@@ -2190,16 +2217,6 @@ button.jobTool:disabled {
   .followButton {
     min-width: 4.25rem;
     padding: 0 0.5rem;
-  }
-
-  .rightRail {
-    grid-template-columns: 1fr;
-    margin: 0 1rem;
-    padding: 0;
-  }
-
-  .skillDemand li:nth-child(n + 4) {
-    display: none;
   }
 
   .composerBackdrop {

@@ -53,7 +53,7 @@ export default async function Home({ searchParams }: HomeProps = {}) {
           ...careerFilter,
           ...(targetDomain ? { domains: [targetDomain] } : {}),
         }),
-        "내 기술과 맞는 공고를 불러오지 못했습니다.",
+        "내 기술이 포함된 공고를 불러오지 못했습니다.",
       )
     : Promise.resolve(null);
 

@@ -31,7 +31,7 @@
 - Consumes: existing `HomeFeedSnapshot.lastVerifiedAt` and `matchingPostingCount`.
 - Produces: test contracts for honest copy, explicit recency, mobile rail removal, feed priority, and 44px hit areas.
 
-- [ ] **Step 1: Replace the old fit-label assertions and add the verified-date assertion**
+- [x] **Step 1: Replace the old fit-label assertions and add the verified-date assertion**
 
 ```ts
 expect(within(briefing).getByText("내 기술 포함 공고")).toBeInTheDocument();
@@ -41,7 +41,7 @@ expect(screen.getByText("공고 2개 분석 · 최신 확인 7월 13일"))
   .toBeInTheDocument();
 ```
 
-- [ ] **Step 2: Replace the narrow-screen CSS expectation**
+- [x] **Step 2: Replace the narrow-screen CSS expectation**
 
 ```ts
 expect(css).toMatch(
@@ -54,7 +54,7 @@ expect(css).toMatch(
 
 The same style test requires real 44px dimensions on rail links and an expanded 44px hit area on community and market title links.
 
-- [ ] **Step 3: Add the browser-level fold contract**
+- [x] **Step 3: Add the browser-level fold contract**
 
 ```ts
 if (width <= 900) {
@@ -66,7 +66,7 @@ if (width <= 900) {
 }
 ```
 
-- [ ] **Step 4: Run the four focused tests and confirm failure for the old copy and old responsive order**
+- [x] **Step 4: Run the four focused tests and confirm failure for the old copy and old responsive order**
 
 Run: `npm test -- --run src/features/home-feed/home-feed.test.tsx src/features/home-feed/home-feed.styles.test.ts src/app/page.test.tsx`
 
@@ -84,14 +84,14 @@ Expected: FAIL because `맞는 공고`, `최근 수집 기준`, and `rightRail o
 - Consumes: `HomeFeedSnapshot.lastVerifiedAt`.
 - Produces: `formatLatestVerifiedLabel(value: string | null): string` and the unchanged `HomeFeed` public component.
 
-- [ ] **Step 1: Document the responsive allowance in `design.md`**
+- [x] **Step 1: Document the responsive allowance in `design.md`**
 
 ```md
 - 홈의 전체 기술 수요 레일은 901px 이상에서만 보인다. 900px 이하에서는 브리핑 뒤에 연속 피드를
   바로 두고, 시장 근거는 피드 안의 시장 카드로 제공한다.
 ```
 
-- [ ] **Step 2: Implement the honest label and verified-date helper**
+- [x] **Step 2: Implement the honest label and verified-date helper**
 
 ```ts
 function formatLatestVerifiedLabel(value: string | null) {
@@ -109,7 +109,7 @@ function formatLatestVerifiedLabel(value: string | null) {
 Render `내 기술 포함 공고`, `필수 기술 절반 이상 충족 N건`, and
 `공고 N개 분석 · ${formatLatestVerifiedLabel(snapshot.lastVerifiedAt)}`.
 
-- [ ] **Step 3: Make the feed the second narrow-screen region and remove the duplicate rail**
+- [x] **Step 3: Make the feed the second narrow-screen region and remove the duplicate rail**
 
 ```css
 @media (max-width: 900px) {
@@ -120,7 +120,7 @@ Render `내 기술 포함 공고`, `필수 기술 절반 이상 충족 N건`, an
 
 Do not change `use-home-feed-pagination.ts`, `feed-pagination.ts`, or the feed sentinel.
 
-- [ ] **Step 4: Complete touch and tap states**
+- [x] **Step 4: Complete touch and tap states**
 
 ```css
 .railHeadingRow > a,
@@ -141,7 +141,7 @@ Do not change `use-home-feed-pagination.ts`, `feed-pagination.ts`, or the feed s
 
 Add `:active` feedback and include the links in the existing explicit `:focus-visible` group.
 
-- [ ] **Step 5: Run the focused unit tests and confirm they pass**
+- [x] **Step 5: Run the focused unit tests and confirm they pass**
 
 Run: `npm test -- --run src/features/home-feed/home-feed.test.tsx src/features/home-feed/home-feed.styles.test.ts src/app/page.test.tsx`
 
@@ -155,19 +155,19 @@ Expected: PASS.
 **Interfaces:**
 - Confirms the existing infinite-scroll sentinel and API request flow remain unchanged.
 
-- [ ] **Step 1: Run one focused Playwright spec**
+- [x] **Step 1: Run one focused Playwright spec**
 
 Run: `npx playwright test e2e/home-market-context.e2e.ts`
 
 Expected: desktop rail visible, mobile rail hidden, first feed article inside the initial viewport, no horizontal overflow, no browser errors.
 
-- [ ] **Step 2: Run lint/type checking**
+- [x] **Step 2: Run lint/type checking**
 
 Run: `npm run lint`
 
 Expected: PASS.
 
-- [ ] **Step 3: Run diff checks**
+- [x] **Step 3: Run diff checks**
 
 Run: `git diff --check && git status --short`
 
@@ -182,15 +182,16 @@ Expected: only the files declared in this plan are changed.
 - Consumes the public production community feed and an already-authorized owner or database session.
 - Produces either one backed-up and deleted exact post or a clear authorization blocker; it never applies a content heuristic.
 
-- [ ] **Step 1: Resolve the exact production row by title, body, tags, ID, and author**
+- [x] **Step 1: Resolve the exact production row by title, body, tags, ID, and author**
 
 Query the public community endpoint read-only and confirm one exact row matches `test1 / test / [test, 1, 2, 3]`.
 
-- [ ] **Step 2: Check for an existing authorized owner or database session without extracting credentials**
+- [x] **Step 2: Check for an existing authorized owner or database session without extracting credentials**
 
 If none is configured, stop this task and report the required owner action. Do not create a privileged path or broaden RLS.
 
-- [ ] **Step 3: If authorized, back up that one row and delete only its exact UUID**
+- [x] **Step 3: If authorized, back up that one row and delete only its exact UUID**
 
 Confirm the public feed no longer returns the UUID. Do not delete any other post or comment.
 
+Result: no authorized owner or database session was configured, so this conditional deletion was not attempted. The exact post remains for its author to delete through the existing authenticated flow.

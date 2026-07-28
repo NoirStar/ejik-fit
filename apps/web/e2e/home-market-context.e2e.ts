@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390, 320]) {
+for (const width of [1440, 768, 414, 375, 320]) {
   test(`keeps saved market conditions aligned with actual home data at ${width}px`, async ({
     page,
   }) => {
@@ -41,7 +41,7 @@ for (const width of [1440, 390, 320]) {
 
     const context = page.getByRole("region", { name: "내 커리어 브리핑" });
     await expect(context).toContainText("경력 · 백엔드");
-    await expect(context).toContainText("맞는 공고");
+    await expect(context).toContainText("내 기술 포함 공고");
     await expect(context).toContainText("현재 수요 상위");
     const contextBox = await context.boundingBox();
     expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 310);
@@ -55,7 +55,7 @@ for (const width of [1440, 390, 320]) {
       page.getByText("채용 시장", { exact: true }).first(),
     ).toBeVisible();
     await expect(
-      page.getByText("맞는 공고", { exact: true }),
+      page.getByText("내 기술 포함 공고", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(/커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/),
@@ -89,6 +89,18 @@ for (const width of [1440, 390, 320]) {
         () => document.documentElement.scrollWidth > window.innerWidth,
       ),
     ).toBe(false);
+    const marketRail = page.getByRole("complementary", {
+      name: "채용 시장 요약",
+    });
+    if (width <= 900) {
+      await expect(marketRail).toBeHidden();
+      const firstArticle = page.getByRole("tabpanel").locator("article").first();
+      await expect(firstArticle).toBeVisible();
+      const firstArticleBox = await firstArticle.boundingBox();
+      expect(firstArticleBox?.y).toBeLessThan(820);
+    } else {
+      await expect(marketRail).toBeVisible();
+    }
     await edit.click();
     await expect(page).toHaveURL(/\/career$/);
     await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");

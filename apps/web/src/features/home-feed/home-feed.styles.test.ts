@@ -20,10 +20,10 @@ describe("home feed density", () => {
       "width: min(calc(100% - 3rem), 67rem);",
     );
     expect(css).toMatch(
-      /@media \(max-width: 900px\)[\s\S]*?\.rightRail\s*\{[^}]*order: 2;/,
+      /@media \(max-width: 900px\)[\s\S]*?\.rightRail\s*\{[^}]*display: none;/,
     );
     expect(css).toMatch(
-      /@media \(max-width: 900px\)[\s\S]*?\.feedColumn\s*\{[^}]*order: 3;/,
+      /@media \(max-width: 900px\)[\s\S]*?\.feedColumn\s*\{[^}]*order: 2;/,
     );
     expect(css).not.toContain("radial-gradient");
   });
@@ -58,6 +58,21 @@ describe("home feed density", () => {
     expect(css).toMatch(/\.tags a::before\s*\{[^}]*inset: 0\.5rem 0;/);
   });
 
+  it("gives rail and title links a full touch target without another card layer", () => {
+    expect(rule("railHeadingRow > a")).toContain(
+      "min-width: var(--touch-target);",
+    );
+    expect(rule("railHeadingRow > a")).toContain(
+      "min-height: var(--touch-target);",
+    );
+    expect(rule("railFootnote a")).toContain(
+      "min-height: var(--touch-target);",
+    );
+    expect(css).toMatch(
+      /\.cardCopy h2 a::before,\s*\.marketBody h2 a::before\s*\{[^}]*inset: -0\.75rem -0\.25rem;/,
+    );
+  });
+
   it("keeps social actions and compact job tools at the shared touch target", () => {
     expect(css).toMatch(
       /\.cardActions button,\s*\.cardActions a\s*\{[^}]*min-height: var\(--touch-target\);/,
@@ -85,9 +100,10 @@ describe("home feed density", () => {
     expect(css).not.toMatch(/\.stackPrompt\s*\{/);
   });
 
-  it("keeps the mobile market preview short enough to reach the feed", () => {
+  it("uses in-feed market cards instead of a repeated mobile market rail", () => {
     expect(css).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.skillDemand li:nth-child\(n \+ 4\)\s*\{[^}]*display: none;/,
+      /@media \(max-width: 900px\)[\s\S]*?\.rightRail\s*\{[^}]*display: none;/,
     );
+    expect(css).toMatch(/\.marketCard\s*\{[^}]*display: grid;/);
   });
 });
