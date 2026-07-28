@@ -403,12 +403,18 @@ git commit -m "feat: parse official enterprise job details"
 - 수정: `packages/backend/src/ejikfit/connectors/next_data.py`
 - 수정: `packages/backend/src/ejikfit/connectors/enterprise_json.py`
 - 수정: `packages/backend/src/ejikfit/connectors/browser_public.py`
-- 수정: `packages/backend/src/ejikfit/connectors/official_detail.py`
+- 수정: `packages/backend/src/ejikfit/connectors/enterprise_detail.py`
+- 생성: `packages/backend/src/ejikfit/connectors/technical_roles.py`
+- 수정: `packages/backend/src/ejikfit/crawler.py`
 - 수정: `packages/backend/src/ejikfit/seed_data.py`
 - 수정: `packages/backend/tests/test_enterprise_json_connector.py`
+- 수정: `packages/backend/tests/test_enterprise_detail_connector.py`
 - 수정: `packages/backend/tests/test_browser_public_connector.py`
+- 수정: `packages/backend/tests/test_crawler.py`
 - 수정: `packages/backend/tests/test_official_detail.py`
 - 수정: `packages/backend/tests/test_seed_data.py`
+- 수정: `packages/backend/tests/test_static_next_data_connector.py`
+- 생성: `packages/backend/tests/test_technical_roles.py`
 
 ### 1. KT 실패 테스트
 
@@ -420,7 +426,13 @@ git commit -m "feat: parse official enterprise job details"
 
 ### 2. 기아 실패 테스트
 
-공식 응답 `data.applyInfo` fixture로 다음을 확인한다.
+브라우저 렌더링 대신 공식 목록 API를 직접 사용하고, 응답의 모든 공고를 상세 보강한 뒤 기술 직군을 가른다.
+
+- 목록 URL: `https://career.kia.com/api/rec/AP-KM-FO-02700`
+- 목록 headers: `X-HKMC-SERVICE: KM`, `X-HKMC-TOKEN: null`
+- 목록 ID·제목·공식 상세 URL을 검증한다.
+
+공식 상세 응답 `data.applyInfo` fixture로 다음을 확인한다.
 
 - 요청 URL: `https://career.kia.com/api/rec/AP-KM-FO-02800`
 - query: `hgrCd=2`, `lang=ko`, 목록 ID의 세 부분
@@ -434,14 +446,18 @@ git commit -m "feat: parse official enterprise job details"
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest \
   -p pytest_asyncio.plugin \
   packages/backend/tests/test_enterprise_json_connector.py \
+  packages/backend/tests/test_enterprise_detail_connector.py \
   packages/backend/tests/test_browser_public_connector.py \
+  packages/backend/tests/test_crawler.py \
   packages/backend/tests/test_official_detail.py \
-  packages/backend/tests/test_seed_data.py -q
+  packages/backend/tests/test_seed_data.py \
+  packages/backend/tests/test_static_next_data_connector.py \
+  packages/backend/tests/test_technical_roles.py -q
 ```
 
 `next_data.py`에는 허용된 HTML 설명 키만 처리하는 `DESCRIPTION_HTML_KEYS`를 추가한다. HTML은 렌더하지 않고 정제 텍스트만 사용자에게 전달한다.
 
-기아 파서는 현대차의 필드 구조를 공유할 수 있는 작은 내부 helper를 사용하되 회사별 ID/host/header 검증은 분리한다.
+기아 파서는 현대차의 필드 구조를 공유할 수 있는 작은 내부 helper를 사용하되 회사별 ID/host/header 검증은 분리한다. seed는 `BROWSER_PUBLIC_RENDER`에서 전용 `ENTERPRISE_JSON` 목록 API로 전환하고, 제목 또는 상세 본문의 복수 기술 신호를 요구하는 보수적인 상세 직군 판별기를 사용한다. 짧은 목록 문구만으로 기술 공고를 미리 제외하지 않는다.
 
 ### 4. 통과 확인 및 커밋
 
@@ -449,12 +465,18 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest \
 git add packages/backend/src/ejikfit/connectors/next_data.py \
   packages/backend/src/ejikfit/connectors/enterprise_json.py \
   packages/backend/src/ejikfit/connectors/browser_public.py \
-  packages/backend/src/ejikfit/connectors/official_detail.py \
+  packages/backend/src/ejikfit/connectors/enterprise_detail.py \
+  packages/backend/src/ejikfit/connectors/technical_roles.py \
+  packages/backend/src/ejikfit/crawler.py \
   packages/backend/src/ejikfit/seed_data.py \
   packages/backend/tests/test_enterprise_json_connector.py \
+  packages/backend/tests/test_enterprise_detail_connector.py \
   packages/backend/tests/test_browser_public_connector.py \
+  packages/backend/tests/test_crawler.py \
   packages/backend/tests/test_official_detail.py \
-  packages/backend/tests/test_seed_data.py
+  packages/backend/tests/test_seed_data.py \
+  packages/backend/tests/test_static_next_data_connector.py \
+  packages/backend/tests/test_technical_roles.py
 git commit -m "feat: recover KT and Kia posting bodies"
 ```
 
@@ -505,6 +527,7 @@ git commit -m "feat: recognize Electron and WebGL evidence"
 
 - 수정: `packages/backend/src/ejikfit/source_monitor.py`
 - 수정: `packages/backend/tests/test_source_monitor.py`
+- 수정: `packages/backend/tests/test_crawl_workflow.py`
 - 수정: `.github/workflows/crawl.yml`
 
 ### 1. 실패 테스트 작성
@@ -543,7 +566,8 @@ workflow dispatch와 schedule의 crawl 뒤에 `ejikfit source-monitor --format m
 
 ```bash
 git add packages/backend/src/ejikfit/source_monitor.py \
-  packages/backend/tests/test_source_monitor.py .github/workflows/crawl.yml
+  packages/backend/tests/test_source_monitor.py \
+  packages/backend/tests/test_crawl_workflow.py .github/workflows/crawl.yml
 git commit -m "feat: audit sparse production postings"
 ```
 
@@ -554,6 +578,7 @@ git commit -m "feat: audit sparse production postings"
 - 수정: `apps/web/src/features/jobs/job-detail-model.ts`
 - 수정: `apps/web/src/features/jobs/job-detail-view.tsx`
 - 수정: `apps/web/src/features/jobs/job-description.tsx`
+- 수정: `apps/web/src/app/jobs/[id]/job-detail.module.css`
 - 수정: `apps/web/src/app/jobs/[id]/page.test.tsx`
 - 수정: `apps/web/src/features/jobs/job-detail-model.test.ts`
 - 수정: `apps/web/src/app/company-logo-assets/[logoKey]/route.ts`
@@ -599,6 +624,7 @@ npm test -- --run \
 git add apps/web/src/features/jobs/job-detail-model.ts \
   apps/web/src/features/jobs/job-detail-view.tsx \
   apps/web/src/features/jobs/job-description.tsx \
+  apps/web/src/app/jobs/'[id]'/job-detail.module.css \
   apps/web/src/app/jobs/'[id]'/page.test.tsx \
   apps/web/src/features/jobs/job-detail-model.test.ts \
   apps/web/src/app/company-logo-assets/'[logoKey]'/route.ts \
