@@ -31,6 +31,9 @@ def test_production_crawler_is_remote_scheduled_and_serialized() -> None:
         "steps.skill-changes.outputs.required == 'true'" in workflow
     )
     assert "ejikfit crawl-all" in workflow
+    assert "ejikfit source-monitor --format markdown" in workflow
+    assert '>> "$GITHUB_STEP_SUMMARY"' in workflow
+    assert "inputs.company_slug != ''" in workflow
     assert "github.event_name == 'schedule'" in workflow
     assert "pip install './packages/backend'" in workflow
     assert "github.event_name == 'push'" in workflow
