@@ -77,6 +77,10 @@ from ejikfit.connectors.microsoft import (
     pcsx_detail_api_url,
 )
 from ejikfit.connectors.naver import parse_naver_openings
+from ejikfit.connectors.official_detail import (
+    official_detail_request,
+    parse_official_detail,
+)
 from ejikfit.connectors.nexon import (
     NEXON_CONNECTOR_FAMILY,
     NEXON_CORPORATIONS_API,
@@ -2235,15 +2239,17 @@ async def crawl_source(
                     ref,
                     source.connector_family,
                 )
-                ingest_opening(
-                    session,
-                    source,
-                    opening,
-                    detail.text,
-                    store,
-                    now,
-                    posting_index,
-                )
+                with session.begin_nested():
+                    ingest_opening(
+                        session,
+                        source,
+                        opening,
+                        detail.text,
+                        store,
+                        now,
+                        posting_index,
+                        commit=False,
+                    )
                 ingested += 1
             except BlockedSourceError as error:
                 _mark_source_error(
@@ -2260,7 +2266,6 @@ async def crawl_source(
                     failed=failed + 1,
                 )
             except Exception as error:
-                session.rollback()
                 logger.exception(
                     "Public JSON detail ingestion failed for %s",
                     ref.detail_url,
@@ -2438,11 +2443,34 @@ async def crawl_source(
 
     discovered = len(openings)
     ingestion_error: Exception | None = None
+    official_detail_failed = False
     for index, opening in enumerate(openings):
         seen_external_ids.add(opening.external_id)
+        detail_request = official_detail_request(
+            source.connector_family,
+            listing.url,
+            opening,
+        )
         try:
             opening_payload = listing.text
-            if source.connector_family == "workday_public_api_korea_tech":
+            if detail_request is not None:
+                if index > 0 and request_delay_seconds > 0:
+                    await asyncio.sleep(request_delay_seconds)
+                detail = await fetcher.fetch(
+                    detail_request.url,
+                    method=detail_request.method,
+                    json_body=detail_request.json_body,
+                    headers=detail_request.headers,
+                )
+                opening = parse_official_detail(
+                    detail.text,
+                    detail.url,
+                    source.connector_family,
+                    listing.url,
+                    opening,
+                )
+                opening_payload = detail.text
+            elif source.connector_family == "workday_public_api_korea_tech":
                 if index > 0 and request_delay_seconds > 0:
                     await asyncio.sleep(request_delay_seconds)
                 detail_url = workday_detail_api_url(listing.url, opening.url)
@@ -2599,21 +2627,24 @@ async def crawl_source(
                     )
                 opening = detail_opening
                 opening_payload = detail.text
-            ingest_opening(
-                session,
-                source,
-                opening,
-                opening_payload,
-                store,
-                now,
-                posting_index,
-            )
+            with session.begin_nested():
+                ingest_opening(
+                    session,
+                    source,
+                    opening,
+                    opening_payload,
+                    store,
+                    now,
+                    posting_index,
+                    commit=False,
+                )
             ingested += 1
         except Exception as error:
-            session.rollback()
             logger.exception("Opening ingestion failed for %s", opening.url)
             failed += 1
             ingestion_error = error
+            if detail_request is not None:
+                official_detail_failed = True
 
     source.last_verified_at = now
     if discovered > 0:
@@ -2636,7 +2667,11 @@ async def crawl_source(
     if ingestion_error is not None:
         _mark_source_error(
             source,
-            "partial_ingestion_failure",
+            (
+                "partial_detail_failure"
+                if official_detail_failed
+                else "partial_ingestion_failure"
+            ),
             f"{type(ingestion_error).__name__}: {ingestion_error}",
         )
     else:

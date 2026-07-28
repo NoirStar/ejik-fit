@@ -28,6 +28,7 @@ from ejikfit.models import (
     CareerSource,
     Company,
     JobPosting,
+    PostingSkill,
     PolicyStatus,
     PostingStatus,
     SourceStatus,
@@ -1152,7 +1153,16 @@ class StaticFetcher:
     def __init__(self, text: str) -> None:
         self.text = text
 
-    async def fetch(self, url: str) -> crawler.FetchedPage:
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        del method, json_body, form_body, headers
         return crawler.FetchedPage(
             url=url,
             text=self.text,
@@ -3454,6 +3464,269 @@ def test_crawl_source_routes_lever_greenhouse_into_ingestion() -> None:
         assert source.last_success_at is not None
 
 
+def _naver_detail_html(
+    external_id: str,
+    title: str,
+    *,
+    body: str | None = None,
+) -> str:
+    detail_body = body or (
+        "React와 TypeScript 기반 서비스를 설계하고 Next.js 서버 렌더링과 "
+        "Node.js 실행 환경을 운영합니다. 사용자 경험과 성능 지표를 함께 "
+        "개선하고 자동화된 테스트와 안정적인 배포 체계를 구축한 경험이 "
+        "있는 개발자를 찾습니다. Docker와 Kubernetes 운영 경험을 우대합니다."
+    )
+    return f"""
+    <input name="annoId" value="{external_id}">
+    <h4 class="card_title">{title}</h4>
+    <div class="detail_wrap">
+      <div class="detail_box">
+        <h4 class="detail_title">필요 역량</h4>
+        <p class="detail_text"></p>
+        <div>{detail_body}</div>
+      </div>
+    </div>
+    """
+
+
+class NaverListingDetailFetcher:
+    def __init__(
+        self,
+        listing_url: str,
+        listing: str,
+        details: dict[str, str],
+    ) -> None:
+        self.listing_url = listing_url
+        self.listing = listing
+        self.details = details
+        self.calls: list[dict[str, object]] = []
+
+    async def fetch(
+        self,
+        url: str,
+        *,
+        method: str = "GET",
+        json_body: object | None = None,
+        form_body: object | None = None,
+        headers: object | None = None,
+    ) -> crawler.FetchedPage:
+        self.calls.append(
+            {
+                "url": url,
+                "method": method,
+                "json_body": json_body,
+                "form_body": form_body,
+                "headers": headers,
+            }
+        )
+        return crawler.FetchedPage(
+            url=url,
+            text=(
+                self.listing
+                if url == self.listing_url
+                else self.details[url]
+            ),
+            status_code=200,
+            headers={},
+        )
+
+
+def test_naver_official_details_preserve_prior_successes_and_good_content() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    prior_success = now - timedelta(days=1)
+    listing_url = (
+        "https://recruit.navercorp.com/rcrt/loadJobList.do?"
+        "lang=ko&firstIndex=0&recordCountPerPage=500"
+    )
+    first_url = (
+        "https://recruit.navercorp.com/rcrt/view.do?annoId=30006001"
+    )
+    second_url = (
+        "https://recruit.navercorp.com/rcrt/view.do?annoId=30006002"
+    )
+    first_title = "[NAVER] Frontend Engineer"
+    second_title = "[NAVER] Platform Engineer"
+    listing = json.dumps(
+        {
+            "totalSize": 2,
+            "list": [
+                {
+                    "annoId": 30006001,
+                    "annoSubject": first_title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Frontend",
+                    "jobDetailLink": first_url,
+                },
+                {
+                    "annoId": 30006002,
+                    "annoSubject": second_title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Platform",
+                    "jobDetailLink": second_url,
+                },
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    with Session(engine) as session:
+        company = Company(name="네이버", slug="naver-detail-atomicity")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_company_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_success_at=prior_success,
+        )
+        previous_text = "이전에 검증되어 정상적으로 저장된 충분한 상세 공고 본문입니다."
+        existing = JobPosting(
+            company=company,
+            source=source,
+            external_id="30006002",
+            url=second_url,
+            title=second_title,
+            status=PostingStatus.OPEN,
+            description_html=f"<p>{previous_text}</p>",
+            description_text=previous_text,
+        )
+        session.add(existing)
+        session.commit()
+        fetcher = NaverListingDetailFetcher(
+            listing_url,
+            listing,
+            {
+                first_url: _naver_detail_html("30006001", first_title),
+                second_url: _naver_detail_html("wrong-id", second_title),
+            },
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        postings = {
+            posting.external_id: posting
+            for posting in session.scalars(select(JobPosting)).all()
+        }
+        assert result == crawler.CrawlResult(
+            discovered=2,
+            ingested=1,
+            failed=1,
+        )
+        assert postings["30006001"].description_text.startswith(
+            "### 필요 역량"
+        )
+        assert postings["30006002"].description_text == previous_text
+        assert postings["30006002"].status == PostingStatus.OPEN
+        assert source.last_error_code == "partial_detail_failure"
+        assert _as_utc(source.last_success_at) == prior_success
+        assert [call["url"] for call in fetcher.calls] == [
+            listing_url,
+            first_url,
+            second_url,
+        ]
+
+
+def test_naver_official_detail_success_replaces_skill_evidence() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+    listing_url = (
+        "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?"
+        "firstIndex=0&recordCountPerPage=500"
+    )
+    detail_url = (
+        "https://recruit.webtoonscorp.com/rcrt/view.do?annoId=30006003"
+    )
+    title = "[네이버웹툰] 프런트엔드 개발자"
+    listing = json.dumps(
+        {
+            "totalSize": 1,
+            "list": [
+                {
+                    "annoId": 30006003,
+                    "annoSubject": title,
+                    "classCdNm": "Tech",
+                    "subJobCdNm": "Frontend",
+                    "jobDetailLink": detail_url,
+                }
+            ],
+        },
+        ensure_ascii=False,
+    )
+
+    with Session(engine) as session:
+        company = Company(name="네이버웹툰", slug="naver-webtoon-detail")
+        source = CareerSource(
+            company=company,
+            base_url=listing_url,
+            source_type=SourceType.NAVER_JSON,
+            connector_family="naver_webtoon_json_tech",
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+            last_error_code="partial_detail_failure",
+            last_error_reason="previous detail failure",
+        )
+        posting = JobPosting(
+            company=company,
+            source=source,
+            external_id="30006003",
+            url=detail_url,
+            title=title,
+            description_html="<p>Java 운영 경험</p>",
+            description_text="Java 운영 경험",
+        )
+        session.add(posting)
+        session.flush()
+        session.add(
+            PostingSkill(
+                posting_id=posting.id,
+                skill="Java",
+                category="language",
+                evidence_text="Java 운영 경험",
+            )
+        )
+        session.commit()
+        fetcher = NaverListingDetailFetcher(
+            listing_url,
+            listing,
+            {detail_url: _naver_detail_html("30006003", title)},
+        )
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=now,
+                request_delay_seconds=0,
+            )
+        )
+
+        skills = {
+            row.skill: row
+            for row in session.scalars(select(PostingSkill)).all()
+        }
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert "Java" not in skills
+        assert {"React", "TypeScript"} <= set(skills)
+        assert "TypeScript" in (skills["TypeScript"].evidence_text or "")
+        assert source.last_error_code is None
+        assert _as_utc(source.last_success_at) == now
+
+
 def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -3477,7 +3750,8 @@ def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() 
             crawler.crawl_source(
                 session=session,
                 source=source,
-                fetcher=StaticFetcher(
+                fetcher=NaverListingDetailFetcher(
+                    source.base_url,
                     json.dumps(
                         {
                             "totalSize": 3,
@@ -3515,7 +3789,16 @@ def test_naver_webtoon_crawl_keeps_current_tech_jobs_and_excludes_talent_pool() 
                             ],
                         },
                         ensure_ascii=False,
-                    )
+                    ),
+                    {
+                        (
+                            "https://recruit.webtoonscorp.com/rcrt/"
+                            "view.do?annoId=30005124"
+                        ): _naver_detail_html(
+                            "30005124",
+                            "[네이버웹툰] 백엔드 서버 개발 (경력)",
+                        )
+                    },
                 ),
                 store=MemorySnapshotStore(),
                 now=datetime(2026, 7, 15, tzinfo=timezone.utc),
@@ -3551,7 +3834,8 @@ def test_naver_company_crawl_requires_the_official_tech_classification() -> None
             crawler.crawl_source(
                 session=session,
                 source=source,
-                fetcher=StaticFetcher(
+                fetcher=NaverListingDetailFetcher(
+                    source.base_url,
                     json.dumps(
                         {
                             "totalSize": 3,
@@ -3583,7 +3867,19 @@ def test_naver_company_crawl_requires_the_official_tech_classification() -> None
                             ],
                         },
                         ensure_ascii=False,
-                    )
+                    ),
+                    {
+                        (
+                            "https://recruit.navercorp.com/rcrt/"
+                            "view.do?annoId=30005100"
+                        ): _naver_detail_html(
+                            "30005100",
+                            (
+                                "[NAVER] Efficient World Model Research "
+                                "(체험형 인턴)"
+                            ),
+                        )
+                    },
                 ),
                 store=MemorySnapshotStore(),
                 now=datetime(2026, 7, 15, tzinfo=timezone.utc),
