@@ -39,6 +39,8 @@ function job(id: string): RecommendedJobFeedItem {
     sourceUrl: `https://example.com/${id}`,
     firstSeenAt: "2026-07-28T00:00:00.000Z",
     verifiedLabel: "7월 28일",
+    requiredSkills: [],
+    preferredSkills: [],
     matchedRequiredSkills: [],
     missingRequiredSkills: [],
     matchedPreferredSkills: [],

@@ -1,5 +1,6 @@
-/* Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V4 */
-/* Hallmark · genre: modern-minimal · macrostructure: signal stream + guidance shelf · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
+/* Hallmark · genre: modern-minimal · macrostructure: action briefing + mixed signal stream · theme: 이직핏 locked system · enrichment: none */
+/* Hallmark · contrast: pass (40–41) · nav: N1b · footer: Ft2 · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · icons: pass (30) · mobile: pass (34, 49–57) */
 .page {
   width: 100%;
   max-width: none;
@@ -55,7 +56,7 @@
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
-  padding: 1.125rem 1.25rem 0;
+  padding: 1rem 1.25rem 0;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
@@ -72,22 +73,18 @@
   min-width: 0;
 }
 
-.briefingHeader span {
-  color: var(--color-accent-strong);
-  font-size: 0.6875rem;
-  font-weight: 800;
-}
-
 .briefingHeader h1 {
-  margin: 0.125rem 0 0;
+  min-width: 0;
+  margin: 0.25rem 0 0;
   font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .briefingHeader p {
-  margin: 0.3125rem 0 0;
+  margin: 0.25rem 0 0;
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 650;
@@ -99,7 +96,7 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 0.25rem;
-  margin-top: -0.375rem;
+  margin-top: -0.25rem;
   padding: 0 0.5rem;
   border-radius: var(--radius-control);
   color: var(--color-muted);
@@ -124,7 +121,7 @@
 .briefingSetup {
   min-width: 0;
   min-height: 6rem;
-  padding: 0.875rem;
+  padding: 0.75rem;
   color: var(--color-text);
   text-decoration: none;
 }
@@ -132,7 +129,7 @@
 .briefingMetric {
   display: grid;
   align-content: center;
-  gap: 0.1875rem;
+  gap: 0.25rem;
 }
 
 .briefingMetric + .briefingMetric {
@@ -180,7 +177,7 @@
 .briefingSetup > span {
   display: grid;
   min-width: 0;
-  gap: 0.1875rem;
+  gap: 0.25rem;
 }
 
 .briefingSetup strong {
@@ -248,8 +245,7 @@
 }
 
 .ownedSkills,
-.tags,
-.skillEvidence {
+.tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4375rem;
@@ -566,11 +562,13 @@
 }
 
 .feedHeader h2 {
+  min-width: 0;
   margin: 0;
   font-size: 1.25rem;
   font-weight: 760;
   letter-spacing: -0.035em;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .dataNotice {
@@ -1046,11 +1044,13 @@
 .cardCopy h2,
 .jobIdentity h2,
 .marketBody h2 {
+  min-width: 0;
   margin: 0;
   font-size: var(--type-item-title);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .cardCopy h2 a,
@@ -1085,8 +1085,7 @@
   margin-top: 0.5rem;
 }
 
-.cardActions,
-.jobActions {
+.cardActions {
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -1096,9 +1095,7 @@
 }
 
 .cardActions button,
-.cardActions a,
-.jobActions button,
-.jobActions a {
+.cardActions a {
   display: inline-flex;
   min-height: var(--touch-target);
   align-items: center;
@@ -1117,9 +1114,7 @@
 }
 
 .cardActions button:hover,
-.cardActions a:hover,
-.jobActions button:hover,
-.jobActions a:hover {
+.cardActions a:hover {
   background: var(--color-surface-muted);
   color: var(--color-text);
 }
@@ -1128,13 +1123,11 @@
   color: var(--color-danger);
 }
 
-.cardActions .saveAction,
-.jobActions button {
+.cardActions .saveAction {
   margin-left: auto;
 }
 
-.cardActions .saveAction[data-active="true"],
-.jobActions button[data-active="true"] {
+.cardActions .saveAction[data-active="true"] {
   color: var(--color-accent-strong);
 }
 
@@ -1142,7 +1135,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.jobTopline,
 .marketTopline {
   display: flex;
   flex-wrap: wrap;
@@ -1155,32 +1147,77 @@
 
 .jobCard {
   margin: 0;
-  padding: 1rem 1.125rem;
+  padding: 0;
   border: 0;
   border-bottom: 1px solid var(--color-line-soft);
   border-left: 0;
   border-radius: 0;
-  background: color-mix(in srgb, var(--color-brand-subtle) 34%, var(--color-surface));
+  background: transparent;
 }
 
 .jobCard:hover {
-  background: color-mix(in srgb, var(--color-brand-subtle) 48%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-brand-subtle) 36%, var(--color-surface));
 }
 
-.verifiedBadge {
+.jobCluster {
+  overflow: hidden;
+  border-bottom: 1px solid var(--color-line-soft);
+  background: color-mix(in srgb, var(--color-brand-subtle) 25%, var(--color-surface));
+}
+
+.jobClusterHeader {
+  display: flex;
+  min-height: 2.625rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-accent) 12%, var(--color-line));
+}
+
+.jobClusterHeader > span {
   display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
+  gap: 0.25rem;
   color: var(--color-accent-strong);
+  font-size: 0.75rem;
   font-weight: 750;
+}
+
+.jobClusterHeader small {
+  color: var(--color-faint);
+  font-size: 0.6875rem;
+  font-weight: 650;
+}
+
+.jobClusterList {
+  display: grid;
+}
+
+.jobClusterList > :last-child {
+  border-bottom: 0;
+}
+
+.jobShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.jobMainLink {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem 0.75rem 1rem;
+  color: var(--color-text);
+  text-decoration: none;
 }
 
 .jobIdentity {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.875rem;
-  margin-top: 0.75rem;
+  gap: 0.75rem;
 }
 
 .jobIdentity > div {
@@ -1202,28 +1239,15 @@
   line-height: 1.35;
 }
 
-.jobIdentity h2 a {
-  display: block;
-  line-height: 1.35;
-}
-
-.companyLink {
-  display: inline;
-  width: fit-content;
-  color: inherit;
-  line-height: 1.35;
-  text-decoration: none;
-}
-
-.companyLink:hover {
+.jobMainLink:hover h2 {
   color: var(--color-accent-strong);
 }
 
 .jobMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 0.875rem;
-  margin-top: 0.75rem;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.25rem;
   color: var(--color-muted);
   font-size: 0.75rem;
 }
@@ -1234,84 +1258,104 @@
   gap: 0.25rem;
 }
 
-.stackPrompt {
+.jobSignalRow {
   display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0.875rem 0 0;
-  padding: 0.75rem 0 0;
-  border-top: 1px solid var(--color-line);
-  border-radius: 0;
-  background: transparent;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.5;
+  gap: 0.25rem 0.5rem;
 }
 
-.stackPrompt a {
-  display: inline-flex;
-  min-height: var(--touch-target);
+.matchSummary {
   flex: 0 0 auto;
-  align-items: center;
-  padding: 0 0.6875rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 24%, var(--color-line));
-  border-radius: 0.5rem;
-  background: var(--color-surface);
   color: var(--color-accent-strong);
-  font-size: 0.75rem;
-  font-weight: 750;
-  text-decoration: none;
-  white-space: nowrap;
+  font-size: 0.71875rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-.stackPrompt a:hover {
-  border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-line));
-  background: var(--color-brand-subtle);
-}
-
-.skillEvidence {
-  margin-top: 0.75rem;
-}
-
-.skillEvidence span {
-  display: inline-flex;
+.jobSkills {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.3125rem 0.5625rem;
+}
+
+.jobSkills span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: 0.4375rem;
+  background: color-mix(in srgb, var(--color-surface) 75%, transparent);
   color: var(--color-muted);
-  font-size: 0.71875rem;
+  font-size: 0.6875rem;
   font-weight: 650;
 }
 
-.skillEvidence span[data-kind="matched"] {
+.jobSkills span[data-kind="matched"] {
   border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-line));
-  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
   color: var(--color-accent-strong);
 }
 
-.skillEvidence span[data-kind="missing"] {
+.jobSkills span[data-kind="missing"] {
   border-color: color-mix(in srgb, var(--color-warning) 25%, var(--color-line));
   color: var(--color-warning);
 }
 
-.jobActions {
-  gap: 0.375rem;
+.jobSkills span[data-kind="preferred"] {
+  border-style: dashed;
 }
 
-.jobActions > a:first-child {
-  background: var(--color-accent-strong);
-  color: var(--color-surface);
-  font-size: 0.8125rem;
-  font-weight: 750;
+.jobSkills small {
+  color: var(--color-faint);
+  font-size: 0.6875rem;
+  white-space: nowrap;
 }
 
-.jobActions > a:first-child:hover {
-  background: color-mix(in srgb, var(--color-accent-strong) 86%, var(--color-text));
-  color: var(--color-surface);
+.jobTools {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.5rem 0 0;
+}
+
+.jobTool {
+  display: inline-grid;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5625rem;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.jobTool:hover {
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+  color: var(--color-accent-strong);
+}
+
+.jobMainLink:active {
+  background: color-mix(in srgb, var(--color-accent) 5%, transparent);
+}
+
+.jobTool:active {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+}
+
+button.jobTool:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.jobTool[data-active="true"] {
+  color: var(--color-accent-strong);
 }
 
 .marketCard {
@@ -1344,26 +1388,65 @@
   margin-top: 0.5rem;
 }
 
-.marketCounts {
+.demandDistribution {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4375rem;
+  width: 100%;
+  height: 0.375rem;
+  overflow: hidden;
   margin-top: 0.75rem;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
 }
 
-.marketCounts strong,
-.marketCounts span {
-  padding: 0.375rem 0.625rem;
-  border-radius: 0.5rem;
-  background: var(--color-surface-muted);
+.demandDistribution > span[data-kind="required"] {
+  background: var(--color-accent-strong);
+}
+
+.demandDistribution > span[data-kind="preferred"] {
+  background: color-mix(in srgb, var(--color-accent) 52%, var(--color-surface));
+}
+
+.demandDistribution > span[data-kind="unspecified"] {
+  background: var(--color-line-strong);
+}
+
+.marketLegend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.marketLegend strong,
+.marketLegend span {
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 700;
 }
 
-.marketCounts strong {
-  background: color-mix(in srgb, var(--color-accent) 11%, var(--color-surface));
+.marketLegend strong {
+  margin-right: auto;
   color: var(--color-accent-strong);
+}
+
+.marketLegend span::before {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-right: 0.25rem;
+  border-radius: 999px;
+  background: var(--color-line-strong);
+  content: "";
+  vertical-align: 0.0625rem;
+}
+
+.marketLegend span[data-kind="required"]::before {
+  background: var(--color-accent-strong);
+}
+
+.marketLegend span[data-kind="preferred"]::before {
+  background: color-mix(in srgb, var(--color-accent) 52%, var(--color-surface));
 }
 
 .marketLink {
@@ -1471,8 +1554,8 @@
 .skillDemand a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.1875rem 0.5rem;
-  padding: 0.625rem 0;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0;
   text-decoration: none;
 }
 
@@ -1491,125 +1574,36 @@
   font-variant-numeric: tabular-nums;
 }
 
+.skillDemandTrack {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 0.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  font-style: normal;
+}
+
+.skillDemandTrack > b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: background-color 160ms var(--ease-standard);
+}
+
+.skillDemand a:hover .skillDemandTrack > b {
+  background: var(--color-accent-strong);
+}
+
 .skillDemand small {
   grid-column: 1 / -1;
   color: var(--color-faint);
   font-size: 0.6875rem;
 }
 
-.careerInsightCard {
-  background: transparent;
-}
-
-.careerInsightCard .railHeadingRow > a {
-  display: inline-flex;
-  min-width: var(--touch-target);
-  min-height: var(--touch-target);
-  align-items: center;
-  justify-content: flex-end;
-  margin: -0.625rem -0.375rem -0.625rem 0;
-  padding: 0 0.375rem;
-}
-
-.careerCoverage {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 0.1875rem 0.75rem;
-  margin-top: 0.875rem;
-  padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent) 13%, var(--color-line));
-  border-radius: 0.75rem;
-  background: var(--color-surface);
-}
-
-.careerCoverage > span {
-  color: var(--color-muted);
-  font-size: 0.71875rem;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.careerCoverage > strong {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  color: var(--color-accent-strong);
-  font-size: 1.375rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.045em;
-}
-
-.careerCoverage > small {
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  line-height: 1.4;
-}
-
-.careerNextSkill {
-  display: grid;
-  min-height: var(--touch-target);
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.1875rem 0.625rem;
-  margin-top: 0.625rem;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.careerNextSkill:hover {
-  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
-}
-
-.careerNextSkill > span,
-.careerNextSkill > strong,
-.careerNextSkill > small,
-.careerNextSkill > em {
-  grid-column: 1;
-}
-
-.careerNextSkill > span {
-  color: var(--color-accent-strong);
-  font-size: 0.6875rem;
-  font-weight: 800;
-}
-
-.careerNextSkill > strong {
-  overflow-wrap: anywhere;
-  font-size: 0.875rem;
-}
-
-.careerNextSkill > small {
-  color: var(--color-muted);
-  font-size: 0.6875rem;
-  line-height: 1.45;
-}
-
-.careerNextSkill > em {
-  color: var(--color-faint);
-  font-size: 0.6875rem;
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-}
-
-.careerNextSkill > svg {
-  grid-column: 2;
-  grid-row: 1 / span 4;
-  color: var(--color-accent-strong);
-}
-
-.careerInsightState > p,
-.careerNoRecommendation {
-  margin: 0.875rem 0 0;
-  color: var(--color-muted);
-  font-size: 0.8125rem;
-  line-height: 1.55;
-}
-
-.careerInsightFootnote {
-  margin: 0.625rem 0 0;
+.railScope {
+  margin: 0.25rem 0 0;
   color: var(--color-faint);
   font-size: 0.6875rem;
   line-height: 1.45;
@@ -1970,9 +1964,8 @@
 .localDeleteButton:focus-visible,
 .cardActions button:focus-visible,
 .cardActions a:focus-visible,
-.jobActions button:focus-visible,
-.jobActions a:focus-visible,
-.stackPrompt a:focus-visible,
+.jobMainLink:focus-visible,
+.jobTool:focus-visible,
 .tags a:focus-visible,
 .composer button:focus-visible,
 .shortcutList a:focus-visible,
@@ -2128,6 +2121,7 @@
 
   .jobCard {
     margin: 0;
+    padding: 0;
     border: 0;
     border-bottom: 1px solid var(--color-line-soft);
     border-left: 0;
@@ -2149,6 +2143,19 @@
     height: 2.5rem;
   }
 
+  .jobClusterHeader {
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .jobMainLink {
+    padding-left: 1rem;
+  }
+
+  .jobTools {
+    padding-right: 0.5rem;
+  }
+
   .cardActions button,
   .cardActions a {
     padding: 0 0.5rem;
@@ -2163,23 +2170,14 @@
     padding: 0 0.5rem;
   }
 
-  .jobActions {
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
-
-  .jobActions > a {
-    flex: 1;
-  }
-
   .rightRail {
     grid-template-columns: 1fr;
     margin: 0 1rem;
     padding: 0;
   }
 
-  .careerInsightCard {
-    grid-column: auto;
+  .skillDemand li:nth-child(n + 4) {
+    display: none;
   }
 
   .composerBackdrop {

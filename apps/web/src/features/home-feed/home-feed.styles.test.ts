@@ -58,26 +58,36 @@ describe("home feed density", () => {
     expect(css).toMatch(/\.tags a::before\s*\{[^}]*inset: 0\.5rem 0;/);
   });
 
-  it("keeps feed actions at the shared touch target", () => {
+  it("keeps social actions and compact job tools at the shared touch target", () => {
     expect(css).toMatch(
-      /\.cardActions button,\s*\.cardActions a,\s*\.jobActions button,\s*\.jobActions a\s*\{[^}]*min-height: var\(--touch-target\);/,
+      /\.cardActions button,\s*\.cardActions a\s*\{[^}]*min-height: var\(--touch-target\);/,
     );
+    expect(rule("jobTool")).toContain("min-width: var(--touch-target);");
+    expect(rule("jobTool")).toContain("min-height: var(--touch-target);");
+    expect(css).not.toMatch(/\.jobActions\s*\{/);
   });
 
-  it("keeps the home job company and title in one compact text stack", () => {
+  it("makes the job content one clear internal-detail destination", () => {
     expect(css).toMatch(
       /\.jobIdentity > div\s*\{[^}]*gap: 0\.125rem;/,
     );
     expect(rule("jobIdentity p")).toContain("margin: 0;");
-    expect(rule("companyLink")).not.toContain("min-height:");
-    expect(rule("companyLink")).not.toContain("min-width:");
-    expect(rule("companyLink")).toContain("line-height: 1.35;");
+    expect(rule("jobMainLink")).toContain("display: grid;");
+    expect(rule("jobMainLink")).toContain("text-decoration: none;");
+    expect(css).not.toMatch(/\.companyLink\s*\{/);
   });
 
-  it("separates official jobs without a side stripe or nested card frame", () => {
+  it("separates official job groups without repeated onboarding prompts", () => {
+    expect(rule("jobCluster")).toContain("background:");
     expect(rule("jobCard")).toContain("border-left: 0;");
     expect(rule("jobCard")).toContain("border-radius: 0;");
     expect(rule("jobCard")).toContain("margin: 0;");
-    expect(rule("stackPrompt")).toContain("background: transparent;");
+    expect(css).not.toMatch(/\.stackPrompt\s*\{/);
+  });
+
+  it("keeps the mobile market preview short enough to reach the feed", () => {
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*?\.skillDemand li:nth-child\(n \+ 4\)\s*\{[^}]*display: none;/,
+    );
   });
 });

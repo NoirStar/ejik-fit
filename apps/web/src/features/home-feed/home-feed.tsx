@@ -58,6 +58,7 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { CompanyMark } from "./company-mark";
+import { groupFeedForDisplay } from "./feed-display-groups";
 import { appendOnlyItemsForTab, itemsForTab } from "./feed-order";
 import { FollowingPostList } from "./following-post-list";
 import {
@@ -122,9 +123,7 @@ const EMPTY_DRAFT: LocalPostDraft = {
 const HOME_COPY = {
   title: "추천 피드",
   market: "채용 시장",
-  career: "내 기술과 맞는 공고",
   addSkills: "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
-  graphEvidenceMissing: "이 공고에서 확인된 기술 요건이 없습니다.",
   followingEmpty: "팔로우한 작성자의 글이 없습니다.",
   followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
 } as const;
@@ -312,130 +311,182 @@ function SocialCard({
 }
 
 function JobCard({
+  compact,
   item,
   onSave,
   ownedSkills,
   saved,
 }: {
+  compact: boolean;
   item: RecommendedJobFeedItem;
   onSave(): void;
   ownedSkills: string[];
   saved: boolean;
 }) {
   const titleId = `feed-${item.id}-title`;
-  const hasEvidence =
-    item.matchedRequiredSkills.length > 0 ||
-    item.missingRequiredSkills.length > 0 ||
-    item.matchedPreferredSkills.length > 0;
+  const hasOwnedSkills = ownedSkills.length > 0;
+  const matchedRequired = new Set(item.matchedRequiredSkills);
+  const matchedPreferred = new Set(item.matchedPreferredSkills);
+  const required = item.requiredSkills.map((skill) => ({
+    kind: hasOwnedSkills
+      ? matchedRequired.has(skill)
+        ? "matched"
+        : "missing"
+      : "neutral",
+    skill,
+  }));
+  const requiredNames = new Set(item.requiredSkills);
+  const preferred = item.preferredSkills
+    .filter((skill) => !requiredNames.has(skill))
+    .map((skill) => ({
+      kind: matchedPreferred.has(skill) ? "matched" : "preferred",
+      skill,
+    }));
+  const skills = [...required, ...preferred];
+  const visibleSkills = skills.slice(0, compact ? 3 : 4);
+  const hiddenSkillCount = Math.max(0, skills.length - visibleSkills.length);
 
   return (
-    <article aria-labelledby={titleId} className={styles.jobCard}>
-      <div className={styles.jobTopline}>
-        <span className={styles.verifiedBadge}>
-          <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-          공식 채용 공고
-        </span>
-        <span>{item.verifiedLabel} 확인</span>
-      </div>
-
-      <div className={styles.jobIdentity}>
-        <CompanyMark
-          companyName={item.companyName}
-          companySlug={item.companySlug}
-          priority
-          size={52}
-          sourceUrl={item.sourceUrl}
-        />
-        <div>
-          <p>
-            {item.companyHref ? (
-              <Link
-                aria-label={`${item.companyName} 기업 채용 현황`}
-                className={styles.companyLink}
-                href={item.companyHref}
-                prefetch={false}
-              >
-                {item.companyName}
-              </Link>
-            ) : (
-              item.companyName
-            )}
-          </p>
-          <h2 id={titleId}>
-            <Link href={item.href} prefetch={false}>
-              {item.title}
-            </Link>
-          </h2>
-        </div>
-      </div>
-
-      <div className={styles.jobMeta}>
-        <span>
-          <MapPin aria-hidden="true" size={16} />
-          {item.location}
-        </span>
-        <span>{item.careerLabel}</span>
-        <span>{item.employmentLabel}</span>
-      </div>
-
-      {ownedSkills.length === 0 ? (
-        <div className={styles.stackPrompt}>
-          <span>{HOME_COPY.addSkills}</span>
-          <Link href="/career">{PRODUCT_TERMS.ownedSkills} 추가</Link>
-        </div>
-      ) : hasEvidence ? (
-        <div className={styles.skillEvidence}>
-          {item.matchedRequiredSkills.map((skill) => (
-            <span data-kind="matched" key={`matched-${skill}`}>
-              <CheckCircle aria-hidden="true" size={15} weight="fill" />
-              보유 필수 {skill}
-            </span>
-          ))}
-          {item.missingRequiredSkills.map((skill) => (
-            <span data-kind="missing" key={`missing-${skill}`}>
-              확인 필요 {skill}
-            </span>
-          ))}
-          {item.matchedPreferredSkills.map((skill) => (
-            <span data-kind="preferred" key={`preferred-${skill}`}>
-              보유 우대 {skill}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className={styles.stackPrompt}>{HOME_COPY.graphEvidenceMissing}</p>
-      )}
-
-      <footer className={styles.jobActions}>
-        <Link href={item.href} prefetch={false}>
-          공고 상세
-          <ArrowRight aria-hidden="true" size={16} />
-        </Link>
-        <a href={item.sourceUrl} rel="noreferrer" target="_blank">
-          공식 원문
-          <ArrowSquareOut aria-hidden="true" size={15} />
-        </a>
-        <button
-          aria-label={`${item.title} 저장`}
-          aria-pressed={saved}
-          data-active={saved ? "true" : undefined}
-          onClick={onSave}
-          type="button"
+    <article
+      aria-labelledby={titleId}
+      className={styles.jobCard}
+      data-compact={compact ? "true" : undefined}
+    >
+      <div className={styles.jobShell}>
+        <Link
+          aria-label={`${item.title} 공고 보기`}
+          className={styles.jobMainLink}
+          href={item.href}
+          prefetch={false}
         >
-          <BookmarkSimple
-            aria-hidden="true"
-            size={19}
-            weight={saved ? "fill" : "regular"}
-          />
-          <span>저장</span>
-        </button>
-      </footer>
+          <div className={styles.jobIdentity}>
+            <CompanyMark
+              companyName={item.companyName}
+              companySlug={item.companySlug}
+              priority={!compact}
+              size={compact ? 40 : 44}
+              sourceUrl={item.sourceUrl}
+            />
+            <div>
+              <p>{item.companyName}</p>
+              <h2 id={titleId}>{item.title}</h2>
+              <div className={styles.jobMeta}>
+                <span>
+                  <MapPin aria-hidden="true" size={14} />
+                  {item.location}
+                </span>
+                <span>{item.careerLabel}</span>
+                <span>{item.employmentLabel}</span>
+                <span>{item.verifiedLabel} 확인</span>
+              </div>
+            </div>
+          </div>
+
+          {(visibleSkills.length > 0 ||
+            (hasOwnedSkills && item.requiredSkills.length > 0)) && (
+            <div className={styles.jobSignalRow}>
+              {hasOwnedSkills && item.requiredSkills.length > 0 && (
+                <strong className={styles.matchSummary}>
+                  필수 {item.matchedRequiredSkills.length}/
+                  {item.requiredSkills.length} 일치
+                </strong>
+              )}
+              {visibleSkills.length > 0 && (
+                <div
+                  aria-label={`${item.title} 기술 요건`}
+                  className={styles.jobSkills}
+                >
+                  {visibleSkills.map(({ kind, skill }) => (
+                    <span data-kind={kind} key={`${kind}-${skill}`}>
+                      {skill}
+                    </span>
+                  ))}
+                  {hiddenSkillCount > 0 && <small>외 {hiddenSkillCount}개</small>}
+                </div>
+              )}
+            </div>
+          )}
+        </Link>
+
+        <div className={styles.jobTools}>
+          <a
+            aria-label={`${item.title} 공식 원문`}
+            className={styles.jobTool}
+            href={item.sourceUrl}
+            rel="noreferrer"
+            target="_blank"
+            title="공식 원문"
+          >
+            <ArrowSquareOut aria-hidden="true" size={18} />
+          </a>
+          <button
+            aria-label={`${item.title} ${saved ? "저장 해제" : "저장"}`}
+            aria-pressed={saved}
+            className={styles.jobTool}
+            data-active={saved ? "true" : undefined}
+            onClick={onSave}
+            title={saved ? "저장 해제" : "저장"}
+            type="button"
+          >
+            <BookmarkSimple
+              aria-hidden="true"
+              size={19}
+              weight={saved ? "fill" : "regular"}
+            />
+          </button>
+        </div>
+      </div>
     </article>
+  );
+}
+
+function JobCluster({
+  items,
+  onSave,
+  ownedSkills,
+  savedJobIds,
+}: {
+  items: RecommendedJobFeedItem[];
+  onSave(postingId: string): void;
+  ownedSkills: string[];
+  savedJobIds: string[];
+}) {
+  const compact = items.length > 1;
+
+  return (
+    <section
+      aria-label={`추천 공고 ${items.length}개`}
+      className={styles.jobCluster}
+    >
+      <header className={styles.jobClusterHeader}>
+        <span>
+          <ShieldCheck aria-hidden="true" size={16} weight="fill" />
+          추천 공고
+        </span>
+        <small>공식 채용 페이지 · {items.length}개</small>
+      </header>
+      <div className={styles.jobClusterList}>
+        {items.map((item) => (
+          <JobCard
+            compact={compact}
+            item={item}
+            key={item.id}
+            onSave={() => onSave(item.postingId)}
+            ownedSkills={ownedSkills}
+            saved={savedJobIds.includes(item.postingId)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
 function MarketCard({ item }: { item: MarketInsightFeedItem }) {
   const titleId = `feed-${item.id}-title`;
+  const totalCount = Math.max(
+    1,
+    item.requiredCount + item.preferredCount + item.unspecifiedCount,
+  );
 
   return (
     <article aria-labelledby={titleId} className={styles.marketCard}>
@@ -453,11 +504,29 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           </Link>
         </h2>
         <p>{item.summary}</p>
-        <div aria-label={`${item.skillName} 채용 수요`} className={styles.marketCounts}>
+        <div
+          aria-label={`${item.skillName} 채용 수요 구성`}
+          className={styles.demandDistribution}
+          role="img"
+        >
+          <span
+            data-kind="required"
+            style={{ width: `${(item.requiredCount / totalCount) * 100}%` }}
+          />
+          <span
+            data-kind="preferred"
+            style={{ width: `${(item.preferredCount / totalCount) * 100}%` }}
+          />
+          <span
+            data-kind="unspecified"
+            style={{ width: `${(item.unspecifiedCount / totalCount) * 100}%` }}
+          />
+        </div>
+        <div className={styles.marketLegend}>
           <strong>{item.sampleLabel}</strong>
-          <span>필수 {item.requiredCount}건</span>
-          <span>우대 {item.preferredCount}건</span>
-          <span>{PRODUCT_TERMS.unspecifiedRequirementCompact} {item.unspecifiedCount}건</span>
+          <span data-kind="required">필수 {item.requiredCount}건</span>
+          <span data-kind="preferred">우대 {item.preferredCount}건</span>
+          <span data-kind="unspecified">구분 없음 {item.unspecifiedCount}건</span>
         </div>
         <Link className={styles.marketLink} href={item.href} prefetch={false}>
           스킬맵에서 공고 근거 보기
@@ -487,7 +556,6 @@ function CareerBriefing({
     <section aria-labelledby={titleId} className={styles.careerBriefing}>
       <header className={styles.briefingHeader}>
         <div>
-          <span>내 기준</span>
           <h1 id={titleId}>내 커리어 브리핑</h1>
           <p>
             {context.careerConditionLabel} · {context.targetDomainLabel}
@@ -678,7 +746,13 @@ function FeedCard({
 
   if (item.type === "recommended_job") {
     return (
-      <JobCard item={item} onSave={onSave} ownedSkills={ownedSkills} saved={saved} />
+      <JobCard
+        compact={false}
+        item={item}
+        onSave={onSave}
+        ownedSkills={ownedSkills}
+        saved={saved}
+      />
     );
   }
 
@@ -903,6 +977,14 @@ export function HomeFeed({
     tabOrderRef.current[activeTab] = result.orderIds;
     return result.items;
   }, [activeTab, followedAuthorIds, paginationItems]);
+  const displayGroups = useMemo(
+    () => groupFeedForDisplay(visibleItems),
+    [visibleItems],
+  );
+  const maximumDemandCount = Math.max(
+    1,
+    ...snapshot.skillDemand.map((skill) => skill.postingCount),
+  );
 
   useEffect(() => {
     const target = feedSentinelRef.current;
@@ -1206,8 +1288,22 @@ export function HomeFeed({
             role="tabpanel"
           >
             {visibleItems.length > 0 ? (
-              visibleItems.map((item) => {
-                const recommendedJob = item.type === "recommended_job";
+              displayGroups.map((group) => {
+                if (group.kind === "jobs") {
+                  return (
+                    <JobCluster
+                      items={group.items}
+                      key={`jobs-${group.items[0]?.id ?? "empty"}`}
+                      onSave={(postingId) => {
+                        setSavedJobIds(toggleSavedJob(postingId));
+                      }}
+                      ownedSkills={snapshot.ownedSkills}
+                      savedJobIds={savedJobIds}
+                    />
+                  );
+                }
+
+                const item = group.item;
                 const serverItem =
                   item.type === "community_post" && item.source === "server";
                 const serverPending =
@@ -1252,9 +1348,7 @@ export function HomeFeed({
                       if (isSocialItem(item)) void handleAuthorFollow(item);
                     }}
                     onSave={() => {
-                      if (recommendedJob) {
-                        setSavedJobIds(toggleSavedJob(item.postingId));
-                      } else if (isSocialItem(item)) {
+                      if (isSocialItem(item)) {
                         void handleSocialSave(item);
                       }
                     }}
@@ -1265,9 +1359,7 @@ export function HomeFeed({
                         : false
                     }
                     saved={
-                      recommendedJob
-                        ? savedJobIds.includes(item.postingId)
-                        : serverItem
+                      serverItem
                           ? community.state.viewerState.savedPostIds.includes(item.id)
                           : false
                     }
@@ -1344,6 +1436,9 @@ export function HomeFeed({
                 더보기
               </Link>
             </div>
+            <p className={styles.railScope}>
+              분석 공고 {snapshot.postingCount.toLocaleString("ko-KR")}개 · 최근 수집 기준
+            </p>
             {snapshot.skillDemand.length > 0 ? (
               <ol className={styles.skillDemand}>
                 {snapshot.skillDemand.map((skill) => (
@@ -1354,9 +1449,19 @@ export function HomeFeed({
                     >
                       <strong>{skill.skillName}</strong>
                       <span>{skill.postingCount}건</span>
+                      <i aria-hidden="true" className={styles.skillDemandTrack}>
+                        <b
+                          style={{
+                            width: `${Math.max(
+                              6,
+                              (skill.postingCount / maximumDemandCount) * 100,
+                            )}%`,
+                          }}
+                        />
+                      </i>
                       <small>
                         필수 {skill.requiredCount} · 우대 {skill.preferredCount} ·
-                        {PRODUCT_TERMS.unspecifiedRequirementCompact} {skill.unspecifiedCount}
+                        구분 없음 {skill.unspecifiedCount}
                       </small>
                     </Link>
                   </li>
@@ -1366,8 +1471,8 @@ export function HomeFeed({
               <p className={styles.railEmpty}>확인된 기술 수요가 없습니다.</p>
             )}
             <p className={styles.railFootnote}>
-              {PRODUCT_TERMS.unspecifiedRequirement}는 공고에 기술이 나오지만 필수
-              또는 우대로 구분되지 않은 경우입니다.
+              ‘구분 없음’은 공고에 기술이 나오지만 필수·우대로
+              구분되지 않은 경우입니다.
               <Link href="/data-policy" prefetch={false}>
                 수집 기준 확인
               </Link>

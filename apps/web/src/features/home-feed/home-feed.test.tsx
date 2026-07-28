@@ -255,7 +255,7 @@ describe("HomeFeed", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.getByText("우대 4건")).toBeInTheDocument();
-    expect(screen.getByText("미표기 2건")).toBeInTheDocument();
+    expect(screen.getByText("구분 없음 2건")).toBeInTheDocument();
     expect(
       screen.queryByText(
         /커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/,
@@ -264,9 +264,6 @@ describe("HomeFeed", () => {
     expect(
       screen.getByRole("link", { name: "수집 기준 확인" }),
     ).toHaveAttribute("href", "/data-policy");
-    expect(
-      screen.getByRole("link", { name: "토스 기업 채용 현황" }),
-    ).toHaveAttribute("href", "/companies/toss");
     expect(
       screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
     ).not.toBeInTheDocument();
@@ -291,6 +288,15 @@ describe("HomeFeed", () => {
     expect(within(briefing).getByRole("link", {
       name: "내 커리어 기준 수정",
     })).toHaveAttribute("href", "/career");
+    const job = screen.getByRole("article", { name: "Backend Engineer" });
+    expect(within(job).getByText("필수 1/2 일치")).toBeInTheDocument();
+    expect(within(job).getByRole("link", {
+      name: "Backend Engineer 공고 보기",
+    })).toHaveAttribute("href", "/jobs/job-1");
+    expect(within(job).getByRole("link", {
+      name: "Backend Engineer 공식 원문",
+    })).toHaveAttribute("href", "https://careers.toss.im/job-1");
+    expect(within(job).queryByText("공고 상세")).not.toBeInTheDocument();
     expect(screen.getByText("모든 콘텐츠를 확인했습니다.")).toHaveAttribute(
       "role",
       "status",
@@ -495,6 +501,35 @@ describe("HomeFeed", () => {
         "기술을 등록하면 맞는 공고와 다음에 배울 기술을 보여드려요.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "내 기술 추가" }),
+    ).not.toBeInTheDocument();
+    const job = screen.getByRole("article", { name: "Backend Engineer" });
+    expect(within(job).getByText("Java")).toBeInTheDocument();
+    expect(within(job).getByText("Spring")).toBeInTheDocument();
+  });
+
+  it("renders consecutive jobs as one recommendation group", () => {
+    const groupedPostings: PostingListResponse = {
+      total: 3,
+      items: Array.from({ length: 3 }, (_, index) => ({
+        ...postings.items[0],
+        id: `job-${index + 1}`,
+        title: `Backend Engineer ${index + 1}`,
+      })),
+    };
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(groupedPostings),
+      skillStats: ready({ total: 0, items: [] }),
+      graph: ready({ ...graph, evidence: [] }),
+      fit: null,
+      ownedSkills: [],
+    });
+
+    render(<HomeFeed snapshot={snapshot} />);
+
+    const group = screen.getByRole("region", { name: "추천 공고 3개" });
+    expect(within(group).getAllByRole("article")).toHaveLength(3);
   });
 
   it("does not promote old browser-only follows into real activity", () => {
@@ -1124,7 +1159,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Backend Engineer 저장" }),
+        screen.getByRole("button", { name: "Backend Engineer 저장 해제" }),
       ).toHaveAttribute("aria-pressed", "true"),
     );
   });

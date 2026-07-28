@@ -217,8 +217,12 @@ export function postingSummaryToFeedItem(
   evidence?: SkillGraphEvidence,
 ): RecommendedJobFeedItem {
   const ownedSet = new Set(ownedSkills.map(normalize));
-  const required = posting.required_skills ?? evidence?.required ?? [];
-  const preferred = posting.preferred_skills ?? evidence?.preferred ?? [];
+  const required = posting.required_skills?.length
+    ? posting.required_skills
+    : evidence?.required ?? [];
+  const preferred = posting.preferred_skills?.length
+    ? posting.preferred_skills
+    : evidence?.preferred ?? [];
   return {
     id: `job-${posting.id}`,
     postingId: posting.id,
@@ -237,6 +241,8 @@ export function postingSummaryToFeedItem(
     sourceUrl: posting.source_url,
     firstSeenAt: posting.first_seen_at ?? null,
     verifiedLabel: formatVerifiedDate(posting.last_verified_at),
+    requiredSkills: required,
+    preferredSkills: preferred,
     ...skillMatches(required, preferred, ownedSet),
     href: `/jobs/${encodeURIComponent(posting.id)}`,
     source: "api",

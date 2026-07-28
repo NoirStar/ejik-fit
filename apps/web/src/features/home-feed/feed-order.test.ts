@@ -50,6 +50,8 @@ const items: FeedItem[] = [
     sourceUrl: "https://example.com/job-1",
     firstSeenAt: "2026-07-13T08:00:00.000Z",
     verifiedLabel: "7월 13일",
+    requiredSkills: [],
+    preferredSkills: [],
     matchedRequiredSkills: [],
     missingRequiredSkills: [],
     matchedPreferredSkills: [],

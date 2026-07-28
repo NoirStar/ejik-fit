@@ -30,6 +30,9 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://careers.toss.im/job-1",
       last_verified_at: "2026-07-12T15:00:00.000Z",
+      required_skills: [],
+      preferred_skills: [],
+      unspecified_skills: [],
     },
   ],
 };
@@ -199,6 +202,8 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       companyName: "토스",
       companyHref: "/companies/toss",
+      requiredSkills: ["Java", "Spring"],
+      preferredSkills: ["Kafka"],
       matchedRequiredSkills: ["Java"],
       missingRequiredSkills: ["Spring"],
       matchedPreferredSkills: ["Kafka"],
