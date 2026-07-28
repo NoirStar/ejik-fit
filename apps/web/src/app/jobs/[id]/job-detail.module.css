@@ -1,3 +1,5 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · genre: modern-minimal · tone: Korean product workbench · anchor: violet 286 · macrostructure: document detail · contrast: pass (40–41) · slop/mobile/tokens: pass */
+
 .main {
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -386,6 +388,18 @@
   background: var(--color-surface-subtle);
 }
 
+.descriptionPending {
+  max-width: 74ch;
+  margin-top: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
 .sourceImages {
   display: grid;
   max-width: 74ch;
@@ -591,7 +605,8 @@
 
   .descriptionBody p,
   .descriptionBody li,
-  .descriptionEmpty {
+  .descriptionEmpty,
+  .descriptionPending {
     font-size: 0.875rem;
   }
 }

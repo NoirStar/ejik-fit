@@ -97,6 +97,32 @@ describe("company logo asset proxy", () => {
     );
   });
 
+  it("serves the official NAVER WEBTOON wordmark as a cached SVG", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 151 45"><path d="M0 0h151v45H0z"/></svg>',
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(
+      new Request("http://localhost/company-logo-assets/naver-webtoon"),
+      { params: Promise.resolve({ logoKey: "naver-webtoon" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/svg+xml");
+    expect(response.headers.get("Cache-Control")).toContain("s-maxage=604800");
+    expect(response.headers.get("Content-Security-Policy")).toContain(
+      "default-src 'none'",
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://recruit.webtoonscorp.com/share/tmplat/webtoon/img/logo_2025.svg",
+      expect.any(Object),
+    );
+  });
+
   it("uses a fresh key for the official Nexon Korea wordmark", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), {

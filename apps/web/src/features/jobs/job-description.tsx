@@ -41,3 +41,11 @@ export function PostingDescription({ text }: { text: string }) {
     </div>
   );
 }
+
+export function PostingDescriptionPending() {
+  return (
+    <p className={styles.descriptionPending}>
+      상세 내용 수집을 점검 중입니다. 지원 요건은 공식 공고에서 확인해 주세요.
+    </p>
+  );
+}

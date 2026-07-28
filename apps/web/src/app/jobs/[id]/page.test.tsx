@@ -32,7 +32,7 @@ const job = {
   last_verified_at: "2026-07-12T15:00:00.000Z",
   description_html: "<p>서버 개발</p>",
   description_text:
-    "제품 소개입니다. ### 주요 업무 * 안정적인 서버를 개발합니다. * 장애 원인을 분석합니다.",
+    "이 팀은 대규모 트래픽을 안정적으로 처리하는 서버 플랫폼을 개발하고 운영합니다. 사용자 경험과 서비스 신뢰도를 높이기 위해 장애 원인을 분석하고 배포 과정을 자동화합니다. 여러 직군과 협업해 장기적인 기술 방향을 정하고 품질 기준을 개선합니다. ### 주요 업무 * 안정적인 서버를 개발합니다. * 장애 원인을 분석합니다.",
   description_images: [
     {
       url: "https://careers.toss.im/job-1/detail.png",
@@ -188,11 +188,11 @@ describe("JobDetail", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("states when no body or confirmed skill evidence is available", async () => {
+  it("directs sparse posting metadata to the official job page", async () => {
     vi.mocked(getPosting).mockResolvedValue({
       ...job,
       description_html: "<script>alert('never render')</script>",
-      description_text: "",
+      description_text: "Tech Frontend NAVER WEBTOON 경력 정규직",
       description_images: [],
       skills: [],
       skill_details: [],
@@ -205,14 +205,52 @@ describe("JobDetail", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "제공된 공고 원문이 없습니다. 기업 채용페이지를 확인해 주세요.",
+        "상세 내용 수집을 점검 중입니다. 지원 요건은 공식 공고에서 확인해 주세요.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "공고 상세" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { level: 2, name: "공고 원문" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("제공된 공고 원문")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Tech Frontend NAVER WEBTOON 경력 정규직"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/API/)).not.toBeInTheDocument();
     expect(screen.queryByText("never render")).not.toBeInTheDocument();
+    const detail = screen.getByRole("region", { name: "공고 상세" });
     expect(
-      screen.getAllByRole("link", { name: /공식/ }).length,
-    ).toBeGreaterThan(0);
+      within(detail).getByRole("link", { name: "기업 채용페이지 보기" }),
+    ).toHaveAttribute("href", job.source_url);
+  });
+
+  it("keeps an official image-only posting in the source-detail state", async () => {
+    vi.mocked(getPosting).mockResolvedValue({
+      ...job,
+      description_html: '<img src="/job-1/detail.png">',
+      description_text: "",
+      description_images: [
+        {
+          url: "https://careers.toss.im/job-1/detail.png",
+          alt: "채용 공고 상세 내용 이미지 1",
+        },
+      ],
+    });
+
+    render(await JobDetail({ params: Promise.resolve({ id: "job-1" }) }));
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "공고 원문" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("제공된 공고 원문")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "채용 공고 상세 내용 이미지 1" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/제공된 공고 원문이 없습니다/),
+    ).not.toBeInTheDocument();
   });
 
   it("rejects a non-http source URL before rendering application links", async () => {
