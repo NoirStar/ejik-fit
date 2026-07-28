@@ -3546,6 +3546,9 @@ def test_naver_official_details_preserve_prior_successes_and_good_content() -> N
     second_url = (
         "https://recruit.navercorp.com/rcrt/view.do?annoId=30006002"
     )
+    untrusted_second_url = (
+        "https://attacker.example/rcrt/view.do?annoId=30006002"
+    )
     first_title = "[NAVER] Frontend Engineer"
     second_title = "[NAVER] Platform Engineer"
     listing = json.dumps(
@@ -3564,7 +3567,7 @@ def test_naver_official_details_preserve_prior_successes_and_good_content() -> N
                     "annoSubject": second_title,
                     "classCdNm": "Tech",
                     "subJobCdNm": "Platform",
-                    "jobDetailLink": second_url,
+                    "jobDetailLink": untrusted_second_url,
                 },
             ],
         },
@@ -3600,7 +3603,6 @@ def test_naver_official_details_preserve_prior_successes_and_good_content() -> N
             listing,
             {
                 first_url: _naver_detail_html("30006001", first_title),
-                second_url: _naver_detail_html("wrong-id", second_title),
             },
         )
 
@@ -3634,7 +3636,6 @@ def test_naver_official_details_preserve_prior_successes_and_good_content() -> N
         assert [call["url"] for call in fetcher.calls] == [
             listing_url,
             first_url,
-            second_url,
         ]
 
 

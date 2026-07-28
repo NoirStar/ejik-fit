@@ -2466,12 +2466,17 @@ async def crawl_source(
     official_detail_failed = False
     for index, opening in enumerate(openings):
         seen_external_ids.add(opening.external_id)
-        detail_request = official_detail_request(
-            source.connector_family,
-            listing.url,
-            opening,
-        )
+        detail_request = None
         try:
+            try:
+                detail_request = official_detail_request(
+                    source.connector_family,
+                    listing.url,
+                    opening,
+                )
+            except Exception:
+                official_detail_failed = True
+                raise
             opening_payload = listing.text
             if detail_request is not None:
                 if index > 0 and request_delay_seconds > 0:
