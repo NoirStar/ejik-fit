@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from ejikfit.connectors.types import ParsedOpening
@@ -25,18 +27,29 @@ def _opening() -> ParsedOpening:
 
 
 @pytest.mark.parametrize(
-    "connector_family",
-    ["naver_company_json_tech", "naver_webtoon_json_tech"],
+    ("connector_family", "listing_host"),
+    [
+        ("naver_company_json_tech", "recruit.navercorp.com"),
+        ("naver_company_json_tech", "recruit.kreamcorp.com"),
+        ("naver_webtoon_json_tech", "recruit.webtoonscorp.com"),
+    ],
 )
 def test_official_detail_request_uses_naver_opening_url(
     connector_family: str,
+    listing_host: str,
 ) -> None:
     from ejikfit.connectors.official_detail import official_detail_request
 
-    opening = _opening()
+    opening = replace(
+        _opening(),
+        url=(
+            f"https://{listing_host}/rcrt/view.do?"
+            f"annoId={_opening().external_id}"
+        ),
+    )
     request = official_detail_request(
         connector_family,
-        "https://recruit.webtoonscorp.com/rcrt/loadJobList.do",
+        f"https://{listing_host}/rcrt/loadJobList.do",
         opening,
     )
 
@@ -45,6 +58,29 @@ def test_official_detail_request_uses_naver_opening_url(
     assert request.method == "GET"
     assert request.json_body is None
     assert request.headers is None
+
+
+@pytest.mark.parametrize(
+    "opening_url",
+    [
+        "https://attacker.example/rcrt/view.do?annoId=30005224",
+        (
+            "https://recruit.webtoonscorp.com/rcrt/view.do?"
+            "annoId=99999999"
+        ),
+    ],
+)
+def test_official_detail_request_rejects_untrusted_naver_url(
+    opening_url: str,
+) -> None:
+    from ejikfit.connectors.official_detail import official_detail_request
+
+    with pytest.raises(ValueError, match="NAVER detail URL identity"):
+        official_detail_request(
+            "naver_webtoon_json_tech",
+            "https://recruit.webtoonscorp.com/rcrt/loadJobList.do",
+            replace(_opening(), url=opening_url),
+        )
 
 
 def test_official_detail_request_ignores_unregistered_connector() -> None:
@@ -89,6 +125,29 @@ def test_parse_official_detail_dispatches_to_naver_parser() -> None:
 
     assert "React와 TypeScript" in detailed.description_text
     assert detailed.external_id == opening.external_id
+
+
+def test_parse_official_detail_rejects_redirected_naver_response() -> None:
+    from ejikfit.connectors.official_detail import parse_official_detail
+
+    opening = _opening()
+    body = "공식 상세 본문을 검증하기 위한 충분한 채용 정보입니다. " * 12
+    raw = f"""
+    <input name="annoId" value="{opening.external_id}">
+    <h4 class="card_title">{opening.title}</h4>
+    <div class="detail_wrap">
+      <div class="detail_box"><h4>필요 역량</h4><div>{body}</div></div>
+    </div>
+    """
+
+    with pytest.raises(ValueError, match="NAVER detail response URL"):
+        parse_official_detail(
+            raw,
+            "https://attacker.example/rcrt/view.do?annoId=30005224",
+            "naver_webtoon_json_tech",
+            "https://recruit.webtoonscorp.com/rcrt/loadJobList.do",
+            opening,
+        )
 
 
 def test_official_detail_request_uses_line_page_data_json() -> None:

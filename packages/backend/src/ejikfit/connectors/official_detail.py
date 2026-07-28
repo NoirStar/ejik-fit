@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from typing import Any, Mapping
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from ejikfit.connectors.enterprise_detail import (
     enterprise_detail_request,
@@ -20,6 +20,13 @@ NAVER_DETAIL_FAMILIES = frozenset(
         "naver_webtoon_json_tech",
     }
 )
+NAVER_DETAIL_HOSTS = frozenset(
+    {
+        "recruit.kreamcorp.com",
+        "recruit.navercorp.com",
+        "recruit.webtoonscorp.com",
+    }
+)
 LINE_DETAIL_FAMILY = "line_gatsby"
 
 
@@ -31,6 +38,38 @@ class OfficialDetailRequest:
     headers: Mapping[str, str] | None = None
 
 
+def _validate_naver_detail_url(
+    listing_url: str,
+    detail_url: str,
+    external_id: str,
+) -> None:
+    try:
+        listing = urlsplit(listing_url)
+        detail = urlsplit(detail_url)
+        detail_identity = parse_qs(detail.query).get("annoId")
+        valid = (
+            listing.scheme == "https"
+            and listing.hostname in NAVER_DETAIL_HOSTS
+            and listing.path.rstrip("/") == "/rcrt/loadJobList.do"
+            and listing.username is None
+            and listing.password is None
+            and listing.port is None
+            and detail.scheme == "https"
+            and detail.hostname == listing.hostname
+            and detail.path.rstrip("/") == "/rcrt/view.do"
+            and detail.username is None
+            and detail.password is None
+            and detail.port is None
+            and not detail.fragment
+            and re.fullmatch(r"\d{1,12}", external_id) is not None
+            and detail_identity == [external_id]
+        )
+    except (TypeError, ValueError):
+        valid = False
+    if not valid:
+        raise ValueError("NAVER detail URL identity is invalid")
+
+
 def official_detail_request(
     connector_family: str | None,
     listing_url: str,
@@ -39,6 +78,11 @@ def official_detail_request(
     """Return the official detail request registered for a listing parser."""
 
     if connector_family in NAVER_DETAIL_FAMILIES:
+        _validate_naver_detail_url(
+            listing_url,
+            opening.url,
+            opening.external_id,
+        )
         return OfficialDetailRequest(url=opening.url)
     if connector_family == LINE_DETAIL_FAMILY:
         listing = urlsplit(listing_url)
@@ -86,6 +130,16 @@ def parse_official_detail(
     """Parse a registered official detail response into one trusted opening."""
 
     if connector_family in NAVER_DETAIL_FAMILIES:
+        try:
+            _validate_naver_detail_url(
+                listing_url,
+                response_url,
+                listing_opening.external_id,
+            )
+        except ValueError as error:
+            raise ValueError(
+                "NAVER detail response URL is invalid"
+            ) from error
         return parse_naver_detail_opening(
             raw_detail,
             response_url,
