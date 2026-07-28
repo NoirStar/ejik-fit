@@ -5377,6 +5377,148 @@ def test_dunamu_sparse_detail_preserves_previous_good_body() -> None:
         assert _as_utc(source.last_success_at) == prior_success
 
 
+def test_lg_crawl_posts_detail_request_and_ingests_full_role_content() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    listing_url = (
+        "https://api.careers.lg.com/rmk/job/retrieveJobNoticesList"
+    )
+    detail_url = (
+        "https://api.careers.lg.com/rmk/job/retrieveJobNoticesDetail"
+    )
+    title = "[LG CNS] 클라우드 보안 전문가 모집(경력)"
+    listing = json.dumps(
+        {
+            "status": "S",
+            "data": {
+                "jobNoticeList": [
+                    {
+                        "jobNoticeId": 1001310,
+                        "careerTypeName": "경력",
+                        "companyCode": "CNS",
+                        "companyName": "LG CNS",
+                        "jobNoticeName": title,
+                        "noticeStatus": "POSTING",
+                        "jobGroupName": "IT서비스",
+                    }
+                ]
+            },
+        },
+        ensure_ascii=False,
+    )
+    detail = json.dumps(
+        {
+            "status": "S",
+            "data": {
+                "jobNoticesDetail": {
+                    "jobNoticesDetail": {
+                        "jobNoticeId": 1001310,
+                        "jobNoticeName": title,
+                        "qualForAppInfo": (
+                            "관련 분야의 실무 경험과 원활한 협업 역량을 "
+                            "갖춘 분을 찾습니다."
+                        ),
+                    },
+                    "recList": [
+                        {
+                            "jobNoticeId": 1001310,
+                            "orgName": "보안사업담당",
+                            "jobGroupName": "클라우드보안",
+                            "detailContext": (
+                                "<p>AWS와 Kubernetes 환경의 보안 아키텍처를 "
+                                "설계하고 Python 자동화 도구로 취약점 진단과 "
+                                "대응 프로세스를 개선합니다.</p>"
+                            ),
+                            "requiredItem": (
+                                "<p>웹 서비스, 네트워크와 IAM에 대한 깊은 "
+                                "이해 및 장애 분석 경험이 필요합니다.</p>"
+                            ),
+                            "preferredItem": (
+                                "<p>Terraform과 SIEM 운영 경험을 우대합니다.</p>"
+                            ),
+                        }
+                    ],
+                }
+            },
+        },
+        ensure_ascii=False,
+    )
+
+    class LgDetailFetcher:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        async def fetch(
+            self,
+            url: str,
+            *,
+            method: str = "GET",
+            json_body: object | None = None,
+            form_body: object | None = None,
+            headers: object | None = None,
+        ) -> crawler.FetchedPage:
+            self.calls.append(
+                {
+                    "url": url,
+                    "method": method,
+                    "json_body": json_body,
+                    "headers": headers,
+                }
+            )
+            return crawler.FetchedPage(
+                url=url,
+                text=listing if url == listing_url else detail,
+                status_code=200,
+                headers={},
+            )
+
+    with Session(engine) as session:
+        source = CareerSource(
+            company=Company(name="LG CNS", slug="lg-cns-detail"),
+            base_url=listing_url,
+            source_type=SourceType.ENTERPRISE_JSON,
+            connector_family="enterprise_json",
+            request_method="POST",
+            request_body={"companyCodeList": ["CNS"]},
+            status=SourceStatus.ALLOWED,
+            policy_status=PolicyStatus.ALLOWED,
+        )
+        session.add(source)
+        session.commit()
+        fetcher = LgDetailFetcher()
+
+        result = asyncio.run(
+            crawler.crawl_source(
+                session=session,
+                source=source,
+                fetcher=fetcher,
+                store=MemorySnapshotStore(),
+                now=datetime(2026, 7, 28, tzinfo=timezone.utc),
+                request_delay_seconds=0,
+            )
+        )
+
+        posting = session.scalar(select(JobPosting))
+        assert result == crawler.CrawlResult(discovered=1, ingested=1)
+        assert posting is not None
+        assert "AWS와 Kubernetes" in posting.description_text
+        assert "Python 자동화" in posting.description_text
+        assert fetcher.calls == [
+            {
+                "url": listing_url,
+                "method": "POST",
+                "json_body": {"companyCodeList": ["CNS"]},
+                "headers": None,
+            },
+            {
+                "url": detail_url,
+                "method": "POST",
+                "json_body": {"jobNoticeId": "1001310"},
+                "headers": None,
+            },
+        ]
+
+
 class WorkableListingFetcher:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []

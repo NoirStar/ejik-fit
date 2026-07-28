@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
+from ejikfit.connectors.enterprise_detail import (
+    enterprise_detail_request,
+    parse_enterprise_detail,
+)
 from ejikfit.connectors.line_gatsby import parse_line_gatsby_detail_opening
 from ejikfit.connectors.naver import parse_naver_detail_opening
 from ejikfit.connectors.types import ParsedOpening
@@ -57,6 +61,18 @@ def official_detail_request(
                 f"{opening.external_id}/page-data.json"
             )
         )
+    enterprise_request = enterprise_detail_request(
+        connector_family,
+        listing_url,
+        opening,
+    )
+    if enterprise_request is not None:
+        return OfficialDetailRequest(
+            url=enterprise_request.url,
+            method=enterprise_request.method,
+            json_body=enterprise_request.json_body,
+            headers=enterprise_request.headers,
+        )
     return None
 
 
@@ -86,6 +102,19 @@ def parse_official_detail(
         return parse_line_gatsby_detail_opening(
             raw_detail,
             response_url,
+            listing_opening,
+        )
+    enterprise_request = enterprise_detail_request(
+        connector_family,
+        listing_url,
+        listing_opening,
+    )
+    if enterprise_request is not None:
+        return parse_enterprise_detail(
+            raw_detail,
+            response_url,
+            connector_family,
+            listing_url,
             listing_opening,
         )
     raise ValueError(
