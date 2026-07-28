@@ -58,6 +58,7 @@ RISKY_ALIASES = {
     ("HPC", "hpc"),
     ("MCP", "mcp"),
     ("NVIDIA Omniverse", "omniverse"),
+    ("Electron", "electron"),
 }
 
 
@@ -118,6 +119,8 @@ def test_seed_pack_contains_professional_tools_and_cross_domain_skills() -> None
         "React Native": ("framework", {"mobile", "frontend"}),
         "FPGA": ("platform", {"embedded", "hardware"}),
         "Verilog": ("language", {"embedded", "hardware"}),
+        "Electron": ("framework", {"desktop", "frontend", "web"}),
+        "WebGL": ("api", {"graphics", "frontend", "web"}),
     }
 
     actual_names = {skill.canonical for skill in SKILLS}
@@ -214,6 +217,8 @@ def test_production_posting_gap_expansion_uses_stable_categories() -> None:
         "MCP": "ai",
         "NVIDIA Omniverse": "robotics",
         "NVIDIA PhysicsNeMo": "ai",
+        "Electron": "frontend",
+        "WebGL": "frontend",
     }
 
     assert {

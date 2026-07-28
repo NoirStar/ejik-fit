@@ -122,6 +122,10 @@ RISKY_GOLDENS = {
         "NVIDIA Omniverse 기반 3D 시뮬레이션 개발",
         "an omniverse story collection",
     ),
+    ("Electron", "electron"): (
+        "웹 기술(Electron) 기반 데스크톱 뷰어 개발",
+        "electron microscopy image analysis",
+    ),
 }
 
 
@@ -274,6 +278,17 @@ def test_rejects_rag_when_non_technical_text_only_contains_ai_substring(
     text: str,
 ) -> None:
     assert confirmed_names(text) == []
+
+
+def test_extracts_electron_and_webgl_from_official_webtoon_wording() -> None:
+    text = (
+        "웹 기술(Electron) 기반 데스크톱 뷰어와 Canvas, WebGL "
+        "렌더링을 개발합니다."
+    )
+
+    assert sorted(confirmed_names(text)) == ["Electron", "WebGL"]
+    assert confirmed_names("Electron.js 데스크톱 앱 개발") == ["Electron"]
+    assert confirmed_names("electron microscopy image processing") == []
 
 
 @pytest.mark.parametrize(
