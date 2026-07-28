@@ -74,8 +74,13 @@ def parse_naver_openings(raw_json: str, listing_url: str) -> list[ParsedOpening]
             continue
 
         raw_url = _text(item.get("jobDetailLink"))
-        url = urljoin(listing_url, raw_url) if raw_url else (
-            f"https://recruit.navercorp.com/rcrt/view.do?annoId={external_id}"
+        url = (
+            urljoin(listing_url, raw_url)
+            if raw_url
+            else urljoin(
+                listing_url,
+                f"/rcrt/view.do?annoId={external_id}",
+            )
         )
         description_text = _unique_join(
             [

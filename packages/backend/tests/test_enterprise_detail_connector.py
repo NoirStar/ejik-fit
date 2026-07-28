@@ -156,6 +156,57 @@ def test_parse_cj_detail_keeps_only_job_sections() -> None:
         )
 
 
+def test_enterprise_detail_rejects_credentialed_listing_url() -> None:
+    from ejikfit.connectors.enterprise_detail import enterprise_detail_request
+
+    listing = _opening(
+        "J20260714039188",
+        CJ_DETAIL_URL,
+        "[경력] CJ 유통 계열사 글로벌 SAP FI 운영/개발",
+    )
+
+    with pytest.raises(ValueError, match="official"):
+        enterprise_detail_request(
+            "enterprise_json",
+            CJ_LISTING_URL.replace("https://", "https://crawler@"),
+            listing,
+        )
+
+
+def test_enterprise_detail_rejects_nonstandard_opening_port() -> None:
+    from ejikfit.connectors.enterprise_detail import enterprise_detail_request
+
+    listing = _opening(
+        "J20260714039188",
+        CJ_DETAIL_URL.replace("recruit.cj.net", "recruit.cj.net:8443"),
+        "[경력] CJ 유통 계열사 글로벌 SAP FI 운영/개발",
+    )
+
+    with pytest.raises(ValueError, match="official"):
+        enterprise_detail_request(
+            "enterprise_json",
+            CJ_LISTING_URL,
+            listing,
+        )
+
+
+def test_enterprise_detail_rejects_fragmented_response_url() -> None:
+    listing = _opening(
+        "J20260714039188",
+        CJ_DETAIL_URL,
+        "[경력] CJ 유통 계열사 글로벌 SAP FI 운영/개발",
+    )
+
+    with pytest.raises(ValueError, match="official"):
+        _parse(
+            _cj_html(),
+            f"{CJ_DETAIL_URL}#untrusted",
+            "enterprise_json",
+            CJ_LISTING_URL,
+            listing,
+        )
+
+
 def _hyundai_payload(
     *,
     recu_cls: int = 268,

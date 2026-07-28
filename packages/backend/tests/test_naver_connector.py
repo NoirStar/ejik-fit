@@ -51,6 +51,29 @@ def test_parse_naver_openings_maps_public_job_list_json() -> None:
     assert opening.closes_at is not None
 
 
+def test_parse_naver_openings_builds_missing_detail_link_on_listing_host() -> None:
+    from ejikfit.connectors.naver import parse_naver_openings
+
+    openings = parse_naver_openings(
+        json.dumps(
+            {
+                "list": [
+                    {
+                        "annoId": 30005224,
+                        "annoSubject": "[네이버웹툰] 프런트엔드 개발자",
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        "https://recruit.webtoonscorp.com/rcrt/loadJobList.do?lang=ko",
+    )
+
+    assert openings[0].url == (
+        "https://recruit.webtoonscorp.com/rcrt/view.do?annoId=30005224"
+    )
+
+
 def _listing_opening() -> ParsedOpening:
     return ParsedOpening(
         external_id="30005224",

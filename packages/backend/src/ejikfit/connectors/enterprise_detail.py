@@ -53,6 +53,26 @@ def _url(value: str):
         raise ValueError("Enterprise detail URL is not official") from error
 
 
+def _require_plain_official_url(
+    parsed: Any,
+    label: str,
+    *,
+    allow_fragment: bool = False,
+) -> None:
+    try:
+        is_plain = (
+            parsed.scheme == "https"
+            and parsed.username is None
+            and parsed.password is None
+            and parsed.port is None
+            and (allow_fragment or not parsed.fragment)
+        )
+    except ValueError:
+        is_plain = False
+    if not is_plain:
+        raise ValueError(f"Enterprise {label} URL is not official")
+
+
 def _query_value(value: str, name: str) -> str | None:
     values = parse_qs(_url(value).query).get(name)
     if values is None or len(values) != 1:
@@ -72,39 +92,74 @@ def _provider(
             listing.hostname == "recruit.cj.net"
             and listing.path.endswith("/common/common/jobListInfo.fo")
         ):
+            _require_plain_official_url(
+                listing,
+                "listing",
+                allow_fragment=True,
+            )
             return CJ_PROVIDER
         if (
             listing.hostname == "talent.hyundai.com"
             and listing.path == "/api/rec/AP-HM-FO-02700"
         ):
+            _require_plain_official_url(
+                listing,
+                "listing",
+                allow_fragment=True,
+            )
             return HYUNDAI_PROVIDER
         if (
             listing.hostname == "api.careers.lg.com"
             and listing.path == "/rmk/job/retrieveJobNoticesList"
         ):
+            _require_plain_official_url(
+                listing,
+                "listing",
+                allow_fragment=True,
+            )
             return LG_PROVIDER
         if (
             listing.hostname == "hwadm.hanwhain.com"
             and listing.path.endswith("/rcRecruit/search-rcrt")
         ):
+            _require_plain_official_url(
+                listing,
+                "listing",
+                allow_fragment=True,
+            )
             return HANWHA_PROVIDER
     if (
         connector_family == KIA_CONNECTOR_FAMILY
         and listing.hostname == "career.kia.com"
         and listing.path == "/api/rec/AP-KM-FO-02700"
     ):
+        _require_plain_official_url(
+            listing,
+            "listing",
+            allow_fragment=True,
+        )
         return KIA_PROVIDER
     if (
         connector_family == "lg_careers_lguplus_tech"
         and listing.hostname == "api.careers.lg.com"
         and listing.path == "/rmk/job/retrieveJobNoticesList"
     ):
+        _require_plain_official_url(
+            listing,
+            "listing",
+            allow_fragment=True,
+        )
         return LG_PROVIDER
     if (
         connector_family == "smilegate_api"
         and listing.hostname == "careers.smilegate.com"
         and listing.path.rstrip("/") == "/api/apply/announce/guest"
     ):
+        _require_plain_official_url(
+            listing,
+            "listing",
+            allow_fragment=True,
+        )
         return SMILEGATE_PROVIDER
     return None
 
@@ -114,8 +169,7 @@ def _validate_public_opening(
     opening: ParsedOpening,
 ) -> dict[str, str]:
     parsed = _url(opening.url)
-    if parsed.scheme != "https":
-        raise ValueError("Enterprise opening URL is not official")
+    _require_plain_official_url(parsed, "opening")
 
     if provider == CJ_PROVIDER:
         expected_path = (
@@ -383,9 +437,10 @@ def _validate_response_url(
 ) -> None:
     actual = _url(response_url)
     expected = _url(request.url)
+    _require_plain_official_url(actual, "detail response")
+    _require_plain_official_url(expected, "detail request")
     if (
-        actual.scheme != "https"
-        or actual.hostname != expected.hostname
+        actual.hostname != expected.hostname
         or actual.path.rstrip("/") != expected.path.rstrip("/")
         or parse_qs(actual.query) != parse_qs(expected.query)
     ):
