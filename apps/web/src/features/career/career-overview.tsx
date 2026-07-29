@@ -11,13 +11,13 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import type { FormEvent } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 
 import {
   accountStorageStatusCopy,
   useAuthViewerContext,
 } from "@/features/auth/auth-viewer-context";
+import { SkillPicker } from "@/features/owned-skills/skill-picker";
 import {
   EMPTY_CAREER_PREFERENCES,
   readCareerPreferences,
@@ -32,10 +32,6 @@ import {
   removeOwnedSkill,
   subscribeOwnedSkills,
 } from "@/lib/owned-skills";
-import {
-  normalizeSkillCategory,
-  skillCategoryLabel,
-} from "@/lib/skill-categories";
 import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import type { FitAnalyzeResponse, SkillCatalogItem } from "@/lib/types";
@@ -322,10 +318,6 @@ export function CareerOverview({
   const effectiveAccountSyncStatus = viewer ? accountSyncStatus : "local";
   const storageStatus = accountStorageStatusCopy(effectiveAccountSyncStatus);
   const inputId = useId();
-  const inputErrorId = useId();
-  const catalogHintId = useId();
-  const catalogSuffix = useId().replace(/:/g, "");
-  const catalogId = `career-skill-catalog-${catalogSuffix}`;
   const conditionId = useId();
   const targetDomainId = useId();
   const [hydrated, setHydrated] = useState(false);
@@ -352,10 +344,6 @@ export function CareerOverview({
       )
       .slice(0, 8);
   }, [ownedSkills, suggestions]);
-  const availableCatalog = useMemo(() => {
-    const owned = new Set(ownedSkills.map(skillNameKey));
-    return catalog.filter((skill) => !owned.has(skillNameKey(skill.name)));
-  }, [catalog, ownedSkills]);
   const targetDomainIsAvailable =
     Boolean(targetDomain) &&
     domainSuggestions.some((domain) => domain.value === targetDomain);
@@ -478,7 +466,7 @@ export function CareerOverview({
     const trimmed = skill.trim();
     if (!trimmed) {
       setInputError("기술 이름을 입력해 주세요.");
-      return;
+      return false;
     }
     const normalized = canonicalSkillName(
       suggestions.find(
@@ -494,18 +482,14 @@ export function CareerOverview({
       )
     ) {
       setInputError("이미 추가한 기술입니다.");
-      return;
+      return false;
     }
 
     const nextSkills = addOwnedSkill(normalized);
     setOwnedSkills(nextSkills);
     setDraft("");
     setInputError("");
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    saveSkill(draft);
+    return true;
   }
 
   function handleRemove(skill: string) {
@@ -597,61 +581,27 @@ export function CareerOverview({
             {effectiveAccountSyncStatus === "synced"
               ? "내 기술과 비교 조건을 이 기기와 계정에 저장합니다."
               : effectiveAccountSyncStatus === "syncing"
-                ? "내 기술과 비교 조건은 이 기기에 저장되어 있고, 계정에 저장 중입니다."
+                ? "내 기술과 비교 조건을 계정에 저장하고 있습니다."
                 : viewer
-                  ? "내 기술과 비교 조건은 이 기기에 저장됩니다."
-              : "내 기술과 비교 조건은 이 기기에 저장됩니다. 로그인하면 계정 데이터와 합칩니다."}
+                  ? "내 기술과 비교 조건을 이 기기에 저장합니다."
+              : "내 기술과 비교 조건을 이 기기에 저장합니다. 로그인하면 계정과 동기화합니다."}
           </p>
 
-          <form className={styles.skillForm} onSubmit={handleSubmit}>
-            <label htmlFor={inputId}>추가할 기술</label>
-            <div className={styles.inputRow}>
-              <input
-                aria-describedby={
-                  [
-                    inputError ? inputErrorId : "",
-                    catalogUnavailable ? catalogHintId : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ") || undefined
-                }
-                autoComplete="off"
-                id={inputId}
-                list={availableCatalog.length > 0 ? catalogId : undefined}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="예: Spring, React"
-                type="text"
-                value={draft}
-              />
-              {availableCatalog.length > 0 && (
-                <datalist id={catalogId}>
-                  {availableCatalog.map((skill) => (
-                    <option
-                      key={skill.name}
-                      label={skillCategoryLabel(
-                        normalizeSkillCategory(skill.category),
-                      )}
-                      value={skill.name}
-                    />
-                  ))}
-                </datalist>
-              )}
-              <button className={styles.addButton} type="submit">
-                <Plus aria-hidden="true" size={17} weight="bold" />
-                기술 추가
-              </button>
-            </div>
-            {inputError && (
-              <p className={styles.inputError} id={inputErrorId} role="alert">
-                {inputError}
-              </p>
-            )}
-            {!inputError && catalogUnavailable && (
-              <p className={styles.catalogHint} id={catalogHintId}>
-                표준 기술명 목록을 불러오지 못했지만 직접 입력할 수 있습니다.
-              </p>
-            )}
-          </form>
+          <div className={styles.skillPicker}>
+            <SkillPicker
+              catalog={catalog}
+              catalogStatus={catalogUnavailable ? "error" : "ready"}
+              error={inputError}
+              excludedSkills={ownedSkills}
+              id={inputId}
+              onCommit={saveSkill}
+              onValueChange={(nextValue) => {
+                setDraft(nextValue);
+                setInputError("");
+              }}
+              value={draft}
+            />
+          </div>
 
           <div className={styles.savedHeader}>
             <h3>내 기술 목록</h3>

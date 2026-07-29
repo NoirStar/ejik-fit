@@ -76,7 +76,6 @@ import type {
   HomeFeedSnapshot,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
-  SkillDemandSummary,
 } from "./types";
 
 export type HomeFeedProps = {
@@ -123,8 +122,6 @@ const EMPTY_DRAFT: LocalPostDraft = {
 const HOME_COPY = {
   title: "추천 피드",
   market: "채용 시장",
-  addSkills:
-    "기술을 등록하면 내 기술이 포함된 공고와 다음에 배울 기술을 확인할 수 있습니다.",
   followingEmpty: "팔로우한 작성자의 글이 없습니다.",
   followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
 } as const;
@@ -554,12 +551,10 @@ function CareerBriefing({
   context,
   insight,
   ownedSkillCount,
-  topDemand,
 }: {
   context: CareerContextSummary;
   insight: CareerInsightSummary;
   ownedSkillCount: number;
-  topDemand: SkillDemandSummary | null;
 }) {
   const titleId = "home-career-briefing-title";
   const readyInsight =
@@ -587,40 +582,66 @@ function CareerBriefing({
         </Link>
       </header>
 
-      <div className={styles.briefingGrid}>
+      <div className={styles.briefingBody}>
         {readyInsight ? (
           <>
-            <Link className={styles.briefingMetric} href="/career" prefetch={false}>
-              <span>내 기술 포함 공고</span>
-              <strong>{readyInsight.matchingPostingCount.toLocaleString("ko-KR")}건</strong>
-              <small>
-                필수 기술 절반 이상 충족 {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
-              </small>
-            </Link>
-            {readyInsight.nextSkill ? (
-              <Link
-                aria-label={`${readyInsight.nextSkill.skillName} 근거 보기`}
-                className={styles.briefingMetric}
-                href={`/skill-map?skill=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
-                prefetch={false}
-              >
-                <span>{PRODUCT_TERMS.nextSkill}</span>
-                <strong>{readyInsight.nextSkill.skillName}</strong>
-                <small>
-                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 부족
-                </small>
-              </Link>
-            ) : (
-              <div className={styles.briefingMetric}>
-                <span>{PRODUCT_TERMS.nextSkill}</span>
-                <strong>추가 추천 없음</strong>
-                <small>내 기술이 포함된 공고에서 반복된 부족 기술이 없습니다.</small>
+            <div className={styles.briefingLead}>
+              <div className={styles.briefingRecommendation}>
+                <div className={styles.briefingRecommendationCopy}>
+                  <span>다음에 준비할 기술</span>
+                  {readyInsight.nextSkill ? (
+                    <strong>{readyInsight.nextSkill.skillName}</strong>
+                  ) : (
+                    <strong className={styles.briefingEmptyRecommendation}>
+                      현재 반복되는 부족 기술이 없습니다.
+                    </strong>
+                  )}
+                </div>
+                {readyInsight.nextSkill && (
+                  <Link
+                    aria-label={`${readyInsight.nextSkill.skillName} 추천 근거 보기`}
+                    className={styles.briefingEvidenceLink}
+                    href={`/skill-map?skill=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
+                    prefetch={false}
+                  >
+                    <span className={styles.evidencePrefix}>추천 </span>
+                    근거 보기
+                    <ArrowRight aria-hidden="true" size={14} weight="bold" />
+                  </Link>
+                )}
               </div>
-            )}
+              {readyInsight.nextSkill ? (
+                <p>
+                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 반복적으로 부족했습니다.
+                </p>
+              ) : (
+                <p>현재 조건에서 확인된 공고를 계속 비교합니다.</p>
+              )}
+            </div>
+            <dl aria-label="내 기술 공고 분석" className={styles.briefingFacts}>
+              <div>
+                <dt>준비도 높은 공고</dt>
+                <dd>
+                  <strong>
+                    {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
+                  </strong>
+                  <span>필수 기술 절반 이상 충족</span>
+                </dd>
+              </div>
+              <div>
+                <dt>기술이 겹치는 공고</dt>
+                <dd>
+                  <strong>
+                    {readyInsight.matchingPostingCount.toLocaleString("ko-KR")}건
+                  </strong>
+                  <span>내 기술 한 개 이상 포함</span>
+                </dd>
+              </div>
+            </dl>
           </>
         ) : unavailableInsight ? (
           <div className={styles.briefingState} role="status">
-            <strong>내 기술이 포함된 공고를 불러오지 못했습니다.</strong>
+            <strong>내 기술 분석을 불러오지 못했습니다.</strong>
             <small>잠시 후 다시 확인해 주세요.</small>
           </div>
         ) : (
@@ -630,34 +651,14 @@ function CareerBriefing({
             href="/career"
             prefetch={false}
           >
+            <strong>
+              내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.
+            </strong>
             <span>
-              <strong>맞춤 추천 시작하기</strong>
-              <small>{HOME_COPY.addSkills}</small>
-            </span>
-            <em>
-              내 기술 등록
+              기술 등록
               <ArrowRight aria-hidden="true" size={15} weight="bold" />
-            </em>
+            </span>
           </Link>
-        )}
-
-        {topDemand ? (
-          <Link
-            aria-label={`${topDemand.skillName} 수요 근거 보기`}
-            className={styles.briefingMetric}
-            href={`/skill-map?skill=${encodeURIComponent(topDemand.skillName)}`}
-            prefetch={false}
-          >
-            <span>현재 수요 상위</span>
-            <strong>{topDemand.skillName}</strong>
-            <small>기술 언급 공고 {topDemand.postingCount.toLocaleString("ko-KR")}건</small>
-          </Link>
-        ) : (
-          <div className={styles.briefingMetric}>
-            <span>현재 수요 상위</span>
-            <strong>확인 중</strong>
-            <small>수집된 공고를 분석하고 있습니다.</small>
-          </div>
         )}
       </div>
     </section>
@@ -1223,7 +1224,6 @@ export function HomeFeed({
           context={snapshot.careerContext}
           insight={snapshot.careerInsight}
           ownedSkillCount={snapshot.ownedSkills.length}
-          topDemand={snapshot.skillDemand[0] ?? null}
         />
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>

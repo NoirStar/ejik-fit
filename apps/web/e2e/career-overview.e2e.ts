@@ -42,7 +42,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   await expect(page.getByText("이 기기에 저장됨")).toBeVisible();
 
   await page.getByLabel("추가할 기술").fill("Python");
-  await page.getByRole("button", { name: "기술 추가" }).click();
+  await page.getByRole("button", { name: "추가", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "공고와 비교" }),
   ).toBeVisible();
@@ -80,7 +80,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   expect(careerBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByLabel("추가할 기술").fill("React");
-  await page.getByRole("button", { name: "기술 추가" }).click();
+  await page.getByRole("button", { name: "추가", exact: true }).click();
 
   await expect(
     page.getByRole("list", { name: "내 기술 목록" }),

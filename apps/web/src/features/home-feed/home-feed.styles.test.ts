@@ -106,4 +106,18 @@ describe("home feed density", () => {
     );
     expect(css).toMatch(/\.marketCard\s*\{[^}]*display: grid;/);
   });
+
+  it("gives the career briefing one lead action and two compact facts", () => {
+    expect(rule("briefingBody")).toContain("grid-template-columns:");
+    expect(rule("briefingLead")).toContain("min-width: 0;");
+    expect(rule("briefingFacts")).toContain(
+      "grid-template-columns: repeat(2, minmax(0, 1fr));",
+    );
+    expect(css).not.toMatch(
+      /\.briefingGrid\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)/,
+    );
+    expect(css).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*?\.briefingBody\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\);/,
+    );
+  });
 });

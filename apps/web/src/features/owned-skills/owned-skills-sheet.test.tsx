@@ -90,7 +90,7 @@ describe("OwnedSkillsSheet", () => {
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "Spring" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     expect(screen.getByText("Spring")).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
@@ -143,6 +143,43 @@ describe("OwnedSkillsSheet", () => {
     ]);
   });
 
+  it("uses the shared bounded picker and resolves a common alias", async () => {
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
+    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
+    const input = within(dialog).getByRole("combobox", {
+      name: "추가할 기술",
+    });
+
+    fireEvent.focus(input);
+    expect(
+      within(dialog).queryByRole("listbox", { name: "기술 검색 결과" }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "k8s" } });
+    expect(
+      within(dialog).getByRole("option", { name: "Kubernetes 인프라" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("option", { name: "“k8s” 직접 추가" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual(["Kubernetes"]);
+    expect(input).toHaveFocus();
+    expect(
+      within(dialog).getByRole("list", { name: "추가한 기술 목록" }),
+    ).toBeInTheDocument();
+    expect(dialog.querySelector("datalist")).toBeNull();
+  });
+
   it("keeps Tab focus inside the modal sheet", async () => {
     render(
       <AppShell>
@@ -151,7 +188,7 @@ describe("OwnedSkillsSheet", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
     const close = await screen.findByRole("button", { name: "내 기술 닫기" });
-    const add = screen.getByRole("button", { name: "기술 추가" });
+    const add = screen.getByRole("button", { name: "추가" });
 
     add.focus();
     fireEvent.keyDown(document, { key: "Tab" });

@@ -32,12 +32,12 @@ for (const width of [1440, 390, 320]) {
       await page.getByRole("button", { name: "내 기술 열기" }).click();
       const stack = page.getByRole("dialog", { name: "내 기술" });
       await stack.getByLabel("추가할 기술").fill("Java");
-      await stack.getByRole("button", { name: "기술 추가" }).click();
+      await stack.getByRole("button", { name: "추가", exact: true }).click();
       await stack.getByRole("button", { name: "내 기술 닫기" }).click();
     } else {
       await setup.click();
       await page.getByLabel("추가할 기술").fill("Java");
-      await page.getByRole("button", { name: "기술 추가" }).click();
+      await page.getByRole("button", { name: "추가", exact: true }).click();
       await page.goto("/");
     }
 
@@ -46,16 +46,22 @@ for (const width of [1440, 390, 320]) {
       name: "내 커리어 브리핑",
     });
     await expect(insight.getByText("17건", { exact: true })).toBeVisible();
-    await expect(insight).toContainText("필수 기술 절반 이상 충족 6건");
+    await expect(insight.getByText("6건", { exact: true })).toBeVisible();
+    await expect(insight).toContainText("필수 기술 절반 이상 충족");
+    await expect(insight).toContainText("기술이 겹치는 공고");
     const skillLink = insight.getByRole("link", {
-      name: "Kubernetes 근거 보기",
+      name: "Kubernetes 추천 근거 보기",
     });
     await expect(skillLink).toHaveAttribute(
       "href",
       "/skill-map?skill=Kubernetes",
     );
-    await expect(insight).toContainText("관련 공고 10건에서 부족");
-    await expect(insight).toContainText("현재 수요 상위");
+    await expect(insight).toContainText(
+      "관련 공고 10건에서 반복적으로 부족했습니다.",
+    );
+    await expect(insight.getByText("현재 수요 상위")).toHaveCount(0);
+    const insightBox = await insight.boundingBox();
+    expect(insightBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 240);
     const linkBox = await skillLink.boundingBox();
     expect(linkBox?.width).toBeGreaterThanOrEqual(44);
     expect(linkBox?.height).toBeGreaterThanOrEqual(44);
