@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scanned_at": "2026-07-27",
+  "scanned_at": "2026-07-29",
   "framework": "Next.js 16.2.11 App Router with React 19.2",
   "font_stack": [
     "Pretendard Variable",
@@ -10,5 +10,5 @@
   "motion": "GSAP 3.15 installed; locked product UI uses restrained CSS transitions and reduced-motion overrides",
   "spacing": "4px-compatible named rem scale in apps/web/src/styles/tokens.css",
   "design_contract": "design.md",
-  "scope": "multi-page product app"
+  "scope": "multi-page product app; personalized home feed and map/diagram skill graph"
 }
