@@ -1117,6 +1117,18 @@ def _skill_input_key(value: str) -> str:
     return " ".join(value.split()).casefold()
 
 
+EXPLICIT_INPUT_ALIASES: dict[str, tuple[str, ...]] = {
+    "C#": ("csharp", "씨샵"),
+    "C++": ("cpp", "씨플플"),
+    "JavaScript": ("js", "자바스크립트"),
+    "Node.js": ("node", "노드"),
+    "PostgreSQL": ("포스트그레스",),
+    "React": ("reactjs",),
+    "Spring": ("스프링",),
+    "TypeScript": ("ts", "타입스크립트"),
+}
+
+
 SKILL_INPUT_CANONICAL: dict[str, str] = {}
 for _skill in SKILLS:
     for _name in (_skill.canonical, *(_alias.value for _alias in _skill.aliases)):
@@ -1128,6 +1140,35 @@ for _skill in SKILLS:
                 f"{_existing!r} and {_skill.canonical!r}"
             )
         SKILL_INPUT_CANONICAL[_key] = _skill.canonical
+for _canonical, _aliases in EXPLICIT_INPUT_ALIASES.items():
+    for _alias in _aliases:
+        _key = _skill_input_key(_alias)
+        _existing = SKILL_INPUT_CANONICAL.get(_key)
+        if _existing is not None and _existing != _canonical:
+            raise RuntimeError(
+                f"ambiguous explicit skill input {_alias!r}: "
+                f"{_existing!r} and {_canonical!r}"
+            )
+        SKILL_INPUT_CANONICAL[_key] = _canonical
+
+
+def skill_input_aliases(canonical: str) -> tuple[str, ...]:
+    skill = next((item for item in SKILLS if item.canonical == canonical), None)
+    if skill is None:
+        return ()
+    canonical_key = _skill_input_key(canonical)
+    seen: set[str] = set()
+    values: list[str] = []
+    for value in (
+        *(alias.value for alias in skill.aliases),
+        *EXPLICIT_INPUT_ALIASES.get(canonical, ()),
+    ):
+        key = _skill_input_key(value)
+        if key == canonical_key or key in seen:
+            continue
+        seen.add(key)
+        values.append(value)
+    return tuple(values)
 
 
 def canonicalize_skill_input(value: str) -> str:

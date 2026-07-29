@@ -336,3 +336,121 @@ def test_category_search_uses_database_until_the_index_has_category_fields() -> 
 
     assert len(reader.list(q="플랫폼", category="infra", limit=10)) == 1
     assert index.calls == 0
+
+
+def test_database_list_personalizes_requirement_evidence_and_keeps_pages_stable() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+
+    with factory() as session:
+        definitions = [
+            ("required-strongest", [("C++", "required")]),
+            (
+                "required-second",
+                [("C++", "required"), ("Rust", "required")],
+            ),
+            ("preferred-match", [("C++", "preferred")]),
+            ("unspecified-match", [("C++", "unspecified")]),
+            ("exploration", [("Python", "required")]),
+        ]
+        for index, (title, skills) in enumerate(definitions):
+            company = Company(name=f"기업 {index}", slug=f"company-{index}")
+            source = CareerSource(
+                company=company,
+                base_url=f"https://careers.example.com/{index}",
+                source_type=SourceType.JSON_LD,
+                status=SourceStatus.ALLOWED,
+            )
+            posting = JobPosting(
+                company=company,
+                source=source,
+                external_id=title,
+                url=f"https://careers.example.com/{index}/{title}",
+                title=title,
+                first_seen_at=now - timedelta(minutes=index),
+                last_seen_at=now,
+                last_verified_at=now,
+            )
+            posting.skills = [
+                PostingSkill(
+                    skill=skill,
+                    category="language",
+                    requirement_type=requirement_type,
+                    confidence=1.0,
+                    match_reason="distinct_alias",
+                )
+                for skill, requirement_type in skills
+            ]
+            session.add(posting)
+        session.commit()
+
+    reader = DatabasePostingReader(session_factory=factory)
+
+    first_page = reader.list(owned_skills=["c++"], limit=3)
+    second_page = reader.list(owned_skills=["C++"], limit=3, offset=3)
+    items = first_page + second_page
+
+    assert [item["title"] for item in items] == [
+        "required-strongest",
+        "required-second",
+        "preferred-match",
+        "unspecified-match",
+        "exploration",
+    ]
+    assert len({item["id"] for item in items}) == 5
+
+
+def test_personalized_list_limits_one_company_to_two_results_per_round() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(engine)
+    now = datetime(2026, 7, 28, tzinfo=timezone.utc)
+
+    with factory() as session:
+        companies: list[tuple[Company, CareerSource]] = []
+        for slug in ("crowded", "alternative"):
+            company = Company(name=slug, slug=slug)
+            source = CareerSource(
+                company=company,
+                base_url=f"https://careers.example.com/{slug}",
+                source_type=SourceType.JSON_LD,
+                status=SourceStatus.ALLOWED,
+            )
+            companies.append((company, source))
+
+        for index in range(4):
+            company, source = companies[0 if index < 3 else 1]
+            posting = JobPosting(
+                company=company,
+                source=source,
+                external_id=f"match-{index}",
+                url=f"https://careers.example.com/{company.slug}/{index}",
+                title=f"{company.slug}-{index}",
+                first_seen_at=now - timedelta(minutes=index),
+                last_seen_at=now,
+                last_verified_at=now,
+            )
+            posting.skills = [
+                PostingSkill(
+                    skill="C++",
+                    category="language",
+                    requirement_type="required",
+                    confidence=1.0,
+                    match_reason="distinct_alias",
+                )
+            ]
+            session.add(posting)
+        session.commit()
+
+    items = DatabasePostingReader(session_factory=factory).list(
+        owned_skills=["C++"],
+        limit=4,
+    )
+
+    assert [item["company_slug"] for item in items[:3]] == [
+        "crowded",
+        "crowded",
+        "alternative",
+    ]

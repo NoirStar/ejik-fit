@@ -12,13 +12,12 @@ import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
+import { skillIdentityKey } from "@/lib/skill-catalog";
 import type { CommunityPost } from "@/lib/community-contract";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
   PostingSummary,
-  SkillGraphEvidence,
-  SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
@@ -115,18 +114,14 @@ export function serverCommunityPostToFeedItem(
 export type BuildHomeFeedSnapshotInput = {
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
-  graph: ResourceState<SkillGraphResponse>;
   fit: ResourceState<FitAnalyzeResponse> | null;
   careerPreferences?: CareerPreferences;
   ownedSkills: string[];
+  personalizationFallback?: boolean;
 };
 
 function readyData<T>(resource: ResourceState<T>): T | null {
   return resource.status === "ready" ? resource.data : null;
-}
-
-function normalize(value: string) {
-  return value.trim().toLocaleLowerCase("en-US");
 }
 
 function unique(values: string[]) {
@@ -157,72 +152,59 @@ function latestVerifiedAt(values: string[]) {
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0] ?? null;
 }
 
-function evidenceByPostingId(graph: SkillGraphResponse | null) {
-  return new Map(
-    (graph?.evidence ?? []).map((evidence) => [evidence.posting_id, evidence]),
-  );
-}
-
 function skillMatches(
   required: string[],
   preferred: string[],
+  unspecified: string[],
   ownedSet: ReadonlySet<string>,
 ) {
   return {
     matchedRequiredSkills: required.filter((skill) =>
-      ownedSet.has(normalize(skill)),
+      ownedSet.has(skillIdentityKey(skill)),
     ),
     missingRequiredSkills: required.filter(
-      (skill) => !ownedSet.has(normalize(skill)),
+      (skill) => !ownedSet.has(skillIdentityKey(skill)),
     ),
     matchedPreferredSkills: preferred.filter((skill) =>
-      ownedSet.has(normalize(skill)),
+      ownedSet.has(skillIdentityKey(skill)),
+    ),
+    matchedUnspecifiedSkills: unspecified.filter((skill) =>
+      ownedSet.has(skillIdentityKey(skill)),
     ),
   };
 }
 
-function postingFitScore(
-  evidence: SkillGraphEvidence | undefined,
-  ownedSet: ReadonlySet<string>,
+function recommendationReason(
+  matches: ReturnType<typeof skillMatches>,
+  hasOwnedSkills: boolean,
 ) {
-  if (!evidence || ownedSet.size === 0) return null;
-  const matchedRequired = evidence.required.filter((skill) =>
-    ownedSet.has(normalize(skill)),
-  ).length;
-  const matchedPreferred = evidence.preferred.filter((skill) =>
-    ownedSet.has(normalize(skill)),
-  ).length;
-  const matchedUnspecified = evidence.unspecified.filter((skill) =>
-    ownedSet.has(normalize(skill)),
-  ).length;
-  const matchedTotal = matchedRequired + matchedPreferred + matchedUnspecified;
-  if (matchedTotal === 0) return null;
-
-  const missingRequired = evidence.required.length - matchedRequired;
-  const requiredCoverage = evidence.required.length > 0
-    ? matchedRequired / evidence.required.length
-    : 0;
-  return (
-    matchedRequired * 120
-    + matchedPreferred * 45
-    + matchedUnspecified * 20
-    + requiredCoverage * 35
-    - missingRequired * 12
-  );
+  if (!hasOwnedSkills) return null;
+  const matched = [
+    ...matches.matchedRequiredSkills,
+    ...matches.matchedPreferredSkills,
+    ...matches.matchedUnspecifiedSkills,
+  ];
+  if (matched.length === 0) return "새로운 분야 탐색";
+  if (matched.length > 1) return `내 기술 ${matched.length}개 일치`;
+  const [skill] = matched;
+  if (matches.matchedRequiredSkills.length > 0) {
+    return `${skill} 필수 요건 일치`;
+  }
+  if (matches.matchedPreferredSkills.length > 0) {
+    return `${skill} 우대 요건 일치`;
+  }
+  return `${skill} 기술 포함`;
 }
 
 export function postingSummaryToFeedItem(
   posting: PostingSummary,
   ownedSkills: string[],
-  evidence?: SkillGraphEvidence,
 ): RecommendedJobFeedItem {
-  const ownedSet = new Set(ownedSkills.map(normalize));
-  const required = posting.required_skills?.length
-    ? posting.required_skills
-    : evidence?.required ?? [];
-  const preferred = posting.preferred_skills?.length
-    ? posting.preferred_skills
-    : evidence?.preferred ?? [];
+  const ownedSet = new Set(ownedSkills.map(skillIdentityKey));
+  const required = posting.required_skills ?? [];
+  const preferred = posting.preferred_skills ?? [];
+  const unspecified = posting.unspecified_skills ?? [];
+  const matches = skillMatches(required, preferred, unspecified, ownedSet);
   return {
     id: `job-${posting.id}`,
     postingId: posting.id,
@@ -243,7 +225,9 @@ export function postingSummaryToFeedItem(
     verifiedLabel: formatVerifiedDate(posting.last_verified_at),
     requiredSkills: required,
     preferredSkills: preferred,
-    ...skillMatches(required, preferred, ownedSet),
+    unspecifiedSkills: unspecified,
+    ...matches,
+    recommendationReason: recommendationReason(matches, ownedSet.size > 0),
     href: `/jobs/${encodeURIComponent(posting.id)}`,
     source: "api",
   };
@@ -251,33 +235,10 @@ export function postingSummaryToFeedItem(
 
 function buildJobs(
   postings: PostingListResponse | null,
-  graph: SkillGraphResponse | null,
   ownedSkills: string[],
 ): RecommendedJobFeedItem[] {
-  const evidenceMap = evidenceByPostingId(graph);
-  const ownedSet = new Set(ownedSkills.map(normalize));
-  const rankedPostings = (postings?.items ?? [])
-    .map((posting, index) => ({
-      index,
-      posting,
-      score: postingFitScore(evidenceMap.get(posting.id), ownedSet),
-    }))
-    .sort((left, right) => {
-      if (left.score === null && right.score === null) {
-        return left.index - right.index;
-      }
-      if (left.score === null) return 1;
-      if (right.score === null) return -1;
-      return right.score - left.score || left.index - right.index;
-    })
-    .map(({ posting }) => posting);
-
-  return rankedPostings.map((posting) =>
-    postingSummaryToFeedItem(
-      posting,
-      ownedSkills,
-      evidenceMap.get(posting.id),
-    ),
+  return (postings?.items ?? []).map((posting) =>
+    postingSummaryToFeedItem(posting, ownedSkills),
   );
 }
 
@@ -295,7 +256,7 @@ function buildMarketInsights(
   skillDemand: SkillDemandSummary[],
 ): MarketInsightFeedItem[] {
   return skillDemand.slice(0, 2).map((skill) => ({
-    id: `market-${normalize(skill.skillName).replaceAll(" ", "-")}`,
+    id: `market-${skillIdentityKey(skill.skillName).replaceAll(" ", "-")}`,
     type: "market_insight",
     skillName: skill.skillName,
     title: `${skill.skillName} 요구 공고`,
@@ -391,15 +352,22 @@ export function buildHomeFeedSnapshot(
 ): HomeFeedSnapshot {
   const postings = readyData(input.postings);
   const skillStats = readyData(input.skillStats);
-  const graph = readyData(input.graph);
-  const ownedSkills = unique(input.ownedSkills.map((skill) => skill.trim()).filter(Boolean));
-  const recommendedJobs = buildJobs(postings, graph, ownedSkills);
+  const requestedOwnedSkills = unique(
+    input.ownedSkills.map((skill) => skill.trim()).filter(Boolean),
+  );
+  const canonicalOwnedSkills = postings?.canonical_owned_skills ?? [];
+  const ownedSkills = unique(
+    (canonicalOwnedSkills.length > 0
+      ? canonicalOwnedSkills
+      : requestedOwnedSkills
+    ).map((skill) => skill.trim()).filter(Boolean),
+  );
+  const recommendedJobs = buildJobs(postings, ownedSkills);
   const skillDemand = buildSkillDemand(skillStats);
   const marketInsights = buildMarketInsights(skillDemand);
   const resources = [
     input.postings,
     input.skillStats,
-    input.graph,
     ...(input.fit ? [input.fit] : []),
   ];
   const resourceErrors = resources.flatMap(
@@ -407,7 +375,6 @@ export function buildHomeFeedSnapshot(
   );
   const hasVerifiedData = recommendedJobs.length > 0
     || skillDemand.length > 0
-    || (graph?.evidence.length ?? 0) > 0
     || input.fit?.status === "ready";
 
   return {
@@ -422,6 +389,7 @@ export function buildHomeFeedSnapshot(
     careerInsight: buildCareerInsight(input.fit, ownedSkills),
     careerContext: buildCareerContext(input.careerPreferences),
     ownedSkills,
+    personalizationFallback: input.personalizationFallback ?? false,
     postingCount: postings?.total ?? 0,
     sourceCount: new Set(
       (postings?.items ?? []).map((posting) => safeHostname(posting.source_url)),

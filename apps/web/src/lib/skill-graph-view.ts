@@ -1,6 +1,5 @@
-import { GRAPH_DEFAULT_COLOR } from "@/styles/design-tokens";
-
 import { domainColor } from "./skill-graph";
+import { skillIdentityKey } from "./skill-catalog";
 import type {
   SkillGraphEdge,
   SkillGraphEvidence,
@@ -36,6 +35,7 @@ export type SkillGraphViewNode = {
   demandCount: number;
   owned: boolean;
   recommended: boolean;
+  recommendationRank: number | null;
   seed: boolean;
   evidence?: SkillGraphEvidence;
   skill?: SkillGraphNode;
@@ -214,19 +214,89 @@ function selectFocusNodes(
         compareNodes(left.neighbor, right.neighbor),
     );
 
-  const result = [selected];
-  const seen = new Set([selected.id]);
+  const directNeighbors: SkillGraphNode[] = [];
+  const directIds = new Set<string>();
   for (const { neighbor } of incident) {
-    if (seen.has(neighbor.id)) {
+    if (directIds.has(neighbor.id)) {
       continue;
     }
-    result.push(neighbor);
-    seen.add(neighbor.id);
-    if (result.length >= limit) {
+    directNeighbors.push(neighbor);
+    directIds.add(neighbor.id);
+  }
+
+  const secondConnections = edges
+    .map((edge) => {
+      const sourceIsDirect = directIds.has(edge.source);
+      const targetIsDirect = directIds.has(edge.target);
+      if (sourceIsDirect === targetIsDirect) {
+        return null;
+      }
+      const parentId = sourceIsDirect ? edge.source : edge.target;
+      const neighborId = sourceIsDirect ? edge.target : edge.source;
+      if (neighborId === selected.id || directIds.has(neighborId)) {
+        return null;
+      }
+      const neighbor = byId.get(neighborId);
+      return neighbor ? { edge, neighbor, parentId } : null;
+    })
+    .filter(
+      (item): item is {
+        edge: SkillGraphEdge;
+        neighbor: SkillGraphNode;
+        parentId: string;
+      } =>
+        item !== null,
+    )
+    .sort(
+      (left, right) =>
+        compareEdges(left.edge, right.edge) ||
+        compareNodes(left.neighbor, right.neighbor),
+    );
+  const capacity = Math.max(0, limit - 1);
+  const secondTarget = secondConnections.length > 0
+    ? Math.max(1, Math.floor(capacity * 0.35))
+    : 0;
+  const selectedSecond: SkillGraphNode[] = [];
+  const selectedSecondIds = new Set<string>();
+  const requiredParentIds = new Set<string>();
+  for (const { neighbor, parentId } of secondConnections) {
+    if (
+      selectedSecond.length >= secondTarget ||
+      selectedSecondIds.has(neighbor.id)
+    ) {
+      continue;
+    }
+    const addedParentCost = requiredParentIds.has(parentId) ? 0 : 1;
+    if (
+      selectedSecond.length + requiredParentIds.size + addedParentCost + 1 >
+      capacity
+    ) {
+      continue;
+    }
+    selectedSecond.push(neighbor);
+    selectedSecondIds.add(neighbor.id);
+    requiredParentIds.add(parentId);
+  }
+
+  const directCapacity = Math.max(0, capacity - selectedSecond.length);
+  const visibleDirect = directNeighbors
+    .filter((node) => requiredParentIds.has(node.id));
+  const visibleDirectIds = new Set(visibleDirect.map(({ id }) => id));
+  for (const node of directNeighbors) {
+    if (visibleDirect.length >= directCapacity) {
       break;
     }
+    if (!visibleDirectIds.has(node.id)) {
+      visibleDirect.push(node);
+      visibleDirectIds.add(node.id);
+    }
   }
-  return result;
+
+  return [
+    selected,
+    ...visibleDirect,
+    ...selectedSecond,
+  ];
 }
 
 
@@ -410,10 +480,20 @@ export function buildSkillGraphView(
     1,
     ...graph.nodes.map((node) => safeCount(node.demand_count)),
   );
-  const recommendedIds = new Set(options.recommendedIds ?? []);
-  const ownedIds = options.ownedIds ? new Set(options.ownedIds) : null;
+  const recommendationRanks = new Map<string, number>();
+  (options.recommendedIds ?? []).forEach((id, index) => {
+    const key = skillIdentityKey(id);
+    if (!recommendationRanks.has(key)) {
+      recommendationRanks.set(key, index + 1);
+    }
+  });
+  const ownedIds = options.ownedIds
+    ? new Set(options.ownedIds.map(skillIdentityKey))
+    : null;
   const nodes = selectedNodes.map<SkillGraphViewNode>((node) => {
     const domain = primaryDomain(node);
+    const identityKey = skillIdentityKey(node.id);
+    const recommendationRank = recommendationRanks.get(identityKey) ?? null;
     return {
       id: node.id,
       label: node.label,
@@ -421,11 +501,15 @@ export function buildSkillGraphView(
       category: node.category,
       domain,
       domains: node.domains,
-      color: GRAPH_DEFAULT_COLOR,
+      color: domainColor(domain),
       val: skillNodeValue(node, maximumDemand),
       demandCount: safeCount(node.demand_count),
-      owned: ownedIds ? ownedIds.has(node.id) : node.owned,
-      recommended: recommendedIds.has(node.id),
+      owned: ownedIds ? ownedIds.has(identityKey) : node.owned,
+      recommended: recommendationRank !== null && recommendationRank <= 3,
+      recommendationRank:
+        recommendationRank !== null && recommendationRank <= 3
+          ? recommendationRank
+          : null,
       seed: node.seed,
       skill: node,
     };

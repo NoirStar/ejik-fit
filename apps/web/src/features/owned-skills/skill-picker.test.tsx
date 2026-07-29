@@ -13,12 +13,14 @@ import {
 function catalogItem(
   name: string,
   category = "frontend",
+  aliases: string[] = [],
 ): SkillCatalogItem {
   return {
     category,
     domains: [category],
     kind: "technology",
     name,
+    aliases,
   };
 }
 
@@ -34,6 +36,7 @@ const catalog = [
   catalogItem("C#", "language"),
   catalogItem("C++", "language"),
   catalogItem("Create React App"),
+  catalogItem("Go", "language", ["golang"]),
 ];
 
 function PickerHarness({
@@ -94,6 +97,7 @@ describe("skill picker", () => {
   it("resolves exact aliases and preserves a direct entry", () => {
     expect(resolveSkillInput(" k8s ", catalog)).toBe("Kubernetes");
     expect(resolveSkillInput("자바스크립트", catalog)).toBe("JavaScript");
+    expect(resolveSkillInput("golang", catalog)).toBe("Go");
     expect(resolveSkillInput("WebGPU", catalog)).toBe("WebGPU");
   });
 

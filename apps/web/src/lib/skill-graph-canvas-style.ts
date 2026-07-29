@@ -9,8 +9,9 @@ export const SKILL_GRAPH_LABEL_FONT_FAMILY =
 
 
 type SkillGraphNodeState = {
+  color: string;
   owned: boolean;
-  recommended: boolean;
+  recommendationRank: number | null;
 };
 
 
@@ -26,10 +27,12 @@ export function skillGraphNodePaint(
   return {
     fill: selected
       ? GRAPH_CANVAS_COLORS.selectedNode
-      : GRAPH_CANVAS_COLORS.neutralNode,
+      : node.color,
     ring: node.owned
       ? GRAPH_CANVAS_COLORS.ownedRing
-      : node.recommended
+      : null,
+    recommendationMarker:
+      node.recommendationRank !== null && node.recommendationRank <= 3
         ? GRAPH_CANVAS_COLORS.recommendedRing
         : null,
   };
@@ -48,7 +51,7 @@ export function skillGraphLinkWidth(
   if (!focused) {
     return 0.6;
   }
-  return clamp(restingWidth + clamp(relationRatio, 0, 1) * 0.6, 0.6, 1.6);
+  return clamp(restingWidth + clamp(relationRatio, 0, 1) * 0.35, 0.6, 1.35);
 }
 
 

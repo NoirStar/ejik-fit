@@ -4,7 +4,7 @@ import { loadInitialCommunityFeed } from "@/features/community/server-community-
 import { HomeFeed } from "@/features/home-feed/home-feed";
 import { buildHomeFeedSnapshot } from "@/features/home-feed/model";
 import { settledResource } from "@/features/home-feed/resource-state";
-import { analyzeFit, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
+import { analyzeFit, getPostings, getSkillStats } from "@/lib/api";
 import { homeContextFromSearchParams } from "@/lib/home-context";
 
 export const dynamic = "force-dynamic";
@@ -21,13 +21,38 @@ type HomeProps = {
   searchParams?: Promise<HomeSearchParams>;
 };
 
+async function loadHomePostings(
+  careerFilter: { career_type?: string },
+  ownedSkills: string[],
+) {
+  const postings = await settledResource(
+    getPostings({
+      ...careerFilter,
+      limit: 20,
+      ...(ownedSkills.length > 0 ? { owned_skills: ownedSkills } : {}),
+    }),
+    "공고를 불러오지 못했습니다.",
+  );
+  if (postings.status === "ready" || ownedSkills.length === 0) {
+    return { personalizationFallback: false, postings };
+  }
+
+  const fallback = await settledResource(
+    getPostings({ ...careerFilter, limit: 20 }),
+    "공고를 불러오지 못했습니다.",
+  );
+  return {
+    personalizationFallback: fallback.status === "ready",
+    postings: fallback,
+  };
+}
+
 export default async function Home({ searchParams }: HomeProps = {}) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const { careerPreferences, ownedSkills } = homeContextFromSearchParams(
     resolvedSearchParams,
   );
   const { careerCondition, targetDomain } = careerPreferences;
-  const seed = ownedSkills[0];
   const composeParam = Array.isArray(resolvedSearchParams.compose)
     ? resolvedSearchParams.compose[0]
     : resolvedSearchParams.compose;
@@ -57,23 +82,11 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       )
     : Promise.resolve(null);
 
-  const [postings, skillStats, graph, fit, initialCommunityFeed] = await Promise.all([
-    settledResource(
-      getPostings({ ...careerFilter, limit: 20 }),
-      "공고를 불러오지 못했습니다.",
-    ),
+  const [postingResult, skillStats, fit, initialCommunityFeed] = await Promise.all([
+    loadHomePostings(careerFilter, ownedSkills),
     settledResource(
       getSkillStats({ ...careerFilter, limit: 8 }),
       "채용 시장 기술 수요를 불러오지 못했습니다.",
-    ),
-    settledResource(
-      getSkillGraph({
-        ...(seed ? { seed } : {}),
-        owned_skills: ownedSkills,
-        ...careerFilter,
-        limit: 30,
-      }),
-      "스킬맵을 불러오지 못했습니다.",
     ),
     fitRequest,
     loadInitialCommunityFeed(10),
@@ -85,12 +98,12 @@ export default async function Home({ searchParams }: HomeProps = {}) {
       initialCommunityFeed={initialCommunityFeed}
       key={feedScopeKey}
       snapshot={buildHomeFeedSnapshot({
-        postings,
+        postings: postingResult.postings,
         skillStats,
-        graph,
         fit,
         careerPreferences,
         ownedSkills,
+        personalizationFallback: postingResult.personalizationFallback,
       })}
     />
   );

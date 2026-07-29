@@ -166,13 +166,12 @@ describe("Home", () => {
     expect(screen.getAllByText("Kubernetes").length).toBeGreaterThan(0);
     expect(screen.getByText("필수 8건")).toBeInTheDocument();
     expect(screen.queryByText(/지난주 대비|합격 가능성|\d+\.\d+점/)).not.toBeInTheDocument();
-    expect(getPostings).toHaveBeenCalledWith({ limit: 20 });
-    expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
-    expect(getSkillGraph).toHaveBeenCalledWith({
-      seed: "Java",
+    expect(getPostings).toHaveBeenCalledWith({
+      limit: 20,
       owned_skills: ["Java", "Spring"],
-      limit: 30,
     });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
+    expect(getSkillGraph).not.toHaveBeenCalled();
     expect(analyzeFit).toHaveBeenCalledWith({
       owned_skills: ["Java", "Spring"],
     });
@@ -195,17 +194,13 @@ describe("Home", () => {
     expect(getPostings).toHaveBeenCalledWith({
       career_type: "experienced",
       limit: 20,
+      owned_skills: ["Java"],
     });
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
       limit: 8,
     });
-    expect(getSkillGraph).toHaveBeenCalledWith({
-      seed: "Java",
-      owned_skills: ["Java"],
-      career_type: "experienced",
-      limit: 30,
-    });
+    expect(getSkillGraph).not.toHaveBeenCalled();
     expect(analyzeFit).toHaveBeenCalledWith({
       owned_skills: ["Java"],
       career_type: "experienced",
@@ -236,10 +231,8 @@ describe("Home", () => {
   it("does not inject default skills for a first visit", async () => {
     render(await Home());
 
-    expect(getSkillGraph).toHaveBeenCalledWith({
-      owned_skills: [],
-      limit: 30,
-    });
+    expect(getPostings).toHaveBeenCalledWith({ limit: 20 });
+    expect(getSkillGraph).not.toHaveBeenCalled();
     expect(analyzeFit).not.toHaveBeenCalled();
     expect(
       screen.getByText(
@@ -259,21 +252,44 @@ describe("Home", () => {
     expect(screen.queryByText("내 기술 Java")).not.toBeInTheDocument();
   });
 
-  it("keeps successful data visible when a resource fails", async () => {
+  it("falls back to generic jobs without breaking the personalized home", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    vi.mocked(getSkillGraph).mockRejectedValue(new Error("graph offline"));
+    vi.mocked(getPostings)
+      .mockRejectedValueOnce(new Error("personalization offline"))
+      .mockResolvedValueOnce({
+        total: 1,
+        items: [
+          {
+            id: "job-1",
+            title: "Backend Engineer",
+            company_name: "토스",
+            career_type: "experienced",
+            employment_type: "FULL_TIME",
+            career_min: 3,
+            career_max: 7,
+            location: "서울",
+            status: "open",
+            source_url: "https://careers.toss.im/job-1",
+            last_verified_at: "2026-07-12T15:00:00.000Z",
+          },
+        ],
+      });
 
-    render(await Home());
-
-    expect(screen.getByText("일부 정보를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.getByText("토스")).toBeInTheDocument();
-    expect(screen.getByText("스킬맵을 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.queryByText("graph offline")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "다시 불러오기" })).toBeInTheDocument();
-    expect(log).toHaveBeenCalledWith(
-      "[resource] request failed",
-      expect.any(Error),
+    render(
+      await Home({
+        searchParams: Promise.resolve({ owned_skills: "Java" }),
+      }),
     );
+
+    expect(screen.getByText("토스")).toBeInTheDocument();
+    expect(screen.getByText(
+      "맞춤 추천을 불러오지 못했습니다. 최신 공고를 대신 표시합니다.",
+    )).toBeInTheDocument();
+    expect(getPostings).toHaveBeenNthCalledWith(1, {
+      limit: 20,
+      owned_skills: ["Java"],
+    });
+    expect(getPostings).toHaveBeenNthCalledWith(2, { limit: 20 });
     log.mockRestore();
   });
 

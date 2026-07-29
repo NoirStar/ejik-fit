@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   normalizePostingDetail,
+  normalizePostingList,
   normalizePostingSummary,
 } from "./posting-contract";
 
@@ -25,6 +26,21 @@ const posting = {
 };
 
 describe("posting contract company slug", () => {
+  it("preserves server-canonicalized owned skills on a list response", () => {
+    expect(
+      normalizePostingList({
+        items: [posting],
+        total: 1,
+        canonical_owned_skills: ["Go"],
+      }).canonical_owned_skills,
+    ).toEqual(["Go"]);
+  });
+
+  it("keeps compatibility with list responses from an older backend", () => {
+    expect(normalizePostingList({ items: [posting], total: 1 }))
+      .not.toHaveProperty("canonical_owned_skills");
+  });
+
   it("preserves a valid backend company slug", () => {
     expect(
       normalizePostingSummary({ ...posting, company_slug: "verified-company" })

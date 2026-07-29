@@ -147,12 +147,14 @@ def test_skill_catalog_endpoint_returns_canonical_metadata() -> None:
         "category": "infra",
         "kind": "platform",
         "domains": ["devops", "cloud", "mlops"],
+        "aliases": ["k8s", "쿠버네티스"],
     }
     assert items["React Native"] == {
         "name": "React Native",
         "category": "mobile",
         "kind": "framework",
         "domains": ["mobile", "frontend"],
+        "aliases": [],
     }
 
 

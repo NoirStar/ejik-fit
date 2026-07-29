@@ -32,6 +32,8 @@ import {
 import {
   addOwnedSkill,
   clearOwnedSkills,
+  MAX_OWNED_SKILL_LENGTH,
+  MAX_OWNED_SKILLS,
   readOwnedSkills,
   removeOwnedSkill,
   subscribeOwnedSkills,
@@ -472,6 +474,12 @@ export function CareerOverview({
       setInputError("기술 이름을 입력해 주세요.");
       return false;
     }
+    if (trimmed.length > MAX_OWNED_SKILL_LENGTH) {
+      setInputError(
+        `기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`,
+      );
+      return false;
+    }
     const normalized = resolveSkillInput(
       suggestions.find(
         (suggestion) =>
@@ -487,6 +495,12 @@ export function CareerOverview({
       )
     ) {
       setInputError("이미 추가한 기술입니다.");
+      return false;
+    }
+    if (ownedSkills.length >= MAX_OWNED_SKILLS) {
+      setInputError(
+        `내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`,
+      );
       return false;
     }
 

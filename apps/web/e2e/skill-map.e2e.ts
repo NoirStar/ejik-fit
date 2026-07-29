@@ -6,7 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 
-import { GRAPH_CANVAS_COLORS } from "../src/styles/design-tokens";
+import { GRAPH_DOMAIN_COLORS } from "../src/styles/design-tokens";
 
 type CanvasFingerprint = {
   hash: number;
@@ -38,10 +38,10 @@ function rectanglesOverlap(left: Rect, right: Rect) {
   );
 }
 
-const neutralNodeRgb = [
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(1, 3), 16),
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(3, 5), 16),
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(5, 7), 16),
+const backendNodeRgb = [
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(5, 7), 16),
 ] as const;
 
 async function readCanvasFingerprint(
@@ -236,7 +236,7 @@ async function dispatchPinch(
   });
 }
 
-async function findNeutralNodeOffsets(canvas: Locator) {
+async function findBackendNodeOffsets(canvas: Locator) {
   return canvas.evaluate(
     (element, [red, green, blue]) => {
       const canvasElement = element as HTMLCanvasElement;
@@ -257,9 +257,9 @@ async function findNeutralNodeOffsets(canvas: Locator) {
         for (let x = 0; x < canvasElement.width; x += 2) {
           const offset = (y * canvasElement.width + x) * 4;
           if (
-            Math.abs(pixels[offset] - red) <= 4 &&
-            Math.abs(pixels[offset + 1] - green) <= 4 &&
-            Math.abs(pixels[offset + 2] - blue) <= 4 &&
+            Math.abs(pixels[offset] - red) <= 14 &&
+            Math.abs(pixels[offset + 1] - green) <= 14 &&
+            Math.abs(pixels[offset + 2] - blue) <= 14 &&
             pixels[offset + 3] >= 180
           ) {
             matchingPixels.add((y / step) * gridWidth + x / step);
@@ -314,7 +314,7 @@ async function findNeutralNodeOffsets(canvas: Locator) {
           };
         });
     },
-    neutralNodeRgb,
+    backendNodeRgb,
   );
 }
 
@@ -323,74 +323,81 @@ async function tapSkillNode(
   session: CDPSession,
   canvas: Locator,
 ) {
-  let point: CanvasPoint | null = null;
   const selectableBackendSkills = ["Docker", "Go", "Linux", "Python"];
+  let offsets: CanvasPoint[] = [];
   await expect
     .poll(
       async () => {
-        const offsets = await findNeutralNodeOffsets(canvas);
-        for (const offset of offsets) {
-          const visiblePoint = await canvas.evaluate((element, nodeOffset) => {
-            const canvasElement = element as HTMLCanvasElement;
-            const beforeRect = canvasElement.getBoundingClientRect();
-            const root = document.documentElement;
-            const previousScrollBehavior = root.style.scrollBehavior;
-            root.style.scrollBehavior = "auto";
-            window.scrollBy(
-              0,
-              beforeRect.top + nodeOffset.y - window.innerHeight / 2,
-            );
-            root.style.scrollBehavior = previousScrollBehavior;
-
-            const rect = canvasElement.getBoundingClientRect();
-            const x = rect.left + nodeOffset.x;
-            const y = rect.top + nodeOffset.y;
-            return document.elementFromPoint(x, y) === canvasElement
-              ? { x, y }
-              : null;
-          }, offset);
-          if (visiblePoint) {
-            point = visiblePoint;
-            break;
-          }
-        }
-        return point !== null;
+        offsets = await findBackendNodeOffsets(canvas);
+        return offsets.length;
       },
       { intervals: [100, 200, 400, 800, 1_200], timeout: 8_000 },
     )
-    .toBe(true);
-  await session.send("Input.dispatchTouchEvent", {
-    touchPoints: [
-      {
-        force: 1,
-        id: 1,
-        radiusX: 7,
-        radiusY: 7,
-        x: point!.x,
-        y: point!.y,
-      },
-    ],
-    type: "touchStart",
-  });
-  await page.waitForTimeout(40);
-  await session.send("Input.dispatchTouchEvent", {
-    touchPoints: [],
-    type: "touchEnd",
-  });
+    .toBeGreaterThan(0);
 
   const selectedHeading = page
     .getByRole("complementary", { name: "선택 기술 분석" })
     .getByRole("heading", { level: 2 })
     .first();
-  await expect(selectedHeading).not.toHaveText("Kubernetes");
-  const selectedSkill = (await selectedHeading.textContent())?.trim() ?? "";
-  expect(selectableBackendSkills).toContain(selectedSkill);
-  await expect(
-    page
-      .locator('button[aria-pressed="true"]')
-      .filter({ hasText: "선택 주변" }),
-  ).toHaveCount(1);
-  return selectedSkill;
+  const initialSkill = (await selectedHeading.textContent())?.trim() ?? "";
+  const requireDifferentSelection = !selectableBackendSkills.includes(
+    initialSkill,
+  );
+  for (const offset of offsets.slice(0, 8)) {
+    const point = await canvas.evaluate((element, nodeOffset) => {
+      const canvasElement = element as HTMLCanvasElement;
+      const beforeRect = canvasElement.getBoundingClientRect();
+      const root = document.documentElement;
+      const previousScrollBehavior = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      window.scrollBy(
+        0,
+        beforeRect.top + nodeOffset.y - window.innerHeight / 2,
+      );
+      root.style.scrollBehavior = previousScrollBehavior;
+
+      const rect = canvasElement.getBoundingClientRect();
+      const x = rect.left + nodeOffset.x;
+      const y = rect.top + nodeOffset.y;
+      return document.elementFromPoint(x, y) === canvasElement
+        ? { x, y }
+        : null;
+    }, offset);
+    if (!point) continue;
+
+    await session.send("Input.dispatchTouchEvent", {
+      touchPoints: [{
+        force: 1,
+        id: 1,
+        radiusX: 7,
+        radiusY: 7,
+        x: point.x,
+        y: point.y,
+      }],
+      type: "touchStart",
+    });
+    await page.waitForTimeout(40);
+    await session.send("Input.dispatchTouchEvent", {
+      touchPoints: [],
+      type: "touchEnd",
+    });
+    await page.waitForTimeout(80);
+
+    const selectedSkill = (await selectedHeading.textContent())?.trim() ?? "";
+    if (
+      (!requireDifferentSelection || selectedSkill !== initialSkill) &&
+      selectableBackendSkills.includes(selectedSkill)
+    ) {
+      await expect(
+        page
+          .locator('button[aria-pressed="true"]')
+          .filter({ hasText: "선택 주변" }),
+      ).toHaveCount(1);
+      return selectedSkill;
+    }
+  }
+
+  throw new Error("터치 가능한 백엔드 기술 노드를 선택하지 못했습니다.");
 }
 
 test("keeps fixture graph scope aligned with the production API contract", async ({
@@ -534,8 +541,9 @@ for (const width of [1440, 820, 390, 320]) {
     });
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("크기: 시장 수요");
+    await expect(legend).toContainText("색: 기술 분야");
     await expect(legend).toContainText("테두리: 내 기술");
-    await expect(legend).toContainText("점선: 추천 기술");
+    await expect(legend).toContainText("점: 학습 추천");
     await expect(legend).toContainText("선 농도: 함께 요구");
     const [legendBox, graphControlsBox] = await Promise.all([
       legend.boundingBox(),
@@ -640,7 +648,7 @@ for (const width of [1440, 820, 390, 320]) {
 
       if (width === 390) {
         await page.getByLabel("기술 추가").fill("Rust");
-        await page.getByRole("button", { name: "추가" }).click();
+        await page.getByRole("button", { name: "추가", exact: true }).click();
 
         for (const target of [
           page.getByRole("button", { name: "Rust 제거" }),
@@ -677,12 +685,23 @@ for (const width of [1440, 820, 390, 320]) {
       const mobileNavigationBox = await mobileNavigation.boundingBox();
       expect(mobileNavigationBox).not.toBeNull();
 
-      for (const overlay of [
+      const usesCoarsePointer = await page.evaluate(() =>
+        window.matchMedia("(pointer: coarse)").matches,
+      );
+      const overlays = [
         graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-        graphFrame.getByText(
-          "한 손가락으로 화면 스크롤 · 두 손가락으로 확대 · 탭하여 선택",
-        ),
-      ]) {
+      ];
+      if (usesCoarsePointer) {
+        overlays.push(
+          graphFrame.getByText(
+            "화면을 스크롤하거나 그래프 조작을 시작하세요",
+            { exact: true },
+          ),
+          graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
+        );
+      }
+
+      for (const overlay of overlays) {
         const overlayBox = await overlay.boundingBox();
         expect(overlayBox).not.toBeNull();
         expect(overlayBox!.y + overlayBox!.height).toBeLessThanOrEqual(
@@ -734,6 +753,7 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
   const canvas = forceCanvas.locator("canvas");
   await waitForPaintedCanvas(canvas);
   const beforeScrollZoom = await waitForZoomStability(canvas);
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "disabled");
   const beforeScrollY = await page.evaluate(() => window.scrollY);
   await dispatchTouchScroll(session, {
     x: graphBox!.x + graphBox!.width - 24,
@@ -747,6 +767,12 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
   expect(afterScrollZoom?.x).toBeCloseTo(beforeScrollZoom?.x ?? 0, 1);
   expect(afterScrollZoom?.y).toBeCloseTo(beforeScrollZoom?.y ?? 0, 1);
 
+  const defaultTapSelection = await tapSkillNode(page, session, canvas);
+  await expect(page).toHaveURL(
+    new RegExp(`\\bseed=${encodeURIComponent(defaultTapSelection)}(?:&|$)`),
+  );
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "disabled");
+
   await graphFrame.evaluate((element) => {
     const root = document.documentElement;
     const previousScrollBehavior = root.style.scrollBehavior;
@@ -759,6 +785,9 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
     .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
     .toBeGreaterThan(afterScrollZoom?.k ?? 0);
   const afterButtonZoom = await readCanvasZoom(canvas);
+
+  await graphFrame.getByRole("button", { name: "그래프 조작 시작" }).click();
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "enabled");
 
   const canvasBox = await canvas.boundingBox();
   expect(canvasBox).not.toBeNull();
@@ -778,6 +807,37 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
   );
   await expect(graphFrame.locator(".force-canvas--ready")).toBeVisible();
   await expect(graphFrame.locator(".graph-node")).toHaveCount(0);
+  await context.close();
+});
+
+test("shows graph interaction controls on a landscape touch viewport", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    baseURL: "http://127.0.0.1:3102",
+    hasTouch: true,
+    isMobile: true,
+    viewport: { height: 768, width: 1024 },
+  });
+  const page = await context.newPage();
+  await page.goto("/skills/graph?seed=Kubernetes");
+
+  const graphFrame = page.locator(
+    '[data-testid="skill-graph-frame"]:visible',
+  );
+  await expect(graphFrame.locator(".force-canvas--ready")).toBeVisible();
+  await expect(
+    graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
+  ).toBeVisible();
+  for (const target of [
+    graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
+    page.getByRole("button", { name: "Kubernetes 내 기술에 추가" }),
+    page.getByRole("link", { name: "Kubernetes 관련 공고 모두 보기" }),
+  ]) {
+    const box = await target.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+
   await context.close();
 });
 
@@ -825,6 +885,9 @@ test("keeps a static, painted, touch-controllable graph with reduced motion", as
   expect(afterScrollZoom?.y).toBeCloseTo(initialZoom?.y ?? 0, 1);
   const afterPanCanvas = await waitForCanvasStability(canvas);
   expect(afterPanCanvas.hash).toBe(initialCanvas.hash);
+
+  await graphFrame.getByRole("button", { name: "그래프 조작 시작" }).click();
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "enabled");
 
   await graphFrame.evaluate((element) =>
     element.scrollIntoView({ block: "center" }),

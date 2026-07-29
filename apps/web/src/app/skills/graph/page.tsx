@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
-import { getSkillGraph } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 import { normalizeCareerPreferences } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
@@ -44,6 +44,10 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function graphDepth(value: string | string[] | undefined): 1 | 2 {
+  return firstValue(value) === "2" ? 2 : 1;
+}
+
 function buildRetryHref(searchParams: SkillGraphSearchParams) {
   const output = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
@@ -66,24 +70,31 @@ export default async function SkillGraphPage({
     targetDomain: "",
   }).careerCondition;
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
+  const depth = graphDepth(resolvedSearchParams.depth);
   let graph = emptyGraph();
   let failed = false;
+  const catalogPromise = getSkillCatalog()
+    .then((catalog) => catalog.items)
+    .catch(() => []);
 
   try {
     graph = await getSkillGraph({
       ...(seed ? { seed } : {}),
       ...(careerType ? { career_type: careerType } : {}),
-      owned_skills: ownedSkills,
+      depth,
       limit: 30,
       include_evidence: false,
     });
   } catch {
     failed = true;
   }
+  const catalog = await catalogPromise;
 
   return (
     <SkillGraphExperience
       initialGraph={graph}
+      initialSkillCatalog={catalog}
+      initialDepth={depth}
       initialOwnedSkills={ownedSkills}
       careerType={careerType || undefined}
       loadFailed={failed}

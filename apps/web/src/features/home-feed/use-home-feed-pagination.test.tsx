@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { StrictMode, type ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   CommunityPostFeedItem,
@@ -45,9 +45,12 @@ function job(id: string): RecommendedJobFeedItem {
     verifiedLabel: "7월 27일",
     requiredSkills: [],
     preferredSkills: [],
+    unspecifiedSkills: [],
     matchedRequiredSkills: [],
     missingRequiredSkills: [],
     matchedPreferredSkills: [],
+    matchedUnspecifiedSkills: [],
+    recommendationReason: null,
     href: `/jobs/${id}`,
     source: "api",
   };
@@ -82,6 +85,153 @@ function deferred<T>() {
 }
 
 describe("useHomeFeedPagination", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("forwards saved skills and exposes a quiet personalization fallback", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(
+        JSON.stringify({
+          total: 2,
+          items: [
+            {
+              id: "posting-1",
+              title: "C++ Engineer",
+              company_name: "기업",
+              company_slug: "company",
+              career_type: "experienced",
+              employment_type: "FULL_TIME",
+              career_min: 2,
+              career_max: null,
+              location: "서울",
+              status: "open",
+              source_url: "https://example.com/posting-1",
+              last_verified_at: "2026-07-28T00:00:00.000Z",
+              required_skills: ["C++"],
+              preferred_skills: [],
+              unspecified_skills: [],
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "x-ejik-personalization": "fallback" },
+        },
+      ))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        total: 2,
+        items: [
+          {
+            id: "posting-2",
+            title: "C++ Platform Engineer",
+            company_name: "기업",
+            company_slug: "company",
+            career_type: "experienced",
+            employment_type: "FULL_TIME",
+            career_min: 2,
+            career_max: null,
+            location: "서울",
+            status: "open",
+            source_url: "https://example.com/posting-2",
+            last_verified_at: "2026-07-28T00:00:00.000Z",
+            required_skills: ["C++"],
+            preferred_skills: [],
+            unspecified_skills: [],
+          },
+        ],
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { result } = renderHook(() =>
+      useHomeFeedPagination({
+        activeTab: "recommended",
+        initialCommunity: [],
+        initialCommunityHasMore: false,
+        initialInsights: [],
+        initialJobs: [],
+        jobTotal: 2,
+        ownedSkills: ["C++", "Rust"],
+      }),
+    );
+
+    await act(async () => {
+      await result.current.loadNext("recommended");
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "/api/home-feed/postings?limit=10&offset=0&owned_skills=C%2B%2B&owned_skills=Rust",
+    );
+    expect(result.current.personalizationFallback).toBe(true);
+    expect(result.current.items[0]).toMatchObject({
+      postingId: "posting-1",
+      recommendationReason: "C++ 필수 요건 일치",
+    });
+
+    await act(async () => {
+      await result.current.loadNext("recommended");
+    });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe(
+      "/api/home-feed/postings?limit=10&offset=1",
+    );
+    expect(result.current.items[1]).toMatchObject({
+      postingId: "posting-2",
+      recommendationReason: "C++ 필수 요건 일치",
+    });
+  });
+
+  it("restarts the generic cursor from zero after a mid-feed fallback", async () => {
+    const initialJobs = Array.from({ length: 10 }, (_, index) =>
+      job(`personalized-${index}`),
+    );
+    const firstGenericPage = Array.from({ length: 10 }, (_, index) =>
+      job(`generic-${index}`),
+    );
+    const secondGenericPage = Array.from({ length: 10 }, (_, index) =>
+      job(`generic-${index + 10}`),
+    );
+    const loadJobs = vi.fn()
+      .mockResolvedValueOnce({
+        items: firstGenericPage,
+        total: 30,
+        personalizationFallback: true,
+      })
+      .mockResolvedValueOnce({ items: secondGenericPage, total: 30 });
+    const { result } = renderHook(() =>
+      useHomeFeedPagination({
+        activeTab: "recommended",
+        initialCommunity: [],
+        initialCommunityHasMore: false,
+        initialInsights: [],
+        initialJobs,
+        jobTotal: 30,
+        loadJobs,
+        ownedSkills: ["C++"],
+      }),
+    );
+
+    await act(async () => {
+      await result.current.loadNext("recommended");
+      await result.current.loadNext("recommended");
+    });
+
+    expect(loadJobs).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      offset: 10,
+      ownedSkills: ["C++"],
+      personalize: true,
+    }));
+    expect(loadJobs).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      offset: 10,
+      ownedSkills: ["C++"],
+      personalize: false,
+    }));
+    expect(result.current.items.map(({ id }) => id)).toEqual([
+      ...initialJobs.map(({ id }) => id),
+      ...firstGenericPage.map(({ id }) => id),
+      ...secondGenericPage.map(({ id }) => id),
+    ]);
+  });
+
   it("continues updating after React's development effect replay", async () => {
     const loadJobs = vi.fn(async () => ({ items: [job("job-1")], total: 1 }));
     const { result } = renderHook(

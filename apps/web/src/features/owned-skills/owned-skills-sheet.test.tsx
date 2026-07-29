@@ -205,6 +205,31 @@ describe("OwnedSkillsSheet", () => {
       .toEqual(["k8s"]);
   });
 
+  it("explains the 20-skill limit before attempting another save", async () => {
+    localStorage.setItem(
+      "ejik-fit:owned-skills",
+      JSON.stringify(Array.from({ length: 20 }, (_, index) => `skill-${index}`)),
+    );
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
+    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
+    fireEvent.change(within(dialog).getByRole("combobox", {
+      name: "추가할 기술",
+    }), { target: { value: "새 기술" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: "추가" }));
+
+    expect(within(dialog).getByRole("alert")).toHaveTextContent(
+      "내 기술은 최대 20개까지 추가할 수 있습니다.",
+    );
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!))
+      .toHaveLength(20);
+  });
+
   it("keeps Tab focus inside the modal sheet", async () => {
     render(
       <AppShell>

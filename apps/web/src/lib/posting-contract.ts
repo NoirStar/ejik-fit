@@ -112,9 +112,20 @@ export function normalizePostingList(value: unknown): PostingListResponse {
   if (!Number.isSafeInteger(value.total) || Number(value.total) < 0) {
     throw new Error("Invalid posting total");
   }
+  const canonicalOwnedSkills = value.canonical_owned_skills;
+  if (
+    canonicalOwnedSkills !== undefined &&
+    (!Array.isArray(canonicalOwnedSkills) ||
+      canonicalOwnedSkills.some((skill) => typeof skill !== "string"))
+  ) {
+    throw new Error("Invalid canonical owned skills");
+  }
   return {
     items: value.items.map(normalizePostingSummary),
     total: Number(value.total),
+    ...(canonicalOwnedSkills === undefined
+      ? {}
+      : { canonical_owned_skills: [...canonicalOwnedSkills] }),
   };
 }
 

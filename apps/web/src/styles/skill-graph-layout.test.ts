@@ -19,7 +19,7 @@ describe("skill graph layout CSS", () => {
     );
 
     expect(graphCss).toMatch(/\.page\s*\{[\s\S]*?height: 100%;/);
-    expect(graphCss).toMatch(/\.graphFrame\s*\{[\s\S]*?min-height: 31rem;/);
+    expect(graphCss).toMatch(/\.graphFrame\s*\{[\s\S]*?min-height: 34rem;/);
     expect(graphCss).toMatch(
       /\.graphFrame\s*\{[\s\S]*?background: var\(--color-graph\);/,
     );

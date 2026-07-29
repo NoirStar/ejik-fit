@@ -27,6 +27,7 @@ class SkillGraphReader(Protocol):
         seed: str | None = None,
         owned_skills: list[str] | None = None,
         career_type: str | None = None,
+        depth: int = 1,
         limit: int = 30,
         include_evidence: bool = False,
     ) -> dict: ...
@@ -98,6 +99,7 @@ class DatabaseSkillGraphReader:
         seed: str | None = None,
         owned_skills: list[str] | None = None,
         career_type: str | None = None,
+        depth: int = 1,
         limit: int = 30,
         include_evidence: bool = False,
     ) -> dict:
@@ -107,6 +109,7 @@ class DatabaseSkillGraphReader:
                 seed=seed,
                 owned_skills=owned_skills or (),
                 career_type=career_type,
+                depth=depth,
                 limit=limit,
                 include_evidence=include_evidence,
             )
@@ -221,6 +224,7 @@ def create_graph_router(reader: SkillGraphReader) -> APIRouter:
         seed: str | None = Query(default=None, max_length=100),
         owned_skills: list[str] | None = Query(default=None),
         career_type: str | None = Query(default=None, max_length=100),
+        depth: int = Query(default=1, ge=1, le=2),
         limit: int = Query(default=30, ge=5, le=60),
         include_evidence: bool = Query(default=False),
     ) -> dict:
@@ -231,6 +235,7 @@ def create_graph_router(reader: SkillGraphReader) -> APIRouter:
             seed=canonicalize_skill_input(seed) if seed else None,
             owned_skills=canonicalize_skill_inputs(owned_skills or []),
             career_type=career_type,
+            depth=depth,
             limit=limit,
             include_evidence=include_evidence,
         )

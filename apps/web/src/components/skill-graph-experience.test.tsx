@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -10,9 +11,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   FitAnalyzeResponse,
+  SkillCatalogItem,
   SkillGraphEvidenceResponse,
   SkillGraphResponse,
 } from "@/lib/types";
+import { writeOwnedSkills } from "@/lib/owned-skills";
 
 import { SkillGraphExperience } from "./skill-graph-experience";
 
@@ -197,7 +200,9 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
-    expect(screen.queryByLabelText("주변 깊이")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "주변 깊이" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "직접 연결" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "두 단계" })).toBeDisabled();
     expect(
       screen.queryByRole("checkbox", { name: "관련 공고" }),
     ).not.toBeInTheDocument();
@@ -226,7 +231,9 @@ describe("SkillGraphExperience", () => {
     ).not.toBeInTheDocument();
     const legend = screen.getByRole("note", { name: "스킬맵 범례" });
     expect(legend).toHaveTextContent("크기: 시장 수요");
+    expect(legend).toHaveTextContent("색: 기술 분야");
     expect(legend).toHaveTextContent("테두리: 내 기술");
+    expect(legend).toHaveTextContent("점: 학습 추천");
     expect(legend).toHaveTextContent("선 농도: 함께 요구");
     expect(screen.getByText("표시 기술")).toBeInTheDocument();
     expect(screen.getByText("표시 관계")).toBeInTheDocument();
@@ -239,6 +246,45 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.getByText("기술을 선택하면 관련 공고를 확인할 수 있습니다."),
     ).toBeInTheDocument();
+  });
+
+  it("uses catalog aliases when marking and removing an owned graph node", () => {
+    const goCatalog: SkillCatalogItem[] = [{
+      name: "Go",
+      category: "language",
+      kind: "language",
+      domains: ["backend"],
+      aliases: ["golang"],
+    }];
+    const goGraph: SkillGraphResponse = {
+      ...graph,
+      seed: "Go",
+      nodes: [{
+        ...graph.nodes[0]!,
+        id: "Go",
+        label: "Go",
+        domains: ["backend"],
+        seed: true,
+      }],
+      edges: [],
+    };
+
+    render(
+      <SkillGraphExperience
+        initialGraph={goGraph}
+        initialOwnedSkills={["golang"]}
+        initialSkillCatalog={goCatalog}
+      />,
+    );
+
+    const remove = screen.getByRole("button", {
+      name: "Go 내 기술에서 제거",
+    });
+    fireEvent.click(remove);
+    expect(screen.getByRole("button", { name: "Go 내 기술에 추가" }))
+      .toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual([]);
   });
 
   it("loads official job evidence only after a skill is selected", async () => {
@@ -277,7 +323,49 @@ describe("SkillGraphExperience", () => {
     expect(
       await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
+    expect(screen.getByRole("button", { name: "C++ 내 기술에 추가" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "C++ 관련 공고 모두 보기" }))
+      .toHaveAttribute("href", "/search?q=C%2B%2B&scope=jobs");
     expect(screen.getByText("1건")).toBeInTheDocument();
+  });
+
+  it("loads a two-step neighborhood only when the user asks for it", async () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "두 단계" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/data?limit=30&depth=2&seed=C%2B%2B",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+    expect(screen.getByRole("button", { name: "두 단계" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(window.location.search).toContain("depth=2");
+  });
+
+  it("keeps page scrolling until mobile graph interaction is explicitly enabled", () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    const frame = screen.getByTestId("skill-graph-frame");
+    const toggle = screen.getByRole("button", { name: "그래프 조작 시작" });
+    expect(frame).toHaveAttribute("data-touch-interaction", "disabled");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+
+    expect(frame).toHaveAttribute("data-touch-interaction", "enabled");
+    expect(screen.getByRole("button", { name: "그래프 조작 종료" }))
+      .toHaveAttribute("aria-pressed", "true");
   });
 
   it("replaces the overview with server-backed topology after selection", async () => {
@@ -335,7 +423,7 @@ describe("SkillGraphExperience", () => {
       await within(quickSkills).findByRole("link", { name: "Python" }),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/skills/graph/data?limit=30&seed=C%2B%2B",
+      "/skills/graph/data?limit=30&depth=1&seed=C%2B%2B",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });
@@ -427,7 +515,7 @@ describe("SkillGraphExperience", () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        "/skills/graph/data?limit=30&seed=C%2B%2B&career_type=experienced",
+        "/skills/graph/data?limit=30&depth=1&seed=C%2B%2B&career_type=experienced",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
@@ -493,10 +581,72 @@ describe("SkillGraphExperience", () => {
     ).toHaveTextContent("ROS2");
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        "/skills/graph/data?limit=30&seed=ROS2",
+        "/skills/graph/data?limit=30&depth=1&seed=ROS2",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
+  });
+
+  it("canonicalizes a catalog alias restored from browser history", async () => {
+    const aliasGraph: SkillGraphResponse = {
+      ...graph,
+      seed: "Go",
+      nodes: [
+        {
+          ...graph.nodes[0]!,
+          id: "Go",
+          label: "Go",
+          domains: ["backend"],
+          seed: true,
+        },
+        graph.nodes[1]!,
+      ],
+      edges: [{
+        ...graph.edges[0]!,
+        id: "Go:ROS2",
+        source: "Go",
+        target: "ROS2",
+      }],
+    };
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(aliasGraph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
+    window.history.replaceState(null, "", "/skills/graph?seed=golang");
+    render(
+      <SkillGraphExperience
+        initialGraph={aliasGraph}
+        initialOwnedSkills={[]}
+        initialSkillCatalog={[{
+          name: "Go",
+          category: "language",
+          kind: "language",
+          domains: ["backend"],
+          aliases: ["golang"],
+        }]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "ROS2" }));
+
+    window.history.pushState(null, "", "/skills/graph?seed=golang");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+
+    expect(
+      await within(
+        screen.getByRole("complementary", { name: "선택 기술 분석" }),
+      ).findByRole("heading", { level: 2, name: "Go" }),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls
+        .map(([input]) => String(input))
+        .filter((url) => url.startsWith("/skills/graph/data")),
+    ).toEqual(["/skills/graph/data?limit=30&depth=1&seed=ROS2"]);
   });
 
   it("moves repeated selection to the detail panel", () => {
@@ -516,7 +666,9 @@ describe("SkillGraphExperience", () => {
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
-    const firstAction = within(inspector).getByRole("button", { name: /ROS2/ });
+    const firstAction = within(inspector).getByRole("button", {
+      name: "C++ 내 기술에 추가",
+    });
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
       block: "start",
@@ -740,8 +892,72 @@ describe("SkillGraphExperience", () => {
       );
     });
     expect(screen.getByRole("note", { name: "스킬맵 범례" })).toHaveTextContent(
-      "점선: 추천 기술",
+      "점: 학습 추천",
     );
+  });
+
+  it("updates graph ownership when the shared header edits saved skills", async () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    const node = screen.getByRole("button", { name: "C++" });
+    expect(node).toHaveAttribute("data-owned", "false");
+
+    act(() => {
+      writeOwnedSkills(["C++"]);
+    });
+    await waitFor(() => expect(node).toHaveAttribute("data-owned", "true"));
+
+    act(() => {
+      writeOwnedSkills([]);
+    });
+    await waitFor(() => expect(node).toHaveAttribute("data-owned", "false"));
+  });
+
+  it("uses the same identity for aliased owned nodes and removal", async () => {
+    const aliasGraph: SkillGraphResponse = {
+      ...graph,
+      nodes: [
+        ...graph.nodes,
+        {
+          ...graph.nodes[0]!,
+          id: "Kubernetes",
+          label: "Kubernetes",
+          owned: false,
+        },
+      ],
+    };
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(aliasGraph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
+
+    render(
+      <SkillGraphExperience
+        initialGraph={aliasGraph}
+        initialOwnedSkills={["k8s"]}
+      />,
+    );
+
+    const node = screen.getByRole("button", { name: "Kubernetes" });
+    expect(node).toHaveAttribute("data-owned", "true");
+    fireEvent.click(node);
+
+    const remove = await screen.findByRole("button", {
+      name: "Kubernetes 내 기술에서 제거",
+    });
+    fireEvent.click(remove);
+
+    await waitFor(() => {
+      expect(localStorage.getItem("ejik-fit:owned-skills")).toBe("[]");
+    });
+    expect(node).toHaveAttribute("data-owned", "false");
   });
 
   it("explains an empty filter result and restores the graph", () => {

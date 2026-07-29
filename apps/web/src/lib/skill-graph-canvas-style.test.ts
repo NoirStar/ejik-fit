@@ -14,21 +14,26 @@ import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
 
 describe("skill graph canvas styling", () => {
   it("uses explicit visual roles for resting, selected, owned, and recommended nodes", () => {
-    expect(skillGraphNodePaint({ owned: false, recommended: false }, false)).toEqual({
-      fill: GRAPH_CANVAS_COLORS.neutralNode,
+    const backend = "#27ae60";
+    expect(skillGraphNodePaint({ color: backend, owned: false, recommendationRank: null }, false)).toEqual({
+      fill: backend,
       ring: null,
+      recommendationMarker: null,
     });
-    expect(skillGraphNodePaint({ owned: true, recommended: false }, false)).toEqual({
-      fill: GRAPH_CANVAS_COLORS.neutralNode,
+    expect(skillGraphNodePaint({ color: backend, owned: true, recommendationRank: null }, false)).toEqual({
+      fill: backend,
       ring: GRAPH_CANVAS_COLORS.ownedRing,
+      recommendationMarker: null,
     });
-    expect(skillGraphNodePaint({ owned: false, recommended: true }, false)).toEqual({
-      fill: GRAPH_CANVAS_COLORS.neutralNode,
-      ring: GRAPH_CANVAS_COLORS.recommendedRing,
+    expect(skillGraphNodePaint({ color: backend, owned: false, recommendationRank: 2 }, false)).toEqual({
+      fill: backend,
+      ring: null,
+      recommendationMarker: GRAPH_CANVAS_COLORS.recommendedRing,
     });
-    expect(skillGraphNodePaint({ owned: true, recommended: true }, true)).toEqual({
+    expect(skillGraphNodePaint({ color: backend, owned: true, recommendationRank: 1 }, true)).toEqual({
       fill: GRAPH_CANVAS_COLORS.selectedNode,
       ring: GRAPH_CANVAS_COLORS.ownedRing,
+      recommendationMarker: GRAPH_CANVAS_COLORS.recommendedRing,
     });
   });
 
@@ -41,7 +46,7 @@ describe("skill graph canvas styling", () => {
     ];
 
     expect(Math.min(...values)).toBeGreaterThanOrEqual(0.6);
-    expect(Math.max(...values)).toBeLessThanOrEqual(1.6);
+    expect(Math.max(...values)).toBeLessThanOrEqual(1.35);
   });
 
   it("uses token-backed line colors and the product font", () => {

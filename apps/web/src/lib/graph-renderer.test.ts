@@ -24,6 +24,7 @@ const view: SkillGraphViewData = {
       demandCount: 12,
       owned: true,
       recommended: false,
+      recommendationRank: null,
       seed: true,
     },
     {
@@ -38,6 +39,7 @@ const view: SkillGraphViewData = {
       demandCount: 7,
       owned: false,
       recommended: true,
+      recommendationRank: 1,
       seed: false,
     },
   ],

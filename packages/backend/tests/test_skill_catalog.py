@@ -6,6 +6,7 @@ from ejikfit.skill_catalog import (
     canonicalize_skill_input,
     canonicalize_skill_inputs,
     skill_category,
+    skill_input_aliases,
 )
 
 
@@ -239,7 +240,15 @@ def test_explicit_skill_inputs_are_canonicalized_and_deduplicated() -> None:
     assert canonicalize_skill_input("K8S") == "Kubernetes"
     assert canonicalize_skill_input("feature   store") == "Feature Store"
     assert canonicalize_skill_input("react-query") == "TanStack Query"
+    assert canonicalize_skill_input("cpp") == "C++"
+    assert canonicalize_skill_input("js") == "JavaScript"
     assert canonicalize_skill_input("Custom Tool") == "Custom Tool"
     assert canonicalize_skill_inputs(
         ["python", "PYTHON", " k8s ", "Custom Tool", "custom tool"]
     ) == ["Python", "Kubernetes", "Custom Tool"]
+
+
+def test_input_aliases_expose_the_same_server_side_identity_source() -> None:
+    assert skill_input_aliases("Go") == ("golang",)
+    assert skill_input_aliases("Kubernetes") == ("k8s", "쿠버네티스")
+    assert skill_input_aliases("C++") == ("cpp", "씨플플")

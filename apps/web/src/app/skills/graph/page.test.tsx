@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import SkillGraphPage from "./page";
 
-import { getSkillGraph } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 
 
 vi.mock("@/lib/api", () => ({
+  getSkillCatalog: vi.fn(),
   getSkillGraph: vi.fn(),
 }));
 
@@ -23,6 +24,7 @@ describe("SkillGraphPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     navigation.push.mockReset();
+    vi.mocked(getSkillCatalog).mockResolvedValue({ items: [], total: 0 });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -129,7 +131,8 @@ describe("SkillGraphPage", () => {
     expect(
       screen.queryByRole("link", { name: "이직핏 기술 맵 홈" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("주변 깊이")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "주변 깊이" }))
+      .toBeInTheDocument();
     expect(screen.getByRole("button", { name: "선택 주변" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -146,15 +149,57 @@ describe("SkillGraphPage", () => {
     });
 
     await SkillGraphPage({
-      searchParams: Promise.resolve({ seed: "Kubernetes" }),
+      searchParams: Promise.resolve({
+        seed: "Kubernetes",
+        owned_skills: "Linux",
+      }),
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Kubernetes",
-      owned_skills: [],
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });
+  });
+
+  it("passes server-owned aliases to the graph experience", async () => {
+    vi.mocked(getSkillCatalog).mockResolvedValue({
+      items: [{
+        name: "Go",
+        category: "language",
+        kind: "language",
+        domains: ["backend"],
+        aliases: ["golang"],
+      }],
+      total: 1,
+    });
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: "Go",
+      nodes: [{
+        id: "Go",
+        label: "Go",
+        category: "language",
+        kind: "language",
+        domains: ["backend"],
+        demand_count: 10,
+        required_count: 8,
+        preferred_count: 2,
+        unspecified_count: 0,
+        owned: false,
+        seed: true,
+      }],
+      edges: [],
+      evidence: [],
+      meta: { limit: 30, min_confidence: 0.8 },
+    });
+
+    render(await SkillGraphPage({
+      searchParams: Promise.resolve({ owned_skills: "golang", seed: "Go" }),
+    }));
+
+    expect(screen.getByRole("button", { name: "Go 내 기술에서 제거" }))
+      .toBeInTheDocument();
   });
 
   it("normalizes and forwards the selected career scope", async () => {
@@ -175,8 +220,8 @@ describe("SkillGraphPage", () => {
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Kubernetes",
-      owned_skills: [],
       career_type: "experienced",
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });
@@ -196,7 +241,7 @@ describe("SkillGraphPage", () => {
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
-      owned_skills: [],
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });

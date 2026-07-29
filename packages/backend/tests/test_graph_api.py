@@ -9,6 +9,7 @@ class FakeSkillGraphReader:
         seed: str | None = None,
         owned_skills: list[str] | None = None,
         career_type: str | None = None,
+        depth: int = 1,
         limit: int = 30,
         include_evidence: bool = False,
     ) -> dict:
@@ -64,6 +65,7 @@ class RecordingSkillGraphReader(FakeSkillGraphReader):
         self.seed: str | None = None
         self.owned_skills: list[str] = []
         self.include_evidence: bool | None = None
+        self.depth: int | None = None
         self.evidence_call: tuple[str, str | None, int] | None = None
 
     def graph(
@@ -71,16 +73,19 @@ class RecordingSkillGraphReader(FakeSkillGraphReader):
         seed: str | None = None,
         owned_skills: list[str] | None = None,
         career_type: str | None = None,
+        depth: int = 1,
         limit: int = 30,
         include_evidence: bool = False,
     ) -> dict:
         self.seed = seed
         self.owned_skills = owned_skills or []
+        self.depth = depth
         self.include_evidence = include_evidence
         return super().graph(
             seed,
             owned_skills,
             career_type,
+            depth,
             limit,
             include_evidence,
         )
@@ -114,6 +119,17 @@ def test_skill_graph_endpoint_validates_limit_bounds() -> None:
     response = TestClient(app).get("/api/graph/skills?limit=1000")
 
     assert response.status_code == 422
+
+
+def test_skill_graph_endpoint_forwards_bounded_local_depth() -> None:
+    reader = RecordingSkillGraphReader()
+    app = create_app(skill_graph_reader=reader)
+
+    response = TestClient(app).get("/api/graph/skills?seed=Python&depth=2")
+
+    assert response.status_code == 200
+    assert reader.depth == 2
+    assert TestClient(app).get("/api/graph/skills?depth=3").status_code == 422
 
 
 def test_skill_graph_endpoint_canonicalizes_explicit_skill_inputs() -> None:

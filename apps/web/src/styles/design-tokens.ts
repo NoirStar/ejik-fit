@@ -35,7 +35,7 @@ export const GRAPH_PREVIEW_COLORS = {
 export const GRAPH_CANVAS_COLORS = {
   neutralNode: GRAPH_DEFAULT_COLOR,
   selectedNode: "#6d4be8",
-  ownedRing: "#2f80ed",
+  ownedRing: "#6d4be8",
   recommendedRing: "#d97706",
   hoverRing: "rgba(109, 75, 232, 0.62)",
   postingNode: "rgba(113, 116, 130, 0.58)",

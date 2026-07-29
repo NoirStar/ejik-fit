@@ -49,6 +49,7 @@ export async function getPostings(filters: {
   category?: string;
   company?: string;
   companies?: string[];
+  owned_skills?: string[];
   limit?: number;
   offset?: number;
 } = {}): Promise<PostingListResponse> {
@@ -68,6 +69,9 @@ export async function getPostings(filters: {
   for (const company of filters.companies ?? []) {
     params.append("companies", company);
   }
+  for (const skill of filters.owned_skills ?? []) {
+    params.append("owned_skills", skill);
+  }
   if (filters.limit) {
     params.set("limit", String(filters.limit));
   }
@@ -77,7 +81,7 @@ export async function getPostings(filters: {
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return normalizePostingList(
     await request<unknown>(`/api/postings${query}`, {
-      policy: "public",
+      policy: filters.owned_skills?.length ? "private" : "public",
       tags: ["postings"],
     }),
   );
@@ -177,6 +181,7 @@ export function getSkillGraph(filters: {
   seed?: string;
   owned_skills?: string[];
   career_type?: string;
+  depth?: 1 | 2;
   limit?: number;
   include_evidence?: boolean;
 } = {}): Promise<SkillGraphResponse> {
@@ -189,6 +194,9 @@ export function getSkillGraph(filters: {
   }
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.depth) {
+    params.set("depth", String(filters.depth));
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));

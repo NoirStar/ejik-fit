@@ -156,7 +156,9 @@ export function buildLargeSkillGraphViewFixture({
         val: Math.min(10, 3.2 + Math.sqrt(demandCount) * 1.15),
         demandCount,
         owned: index < 8,
-        recommended: index >= 8 && index < 12,
+        recommended: index >= 8 && index < 11,
+        recommendationRank:
+          index >= 8 && index < 11 ? index - 7 : null,
         seed: index === 0,
       };
     },

@@ -34,15 +34,15 @@ describe("skill graph data route", () => {
 
     const response = await GET(
       new Request(
-        "http://localhost/skills/graph/data?seed=C%2B%2B&owned_skills=C%2B%2B&career_type=experienced&limit=2",
+        "http://localhost/skills/graph/data?seed=C%2B%2B&owned_skills=C%2B%2B&career_type=experienced&depth=2&limit=2",
       ),
     );
 
     expect(response.status).toBe(200);
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "C++",
-      owned_skills: ["C++"],
       career_type: "experienced",
+      depth: 2,
       limit: 5,
       include_evidence: false,
     });
@@ -60,11 +60,20 @@ describe("skill graph data route", () => {
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: undefined,
-      owned_skills: [],
       career_type: undefined,
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });
+  });
+
+  it("rejects a graph depth outside the supported local range", async () => {
+    const response = await GET(
+      new Request("http://localhost/skills/graph/data?depth=3"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSkillGraph).not.toHaveBeenCalled();
   });
 
   it("returns backend ApiError status and message as JSON", async () => {

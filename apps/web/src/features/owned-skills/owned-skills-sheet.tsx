@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   addOwnedSkill,
   clearOwnedSkills,
+  MAX_OWNED_SKILL_LENGTH,
+  MAX_OWNED_SKILLS,
   readOwnedSkills,
   removeOwnedSkill,
 } from "@/lib/owned-skills";
@@ -99,10 +101,18 @@ export function OwnedSkillsSheet({
       setError("기술 이름을 입력해 주세요.");
       return false;
     }
+    if (normalized.length > MAX_OWNED_SKILL_LENGTH) {
+      setError(`기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`);
+      return false;
+    }
     const skillName = resolveSkillInput(normalized, catalog);
     const skillKey = resolvedSkillKey(skillName, catalog);
     if (skills.some((skill) => resolvedSkillKey(skill, catalog) === skillKey)) {
       setError("이미 추가한 기술입니다.");
+      return false;
+    }
+    if (skills.length >= MAX_OWNED_SKILLS) {
+      setError(`내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`);
       return false;
     }
 
