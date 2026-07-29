@@ -283,7 +283,7 @@ describe("Home", () => {
 
     expect(screen.getByText("토스")).toBeInTheDocument();
     expect(screen.getByText(
-      "맞춤 추천을 불러오지 못해 최신 공고를 보여드려요.",
+      "맞춤 추천을 불러오지 못했습니다. 최신 공고를 대신 표시합니다.",
     )).toBeInTheDocument();
     expect(getPostings).toHaveBeenNthCalledWith(1, {
       limit: 20,
