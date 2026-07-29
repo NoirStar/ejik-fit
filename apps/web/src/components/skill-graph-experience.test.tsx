@@ -199,6 +199,15 @@ describe("SkillGraphExperience", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("내 기술", { selector: "summary" })).toBeInTheDocument();
+    expect(screen.getByText("보기 설정", { selector: "summary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "핵심" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "주요만" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
@@ -254,6 +263,64 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.getByText("기술을 선택하면 관련 공고를 확인할 수 있습니다."),
     ).toBeInTheDocument();
+  });
+
+  it("changes paint density without requesting another topology", () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    const topologyCallsBefore = fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    ).length;
+
+    fireEvent.click(screen.getByRole("button", { name: "자세히" }));
+    fireEvent.click(screen.getByRole("button", { name: "더 많이" }));
+
+    expect(screen.getByRole("button", { name: "자세히" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "더 많이" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    )).toHaveLength(topologyCallsBefore);
+  });
+
+  it("shows and toggles an owned-skill market connection without refetching", () => {
+    render(
+      <SkillGraphExperience
+        initialGraph={graph}
+        initialOwnedSkills={["C++"]}
+        initialSelectedSkill="ROS2"
+      />,
+    );
+    const topologyCallsBefore = fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    ).length;
+
+    expect(screen.getByRole("heading", {
+      level: 2,
+      name: "내 기술과의 시장 연결",
+    })).toBeInTheDocument();
+    expect(screen.getByLabelText("시장 연결 경로: C++에서 ROS2까지"))
+      .toHaveTextContent("C++ROS2");
+    expect(screen.getByText(
+      "공고에서 함께 요구된 강한 관계를 따라 표시합니다. 학습 순서를 뜻하지 않습니다.",
+    )).toBeInTheDocument();
+
+    const pathButton = screen.getByRole("button", {
+      name: "그래프에서 경로 보기",
+    });
+    fireEvent.click(pathButton);
+
+    expect(screen.getByRole("button", { name: "경로 강조 끄기" }))
+      .toHaveAttribute("aria-pressed", "true");
+    expect(fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    )).toHaveLength(topologyCallsBefore);
   });
 
   it("uses catalog aliases when marking and removing an owned graph node", () => {

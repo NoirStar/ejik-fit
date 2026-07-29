@@ -26,11 +26,20 @@ import {
   skillGraphLinkColor,
   skillGraphLinkWidth,
 } from "@/lib/skill-graph-canvas-style";
+import { findStrongestSkillGraphPath } from "@/lib/skill-graph-path";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
 import type {
   SkillGraphViewMode,
   SkillGraphViewNode,
 } from "@/lib/skill-graph-view";
+import {
+  buildVisibleSkillGraphLinkIds,
+  skillGraphLabelLimit,
+} from "@/lib/skill-graph-visibility";
+import type {
+  SkillGraphLabelDensity,
+  SkillGraphRelationshipDensity,
+} from "@/lib/skill-graph-visibility";
 import type {
   FitAnalyzeResponse,
   SkillCatalogItem,
@@ -101,6 +110,16 @@ const DOMAIN_LABELS: Record<string, string> = {
   robotics: "로보틱스",
   security: "보안",
   web: "웹",
+};
+
+
+const RELATIONSHIP_DENSITY_LABELS: Record<
+  SkillGraphRelationshipDensity,
+  string
+> = {
+  core: "핵심",
+  balanced: "균형",
+  detailed: "자세히",
 };
 
 
@@ -261,6 +280,11 @@ export function SkillGraphExperience({
   const [searchInput, setSearchInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
   const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("all");
+  const [relationshipDensity, setRelationshipDensity] =
+    useState<SkillGraphRelationshipDensity>("core");
+  const [labelDensity, setLabelDensity] =
+    useState<SkillGraphLabelDensity>("key");
+  const [pathEmphasisEnabled, setPathEmphasisEnabled] = useState(false);
   const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
   const [compactGraph, setCompactGraph] = useState(false);
   const [forceReady, setForceReady] = useState(false);
@@ -425,6 +449,37 @@ export function SkillGraphExperience({
   );
   const showFallbackGraph = positionedNodes.length > 0 && !forceReady;
   const isFilteredEmpty = graph.nodes.length > 0 && viewData.nodes.length === 0;
+  const visibleLinkIds = useMemo(
+    () => buildVisibleSkillGraphLinkIds(
+      viewData.links,
+      viewData.stats.skillCount,
+      relationshipDensity,
+    ),
+    [relationshipDensity, viewData.links, viewData.stats.skillCount],
+  );
+  const marketPath = useMemo(() => {
+    if (!selectedId) return null;
+    return findStrongestSkillGraphPath({
+      nodes: viewData.nodes,
+      links: viewData.links,
+      sourceIds: viewData.nodes
+        .filter((node) => node.kind === "skill" && node.owned)
+        .map(({ id }) => id),
+      targetId: selectedId,
+      maxHops: 4,
+    });
+  }, [selectedId, viewData.links, viewData.nodes]);
+  const marketPathLabels = useMemo(() => {
+    if (!marketPath) return [];
+    const labels = new Map(viewData.nodes.map((node) => [node.id, node.label]));
+    return marketPath.nodeIds.map((nodeId) => labels.get(nodeId) ?? nodeId);
+  }, [marketPath, viewData.nodes]);
+  const pathEmphasis = useMemo(
+    () => pathEmphasisEnabled && marketPath && marketPath.hopCount > 0
+      ? { nodeIds: marketPath.nodeIds, linkIds: marketPath.linkIds }
+      : null,
+    [marketPath, pathEmphasisEnabled],
+  );
 
   const strongestConnections = useMemo(() => {
     const focusIds = new Set(
@@ -467,9 +522,10 @@ export function SkillGraphExperience({
       // The renderer's minimum zoom is 0.18. Keep the curated atlas labels
       // visible at that fitted overview scale; collision checks still remove
       // labels that would overlap on narrow screens.
+      labelLimit: skillGraphLabelLimit(labelDensity, viewData.stats.skillCount),
       labelThreshold: 0.18,
     }),
-    [],
+    [labelDensity, viewData.stats.skillCount],
   );
   const forces = useMemo<SkillGraphForceSettings>(
     () => ({
@@ -496,6 +552,10 @@ export function SkillGraphExperience({
     compactLayout.addEventListener("change", syncGraphBudget);
     return () => compactLayout.removeEventListener("change", syncGraphBudget);
   }, []);
+
+  useEffect(() => {
+    setPathEmphasisEnabled(false);
+  }, [graph, ownedSkills, selectedId]);
 
   useEffect(() => {
     topologyRequestRef.current?.abort();
@@ -818,6 +878,19 @@ export function SkillGraphExperience({
     );
   }
 
+  function toggleMarketPath() {
+    if (!marketPath || marketPath.hopCount === 0) return;
+    setPathEmphasisEnabled((current) => {
+      const next = !current;
+      setAnnouncement(
+        next
+          ? `${marketPathLabels[0]}에서 ${marketPathLabels.at(-1)}까지의 시장 관계를 강조했습니다.`
+          : "시장 연결 경로 강조를 껐습니다.",
+      );
+      return next;
+    });
+  }
+
   function resetGraphView() {
     depthRef.current = 1;
     graphModeRef.current = "all";
@@ -989,6 +1062,70 @@ export function SkillGraphExperience({
             </details>
 
             <details>
+              <summary>
+                보기 설정 <b>{RELATIONSHIP_DENSITY_LABELS[relationshipDensity]}</b>
+              </summary>
+              <div className={`${styles.popover} ${styles.displayPopover}`}>
+                <div className={styles.popoverHeader}>
+                  <div>
+                    <strong>그래프 표시</strong>
+                    <span>배치는 유지하고 표시 정보만 바뀝니다.</span>
+                  </div>
+                </div>
+                <div className={styles.displaySetting}>
+                  <span id="skill-graph-relationship-density">관계선</span>
+                  <div
+                    aria-labelledby="skill-graph-relationship-density"
+                    className={styles.settingSegmented}
+                    role="group"
+                  >
+                    {(
+                      Object.entries(RELATIONSHIP_DENSITY_LABELS) as [
+                        SkillGraphRelationshipDensity,
+                        string,
+                      ][]
+                    ).map(([value, label]) => (
+                      <button
+                        aria-pressed={relationshipDensity === value}
+                        data-active={relationshipDensity === value ? "true" : undefined}
+                        key={value}
+                        onClick={() => setRelationshipDensity(value)}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.displaySetting}>
+                  <span id="skill-graph-label-density">기술명</span>
+                  <div
+                    aria-labelledby="skill-graph-label-density"
+                    className={styles.settingSegmented}
+                    role="group"
+                  >
+                    <button
+                      aria-pressed={labelDensity === "key"}
+                      data-active={labelDensity === "key" ? "true" : undefined}
+                      onClick={() => setLabelDensity("key")}
+                      type="button"
+                    >
+                      주요만
+                    </button>
+                    <button
+                      aria-pressed={labelDensity === "more"}
+                      data-active={labelDensity === "more" ? "true" : undefined}
+                      onClick={() => setLabelDensity("more")}
+                      type="button"
+                    >
+                      더 많이
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details>
               <summary>읽는 법</summary>
               <p aria-label="스킬맵 범례" className={styles.legend} role="note">
                 <span><i aria-hidden="true" data-kind="demand" />크기: 시장 수요</span>
@@ -1013,19 +1150,26 @@ export function SkillGraphExperience({
                 <span>
                   {loadFailed
                     ? "기술·관계 수 확인 불가"
-                    : `${viewData.stats.skillCount}개 기술 · ${viewData.stats.linkCount}개 관계`}
+                    : `${viewData.stats.skillCount}개 기술 · ${visibleLinkIds.size}개 관계`}
                 </span>
+                {!loadFailed && (
+                  <b className={styles.graphDensityBadge}>
+                    {RELATIONSHIP_DENSITY_LABELS[relationshipDensity]}
+                  </b>
+                )}
               </div>
 
               <SkillGraphForceCanvas
                 data={viewData}
                 display={display}
+                emphasis={pathEmphasis}
                 forces={forces}
                 onNodeSelect={selectSkill}
                 onReadyChange={setForceReady}
                 reheatKey={0}
                 selectedId={selectedId}
                 touchInteractionEnabled={graphInteractionEnabled}
+                visibleLinkIds={visibleLinkIds}
               />
 
               <button
@@ -1078,7 +1222,15 @@ export function SkillGraphExperience({
                 <>
                   <svg className="graph-edges" aria-hidden="true" viewBox="0 0 100 100">
                     {viewData.links
-                      .filter((link) => link.kind === "skill")
+                      .filter((link) =>
+                        link.kind === "skill" && (
+                          visibleLinkIds.has(link.id) ||
+                          pathEmphasis?.linkIds.includes(link.id) ||
+                          (selectedId !== null && (
+                            link.source === selectedId || link.target === selectedId
+                          ))
+                        ),
+                      )
                       .map((edge) => {
                         const source = positionedNodeMap.get(edge.source);
                         const target = positionedNodeMap.get(edge.target);
@@ -1181,6 +1333,68 @@ export function SkillGraphExperience({
                 </div>
                 <div><dt>직접 연결</dt><dd>{selected ? `${directConnectionCount}개` : "—"}</dd></div>
               </dl>
+            </section>
+
+            <section className={styles.inspectorSection}>
+              <header className={styles.sectionHeader}>
+                <h2>내 기술과의 시장 연결</h2>
+                <span>
+                  {marketPath && marketPath.hopCount > 0
+                    ? `${marketPath.hopCount}개 관계`
+                    : "공고 관계 기준"}
+                </span>
+              </header>
+              {!selected && (
+                <p className={styles.marketPathState}>
+                  기술을 선택하면 내 기술과 이어지는 시장 관계를 확인할 수 있습니다.
+                </p>
+              )}
+              {selected && ownedSkills.length === 0 && (
+                <p className={styles.marketPathState}>
+                  내 기술을 추가하면 선택 기술까지 이어지는 시장 관계를 볼 수 있습니다.
+                </p>
+              )}
+              {selected && selectedOwned && (
+                <p className={styles.marketPathState}>
+                  선택한 기술은 이미 내 기술에 포함되어 있습니다.
+                </p>
+              )}
+              {selected && ownedSkills.length > 0 && !selectedOwned && !marketPath && (
+                <p className={styles.marketPathState}>
+                  현재 지도에 보이는 내 기술과의 연결을 찾지 못했습니다.
+                </p>
+              )}
+              {selected && !selectedOwned && marketPath && marketPath.hopCount > 0 && (
+                <div className={styles.marketPathContent}>
+                  <ol
+                    aria-label={`시장 연결 경로: ${marketPathLabels[0]}에서 ${marketPathLabels.at(-1)}까지`}
+                    className={styles.marketPathNodes}
+                  >
+                    {marketPathLabels.map((label, index) => (
+                      <li key={`${marketPath.nodeIds[index]}:${index}`}>
+                        <span>{label}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <p>
+                    공고에서 함께 요구된 강한 관계를 따라 표시합니다. 학습 순서를 뜻하지 않습니다.
+                  </p>
+                  <div className={styles.marketPathFooter}>
+                    <span>
+                      가장 약한 구간도 함께 {marketPath.weakestCooccurrenceCount}건
+                    </span>
+                    <button
+                      aria-pressed={pathEmphasisEnabled}
+                      onClick={toggleMarketPath}
+                      type="button"
+                    >
+                      {pathEmphasisEnabled
+                        ? "경로 강조 끄기"
+                        : "그래프에서 경로 보기"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className={styles.inspectorSection}>
