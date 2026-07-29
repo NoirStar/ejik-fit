@@ -6,6 +6,7 @@ import type { SkillGraphViewData } from "./skill-graph-view";
 export type GraphRendererDisplaySettings = {
   animate: boolean;
   arrows: boolean;
+  labelLimit: number;
   labelThreshold: number;
   linkThickness: number;
   nodeScale: number;
@@ -22,15 +23,23 @@ export type GraphRendererForceSettings = {
 };
 
 
+export type GraphRendererEmphasis = {
+  nodeIds: readonly string[];
+  linkIds: readonly string[];
+};
+
+
 export type GraphRendererProps = {
   data: SkillGraphViewData;
   display: GraphRendererDisplaySettings;
+  emphasis?: GraphRendererEmphasis | null;
   forces: GraphRendererForceSettings;
   selectedId: string | null;
   onNodeSelect: (nodeId: string) => void;
   onReadyChange?: (ready: boolean) => void;
   reheatKey?: number;
   touchInteractionEnabled?: boolean;
+  visibleLinkIds?: ReadonlySet<string>;
 };
 
 

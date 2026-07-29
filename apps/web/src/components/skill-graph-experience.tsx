@@ -120,6 +120,7 @@ const COPY = {
 const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
   animate: true,
   arrows: false,
+  labelLimit: 14,
   labelThreshold: 1.08,
   linkThickness: 1,
   nodeScale: 0.9,

@@ -38,9 +38,11 @@ import type {
 } from "@/lib/skill-graph-view";
 import type {
   GraphRendererDisplaySettings,
+  GraphRendererEmphasis,
   GraphRendererForceSettings,
   GraphRendererProps,
 } from "@/lib/graph-renderer";
+import { shouldRenderSkillGraphLink } from "@/lib/skill-graph-visibility";
 import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
 export {
   FORCE_CANVAS_RENDERER as SKILL_GRAPH_FORCE_CANVAS_RENDERER,
@@ -80,9 +82,6 @@ type LabelBounds = {
   right: number;
   top: number;
 };
-
-
-const MAX_VISIBLE_LABELS = 14;
 
 
 function emptyHighlight(): HighlightState {
@@ -385,6 +384,29 @@ function focusedHighlight(
 }
 
 
+function resolvedHighlight(
+  selectedId: string | null,
+  hoveredId: string | null,
+  adjacency: SkillGraphAdjacency,
+  emphasis: GraphRendererEmphasis | null | undefined,
+): HighlightState {
+  if (hoveredId) {
+    return focusedHighlight(hoveredId, hoveredId, adjacency);
+  }
+  if (emphasis && emphasis.nodeIds.length > 0) {
+    return {
+      focusId: null,
+      hoveredId: null,
+      nodeIds: new Set(emphasis.nodeIds),
+      linkIds: new Set(emphasis.linkIds),
+      relationRatios: new Map(emphasis.nodeIds.map((nodeId) => [nodeId, 1])),
+      maxCooccurrenceCount: 0,
+    };
+  }
+  return focusedHighlight(selectedId, null, adjacency);
+}
+
+
 function nodeTooltip(
   node: SkillForceNode,
   adjacency: SkillGraphAdjacency,
@@ -411,7 +433,10 @@ function linkRelationRatio(
   link: SkillForceLink,
   highlight: HighlightState,
 ) {
-  if (!highlight.focusId || link.kind !== "skill") return 0;
+  if (link.kind !== "skill") return 0;
+  if (!highlight.focusId) {
+    return highlight.linkIds.has(link.id) ? 1 : 0;
+  }
   const source = getNodeId(link.source);
   const target = getNodeId(link.target);
   if (source === highlight.focusId) {
@@ -427,12 +452,14 @@ function linkRelationRatio(
 export function SkillGraphForceCanvas({
   data,
   display,
+  emphasis,
   forces,
   selectedId,
   onNodeSelect,
   onReadyChange,
   reheatKey = 0,
   touchInteractionEnabled = false,
+  visibleLinkIds,
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
@@ -445,14 +472,16 @@ export function SkillGraphForceCanvas({
     [stableData.links],
   );
   const labelEligibleIds = useMemo(
-    () => selectSkillGraphLabelIds(stableData.nodes, MAX_VISIBLE_LABELS),
-    [stableData.nodes],
+    () => selectSkillGraphLabelIds(stableData.nodes, display.labelLimit),
+    [display.labelLimit, stableData.nodes],
   );
   const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
+  const emphasisRef = useRef<GraphRendererEmphasis | null | undefined>(emphasis);
   const highlightRef = useRef<HighlightState>(emptyHighlight());
   const renderedLabelBoundsRef = useRef<LabelBounds[]>([]);
   const hoveredIdRef = useRef<string | null>(null);
   const selectedIdRef = useRef<string | null>(selectedId);
+  const visibleLinkIdsRef = useRef<ReadonlySet<string> | undefined>(visibleLinkIds);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
   const touchInteractionEnabledRef = useRef(touchInteractionEnabled);
@@ -463,14 +492,21 @@ export function SkillGraphForceCanvas({
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   adjacencyRef.current = adjacency;
+  emphasisRef.current = emphasis;
   touchInteractionEnabledRef.current = touchInteractionEnabled;
+  visibleLinkIdsRef.current = visibleLinkIds;
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
     if (hoveredIdRef.current) return;
-    highlightRef.current = focusedHighlight(selectedId, null, adjacency);
+    highlightRef.current = resolvedHighlight(
+      selectedId,
+      null,
+      adjacency,
+      emphasis,
+    );
     requestGraphRedraw(graphRef.current);
-  }, [adjacency, selectedId]);
+  }, [adjacency, emphasis, selectedId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -742,10 +778,11 @@ export function SkillGraphForceCanvas({
         .onNodeHover((node) => {
           const hoveredId = node ? String(node.id) : null;
           hoveredIdRef.current = hoveredId;
-          highlightRef.current = focusedHighlight(
-            hoveredId ?? selectedIdRef.current,
+          highlightRef.current = resolvedHighlight(
+            selectedIdRef.current,
             hoveredId,
             adjacencyRef.current,
+            emphasisRef.current,
           );
           requestGraphRedraw(graphRef.current);
         })
@@ -860,10 +897,11 @@ export function SkillGraphForceCanvas({
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
     hoveredIdRef.current = null;
-    highlightRef.current = focusedHighlight(
+    highlightRef.current = resolvedHighlight(
       selectedIdRef.current,
       null,
       adjacencyRef.current,
+      emphasisRef.current,
     );
     graph.d3ReheatSimulation();
     if (document.visibilityState === "hidden") {
@@ -947,6 +985,13 @@ export function SkillGraphForceCanvas({
       )
       .linkWidth((link) => {
         const highlight = highlightRef.current;
+        if (!shouldRenderSkillGraphLink(
+          link.id,
+          visibleLinkIdsRef.current,
+          highlight.linkIds,
+        )) {
+          return 0;
+        }
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
         return skillGraphLinkWidth(
@@ -958,6 +1003,13 @@ export function SkillGraphForceCanvas({
       })
       .linkColor((link) => {
         const highlight = highlightRef.current;
+        if (!shouldRenderSkillGraphLink(
+          link.id,
+          visibleLinkIdsRef.current,
+          highlight.linkIds,
+        )) {
+          return GRAPH_CANVAS_COLORS.transparent;
+        }
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
         return skillGraphLinkColor(
@@ -975,6 +1027,18 @@ export function SkillGraphForceCanvas({
 
     requestGraphRedraw(graph);
   }, [display, labelEligibleIds, mounted]);
+
+  useEffect(() => {
+    if (!hoveredIdRef.current) {
+      highlightRef.current = resolvedHighlight(
+        selectedIdRef.current,
+        null,
+        adjacencyRef.current,
+        emphasis,
+      );
+    }
+    requestGraphRedraw(graphRef.current);
+  }, [emphasis, visibleLinkIds]);
 
   useEffect(() => {
     const graph = graphRef.current;
