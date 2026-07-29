@@ -12,10 +12,15 @@ import {
 } from "@/lib/owned-skills";
 import { trapTabKey } from "@/lib/focus-trap";
 import { PRODUCT_TERMS } from "@/lib/labels";
-import { parseSkillCatalogResponse, skillNameKey } from "@/lib/skill-catalog";
+import { parseSkillCatalogResponse } from "@/lib/skill-catalog";
 import type { SkillCatalogItem } from "@/lib/types";
 
-import { type CatalogStatus, SkillPicker } from "./skill-picker";
+import {
+  type CatalogStatus,
+  resolvedSkillKey,
+  resolveSkillInput,
+  SkillPicker,
+} from "./skill-picker";
 import styles from "./owned-skills-sheet.module.css";
 
 type OwnedSkillsSheetProps = {
@@ -94,8 +99,9 @@ export function OwnedSkillsSheet({
       setError("기술 이름을 입력해 주세요.");
       return false;
     }
-    const skillName = normalized;
-    if (skills.some((skill) => skillNameKey(skill) === skillNameKey(skillName))) {
+    const skillName = resolveSkillInput(normalized, catalog);
+    const skillKey = resolvedSkillKey(skillName, catalog);
+    if (skills.some((skill) => resolvedSkillKey(skill, catalog) === skillKey)) {
       setError("이미 추가한 기술입니다.");
       return false;
     }

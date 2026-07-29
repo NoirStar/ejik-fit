@@ -4,7 +4,7 @@ import { Plus } from "@phosphor-icons/react";
 import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
+  type MouseEvent as ReactMouseEvent,
   useId,
   useMemo,
   useRef,
@@ -83,12 +83,15 @@ export function filterSkillSuggestions(
   const query = skillNameKey(value);
   if (!query) return [];
 
-  const excluded = new Set(excludedSkills.map(skillNameKey));
+  const excluded = new Set(
+    excludedSkills.map((skill) => resolvedSkillKey(skill, catalog)),
+  );
   return catalog
     .map((item) => ({ item, rank: itemRank(item, query) }))
     .filter(
       ({ item, rank }) =>
-        !excluded.has(skillNameKey(item.name)) && Number.isFinite(rank),
+        !excluded.has(resolvedSkillKey(item.name, catalog)) &&
+        Number.isFinite(rank),
     )
     .sort(
       (left, right) =>
@@ -117,6 +120,13 @@ export function resolveSkillInput(
   }
 
   return canonicalSkillName(trimmed, [...catalog]);
+}
+
+export function resolvedSkillKey(
+  value: string,
+  catalog: readonly SkillCatalogItem[],
+) {
+  return skillNameKey(resolveSkillInput(value, catalog));
 }
 
 function catalogHint(status: CatalogStatus) {
@@ -224,12 +234,8 @@ export function SkillPicker({
     }
   }
 
-  function handleRowPointerDown(
-    event: ReactPointerEvent<HTMLLIElement>,
-    row: PickerRow,
-  ) {
+  function handleRowMouseDown(event: ReactMouseEvent<HTMLLIElement>) {
     event.preventDefault();
-    commitRow(row);
   }
 
   return (
@@ -286,7 +292,8 @@ export function SkillPicker({
                       id={optionId}
                       key={`direct-${row.value}`}
                       onMouseEnter={() => setActiveIndex(index)}
-                      onPointerDown={(event) => handleRowPointerDown(event, row)}
+                      onClick={() => commitRow(row)}
+                      onMouseDown={handleRowMouseDown}
                       role="option"
                     >
                       <strong>“{row.value}” 직접 추가</strong>
@@ -306,7 +313,8 @@ export function SkillPicker({
                     id={optionId}
                     key={row.skill.name}
                     onMouseEnter={() => setActiveIndex(index)}
-                    onPointerDown={(event) => handleRowPointerDown(event, row)}
+                    onClick={() => commitRow(row)}
+                    onMouseDown={handleRowMouseDown}
                     role="option"
                   >
                     <strong>{row.skill.name}</strong>

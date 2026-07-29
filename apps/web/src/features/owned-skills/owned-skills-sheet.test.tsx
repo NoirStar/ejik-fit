@@ -180,6 +180,32 @@ describe("OwnedSkillsSheet", () => {
     expect(dialog.querySelector("datalist")).toBeNull();
   });
 
+  it("does not add a canonical duplicate of a stored alias", async () => {
+    localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["k8s"]));
+    render(
+      <AppShell>
+        <main>내용</main>
+      </AppShell>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
+    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
+    const input = within(dialog).getByRole("combobox", {
+      name: "추가할 기술",
+    });
+    fireEvent.change(input, { target: { value: "Kubernetes" } });
+    fireEvent.click(within(dialog).getByRole("button", {
+      name: "추가",
+      exact: true,
+    }));
+
+    expect(within(dialog).getByRole("alert")).toHaveTextContent(
+      "이미 추가한 기술입니다.",
+    );
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual(["k8s"]);
+  });
+
   it("keeps Tab focus inside the modal sheet", async () => {
     render(
       <AppShell>

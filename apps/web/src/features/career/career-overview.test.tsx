@@ -308,6 +308,36 @@ describe("CareerOverview", () => {
     expect(input).toHaveFocus();
   });
 
+  it("does not add a canonical duplicate of a stored alias", async () => {
+    writeOwnedSkills(["k8s"]);
+    render(
+      <CareerOverview
+        catalog={[
+          {
+            name: "Kubernetes",
+            category: "infra",
+            kind: "platform",
+            domains: ["devops", "cloud"],
+          },
+        ]}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await screen.findByText("k8s");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
+      target: { value: "Kubernetes" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "추가", exact: true }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "이미 추가한 기술입니다.",
+    );
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual(["k8s"]);
+  });
+
   it("reacts to same-tab stack changes and requests an updated comparison", async () => {
     render(
       <CareerOverview

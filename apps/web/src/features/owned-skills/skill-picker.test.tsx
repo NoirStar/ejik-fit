@@ -79,6 +79,11 @@ describe("skill picker", () => {
         (item) => item.name,
       ),
     ).toEqual(["React Native", "Create React App"]);
+    expect(
+      filterSkillSuggestions(catalog, "javascript", ["js"]).map(
+        (item) => item.name,
+      ),
+    ).toEqual([]);
 
     const manyMatches = Array.from({ length: 9 }, (_, index) =>
       catalogItem(`Java ${index + 1}`, "language"),
@@ -124,15 +129,22 @@ describe("skill picker", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("adds an unknown skill from the direct-entry row", () => {
+  it("waits for a completed click before adding a touch result", () => {
     const onCommitted = vi.fn();
     render(<PickerHarness initialValue="WebGPU" onCommitted={onCommitted} />);
 
     const input = screen.getByRole("combobox", { name: "추가할 기술" });
     fireEvent.focus(input);
-    fireEvent.pointerDown(
-      screen.getByRole("option", { name: "“WebGPU” 직접 추가" }),
-    );
+    const option = screen.getByRole("option", {
+      name: "“WebGPU” 직접 추가",
+    });
+    fireEvent.pointerDown(option, { pointerType: "touch" });
+
+    expect(onCommitted).not.toHaveBeenCalled();
+    expect(screen.getByRole("listbox", { name: "기술 검색 결과" }))
+      .toBeInTheDocument();
+
+    fireEvent.click(option);
 
     expect(onCommitted).toHaveBeenCalledWith("WebGPU");
     expect(input).toHaveValue("");

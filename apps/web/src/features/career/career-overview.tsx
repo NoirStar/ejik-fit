@@ -17,7 +17,11 @@ import {
   accountStorageStatusCopy,
   useAuthViewerContext,
 } from "@/features/auth/auth-viewer-context";
-import { SkillPicker } from "@/features/owned-skills/skill-picker";
+import {
+  resolvedSkillKey,
+  resolveSkillInput,
+  SkillPicker,
+} from "@/features/owned-skills/skill-picker";
 import {
   EMPTY_CAREER_PREFERENCES,
   readCareerPreferences,
@@ -32,7 +36,7 @@ import {
   removeOwnedSkill,
   subscribeOwnedSkills,
 } from "@/lib/owned-skills";
-import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
+import { skillNameKey } from "@/lib/skill-catalog";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import type { FitAnalyzeResponse, SkillCatalogItem } from "@/lib/types";
 
@@ -468,17 +472,18 @@ export function CareerOverview({
       setInputError("기술 이름을 입력해 주세요.");
       return false;
     }
-    const normalized = canonicalSkillName(
+    const normalized = resolveSkillInput(
       suggestions.find(
         (suggestion) =>
           skillNameKey(suggestion.name) === skillNameKey(trimmed),
       )?.name ?? trimmed,
       catalog,
     );
+    const normalizedKey = resolvedSkillKey(normalized, catalog);
     if (
       ownedSkills.some(
         (ownedSkill) =>
-          skillNameKey(ownedSkill) === skillNameKey(normalized),
+          resolvedSkillKey(ownedSkill, catalog) === normalizedKey,
       )
     ) {
       setInputError("이미 추가한 기술입니다.");
