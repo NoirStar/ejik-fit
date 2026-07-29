@@ -5,6 +5,10 @@ import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 import { normalizeCareerPreferences } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
+import {
+  graphContainsSkill,
+  mergeSkillGraphResponses,
+} from "@/lib/skill-graph-data";
 import type { SkillGraphResponse } from "@/lib/types";
 
 
@@ -33,7 +37,7 @@ function emptyGraph(): SkillGraphResponse {
     edges: [],
     evidence: [],
     meta: {
-      limit: 30,
+      limit: 60,
       min_confidence: 0.8,
     },
   };
@@ -79,12 +83,25 @@ export default async function SkillGraphPage({
 
   try {
     graph = await getSkillGraph({
-      ...(seed ? { seed } : {}),
       ...(careerType ? { career_type: careerType } : {}),
-      depth,
-      limit: 30,
+      depth: 1,
+      limit: 60,
       include_evidence: false,
     });
+    if (seed && !graphContainsSkill(graph, seed)) {
+      try {
+        const neighborhood = await getSkillGraph({
+          seed,
+          ...(careerType ? { career_type: careerType } : {}),
+          depth,
+          limit: 30,
+          include_evidence: false,
+        });
+        graph = mergeSkillGraphResponses(graph, neighborhood);
+      } catch {
+        // The public atlas is still useful when a rare seed cannot be expanded.
+      }
+    }
   } catch {
     failed = true;
   }
@@ -93,6 +110,7 @@ export default async function SkillGraphPage({
   return (
     <SkillGraphExperience
       initialGraph={graph}
+      initialSelectedSkill={seed}
       initialSkillCatalog={catalog}
       initialDepth={depth}
       initialOwnedSkills={ownedSkills}

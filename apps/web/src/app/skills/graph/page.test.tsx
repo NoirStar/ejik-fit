@@ -140,9 +140,29 @@ describe("SkillGraphPage", () => {
   });
 
   it("loads the graph with the requested seed", async () => {
-    vi.mocked(getSkillGraph).mockResolvedValue({
+    vi.mocked(getSkillGraph)
+      .mockResolvedValueOnce({
+        seed: null,
+        nodes: [],
+        edges: [],
+        evidence: [],
+        meta: { limit: 60, min_confidence: 0.8 },
+      })
+      .mockResolvedValueOnce({
       seed: "Kubernetes",
-      nodes: [],
+      nodes: [{
+        id: "Kubernetes",
+        label: "Kubernetes",
+        category: "platform",
+        kind: "platform",
+        domains: ["cloud"],
+        demand_count: 12,
+        required_count: 8,
+        preferred_count: 4,
+        unspecified_count: 0,
+        owned: false,
+        seed: true,
+      }],
       edges: [],
       evidence: [],
       meta: { limit: 30, min_confidence: 0.8 },
@@ -155,7 +175,12 @@ describe("SkillGraphPage", () => {
       }),
     });
 
-    expect(getSkillGraph).toHaveBeenCalledWith({
+    expect(getSkillGraph).toHaveBeenNthCalledWith(1, {
+      depth: 1,
+      limit: 60,
+      include_evidence: false,
+    });
+    expect(getSkillGraph).toHaveBeenNthCalledWith(2, {
       seed: "Kubernetes",
       depth: 1,
       limit: 30,
@@ -242,7 +267,7 @@ describe("SkillGraphPage", () => {
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       depth: 1,
-      limit: 30,
+      limit: 60,
       include_evidence: false,
     });
   });

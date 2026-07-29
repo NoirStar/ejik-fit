@@ -78,9 +78,9 @@ const DEFAULT_LIMITS: Record<
   SkillGraphViewMode,
   { nodes: number; links: number }
 > = {
-  overview: { nodes: 12, links: 18 },
-  focus: { nodes: 9, links: 12 },
-  all: { nodes: 30, links: 45 },
+  overview: { nodes: 36, links: 60 },
+  focus: { nodes: 18, links: 30 },
+  all: { nodes: 48, links: 84 },
 };
 
 
@@ -333,6 +333,31 @@ function selectQueryNodes(
 }
 
 
+function selectAtlasNodes(
+  candidates: SkillGraphNode[],
+  selectedId: string | null | undefined,
+  limit: number,
+) {
+  const ranked = [...candidates].sort(compareNodes);
+  const visible = ranked.slice(0, limit);
+  const selectedIdentity = selectedId ? skillIdentityKey(selectedId) : "";
+  if (!selectedIdentity) return visible;
+
+  const selected = ranked.find(
+    (node) => skillIdentityKey(node.id) === selectedIdentity,
+  );
+  if (
+    !selected ||
+    visible.some((node) => skillIdentityKey(node.id) === selectedIdentity)
+  ) {
+    return visible;
+  }
+
+  visible[Math.max(0, visible.length - 1)] = selected;
+  return visible.sort(compareNodes);
+}
+
+
 class DisjointSet {
   private readonly parents = new Map<string, string>();
 
@@ -464,7 +489,7 @@ export function buildSkillGraphView(
       nodeLimit,
     );
   } else {
-    selectedNodes = [...candidates].sort(compareNodes).slice(0, nodeLimit);
+    selectedNodes = selectAtlasNodes(candidates, options.selectedId, nodeLimit);
   }
 
   const visibleIds = new Set(selectedNodes.map(({ id }) => id));

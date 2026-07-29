@@ -63,6 +63,7 @@ type SkillGraphExperienceProps = {
   initialDepth?: 1 | 2;
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
+  initialSelectedSkill?: string;
   initialSkillCatalog?: readonly SkillCatalogItem[];
   loadFailed?: boolean;
   retryHref?: string;
@@ -211,8 +212,11 @@ function displayDomain(domain: string) {
 
 function chooseInitialSelection(
   graph: SkillGraphResponse,
+  requestedSkill?: string,
 ) {
-  return graph.seed ?? null;
+  const requestedKey = skillNameKey(requestedSkill ?? graph.seed ?? "");
+  if (!requestedKey) return null;
+  return graph.nodes.find((node) => skillNameKey(node.id) === requestedKey)?.id ?? null;
 }
 
 
@@ -283,13 +287,14 @@ export function SkillGraphExperience({
   initialDepth = 1,
   initialGraph,
   initialOwnedSkills,
+  initialSelectedSkill,
   initialSkillCatalog = EMPTY_SKILL_CATALOG,
   loadFailed = false,
   retryHref = "/skills/graph",
 }: SkillGraphExperienceProps) {
   const initialSelection = useMemo(
-    () => chooseInitialSelection(initialGraph),
-    [initialGraph],
+    () => chooseInitialSelection(initialGraph, initialSelectedSkill),
+    [initialGraph, initialSelectedSkill],
   );
   const startingCatalog = useMemo(
     () => buildGraphCatalog(initialSkillCatalog, initialGraph.nodes),
