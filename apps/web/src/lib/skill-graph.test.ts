@@ -69,6 +69,6 @@ describe("skill graph helpers", () => {
   });
 
   it("summarizes graph for accessible fallback", () => {
-    expect(summarizeGraph(graph)).toBe("C++ 중심 그래프: 2개 스킬, 1개 관계");
+    expect(summarizeGraph(graph)).toBe("C++ 주변 분석: 기술 2개 · 관계 1개");
   });
 });

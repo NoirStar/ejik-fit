@@ -146,7 +146,7 @@ describe("design system foundation", () => {
       "src/features/search/search-results.module.css",
       "src/features/career/career-overview.module.css",
       "src/features/market/market-overview.module.css",
-      "src/components/skill-graph-experience.module.css",
+      "src/components/skill-graph-atlas.module.css",
       "src/app/trust-pages.module.css",
     ]) {
       expect(read(path), path).toContain("font-size: var(--type-page-title);");

@@ -71,4 +71,22 @@ describe("skill graph canvas styling", () => {
     expect(source).not.toContain("rgba(86, 56, 198");
     expect(source).not.toContain("var(--font-geist)");
   });
+
+  it("keeps representative labels readable in the fitted market overview", () => {
+    const canvasSource = readFileSync(
+      resolve(process.cwd(), "src/components/skill-graph-force-canvas.tsx"),
+      "utf8",
+    );
+    const experienceSource = readFileSync(
+      resolve(process.cwd(), "src/components/skill-graph-experience.tsx"),
+      "utf8",
+    );
+
+    expect(canvasSource).toContain("const screenFontSize");
+    expect(canvasSource).toContain("fontSize = screenFontSize / safeScale");
+    expect(canvasSource).toContain("? 14 : node.seed ? 13 : 12");
+    expect(canvasSource.match(/touchInputRef\.current \? 32 : 92/g))
+      .toHaveLength(2);
+    expect(experienceSource).toContain("labelThreshold: 0.18");
+  });
 });

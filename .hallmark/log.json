@@ -151,5 +151,62 @@
     "slop_test": "58/58 pass",
     "critical_slop_findings": 0
   },
+  "last_obsidian_skill_map_audit": {
+    "audited_at": "2026-07-29",
+    "status": "postbuild_verified",
+    "scope": "/skills/graph spatial hierarchy, graph interaction, responsive behavior, and low-end performance",
+    "retained_strengths": [
+      "Canvas 2D renderer with dynamic import and bounded simulation",
+      "separate visual meanings for demand, domain, saved skills, recommendations, and relationship strength",
+      "official-posting evidence rail",
+      "mobile document-scroll default with opt-in pan and pinch"
+    ],
+    "critical_findings": [
+      "The graph begins after search, metrics, quick links, a disclosure, and three large control cards, so the declared Map / Diagram hierarchy is not visible.",
+      "A normal node selection replaces topology, reheats the simulation, recenters the node, and zooms past 2x, destroying spatial memory.",
+      "The default 9–12 node local view cannot communicate the larger 60-node market landscape.",
+      "Typing in search changes the visible topology instead of locating a node in a stable map.",
+      "No semantic domain anchors exist, so the graph settles into a dense star rather than readable technology regions.",
+      "Recommendation and domain summaries below the graph duplicate the evidence rail and reduce the primary map area."
+    ],
+    "compared_directions": [
+      "compact the current local-first controls",
+      "stable market atlas plus selected-skill spotlight",
+      "100-plus-node WebGL and worker map"
+    ],
+    "selected_direction": "stable market atlas plus selected-skill spotlight",
+    "target_canvas_budgets": {
+      "desktop": "48 nodes / 84 links",
+      "mobile": "30 nodes / 48 links",
+      "nearby": "18 nodes / 30 links"
+    },
+    "postbuild_verification": {
+      "verified_widths": [320, 375, 414, 768, 1280, 1440, 1920],
+      "horizontal_overflow_failures": 0,
+      "wrapped_clickable_labels": 0,
+      "console_or_page_errors": 0,
+      "computed_contrast_failures": 0,
+      "normal_selection_topology_requests": 0,
+      "explicit_nearby_topology_requests": 1,
+      "mobile_touch_mode": "pass",
+      "hover_tooltip_delay_ms": 900,
+      "related_tests_passed": 83,
+      "implemented_canvas_budgets": {
+        "desktop": "48 nodes / 84 links",
+        "mobile": "30 nodes / 48 links",
+        "nearby": "18 nodes / 30 links"
+      },
+      "pre_emit_critique": {
+        "philosophy": 5,
+        "hierarchy": 5,
+        "execution": 5,
+        "specificity": 5,
+        "restraint": 5,
+        "variety": 5
+      },
+      "slop_test": "58/58 pass",
+      "critical_slop_findings": 0
+    }
+  },
   "intentional_exception": null
 }

@@ -5,6 +5,10 @@ import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 import { normalizeCareerPreferences } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
+import {
+  graphContainsSkill,
+  mergeSkillGraphResponses,
+} from "@/lib/skill-graph-data";
 import type { SkillGraphResponse } from "@/lib/types";
 
 
@@ -13,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: PRODUCT_TERMS.skillMap,
-  description: "내 기술과 함께 자주 요구되는 기술을 보여줍니다.",
+  description: "공개 채용 공고의 기술 관계와 다음 학습 방향을 한눈에 확인하세요.",
 };
 
 type SkillGraphSearchParams = Record<
@@ -33,7 +37,7 @@ function emptyGraph(): SkillGraphResponse {
     edges: [],
     evidence: [],
     meta: {
-      limit: 30,
+      limit: 60,
       min_confidence: 0.8,
     },
   };
@@ -79,12 +83,25 @@ export default async function SkillGraphPage({
 
   try {
     graph = await getSkillGraph({
-      ...(seed ? { seed } : {}),
       ...(careerType ? { career_type: careerType } : {}),
-      depth,
-      limit: 30,
+      depth: 1,
+      limit: 60,
       include_evidence: false,
     });
+    if (seed && !graphContainsSkill(graph, seed)) {
+      try {
+        const neighborhood = await getSkillGraph({
+          seed,
+          ...(careerType ? { career_type: careerType } : {}),
+          depth,
+          limit: 30,
+          include_evidence: false,
+        });
+        graph = mergeSkillGraphResponses(graph, neighborhood);
+      } catch {
+        // The public atlas is still useful when a rare seed cannot be expanded.
+      }
+    }
   } catch {
     failed = true;
   }
@@ -93,6 +110,7 @@ export default async function SkillGraphPage({
   return (
     <SkillGraphExperience
       initialGraph={graph}
+      initialSelectedSkill={seed}
       initialSkillCatalog={catalog}
       initialDepth={depth}
       initialOwnedSkills={ownedSkills}

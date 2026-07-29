@@ -51,9 +51,9 @@ describe("large graph fixtures", () => {
 
     expect(graph.nodes).toHaveLength(30);
     expect(graph.edges).toHaveLength(435);
-    expect(overview.nodes.length).toBeLessThanOrEqual(12);
-    expect(overview.links.length).toBeLessThanOrEqual(18);
-    expect(focus.nodes.length).toBeLessThanOrEqual(9);
-    expect(focus.links.length).toBeLessThanOrEqual(12);
+    expect(overview.nodes.length).toBeLessThanOrEqual(36);
+    expect(overview.links.length).toBeLessThanOrEqual(60);
+    expect(focus.nodes.length).toBeLessThanOrEqual(18);
+    expect(focus.links.length).toBeLessThanOrEqual(30);
   });
 });
