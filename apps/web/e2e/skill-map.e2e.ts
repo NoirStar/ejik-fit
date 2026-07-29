@@ -685,11 +685,23 @@ for (const width of [1440, 820, 390, 320]) {
       const mobileNavigationBox = await mobileNavigation.boundingBox();
       expect(mobileNavigationBox).not.toBeNull();
 
-      for (const overlay of [
+      const usesCoarsePointer = await page.evaluate(() =>
+        window.matchMedia("(pointer: coarse)").matches,
+      );
+      const overlays = [
         graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-        graphFrame.getByText("화면을 스크롤하거나 그래프 조작을 시작하세요"),
-        graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
-      ]) {
+      ];
+      if (usesCoarsePointer) {
+        overlays.push(
+          graphFrame.getByText(
+            "화면을 스크롤하거나 그래프 조작을 시작하세요",
+            { exact: true },
+          ),
+          graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
+        );
+      }
+
+      for (const overlay of overlays) {
         const overlayBox = await overlay.boundingBox();
         expect(overlayBox).not.toBeNull();
         expect(overlayBox!.y + overlayBox!.height).toBeLessThanOrEqual(
