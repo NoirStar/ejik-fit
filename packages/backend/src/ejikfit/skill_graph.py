@@ -4,7 +4,7 @@ import itertools
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Literal, Sequence
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -148,12 +148,68 @@ def _node(
     )
 
 
+def _seeded_skill_selection(
+    seed: str,
+    scored_edges: Sequence[SkillGraphEdge],
+    *,
+    depth: Literal[1, 2],
+    limit: int,
+) -> list[str]:
+    capacity = max(0, limit - 1)
+    direct_neighbors: list[str] = []
+    for edge in scored_edges:
+        if seed not in {edge.source, edge.target}:
+            continue
+        neighbor = edge.target if edge.source == seed else edge.source
+        if neighbor not in direct_neighbors:
+            direct_neighbors.append(neighbor)
+
+    if depth == 1 or capacity == 0:
+        return [seed, *direct_neighbors[:capacity]]
+
+    direct_target = min(
+        len(direct_neighbors),
+        max(1, round(capacity * 0.6)),
+    )
+    selected_direct = direct_neighbors[:direct_target]
+    selected_direct_set = set(selected_direct)
+    all_direct_set = set(direct_neighbors)
+    second_hop: list[str] = []
+    for edge in scored_edges:
+        source_is_direct = edge.source in selected_direct_set
+        target_is_direct = edge.target in selected_direct_set
+        if source_is_direct == target_is_direct:
+            continue
+        candidate = edge.target if source_is_direct else edge.source
+        if (
+            candidate == seed
+            or candidate in all_direct_set
+            or candidate in second_hop
+        ):
+            continue
+        second_hop.append(candidate)
+
+    selected = [seed, *selected_direct]
+    second_target = capacity - len(selected_direct)
+    selected.extend(second_hop[:second_target])
+    for neighbor in direct_neighbors[direct_target:]:
+        if len(selected) >= limit:
+            break
+        selected.append(neighbor)
+    for neighbor in second_hop[second_target:]:
+        if len(selected) >= limit:
+            break
+        selected.append(neighbor)
+    return selected
+
+
 def build_skill_graph(
     session: Session,
     *,
     seed: str | None = None,
     owned_skills: Sequence[str] = (),
     career_type: str | None = None,
+    depth: Literal[1, 2] = 1,
     limit: int = 30,
     include_evidence: bool = True,
 ) -> SkillGraph:
@@ -254,15 +310,12 @@ def build_skill_graph(
     if not seed:
         selected_skills = demand_ranked_skills[:bounded_limit]
     elif skill_counts[seed] > 0:
-        selected_skills.append(seed)
-        for edge in scored_edges:
-            if seed not in {edge.source, edge.target}:
-                continue
-            neighbor = edge.target if edge.source == seed else edge.source
-            if neighbor not in selected_skills:
-                selected_skills.append(neighbor)
-            if len(selected_skills) >= bounded_limit:
-                break
+        selected_skills = _seeded_skill_selection(
+            seed,
+            scored_edges,
+            depth=2 if depth == 2 else 1,
+            limit=bounded_limit,
+        )
     if not selected_skills:
         selected_skills = demand_ranked_skills[:bounded_limit]
 

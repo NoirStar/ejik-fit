@@ -181,6 +181,7 @@ export function getSkillGraph(filters: {
   seed?: string;
   owned_skills?: string[];
   career_type?: string;
+  depth?: 1 | 2;
   limit?: number;
   include_evidence?: boolean;
 } = {}): Promise<SkillGraphResponse> {
@@ -193,6 +194,9 @@ export function getSkillGraph(filters: {
   }
   if (filters.career_type) {
     params.set("career_type", filters.career_type);
+  }
+  if (filters.depth) {
+    params.set("depth", String(filters.depth));
   }
   if (filters.limit) {
     params.set("limit", String(filters.limit));

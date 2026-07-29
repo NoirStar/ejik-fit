@@ -89,14 +89,14 @@ it("requests a lightweight graph and cancellable selected-skill evidence", async
   vi.stubGlobal("fetch", fetchMock);
   const controller = new AbortController();
 
-  await getSkillGraph({ limit: 30, include_evidence: false });
+  await getSkillGraph({ depth: 2, limit: 30, include_evidence: false });
   await getSkillGraphEvidence(
     { skill: "C++", career_type: "experienced", limit: 6 },
     controller.signal,
   );
 
   expect(fetchMock.mock.calls[0]?.[0].toString()).toContain(
-    "/api/graph/skills?limit=30&include_evidence=false",
+    "/api/graph/skills?depth=2&limit=30&include_evidence=false",
   );
   expect(fetchMock.mock.calls[1]?.[0].toString()).toContain(
     "/api/graph/skills/evidence?skill=C%2B%2B&career_type=experienced&limit=6",

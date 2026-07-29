@@ -146,12 +146,15 @@ describe("SkillGraphPage", () => {
     });
 
     await SkillGraphPage({
-      searchParams: Promise.resolve({ seed: "Kubernetes" }),
+      searchParams: Promise.resolve({
+        seed: "Kubernetes",
+        owned_skills: "Linux",
+      }),
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Kubernetes",
-      owned_skills: [],
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });
@@ -175,8 +178,8 @@ describe("SkillGraphPage", () => {
 
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Kubernetes",
-      owned_skills: [],
       career_type: "experienced",
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });
@@ -196,7 +199,7 @@ describe("SkillGraphPage", () => {
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
-      owned_skills: [],
+      depth: 1,
       limit: 30,
       include_evidence: false,
     });

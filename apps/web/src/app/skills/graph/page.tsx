@@ -44,6 +44,10 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function graphDepth(value: string | string[] | undefined): 1 | 2 {
+  return firstValue(value) === "2" ? 2 : 1;
+}
+
 function buildRetryHref(searchParams: SkillGraphSearchParams) {
   const output = new URLSearchParams();
   Object.entries(searchParams).forEach(([key, value]) => {
@@ -66,6 +70,7 @@ export default async function SkillGraphPage({
     targetDomain: "",
   }).careerCondition;
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
+  const depth = graphDepth(resolvedSearchParams.depth);
   let graph = emptyGraph();
   let failed = false;
 
@@ -73,7 +78,7 @@ export default async function SkillGraphPage({
     graph = await getSkillGraph({
       ...(seed ? { seed } : {}),
       ...(careerType ? { career_type: careerType } : {}),
-      owned_skills: ownedSkills,
+      depth,
       limit: 30,
       include_evidence: false,
     });
@@ -84,6 +89,7 @@ export default async function SkillGraphPage({
   return (
     <SkillGraphExperience
       initialGraph={graph}
+      initialDepth={depth}
       initialOwnedSkills={ownedSkills}
       careerType={careerType || undefined}
       loadFailed={failed}

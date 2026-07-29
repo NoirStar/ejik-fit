@@ -47,6 +47,7 @@ type PositionedNode = SkillGraphViewNode & {
 
 type SkillGraphExperienceProps = {
   careerType?: Exclude<CareerCondition, "">;
+  initialDepth?: 1 | 2;
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
   loadFailed?: boolean;
@@ -202,8 +203,9 @@ function chooseInitialSelection(
 function topologyCacheKey(
   seed: string | null,
   careerType: Exclude<CareerCondition, ""> | undefined,
+  depth: 1 | 2,
 ) {
-  return `${careerType ?? "all"}:${seed?.toLocaleLowerCase("en-US") ?? "overview"}`;
+  return `${careerType ?? "all"}:${depth}:${seed?.toLocaleLowerCase("en-US") ?? "overview"}`;
 }
 
 
@@ -224,6 +226,7 @@ function isSkillGraphResponse(value: unknown): value is SkillGraphResponse {
 
 export function SkillGraphExperience({
   careerType,
+  initialDepth = 1,
   initialGraph,
   initialOwnedSkills,
   loadFailed = false,
@@ -234,6 +237,7 @@ export function SkillGraphExperience({
     [initialGraph],
   );
   const [graph, setGraph] = useState(initialGraph);
+  const [depth, setDepth] = useState<1 | 2>(initialDepth);
   const [ownedSkills, setOwnedSkills] = useState(initialOwnedSkills);
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
@@ -261,14 +265,19 @@ export function SkillGraphExperience({
   const inspectorRef = useRef<HTMLElement>(null);
   const selectedIdRef = useRef<string | null>(initialSelection);
   const careerTypeRef = useRef(careerType);
+  const depthRef = useRef<1 | 2>(depth);
   const ownedSkillsRef = useRef(ownedSkills);
   selectedIdRef.current = selectedId;
   careerTypeRef.current = careerType;
+  depthRef.current = depth;
   ownedSkillsRef.current = ownedSkills;
 
-  const loadTopology = useCallback(async (seed: string | null) => {
+  const loadTopology = useCallback(async (
+    seed: string | null,
+    requestedDepth = depthRef.current,
+  ) => {
     const scope = careerTypeRef.current;
-    const cacheKey = topologyCacheKey(seed, scope);
+    const cacheKey = topologyCacheKey(seed, scope, requestedDepth);
     const cached = topologyCache.current.get(cacheKey);
     topologyRequestRef.current?.abort();
     topologyRequestRef.current = null;
@@ -281,7 +290,10 @@ export function SkillGraphExperience({
     const controller = new AbortController();
     topologyRequestRef.current = controller;
     setTopologyState("loading");
-    const params = new URLSearchParams({ limit: "30" });
+    const params = new URLSearchParams({
+      limit: "30",
+      depth: String(requestedDepth),
+    });
     if (seed) {
       params.set("seed", seed);
     }
@@ -494,16 +506,17 @@ export function SkillGraphExperience({
   useEffect(() => {
     topologyRequestRef.current?.abort();
     topologyCache.current.set(
-      topologyCacheKey(initialGraph.seed, careerType),
+      topologyCacheKey(initialGraph.seed, careerType, initialDepth),
       initialGraph,
     );
     setGraph(initialGraph);
+    setDepth(initialDepth);
     setSelectedId(initialSelection);
     selectedIdRef.current = initialSelection;
     setGraphMode(initialSelection ? "focus" : "overview");
     setForceReady(false);
     setTopologyState("idle");
-  }, [careerType, initialGraph, initialSelection]);
+  }, [careerType, initialDepth, initialGraph, initialSelection]);
 
   useEffect(
     () => () => {
@@ -517,12 +530,16 @@ export function SkillGraphExperience({
       const requested = new URL(window.location.href).searchParams
         .get("seed")
         ?.trim() || null;
+      const requestedDepth = new URL(window.location.href).searchParams
+        .get("depth") === "2" ? 2 : 1;
       const nextSelection = requested;
+      depthRef.current = requestedDepth;
+      setDepth(requestedDepth);
       selectedIdRef.current = nextSelection;
       setSelectedId(nextSelection);
       setGraphMode(nextSelection ? "focus" : "overview");
       setForceReady(false);
-      void loadTopology(nextSelection);
+      void loadTopology(nextSelection, requestedDepth);
     }
 
     window.addEventListener("popstate", restoreSelectionFromHistory);
@@ -649,6 +666,11 @@ export function SkillGraphExperience({
     }
     if (careerTypeRef.current) {
       url.searchParams.set("career_type", careerTypeRef.current);
+    }
+    if (depthRef.current === 2) {
+      url.searchParams.set("depth", "2");
+    } else {
+      url.searchParams.delete("depth");
     }
     url.searchParams.delete("owned_skills");
     ownedSkillsRef.current.forEach((skill) => {

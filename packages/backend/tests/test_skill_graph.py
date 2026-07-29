@@ -347,6 +347,68 @@ def test_seeded_graph_retains_context_between_selected_neighbors() -> None:
     assert graph.edge_between("Docker", "Kubernetes") is not None
 
 
+def test_seeded_graph_depth_two_balances_direct_and_second_hop_neighbors() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        company, source = _source(session)
+        direct_skills = ["Alpha", "Bravo", "Charlie", "Delta", "Echo"]
+        for index, skill in enumerate(direct_skills):
+            _posting(
+                session,
+                company,
+                source,
+                f"direct-{index}",
+                title=f"Seed와 {skill}",
+                skills=[
+                    ("Seed", "language", "required", 1.0),
+                    (skill, "infra", "required", 1.0),
+                ],
+            )
+            _posting(
+                session,
+                company,
+                source,
+                f"second-{index}",
+                title=f"{skill}의 주변 기술",
+                skills=[
+                    (skill, "infra", "required", 1.0),
+                    (f"Second {index}", "infra", "required", 1.0),
+                ],
+            )
+        session.commit()
+
+        direct_graph = build_skill_graph(
+            session,
+            seed="Seed",
+            depth=1,
+            limit=6,
+            include_evidence=False,
+        )
+        expanded_graph = build_skill_graph(
+            session,
+            seed="Seed",
+            depth=2,
+            limit=6,
+            include_evidence=False,
+        )
+        repeated_graph = build_skill_graph(
+            session,
+            seed="Seed",
+            depth=2,
+            limit=6,
+            include_evidence=False,
+        )
+
+    direct_ids = {node.id for node in direct_graph.nodes}
+    expanded_ids = {node.id for node in expanded_graph.nodes}
+    assert direct_ids == {"Seed", *direct_skills}
+    assert len(expanded_ids.intersection(direct_skills)) == 3
+    assert len({node for node in expanded_ids if node.startswith("Second ")}) == 2
+    assert expanded_graph.nodes == repeated_graph.nodes
+    assert expanded_graph.edges == repeated_graph.edges
+
+
 def test_database_skill_graph_reader_returns_bounded_selected_skill_evidence() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     Base.metadata.create_all(engine)

@@ -335,7 +335,7 @@ describe("SkillGraphExperience", () => {
       await within(quickSkills).findByRole("link", { name: "Python" }),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/skills/graph/data?limit=30&seed=C%2B%2B",
+      "/skills/graph/data?limit=30&depth=1&seed=C%2B%2B",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
   });
@@ -427,7 +427,7 @@ describe("SkillGraphExperience", () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
       expect(fetchMock).toHaveBeenCalledWith(
-        "/skills/graph/data?limit=30&seed=C%2B%2B&career_type=experienced",
+        "/skills/graph/data?limit=30&depth=1&seed=C%2B%2B&career_type=experienced",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
@@ -493,7 +493,7 @@ describe("SkillGraphExperience", () => {
     ).toHaveTextContent("ROS2");
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        "/skills/graph/data?limit=30&seed=ROS2",
+        "/skills/graph/data?limit=30&depth=1&seed=ROS2",
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       );
     });
