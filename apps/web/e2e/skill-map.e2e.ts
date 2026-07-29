@@ -24,20 +24,6 @@ type CanvasZoom = {
   y: number;
 };
 
-type Rect = CanvasPoint & {
-  height: number;
-  width: number;
-};
-
-function rectanglesOverlap(left: Rect, right: Rect) {
-  return !(
-    left.x + left.width <= right.x ||
-    right.x + right.width <= left.x ||
-    left.y + left.height <= right.y ||
-    right.y + right.height <= left.y
-  );
-}
-
 const backendNodeRgb = [
   Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
   Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
@@ -390,9 +376,9 @@ async function tapSkillNode(
     ) {
       await expect(
         page
-          .locator('button[aria-pressed="true"]')
-          .filter({ hasText: "선택 주변" }),
-      ).toHaveCount(1);
+          .getByRole("group", { name: "지도 범위" })
+          .getByRole("button", { name: "전체 지도", exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
       return selectedSkill;
     }
   }
@@ -453,10 +439,16 @@ for (const width of [1440, 820, 390, 320]) {
     page,
   }) => {
     const browserErrors: string[] = [];
+    const topologyRequests: string[] = [];
     page.on("console", (message) => {
       if (message.type() === "error") browserErrors.push(message.text());
     });
     page.on("pageerror", (error) => browserErrors.push(error.message));
+    page.on("request", (request) => {
+      if (request.url().includes("/skills/graph/data")) {
+        topologyRequests.push(request.url());
+      }
+    });
 
     await page.setViewportSize({ height: 900, width });
     const session = await page.context().newCDPSession(page);
@@ -495,13 +487,48 @@ for (const width of [1440, 820, 390, 320]) {
       inspector.getByRole("link", { name: /Python Backend Engineer/ }),
     ).toHaveAttribute("href", "/jobs/job-python");
 
-    const quickSkills = page.getByRole("navigation", {
-      name: "빠른 기술 선택",
+    const graphFrame = page.locator(
+      '[data-testid="skill-graph-frame"]:visible',
+    );
+    const forceCanvas = graphFrame.locator(".force-canvas--ready");
+    await expect(forceCanvas).toBeVisible();
+    await expect(forceCanvas.locator("canvas")).toBeVisible();
+    await expect(
+      graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
+    ).toBeVisible();
+
+    const scope = page.getByRole("group", { name: "지도 범위" });
+    const atlasButton = scope.getByRole("button", {
+      name: "전체 지도",
+      exact: true,
     });
-    await quickSkills.getByRole("link", { name: "Docker" }).click();
+    const nearbyButton = scope.getByRole("button", {
+      name: "선택 주변 보기",
+      exact: true,
+    });
+    await expect(atlasButton).toHaveAttribute("aria-pressed", "true");
+
+    const initialHud = graphFrame.getByText(
+      /^\d+개 기술 · \d+개 관계$/,
+    );
+    const initialCounts = (await initialHud.textContent())?.match(
+      /^(\d+)개 기술 · (\d+)개 관계$/,
+    );
+    expect(initialCounts).not.toBeNull();
+    expect(Number(initialCounts?.[1])).toBeLessThanOrEqual(width <= 640 ? 30 : 48);
+    expect(Number(initialCounts?.[2])).toBeLessThanOrEqual(width <= 640 ? 48 : 84);
+
+    const topologyBeforeSelection = topologyRequests.length;
+    const skillSearch = page.getByRole("combobox", { name: "기술 찾기" });
+    await skillSearch.fill("Docker");
+    await page
+      .getByRole("listbox", { name: "기술 검색 결과" })
+      .getByRole("option", { name: /^Docker/ })
+      .click();
     await expect(page).toHaveURL(/\/skills\/graph\?seed=Docker$/, {
       timeout: 15_000,
     });
+    await expect(atlasButton).toHaveAttribute("aria-pressed", "true");
     await expect(
       inspector.getByRole("heading", { name: "Docker" }),
     ).toBeVisible();
@@ -511,47 +538,49 @@ for (const width of [1440, 820, 390, 320]) {
     await expect(
       inspector.getByRole("link", { name: /Go Platform Engineer/ }),
     ).toHaveAttribute("href", "/jobs/job-go");
+    expect(topologyRequests).toHaveLength(topologyBeforeSelection);
 
-    const graphFrame = page.locator(
-      '[data-testid="skill-graph-frame"]:visible',
+    await nearbyButton.click();
+    await expect(page).toHaveURL(
+      /\/skills\/graph\?seed=Docker&view=nearby$/,
+      { timeout: 15_000 },
     );
+    await expect(nearbyButton).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .poll(() => topologyRequests.length)
+      .toBe(topologyBeforeSelection + 1);
+    await expect(forceCanvas).toBeVisible();
+    await expect(graphFrame.getByText("선택 주변", { exact: true })).toBeVisible();
+
+    const focusedHud = graphFrame.getByText(
+      /^\d+개 기술 · \d+개 관계$/,
+    );
+    const focusedCounts = (await focusedHud.textContent())?.match(
+      /^(\d+)개 기술 · (\d+)개 관계$/,
+    );
+    expect(focusedCounts).not.toBeNull();
+    expect(Number(focusedCounts?.[1])).toBeLessThanOrEqual(18);
+    expect(Number(focusedCounts?.[2])).toBeLessThanOrEqual(30);
+
     const graphBox = await graphFrame.boundingBox();
     expect(graphBox?.height).toBeGreaterThanOrEqual(width <= 640 ? 400 : 496);
-    const forceCanvas = graphFrame.locator(".force-canvas--ready");
-    await expect(forceCanvas).toBeVisible();
-    await expect(forceCanvas.locator("canvas")).toBeVisible();
-    await expect(
-      graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-    ).toBeVisible();
-    const graphMetrics = page.getByRole("group", { name: "현재 그래프 규모" });
-    const displayedSkills = Number(
-      await graphMetrics.getByText("표시 기술").locator("..").locator("dd").textContent(),
-    );
-    const displayedLinks = Number(
-      await graphMetrics.getByText("표시 관계").locator("..").locator("dd").textContent(),
-    );
-    expect(displayedSkills).toBeLessThanOrEqual(width <= 640 ? 8 : 9);
-    expect(displayedLinks).toBeLessThanOrEqual(width <= 640 ? 10 : 12);
     await expect(
       page.getByRole("checkbox", { name: "관련 공고" }),
     ).toHaveCount(0);
-    const legend = graphFrame.getByRole("note", { name: "스킬맵 범례" });
-    const graphControls = graphFrame.getByRole("group", {
-      name: "그래프 보기 조절",
+
+    const legendDisclosure = page.locator("details").filter({
+      hasText: "읽는 법",
     });
-    await expect(legend).toBeVisible();
-    await expect(legend).toContainText("크기: 시장 수요");
-    await expect(legend).toContainText("색: 기술 분야");
-    await expect(legend).toContainText("테두리: 내 기술");
-    await expect(legend).toContainText("점: 학습 추천");
-    await expect(legend).toContainText("선 농도: 함께 요구");
-    const [legendBox, graphControlsBox] = await Promise.all([
-      legend.boundingBox(),
-      graphControls.boundingBox(),
-    ]);
-    expect(legendBox).not.toBeNull();
-    expect(graphControlsBox).not.toBeNull();
-    expect(rectanglesOverlap(legendBox!, graphControlsBox!)).toBe(false);
+    await legendDisclosure.locator("summary").click();
+    const toolbarLegend = page.getByRole("note", { name: "스킬맵 범례" });
+    await expect(graphFrame.getByRole("note", { name: "스킬맵 범례" })).toHaveCount(0);
+    await expect(toolbarLegend).toBeVisible();
+    await expect(toolbarLegend).toContainText("크기: 시장 수요");
+    await expect(toolbarLegend).toContainText("색: 기술 분야");
+    await expect(toolbarLegend).toContainText("테두리: 내 기술");
+    await expect(toolbarLegend).toContainText("점: 학습 추천");
+    await expect(toolbarLegend).toContainText("선 농도: 함께 요구");
+    await legendDisclosure.locator("summary").click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
@@ -560,7 +589,7 @@ for (const width of [1440, 820, 390, 320]) {
 
     if (width === 1440) {
       await expect(
-        graphFrame.getByText("드래그 · 확대 · 선택", { exact: true }),
+        graphFrame.getByText("드래그 · 확대 · 기술 선택", { exact: true }),
       ).toBeVisible();
 
       const canvas = forceCanvas.locator("canvas");
@@ -591,13 +620,13 @@ for (const width of [1440, 820, 390, 320]) {
     }
 
     if (width <= 900) {
-      const disclosure = page.locator("details").filter({
-        hasText: "내 기술과 그래프 범위",
+      const toolbar = page.getByRole("region", { name: "스킬맵 도구" });
+      const ownedSkillsDisclosure = page.locator("details").filter({
+        has: page.locator("summary").filter({ hasText: /^내 기술/ }),
       });
-      await expect(disclosure).not.toHaveAttribute("open", "");
+      await expect(ownedSkillsDisclosure).not.toHaveAttribute("open", "");
 
       if (width <= 820) {
-        const summary = disclosure.locator("summary");
         const nextSkillHeading = page.getByRole("heading", {
           name: "다음에 배울 기술",
           exact: true,
@@ -606,15 +635,15 @@ for (const width of [1440, 820, 390, 320]) {
           name: "함께 요구되는 기술",
           exact: true,
         });
-        const [summaryBox, nextSkillBox, relatedSkillBox] = await Promise.all([
-          summary.boundingBox(),
+        const [toolbarBox, nextSkillBox, relatedSkillBox] = await Promise.all([
+          toolbar.boundingBox(),
           nextSkillHeading.boundingBox(),
           relatedSkillHeading.boundingBox(),
         ]);
-        expect(summaryBox).not.toBeNull();
+        expect(toolbarBox).not.toBeNull();
         expect(nextSkillBox).not.toBeNull();
         expect(relatedSkillBox).not.toBeNull();
-        expect(summaryBox!.y + summaryBox!.height).toBeLessThanOrEqual(
+        expect(toolbarBox!.y + toolbarBox!.height).toBeLessThanOrEqual(
           graphBox!.y,
         );
         expect(graphBox!.y + graphBox!.height).toBeLessThanOrEqual(
@@ -625,45 +654,52 @@ for (const width of [1440, 820, 390, 320]) {
         );
       }
 
-      await disclosure.locator("summary").click();
-      await expect(page.getByLabel("기술 추가")).toBeVisible();
+      await ownedSkillsDisclosure.locator("summary").click();
+      await expect(page.getByLabel("추가할 기술")).toBeVisible();
 
       if (width === 320) {
         for (const target of [
-          disclosure.getByRole("button", { name: "추가", exact: true }),
-          disclosure.getByRole("button", { name: "초기화" }),
-          disclosure.getByRole("button", { name: "선택 주변" }),
-          disclosure.getByRole("button", { name: "전체 기술" }),
+          ownedSkillsDisclosure.getByRole("button", { name: "추가", exact: true }),
+          atlasButton,
+          nearbyButton,
         ]) {
           const lineCount = await target.evaluate((element) => {
-            const range = document.createRange();
-            range.selectNodeContents(element);
-            return new Set(
-              Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
-            ).size;
+            const lineTops = new Set<number>();
+            const walker = document.createTreeWalker(
+              element,
+              NodeFilter.SHOW_TEXT,
+            );
+            while (walker.nextNode()) {
+              if (!walker.currentNode.textContent?.trim()) continue;
+              const range = document.createRange();
+              range.selectNodeContents(walker.currentNode);
+              Array.from(range.getClientRects()).forEach((rect) => {
+                lineTops.add(Math.round(rect.top));
+              });
+            }
+            return lineTops.size;
           });
-          expect(lineCount).toBe(1);
+          expect(lineCount, (await target.textContent()) ?? "button label").toBe(1);
         }
       }
 
       if (width === 390) {
-        await page.getByLabel("기술 추가").fill("Rust");
+        await page.getByLabel("추가할 기술").fill("Rust");
         await page.getByRole("button", { name: "추가", exact: true }).click();
 
         for (const target of [
           page.getByRole("button", { name: "Rust 제거" }),
-          page.getByRole("button", { name: "초기화" }),
-          page.getByRole("button", { name: "선택 주변" }),
-          page.getByRole("button", { name: "전체 기술" }),
-          page.getByRole("button", { name: /클라우드/ }),
+          atlasButton,
+          nearbyButton,
+          skillSearch,
         ]) {
           const box = await target.boundingBox();
           expect(box?.height).toBeGreaterThanOrEqual(44);
         }
       }
 
-      await disclosure.locator("summary").click();
-      await expect(disclosure).not.toHaveAttribute("open", "");
+      await ownedSkillsDisclosure.locator("summary").click();
+      await expect(ownedSkillsDisclosure).not.toHaveAttribute("open", "");
     }
 
     if (width === 390) {
@@ -694,7 +730,7 @@ for (const width of [1440, 820, 390, 320]) {
       if (usesCoarsePointer) {
         overlays.push(
           graphFrame.getByText(
-            "화면을 스크롤하거나 그래프 조작을 시작하세요",
+            "기술을 누르거나 그래프 조작을 시작하세요",
             { exact: true },
           ),
           graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
@@ -709,10 +745,8 @@ for (const width of [1440, 820, 390, 320]) {
         );
       }
 
-      const quickTarget = await quickSkills
-        .getByRole("link", { name: "Docker" })
-        .boundingBox();
-      expect(quickTarget?.height).toBeGreaterThanOrEqual(44);
+      const searchTarget = await skillSearch.boundingBox();
+      expect(searchTarget?.height).toBeGreaterThanOrEqual(44);
 
       expect(mobileNavigationBox?.height).toBeGreaterThanOrEqual(102);
       expect(mobileNavigationBox?.y).toBeGreaterThanOrEqual(0);
