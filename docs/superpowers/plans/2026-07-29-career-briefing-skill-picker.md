@@ -206,4 +206,3 @@ Re-run the Slop Test against the changed surfaces, update `.hallmark/log.json`, 
 - [ ] **Step 6: Commit, push, open a PR, merge after checks, and verify production**
 
 Push only `feat/career-briefing-skill-picker`, use the repository's normal pull-request path, wait for required checks, merge without touching the dirty root checkout, then capture the deployed home and both skill-entry surfaces.
-
