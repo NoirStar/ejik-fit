@@ -36,6 +36,7 @@ import type {
   SkillGraphViewLink,
   SkillGraphViewNode,
 } from "@/lib/skill-graph-view";
+import { skillGraphPointerRadius } from "@/lib/skill-graph-touch";
 import type {
   GraphRendererDisplaySettings,
   GraphRendererEmphasis,
@@ -280,13 +281,12 @@ function paintPointerArea(
   color: string,
   ctx: CanvasRenderingContext2D,
   touchInput: boolean,
+  globalScale: number,
 ) {
-  const minimumRadius = touchInput
-    ? 18
-    : 12;
-  const radius = Math.max(
-    minimumRadius,
-    (node.val ?? 4) + 7,
+  const radius = skillGraphPointerRadius(
+    node.val,
+    globalScale,
+    touchInput,
   );
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -565,10 +565,16 @@ export function SkillGraphForceCanvas({
         )
         .map((node) => ({
           distance: Math.hypot(node.x! - point.x, node.y! - point.y),
+          hitRadius: skillGraphPointerRadius(
+            node.val,
+            graph.zoom(),
+            true,
+          ),
           node,
         }))
+        .filter((candidate) => candidate.distance <= candidate.hitRadius)
         .sort((left, right) => left.distance - right.distance)[0];
-      if (nearest && nearest.distance <= 26) {
+      if (nearest) {
         selectGraphNode(nearest.node, true);
       }
     }
@@ -687,8 +693,11 @@ export function SkillGraphForceCanvas({
       const start = touchTapStart;
       touchTapStart = null;
       const touch = event.changedTouches.item(0);
-      if (!start.moved && touch) {
-        selectTouchNode(touch.clientX, touch.clientY);
+      if (!start.moved) {
+        selectTouchNode(
+          touch?.clientX ?? start.x,
+          touch?.clientY ?? start.y,
+        );
       }
     }
 
@@ -980,8 +989,14 @@ export function SkillGraphForceCanvas({
         ),
       )
       .nodeCanvasObjectMode(() => "replace")
-      .nodePointerAreaPaint((node, color, ctx) =>
-        paintPointerArea(node, color, ctx, touchInputRef.current),
+      .nodePointerAreaPaint((node, color, ctx, globalScale) =>
+        paintPointerArea(
+          node,
+          color,
+          ctx,
+          touchInputRef.current,
+          globalScale,
+        ),
       )
       .linkWidth((link) => {
         const highlight = highlightRef.current;

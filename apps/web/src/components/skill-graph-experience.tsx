@@ -880,15 +880,13 @@ export function SkillGraphExperience({
 
   function toggleMarketPath() {
     if (!marketPath || marketPath.hopCount === 0) return;
-    setPathEmphasisEnabled((current) => {
-      const next = !current;
-      setAnnouncement(
-        next
-          ? `${marketPathLabels[0]}에서 ${marketPathLabels.at(-1)}까지의 시장 관계를 강조했습니다.`
-          : "시장 연결 경로 강조를 껐습니다.",
-      );
-      return next;
-    });
+    const next = !pathEmphasisEnabled;
+    setPathEmphasisEnabled(next);
+    setAnnouncement(
+      next
+        ? `${marketPathLabels[0]}에서 ${marketPathLabels.at(-1)}까지의 시장 관계를 강조했습니다.`
+        : "시장 연결 경로 강조를 껐습니다.",
+    );
   }
 
   function resetGraphView() {
@@ -1381,7 +1379,7 @@ export function SkillGraphExperience({
                   </p>
                   <div className={styles.marketPathFooter}>
                     <span>
-                      가장 약한 구간도 함께 {marketPath.weakestCooccurrenceCount}건
+                      최소 동시 등장 {marketPath.weakestCooccurrenceCount}건
                     </span>
                     <button
                       aria-pressed={pathEmphasisEnabled}
