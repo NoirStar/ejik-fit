@@ -208,5 +208,50 @@
       "critical_slop_findings": 0
     }
   },
+  "last_actionable_obsidian_skill_graph_audit": {
+    "audited_at": "2026-07-30",
+    "status": "postbuild_verified",
+    "scope": "/skills/graph Obsidian interaction research translated into job-seeker decisions",
+    "research_conclusion": "Obsidian's graph is useful for overview, neighborhood exploration, and path discovery, but an unfiltered global graph becomes a hairball. The product should adopt the exploration model rather than copy note-app controls.",
+    "adopted_patterns": [
+      "stable global market atlas with explicit nearby exploration",
+      "core, balanced, and detailed relationship density without topology or camera changes",
+      "key and expanded label density without simulation restart",
+      "hover and selection reveal hidden contextual relationships",
+      "bounded market relationship path from owned skills to the selected skill",
+      "path explanation explicitly distinguishes co-requirement evidence from learning order"
+    ],
+    "deliberately_not_copied": [
+      "physics sliders that do not change a job-seeker decision",
+      "time-lapse and note-history controls unavailable in posting data",
+      "direction arrows for undirected co-requirement relationships",
+      "right-click note actions and vault-specific filters"
+    ],
+    "mobile_touch_fix": {
+      "minimum_target_css_px": 44,
+      "zoom_independent": true,
+      "touch_end_coordinate_fallback": true
+    },
+    "verification": {
+      "verified_widths": [320, 390, 820, 1024, 1440],
+      "horizontal_overflow_failures": 0,
+      "wrapped_clickable_labels": 0,
+      "topology_requests_for_display_changes": 0,
+      "related_tests_passed": 62,
+      "focused_touch_runs_passed": 3,
+      "skill_graph_browser_flows_passed": 8,
+      "production_build": "pass",
+      "pre_emit_critique": {
+        "philosophy": 5,
+        "hierarchy": 5,
+        "execution": 5,
+        "specificity": 5,
+        "restraint": 5,
+        "variety": 5
+      },
+      "slop_test": "58/58 pass",
+      "critical_slop_findings": 0
+    }
+  },
   "intentional_exception": null
 }
