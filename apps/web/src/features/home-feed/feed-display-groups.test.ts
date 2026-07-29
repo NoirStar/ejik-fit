@@ -41,9 +41,12 @@ function job(id: string): RecommendedJobFeedItem {
     verifiedLabel: "7월 28일",
     requiredSkills: [],
     preferredSkills: [],
+    unspecifiedSkills: [],
     matchedRequiredSkills: [],
     missingRequiredSkills: [],
     matchedPreferredSkills: [],
+    matchedUnspecifiedSkills: [],
+    recommendationReason: null,
     href: `/jobs/${id}`,
     source: "api",
   };

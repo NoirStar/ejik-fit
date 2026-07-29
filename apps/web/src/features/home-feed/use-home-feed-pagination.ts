@@ -23,6 +23,7 @@ const LOAD_MORE_ERROR = "피드를 더 불러오지 못했습니다.";
 export type HomeFeedJobPage = {
   items: RecommendedJobFeedItem[];
   total: number;
+  personalizationFallback?: boolean;
 };
 
 export type HomeFeedCommunityPage = {
@@ -43,6 +44,7 @@ export type HomeFeedPaginationController = {
   loading: boolean;
   error: string;
   complete: boolean;
+  personalizationFallback: boolean;
   loadNext(tab: FeedTab): Promise<void>;
   retry(tab: FeedTab): Promise<void>;
   prepend(item: CommunityPostFeedItem): void;
@@ -58,6 +60,7 @@ type UseHomeFeedPaginationOptions = {
   initialCommunityHasMore: boolean;
   initialInsights: MarketInsightFeedItem[];
   initialJobs: RecommendedJobFeedItem[];
+  initialPersonalizationFallback?: boolean;
   jobTotal: number;
   liveCommunity?: CommunityPostFeedItem[];
   loadCommunity?: () => Promise<HomeFeedCommunityPage>;
@@ -72,6 +75,7 @@ type PaginationState = {
   jobOffset: number;
   jobTotal: number;
   loading: boolean;
+  personalizationFallback: boolean;
   seenIds: Set<string>;
   sourceEnded: {
     community: boolean;
@@ -120,6 +124,9 @@ async function defaultLoadJobs({
     offset: String(offset),
   });
   if (careerType) params.set("career_type", careerType);
+  for (const skill of ownedSkills) {
+    params.append("owned_skills", skill);
+  }
   const response = await fetch(`/api/home-feed/postings?${params}`, {
     signal,
   });
@@ -129,6 +136,8 @@ async function defaultLoadJobs({
     items: page.items.map((posting) =>
       postingSummaryToFeedItem(posting, ownedSkills),
     ),
+    personalizationFallback:
+      response.headers.get("x-ejik-personalization") === "fallback",
     total: page.total,
   };
 }
@@ -138,6 +147,7 @@ function initialState({
   initialCommunityHasMore,
   initialInsights,
   initialJobs,
+  initialPersonalizationFallback = false,
   jobTotal,
 }: UseHomeFeedPaginationOptions): PaginationState {
   const queue = interleaveHomeSources({
@@ -153,6 +163,7 @@ function initialState({
     jobOffset: initialJobs.length,
     jobTotal,
     loading: false,
+    personalizationFallback: initialPersonalizationFallback,
     seenIds: new Set(page.items.map(({ id }) => id)),
     sourceEnded: {
       community: !initialCommunityHasMore,
@@ -346,7 +357,9 @@ export function useHomeFeedPagination(
             careerType: activeOptions.careerType ?? "",
             limit: HOME_FEED_PAGE_SIZE,
             offset: current.jobOffset,
-            ownedSkills: activeOptions.ownedSkills,
+            ownedSkills: current.personalizationFallback
+              ? []
+              : activeOptions.ownedSkills,
             signal: controller.signal,
           })
             .then((page) => ({ page, error: false as const }))
@@ -418,6 +431,9 @@ export function useHomeFeedPagination(
           jobOffset: nextJobOffset,
           jobTotal: nextJobTotal,
           loading: false,
+          personalizationFallback:
+            value.personalizationFallback ||
+            Boolean(jobResult.page?.personalizationFallback),
           seenIds,
           sourceEnded: {
             community: communityResult.error
@@ -524,6 +540,7 @@ export function useHomeFeedPagination(
     loading: state.loading,
     error: state.error,
     complete,
+    personalizationFallback: state.personalizationFallback,
     loadNext,
     prepend,
     remove,

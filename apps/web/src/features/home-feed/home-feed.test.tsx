@@ -26,7 +26,6 @@ import { createLocalCommunityPost } from "@/lib/local-community-posts";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
-  SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
@@ -56,6 +55,9 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://careers.toss.im/job-1",
       last_verified_at: "2026-07-12T15:00:00.000Z",
+      required_skills: ["Java", "Spring"],
+      preferred_skills: ["Kafka"],
+      unspecified_skills: [],
     },
   ],
 };
@@ -72,24 +74,6 @@ const skillStats: SkillStatsResponse = {
       unspecified_count: 2,
     },
   ],
-};
-
-const graph: SkillGraphResponse = {
-  seed: "Java",
-  nodes: [],
-  edges: [],
-  evidence: [
-    {
-      posting_id: "job-1",
-      title: "Backend Engineer",
-      company_name: "토스",
-      skills: ["Java", "Spring", "Kafka"],
-      required: ["Java", "Spring"],
-      preferred: ["Kafka"],
-      unspecified: [],
-    },
-  ],
-  meta: { limit: 30, min_confidence: 0.8 },
 };
 
 const fit: FitAnalyzeResponse = {
@@ -161,7 +145,6 @@ function buildSnapshot() {
   return buildHomeFeedSnapshot({
     postings: ready(postings),
     skillStats: ready(skillStats),
-    graph: ready(graph),
     fit: ready(fit),
     careerPreferences: {
       careerCondition: "experienced",
@@ -299,7 +282,8 @@ describe("HomeFeed", () => {
     expect(screen.getByText("공고 1개 분석 · 최신 확인 7월 13일"))
       .toBeInTheDocument();
     const job = screen.getByRole("article", { name: "Backend Engineer" });
-    expect(within(job).getByText("필수 1/2 일치")).toBeInTheDocument();
+    expect(within(job).getByText("내 기술 2개 일치")).toBeInTheDocument();
+    expect(within(job).queryByText("필수 1/2 일치")).not.toBeInTheDocument();
     expect(within(job).getByRole("link", {
       name: "Backend Engineer 공고 보기",
     })).toHaveAttribute("href", "/jobs/job-1");
@@ -488,7 +472,6 @@ describe("HomeFeed", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
-      graph: ready(graph),
       fit: null,
       ownedSkills: [],
     });
@@ -523,7 +506,6 @@ describe("HomeFeed", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
-      graph: ready(graph),
       fit: { status: "error", message: "fit offline" },
       ownedSkills: ["Java"],
     });
@@ -554,7 +536,6 @@ describe("HomeFeed", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(groupedPostings),
       skillStats: ready({ total: 0, items: [] }),
-      graph: ready({ ...graph, evidence: [] }),
       fit: null,
       ownedSkills: [],
     });

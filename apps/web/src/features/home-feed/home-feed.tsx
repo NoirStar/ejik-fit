@@ -337,6 +337,7 @@ function JobCard({
   const hasOwnedSkills = ownedSkills.length > 0;
   const matchedRequired = new Set(item.matchedRequiredSkills);
   const matchedPreferred = new Set(item.matchedPreferredSkills);
+  const matchedUnspecified = new Set(item.matchedUnspecifiedSkills);
   const required = item.requiredSkills.map((skill) => ({
     kind: hasOwnedSkills
       ? matchedRequired.has(skill)
@@ -352,7 +353,17 @@ function JobCard({
       kind: matchedPreferred.has(skill) ? "matched" : "preferred",
       skill,
     }));
-  const skills = [...required, ...preferred];
+  const knownNames = new Set([
+    ...item.requiredSkills,
+    ...item.preferredSkills,
+  ]);
+  const unspecified = item.unspecifiedSkills
+    .filter((skill) => !knownNames.has(skill))
+    .map((skill) => ({
+      kind: matchedUnspecified.has(skill) ? "matched" : "neutral",
+      skill,
+    }));
+  const skills = [...required, ...preferred, ...unspecified];
   const visibleSkills = skills.slice(0, compact ? 3 : 4);
   const hiddenSkillCount = Math.max(0, skills.length - visibleSkills.length);
 
@@ -392,13 +403,18 @@ function JobCard({
             </div>
           </div>
 
-          {(visibleSkills.length > 0 ||
-            (hasOwnedSkills && item.requiredSkills.length > 0)) && (
+          {(visibleSkills.length > 0 || item.recommendationReason) && (
             <div className={styles.jobSignalRow}>
-              {hasOwnedSkills && item.requiredSkills.length > 0 && (
-                <strong className={styles.matchSummary}>
-                  필수 {item.matchedRequiredSkills.length}/
-                  {item.requiredSkills.length} 일치
+              {item.recommendationReason && (
+                <strong
+                  className={styles.matchSummary}
+                  data-kind={
+                    item.recommendationReason === "새로운 분야 탐색"
+                      ? "exploration"
+                      : "matched"
+                  }
+                >
+                  {item.recommendationReason}
                 </strong>
               )}
               {visibleSkills.length > 0 && (
@@ -941,6 +957,7 @@ export function HomeFeed({
       publicCommunity.state.nextCursor !== null,
     initialInsights: snapshot.marketInsights,
     initialJobs: snapshot.recommendedJobs,
+    initialPersonalizationFallback: snapshot.personalizationFallback,
     jobTotal: snapshot.postingCount,
     liveCommunity: publicServerFeedItems,
     loadCommunity:
@@ -1255,6 +1272,13 @@ export function HomeFeed({
                 </button>
               </div>
             </section>
+          )}
+
+          {(snapshot.personalizationFallback ||
+            pagination.personalizationFallback) && (
+            <p className={styles.personalizationNotice} role="status">
+              맞춤 추천을 불러오지 못해 최신 공고를 보여드려요.
+            </p>
           )}
 
           {community.state.status === "error" && (

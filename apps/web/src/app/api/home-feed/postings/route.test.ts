@@ -48,6 +48,61 @@ describe("home feed postings route", () => {
     });
   });
 
+  it("forwards saved skills and keeps personalized pages private", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/home-feed/postings?owned_skills=C%2B%2B&owned_skills=Rust",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(getPostings).toHaveBeenCalledWith({
+      offset: 0,
+      limit: 20,
+      owned_skills: ["C++", "Rust"],
+    });
+  });
+
+  it("falls back once to a generic page when personalization is unavailable", async () => {
+    vi.mocked(getPostings)
+      .mockRejectedValueOnce(new Error("personalization offline"))
+      .mockResolvedValueOnce({ items: [], total: 12 });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/home-feed/postings?offset=20&owned_skills=C%2B%2B",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-ejik-personalization")).toBe("fallback");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(getPostings).toHaveBeenNthCalledWith(1, {
+      offset: 20,
+      limit: 20,
+      owned_skills: ["C++"],
+    });
+    expect(getPostings).toHaveBeenNthCalledWith(2, {
+      offset: 20,
+      limit: 20,
+    });
+  });
+
+  it("rejects an oversized saved-skill list", async () => {
+    const query = Array.from(
+      { length: 21 },
+      (_, index) => `owned_skills=custom-${index}`,
+    ).join("&");
+
+    const response = await GET(
+      new Request(`http://localhost/api/home-feed/postings?${query}`),
+    );
+
+    expect(response.status).toBe(400);
+    expect(getPostings).not.toHaveBeenCalled();
+  });
+
   it("returns a stable service error without leaking the provider failure", async () => {
     vi.mocked(getPostings).mockRejectedValue(new Error("private upstream detail"));
 

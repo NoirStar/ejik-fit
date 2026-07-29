@@ -61,9 +61,12 @@ export type RecommendedJobFeedItem = {
   verifiedLabel: string;
   requiredSkills: string[];
   preferredSkills: string[];
+  unspecifiedSkills: string[];
   matchedRequiredSkills: string[];
   missingRequiredSkills: string[];
   matchedPreferredSkills: string[];
+  matchedUnspecifiedSkills: string[];
+  recommendationReason: string | null;
   href: string;
   source: "api";
 };
@@ -113,6 +116,7 @@ export type HomeFeedSnapshot = {
   careerInsight: CareerInsightSummary;
   careerContext: CareerContextSummary;
   ownedSkills: string[];
+  personalizationFallback: boolean;
   postingCount: number;
   sourceCount: number;
   lastVerifiedAt: string | null;
