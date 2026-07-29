@@ -196,7 +196,6 @@ describe("OwnedSkillsSheet", () => {
     fireEvent.change(input, { target: { value: "Kubernetes" } });
     fireEvent.click(within(dialog).getByRole("button", {
       name: "추가",
-      exact: true,
     }));
 
     expect(within(dialog).getByRole("alert")).toHaveTextContent(

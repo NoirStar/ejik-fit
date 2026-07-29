@@ -329,7 +329,7 @@ describe("CareerOverview", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
       target: { value: "Kubernetes" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(
       "이미 추가한 기술입니다.",
