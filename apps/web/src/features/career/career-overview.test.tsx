@@ -193,7 +193,7 @@ describe("CareerOverview", () => {
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " python " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     await waitFor(() => {
       expect(JSON.parse(window.localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([
@@ -209,7 +209,7 @@ describe("CareerOverview", () => {
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "python" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
     expect(screen.getByRole("alert")).toHaveTextContent("이미 추가한 기술입니다.");
 
     fireEvent.click(screen.getByRole("button", { name: "Python 제거" }));
@@ -251,13 +251,91 @@ describe("CareerOverview", () => {
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " react native " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     expect(
       within(screen.getByRole("list", { name: "내 기술 목록" })).getByText(
         "React Native",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("searches a bounded catalog instead of opening the browser-native list", async () => {
+    render(
+      <CareerOverview
+        catalog={[
+          {
+            name: "Kubernetes",
+            category: "infra",
+            kind: "platform",
+            domains: ["devops", "cloud"],
+          },
+          {
+            name: "React Native",
+            category: "mobile",
+            kind: "framework",
+            domains: ["mobile", "frontend"],
+          },
+        ]}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await screen.findByText("먼저 내 기술을 추가해 주세요.");
+
+    const input = screen.getByRole("combobox", { name: "추가할 기술" });
+    fireEvent.focus(input);
+    expect(
+      screen.queryByRole("listbox", { name: "기술 검색 결과" }),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector("datalist")).toBeNull();
+
+    fireEvent.change(input, { target: { value: "k8s" } });
+    expect(
+      screen.getByRole("option", { name: "Kubernetes 인프라" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "“k8s” 직접 추가" }),
+    ).not.toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(
+        JSON.parse(window.localStorage.getItem("ejik-fit:owned-skills")!),
+      ).toEqual(["Kubernetes"]);
+    });
+    expect(input).toHaveFocus();
+  });
+
+  it("does not add a canonical duplicate of a stored alias", async () => {
+    writeOwnedSkills(["k8s"]);
+    render(
+      <CareerOverview
+        catalog={[
+          {
+            name: "Kubernetes",
+            category: "infra",
+            kind: "platform",
+            domains: ["devops", "cloud"],
+          },
+        ]}
+        suggestions={suggestions}
+        suggestionsUnavailable={false}
+      />,
+    );
+    await screen.findByText("k8s");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
+      target: { value: "Kubernetes" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "이미 추가한 기술입니다.",
+    );
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual(["k8s"]);
   });
 
   it("reacts to same-tab stack changes and requests an updated comparison", async () => {

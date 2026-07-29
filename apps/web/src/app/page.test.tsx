@@ -243,7 +243,7 @@ describe("Home", () => {
     expect(analyzeFit).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "기술을 등록하면 내 기술이 포함된 공고와 다음에 배울 기술을 확인할 수 있습니다.",
+        "내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -291,7 +291,7 @@ describe("Home", () => {
       .toBeInTheDocument();
     const insight = screen.getByRole("region", { name: "내 커리어 브리핑" });
     expect(insight).toHaveTextContent(
-      "내 기술이 포함된 공고를 불러오지 못했습니다.",
+      "내 기술 분석을 불러오지 못했습니다.",
     );
     expect(screen.getByText("토스")).toBeInTheDocument();
     log.mockRestore();

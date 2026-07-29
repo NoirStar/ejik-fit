@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "audited_at": "2026-07-23",
+  "audited_at": "2026-07-29",
   "scope": "multi-page production app with authenticated community persistence",
   "genre": "modern-minimal",
   "tone": "Korean product workbench",
@@ -55,9 +55,9 @@
     "audited_at": "2026-07-29",
     "macrostructure": "Ecosystem Index / action briefing + mixed signal stream",
     "changes": [
-      "900px 이하에서 중복 시장 레일을 숨기고 브리핑 다음에 연속 피드를 배치",
-      "기술 매칭 문구를 실제 집계 기준에 맞게 수정",
-      "링크의 터치 영역과 키보드 포커스 상태 보강"
+      "커리어 브리핑을 다음 학습 후보 한 가지와 보조 사실 두 가지로 재구성",
+      "시장 전체 수요 지표를 브리핑에서 제거해 우측 레일과 피드 시장 카드의 중복 해소",
+      "모바일 브리핑 높이를 약 273px에서 약 235px로 줄여 첫 공고 노출 시점 개선"
     ],
     "pre_emit_critique": {
       "purpose": 5,
@@ -67,9 +67,25 @@
       "responsiveness": 5,
       "visual_quality": 4
     },
-    "verified_widths": [320, 375, 414, 768, 1440],
+    "verified_widths": [320, 390, 1440],
     "horizontal_overflow_failures": 0,
-    "browser_e2e_passed": 5
+    "browser_e2e_passed": 3
+  },
+  "last_skill_picker_audit": {
+    "audited_at": "2026-07-29",
+    "changes": [
+      "빈 입력에서 155개 기술을 펼치던 목록을 검색형 콤보박스로 교체",
+      "표준 기술 검색 결과를 최대 6개로 제한하고 별도 직접 추가 경로 제공",
+      "헤더 패널과 내 커리어 화면에서 같은 키보드·터치 상호작용 사용",
+      "모바일 결과 목록을 248px 이하로 제한해 하단 내비게이션과 겹치지 않도록 조정",
+      "별칭과 정식명을 같은 기술로 판정하고 터치 스크롤 시작 시 항목이 추가되지 않도록 보강"
+    ],
+    "catalog_items": 155,
+    "max_catalog_suggestions": 6,
+    "max_result_height_px": 248,
+    "mobile_navigation_overlap": false,
+    "keyboard_navigation": "pass",
+    "touch_target_floor_px": 44
   },
   "intentional_exception": null
 }

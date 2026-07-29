@@ -41,10 +41,11 @@ for (const width of [1440, 768, 414, 375, 320]) {
 
     const context = page.getByRole("region", { name: "내 커리어 브리핑" });
     await expect(context).toContainText("경력 · 백엔드");
-    await expect(context).toContainText("내 기술 포함 공고");
-    await expect(context).toContainText("현재 수요 상위");
+    await expect(context).toContainText("준비도 높은 공고");
+    await expect(context).toContainText("기술이 겹치는 공고");
+    await expect(context.getByText("현재 수요 상위")).toHaveCount(0);
     const contextBox = await context.boundingBox();
-    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 310);
+    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 240);
     await expect(
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).toBeVisible();
@@ -55,7 +56,7 @@ for (const width of [1440, 768, 414, 375, 320]) {
       page.getByText("채용 시장", { exact: true }).first(),
     ).toBeVisible();
     await expect(
-      page.getByText("내 기술 포함 공고", { exact: true }),
+      page.getByText("기술이 겹치는 공고", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(/커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/),

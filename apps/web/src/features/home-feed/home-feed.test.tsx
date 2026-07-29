@@ -271,18 +271,26 @@ describe("HomeFeed", () => {
       screen.queryByRole("complementary", { name: "내 커리어 바로가기" }),
     ).not.toBeInTheDocument();
     const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
-    expect(within(briefing).getByText("내 기술 포함 공고")).toBeInTheDocument();
-    expect(within(briefing).getByText("12건")).toBeInTheDocument();
-    expect(within(briefing).getByText("필수 기술 절반 이상 충족 4건"))
-      .toBeInTheDocument();
-    expect(within(briefing).getByText("다음에 배울 기술")).toBeInTheDocument();
-    expect(within(briefing).getByRole("link", { name: "Kubernetes 근거 보기" }))
+    expect(within(briefing).getByText("다음에 준비할 기술")).toBeInTheDocument();
+    expect(within(briefing).getByRole("link", {
+      name: "Kubernetes 추천 근거 보기",
+    }))
       .toHaveAttribute("href", "/skill-map?skill=Kubernetes");
-    expect(within(briefing).getByText("관련 공고 8건에서 부족"))
+    expect(within(briefing).getByText(
+      "관련 공고 8건에서 반복적으로 부족했습니다.",
+    ))
       .toBeInTheDocument();
-    expect(within(briefing).getByText("현재 수요 상위")).toBeInTheDocument();
-    expect(within(briefing).getByText("기술 언급 공고 14건"))
+    expect(within(briefing).getByText("준비도 높은 공고")).toBeInTheDocument();
+    expect(within(briefing).getByText("4건")).toBeInTheDocument();
+    expect(within(briefing).getByText("필수 기술 절반 이상 충족"))
       .toBeInTheDocument();
+    expect(within(briefing).getByText("기술이 겹치는 공고"))
+      .toBeInTheDocument();
+    expect(within(briefing).getByText("12건")).toBeInTheDocument();
+    expect(within(briefing).getByText("내 기술 한 개 이상 포함"))
+      .toBeInTheDocument();
+    expect(within(briefing).queryByText("현재 수요 상위"))
+      .not.toBeInTheDocument();
     expect(within(briefing).getByText("경력 · 백엔드"))
       .toBeInTheDocument();
     expect(within(briefing).getByRole("link", {
@@ -500,7 +508,7 @@ describe("HomeFeed", () => {
       .toHaveLength(1);
     expect(
       within(briefing).getByText(
-        "기술을 등록하면 내 기술이 포함된 공고와 다음에 배울 기술을 확인할 수 있습니다.",
+        "내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -509,6 +517,29 @@ describe("HomeFeed", () => {
     const job = screen.getByRole("article", { name: "Backend Engineer" });
     expect(within(job).getByText("Java")).toBeInTheDocument();
     expect(within(job).getByText("Spring")).toBeInTheDocument();
+  });
+
+  it("keeps a compact recovery action when personalized analysis is unavailable", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(postings),
+      skillStats: ready(skillStats),
+      graph: ready(graph),
+      fit: { status: "error", message: "fit offline" },
+      ownedSkills: ["Java"],
+    });
+
+    render(<HomeFeed snapshot={snapshot} />);
+
+    const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
+    expect(within(briefing).getByText("내 기술 분석을 불러오지 못했습니다."))
+      .toBeInTheDocument();
+    expect(within(briefing).getByText("잠시 후 다시 확인해 주세요."))
+      .toBeInTheDocument();
+    expect(within(briefing).queryByText("현재 수요 상위"))
+      .not.toBeInTheDocument();
+    expect(within(briefing).getByRole("link", {
+      name: "내 커리어 기준 수정",
+    })).toHaveAttribute("href", "/career");
   });
 
   it("renders consecutive jobs as one recommendation group", () => {
