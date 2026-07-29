@@ -18,6 +18,7 @@ class FakePostingReader:
         category: str | None = None,
         limit: int = 20,
         offset: int = 0,
+        owned_skills: list[str] | None = None,
     ) -> list[dict]:
         self.calls.append(
             {
@@ -27,6 +28,7 @@ class FakePostingReader:
                 "category": category,
                 "limit": limit,
                 "offset": offset,
+                "owned_skills": owned_skills or [],
             }
         )
         return [
@@ -134,6 +136,7 @@ def test_list_postings_exposes_source_and_verification_time() -> None:
             "category": "backend",
             "limit": 20,
             "offset": 40,
+            "owned_skills": [],
         }
     ]
     assert reader.count_calls == [
@@ -157,6 +160,43 @@ def test_list_postings_combines_repeated_company_filters() -> None:
     assert response.status_code == 200
     assert reader.calls[0]["company"] == "naver,kakao"
     assert reader.count_calls[0]["company"] == "naver,kakao"
+
+
+def test_list_postings_canonicalizes_saved_skills_and_disables_shared_cache() -> None:
+    reader = FakePostingReader()
+    app = create_app(posting_reader=reader)
+
+    response = TestClient(app).get(
+        "/api/postings?owned_skills=c%2B%2B&owned_skills=K8S&owned_skills=C%2B%2B"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "private, no-store"
+    assert reader.calls[0]["owned_skills"] == ["C++", "Kubernetes"]
+    assert "owned_skills" not in reader.count_calls[0]
+
+
+def test_list_postings_keeps_generic_response_publicly_cacheable() -> None:
+    response = TestClient(create_app(posting_reader=FakePostingReader())).get(
+        "/api/postings"
+    )
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == (
+        "public, s-maxage=60, stale-while-revalidate=300"
+    )
+
+
+def test_list_postings_rejects_more_than_twenty_saved_skills() -> None:
+    reader = FakePostingReader()
+    query = "&".join(f"owned_skills=custom-{index}" for index in range(21))
+
+    response = TestClient(create_app(posting_reader=reader)).get(
+        f"/api/postings?{query}"
+    )
+
+    assert response.status_code == 422
+    assert reader.calls == []
 
 
 def test_posting_detail_keeps_names_and_adds_structured_evidence() -> None:
