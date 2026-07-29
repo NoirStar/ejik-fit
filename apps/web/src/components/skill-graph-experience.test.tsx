@@ -197,7 +197,9 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
-    expect(screen.queryByLabelText("주변 깊이")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "주변 깊이" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "직접 연결" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "두 단계" })).toBeDisabled();
     expect(
       screen.queryByRole("checkbox", { name: "관련 공고" }),
     ).not.toBeInTheDocument();
@@ -226,7 +228,9 @@ describe("SkillGraphExperience", () => {
     ).not.toBeInTheDocument();
     const legend = screen.getByRole("note", { name: "스킬맵 범례" });
     expect(legend).toHaveTextContent("크기: 시장 수요");
+    expect(legend).toHaveTextContent("색: 기술 분야");
     expect(legend).toHaveTextContent("테두리: 내 기술");
+    expect(legend).toHaveTextContent("점: 학습 추천");
     expect(legend).toHaveTextContent("선 농도: 함께 요구");
     expect(screen.getByText("표시 기술")).toBeInTheDocument();
     expect(screen.getByText("표시 관계")).toBeInTheDocument();
@@ -277,7 +281,49 @@ describe("SkillGraphExperience", () => {
     expect(
       await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
+    expect(screen.getByRole("button", { name: "C++ 내 기술에 추가" }))
+      .toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "C++ 관련 공고 모두 보기" }))
+      .toHaveAttribute("href", "/search?q=C%2B%2B&scope=jobs");
     expect(screen.getByText("1건")).toBeInTheDocument();
+  });
+
+  it("loads a two-step neighborhood only when the user asks for it", async () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "두 단계" }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/skills/graph/data?limit=30&depth=2&seed=C%2B%2B",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      );
+    });
+    expect(screen.getByRole("button", { name: "두 단계" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(window.location.search).toContain("depth=2");
+  });
+
+  it("keeps page scrolling until mobile graph interaction is explicitly enabled", () => {
+    render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    const frame = screen.getByTestId("skill-graph-frame");
+    const toggle = screen.getByRole("button", { name: "그래프 조작 시작" });
+    expect(frame).toHaveAttribute("data-touch-interaction", "disabled");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+
+    expect(frame).toHaveAttribute("data-touch-interaction", "enabled");
+    expect(screen.getByRole("button", { name: "그래프 조작 종료" }))
+      .toHaveAttribute("aria-pressed", "true");
   });
 
   it("replaces the overview with server-backed topology after selection", async () => {
@@ -516,7 +562,9 @@ describe("SkillGraphExperience", () => {
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
-    const firstAction = within(inspector).getByRole("button", { name: /ROS2/ });
+    const firstAction = within(inspector).getByRole("button", {
+      name: "C++ 내 기술에 추가",
+    });
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
       block: "start",
@@ -740,7 +788,7 @@ describe("SkillGraphExperience", () => {
       );
     });
     expect(screen.getByRole("note", { name: "스킬맵 범례" })).toHaveTextContent(
-      "점선: 추천 기술",
+      "점: 학습 추천",
     );
   });
 

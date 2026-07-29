@@ -1,5 +1,3 @@
-import { GRAPH_DEFAULT_COLOR } from "@/styles/design-tokens";
-
 import { domainColor } from "./skill-graph";
 import type {
   SkillGraphEdge,
@@ -36,6 +34,7 @@ export type SkillGraphViewNode = {
   demandCount: number;
   owned: boolean;
   recommended: boolean;
+  recommendationRank: number | null;
   seed: boolean;
   evidence?: SkillGraphEvidence;
   skill?: SkillGraphNode;
@@ -410,7 +409,9 @@ export function buildSkillGraphView(
     1,
     ...graph.nodes.map((node) => safeCount(node.demand_count)),
   );
-  const recommendedIds = new Set(options.recommendedIds ?? []);
+  const recommendationRanks = new Map(
+    (options.recommendedIds ?? []).map((id, index) => [id, index + 1]),
+  );
   const ownedIds = options.ownedIds ? new Set(options.ownedIds) : null;
   const nodes = selectedNodes.map<SkillGraphViewNode>((node) => {
     const domain = primaryDomain(node);
@@ -421,11 +422,15 @@ export function buildSkillGraphView(
       category: node.category,
       domain,
       domains: node.domains,
-      color: GRAPH_DEFAULT_COLOR,
+      color: domainColor(domain),
       val: skillNodeValue(node, maximumDemand),
       demandCount: safeCount(node.demand_count),
       owned: ownedIds ? ownedIds.has(node.id) : node.owned,
-      recommended: recommendedIds.has(node.id),
+      recommended: (recommendationRanks.get(node.id) ?? Infinity) <= 3,
+      recommendationRank:
+        (recommendationRanks.get(node.id) ?? Infinity) <= 3
+          ? recommendationRanks.get(node.id) ?? null
+          : null,
       seed: node.seed,
       skill: node,
     };

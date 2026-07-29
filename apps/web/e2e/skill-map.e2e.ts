@@ -6,7 +6,7 @@ import {
   type Page,
 } from "@playwright/test";
 
-import { GRAPH_CANVAS_COLORS } from "../src/styles/design-tokens";
+import { GRAPH_DOMAIN_COLORS } from "../src/styles/design-tokens";
 
 type CanvasFingerprint = {
   hash: number;
@@ -38,10 +38,10 @@ function rectanglesOverlap(left: Rect, right: Rect) {
   );
 }
 
-const neutralNodeRgb = [
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(1, 3), 16),
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(3, 5), 16),
-  Number.parseInt(GRAPH_CANVAS_COLORS.neutralNode.slice(5, 7), 16),
+const backendNodeRgb = [
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(1, 3), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(3, 5), 16),
+  Number.parseInt(GRAPH_DOMAIN_COLORS.backend.slice(5, 7), 16),
 ] as const;
 
 async function readCanvasFingerprint(
@@ -236,7 +236,7 @@ async function dispatchPinch(
   });
 }
 
-async function findNeutralNodeOffsets(canvas: Locator) {
+async function findBackendNodeOffsets(canvas: Locator) {
   return canvas.evaluate(
     (element, [red, green, blue]) => {
       const canvasElement = element as HTMLCanvasElement;
@@ -257,9 +257,9 @@ async function findNeutralNodeOffsets(canvas: Locator) {
         for (let x = 0; x < canvasElement.width; x += 2) {
           const offset = (y * canvasElement.width + x) * 4;
           if (
-            Math.abs(pixels[offset] - red) <= 4 &&
-            Math.abs(pixels[offset + 1] - green) <= 4 &&
-            Math.abs(pixels[offset + 2] - blue) <= 4 &&
+            Math.abs(pixels[offset] - red) <= 14 &&
+            Math.abs(pixels[offset + 1] - green) <= 14 &&
+            Math.abs(pixels[offset + 2] - blue) <= 14 &&
             pixels[offset + 3] >= 180
           ) {
             matchingPixels.add((y / step) * gridWidth + x / step);
@@ -314,7 +314,7 @@ async function findNeutralNodeOffsets(canvas: Locator) {
           };
         });
     },
-    neutralNodeRgb,
+    backendNodeRgb,
   );
 }
 
@@ -328,7 +328,7 @@ async function tapSkillNode(
   await expect
     .poll(
       async () => {
-        const offsets = await findNeutralNodeOffsets(canvas);
+        const offsets = await findBackendNodeOffsets(canvas);
         for (const offset of offsets) {
           const visiblePoint = await canvas.evaluate((element, nodeOffset) => {
             const canvasElement = element as HTMLCanvasElement;
@@ -534,8 +534,9 @@ for (const width of [1440, 820, 390, 320]) {
     });
     await expect(legend).toBeVisible();
     await expect(legend).toContainText("크기: 시장 수요");
+    await expect(legend).toContainText("색: 기술 분야");
     await expect(legend).toContainText("테두리: 내 기술");
-    await expect(legend).toContainText("점선: 추천 기술");
+    await expect(legend).toContainText("점: 학습 추천");
     await expect(legend).toContainText("선 농도: 함께 요구");
     const [legendBox, graphControlsBox] = await Promise.all([
       legend.boundingBox(),
@@ -640,7 +641,7 @@ for (const width of [1440, 820, 390, 320]) {
 
       if (width === 390) {
         await page.getByLabel("기술 추가").fill("Rust");
-        await page.getByRole("button", { name: "추가" }).click();
+        await page.getByRole("button", { name: "추가", exact: true }).click();
 
         for (const target of [
           page.getByRole("button", { name: "Rust 제거" }),
@@ -679,9 +680,8 @@ for (const width of [1440, 820, 390, 320]) {
 
       for (const overlay of [
         graphFrame.getByRole("group", { name: "그래프 보기 조절" }),
-        graphFrame.getByText(
-          "한 손가락으로 화면 스크롤 · 두 손가락으로 확대 · 탭하여 선택",
-        ),
+        graphFrame.getByText("화면을 스크롤하거나 그래프 조작을 시작하세요"),
+        graphFrame.getByRole("button", { name: "그래프 조작 시작" }),
       ]) {
         const overlayBox = await overlay.boundingBox();
         expect(overlayBox).not.toBeNull();
@@ -734,6 +734,7 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
   const canvas = forceCanvas.locator("canvas");
   await waitForPaintedCanvas(canvas);
   const beforeScrollZoom = await waitForZoomStability(canvas);
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "disabled");
   const beforeScrollY = await page.evaluate(() => window.scrollY);
   await dispatchTouchScroll(session, {
     x: graphBox!.x + graphBox!.width - 24,
@@ -759,6 +760,9 @@ test("supports page scroll, pinch zoom, and node selection on touch", async ({ b
     .poll(async () => (await readCanvasZoom(canvas))?.k ?? 0)
     .toBeGreaterThan(afterScrollZoom?.k ?? 0);
   const afterButtonZoom = await readCanvasZoom(canvas);
+
+  await graphFrame.getByRole("button", { name: "그래프 조작 시작" }).click();
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "enabled");
 
   const canvasBox = await canvas.boundingBox();
   expect(canvasBox).not.toBeNull();
@@ -825,6 +829,9 @@ test("keeps a static, painted, touch-controllable graph with reduced motion", as
   expect(afterScrollZoom?.y).toBeCloseTo(initialZoom?.y ?? 0, 1);
   const afterPanCanvas = await waitForCanvasStability(canvas);
   expect(afterPanCanvas.hash).toBe(initialCanvas.hash);
+
+  await graphFrame.getByRole("button", { name: "그래프 조작 시작" }).click();
+  await expect(graphFrame).toHaveAttribute("data-touch-interaction", "enabled");
 
   await graphFrame.evaluate((element) =>
     element.scrollIntoView({ block: "center" }),

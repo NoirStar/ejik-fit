@@ -5,8 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 
-import { PRODUCT_TERMS } from "@/lib/labels";
+import { buildSearchScopeHref } from "@/features/search/model";
 import type { CareerCondition } from "@/lib/career-preferences";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
 import { buildSkillGraphHref } from "@/lib/product-routes";
 import { summarizeGraph } from "@/lib/skill-graph";
@@ -74,7 +75,7 @@ const SKILL_MAP_COPY = {
   recommendation: "다음에 배울 기술",
   related: "함께 요구되는 기술",
   desktopControls: "드래그 · 확대 · 선택",
-  mobileControls: "한 손가락으로 화면 스크롤 · 두 손가락으로 확대 · 탭하여 선택",
+  mobileControls: "화면을 스크롤하거나 그래프 조작을 시작하세요",
 };
 
 
@@ -258,6 +259,7 @@ export function SkillGraphExperience({
   const [evidenceRetryKey, setEvidenceRetryKey] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const [controlsOpen, setControlsOpen] = useState(true);
+  const [graphInteractionEnabled, setGraphInteractionEnabled] = useState(false);
   const [topologyState, setTopologyState] = useState<TopologyState>("idle");
   const evidenceCache = useRef(new Map<string, SkillGraphEvidenceResponse>());
   const topologyCache = useRef(new Map<string, SkillGraphResponse>());
@@ -361,6 +363,13 @@ export function SkillGraphExperience({
     [graph.nodes],
   );
   const selected = selectedId ? graphNodeMap.get(selectedId) ?? null : null;
+  const selectedOwned = selected
+    ? ownedSkills.some(
+        (skill) =>
+          skill.toLocaleLowerCase("en-US") ===
+          selected.id.toLocaleLowerCase("en-US"),
+      )
+    : false;
   const allDomains = useMemo(
     () => buildSkillGraphView(graph).domains,
     [graph],
@@ -375,7 +384,9 @@ export function SkillGraphExperience({
   const recommendedIds = useMemo(
     () =>
       fitState === "idle"
-        ? (fit?.recommended_next_skills ?? []).map(({ skill }) => skill)
+        ? (fit?.recommended_next_skills ?? [])
+            .slice(0, 3)
+            .map(({ skill }) => skill)
         : [],
     [fit, fitState],
   );
@@ -736,6 +747,8 @@ export function SkillGraphExperience({
   }
 
   function resetGraphView() {
+    depthRef.current = initialDepth;
+    setDepth(initialDepth);
     setGraphMode(initialSelection ? "focus" : "overview");
     setSelectedId(initialSelection);
     selectedIdRef.current = initialSelection;
@@ -743,20 +756,40 @@ export function SkillGraphExperience({
     setDisabledDomains([]);
     setForceReady(false);
     writeSelectionUrl(initialSelection, "replace");
-    void loadTopology(initialSelection);
+    void loadTopology(initialSelection, initialDepth);
   }
 
   function showGlobalGraph(mode: Extract<SkillGraphViewMode, "overview" | "all">) {
+    depthRef.current = 1;
+    setDepth(1);
     selectedIdRef.current = null;
     setSelectedId(null);
     setGraphMode(mode);
     setForceReady(false);
     writeSelectionUrl(null, "push");
-    void loadTopology(null);
+    void loadTopology(null, 1);
     setAnnouncement(
       mode === "overview"
         ? "시장 수요가 높은 핵심 기술을 표시합니다."
         : "현재 수집 범위의 전체 기술을 표시합니다.",
+    );
+  }
+
+  function changeDepth(nextDepth: 1 | 2) {
+    const currentSelection = selectedIdRef.current;
+    if (!currentSelection || nextDepth === depthRef.current) {
+      return;
+    }
+    depthRef.current = nextDepth;
+    setDepth(nextDepth);
+    setGraphMode("focus");
+    setForceReady(false);
+    writeSelectionUrl(currentSelection, "replace");
+    void loadTopology(currentSelection, nextDepth);
+    setAnnouncement(
+      nextDepth === 1
+        ? `${currentSelection}의 직접 연결 기술을 표시합니다.`
+        : `${currentSelection}에서 두 단계까지 이어지는 기술을 표시합니다.`,
     );
   }
 
@@ -829,6 +862,7 @@ export function SkillGraphExperience({
                   skill,
                   owned_skills: ownedSkills,
                   ...(careerType ? { career_type: careerType } : {}),
+                  ...(depth === 2 ? { depth: "2" } : {}),
                 })}
                 key={skill}
               >
@@ -958,6 +992,30 @@ export function SkillGraphExperience({
                       전체 기술
                     </button>
                   </div>
+
+                  <div aria-label="주변 깊이" className={styles.depthControl} role="group">
+                    <span>선택 기술에서 얼마나 멀리 볼까요?</span>
+                    <div className={styles.depthSegmented}>
+                      <button
+                        aria-pressed={depth === 1}
+                        data-active={depth === 1 ? "true" : undefined}
+                        disabled={!selectedId || graphMode !== "focus"}
+                        onClick={() => changeDepth(1)}
+                        type="button"
+                      >
+                        직접 연결
+                      </button>
+                      <button
+                        aria-pressed={depth === 2}
+                        data-active={depth === 2 ? "true" : undefined}
+                        disabled={!selectedId || graphMode !== "focus"}
+                        onClick={() => changeDepth(2)}
+                        type="button"
+                      >
+                        두 단계
+                      </button>
+                    </div>
+                  </div>
                 </section>
 
                 <section className={styles.controlSection}>
@@ -998,7 +1056,11 @@ export function SkillGraphExperience({
           </aside>
 
           <section aria-label="기술 관계 그래프" className={styles.graphColumn}>
-            <div className={styles.graphFrame} data-testid="skill-graph-frame">
+            <div
+              className={styles.graphFrame}
+              data-testid="skill-graph-frame"
+              data-touch-interaction={graphInteractionEnabled ? "enabled" : "disabled"}
+            >
               <SkillGraphForceCanvas
                 data={viewData}
                 display={display}
@@ -1007,7 +1069,24 @@ export function SkillGraphExperience({
                 onReadyChange={setForceReady}
                 reheatKey={0}
                 selectedId={selectedId}
+                touchInteractionEnabled={graphInteractionEnabled}
               />
+
+              <button
+                aria-label={
+                  graphInteractionEnabled
+                    ? "그래프 조작 종료"
+                    : "그래프 조작 시작"
+                }
+                aria-pressed={graphInteractionEnabled}
+                className={styles.touchInteractionToggle}
+                onClick={() =>
+                  setGraphInteractionEnabled((current) => !current)
+                }
+                type="button"
+              >
+                {graphInteractionEnabled ? "조작 끝내기" : "그래프 조작"}
+              </button>
 
               <p
                 aria-label="스킬맵 범례"
@@ -1016,9 +1095,11 @@ export function SkillGraphExperience({
               >
                 <span><b>크기</b>: 시장 수요</span>
                 <i aria-hidden="true" />
+                <span><b>색</b>: 기술 분야</span>
+                <i aria-hidden="true" />
                 <span><b>테두리</b>: 내 기술</span>
                 <i aria-hidden="true" />
-                <span><b>점선</b>: 추천 기술</span>
+                <span><b>점</b>: 학습 추천</span>
                 <i aria-hidden="true" />
                 <span><b>선 농도</b>: 함께 요구</span>
               </p>
@@ -1133,10 +1214,12 @@ export function SkillGraphExperience({
                         {
                           "--node-color": selectedId === node.id
                             ? GRAPH_CANVAS_COLORS.selectedNode
-                            : GRAPH_CANVAS_COLORS.neutralNode,
+                            : node.color,
                           "--node-ring": node.owned
                             ? GRAPH_CANVAS_COLORS.ownedRing
-                            : GRAPH_CANVAS_COLORS.recommendedRing,
+                            : "transparent",
+                          "--recommendation-color":
+                            GRAPH_CANVAS_COLORS.recommendedRing,
                           left: `${node.x}%`,
                           top: `${node.y}%`,
                         } as CSSProperties
@@ -1227,6 +1310,29 @@ export function SkillGraphExperience({
                   ? `${selected.domains.map(displayDomain).join(", ")} 분야의 공개 공고에서 확인한 수치입니다.`
                   : "기술을 선택하면 관련 공고와 함께 요구되는 기술을 확인할 수 있습니다."}
               </p>
+              {selected && (
+                <div className={styles.selectedActions}>
+                  <button
+                    aria-label={`${selected.label} ${
+                      selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"
+                    }`}
+                    onClick={() =>
+                      selectedOwned
+                        ? removeSkill(selected.id)
+                        : addSkill(selected.id)
+                    }
+                    type="button"
+                  >
+                    {selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"}
+                  </button>
+                  <Link
+                    aria-label={`${selected.label} 관련 공고 모두 보기`}
+                    href={buildSearchScopeHref(selected.label, "jobs")}
+                  >
+                    관련 공고 모두 보기
+                  </Link>
+                </div>
+              )}
               <dl className={styles.evidenceMetrics}>
                 <div>
                   <dt>언급 공고</dt>

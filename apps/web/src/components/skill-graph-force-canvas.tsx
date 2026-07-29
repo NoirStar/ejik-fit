@@ -194,11 +194,9 @@ function drawNode(
   if (paint.ring) {
     ctx.beginPath();
     ctx.arc(node.x ?? 0, node.y ?? 0, radius + 2.1, 0, Math.PI * 2);
-    ctx.setLineDash(node.recommended && !node.owned ? [2.4, 1.6] : []);
     ctx.strokeStyle = paint.ring;
     ctx.lineWidth = Math.max(0.8, 1.35 / globalScale);
     ctx.stroke();
-    ctx.setLineDash([]);
   }
 
   if (isSelected || isHovered) {
@@ -216,6 +214,23 @@ function drawNode(
   ctx.fillStyle = paint.fill;
   ctx.shadowBlur = 0;
   ctx.fill();
+
+  if (paint.recommendationMarker) {
+    const markerRadius = Math.max(1.65, radius * 0.24);
+    ctx.beginPath();
+    ctx.arc(
+      (node.x ?? 0) + radius * 0.72,
+      (node.y ?? 0) - radius * 0.72,
+      markerRadius,
+      0,
+      Math.PI * 2,
+    );
+    ctx.fillStyle = paint.recommendationMarker;
+    ctx.fill();
+    ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
+    ctx.lineWidth = Math.max(0.65, 1.1 / globalScale);
+    ctx.stroke();
+  }
 
   if (shouldLabel) {
     const fontSize = isSelected || isHovered ? 7.2 : node.seed ? 6.8 : 6.2;
@@ -399,6 +414,7 @@ export function SkillGraphForceCanvas({
   onNodeSelect,
   onReadyChange,
   reheatKey = 0,
+  touchInteractionEnabled = false,
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
@@ -431,6 +447,7 @@ export function SkillGraphForceCanvas({
   const selectedIdRef = useRef<string | null>(selectedId);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
+  const touchInteractionEnabledRef = useRef(touchInteractionEnabled);
   const initialViewReadyRef = useRef(false);
   const readyRef = useRef(false);
   const revealGenerationRef = useRef(0);
@@ -438,6 +455,7 @@ export function SkillGraphForceCanvas({
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   adjacencyRef.current = adjacency;
+  touchInteractionEnabledRef.current = touchInteractionEnabled;
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -457,7 +475,10 @@ export function SkillGraphForceCanvas({
     let resizeFrame = 0;
 
     function selectGraphNode(node: SkillForceNode, directTouch = false) {
-      if (node.kind !== "skill") {
+      if (
+        node.kind !== "skill" ||
+        (touchInputRef.current && !touchInteractionEnabledRef.current)
+      ) {
         return;
       }
       const nodeId = String(node.id);
@@ -558,7 +579,7 @@ export function SkillGraphForceCanvas({
     }
 
     function startTouch(event: TouchEvent) {
-      if (!graphRef.current) {
+      if (!graphRef.current || !touchInteractionEnabledRef.current) {
         return;
       }
       if (
@@ -584,6 +605,9 @@ export function SkillGraphForceCanvas({
     }
 
     function moveTouch(event: TouchEvent) {
+      if (!touchInteractionEnabledRef.current) {
+        return;
+      }
       if (event.touches.length === 1 && touchTapStart) {
         const touch = event.touches.item(0);
         if (
@@ -612,6 +636,9 @@ export function SkillGraphForceCanvas({
     }
 
     function endTouch(event: TouchEvent) {
+      if (!touchInteractionEnabledRef.current) {
+        return;
+      }
       if (event.touches.length < 2) {
         pinchStart = null;
       }
@@ -699,8 +726,12 @@ export function SkillGraphForceCanvas({
         .minZoom(0.18)
         .maxZoom(9)
         .enableNodeDrag(!touchInputRef.current)
-        .enablePanInteraction(!touchInputRef.current)
-        .enableZoomInteraction(true)
+        .enablePanInteraction(
+          !touchInputRef.current || touchInteractionEnabledRef.current,
+        )
+        .enableZoomInteraction(
+          !touchInputRef.current || touchInteractionEnabledRef.current,
+        )
         .onRenderFramePre(() => {
           renderedLabelBoundsRef.current = [];
         })
@@ -728,6 +759,12 @@ export function SkillGraphForceCanvas({
         });
 
       graphRef.current = mountedGraph;
+      const canvas = containerRef.current.querySelector("canvas");
+      if (canvas && touchInputRef.current) {
+        canvas.style.touchAction = touchInteractionEnabledRef.current
+          ? "none"
+          : "pan-y";
+      }
       window.addEventListener("touchstart", startTouch, {
         capture: true,
         passive: true,
@@ -792,6 +829,20 @@ export function SkillGraphForceCanvas({
       onReadyChange?.(false);
     };
   }, [onNodeSelect, onReadyChange]);
+
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph || !touchInputRef.current) {
+      return;
+    }
+    graph
+      .enablePanInteraction(touchInteractionEnabled)
+      .enableZoomInteraction(touchInteractionEnabled);
+    const canvas = containerRef.current?.querySelector("canvas");
+    if (canvas) {
+      canvas.style.touchAction = touchInteractionEnabled ? "none" : "pan-y";
+    }
+  }, [mounted, touchInteractionEnabled]);
 
   useEffect(() => {
     const graph = graphRef.current;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { domainColor } from "./skill-graph";
 import { buildSkillGraphView } from "./skill-graph-view";
 import type { SkillGraphResponse } from "./types";
 
@@ -233,19 +234,26 @@ describe("buildSkillGraphView", () => {
     expect(view.links.find(({ score }) => score === 1)?.value).toBe(1);
   });
 
-  it("marks recommendation nodes independently from owned skills", () => {
+  it("uses domain color while marking only the top three recommendations", () => {
     const view = buildSkillGraphView(denseGraph(), {
       mode: "overview",
-      recommendedIds: ["skill-02", "skill-07"],
+      ownedIds: ["skill-02"],
+      recommendedIds: ["skill-02", "skill-07", "skill-08", "skill-09"],
     });
 
     expect(view.nodes.find(({ id }) => id === "skill-02")).toMatchObject({
-      owned: false,
-      recommended: true,
-    });
-    expect(view.nodes.find(({ id }) => id === "skill-00")).toMatchObject({
+      color: domainColor("cloud"),
       owned: true,
+      recommended: true,
+      recommendationRank: 1,
+    });
+    expect(view.nodes.find(({ id }) => id === "skill-08")).toMatchObject({
+      recommended: true,
+      recommendationRank: 3,
+    });
+    expect(view.nodes.find(({ id }) => id === "skill-09")).toMatchObject({
       recommended: false,
+      recommendationRank: null,
     });
   });
 

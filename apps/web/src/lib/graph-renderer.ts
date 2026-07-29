@@ -28,6 +28,7 @@ export type GraphRendererProps = {
   onNodeSelect: (nodeId: string) => void;
   onReadyChange?: (ready: boolean) => void;
   reheatKey?: number;
+  touchInteractionEnabled?: boolean;
 };
 
 
