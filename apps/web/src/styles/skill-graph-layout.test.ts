@@ -9,7 +9,14 @@ describe("skill graph layout CSS", () => {
     const graphCss = readFileSync(
       resolve(
         process.cwd(),
-        "src/components/skill-graph-experience.module.css",
+        "src/components/skill-graph-atlas.module.css",
+      ),
+      "utf8",
+    );
+    const searchCss = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/components/skill-graph-search.module.css",
       ),
       "utf8",
     );
@@ -19,12 +26,34 @@ describe("skill graph layout CSS", () => {
     );
 
     expect(graphCss).toMatch(/\.page\s*\{[\s\S]*?height: 100%;/);
-    expect(graphCss).toMatch(/\.graphFrame\s*\{[\s\S]*?min-height: 34rem;/);
+    const titleRule = graphCss.match(/\.titleLine h1\s*\{([^}]*)\}/)?.[1];
+    expect(titleRule).toContain("overflow-wrap: anywhere;");
+    expect(graphCss).toMatch(/\.graphFrame\s*\{[\s\S]*?min-height: 38rem;/);
     expect(graphCss).toMatch(
-      /\.graphFrame\s*\{[\s\S]*?background: var\(--color-graph\);/,
+      /\.graphFrame\s*\{[\s\S]*?background-color: var\(--color-graph\);/,
     );
     expect(graphCss).not.toContain("background: #07111d;");
-    expect(graphCss).toContain("@media (max-width: 640px)");
+    expect(graphCss).toContain("@media (max-width: 48rem)");
+    expect(graphCss).toMatch(
+      /data-touch-interaction="disabled"[\s\S]*?touch-action: pan-y;/,
+    );
+    expect(graphCss).toMatch(
+      /data-touch-interaction="enabled"[\s\S]*?touch-action: none;/,
+    );
+    expect(graphCss).toMatch(
+      /\.float-tooltip-kap[\s\S]*?background: var\(--color-text\);/,
+    );
+    expect(graphCss).toMatch(
+      /\.float-tooltip-kap\[style\*="display: inline"\][\s\S]*?animation-delay: 900ms;/,
+    );
+    expect(graphCss).not.toMatch(
+      /(?:padding(?:-[\w-]+)?|gap|margin(?:-[\w-]+)?):[^;]*(?:0\.125|0\.15|0\.1875|0\.2|0\.35|0\.375|0\.4|0\.625|0\.7|0\.875|2\.35)rem/,
+    );
+    expect(graphCss).toContain(".page summary:active");
+    expect(searchCss).not.toMatch(
+      /(?:padding(?:-[\w-]+)?|gap|margin(?:-[\w-]+)?):[^;]*(?:0\.125|0\.15|0\.1875|0\.2|0\.35|0\.375|0\.4|0\.625|0\.7|0\.875|2\.35)rem/,
+    );
+    expect(searchCss).toContain(".results li:active");
     expect(css).toContain(".force-canvas__surface");
     expect(css).toMatch(
       /\.graph-empty-state__constellation\s*\{[\s\S]*?background: var\(--color-graph\);/,

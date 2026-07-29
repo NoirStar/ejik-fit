@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: PRODUCT_TERMS.skillMap,
-  description: "내 기술과 함께 자주 요구되는 기술을 보여줍니다.",
+  description: "공개 채용 공고의 기술 관계와 다음 학습 방향을 한눈에 확인하세요.",
 };
 
 type SkillGraphSearchParams = Record<

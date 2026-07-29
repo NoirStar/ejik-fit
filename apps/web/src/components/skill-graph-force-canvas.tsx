@@ -18,6 +18,7 @@ import {
   skillGraphVisualSignature,
 } from "@/lib/skill-graph-canvas-data";
 import { skillGraphDomainAnchor } from "@/lib/skill-graph-domain-layout";
+import { selectSkillGraphLabelIds } from "@/lib/skill-graph-labels";
 import {
   SKILL_GRAPH_LABEL_FONT_FAMILY,
   skillGraphLinkColor,
@@ -238,7 +239,9 @@ function drawNode(
   }
 
   if (shouldLabel) {
-    const fontSize = isSelected || isHovered ? 7.2 : node.seed ? 6.8 : 6.2;
+    const safeScale = Math.max(globalScale, 0.55);
+    const screenFontSize = isSelected || isHovered ? 14 : node.seed ? 13 : 12;
+    const fontSize = screenFontSize / safeScale;
     const text = node.label;
     const textX = node.x ?? 0;
     const textY = (node.y ?? 0) + radius + fontSize * 1.1;
@@ -260,7 +263,7 @@ function drawNode(
       renderedLabelBounds.push(bounds);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.lineWidth = 2.8;
+      ctx.lineWidth = 2.8 / safeScale;
       ctx.strokeStyle = GRAPH_CANVAS_COLORS.labelOutline;
       ctx.shadowBlur = 0;
       ctx.strokeText(text, textX, textY);
@@ -442,16 +445,7 @@ export function SkillGraphForceCanvas({
     [stableData.links],
   );
   const labelEligibleIds = useMemo(
-    () => new Set(
-      [...stableData.nodes]
-        .sort(
-          (left, right) =>
-            right.demandCount - left.demandCount ||
-            left.id.localeCompare(right.id, "en"),
-        )
-        .slice(0, MAX_VISIBLE_LABELS)
-        .map(({ id }) => id),
-    ),
+    () => selectSkillGraphLabelIds(stableData.nodes, MAX_VISIBLE_LABELS),
     [stableData.nodes],
   );
   const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
@@ -887,7 +881,7 @@ export function SkillGraphForceCanvas({
         if (stableData.nodes.length <= 3) {
           graphRef.current.centerAt(0, 0).zoom(1.35);
         } else {
-          graphRef.current.zoomToFit(0, touchInputRef.current ? 64 : 92);
+          graphRef.current.zoomToFit(0, touchInputRef.current ? 32 : 92);
         }
         initialViewReadyRef.current = true;
         window.requestAnimationFrame(() => revealGraphRef.current());
@@ -1025,7 +1019,7 @@ export function SkillGraphForceCanvas({
   }
 
   function fitGraph() {
-    graphRef.current?.zoomToFit(0, touchInputRef.current ? 64 : 92);
+    graphRef.current?.zoomToFit(0, touchInputRef.current ? 32 : 92);
   }
 
   return (

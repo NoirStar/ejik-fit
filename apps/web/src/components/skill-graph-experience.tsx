@@ -2,9 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 
+import { SkillPicker } from "@/features/owned-skills/skill-picker";
 import { buildSearchScopeHref } from "@/features/search/model";
 import type { CareerCondition } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
@@ -15,10 +15,10 @@ import {
   subscribeOwnedSkills,
   writeOwnedSkills,
 } from "@/lib/owned-skills";
-import { buildSkillGraphHref } from "@/lib/product-routes";
 import {
   resolvedSkillKey,
   resolveSkillInput,
+  skillIdentityKey,
   skillNameKey,
 } from "@/lib/skill-catalog";
 import { summarizeGraph } from "@/lib/skill-graph";
@@ -39,17 +39,15 @@ import type {
   SkillGraphNode,
   SkillGraphResponse,
 } from "@/lib/types";
-import {
-  GRAPH_CANVAS_COLORS,
-  GRAPH_PREVIEW_COLORS,
-} from "@/styles/design-tokens";
+import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
 
 import { SkillGraphForceCanvas } from "./skill-graph-force-canvas";
 import type {
   SkillGraphDisplaySettings,
   SkillGraphForceSettings,
 } from "./skill-graph-force-canvas";
-import styles from "./skill-graph-experience.module.css";
+import { SkillGraphSearch } from "./skill-graph-search";
+import styles from "./skill-graph-atlas.module.css";
 
 
 type PositionedNode = SkillGraphViewNode & {
@@ -80,26 +78,6 @@ type EvidenceState = {
 type TopologyState = "idle" | "loading" | "error";
 
 
-const SKILL_MAP_COPY = {
-  title: PRODUCT_TERMS.skillMap,
-  description: "내 기술과 함께 자주 요구되는 기술을 보여줍니다.",
-  ownedSkills: PRODUCT_TERMS.ownedSkills,
-  addSkill: "기술 추가",
-  filters: "그래프 범위",
-  recommendation: "다음에 배울 기술",
-  related: "함께 요구되는 기술",
-  desktopControls: "드래그 · 확대 · 선택",
-  mobileControls: "화면을 스크롤하거나 그래프 조작을 시작하세요",
-};
-
-
-const GRAPH_STATES = {
-  loadError: "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
-  empty: "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
-  fitLoading: "내 기술과 공고를 비교하고 있습니다.",
-  fitError: "내 기술을 비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-};
-
 const EMPTY_SKILL_CATALOG: readonly SkillCatalogItem[] = [];
 
 
@@ -126,13 +104,17 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 
-const PREVIEW_NODES = [
-  { label: "C++", x: 47, y: 48, size: 7, color: GRAPH_PREVIEW_COLORS.cpp },
-  { label: "ROS2", x: 66, y: 38, size: 5.5, color: GRAPH_PREVIEW_COLORS.ros },
-  { label: "Linux", x: 56, y: 63, size: 5.2, color: GRAPH_PREVIEW_COLORS.linux },
-  { label: "Python", x: 34, y: 36, size: 5, color: GRAPH_PREVIEW_COLORS.python },
-  { label: "Security", x: 72, y: 60, size: 4.6, color: GRAPH_PREVIEW_COLORS.security },
-];
+const COPY = {
+  description:
+    "공개 채용 공고에서 함께 요구되는 기술 관계를 보고 다음 학습 방향을 정해 보세요.",
+  desktopControls: "드래그 · 확대 · 기술 선택",
+  empty: "표시할 기술이 없습니다. 분야 필터를 줄여 주세요.",
+  evidenceError: "근거 공고를 불러오지 못했습니다.",
+  fitError: "내 기술을 비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  fitLoading: "내 기술과 공고를 비교하고 있습니다.",
+  loadError: "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  mobileControls: "기술을 누르거나 그래프 조작을 시작하세요",
+};
 
 
 const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
@@ -154,61 +136,32 @@ const DEFAULT_FORCES: SkillGraphForceSettings = {
 };
 
 
-function positionNodes(nodes: SkillGraphViewNode[]): PositionedNode[] {
-  if (nodes.length === 0) {
-    return [];
-  }
+function displayDomain(domain: string) {
+  return DOMAIN_LABELS[domain] ?? domain.replace(/_/g, " ");
+}
 
-  const seed = nodes.find((node) => node.seed) ?? nodes[0];
+
+function stableCoordinate(value: number) {
+  return Number(value.toFixed(4));
+}
+
+
+function positionNodes(nodes: readonly SkillGraphViewNode[]): PositionedNode[] {
+  if (nodes.length === 0) return [];
+  const seed = nodes.find((node) => node.seed) ?? nodes[0]!;
   const outer = nodes.filter((node) => node.id !== seed.id);
   return [
     { ...seed, x: 50, y: 50 },
     ...outer.map((node, index) => {
       const angle = (index / Math.max(outer.length, 1)) * Math.PI * 2 - Math.PI / 2;
-      const radius = 38 + (index % 3) * 5;
+      const radius = 29 + (index % 4) * 5;
       return {
         ...node,
-        x: 50 + Math.cos(angle) * radius,
-        y: 50 + Math.sin(angle) * radius,
+        x: stableCoordinate(50 + Math.cos(angle) * radius),
+        y: stableCoordinate(50 + Math.sin(angle) * radius),
       };
     }),
   ];
-}
-
-
-function previewNumber(value: number): number {
-  return Number(value.toFixed(3));
-}
-
-
-const PREVIEW_DOTS = Array.from({ length: 168 }, (_, index) => {
-  const cluster = PREVIEW_NODES[index % PREVIEW_NODES.length];
-  const angle = ((index * 137.508) % 360) * (Math.PI / 180);
-  const radius = 5 + ((index * 19) % 28);
-  const orbit = index % 11 === 0 ? radius * 1.7 : radius;
-  return {
-    id: `preview-${index}`,
-    x: previewNumber(
-      Math.max(4, Math.min(96, cluster.x + Math.cos(angle) * orbit * 0.72)),
-    ),
-    y: previewNumber(
-      Math.max(6, Math.min(94, cluster.y + Math.sin(angle) * orbit * 0.52)),
-    ),
-    size: index % 17 === 0 ? 2.6 : index % 9 === 0 ? 2 : 1.15,
-    color: index % 13 === 0 ? cluster.color : GRAPH_PREVIEW_COLORS.ambient,
-  };
-});
-
-
-const PREVIEW_LINKS = Array.from({ length: 96 }, (_, index) => {
-  const source = PREVIEW_DOTS[(index * 7) % PREVIEW_DOTS.length];
-  const target = PREVIEW_DOTS[(index * 11 + 5) % PREVIEW_DOTS.length];
-  return { id: `preview-link-${index}`, source, target };
-});
-
-
-function displayDomain(domain: string) {
-  return DOMAIN_LABELS[domain] ?? domain.replace(/_/g, " ");
 }
 
 
@@ -216,9 +169,9 @@ function chooseInitialSelection(
   graph: SkillGraphResponse,
   requestedSkill?: string,
 ) {
-  const requestedKey = skillNameKey(requestedSkill ?? graph.seed ?? "");
+  const requestedKey = skillIdentityKey(requestedSkill ?? graph.seed ?? "");
   if (!requestedKey) return null;
-  return graph.nodes.find((node) => skillNameKey(node.id) === requestedKey)?.id ?? null;
+  return graph.nodes.find((node) => skillIdentityKey(node.id) === requestedKey)?.id ?? null;
 }
 
 
@@ -227,14 +180,12 @@ function topologyCacheKey(
   careerType: Exclude<CareerCondition, ""> | undefined,
   depth: 1 | 2,
 ) {
-  return `${careerType ?? "all"}:${depth}:${seed?.toLocaleLowerCase("en-US") ?? "overview"}`;
+  return `${careerType ?? "all"}:${depth}:${seed?.toLocaleLowerCase("en-US") ?? "atlas"}`;
 }
 
 
 function isSkillGraphResponse(value: unknown): value is SkillGraphResponse {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const candidate = value as Partial<SkillGraphResponse>;
   return (
     (typeof candidate.seed === "string" || candidate.seed === null) &&
@@ -245,13 +196,12 @@ function isSkillGraphResponse(value: unknown): value is SkillGraphResponse {
   );
 }
 
+
 function buildGraphCatalog(
   catalog: readonly SkillCatalogItem[],
   nodes: readonly SkillGraphNode[],
 ) {
-  const byName = new Map(
-    catalog.map((item) => [skillNameKey(item.name), item]),
-  );
+  const byName = new Map(catalog.map((item) => [skillNameKey(item.name), item]));
   nodes.forEach((node) => {
     const key = skillNameKey(node.id);
     if (!byName.has(key)) {
@@ -266,6 +216,7 @@ function buildGraphCatalog(
   return [...byName.values()];
 }
 
+
 function canonicalizeOwnedSkills(
   skills: readonly string[],
   catalog: readonly SkillCatalogItem[],
@@ -274,9 +225,7 @@ function canonicalizeOwnedSkills(
   skills.forEach((skill) => {
     const canonical = resolveSkillInput(skill, catalog);
     const key = resolvedSkillKey(canonical, catalog);
-    if (key && !byIdentity.has(key)) {
-      byIdentity.set(key, canonical);
-    }
+    if (key && !byIdentity.has(key)) byIdentity.set(key, canonical);
   });
   return [...byIdentity.values()].sort((left, right) =>
     left.localeCompare(right, "ko"),
@@ -307,15 +256,15 @@ export function SkillGraphExperience({
   const [ownedSkills, setOwnedSkills] = useState(() =>
     canonicalizeOwnedSkills(initialOwnedSkills, startingCatalog),
   );
-  const [input, setInput] = useState("");
+  const [ownedSkillInput, setOwnedSkillInput] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
-  const [forceReady, setForceReady] = useState(false);
-  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>(
-    initialSelection ? "focus" : "overview",
-  );
-  const [filterQuery, setFilterQuery] = useState("");
+  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("all");
   const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
   const [compactGraph, setCompactGraph] = useState(false);
+  const [forceReady, setForceReady] = useState(false);
+  const [graphInteractionEnabled, setGraphInteractionEnabled] = useState(false);
+  const [topologyState, setTopologyState] = useState<TopologyState>("idle");
   const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
   const [fitState, setFitState] = useState<"idle" | "loading" | "error">("idle");
   const [evidence, setEvidence] = useState<EvidenceState>({
@@ -325,21 +274,22 @@ export function SkillGraphExperience({
   });
   const [evidenceRetryKey, setEvidenceRetryKey] = useState(0);
   const [announcement, setAnnouncement] = useState("");
-  const [controlsOpen, setControlsOpen] = useState(true);
-  const [graphInteractionEnabled, setGraphInteractionEnabled] = useState(false);
-  const [topologyState, setTopologyState] = useState<TopologyState>("idle");
+
   const evidenceCache = useRef(new Map<string, SkillGraphEvidenceResponse>());
   const topologyCache = useRef(new Map<string, SkillGraphResponse>());
   const topologyRequestRef = useRef<AbortController | null>(null);
   const inspectorRef = useRef<HTMLElement>(null);
   const selectedIdRef = useRef<string | null>(initialSelection);
   const careerTypeRef = useRef(careerType);
-  const depthRef = useRef<1 | 2>(depth);
+  const depthRef = useRef<1 | 2>(initialDepth);
+  const graphModeRef = useRef<SkillGraphViewMode>("all");
   const ownedSkillsRef = useRef(ownedSkills);
   const graphCatalogRef = useRef(startingCatalog);
+
   selectedIdRef.current = selectedId;
   careerTypeRef.current = careerType;
   depthRef.current = depth;
+  graphModeRef.current = graphMode;
   ownedSkillsRef.current = ownedSkills;
 
   const loadTopology = useCallback(async (
@@ -361,56 +311,34 @@ export function SkillGraphExperience({
     topologyRequestRef.current = controller;
     setTopologyState("loading");
     const params = new URLSearchParams({
-      limit: "30",
+      limit: seed ? "30" : "60",
       depth: String(requestedDepth),
     });
-    if (seed) {
-      params.set("seed", seed);
-    }
-    if (scope) {
-      params.set("career_type", scope);
-    }
+    if (seed) params.set("seed", seed);
+    if (scope) params.set("career_type", scope);
 
     try {
       const response = await fetch(`/skills/graph/data?${params.toString()}`, {
         signal: controller.signal,
       });
-      if (!response.ok) {
-        throw new Error("topology request failed");
-      }
+      if (!response.ok) throw new Error("topology request failed");
       const payload = (await response.json()) as unknown;
-      if (!isSkillGraphResponse(payload)) {
-        throw new Error("invalid topology response");
-      }
-      if (controller.signal.aborted) {
-        return;
-      }
+      if (!isSkillGraphResponse(payload)) throw new Error("invalid topology response");
+      if (controller.signal.aborted) return;
+
       if (topologyCache.current.size >= 24) {
-        const oldestKey = topologyCache.current.keys().next().value;
-        if (typeof oldestKey === "string") {
-          topologyCache.current.delete(oldestKey);
-        }
+        const oldest = topologyCache.current.keys().next().value;
+        if (typeof oldest === "string") topologyCache.current.delete(oldest);
       }
       topologyCache.current.set(cacheKey, payload);
       setGraph(payload);
+
       if (seed) {
-        const requestedSeedKey = resolvedSkillKey(
-          seed,
-          graphCatalogRef.current,
-        );
+        const requestedKey = resolvedSkillKey(seed, graphCatalogRef.current);
         const canonicalSeed = payload.nodes.find(
-          (node) =>
-            resolvedSkillKey(node.id, graphCatalogRef.current) ===
-            requestedSeedKey,
+          (node) => resolvedSkillKey(node.id, graphCatalogRef.current) === requestedKey,
         )?.id;
-        if (
-          canonicalSeed &&
-          selectedIdRef.current &&
-          resolvedSkillKey(
-            selectedIdRef.current,
-            graphCatalogRef.current,
-          ) === requestedSeedKey
-        ) {
+        if (canonicalSeed && selectedIdRef.current) {
           selectedIdRef.current = canonicalSeed;
           setSelectedId(canonicalSeed);
         }
@@ -423,9 +351,7 @@ export function SkillGraphExperience({
       if (
         controller.signal.aborted ||
         (error instanceof DOMException && error.name === "AbortError")
-      ) {
-        return;
-      }
+      ) return;
       if (topologyRequestRef.current === controller) {
         topologyRequestRef.current = null;
       }
@@ -433,15 +359,19 @@ export function SkillGraphExperience({
     }
   }, []);
 
+  const graphCatalog = useMemo(
+    () => buildGraphCatalog(
+      initialSkillCatalog,
+      [...initialGraph.nodes, ...graph.nodes],
+    ),
+    [graph.nodes, initialGraph.nodes, initialSkillCatalog],
+  );
+  graphCatalogRef.current = graphCatalog;
+
   const graphNodeMap = useMemo(
     () => new Map(graph.nodes.map((node) => [node.id, node])),
     [graph.nodes],
   );
-  const graphCatalog = useMemo(
-    () => buildGraphCatalog(initialSkillCatalog, graph.nodes),
-    [graph.nodes, initialSkillCatalog],
-  );
-  graphCatalogRef.current = graphCatalog;
   const selected = selectedId ? graphNodeMap.get(selectedId) ?? null : null;
   const selectedOwned = selected
     ? ownedSkills.some(
@@ -450,59 +380,51 @@ export function SkillGraphExperience({
           resolvedSkillKey(selected.id, graphCatalog),
       )
     : false;
-  const allDomains = useMemo(
-    () => buildSkillGraphView(graph).domains,
-    [graph],
-  );
+  const allDomains = useMemo(() => buildSkillGraphView(graph).domains, [graph]);
   const enabledDomains = useMemo(
-    () =>
-      allDomains
-        .map((domain) => domain.domain)
-        .filter((domain) => !disabledDomains.includes(domain)),
+    () => allDomains
+      .map((domain) => domain.domain)
+      .filter((domain) => !disabledDomains.includes(domain)),
     [allDomains, disabledDomains],
   );
   const recommendedIds = useMemo(
-    () =>
-      fitState === "idle"
-        ? (fit?.recommended_next_skills ?? [])
-            .slice(0, 3)
-            .map(({ skill }) => skill)
-        : [],
+    () => fitState === "idle"
+      ? (fit?.recommended_next_skills ?? []).slice(0, 3).map(({ skill }) => skill)
+      : [],
     [fit, fitState],
   );
-  const viewData = useMemo(
-    () =>
-      buildSkillGraphView(graph, {
-        enabledDomains: allDomains.length > 0 ? enabledDomains : undefined,
-        linkLimit: compactGraph ? 10 : undefined,
-        mode: graphMode,
-        nodeLimit: compactGraph ? 8 : undefined,
-        ownedIds: ownedSkills,
-        query: filterQuery,
-        recommendedIds,
-        selectedId,
-      }),
-    [
-      allDomains.length,
-      compactGraph,
-      enabledDomains,
-      filterQuery,
-      graphMode,
-      graph,
-      ownedSkills,
+  const viewData = useMemo(() => {
+    const compactAtlas = compactGraph && graphMode === "all";
+    return buildSkillGraphView(graph, {
+      enabledDomains: allDomains.length > 0 ? enabledDomains : undefined,
+      linkLimit: compactAtlas ? 48 : undefined,
+      mode: graphMode,
+      nodeLimit: compactAtlas ? 30 : undefined,
+      ownedIds: ownedSkills,
       recommendedIds,
       selectedId,
-    ],
-  );
-  const nodes = useMemo(
+    });
+  }, [
+    allDomains.length,
+    compactGraph,
+    enabledDomains,
+    graph,
+    graphMode,
+    ownedSkills,
+    recommendedIds,
+    selectedId,
+  ]);
+  const positionedNodes = useMemo(
     () => positionNodes(viewData.nodes.filter((node) => node.kind === "skill")),
     [viewData.nodes],
   );
-  const nodeMap = useMemo(
-    () => new Map(nodes.map((node) => [node.id, node])),
-    [nodes],
+  const positionedNodeMap = useMemo(
+    () => new Map(positionedNodes.map((node) => [node.id, node])),
+    [positionedNodes],
   );
-  const relatedEvidence = evidence.items;
+  const showFallbackGraph = positionedNodes.length > 0 && !forceReady;
+  const isFilteredEmpty = graph.nodes.length > 0 && viewData.nodes.length === 0;
+
   const strongestConnections = useMemo(() => {
     const focusIds = new Set(
       (selectedId ? [selectedId] : ownedSkills).map(skillNameKey),
@@ -517,83 +439,53 @@ export function SkillGraphExperience({
         const otherId = focusIds.has(skillNameKey(edge.source))
           ? edge.target
           : edge.source;
-        return {
-          edge,
-          node: graphNodeMap.get(otherId),
-        };
+        return { edge, node: graphNodeMap.get(otherId) };
       })
-      .filter((item): item is { edge: typeof item.edge; node: SkillGraphNode } =>
-        Boolean(item.node),
+      .filter(
+        (item): item is { edge: typeof item.edge; node: SkillGraphNode } =>
+          Boolean(item.node),
       )
       .sort(
-        (a, b) =>
-          b.edge.score - a.edge.score ||
-          b.edge.cooccurrence_count - a.edge.cooccurrence_count,
+        (left, right) =>
+          right.edge.score - left.edge.score ||
+          right.edge.cooccurrence_count - left.edge.cooccurrence_count,
       )
       .slice(0, 6);
   }, [graph.edges, graphNodeMap, ownedSkills, selectedId]);
   const directConnectionCount = useMemo(
-    () =>
-      selectedId
-        ? graph.edges.filter(
-            (edge) =>
-              edge.source === selectedId || edge.target === selectedId,
-          ).length
-        : 0,
+    () => selectedId
+      ? graph.edges.filter(
+          (edge) => edge.source === selectedId || edge.target === selectedId,
+        ).length
+      : 0,
     [graph.edges, selectedId],
-  );
-  const quickSkills = useMemo(
-    () => viewData.nodes
-      .filter((node) => node.kind === "skill")
-      .map((node) => node.id),
-    [viewData.nodes],
-  );
-  const topNextSkill =
-    fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
-  const isFilteredEmpty = graph.nodes.length > 0 && viewData.nodes.length === 0;
-  const showFallbackGraph = nodes.length > 0 && !forceReady;
-  const totalEvidenceCount = useMemo(
-    () =>
-      new Set(
-        graph.edges.flatMap((edge) => edge.supporting_posting_ids),
-      ).size,
-    [graph.edges],
   );
   const display = useMemo<SkillGraphDisplaySettings>(
     () => ({
       ...DEFAULT_DISPLAY,
-      labelThreshold: graphMode === "all" ? 1.28 : DEFAULT_DISPLAY.labelThreshold,
+      // The renderer's minimum zoom is 0.18. Keep the curated atlas labels
+      // visible at that fitted overview scale; collision checks still remove
+      // labels that would overlap on narrow screens.
+      labelThreshold: 0.18,
     }),
-    [graphMode],
+    [],
   );
   const forces = useMemo<SkillGraphForceSettings>(
     () => ({
       ...DEFAULT_FORCES,
-      linkDistance: graphMode === "all" ? 62 : DEFAULT_FORCES.linkDistance,
-      repel: graphMode === "all" ? 190 : DEFAULT_FORCES.repel,
+      linkDistance: graphMode === "all" ? 64 : 78,
+      repel: graphMode === "all" ? 195 : 230,
     }),
     [graphMode],
   );
 
   useEffect(() => {
     const syncOwnedSkills = (skills: string[]) => {
-      setOwnedSkills(
-        canonicalizeOwnedSkills(skills, graphCatalogRef.current),
-      );
+      setOwnedSkills(canonicalizeOwnedSkills(skills, graphCatalogRef.current));
     };
     const stored = readOwnedSkills();
-    if (stored.length > 0) {
-      syncOwnedSkills(stored);
-    }
+    if (stored.length > 0) syncOwnedSkills(stored);
     return subscribeOwnedSkills(syncOwnedSkills);
-  }, []);
-
-  useEffect(() => {
-    const compactLayout = window.matchMedia("(max-width: 900px)");
-    const syncDisclosure = () => setControlsOpen(!compactLayout.matches);
-    syncDisclosure();
-    compactLayout.addEventListener("change", syncDisclosure);
-    return () => compactLayout.removeEventListener("change", syncDisclosure);
   }, []);
 
   useEffect(() => {
@@ -607,74 +499,86 @@ export function SkillGraphExperience({
   useEffect(() => {
     topologyRequestRef.current?.abort();
     topologyCache.current.set(
-      topologyCacheKey(initialGraph.seed, careerType, initialDepth),
+      topologyCacheKey(null, careerType, initialDepth),
       initialGraph,
     );
     setGraph(initialGraph);
     setDepth(initialDepth);
+    depthRef.current = initialDepth;
     setSelectedId(initialSelection);
     selectedIdRef.current = initialSelection;
-    setGraphMode(initialSelection ? "focus" : "overview");
+    const requestedNearby =
+      new URL(window.location.href).searchParams.get("view") === "nearby" &&
+      Boolean(initialSelection);
+    const nextMode: SkillGraphViewMode = requestedNearby ? "focus" : "all";
+    setGraphMode(nextMode);
+    graphModeRef.current = nextMode;
     setForceReady(false);
     setTopologyState("idle");
-  }, [careerType, initialDepth, initialGraph, initialSelection]);
+    if (requestedNearby) void loadTopology(initialSelection, initialDepth);
+  }, [careerType, initialDepth, initialGraph, initialSelection, loadTopology]);
 
   useEffect(
-    () => () => {
-      topologyRequestRef.current?.abort();
-    },
+    () => () => topologyRequestRef.current?.abort(),
     [],
   );
 
   useEffect(() => {
     function restoreSelectionFromHistory() {
-      const requestedInput = new URL(window.location.href).searchParams
-        .get("seed")
-        ?.trim() || null;
-      const requestedDepth = new URL(window.location.href).searchParams
-        .get("depth") === "2" ? 2 : 1;
+      const url = new URL(window.location.href);
+      const requestedInput = url.searchParams.get("seed")?.trim() || null;
+      const requestedDepth = url.searchParams.get("depth") === "2" ? 2 : 1;
       const nextSelection = requestedInput
         ? resolveSkillInput(requestedInput, graphCatalogRef.current)
         : null;
+      const nextMode: SkillGraphViewMode =
+        url.searchParams.get("view") === "nearby" && nextSelection
+          ? "focus"
+          : "all";
       depthRef.current = requestedDepth;
-      setDepth(requestedDepth);
+      graphModeRef.current = nextMode;
       selectedIdRef.current = nextSelection;
+      setDepth(requestedDepth);
+      setGraphMode(nextMode);
       setSelectedId(nextSelection);
-      setGraphMode(nextSelection ? "focus" : "overview");
-      setForceReady(false);
-      void loadTopology(nextSelection, requestedDepth);
+      if (nextMode === "focus") {
+        setForceReady(false);
+        void loadTopology(nextSelection, requestedDepth);
+      } else {
+        const atlas = topologyCache.current.get(
+          topologyCacheKey(null, careerTypeRef.current, requestedDepth),
+        );
+        if (atlas && atlas !== graph) {
+          setForceReady(false);
+          setGraph(atlas);
+        }
+      }
     }
 
     window.addEventListener("popstate", restoreSelectionFromHistory);
     return () => window.removeEventListener("popstate", restoreSelectionFromHistory);
-  }, [loadTopology]);
+  }, [graph, loadTopology]);
 
   useEffect(() => {
     let cancelled = false;
-
     async function requestFit() {
       if (ownedSkills.length === 0) {
         setFit(null);
         setFitState("idle");
         return;
       }
-
       setFit(null);
       setFitState("loading");
       try {
         const response = await fetch("/skills/graph/fit", {
           method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
+          headers: { "content-type": "application/json" },
           body: JSON.stringify({
             owned_skills: ownedSkills,
             ...(careerType ? { career_type: careerType } : {}),
           }),
         });
-        if (!response.ok) {
-          throw new Error("fit request failed");
-        }
+        if (!response.ok) throw new Error("fit request failed");
         const payload = (await response.json()) as FitAnalyzeResponse;
         if (!cancelled) {
           setFit(payload);
@@ -687,9 +591,7 @@ export function SkillGraphExperience({
         }
       }
     }
-
-    requestFit();
-
+    void requestFit();
     return () => {
       cancelled = true;
     };
@@ -701,7 +603,6 @@ export function SkillGraphExperience({
       return;
     }
     const evidenceSkill = selectedId;
-
     const cacheKey = `${careerType ?? "all"}:${evidenceSkill}`;
     const cached = evidenceCache.current.get(cacheKey);
     if (cached) {
@@ -715,25 +616,18 @@ export function SkillGraphExperience({
 
     const controller = new AbortController();
     setEvidence({ status: "loading", items: [], total: 0 });
-
     async function requestEvidence() {
       try {
         const params = new URLSearchParams({ skill: evidenceSkill });
-        if (careerType) {
-          params.set("career_type", careerType);
-        }
+        if (careerType) params.set("career_type", careerType);
         params.set("limit", "6");
         const response = await fetch(
           `/skills/graph/evidence?${params.toString()}`,
           { signal: controller.signal },
         );
-        if (!response.ok) {
-          throw new Error("evidence request failed");
-        }
+        if (!response.ok) throw new Error("evidence request failed");
         const payload = (await response.json()) as SkillGraphEvidenceResponse;
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
         const normalized = {
           items: Array.isArray(payload.items) ? payload.items.slice(0, 6) : [],
           total: Number.isFinite(payload.total) ? Math.max(0, payload.total) : 0,
@@ -748,115 +642,131 @@ export function SkillGraphExperience({
         if (
           controller.signal.aborted ||
           (error instanceof DOMException && error.name === "AbortError")
-        ) {
-          return;
-        }
+        ) return;
         setEvidence({ status: "error", items: [], total: 0 });
       }
     }
-
-    requestEvidence();
+    void requestEvidence();
     return () => controller.abort();
   }, [careerType, evidenceRetryKey, selectedId]);
 
-  const writeSelectionUrl = useCallback((nodeId: string | null, mode: "push" | "replace") => {
+  const writeSelectionUrl = useCallback((
+    nodeId: string | null,
+    historyMode: "push" | "replace",
+    viewMode = graphModeRef.current,
+  ) => {
     const url = new URL(window.location.href);
     url.pathname = "/skills/graph";
-    if (nodeId) {
-      url.searchParams.set("seed", nodeId);
-    } else {
-      url.searchParams.delete("seed");
-    }
+    if (nodeId) url.searchParams.set("seed", nodeId);
+    else url.searchParams.delete("seed");
     if (careerTypeRef.current) {
       url.searchParams.set("career_type", careerTypeRef.current);
-    }
-    if (depthRef.current === 2) {
-      url.searchParams.set("depth", "2");
     } else {
+      url.searchParams.delete("career_type");
+    }
+    if (viewMode === "focus" && nodeId) {
+      url.searchParams.set("view", "nearby");
+      if (depthRef.current === 2) url.searchParams.set("depth", "2");
+      else url.searchParams.delete("depth");
+    } else {
+      url.searchParams.delete("view");
       url.searchParams.delete("depth");
     }
     url.searchParams.delete("owned_skills");
-    ownedSkillsRef.current.forEach((skill) => {
-      url.searchParams.append("owned_skills", skill);
-    });
+    ownedSkillsRef.current.forEach((skill) => url.searchParams.append("owned_skills", skill));
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
-    if (mode === "push") {
-      window.history.pushState(null, "", nextUrl);
-    } else {
-      window.history.replaceState(null, "", nextUrl);
-    }
+    if (historyMode === "push") window.history.pushState(null, "", nextUrl);
+    else window.history.replaceState(null, "", nextUrl);
   }, []);
 
-  const selectSkill = useCallback(
-    (nodeId: string) => {
-      if (selectedIdRef.current === nodeId) {
-        const inspector = inspectorRef.current;
-        const focusTarget =
-          inspector?.querySelector<HTMLElement>("button:not(:disabled), a[href]") ??
-          inspector;
-        focusTarget?.scrollIntoView({
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-            ? "auto"
-            : "smooth",
-          block: "start",
-        });
-        focusTarget?.focus({ preventScroll: true });
-        setAnnouncement(`${nodeId} 기술의 상세 정보를 표시했습니다.`);
-        return;
-      }
-      selectedIdRef.current = nodeId;
-      setSelectedId(nodeId);
-      setGraphMode("focus");
-      setForceReady(false);
-      writeSelectionUrl(nodeId, "push");
-      void loadTopology(nodeId);
-      setAnnouncement(`${nodeId} 중심의 기술 관계를 표시합니다.`);
-    },
-    [loadTopology, writeSelectionUrl],
-  );
+  const focusInspector = useCallback(() => {
+    const inspector = inspectorRef.current;
+    const target = inspector?.querySelector<HTMLElement>("a[href], button:not(:disabled)") ?? inspector;
+    target?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start",
+    });
+    target?.focus({ preventScroll: true });
+  }, []);
 
-  function addSkill(nextSkill = input.trim()) {
-    const next = resolveSkillInput(nextSkill, graphCatalog);
-    if (!next) {
+  const selectSkill = useCallback((nodeId: string) => {
+    if (selectedIdRef.current === nodeId) {
+      focusInspector();
+      setAnnouncement(`${nodeId} 기술의 상세 정보를 표시했습니다.`);
       return;
     }
-    if (next.length > MAX_OWNED_SKILL_LENGTH) {
-      setAnnouncement(
-        `기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`,
-      );
+    selectedIdRef.current = nodeId;
+    setSelectedId(nodeId);
+    writeSelectionUrl(nodeId, "push", graphModeRef.current);
+    setAnnouncement(`${nodeId} 기술의 수요와 관련 공고를 표시했습니다.`);
+  }, [focusInspector, writeSelectionUrl]);
+
+  const selectSkillFromSearch = useCallback((skill: string) => {
+    const requestedKey = resolvedSkillKey(skill, graphCatalogRef.current);
+    const graphNode = graph.nodes.find(
+      (node) => resolvedSkillKey(node.id, graphCatalogRef.current) === requestedKey,
+    );
+    if (graphNode) {
+      selectSkill(graphNode.id);
       return;
+    }
+
+    const canonical = resolveSkillInput(skill, graphCatalogRef.current);
+    depthRef.current = 1;
+    graphModeRef.current = "focus";
+    selectedIdRef.current = canonical;
+    setDepth(1);
+    setGraphMode("focus");
+    setSelectedId(canonical);
+    setForceReady(false);
+    writeSelectionUrl(canonical, "push", "focus");
+    void loadTopology(canonical, 1);
+    setAnnouncement(`${canonical} 주변 기술을 불러옵니다.`);
+  }, [graph.nodes, loadTopology, selectSkill, writeSelectionUrl]);
+
+  function addSkill(value = ownedSkillInput.trim()) {
+    const next = resolveSkillInput(value, graphCatalog);
+    if (!next) return false;
+    if (next.length > MAX_OWNED_SKILL_LENGTH) {
+      setAnnouncement(`기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`);
+      return false;
     }
     const nextKey = resolvedSkillKey(next, graphCatalog);
-    if (
-      ownedSkills.some(
-        (skill) => resolvedSkillKey(skill, graphCatalog) === nextKey,
-      )
-    ) {
-      setInput("");
-      setAnnouncement(`${next} 기술은 이미 현재 목록에 있습니다.`);
-      return;
+    if (ownedSkills.some((skill) => resolvedSkillKey(skill, graphCatalog) === nextKey)) {
+      setOwnedSkillInput("");
+      setAnnouncement(`${next} 기술은 이미 내 기술에 있습니다.`);
+      return false;
     }
     if (ownedSkills.length >= MAX_OWNED_SKILLS) {
-      setAnnouncement(
-        `내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`,
-      );
-      return;
+      setAnnouncement(`내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`);
+      return false;
     }
-    const saved = writeOwnedSkills([...ownedSkills, next]);
-    setOwnedSkills(canonicalizeOwnedSkills(saved, graphCatalog));
-    setInput("");
-    setAnnouncement(`${next} 기술을 현재 목록에 추가했습니다.`);
+    const saved = canonicalizeOwnedSkills(
+      writeOwnedSkills([...ownedSkills, next]),
+      graphCatalog,
+    );
+    ownedSkillsRef.current = saved;
+    setOwnedSkills(saved);
+    setOwnedSkillInput("");
+    setAnnouncement(`${next} 기술을 내 기술에 추가했습니다.`);
+    return true;
   }
 
   function removeSkill(skill: string) {
     const targetKey = resolvedSkillKey(skill, graphCatalog);
-    const saved = writeOwnedSkills(
-      ownedSkills.filter(
-        (item) => resolvedSkillKey(item, graphCatalog) !== targetKey,
+    const saved = canonicalizeOwnedSkills(
+      writeOwnedSkills(
+        ownedSkills.filter(
+          (item) => resolvedSkillKey(item, graphCatalog) !== targetKey,
+        ),
       ),
+      graphCatalog,
     );
-    setOwnedSkills(canonicalizeOwnedSkills(saved, graphCatalog));
-    setAnnouncement(`${skill} 기술을 현재 목록에서 제거했습니다.`);
+    ownedSkillsRef.current = saved;
+    setOwnedSkills(saved);
+    setAnnouncement(`${skill} 기술을 내 기술에서 제거했습니다.`);
   }
 
   function toggleDomain(domain: string) {
@@ -867,45 +777,38 @@ export function SkillGraphExperience({
     );
   }
 
-  function resetGraphView() {
-    depthRef.current = initialDepth;
-    setDepth(initialDepth);
-    setGraphMode(initialSelection ? "focus" : "overview");
-    setSelectedId(initialSelection);
-    selectedIdRef.current = initialSelection;
-    setFilterQuery("");
-    setDisabledDomains([]);
+  function showAtlasGraph() {
+    if (graphModeRef.current === "all" && topologyState === "idle") return;
+    depthRef.current = 1;
+    graphModeRef.current = "all";
+    setDepth(1);
+    setGraphMode("all");
     setForceReady(false);
-    writeSelectionUrl(initialSelection, "replace");
-    void loadTopology(initialSelection, initialDepth);
+    writeSelectionUrl(selectedIdRef.current, "push", "all");
+    void loadTopology(null, 1);
+    setAnnouncement("현재 수집 범위의 전체 기술 지도를 표시합니다.");
   }
 
-  function showGlobalGraph(mode: Extract<SkillGraphViewMode, "overview" | "all">) {
-    depthRef.current = 1;
-    setDepth(1);
-    selectedIdRef.current = null;
-    setSelectedId(null);
-    setGraphMode(mode);
+  function showNearbyGraph() {
+    const currentSelection = selectedIdRef.current;
+    if (!currentSelection || graphModeRef.current === "focus") return;
+    graphModeRef.current = "focus";
+    setGraphMode("focus");
     setForceReady(false);
-    writeSelectionUrl(null, "push");
-    void loadTopology(null, 1);
-    setAnnouncement(
-      mode === "overview"
-        ? "시장 수요가 높은 핵심 기술을 표시합니다."
-        : "현재 수집 범위의 전체 기술을 표시합니다.",
-    );
+    writeSelectionUrl(currentSelection, "push", "focus");
+    void loadTopology(currentSelection, depthRef.current);
+    setAnnouncement(`${currentSelection} 주변의 기술 관계를 표시합니다.`);
   }
 
   function changeDepth(nextDepth: 1 | 2) {
     const currentSelection = selectedIdRef.current;
-    if (!currentSelection || nextDepth === depthRef.current) {
-      return;
-    }
+    if (!currentSelection || nextDepth === depthRef.current) return;
     depthRef.current = nextDepth;
+    graphModeRef.current = "focus";
     setDepth(nextDepth);
     setGraphMode("focus");
     setForceReady(false);
-    writeSelectionUrl(currentSelection, "replace");
+    writeSelectionUrl(currentSelection, "replace", "focus");
     void loadTopology(currentSelection, nextDepth);
     setAnnouncement(
       nextDepth === 1
@@ -914,272 +817,205 @@ export function SkillGraphExperience({
     );
   }
 
+  function resetGraphView() {
+    depthRef.current = 1;
+    graphModeRef.current = "all";
+    setDepth(1);
+    setGraphMode("all");
+    setDisabledDomains([]);
+    setSearchInput("");
+    setForceReady(false);
+    writeSelectionUrl(selectedIdRef.current, "replace", "all");
+    void loadTopology(null, 1);
+    setAnnouncement("분야 필터를 초기화하고 전체 지도를 표시합니다.");
+  }
+
   return (
     <main className={styles.page}>
-      <section aria-label={SKILL_MAP_COPY.title} className={styles.experience}>
+      <section aria-label={PRODUCT_TERMS.skillMap} className={styles.experience}>
         <header className={styles.intro}>
           <div className={styles.introCopy}>
-            <h1>{SKILL_MAP_COPY.title}</h1>
-            <p className={styles.description}>{SKILL_MAP_COPY.description}</p>
-            <div className={styles.trustLine}>
-              <span>
-                {loadFailed ? "그래프 범위 확인 불가" : summarizeGraph(graph)}
-              </span>
-              <Link href="/methodology">분석 방법</Link>
-              <Link href="/data-policy">데이터 범위</Link>
+            <div className={styles.titleLine}>
+              <h1>{PRODUCT_TERMS.skillMap}</h1>
+              <span>공개 공고 기반</span>
             </div>
+            <p className={styles.description}>{COPY.description}</p>
           </div>
-
-          <div className={styles.searchArea}>
-            <label className={styles.search} htmlFor="skill-graph-search">
-              <MagnifyingGlass aria-hidden="true" size={19} />
-              <input
-                aria-label="그래프 검색"
-                id="skill-graph-search"
-                onChange={(event) => setFilterQuery(event.target.value)}
-                placeholder="기술 이름으로 그래프 좁히기"
-                type="search"
-                value={filterQuery}
-              />
-            </label>
-            <dl
-              aria-label="현재 그래프 규모"
-              className={styles.graphMetrics}
-              role="group"
-            >
-              <div>
-                <dt>표시 기술</dt>
-                <dd>{loadFailed ? "확인 불가" : viewData.stats.skillCount}</dd>
-              </div>
-              <div>
-                <dt>표시 관계</dt>
-                <dd>{loadFailed ? "확인 불가" : viewData.stats.linkCount}</dd>
-              </div>
-              <div>
-                <dt>전체 근거</dt>
-                <dd>{loadFailed ? "확인 불가" : totalEvidenceCount}</dd>
-              </div>
-            </dl>
+          <div className={styles.trustLine}>
+            <span>{loadFailed ? "지도 범위 확인 불가" : summarizeGraph(graph)}</span>
+            <Link href="/methodology">분석 방법</Link>
+            <Link href="/data-policy">데이터 범위</Link>
           </div>
         </header>
 
         {loadFailed && (
-          <section className={styles.errorState} role="alert">
-            <div>
-              <strong>{GRAPH_STATES.loadError}</strong>
-            </div>
+          <div className={styles.loadNotice} role="alert">
+            <span>{COPY.loadError}</span>
             <Link href={retryHref}>다시 시도</Link>
-          </section>
+          </div>
         )}
 
-        <nav aria-label="빠른 기술 선택" className={styles.quickSkills}>
-          <span>빠른 선택</span>
-          <div>
-            {quickSkills.map((skill) => (
-              <Link
-                aria-current={selectedId === skill ? "page" : undefined}
-                data-active={selectedId === skill ? "true" : undefined}
-                href={buildSkillGraphHref({
-                  skill,
-                  owned_skills: ownedSkills,
-                  ...(careerType ? { career_type: careerType } : {}),
-                  ...(depth === 2 ? { depth: "2" } : {}),
-                })}
-                key={skill}
+        <section aria-label="스킬맵 도구" className={styles.toolbar}>
+          <SkillGraphSearch
+            catalog={graphCatalog}
+            onSelect={selectSkillFromSearch}
+            onValueChange={setSearchInput}
+            value={searchInput}
+          />
+
+          <div className={styles.scopeControl}>
+            <span>지도 범위</span>
+            <div aria-label="지도 범위" className={styles.segmented} role="group">
+              <button
+                aria-pressed={graphMode === "all"}
+                data-active={graphMode === "all" ? "true" : undefined}
+                onClick={showAtlasGraph}
+                type="button"
               >
-                {skill}
-              </Link>
-            ))}
+                전체 지도
+              </button>
+              <button
+                aria-pressed={graphMode === "focus"}
+                data-active={graphMode === "focus" ? "true" : undefined}
+                disabled={!selectedId}
+                onClick={showNearbyGraph}
+                type="button"
+              >
+                선택 주변 보기
+              </button>
+            </div>
           </div>
-        </nav>
 
-        <div className={styles.workspace}>
-          <aside
-            aria-label={`${SKILL_MAP_COPY.ownedSkills}과 ${SKILL_MAP_COPY.filters}`}
-            className={styles.controls}
-          >
-            <details
-              className={styles.controlsDisclosure}
-              open={controlsOpen}
-            >
-              <summary
-                onClick={(event) => {
-                  event.preventDefault();
-                  setControlsOpen((current) => !current);
-                }}
-              >
-                <span>
-                  {SKILL_MAP_COPY.ownedSkills}과 {SKILL_MAP_COPY.filters}
-                </span>
-                <small>
-                  {ownedSkills.length}개 · {
-                    graphMode === "overview"
-                      ? "시장 핵심"
-                      : graphMode === "focus"
-                        ? "선택 주변"
-                        : "전체 기술"
-                  }
-                </small>
-              </summary>
+          {graphMode === "focus" && (
+            <div aria-label="주변 깊이" className={styles.depthControl} role="group">
+              <span>관계 범위</span>
+              <div className={styles.depthSegmented}>
+                <button
+                  aria-pressed={depth === 1}
+                  data-active={depth === 1 ? "true" : undefined}
+                  onClick={() => changeDepth(1)}
+                  type="button"
+                >
+                  직접 연결
+                </button>
+                <button
+                  aria-pressed={depth === 2}
+                  data-active={depth === 2 ? "true" : undefined}
+                  onClick={() => changeDepth(2)}
+                  type="button"
+                >
+                  두 단계
+                </button>
+              </div>
+            </div>
+          )}
 
-              <div className={styles.controlsContent}>
-                <section className={styles.controlSection}>
-                  <header className={styles.sectionHeader}>
-                    <div>
-                      <h2>{SKILL_MAP_COPY.ownedSkills}</h2>
-                    </div>
-                    <span>{ownedSkills.length}개</span>
-                  </header>
-
-                  <form
-                    className={styles.skillForm}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      addSkill();
-                    }}
-                  >
-                    <label htmlFor="owned-skill">{SKILL_MAP_COPY.addSkill}</label>
-                    <div>
-                      <input
-                        id="owned-skill"
-                        maxLength={MAX_OWNED_SKILL_LENGTH}
-                        onChange={(event) => setInput(event.target.value)}
-                        placeholder="예: ROS2"
-                        value={input}
-                      />
-                      <button type="submit">추가</button>
-                    </div>
-                  </form>
-
-                  {ownedSkills.length > 0 ? (
-                    <div
-                      aria-label={`${SKILL_MAP_COPY.ownedSkills} 목록`}
-                      className={styles.ownedSkills}
-                    >
-                      {ownedSkills.map((skill) => (
+          <div className={styles.toolbarMenus}>
+            <details>
+              <summary>내 기술 <b>{ownedSkills.length}</b></summary>
+              <div className={styles.popover}>
+                <div className={styles.popoverHeader}>
+                  <div>
+                    <strong>{PRODUCT_TERMS.ownedSkills}</strong>
+                    <span>추천과 공고 매칭에 반영됩니다.</span>
+                  </div>
+                  <b>{ownedSkills.length}/{MAX_OWNED_SKILLS}</b>
+                </div>
+                <SkillPicker
+                  catalog={graphCatalog}
+                  catalogStatus="ready"
+                  excludedSkills={ownedSkills}
+                  id="skill-graph-owned-skill"
+                  onCommit={addSkill}
+                  onValueChange={setOwnedSkillInput}
+                  value={ownedSkillInput}
+                />
+                {ownedSkills.length > 0 ? (
+                  <div className={styles.skillChips}>
+                    {ownedSkills.map((skill) => (
+                      <span key={skill}>
+                        {skill}
                         <button
                           aria-label={`${skill} 제거`}
-                          key={skill}
                           onClick={() => removeSkill(skill)}
                           type="button"
                         >
-                          {skill}
-                          <span aria-hidden="true">×</span>
+                          ×
                         </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className={styles.emptyCopy}>
-                      추가한 기술이 없습니다. 위에서 기술을 추가해 주세요.
-                    </p>
-                  )}
-                </section>
-
-                <section className={styles.controlSection}>
-                  <header className={styles.sectionHeader}>
-                    <div>
-                      <h2>{SKILL_MAP_COPY.filters}</h2>
-                    </div>
-                    <button className={styles.resetButton} onClick={resetGraphView} type="button">
-                      초기화
-                    </button>
-                  </header>
-
-                  <div aria-label="그래프 범위" className={styles.segmented}>
-                    <button
-                      aria-pressed={graphMode === "overview"}
-                      data-active={graphMode === "overview" ? "true" : undefined}
-                      onClick={() => showGlobalGraph("overview")}
-                      type="button"
-                    >
-                      시장 핵심
-                    </button>
-                    <button
-                      aria-pressed={graphMode === "focus"}
-                      data-active={graphMode === "focus" ? "true" : undefined}
-                      disabled={!selectedId}
-                      onClick={() => setGraphMode("focus")}
-                      type="button"
-                    >
-                      선택 주변
-                    </button>
-                    <button
-                      aria-pressed={graphMode === "all"}
-                      data-active={graphMode === "all" ? "true" : undefined}
-                      onClick={() => showGlobalGraph("all")}
-                      type="button"
-                    >
-                      전체 기술
-                    </button>
+                      </span>
+                    ))}
                   </div>
-
-                  <div aria-label="주변 깊이" className={styles.depthControl} role="group">
-                    <span>선택 기술에서 얼마나 멀리 볼까요?</span>
-                    <div className={styles.depthSegmented}>
-                      <button
-                        aria-pressed={depth === 1}
-                        data-active={depth === 1 ? "true" : undefined}
-                        disabled={!selectedId || graphMode !== "focus"}
-                        onClick={() => changeDepth(1)}
-                        type="button"
-                      >
-                        직접 연결
-                      </button>
-                      <button
-                        aria-pressed={depth === 2}
-                        data-active={depth === 2 ? "true" : undefined}
-                        disabled={!selectedId || graphMode !== "focus"}
-                        onClick={() => changeDepth(2)}
-                        type="button"
-                      >
-                        두 단계
-                      </button>
-                    </div>
-                  </div>
-                </section>
-
-                <section className={styles.controlSection}>
-                  <header className={styles.sectionHeader}>
-                    <div>
-                      <h2>분야 필터</h2>
-                    </div>
-                    <span>
-                      {enabledDomains.length}/{allDomains.length}
-                    </span>
-                  </header>
-                  <div className={styles.domainFilters}>
-                    {allDomains.slice(0, 9).map((group) => {
-                      const enabled = !disabledDomains.includes(group.domain);
-                      return (
-                        <button
-                          aria-pressed={enabled}
-                          data-active={enabled ? "true" : undefined}
-                          key={group.domain}
-                          onClick={() => toggleDomain(group.domain)}
-                          type="button"
-                        >
-                          <i style={{ backgroundColor: group.color }} />
-                          <span>{displayDomain(group.domain)}</span>
-                          <b>{group.count}</b>
-                        </button>
-                      );
-                    })}
-                    {allDomains.length === 0 && (
-                      <p className={styles.emptyCopy}>확인 가능한 분야 데이터가 없습니다.</p>
-                    )}
-                  </div>
-                </section>
-
+                ) : (
+                  <p className={styles.emptyCopy}>아직 추가한 기술이 없습니다.</p>
+                )}
               </div>
             </details>
-          </aside>
 
+            <details>
+              <summary>분야 <b>{enabledDomains.length}/{allDomains.length}</b></summary>
+              <div className={styles.popover}>
+                <div className={styles.popoverHeader}>
+                  <div>
+                    <strong>분야 필터</strong>
+                    <span>관심 분야만 지도에 남겨 보세요.</span>
+                  </div>
+                  <button onClick={() => setDisabledDomains([])} type="button">
+                    모두 보기
+                  </button>
+                </div>
+                <div className={styles.domainFilters}>
+                  {allDomains.map((group) => {
+                    const enabled = !disabledDomains.includes(group.domain);
+                    return (
+                      <button
+                        aria-pressed={enabled}
+                        data-active={enabled ? "true" : undefined}
+                        key={group.domain}
+                        onClick={() => toggleDomain(group.domain)}
+                        type="button"
+                      >
+                        <i aria-hidden="true" style={{ backgroundColor: group.color }} />
+                        <span>{displayDomain(group.domain)}</span>
+                        <b>{group.count}</b>
+                      </button>
+                    );
+                  })}
+                  {allDomains.length === 0 && (
+                    <p className={styles.emptyCopy}>확인 가능한 분야가 없습니다.</p>
+                  )}
+                </div>
+              </div>
+            </details>
+
+            <details>
+              <summary>읽는 법</summary>
+              <p aria-label="스킬맵 범례" className={styles.legend} role="note">
+                <span><i aria-hidden="true" data-kind="demand" />크기: 시장 수요</span>
+                <span><i aria-hidden="true" data-kind="domain" />색: 기술 분야</span>
+                <span><i aria-hidden="true" data-kind="owned" />테두리: 내 기술</span>
+                <span><i aria-hidden="true" data-kind="recommended" />점: 학습 추천</span>
+                <span><i aria-hidden="true" data-kind="link" />선 농도: 함께 요구</span>
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <div className={styles.workspace}>
           <section aria-label="기술 관계 그래프" className={styles.graphColumn}>
             <div
               className={styles.graphFrame}
               data-testid="skill-graph-frame"
               data-touch-interaction={graphInteractionEnabled ? "enabled" : "disabled"}
             >
+              <div className={styles.graphHud}>
+                <strong>{graphMode === "focus" ? "선택 주변" : "전체 지도"}</strong>
+                <span>
+                  {loadFailed
+                    ? "기술·관계 수 확인 불가"
+                    : `${viewData.stats.skillCount}개 기술 · ${viewData.stats.linkCount}개 관계`}
+                </span>
+              </div>
+
               <SkillGraphForceCanvas
                 data={viewData}
                 display={display}
@@ -1192,51 +1028,20 @@ export function SkillGraphExperience({
               />
 
               <button
-                aria-label={
-                  graphInteractionEnabled
-                    ? "그래프 조작 종료"
-                    : "그래프 조작 시작"
-                }
+                aria-label={graphInteractionEnabled ? "그래프 조작 종료" : "그래프 조작 시작"}
                 aria-pressed={graphInteractionEnabled}
                 className={styles.touchInteractionToggle}
-                onClick={() =>
-                  setGraphInteractionEnabled((current) => !current)
-                }
+                onClick={() => setGraphInteractionEnabled((current) => !current)}
                 type="button"
               >
                 {graphInteractionEnabled ? "조작 끝내기" : "그래프 조작"}
               </button>
 
-              <p
-                aria-label="스킬맵 범례"
-                className={styles.graphLegend}
-                role="note"
-              >
-                <span><b>크기</b>: 시장 수요</span>
-                <i aria-hidden="true" />
-                <span><b>색</b>: 기술 분야</span>
-                <i aria-hidden="true" />
-                <span><b>테두리</b>: 내 기술</span>
-                <i aria-hidden="true" />
-                <span><b>점</b>: 학습 추천</span>
-                <i aria-hidden="true" />
-                <span><b>선 농도</b>: 함께 요구</span>
-              </p>
-
               <div className={styles.graphStatus}>
-                <span>
-                  {graphMode === "overview"
-                    ? "시장 핵심"
-                    : graphMode === "focus"
-                      ? "선택 주변"
-                      : "전체 기술"}
-                </span>
                 {topologyState === "idle" && (
                   <>
-                    <span className={styles.pointerHint}>
-                      {SKILL_MAP_COPY.desktopControls}
-                    </span>
-                    <span className={styles.touchHint}>{SKILL_MAP_COPY.mobileControls}</span>
+                    <span className={styles.pointerHint}>{COPY.desktopControls}</span>
+                    <span className={styles.touchHint}>{COPY.mobileControls}</span>
                   </>
                 )}
                 {topologyState === "loading" && (
@@ -1247,7 +1052,9 @@ export function SkillGraphExperience({
                     이전 관계망 표시 중
                     <button
                       aria-label="관계망 다시 시도"
-                      onClick={() => void loadTopology(selectedIdRef.current)}
+                      onClick={() => void loadTopology(
+                        graphModeRef.current === "focus" ? selectedIdRef.current : null,
+                      )}
                       type="button"
                     >
                       다시 시도
@@ -1256,39 +1063,12 @@ export function SkillGraphExperience({
                 )}
               </div>
 
-              {viewData.nodes.length === 0 && (
+              {!loadFailed && viewData.nodes.length === 0 && (
                 <div className={`graph-empty-state ${styles.emptyState}`}>
-                  <div className="graph-empty-state__constellation" aria-hidden="true">
-                    <svg viewBox="0 0 100 100">
-                      {PREVIEW_LINKS.map((link) => (
-                        <line
-                          key={link.id}
-                          x1={link.source.x}
-                          x2={link.target.x}
-                          y1={link.source.y}
-                          y2={link.target.y}
-                        />
-                      ))}
-                    </svg>
-                    {PREVIEW_DOTS.map((dot) => (
-                      <i
-                        key={dot.id}
-                        style={
-                          {
-                            "--dot-color": dot.color,
-                            "--dot-size": `${dot.size}px`,
-                            "--dot-x": `${dot.x}%`,
-                            "--dot-y": `${dot.y}%`,
-                          } as CSSProperties
-                        }
-                      />
-                    ))}
-                  </div>
-                  <strong>{GRAPH_STATES.empty}</strong>
+                  <span aria-hidden="true" className={styles.emptyOrbit} />
+                  <strong>{COPY.empty}</strong>
                   {isFilteredEmpty && (
-                    <button onClick={resetGraphView} type="button">
-                      필터 초기화
-                    </button>
+                    <button onClick={resetGraphView} type="button">필터 초기화</button>
                   )}
                 </div>
               )}
@@ -1299,8 +1079,8 @@ export function SkillGraphExperience({
                     {viewData.links
                       .filter((link) => link.kind === "skill")
                       .map((edge) => {
-                        const source = nodeMap.get(edge.source);
-                        const target = nodeMap.get(edge.target);
+                        const source = positionedNodeMap.get(edge.source);
+                        const target = positionedNodeMap.get(edge.target);
                         if (!source || !target) return null;
                         return (
                           <line
@@ -1320,7 +1100,7 @@ export function SkillGraphExperience({
                         );
                       })}
                   </svg>
-                  {nodes.map((node) => (
+                  {positionedNodes.map((node) => (
                     <button
                       className={`graph-node ${node.seed ? "graph-node--seed" : ""} ${
                         selectedId === node.id ? "is-selected" : ""
@@ -1329,20 +1109,17 @@ export function SkillGraphExperience({
                       data-recommended={node.recommended ? "true" : "false"}
                       key={node.id}
                       onClick={() => selectSkill(node.id)}
-                      style={
-                        {
-                          "--node-color": selectedId === node.id
-                            ? GRAPH_CANVAS_COLORS.selectedNode
-                            : node.color,
-                          "--node-ring": node.owned
-                            ? GRAPH_CANVAS_COLORS.ownedRing
-                            : "transparent",
-                          "--recommendation-color":
-                            GRAPH_CANVAS_COLORS.recommendedRing,
-                          left: `${node.x}%`,
-                          top: `${node.y}%`,
-                        } as CSSProperties
-                      }
+                      style={{
+                        "--node-color": selectedId === node.id
+                          ? GRAPH_CANVAS_COLORS.selectedNode
+                          : node.color,
+                        "--node-ring": node.owned
+                          ? GRAPH_CANVAS_COLORS.ownedRing
+                          : "transparent",
+                        "--recommendation-color": GRAPH_CANVAS_COLORS.recommendedRing,
+                        left: `${node.x}%`,
+                        top: `${node.y}%`,
+                      } as CSSProperties}
                       type="button"
                     >
                       <span>{node.label}</span>
@@ -1350,69 +1127,14 @@ export function SkillGraphExperience({
                   ))}
                 </>
               )}
+
+              {selected && (
+                <div className={styles.mobileSelection}>
+                  <span><b>{selected.label}</b> · 공고 {selected.demand_count}건</span>
+                  <button onClick={focusInspector} type="button">분석 보기</button>
+                </div>
+              )}
             </div>
-
-            <section aria-label={SKILL_MAP_COPY.recommendation} className={styles.signals}>
-              <article>
-                <header className={styles.sectionHeader}>
-                  <div>
-                    <p>내 기술 비교</p>
-                    <h2>{SKILL_MAP_COPY.recommendation}</h2>
-                  </div>
-                  <span>{fitState === "loading" ? "분석 중" : "공고 근거"}</span>
-                </header>
-                <div className={styles.nextSkills}>
-                  {fitState === "loading" && (
-                    <p role="status">{GRAPH_STATES.fitLoading}</p>
-                  )}
-                  {fitState === "error" && (
-                    <p role="alert">{GRAPH_STATES.fitError}</p>
-                  )}
-                  {fitState === "idle" &&
-                    (fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
-                      <Link
-                        href={`/skill-map?skill=${encodeURIComponent(skill.skill)}${
-                          careerType
-                            ? `&career_type=${encodeURIComponent(careerType)}`
-                            : ""
-                        }`}
-                        key={skill.skill}
-                      >
-                        <strong>{skill.skill}</strong>
-                        <span>{skill.supporting_posting_count}개 공고 근거</span>
-                      </Link>
-                    ))}
-                  {fitState === "idle" && !fit && ownedSkills.length === 0 && (
-                    <p>
-                      내 기술을 추가하면 공고에서 함께 요구되는 기술이 표시됩니다.
-                    </p>
-                  )}
-                  {fitState === "idle" && fit?.recommended_next_skills.length === 0 && (
-                    <p>현재 공고에서 함께 요구되는 기술을 찾지 못했습니다.</p>
-                  )}
-                </div>
-              </article>
-
-              <article>
-                <header className={styles.sectionHeader}>
-                  <div>
-                    <p>현재 그래프 구성</p>
-                    <h2>분야 분포</h2>
-                  </div>
-                  <span>{allDomains.length}개 분야</span>
-                </header>
-                <div className={styles.domainSignals}>
-                  {allDomains.slice(0, 6).map((domain) => (
-                    <span key={domain.domain}>
-                      <i style={{ backgroundColor: domain.color }} />
-                      {displayDomain(domain.domain)}
-                      <b>{domain.count}</b>
-                    </span>
-                  ))}
-                  {allDomains.length === 0 && <p>확인 가능한 분야 데이터가 없습니다.</p>}
-                </div>
-              </article>
-            </section>
           </section>
 
           <aside
@@ -1423,65 +1145,78 @@ export function SkillGraphExperience({
           >
             <section className={styles.selectedSkill}>
               <p className={styles.eyebrow}>선택 기술</p>
-              <h2>{selected?.label ?? "기술을 선택해 주세요"}</h2>
+              <h2>{selected?.label ?? "기술 하나를 선택하세요"}</h2>
               <p>
                 {selected
-                  ? `${selected.domains.map(displayDomain).join(", ")} 분야의 공개 공고에서 확인한 수치입니다.`
-                  : "기술을 선택하면 관련 공고와 함께 요구되는 기술을 확인할 수 있습니다."}
+                  ? `${selected.domains.map(displayDomain).join(", ")} 분야에서 확인된 채용 수요입니다.`
+                  : "지도에서 기술을 선택하면 수요, 연관 기술, 실제 공고를 한곳에서 볼 수 있습니다."}
               </p>
               {selected && (
                 <div className={styles.selectedActions}>
-                  <button
-                    aria-label={`${selected.label} ${
-                      selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"
-                    }`}
-                    onClick={() =>
-                      selectedOwned
-                        ? removeSkill(selected.id)
-                        : addSkill(selected.id)
-                    }
-                    type="button"
-                  >
-                    {selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"}
-                  </button>
                   <Link
                     aria-label={`${selected.label} 관련 공고 모두 보기`}
                     href={buildSearchScopeHref(selected.label, "jobs")}
                   >
-                    관련 공고 모두 보기
+                    관련 공고 보기
                   </Link>
+                  <button
+                    aria-label={`${selected.label} ${
+                      selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"
+                    }`}
+                    onClick={() => selectedOwned ? removeSkill(selected.id) : addSkill(selected.id)}
+                    type="button"
+                  >
+                    {selectedOwned ? "내 기술에서 제거" : "내 기술에 추가"}
+                  </button>
                 </div>
               )}
               <dl className={styles.evidenceMetrics}>
-                <div>
-                  <dt>언급 공고</dt>
-                  <dd>{selected ? `${selected.demand_count}건` : "—"}</dd>
-                </div>
-                <div>
-                  <dt>필수</dt>
-                  <dd>{selected ? `${selected.required_count}건` : "—"}</dd>
-                </div>
-                <div>
-                  <dt>우대</dt>
-                  <dd>{selected ? `${selected.preferred_count}건` : "—"}</dd>
-                </div>
+                <div><dt>언급 공고</dt><dd>{selected ? `${selected.demand_count}건` : "—"}</dd></div>
+                <div><dt>필수</dt><dd>{selected ? `${selected.required_count}건` : "—"}</dd></div>
+                <div><dt>우대</dt><dd>{selected ? `${selected.preferred_count}건` : "—"}</dd></div>
                 <div>
                   <dt>{PRODUCT_TERMS.unspecifiedRequirement}</dt>
                   <dd>{selected ? `${selected.unspecified_count}건` : "—"}</dd>
                 </div>
-                <div>
-                  <dt>직접 연결</dt>
-                  <dd>{selected ? `${directConnectionCount}개` : "—"}</dd>
-                </div>
+                <div><dt>직접 연결</dt><dd>{selected ? `${directConnectionCount}개` : "—"}</dd></div>
               </dl>
             </section>
 
             <section className={styles.inspectorSection}>
               <header className={styles.sectionHeader}>
-                <div>
-                  <p>공고 동시 등장</p>
-                  <h2>{SKILL_MAP_COPY.related}</h2>
-                </div>
+                <h2>다음에 배울 기술</h2>
+                <span>{fitState === "loading" ? "분석 중" : "공고 근거"}</span>
+              </header>
+              <div className={styles.nextSkills}>
+                {fitState === "loading" && <p role="status">{COPY.fitLoading}</p>}
+                {fitState === "error" && <p role="alert">{COPY.fitError}</p>}
+                {fitState === "idle" &&
+                  (fit?.recommended_next_skills ?? []).slice(0, 3).map((skill) => (
+                    <button
+                      aria-label={`${skill.skill} 기술 지도에서 보기`}
+                      key={skill.skill}
+                      onClick={() => selectSkillFromSearch(skill.skill)}
+                      type="button"
+                    >
+                      <span>
+                        <strong>{skill.skill}</strong>
+                        <small>{skill.reason}</small>
+                      </span>
+                      <b>{skill.supporting_posting_count}건</b>
+                    </button>
+                  ))}
+                {fitState === "idle" && !fit && ownedSkills.length === 0 && (
+                  <p>내 기술을 추가하면 공고에서 함께 요구되는 학습 후보를 찾습니다.</p>
+                )}
+                {fitState === "idle" && fit?.recommended_next_skills.length === 0 && (
+                  <p>현재 공고에서 뚜렷한 학습 후보를 찾지 못했습니다.</p>
+                )}
+              </div>
+            </section>
+
+            <section className={styles.inspectorSection}>
+              <header className={styles.sectionHeader}>
+                <h2>함께 요구되는 기술</h2>
                 <span>{strongestConnections.length}개</span>
               </header>
               <ul className={styles.connectionList}>
@@ -1502,47 +1237,37 @@ export function SkillGraphExperience({
 
             <section className={styles.inspectorSection}>
               <header className={styles.sectionHeader}>
-                <div>
-                  <p>공식 원문 기반</p>
-                  <h2>관련 공고</h2>
-                </div>
+                <h2>관련 공고</h2>
                 <span>
                   {evidence.status === "ready" && evidence.total > 6
-                    ? `전체 ${evidence.total}건 중 최대 6건`
+                    ? `전체 ${evidence.total}건 중 6건`
                     : evidence.status === "ready" || evidence.status === "empty"
                       ? `${evidence.total}건`
                       : "선택 후 확인"}
                 </span>
               </header>
               <ul className={styles.jobEvidence}>
-                {evidence.status === "ready" && relatedEvidence.length > 0 &&
-                  relatedEvidence.map((item) => (
-                    <li key={item.posting_id}>
-                      <Link href={`/jobs/${encodeURIComponent(item.posting_id)}`}>
-                        <span>{item.company_name}</span>
-                        <strong>{item.title}</strong>
-                        <small>공고 분석 보기</small>
-                      </Link>
-                    </li>
-                  ))}
-                {evidence.status === "idle" && (
-                  <li className={styles.evidenceState}>
-                    기술을 선택하면 관련 공고를 확인할 수 있습니다.
+                {evidence.status === "ready" && evidence.items.map((item) => (
+                  <li key={item.posting_id}>
+                    <Link href={`/jobs/${encodeURIComponent(item.posting_id)}`}>
+                      <span>{item.company_name}</span>
+                      <strong>{item.title}</strong>
+                      <small>공고 분석 보기</small>
+                    </Link>
                   </li>
+                ))}
+                {evidence.status === "idle" && (
+                  <li className={styles.evidenceState}>기술을 선택하면 관련 공고를 확인할 수 있습니다.</li>
                 )}
                 {evidence.status === "loading" && (
-                  <li className={styles.evidenceState} role="status">
-                    관련 공고를 불러오는 중입니다.
-                  </li>
+                  <li className={styles.evidenceState} role="status">관련 공고를 불러오는 중입니다.</li>
                 )}
                 {evidence.status === "empty" && (
-                  <li className={styles.evidenceState}>
-                    현재 공개된 근거 공고가 없습니다.
-                  </li>
+                  <li className={styles.evidenceState}>현재 공개된 근거 공고가 없습니다.</li>
                 )}
                 {evidence.status === "error" && (
                   <li className={styles.evidenceState} role="alert">
-                    <span>근거 공고를 불러오지 못했습니다.</span>
+                    <span>{COPY.evidenceError}</span>
                     <button
                       onClick={() => setEvidenceRetryKey((current) => current + 1)}
                       type="button"
@@ -1553,31 +1278,10 @@ export function SkillGraphExperience({
                 )}
               </ul>
             </section>
-
-            <section className={styles.recommendation}>
-              <p className={styles.eyebrow}>학습 근거</p>
-              <strong>
-                {fitState === "loading"
-                  ? GRAPH_STATES.fitLoading
-                  : fitState === "error"
-                    ? GRAPH_STATES.fitError
-                    : topNextSkill?.skill ?? "내 기술을 먼저 추가해 주세요"}
-              </strong>
-              <span>
-                {fitState === "loading"
-                  ? GRAPH_STATES.fitLoading
-                  : fitState === "error"
-                    ? GRAPH_STATES.fitError
-                    : topNextSkill?.reason ??
-                      "기술을 추가하면 다음 학습 근거를 확인할 수 있습니다."}
-              </span>
-            </section>
           </aside>
         </div>
 
-        <p aria-live="polite" className={styles.srOnly}>
-          {announcement}
-        </p>
+        <p aria-live="polite" className={styles.srOnly}>{announcement}</p>
       </section>
     </main>
   );

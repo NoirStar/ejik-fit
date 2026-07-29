@@ -1,0 +1,118 @@
+.root {
+  position: relative;
+  display: grid;
+  min-width: min(21rem, 100%);
+  gap: 0.25rem;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.combobox {
+  position: relative;
+  min-width: 0;
+}
+
+.icon {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 0.75rem;
+  color: var(--color-faint);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.combobox input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0 2rem 0 2.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  outline: 2px solid transparent;
+  outline-offset: 1px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+}
+
+.combobox input::placeholder {
+  color: var(--color-faint);
+}
+
+.combobox input:focus-visible {
+  border-color: var(--color-accent);
+  outline-color: var(--color-focus);
+}
+
+.results {
+  position: absolute;
+  z-index: var(--layer-popover);
+  top: calc(100% + 0.375rem);
+  right: 0;
+  left: 0;
+  max-height: min(17rem, 42dvh);
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.results li {
+  display: flex;
+  min-width: 0;
+  min-height: var(--touch-target);
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+  border-radius: calc(var(--radius-control) - 0.1875rem);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.results li[data-active="true"] {
+  background: var(--color-brand-subtle);
+}
+
+.results li:active {
+  background: var(--color-surface-muted);
+}
+
+.results strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.results span {
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .combobox input:hover {
+    background: var(--color-surface-subtle);
+  }
+
+  .results li:hover {
+    background: var(--color-brand-subtle);
+  }
+}

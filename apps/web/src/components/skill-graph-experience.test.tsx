@@ -185,7 +185,7 @@ describe("SkillGraphExperience", () => {
     vi.unstubAllGlobals();
   });
 
-  it("starts with a sparse market overview and removes density controls", () => {
+  it("starts with the market atlas and keeps controls compact", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -194,36 +194,40 @@ describe("SkillGraphExperience", () => {
       screen.getByRole("heading", { level: 1, name: "스킬맵" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("내 기술과 함께 자주 요구되는 기술을 보여줍니다."),
+      screen.getByText(
+        "공개 채용 공고에서 함께 요구되는 기술 관계를 보고 다음 학습 방향을 정해 보세요.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText("내 기술")).toBeInTheDocument();
+    expect(screen.getByText("내 기술", { selector: "summary" })).toBeInTheDocument();
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "주변 깊이" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "직접 연결" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "두 단계" })).toBeDisabled();
+    expect(screen.queryByText("내 기술과 공고 비교")).not.toBeInTheDocument();
+    expect(screen.queryByText("공고 동시 등장")).not.toBeInTheDocument();
+    expect(screen.queryByText("공식 원문 기반")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "주변 깊이" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "직접 연결" }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "두 단계" }))
+      .not.toBeInTheDocument();
     expect(
       screen.queryByRole("checkbox", { name: "관련 공고" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("checkbox", { name: "연결 없는 기술" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "시장 핵심" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "전체 지도" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "선택 주변" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "전체 기술" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(screen.getByRole("button", { name: "선택 주변 보기" })).toBeDisabled();
     expect(
       screen.queryByText("공고 근거 노드", { exact: true }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        "내 기술을 추가하면 공고에서 함께 요구되는 기술이 표시됩니다.",
+        "내 기술을 추가하면 공고에서 함께 요구되는 학습 후보를 찾습니다.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -235,9 +239,13 @@ describe("SkillGraphExperience", () => {
     expect(legend).toHaveTextContent("테두리: 내 기술");
     expect(legend).toHaveTextContent("점: 학습 추천");
     expect(legend).toHaveTextContent("선 농도: 함께 요구");
-    expect(screen.getByText("표시 기술")).toBeInTheDocument();
-    expect(screen.getByText("표시 관계")).toBeInTheDocument();
-    expect(screen.getByText("전체 근거")).toBeInTheDocument();
+    expect(
+      [...legend.querySelectorAll("i")].every(
+        (marker) => marker.getAttribute("aria-hidden") === "true",
+      ),
+    ).toBe(true);
+    expect(screen.getByText("2개 기술 · 1개 관계")).toBeInTheDocument();
+    expect(screen.queryByText("전체 근거")).not.toBeInTheDocument();
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
@@ -308,10 +316,15 @@ describe("SkillGraphExperience", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "C++" }));
 
-    expect(screen.getByRole("button", { name: "선택 주변" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "전체 지도" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/skills/graph/data"),
+      ),
+    ).toHaveLength(0);
     expect(screen.getByText("관련 공고를 불러오는 중입니다.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/skills/graph/evidence?skill=C%2B%2B&limit=6",
@@ -336,6 +349,7 @@ describe("SkillGraphExperience", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 주변 보기" }));
     fireEvent.click(screen.getByRole("button", { name: "두 단계" }));
 
     await waitFor(() => {
@@ -368,7 +382,7 @@ describe("SkillGraphExperience", () => {
       .toHaveAttribute("aria-pressed", "true");
   });
 
-  it("replaces the overview with server-backed topology after selection", async () => {
+  it("loads server-backed topology only after an explicit nearby action", async () => {
     const focusedGraph: SkillGraphResponse = {
       ...graph,
       seed: "C++",
@@ -415,17 +429,60 @@ describe("SkillGraphExperience", () => {
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "C++" }));
-
-    const quickSkills = screen.getByRole("navigation", {
-      name: "빠른 기술 선택",
-    });
     expect(
-      await within(quickSkills).findByRole("link", { name: "Python" }),
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/skills/graph/data"),
+      ),
+    ).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "선택 주변 보기" }));
+
+    expect(
+      await screen.findByRole("button", { name: "Python" }),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/skills/graph/data?limit=30&depth=1&seed=C%2B%2B",
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
+  });
+
+  it("keeps the explicit nearby canvas within the local performance budget", async () => {
+    const neighborNodes = Array.from({ length: 24 }, (_, index) => ({
+      ...graph.nodes[1]!,
+      id: `neighbor-${index + 1}`,
+      label: `neighbor-${index + 1}`,
+      demand_count: 24 - index,
+    }));
+    const focusedGraph: SkillGraphResponse = {
+      ...graph,
+      seed: "C++",
+      nodes: [{ ...graph.nodes[0]!, seed: true }, ...neighborNodes],
+      edges: neighborNodes.map((node, index) => ({
+        ...graph.edges[0]!,
+        id: `C++:${node.id}`,
+        target: node.id,
+        score: 1 - index / 100,
+      })),
+    };
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/skills/graph/data")) {
+        return topologyResponse(focusedGraph, input);
+      }
+      if (url.startsWith("/skills/graph/evidence")) {
+        return evidenceResponse({ items: [], total: 0 });
+      }
+      return jsonResponse(fitResponse);
+    });
+
+    const { container } = render(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 주변 보기" }));
+
+    await waitFor(() => {
+      expect(container.querySelectorAll(".graph-node")).toHaveLength(18);
+    });
   });
 
   it("retries a failed topology request without changing the selection", async () => {
@@ -449,6 +506,7 @@ describe("SkillGraphExperience", () => {
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 주변 보기" }));
 
     expect(await screen.findByText("이전 관계망 표시 중")).toHaveAttribute(
       "role",
@@ -499,6 +557,7 @@ describe("SkillGraphExperience", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "C++" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 주변 보기" }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -567,7 +626,7 @@ describe("SkillGraphExperience", () => {
     ).toHaveLength(2);
   });
 
-  it("restores selection and topology when browser history changes", async () => {
+  it("restores an atlas selection from browser history without replacing topology", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -579,12 +638,11 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.getByRole("complementary", { name: "선택 기술 분석" }),
     ).toHaveTextContent("ROS2");
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/skills/graph/data?limit=30&depth=1&seed=ROS2",
-        expect.objectContaining({ signal: expect.any(AbortSignal) }),
-      );
-    });
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).startsWith("/skills/graph/data"),
+      ),
+    ).toHaveLength(0);
   });
 
   it("canonicalizes a catalog alias restored from browser history", async () => {
@@ -646,7 +704,7 @@ describe("SkillGraphExperience", () => {
       fetchMock.mock.calls
         .map(([input]) => String(input))
         .filter((url) => url.startsWith("/skills/graph/data")),
-    ).toEqual(["/skills/graph/data?limit=30&depth=1&seed=ROS2"]);
+    ).toEqual([]);
   });
 
   it("moves repeated selection to the detail panel", () => {
@@ -666,8 +724,8 @@ describe("SkillGraphExperience", () => {
     const inspector = screen.getByRole("complementary", {
       name: "선택 기술 분석",
     });
-    const firstAction = within(inspector).getByRole("button", {
-      name: "C++ 내 기술에 추가",
+    const firstAction = within(inspector).getByRole("link", {
+      name: "C++ 관련 공고 모두 보기",
     });
     expect(scrollIntoView).toHaveBeenCalledWith({
       behavior: "smooth",
@@ -676,7 +734,7 @@ describe("SkillGraphExperience", () => {
     expect(firstAction).toHaveFocus();
   });
 
-  it("keeps every displayed skill in the keyboard-accessible quick list", () => {
+  it("replaces the quick-link strip with a searchable atlas", () => {
     const expandedGraph: SkillGraphResponse = {
       ...graph,
       nodes: Array.from({ length: 10 }, (_, index) => ({
@@ -694,12 +752,11 @@ describe("SkillGraphExperience", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "전체 기술" }));
-
-    const quickSkills = screen.getByRole("navigation", {
-      name: "빠른 기술 선택",
-    });
-    expect(within(quickSkills).getAllByRole("link")).toHaveLength(10);
+    expect(
+      screen.queryByRole("navigation", { name: "빠른 기술 선택" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "기술 찾기" }))
+      .toBeInTheDocument();
   });
 
   it("does not replace newer evidence with a late response", async () => {
@@ -812,18 +869,14 @@ describe("SkillGraphExperience", () => {
     ).toHaveLength(2);
   });
 
-  it("links quick skills to a newly seeded graph", () => {
+  it("does not render a duplicate quick-skill navigation", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
 
-    const quickSkills = screen.getByRole("navigation", {
-      name: "빠른 기술 선택",
-    });
-    expect(within(quickSkills).getByRole("link", { name: "ROS2" })).toHaveAttribute(
-      "href",
-      "/skills/graph?seed=ROS2",
-    );
+    expect(
+      screen.queryByRole("navigation", { name: "빠른 기술 선택" }),
+    ).not.toBeInTheDocument();
   });
 
   it("persists owned skills and renders API-backed next-skill evidence", async () => {
@@ -831,7 +884,7 @@ describe("SkillGraphExperience", () => {
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
 
-    fireEvent.change(screen.getByLabelText("기술 추가"), {
+    fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "Kubernetes" },
     });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
@@ -842,7 +895,7 @@ describe("SkillGraphExperience", () => {
       ]);
     });
     expect(
-      screen.getByText("Kubernetes 기술을 현재 목록에 추가했습니다."),
+      screen.getByText("Kubernetes 기술을 내 기술에 추가했습니다."),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/skills/graph/fit",
@@ -852,10 +905,10 @@ describe("SkillGraphExperience", () => {
       }),
     );
     expect(
-      await screen.findByRole("link", {
-        name: "Kubernetes 10개 공고 근거",
+      await screen.findByRole("button", {
+        name: "Kubernetes 기술 지도에서 보기",
       }),
-    ).toHaveAttribute("href", "/skill-map?skill=Kubernetes");
+    ).toHaveTextContent("10건");
     expect(
       screen.getByText("공개 공고에서 인프라 운영 요구와 함께 확인됐습니다."),
     ).toBeInTheDocument();
@@ -960,27 +1013,20 @@ describe("SkillGraphExperience", () => {
     expect(node).toHaveAttribute("data-owned", "false");
   });
 
-  it("explains an empty filter result and restores the graph", () => {
+  it("does not rearrange or empty the atlas while the user types a search", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
 
-    fireEvent.change(screen.getByRole("searchbox", { name: "그래프 검색" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "기술 찾기" }), {
       target: { value: "존재하지않는기술" },
     });
-    expect(
-      screen.getByText(
-        "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
-      ),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "필터 초기화" }));
     expect(
       screen.queryByText(
         "표시할 기술이 없습니다. 검색어나 분야 필터를 줄여 주세요.",
       ),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("searchbox", { name: "그래프 검색" })).toHaveValue("");
+    expect(screen.getByRole("button", { name: "C++" })).toBeInTheDocument();
   });
 
   it("does not attach unrelated job evidence when no skill can be selected", () => {
@@ -1000,7 +1046,7 @@ describe("SkillGraphExperience", () => {
       screen.queryByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "기술을 선택해 주세요" }),
+      screen.getByRole("heading", { name: "기술 하나를 선택하세요" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText("기술을 선택하면 관련 공고를 확인할 수 있습니다."),
@@ -1028,7 +1074,7 @@ describe("SkillGraphExperience", () => {
       ),
     ).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("기술 추가"), {
+    fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "ROS2" },
     });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));

@@ -26,6 +26,6 @@ export function edgeSize(score: number): number {
 
 
 export function summarizeGraph(graph: SkillGraphResponse): string {
-  const seed = graph.seed ?? "전체";
-  return `${seed} 중심 그래프: ${graph.nodes.length}개 스킬, ${graph.edges.length}개 관계`;
+  const scope = graph.seed ? `${graph.seed} 주변 분석` : "공개 공고 분석";
+  return `${scope}: 기술 ${graph.nodes.length}개 · 관계 ${graph.edges.length}개`;
 }

@@ -109,7 +109,9 @@ describe("SkillGraphPage", () => {
       screen.getByRole("heading", { level: 1, name: "스킬맵" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("내 기술과 함께 자주 요구되는 기술을 보여줍니다."),
+      screen.getByText(
+        "공개 채용 공고에서 함께 요구되는 기술 관계를 보고 다음 학습 방향을 정해 보세요.",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
     expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
@@ -118,8 +120,8 @@ describe("SkillGraphPage", () => {
     expect(
       await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
-    expect(screen.getByText("내 기술")).toBeInTheDocument();
-    expect(screen.getByText("그래프 범위")).toBeInTheDocument();
+    expect(screen.getByText("내 기술", { selector: "summary" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "지도 범위" })).toBeInTheDocument();
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
     expect(screen.getByText("언급 공고")).toBeInTheDocument();
@@ -131,9 +133,9 @@ describe("SkillGraphPage", () => {
     expect(
       screen.queryByRole("link", { name: "이직핏 기술 맵 홈" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "주변 깊이" }))
-      .toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "선택 주변" })).toHaveAttribute(
+    expect(screen.queryByRole("group", { name: "주변 깊이" }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "전체 지도" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -287,16 +289,14 @@ describe("SkillGraphPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     );
-    expect(screen.getByText("그래프 범위 확인 불가")).toBeInTheDocument();
-    expect(screen.queryByText(/0개 스킬/)).not.toBeInTheDocument();
+    expect(screen.getByText("지도 범위 확인 불가")).toBeInTheDocument();
+    expect(screen.getByText("기술·관계 수 확인 불가")).toBeInTheDocument();
+    expect(screen.queryByText(/0개 (스킬|기술)/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
       "href",
       "/skills/graph?seed=Kubernetes&owned_skills=Linux",
     );
-    expect(
-      within(screen.getByRole("group", { name: "현재 그래프 규모" })).getAllByText(
-        "확인 불가",
-      ),
-    ).toHaveLength(3);
+    expect(screen.queryByText("표시할 기술이 없습니다. 분야 필터를 줄여 주세요."))
+      .not.toBeInTheDocument();
   });
 });
