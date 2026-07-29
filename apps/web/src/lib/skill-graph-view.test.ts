@@ -158,6 +158,89 @@ describe("buildSkillGraphView", () => {
     );
   });
 
+  it("reserves focus space for second-hop skills returned by the API", () => {
+    const graph = denseGraph(5);
+    graph.edges = [
+      {
+        ...graph.edges[0]!,
+        id: "seed-direct-a",
+        source: "skill-00",
+        target: "skill-01",
+        score: 0.95,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "seed-direct-b",
+        source: "skill-00",
+        target: "skill-02",
+        score: 0.9,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "direct-second-a",
+        source: "skill-01",
+        target: "skill-03",
+        score: 0.85,
+      },
+      {
+        ...graph.edges[0]!,
+        id: "direct-second-b",
+        source: "skill-02",
+        target: "skill-04",
+        score: 0.8,
+      },
+    ];
+
+    const view = buildSkillGraphView(graph, {
+      mode: "focus",
+      selectedId: "skill-00",
+      nodeLimit: 4,
+      linkLimit: 4,
+    });
+
+    expect(view.nodes.map(({ id }) => id)).toEqual([
+      "skill-00",
+      "skill-01",
+      "skill-02",
+      "skill-03",
+    ]);
+    expect(view.links.map(({ id }) => id)).toContain("direct-second-a");
+  });
+
+  it("keeps the visible parent of every selected second-hop skill", () => {
+    const graph = denseGraph(9);
+    graph.edges = [
+      ...Array.from({ length: 7 }, (_, index) => ({
+        ...graph.edges[0]!,
+        id: `seed-direct-${index + 1}`,
+        source: "skill-00",
+        target: `skill-0${index + 1}`,
+        score: 0.9 - index * 0.05,
+      })),
+      {
+        ...graph.edges[0]!,
+        id: "low-direct-strong-second",
+        source: "skill-07",
+        target: "skill-08",
+        score: 0.99,
+      },
+    ];
+
+    const view = buildSkillGraphView(graph, {
+      mode: "focus",
+      selectedId: "skill-00",
+      nodeLimit: 5,
+      linkLimit: 6,
+    });
+    const visibleIds = new Set(view.nodes.map(({ id }) => id));
+
+    expect(visibleIds.has("skill-08")).toBe(true);
+    expect(visibleIds.has("skill-07")).toBe(true);
+    expect(view.links.map(({ id }) => id)).toContain(
+      "low-direct-strong-second",
+    );
+  });
+
   it("keeps the full mode readable with a sparse 30-node backbone", () => {
     const view = buildSkillGraphView(denseGraph(40), { mode: "all" });
 
@@ -254,6 +337,28 @@ describe("buildSkillGraphView", () => {
     expect(view.nodes.find(({ id }) => id === "skill-09")).toMatchObject({
       recommended: false,
       recommendationRank: null,
+    });
+  });
+
+  it("matches owned and recommended nodes across case and common aliases", () => {
+    const graph = denseGraph(3);
+    graph.nodes = [
+      { ...graph.nodes[0]!, id: "Python", label: "Python" },
+      { ...graph.nodes[1]!, id: "Kubernetes", label: "Kubernetes" },
+      graph.nodes[2]!,
+    ];
+
+    const view = buildSkillGraphView(graph, {
+      mode: "overview",
+      ownedIds: ["python", "k8s"],
+      recommendedIds: ["KUBERNETES"],
+    });
+
+    expect(view.nodes.find(({ id }) => id === "Python")?.owned).toBe(true);
+    expect(view.nodes.find(({ id }) => id === "Kubernetes")).toMatchObject({
+      owned: true,
+      recommended: true,
+      recommendationRank: 1,
     });
   });
 

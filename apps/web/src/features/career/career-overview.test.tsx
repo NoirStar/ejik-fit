@@ -338,6 +338,29 @@ describe("CareerOverview", () => {
       .toEqual(["k8s"]);
   });
 
+  it("explains the 20-skill limit without replacing an existing skill", async () => {
+    const existing = Array.from(
+      { length: 20 },
+      (_, index) => `Skill ${index.toString().padStart(2, "0")}`,
+    );
+    writeOwnedSkills(existing);
+    render(
+      <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
+    );
+    await screen.findByText("Skill 00");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
+      target: { value: "새 기술" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "내 기술은 최대 20개까지 추가할 수 있습니다.",
+    );
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
+      .toEqual(existing);
+  });
+
   it("reacts to same-tab stack changes and requests an updated comparison", async () => {
     render(
       <CareerOverview

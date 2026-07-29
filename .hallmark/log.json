@@ -115,7 +115,7 @@
     },
     "interaction_contract": {
       "desktop": "drag, zoom, and select",
-      "mobile_default": "document scroll",
+      "mobile_default": "document scroll and node selection",
       "mobile_opt_in": "pan, pinch zoom, and node selection",
       "touch_target_floor_px": 44
     },
@@ -128,10 +128,12 @@
       "visual_quality": 4
     },
     "focused_browser_verification": {
-      "verified_widths": [320, 390, 1440],
+      "verified_widths": [320, 390, 1024, 1440],
       "horizontal_overflow_failures": 0,
       "mobile_navigation_overlap": false,
       "touch_scroll_before_opt_in": "pass",
+      "touch_selection_before_opt_in": "pass",
+      "landscape_touch_controls": "pass",
       "pinch_and_selection_after_opt_in": "pass",
       "reduced_motion": "pass",
       "home_passed_flows": 5,

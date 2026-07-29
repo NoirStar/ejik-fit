@@ -605,7 +605,11 @@ function CareerBriefing({
               <div className={styles.briefingRecommendation}>
                 <div className={styles.briefingRecommendationCopy}>
                   <span>다음에 준비할 기술</span>
-                  {readyInsight.nextSkill ? (
+                  {readyInsight.matchingPostingCount === 0 ? (
+                    <strong className={styles.briefingEmptyRecommendation}>
+                      현재 공개 공고에서 일치 항목을 찾지 못했습니다.
+                    </strong>
+                  ) : readyInsight.nextSkill ? (
                     <strong>{readyInsight.nextSkill.skillName}</strong>
                   ) : (
                     <strong className={styles.briefingEmptyRecommendation}>
@@ -613,7 +617,7 @@ function CareerBriefing({
                     </strong>
                   )}
                 </div>
-                {readyInsight.nextSkill && (
+                {readyInsight.matchingPostingCount > 0 && readyInsight.nextSkill && (
                   <Link
                     aria-label={`${readyInsight.nextSkill.skillName} 추천 근거 보기`}
                     className={styles.briefingEvidenceLink}
@@ -626,7 +630,9 @@ function CareerBriefing({
                   </Link>
                 )}
               </div>
-              {readyInsight.nextSkill ? (
+              {readyInsight.matchingPostingCount === 0 ? (
+                <p>내 기술을 더 추가하거나 커리어 기준을 조정해 보세요.</p>
+              ) : readyInsight.nextSkill ? (
                 <p>
                   관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 반복적으로 부족했습니다.
                 </p>

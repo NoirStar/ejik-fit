@@ -524,6 +524,33 @@ describe("HomeFeed", () => {
     })).toHaveAttribute("href", "/career");
   });
 
+  it("states clearly when no public posting matches the saved skills", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready(postings),
+      skillStats: ready(skillStats),
+      fit: ready({
+        coverage: {
+          matching_posting_count: 0,
+          strong_fit_posting_count: 0,
+        },
+        domain_branches: [],
+        recommended_next_skills: [],
+      }),
+      ownedSkills: ["Rust"],
+    });
+
+    render(<HomeFeed snapshot={snapshot} />);
+
+    const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
+    expect(within(briefing).getByText(
+      "현재 공개 공고에서 일치 항목을 찾지 못했습니다.",
+    )).toBeInTheDocument();
+    expect(within(briefing).getByText(
+      "내 기술을 더 추가하거나 커리어 기준을 조정해 보세요.",
+    )).toBeInTheDocument();
+    expect(within(briefing).getAllByText("0건")).toHaveLength(2);
+  });
+
   it("renders consecutive jobs as one recommendation group", () => {
     const groupedPostings: PostingListResponse = {
       total: 3,

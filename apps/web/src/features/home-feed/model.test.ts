@@ -9,6 +9,7 @@ import type {
 import {
   buildHomeFeedSnapshot,
   localCommunityPostToFeedItem,
+  postingSummaryToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
 import type { ResourceState } from "./resource-state";
@@ -157,6 +158,48 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       careerLabel: "경력 무관",
       employmentLabel: "정규직",
+    });
+  });
+
+  it("explains canonical matches when a saved skill uses a common alias", () => {
+    const item = postingSummaryToFeedItem(
+      {
+        ...postings.items[0],
+        required_skills: ["Kubernetes"],
+        preferred_skills: [],
+        unspecified_skills: [],
+      },
+      ["k8s"],
+    );
+
+    expect(item).toMatchObject({
+      matchedRequiredSkills: ["Kubernetes"],
+      missingRequiredSkills: [],
+      recommendationReason: "Kubernetes 필수 요건 일치",
+    });
+  });
+
+  it("uses the backend canonical identity for the full skill catalog", () => {
+    const snapshot = buildHomeFeedSnapshot({
+      postings: ready({
+        canonical_owned_skills: ["Go"],
+        total: 1,
+        items: [{
+          ...postings.items[0],
+          required_skills: ["Go"],
+          preferred_skills: [],
+          unspecified_skills: [],
+        }],
+      }),
+      skillStats: ready(skillStats),
+      fit: null,
+      ownedSkills: ["golang"],
+    });
+
+    expect(snapshot.ownedSkills).toEqual(["Go"]);
+    expect(snapshot.recommendedJobs[0]).toMatchObject({
+      matchedRequiredSkills: ["Go"],
+      recommendationReason: "Go 필수 요건 일치",
     });
   });
 

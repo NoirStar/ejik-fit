@@ -817,7 +817,28 @@
 }
 
 .touchInteractionToggle {
+  position: absolute;
+  top: 3.5rem;
+  right: 0.625rem;
+  z-index: 7;
   display: none;
+  min-height: var(--touch-target);
+  align-items: center;
+  padding: 0 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  color: var(--color-accent-strong);
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.touchInteractionToggle[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .touchHint {
@@ -832,6 +853,11 @@
   .touchHint {
     display: inline-flex !important;
   }
+
+  .touchInteractionToggle {
+    display: inline-flex;
+  }
+
 }
 
 .emptyState {
@@ -1255,31 +1281,6 @@
     touch-action: none;
   }
 
-  .touchInteractionToggle {
-    position: absolute;
-    top: 3.5rem;
-    right: 0.625rem;
-    z-index: 7;
-    display: inline-flex;
-    min-height: var(--touch-target);
-    align-items: center;
-    padding: 0 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--color-accent) 40%, var(--color-line));
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
-    color: var(--color-accent-strong);
-    font: inherit;
-    font-size: 0.6875rem;
-    font-weight: 780;
-    cursor: pointer;
-  }
-
-  .touchInteractionToggle[aria-pressed="true"] {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-  }
-
   .touchInteractionToggle:hover {
     border-color: var(--color-accent);
   }
@@ -1411,5 +1412,22 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media (pointer: coarse) {
+  .quickSkills a,
+  .ownedSkills button,
+  .resetButton,
+  .segmented button,
+  .depthSegmented button,
+  .checks label,
+  .domainFilters button,
+  .graphStatus button,
+  .errorState a,
+  .trustLine a,
+  .selectedActions button,
+  .selectedActions a {
+    min-height: var(--touch-target);
   }
 }

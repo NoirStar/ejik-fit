@@ -84,7 +84,7 @@ describe("home feed postings route", () => {
       owned_skills: ["C++"],
     });
     expect(getPostings).toHaveBeenNthCalledWith(2, {
-      offset: 20,
+      offset: 0,
       limit: 20,
     });
   });

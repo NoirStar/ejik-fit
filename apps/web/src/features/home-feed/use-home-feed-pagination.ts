@@ -36,6 +36,7 @@ export type HomeFeedJobRequest = {
   limit: number;
   offset: number;
   ownedSkills: string[];
+  personalize: boolean;
   signal: AbortSignal;
 };
 
@@ -117,6 +118,7 @@ async function defaultLoadJobs({
   limit,
   offset,
   ownedSkills,
+  personalize,
   signal,
 }: HomeFeedJobRequest): Promise<HomeFeedJobPage> {
   const params = new URLSearchParams({
@@ -124,17 +126,22 @@ async function defaultLoadJobs({
     offset: String(offset),
   });
   if (careerType) params.set("career_type", careerType);
-  for (const skill of ownedSkills) {
-    params.append("owned_skills", skill);
+  if (personalize) {
+    for (const skill of ownedSkills) {
+      params.append("owned_skills", skill);
+    }
   }
   const response = await fetch(`/api/home-feed/postings?${params}`, {
     signal,
   });
   if (!response.ok) throw new Error(LOAD_MORE_ERROR);
   const page = normalizePostingList(await response.json());
+  const displayOwnedSkills = page.canonical_owned_skills?.length
+    ? page.canonical_owned_skills
+    : ownedSkills;
   return {
     items: page.items.map((posting) =>
-      postingSummaryToFeedItem(posting, ownedSkills),
+      postingSummaryToFeedItem(posting, displayOwnedSkills),
     ),
     personalizationFallback:
       response.headers.get("x-ejik-personalization") === "fallback",
@@ -357,9 +364,8 @@ export function useHomeFeedPagination(
             careerType: activeOptions.careerType ?? "",
             limit: HOME_FEED_PAGE_SIZE,
             offset: current.jobOffset,
-            ownedSkills: current.personalizationFallback
-              ? []
-              : activeOptions.ownedSkills,
+            ownedSkills: activeOptions.ownedSkills,
+            personalize: !current.personalizationFallback,
             signal: controller.signal,
           })
             .then((page) => ({ page, error: false as const }))
@@ -412,8 +418,14 @@ export function useHomeFeedPagination(
         const seenIds = new Set(value.seenIds);
         for (const item of page.items) seenIds.add(item.id);
 
+        const switchedToGeneric = Boolean(
+          jobResult.page?.personalizationFallback &&
+          !value.personalizationFallback,
+        );
         const nextJobOffset = jobResult.page
-          ? value.jobOffset + jobResult.page.items.length
+          ? switchedToGeneric
+            ? jobResult.page.items.length
+            : value.jobOffset + jobResult.page.items.length
           : value.jobOffset;
         const nextJobTotal = jobResult.page?.total ?? value.jobTotal;
         const communityEnded = communityResult.page

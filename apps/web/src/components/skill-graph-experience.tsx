@@ -8,8 +8,19 @@ import Link from "next/link";
 import { buildSearchScopeHref } from "@/features/search/model";
 import type { CareerCondition } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
-import { readOwnedSkills, writeOwnedSkills } from "@/lib/owned-skills";
+import {
+  MAX_OWNED_SKILL_LENGTH,
+  MAX_OWNED_SKILLS,
+  readOwnedSkills,
+  subscribeOwnedSkills,
+  writeOwnedSkills,
+} from "@/lib/owned-skills";
 import { buildSkillGraphHref } from "@/lib/product-routes";
+import {
+  resolvedSkillKey,
+  resolveSkillInput,
+  skillNameKey,
+} from "@/lib/skill-catalog";
 import { summarizeGraph } from "@/lib/skill-graph";
 import {
   skillGraphLinkColor,
@@ -22,6 +33,7 @@ import type {
 } from "@/lib/skill-graph-view";
 import type {
   FitAnalyzeResponse,
+  SkillCatalogItem,
   SkillGraphEvidence,
   SkillGraphEvidenceResponse,
   SkillGraphNode,
@@ -51,6 +63,7 @@ type SkillGraphExperienceProps = {
   initialDepth?: 1 | 2;
   initialGraph: SkillGraphResponse;
   initialOwnedSkills: string[];
+  initialSkillCatalog?: readonly SkillCatalogItem[];
   loadFailed?: boolean;
   retryHref?: string;
 };
@@ -85,6 +98,8 @@ const GRAPH_STATES = {
   fitLoading: "내 기술과 공고를 비교하고 있습니다.",
   fitError: "내 기술을 비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
 };
+
+const EMPTY_SKILL_CATALOG: readonly SkillCatalogItem[] = [];
 
 
 const DOMAIN_LABELS: Record<string, string> = {
@@ -224,12 +239,51 @@ function isSkillGraphResponse(value: unknown): value is SkillGraphResponse {
   );
 }
 
+function buildGraphCatalog(
+  catalog: readonly SkillCatalogItem[],
+  nodes: readonly SkillGraphNode[],
+) {
+  const byName = new Map(
+    catalog.map((item) => [skillNameKey(item.name), item]),
+  );
+  nodes.forEach((node) => {
+    const key = skillNameKey(node.id);
+    if (!byName.has(key)) {
+      byName.set(key, {
+        name: node.id,
+        category: node.category,
+        kind: node.kind,
+        domains: node.domains,
+      });
+    }
+  });
+  return [...byName.values()];
+}
+
+function canonicalizeOwnedSkills(
+  skills: readonly string[],
+  catalog: readonly SkillCatalogItem[],
+) {
+  const byIdentity = new Map<string, string>();
+  skills.forEach((skill) => {
+    const canonical = resolveSkillInput(skill, catalog);
+    const key = resolvedSkillKey(canonical, catalog);
+    if (key && !byIdentity.has(key)) {
+      byIdentity.set(key, canonical);
+    }
+  });
+  return [...byIdentity.values()].sort((left, right) =>
+    left.localeCompare(right, "ko"),
+  );
+}
+
 
 export function SkillGraphExperience({
   careerType,
   initialDepth = 1,
   initialGraph,
   initialOwnedSkills,
+  initialSkillCatalog = EMPTY_SKILL_CATALOG,
   loadFailed = false,
   retryHref = "/skills/graph",
 }: SkillGraphExperienceProps) {
@@ -237,9 +291,15 @@ export function SkillGraphExperience({
     () => chooseInitialSelection(initialGraph),
     [initialGraph],
   );
+  const startingCatalog = useMemo(
+    () => buildGraphCatalog(initialSkillCatalog, initialGraph.nodes),
+    [initialGraph.nodes, initialSkillCatalog],
+  );
   const [graph, setGraph] = useState(initialGraph);
   const [depth, setDepth] = useState<1 | 2>(initialDepth);
-  const [ownedSkills, setOwnedSkills] = useState(initialOwnedSkills);
+  const [ownedSkills, setOwnedSkills] = useState(() =>
+    canonicalizeOwnedSkills(initialOwnedSkills, startingCatalog),
+  );
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
   const [forceReady, setForceReady] = useState(false);
@@ -269,6 +329,7 @@ export function SkillGraphExperience({
   const careerTypeRef = useRef(careerType);
   const depthRef = useRef<1 | 2>(depth);
   const ownedSkillsRef = useRef(ownedSkills);
+  const graphCatalogRef = useRef(startingCatalog);
   selectedIdRef.current = selectedId;
   careerTypeRef.current = careerType;
   depthRef.current = depth;
@@ -326,15 +387,22 @@ export function SkillGraphExperience({
       topologyCache.current.set(cacheKey, payload);
       setGraph(payload);
       if (seed) {
+        const requestedSeedKey = resolvedSkillKey(
+          seed,
+          graphCatalogRef.current,
+        );
         const canonicalSeed = payload.nodes.find(
           (node) =>
-            node.id.toLocaleLowerCase("en-US") ===
-            seed.toLocaleLowerCase("en-US"),
+            resolvedSkillKey(node.id, graphCatalogRef.current) ===
+            requestedSeedKey,
         )?.id;
         if (
           canonicalSeed &&
-          selectedIdRef.current?.toLocaleLowerCase("en-US") ===
-            seed.toLocaleLowerCase("en-US")
+          selectedIdRef.current &&
+          resolvedSkillKey(
+            selectedIdRef.current,
+            graphCatalogRef.current,
+          ) === requestedSeedKey
         ) {
           selectedIdRef.current = canonicalSeed;
           setSelectedId(canonicalSeed);
@@ -362,12 +430,17 @@ export function SkillGraphExperience({
     () => new Map(graph.nodes.map((node) => [node.id, node])),
     [graph.nodes],
   );
+  const graphCatalog = useMemo(
+    () => buildGraphCatalog(initialSkillCatalog, graph.nodes),
+    [graph.nodes, initialSkillCatalog],
+  );
+  graphCatalogRef.current = graphCatalog;
   const selected = selectedId ? graphNodeMap.get(selectedId) ?? null : null;
   const selectedOwned = selected
     ? ownedSkills.some(
         (skill) =>
-          skill.toLocaleLowerCase("en-US") ===
-          selected.id.toLocaleLowerCase("en-US"),
+          resolvedSkillKey(skill, graphCatalog) ===
+          resolvedSkillKey(selected.id, graphCatalog),
       )
     : false;
   const allDomains = useMemo(
@@ -424,15 +497,19 @@ export function SkillGraphExperience({
   );
   const relatedEvidence = evidence.items;
   const strongestConnections = useMemo(() => {
-    const focusIds = new Set(selectedId ? [selectedId] : ownedSkills);
+    const focusIds = new Set(
+      (selectedId ? [selectedId] : ownedSkills).map(skillNameKey),
+    );
     return graph.edges
       .filter(
         (edge) =>
-          focusIds.has(edge.source) ||
-          focusIds.has(edge.target),
+          focusIds.has(skillNameKey(edge.source)) ||
+          focusIds.has(skillNameKey(edge.target)),
       )
       .map((edge) => {
-        const otherId = focusIds.has(edge.source) ? edge.target : edge.source;
+        const otherId = focusIds.has(skillNameKey(edge.source))
+          ? edge.target
+          : edge.source;
         return {
           edge,
           node: graphNodeMap.get(otherId),
@@ -492,10 +569,16 @@ export function SkillGraphExperience({
   );
 
   useEffect(() => {
+    const syncOwnedSkills = (skills: string[]) => {
+      setOwnedSkills(
+        canonicalizeOwnedSkills(skills, graphCatalogRef.current),
+      );
+    };
     const stored = readOwnedSkills();
     if (stored.length > 0) {
-      setOwnedSkills(stored);
+      syncOwnedSkills(stored);
     }
+    return subscribeOwnedSkills(syncOwnedSkills);
   }, []);
 
   useEffect(() => {
@@ -538,12 +621,14 @@ export function SkillGraphExperience({
 
   useEffect(() => {
     function restoreSelectionFromHistory() {
-      const requested = new URL(window.location.href).searchParams
+      const requestedInput = new URL(window.location.href).searchParams
         .get("seed")
         ?.trim() || null;
       const requestedDepth = new URL(window.location.href).searchParams
         .get("depth") === "2" ? 2 : 1;
-      const nextSelection = requested;
+      const nextSelection = requestedInput
+        ? resolveSkillInput(requestedInput, graphCatalogRef.current)
+        : null;
       depthRef.current = requestedDepth;
       setDepth(requestedDepth);
       selectedIdRef.current = nextSelection;
@@ -724,17 +809,46 @@ export function SkillGraphExperience({
   );
 
   function addSkill(nextSkill = input.trim()) {
-    const next = nextSkill.trim();
+    const next = resolveSkillInput(nextSkill, graphCatalog);
     if (!next) {
       return;
     }
-    setOwnedSkills((current) => writeOwnedSkills([...current, next]));
+    if (next.length > MAX_OWNED_SKILL_LENGTH) {
+      setAnnouncement(
+        `기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`,
+      );
+      return;
+    }
+    const nextKey = resolvedSkillKey(next, graphCatalog);
+    if (
+      ownedSkills.some(
+        (skill) => resolvedSkillKey(skill, graphCatalog) === nextKey,
+      )
+    ) {
+      setInput("");
+      setAnnouncement(`${next} 기술은 이미 현재 목록에 있습니다.`);
+      return;
+    }
+    if (ownedSkills.length >= MAX_OWNED_SKILLS) {
+      setAnnouncement(
+        `내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`,
+      );
+      return;
+    }
+    const saved = writeOwnedSkills([...ownedSkills, next]);
+    setOwnedSkills(canonicalizeOwnedSkills(saved, graphCatalog));
     setInput("");
     setAnnouncement(`${next} 기술을 현재 목록에 추가했습니다.`);
   }
 
   function removeSkill(skill: string) {
-    setOwnedSkills((current) => writeOwnedSkills(current.filter((item) => item !== skill)));
+    const targetKey = resolvedSkillKey(skill, graphCatalog);
+    const saved = writeOwnedSkills(
+      ownedSkills.filter(
+        (item) => resolvedSkillKey(item, graphCatalog) !== targetKey,
+      ),
+    );
+    setOwnedSkills(canonicalizeOwnedSkills(saved, graphCatalog));
     setAnnouncement(`${skill} 기술을 현재 목록에서 제거했습니다.`);
   }
 
@@ -921,6 +1035,7 @@ export function SkillGraphExperience({
                     <div>
                       <input
                         id="owned-skill"
+                        maxLength={MAX_OWNED_SKILL_LENGTH}
                         onChange={(event) => setInput(event.target.value)}
                         placeholder="예: ROS2"
                         value={input}

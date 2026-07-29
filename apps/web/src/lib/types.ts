@@ -46,6 +46,7 @@ export type PostingDetail = PostingSummary & {
 export type PostingListResponse = {
   items: PostingSummary[];
   total: number;
+  canonical_owned_skills?: string[];
 };
 
 export type HiringCompanyActivity = {
@@ -88,6 +89,7 @@ export type SkillCatalogItem = {
   category: string;
   kind: string;
   domains: string[];
+  aliases?: string[];
 };
 
 export type SkillCatalogResponse = {

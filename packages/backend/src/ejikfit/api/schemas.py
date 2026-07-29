@@ -53,6 +53,7 @@ class PostingDetail(PostingSummary):
 class PostingListResponse(BaseModel):
     items: list[PostingSummary]
     total: int
+    canonical_owned_skills: list[str] = Field(default_factory=list)
 
 
 class HiringCompanyActivity(BaseModel):
@@ -95,6 +96,7 @@ class SkillCatalogItem(BaseModel):
     category: str
     kind: str
     domains: list[str]
+    aliases: list[str] = Field(default_factory=list)
 
 
 class SkillCatalogResponse(BaseModel):

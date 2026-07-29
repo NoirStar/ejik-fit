@@ -64,7 +64,7 @@ export async function GET(request: Request) {
   } catch {
     if (ownedSkills.length > 0) {
       try {
-        const postings = await getPostings(baseFilters);
+        const postings = await getPostings({ ...baseFilters, offset: 0 });
         return Response.json(postings, {
           headers: {
             "Cache-Control": "private, no-store",

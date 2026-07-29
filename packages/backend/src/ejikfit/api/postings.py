@@ -613,7 +613,11 @@ def create_postings_router(reader: PostingReader) -> APIRouter:
             career_type=career_type,
             category=category,
         )
-        return {"items": items, "total": total}
+        return {
+            "items": items,
+            "total": total,
+            "canonical_owned_skills": canonical_owned_skills,
+        }
 
     @router.get("/{posting_id}", response_model=PostingDetail)
     def get_posting(posting_id: str) -> dict:

@@ -70,4 +70,21 @@ describe("home context URL contract", () => {
       },
     });
   });
+
+  it("bounds shared URL skills before SSR or serialization", () => {
+    const skills = Array.from({ length: 21 }, (_, index) => `Skill ${index}`);
+    const params = new URLSearchParams();
+    skills.forEach((skill) => params.append("owned_skills", skill));
+
+    expect(homeContextFromUrlSearchParams(params).ownedSkills).toHaveLength(20);
+    expect(
+      new URL(
+        homeContextToDashboardHref({
+          ownedSkills: skills,
+          careerPreferences: { careerCondition: "", targetDomain: "" },
+        }),
+        "https://example.com",
+      ).searchParams.getAll("owned_skills"),
+    ).toHaveLength(20);
+  });
 });

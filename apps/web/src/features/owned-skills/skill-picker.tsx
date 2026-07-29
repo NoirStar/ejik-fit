@@ -15,7 +15,13 @@ import {
   normalizeSkillCategory,
   skillCategoryLabel,
 } from "@/lib/skill-categories";
-import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
+import {
+  resolvedSkillKey,
+  resolveSkillInput,
+  SKILL_ALIASES,
+  skillNameKey,
+} from "@/lib/skill-catalog";
+import { MAX_OWNED_SKILL_LENGTH } from "@/lib/owned-skills";
 import type { SkillCatalogItem } from "@/lib/types";
 
 import styles from "./skill-picker.module.css";
@@ -39,23 +45,7 @@ type PickerRow =
 
 const MAX_SUGGESTIONS = 6;
 
-const SKILL_ALIASES: Readonly<Record<string, readonly string[]>> = {
-  "C#": ["csharp", "씨샵"],
-  "C++": ["cpp", "씨플플"],
-  JavaScript: ["js", "자바스크립트"],
-  Kubernetes: ["k8s", "쿠버네티스"],
-  "Node.js": ["node", "nodejs", "노드"],
-  PostgreSQL: ["postgres", "포스트그레스"],
-  React: ["reactjs", "리액트"],
-  Spring: ["스프링"],
-  TypeScript: ["ts", "타입스크립트"],
-};
-
-const ALIAS_TARGETS = new Map(
-  Object.entries(SKILL_ALIASES).flatMap(([canonicalName, aliases]) =>
-    aliases.map((alias) => [skillNameKey(alias), canonicalName] as const),
-  ),
-);
+export { resolvedSkillKey, resolveSkillInput } from "@/lib/skill-catalog";
 
 function suggestionRank(value: string, query: string) {
   if (value === query) return 0;
@@ -69,6 +59,7 @@ function suggestionRank(value: string, query: string) {
 function itemRank(item: SkillCatalogItem, query: string) {
   const searchableValues = [
     skillNameKey(item.name),
+    ...(item.aliases ?? []).map(skillNameKey),
     ...(SKILL_ALIASES[item.name] ?? []).map(skillNameKey),
   ];
   return Math.min(...searchableValues.map((value) => suggestionRank(value, query)));
@@ -100,33 +91,6 @@ export function filterSkillSuggestions(
     )
     .slice(0, Math.max(0, limit))
     .map(({ item }) => item);
-}
-
-export function resolveSkillInput(
-  value: string,
-  catalog: readonly SkillCatalogItem[],
-) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-
-  const normalized = skillNameKey(trimmed);
-  const aliasTarget = ALIAS_TARGETS.get(normalized);
-  if (aliasTarget) {
-    return (
-      catalog.find(
-        (item) => skillNameKey(item.name) === skillNameKey(aliasTarget),
-      )?.name ?? aliasTarget
-    );
-  }
-
-  return canonicalSkillName(trimmed, [...catalog]);
-}
-
-export function resolvedSkillKey(
-  value: string,
-  catalog: readonly SkillCatalogItem[],
-) {
-  return skillNameKey(resolveSkillInput(value, catalog));
 }
 
 function catalogHint(status: CatalogStatus) {
@@ -259,6 +223,7 @@ export function SkillPicker({
             autoComplete="off"
             className={styles.input}
             id={id}
+            maxLength={MAX_OWNED_SKILL_LENGTH}
             onBlur={closeResults}
             onChange={(event) => {
               onValueChange(event.target.value);

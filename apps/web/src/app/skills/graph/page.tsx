@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
-import { getSkillGraph } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 import { normalizeCareerPreferences } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
@@ -73,6 +73,9 @@ export default async function SkillGraphPage({
   const depth = graphDepth(resolvedSearchParams.depth);
   let graph = emptyGraph();
   let failed = false;
+  const catalogPromise = getSkillCatalog()
+    .then((catalog) => catalog.items)
+    .catch(() => []);
 
   try {
     graph = await getSkillGraph({
@@ -85,10 +88,12 @@ export default async function SkillGraphPage({
   } catch {
     failed = true;
   }
+  const catalog = await catalogPromise;
 
   return (
     <SkillGraphExperience
       initialGraph={graph}
+      initialSkillCatalog={catalog}
       initialDepth={depth}
       initialOwnedSkills={ownedSkills}
       careerType={careerType || undefined}

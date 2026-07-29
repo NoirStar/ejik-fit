@@ -173,6 +173,7 @@ def test_list_postings_canonicalizes_saved_skills_and_disables_shared_cache() ->
     assert response.status_code == 200
     assert response.headers["cache-control"] == "private, no-store"
     assert reader.calls[0]["owned_skills"] == ["C++", "Kubernetes"]
+    assert response.json()["canonical_owned_skills"] == ["C++", "Kubernetes"]
     assert "owned_skills" not in reader.count_calls[0]
 
 

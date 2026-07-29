@@ -8,7 +8,12 @@ from sqlalchemy.orm import Session
 
 from ejikfit.db import SessionLocal
 from ejikfit.models import JobPosting, PostingSkill, PostingStatus
-from ejikfit.skill_catalog import SKILLS, skill_domains, skill_kind
+from ejikfit.skill_catalog import (
+    SKILLS,
+    skill_domains,
+    skill_input_aliases,
+    skill_kind,
+)
 from ejikfit.skill_extraction import CONFIRMED_CONFIDENCE
 
 from .schemas import (
@@ -183,6 +188,7 @@ def create_skills_router(
                 "category": skill.category,
                 "kind": skill_kind(skill.canonical),
                 "domains": list(skill_domains(skill.canonical)),
+                "aliases": list(skill_input_aliases(skill.canonical)),
             }
             for skill in sorted(SKILLS, key=lambda item: item.canonical.casefold())
         ]

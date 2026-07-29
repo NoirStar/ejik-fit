@@ -39,6 +39,47 @@ describe("owned skill storage", () => {
     expect(readOwnedSkills(fake)).toEqual(["C++", "Python"]);
   });
 
+  it("dedupes case and common aliases with one shared identity", () => {
+    const fake = storage();
+
+    expect(
+      writeOwnedSkills(
+        ["python", "Python", "k8s", "Kubernetes", "쿠버네티스"],
+        fake,
+      ),
+    ).toEqual(["k8s", "python"]);
+    expect(removeOwnedSkill("Kubernetes", fake)).toEqual(["python"]);
+  });
+
+  it("keeps persisted skills within the personalization limit", () => {
+    const fake = storage();
+    const saved = writeOwnedSkills(
+      Array.from({ length: 24 }, (_, index) => `skill-${index}`),
+      fake,
+    );
+
+    expect(saved).toHaveLength(20);
+    expect(readOwnedSkills(fake)).toHaveLength(20);
+  });
+
+  it("does not evict an existing skill when a full list receives another", () => {
+    const fake = storage();
+    const existing = Array.from(
+      { length: 20 },
+      (_, index) => `skill-${index.toString().padStart(2, "0")}`,
+    );
+    writeOwnedSkills(existing, fake);
+
+    expect(addOwnedSkill("AAA", fake)).toEqual(existing);
+    expect(readOwnedSkills(fake)).toEqual(existing);
+  });
+
+  it("drops an invalid overlong value from persisted state", () => {
+    const fake = storage();
+
+    expect(writeOwnedSkills(["C++", "x".repeat(101)], fake)).toEqual(["C++"]);
+  });
+
   it("ignores invalid stored json", () => {
     const fake = storage();
     fake.setItem("ejik-fit:owned-skills", "{broken");

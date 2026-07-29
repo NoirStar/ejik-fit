@@ -12,6 +12,7 @@ import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
+import { skillIdentityKey } from "@/lib/skill-catalog";
 import type { CommunityPost } from "@/lib/community-contract";
 import type {
   FitAnalyzeResponse,
@@ -123,10 +124,6 @@ function readyData<T>(resource: ResourceState<T>): T | null {
   return resource.status === "ready" ? resource.data : null;
 }
 
-function normalize(value: string) {
-  return value.trim().toLocaleLowerCase("en-US");
-}
-
 function unique(values: string[]) {
   return Array.from(new Set(values));
 }
@@ -163,16 +160,16 @@ function skillMatches(
 ) {
   return {
     matchedRequiredSkills: required.filter((skill) =>
-      ownedSet.has(normalize(skill)),
+      ownedSet.has(skillIdentityKey(skill)),
     ),
     missingRequiredSkills: required.filter(
-      (skill) => !ownedSet.has(normalize(skill)),
+      (skill) => !ownedSet.has(skillIdentityKey(skill)),
     ),
     matchedPreferredSkills: preferred.filter((skill) =>
-      ownedSet.has(normalize(skill)),
+      ownedSet.has(skillIdentityKey(skill)),
     ),
     matchedUnspecifiedSkills: unspecified.filter((skill) =>
-      ownedSet.has(normalize(skill)),
+      ownedSet.has(skillIdentityKey(skill)),
     ),
   };
 }
@@ -203,7 +200,7 @@ export function postingSummaryToFeedItem(
   posting: PostingSummary,
   ownedSkills: string[],
 ): RecommendedJobFeedItem {
-  const ownedSet = new Set(ownedSkills.map(normalize));
+  const ownedSet = new Set(ownedSkills.map(skillIdentityKey));
   const required = posting.required_skills ?? [];
   const preferred = posting.preferred_skills ?? [];
   const unspecified = posting.unspecified_skills ?? [];
@@ -259,7 +256,7 @@ function buildMarketInsights(
   skillDemand: SkillDemandSummary[],
 ): MarketInsightFeedItem[] {
   return skillDemand.slice(0, 2).map((skill) => ({
-    id: `market-${normalize(skill.skillName).replaceAll(" ", "-")}`,
+    id: `market-${skillIdentityKey(skill.skillName).replaceAll(" ", "-")}`,
     type: "market_insight",
     skillName: skill.skillName,
     title: `${skill.skillName} 요구 공고`,
@@ -355,7 +352,16 @@ export function buildHomeFeedSnapshot(
 ): HomeFeedSnapshot {
   const postings = readyData(input.postings);
   const skillStats = readyData(input.skillStats);
-  const ownedSkills = unique(input.ownedSkills.map((skill) => skill.trim()).filter(Boolean));
+  const requestedOwnedSkills = unique(
+    input.ownedSkills.map((skill) => skill.trim()).filter(Boolean),
+  );
+  const canonicalOwnedSkills = postings?.canonical_owned_skills ?? [];
+  const ownedSkills = unique(
+    (canonicalOwnedSkills.length > 0
+      ? canonicalOwnedSkills
+      : requestedOwnedSkills
+    ).map((skill) => skill.trim()).filter(Boolean),
+  );
   const recommendedJobs = buildJobs(postings, ownedSkills);
   const skillDemand = buildSkillDemand(skillStats);
   const marketInsights = buildMarketInsights(skillDemand);

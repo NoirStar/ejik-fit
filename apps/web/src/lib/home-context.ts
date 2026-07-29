@@ -3,7 +3,6 @@ import {
   type CareerPreferences,
 } from "./career-preferences";
 import {
-  normalizeOwnedSkills,
   ownedSkillsFromSearchParams,
 } from "./owned-skills";
 
@@ -40,11 +39,9 @@ export function homeContextFromUrlSearchParams(
   searchParams: UrlSearchParamsReader,
 ): HomeContext {
   return {
-    ownedSkills: normalizeOwnedSkills(
-      searchParams
-        .getAll("owned_skills")
-        .flatMap((value) => value.split(",")),
-    ),
+    ownedSkills: ownedSkillsFromSearchParams({
+      owned_skills: searchParams.getAll("owned_skills"),
+    }),
     careerPreferences: normalizeCareerPreferences({
       careerCondition: searchParams.get("career_type"),
       targetDomain: searchParams.get("target_domain"),
@@ -70,7 +67,9 @@ export function homeContextToDashboardHref(
   params.delete("career_type");
   params.delete("target_domain");
 
-  for (const skill of normalizeOwnedSkills(context.ownedSkills)) {
+  for (const skill of ownedSkillsFromSearchParams({
+    owned_skills: context.ownedSkills,
+  })) {
     params.append("owned_skills", skill);
   }
   const preferences = normalizeCareerPreferences(context.careerPreferences);

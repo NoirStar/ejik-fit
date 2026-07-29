@@ -14,6 +14,10 @@ import type { GraphData, NodeObject } from "force-graph";
 import { formatDomainLabel } from "@/features/career/model";
 import { skillGraphAnimationProfile } from "@/lib/skill-graph-animation";
 import {
+  skillGraphTopologySignature,
+  skillGraphVisualSignature,
+} from "@/lib/skill-graph-canvas-data";
+import {
   SKILL_GRAPH_LABEL_FONT_FAMILY,
   skillGraphLinkColor,
   skillGraphLinkWidth,
@@ -418,18 +422,17 @@ export function SkillGraphForceCanvas({
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
-  const graphDataSignature = JSON.stringify({
-    links: data.links,
-    nodes: data.nodes,
-  });
-  const stableData = useMemo(() => data, [graphDataSignature]);
+  const topologySignature = skillGraphTopologySignature(data);
+  const visualSignature = skillGraphVisualSignature(data);
+  const stableData = useMemo(() => data, [topologySignature]);
+  const stableVisualNodes = useMemo(() => data.nodes, [visualSignature]);
   const adjacency = useMemo(
-    () => buildSkillGraphAdjacency(data.links),
-    [data.links],
+    () => buildSkillGraphAdjacency(stableData.links),
+    [stableData.links],
   );
   const labelEligibleIds = useMemo(
     () => new Set(
-      [...data.nodes]
+      [...stableData.nodes]
         .sort(
           (left, right) =>
             right.demandCount - left.demandCount ||
@@ -438,7 +441,7 @@ export function SkillGraphForceCanvas({
         .slice(0, MAX_VISIBLE_LABELS)
         .map(({ id }) => id),
     ),
-    [data.nodes],
+    [stableData.nodes],
   );
   const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
   const highlightRef = useRef<HighlightState>(emptyHighlight());
@@ -475,10 +478,7 @@ export function SkillGraphForceCanvas({
     let resizeFrame = 0;
 
     function selectGraphNode(node: SkillForceNode, directTouch = false) {
-      if (
-        node.kind !== "skill" ||
-        (touchInputRef.current && !touchInteractionEnabledRef.current)
-      ) {
+      if (node.kind !== "skill") {
         return;
       }
       const nodeId = String(node.id);
@@ -579,7 +579,7 @@ export function SkillGraphForceCanvas({
     }
 
     function startTouch(event: TouchEvent) {
-      if (!graphRef.current || !touchInteractionEnabledRef.current) {
+      if (!graphRef.current) {
         return;
       }
       if (
@@ -595,7 +595,11 @@ export function SkillGraphForceCanvas({
         return;
       }
       touchTapStart = null;
-      if (event.touches.length !== 2 || !touchesStartInsideGraph(event)) {
+      if (
+        !touchInteractionEnabledRef.current ||
+        event.touches.length !== 2 ||
+        !touchesStartInsideGraph(event)
+      ) {
         return;
       }
       pinchStart = {
@@ -605,9 +609,6 @@ export function SkillGraphForceCanvas({
     }
 
     function moveTouch(event: TouchEvent) {
-      if (!touchInteractionEnabledRef.current) {
-        return;
-      }
       if (event.touches.length === 1 && touchTapStart) {
         const touch = event.touches.item(0);
         if (
@@ -621,7 +622,12 @@ export function SkillGraphForceCanvas({
         }
         return;
       }
-      if (event.touches.length !== 2 || !pinchStart || !graphRef.current) {
+      if (
+        !touchInteractionEnabledRef.current ||
+        event.touches.length !== 2 ||
+        !pinchStart ||
+        !graphRef.current
+      ) {
         return;
       }
       const distance = touchDistance(event);
@@ -636,9 +642,6 @@ export function SkillGraphForceCanvas({
     }
 
     function endTouch(event: TouchEvent) {
-      if (!touchInteractionEnabledRef.current) {
-        return;
-      }
       if (event.touches.length < 2) {
         pinchStart = null;
       }
@@ -704,9 +707,7 @@ export function SkillGraphForceCanvas({
       reduceMotionRef.current = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
-      touchInputRef.current =
-        window.navigator.maxTouchPoints > 0 ||
-        window.matchMedia("(pointer: coarse)").matches;
+      touchInputRef.current = window.matchMedia("(pointer: coarse)").matches;
 
       const { default: ForceGraphCtor } = await import("force-graph");
       if (cancelled || !containerRef.current) {
@@ -900,6 +901,24 @@ export function SkillGraphForceCanvas({
       window.clearTimeout(initialFitTimer);
     };
   }, [display.animate, forces, mounted, onReadyChange, stableData]);
+
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph) {
+      return;
+    }
+    const visualById = new Map(
+      stableVisualNodes.map((node) => [node.id, node] as const),
+    );
+    graph.graphData().nodes.forEach((node) => {
+      const visual = visualById.get(String(node.id));
+      if (!visual) return;
+      node.owned = visual.owned;
+      node.recommended = visual.recommended;
+      node.recommendationRank = visual.recommendationRank;
+    });
+    requestGraphRedraw(graph);
+  }, [mounted, stableVisualNodes]);
 
   useEffect(() => {
     const graph = graphRef.current;
