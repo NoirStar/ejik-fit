@@ -341,7 +341,6 @@
 .settingSegmented button[data-active="true"] {
   background: var(--color-surface);
   color: var(--color-accent-strong);
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--color-text) 9%, transparent);
 }
 
 .skillChips {

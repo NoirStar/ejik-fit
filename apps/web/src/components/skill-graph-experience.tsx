@@ -22,6 +22,7 @@ import {
   skillNameKey,
 } from "@/lib/skill-catalog";
 import { summarizeGraph } from "@/lib/skill-graph";
+import { skillGraphTopologySignature } from "@/lib/skill-graph-canvas-data";
 import {
   skillGraphLinkColor,
   skillGraphLinkWidth,
@@ -443,6 +444,10 @@ export function SkillGraphExperience({
     () => positionNodes(viewData.nodes.filter((node) => node.kind === "skill")),
     [viewData.nodes],
   );
+  const viewTopologySignature = useMemo(
+    () => skillGraphTopologySignature(viewData),
+    [viewData],
+  );
   const positionedNodeMap = useMemo(
     () => new Map(positionedNodes.map((node) => [node.id, node])),
     [positionedNodes],
@@ -555,7 +560,7 @@ export function SkillGraphExperience({
 
   useEffect(() => {
     setPathEmphasisEnabled(false);
-  }, [graph, ownedSkills, selectedId]);
+  }, [ownedSkills, selectedId, viewTopologySignature]);
 
   useEffect(() => {
     topologyRequestRef.current?.abort();

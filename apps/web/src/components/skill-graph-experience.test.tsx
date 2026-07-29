@@ -321,6 +321,14 @@ describe("SkillGraphExperience", () => {
     expect(fetchMock.mock.calls.filter(([input]) =>
       String(input).startsWith("/skills/graph/data"),
     )).toHaveLength(topologyCallsBefore);
+
+    fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
+    expect(screen.queryByRole("button", { name: "경로 강조 끄기" }))
+      .not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
+
+    expect(screen.getByRole("button", { name: "그래프에서 경로 보기" }))
+      .toHaveAttribute("aria-pressed", "false");
   });
 
   it("uses catalog aliases when marking and removing an owned graph node", () => {
