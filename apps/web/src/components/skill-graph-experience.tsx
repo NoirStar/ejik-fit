@@ -146,6 +146,8 @@ const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
 
 const DEFAULT_FORCES: SkillGraphForceSettings = {
   center: 0.04,
+  cluster: 0.075,
+  clusterSpread: 210,
   link: 0.28,
   linkDistance: 82,
   repel: 240,

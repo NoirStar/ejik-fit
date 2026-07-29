@@ -14,6 +14,8 @@ export type GraphRendererDisplaySettings = {
 
 export type GraphRendererForceSettings = {
   center: number;
+  cluster: number;
+  clusterSpread: number;
   link: number;
   linkDistance: number;
   repel: number;

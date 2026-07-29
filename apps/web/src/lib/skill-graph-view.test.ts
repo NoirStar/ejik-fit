@@ -326,7 +326,7 @@ describe("buildSkillGraphView", () => {
     expect(view.links.length).toBeLessThanOrEqual(60);
   });
 
-  it("uses compressed demand size and relationship score for thin links", () => {
+  it("makes demand differences visible while keeping relationship links thin", () => {
     const graph = denseGraph();
     graph.edges = graph.edges.map((edge, index) => ({
       ...edge,
@@ -338,8 +338,9 @@ describe("buildSkillGraphView", () => {
     const sizes = view.nodes.map(({ val }) => val);
     const widths = view.links.map(({ value }) => value);
 
-    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(4.5);
-    expect(Math.max(...sizes)).toBeLessThanOrEqual(9);
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(4);
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(12.5);
+    expect(Math.max(...sizes) - Math.min(...sizes)).toBeGreaterThan(4);
     expect(Math.min(...widths)).toBeGreaterThanOrEqual(0.6);
     expect(Math.max(...widths)).toBeLessThanOrEqual(1);
     expect(view.links.find(({ score }) => score === 1)?.value).toBe(1);

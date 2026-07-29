@@ -143,7 +143,7 @@ function compareEdges(left: SkillGraphEdge, right: SkillGraphEdge) {
 function skillNodeValue(node: SkillGraphNode, maximumDemand: number) {
   const denominator = Math.log1p(Math.max(1, maximumDemand));
   const ratio = Math.log1p(safeCount(node.demand_count)) / denominator;
-  return clamp(4.5 + ratio * 4.5, 4.5, 9);
+  return clamp(3.8 + ratio * 8.7, 4, 12.5);
 }
 
 
