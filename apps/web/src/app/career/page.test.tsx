@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getSkillCatalog, getSkillGraph, getSkillStats } from "@/lib/api";
@@ -94,13 +94,12 @@ describe("CareerPage", () => {
     expect(
       screen.getByRole("button", { name: "Kubernetes 빠르게 추가, 공개 공고 12건" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
-    expect(screen.getByLabelText("추가할 기술")).toHaveAttribute(
-      "list",
-      expect.stringContaining("career-skill-catalog"),
-    );
+    const skillInput = screen.getByRole("combobox", { name: "추가할 기술" });
+    expect(skillInput).not.toHaveAttribute("list");
+    expect(document.querySelector("datalist")).toBeNull();
+    fireEvent.change(skillInput, { target: { value: "react" } });
     expect(
-      document.querySelector('datalist option[value="React Native"]'),
+      screen.getByRole("option", { name: "React Native 모바일" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("희망 기술 분야")).toHaveDisplayValue(
       "전체 기술 분야",
