@@ -905,7 +905,6 @@ export function SkillGraphExperience({
                 <section className={styles.controlSection}>
                   <header className={styles.sectionHeader}>
                     <div>
-                      <p>추가한 기술</p>
                       <h2>{SKILL_MAP_COPY.ownedSkills}</h2>
                     </div>
                     <span>{ownedSkills.length}개</span>
@@ -957,7 +956,6 @@ export function SkillGraphExperience({
                 <section className={styles.controlSection}>
                   <header className={styles.sectionHeader}>
                     <div>
-                      <p>관계 범위</p>
                       <h2>{SKILL_MAP_COPY.filters}</h2>
                     </div>
                     <button className={styles.resetButton} onClick={resetGraphView} type="button">
@@ -1021,7 +1019,6 @@ export function SkillGraphExperience({
                 <section className={styles.controlSection}>
                   <header className={styles.sectionHeader}>
                     <div>
-                      <p>직무 분야</p>
                       <h2>분야 필터</h2>
                     </div>
                     <span>
