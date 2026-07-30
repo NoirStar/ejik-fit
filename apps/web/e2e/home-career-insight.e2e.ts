@@ -79,9 +79,16 @@ test("migrates an existing profile and refreshes home and career map decisions",
   ).not.toBeNull();
 
   await page.goto("/career");
-  await expect(page.getByLabel("현재 직무")).toHaveValue("플랫폼 엔지니어");
-  await page.getByLabel("현재 직무").fill("클라우드 플랫폼 엔지니어");
-  await page.getByRole("button", { name: "커리어 프로필 저장" }).click();
+  const migratedProfile = page
+    .getByRole("region", { name: "커리어 프로필" })
+    .filter({ hasText: "경력 기준 분석" });
+  await expect(migratedProfile).toHaveCount(1);
+  const currentRole = migratedProfile.getByLabel("현재 직무");
+  await expect(currentRole).toHaveValue("플랫폼 엔지니어");
+  await currentRole.fill("클라우드 플랫폼 엔지니어");
+  await migratedProfile
+    .getByRole("button", { name: "커리어 프로필 저장" })
+    .click();
   await expect(
     page.getByRole("status").filter({
       hasText: "커리어 프로필을 저장했습니다",

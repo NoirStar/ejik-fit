@@ -4,6 +4,14 @@ process.env.NO_PROXY = [process.env.NO_PROXY, "127.0.0.1", "localhost"]
   .filter(Boolean)
   .join(",");
 
+const testAppEnvironment =
+  "API_BASE_URL=http://127.0.0.1:8011 " +
+  "NEXT_PUBLIC_SUPABASE_URL=http://localhost:8011 " +
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable-key";
+const testAppCommand = process.env.CI
+  ? "npm run start -- --hostname 127.0.0.1 --port 3102"
+  : "npm run dev -- --hostname 127.0.0.1 --port 3102";
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
@@ -24,8 +32,7 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      command:
-        "API_BASE_URL=http://127.0.0.1:8011 NEXT_PUBLIC_SUPABASE_URL=http://localhost:8011 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable-key npm run dev -- --hostname 127.0.0.1 --port 3102",
+      command: `${testAppEnvironment} ${testAppCommand}`,
       url: "http://127.0.0.1:3102/privacy",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

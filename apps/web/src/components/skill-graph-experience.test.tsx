@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FitAnalyzeResponse, SkillGraphResponse } from "@/lib/types";
@@ -121,6 +122,14 @@ describe("SkillGraphExperience", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+  });
+
+  it("keeps the filter disclosure closed until the client resolves the viewport", () => {
+    const markup = renderToStaticMarkup(
+      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
+    );
+
+    expect(markup).not.toMatch(/<details[^>]*\sopen(?:="")?/);
   });
 
   it("links quick skills to a newly seeded graph", () => {
