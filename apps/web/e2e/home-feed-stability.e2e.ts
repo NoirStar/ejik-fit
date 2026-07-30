@@ -110,7 +110,10 @@ test("continues the community feed when the user reaches its end", async ({
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/community", { waitUntil: "domcontentloaded" });
 
-  const panel = page.getByRole("tabpanel");
+  const communityRegion = page.getByRole("region", {
+    name: "커리어 커뮤니티",
+  });
+  const panel = communityRegion.getByRole("tabpanel");
   await expect(
     panel.getByRole("article", { exact: true, name: "최신 공개 글 1" }),
   ).toBeVisible();
@@ -118,7 +121,9 @@ test("continues the community feed when the user reaches its end", async ({
     page.getByRole("button", { name: "커뮤니티 글 더 보기" }),
   ).toHaveCount(0);
 
-  await page.getByTestId("home-feed-sentinel").scrollIntoViewIfNeeded();
+  await communityRegion
+    .getByTestId("home-feed-sentinel")
+    .scrollIntoViewIfNeeded();
   await expect(
     panel.getByRole("article", { exact: true, name: "최신 공개 글 15" }),
   ).toBeVisible();
