@@ -81,6 +81,7 @@ import type {
 export type HomeFeedProps = {
   snapshot: HomeFeedSnapshot;
   composeMode?: "new" | "resume" | null;
+  communityOnly?: boolean;
   initialCommunityFeed?: InitialCommunityFeed;
   communityStore?: CommunityStore;
 };
@@ -106,6 +107,13 @@ const TABS: Array<{
   { id: "latest", label: "최신" },
   { id: "popular", label: "인기" },
 ];
+
+const COMMUNITY_TAB_LABELS: Record<FeedTab, string> = {
+  recommended: "전체 글",
+  following: "팔로잉",
+  latest: "최신 글",
+  popular: "공감 많은 글",
+};
 
 const POST_KIND_OPTIONS = COMMUNITY_CATEGORIES.map((value) => ({
   label: value,
@@ -804,6 +812,7 @@ function FeedCard({
 
 export function HomeFeed({
   composeMode = null,
+  communityOnly = false,
   communityStore,
   initialCommunityFeed,
   snapshot,
@@ -1009,18 +1018,21 @@ export function HomeFeed({
       : mergeLiveFeedItems(pagination.items, serverFeedItems);
   }, [activeTab, initialCommunityFeed?.status, pagination.items, serverFeedItems]);
   const visibleItems = useMemo(() => {
+    const scopedItems = communityOnly
+      ? paginationItems.filter(isSocialItem)
+      : paginationItems;
     if (activeTab === "recommended") {
-      return itemsForTab(paginationItems, activeTab, followedAuthorIds);
+      return itemsForTab(scopedItems, activeTab, followedAuthorIds);
     }
     const result = appendOnlyItemsForTab(
-      paginationItems,
+      scopedItems,
       activeTab,
       tabOrderRef.current[activeTab] ?? [],
       followedAuthorIds,
     );
     tabOrderRef.current[activeTab] = result.orderIds;
     return result.items;
-  }, [activeTab, followedAuthorIds, paginationItems]);
+  }, [activeTab, communityOnly, followedAuthorIds, paginationItems]);
   const displayGroups = useMemo(
     () => groupFeedForDisplay(visibleItems),
     [visibleItems],
@@ -1034,6 +1046,7 @@ export function HomeFeed({
     const target = feedSentinelRef.current;
     if (
       !target ||
+      !authReady ||
       typeof IntersectionObserver === "undefined" ||
       pagination.complete ||
       pagination.error ||
@@ -1057,6 +1070,7 @@ export function HomeFeed({
     return () => observer.disconnect();
   }, [
     activeTab,
+    authReady,
     community.state.status,
     pagination.complete,
     pagination.error,
@@ -1065,7 +1079,9 @@ export function HomeFeed({
     pagination.loading,
   ]);
 
-  function requestLoginForCommunity(nextPath = "/") {
+  function requestLoginForCommunity(
+    nextPath = communityOnly ? "/community" : "/",
+  ) {
     if (authStatus !== "unauthenticated") {
       setAnnouncement(
         authStatus === "loading"
@@ -1237,24 +1253,43 @@ export function HomeFeed({
       return;
     }
     setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시 내용을 확인해 주세요.");
-    requestLoginForCommunity("/?compose=resume");
+    requestLoginForCommunity(
+      communityOnly ? "/community?compose=resume" : "/?compose=resume",
+    );
   }
 
   return (
     <main className={styles.page}>
-      <div className={styles.layout}>
-        <CareerBriefing
-          context={snapshot.careerContext}
-          insight={snapshot.careerInsight}
-          ownedSkillCount={snapshot.ownedSkills.length}
-        />
+      <div
+        className={styles.layout}
+        data-community={communityOnly ? "true" : undefined}
+      >
+        {!communityOnly && (
+          <CareerBriefing
+            context={snapshot.careerContext}
+            insight={snapshot.careerInsight}
+            ownedSkillCount={snapshot.ownedSkills.length}
+          />
+        )}
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
-          <header className={styles.feedHeader}>
-            <h2 id="home-feed-title">{HOME_COPY.title}</h2>
+          <header
+            className={`${styles.feedHeader} ${communityOnly ? styles.communityHeader : ""}`}
+          >
+            {communityOnly ? (
+              <div>
+                <p>경험을 나누는 공간</p>
+                <h1 id="home-feed-title">커리어 커뮤니티</h1>
+                <span>
+                  커리어 고민과 직무 전환, 실제 업무 경험을 질문하고 나눠보세요.
+                </span>
+              </div>
+            ) : (
+              <h2 id="home-feed-title">{HOME_COPY.title}</h2>
+            )}
           </header>
 
-          {snapshot.dataStatus !== "ready" && (
+          {!communityOnly && snapshot.dataStatus !== "ready" && (
             <section className={styles.dataNotice} role="status">
               <WarningCircle aria-hidden="true" size={20} weight="fill" />
               <div>
@@ -1280,7 +1315,7 @@ export function HomeFeed({
             </section>
           )}
 
-          {(snapshot.personalizationFallback ||
+          {!communityOnly && (snapshot.personalizationFallback ||
             pagination.personalizationFallback) && (
             <p className={styles.personalizationNotice} role="status">
               맞춤 추천을 불러오지 못했습니다. 최신 공고를 대신 표시합니다.
@@ -1314,9 +1349,11 @@ export function HomeFeed({
                 tabIndex={activeTab === tab.id ? 0 : -1}
                 type="button"
               >
-                {hasPersonalization
-                  ? tab.label
-                  : tab.unconfiguredLabel ?? tab.label}
+                {communityOnly
+                  ? COMMUNITY_TAB_LABELS[tab.id]
+                  : hasPersonalization
+                    ? tab.label
+                    : tab.unconfiguredLabel ?? tab.label}
               </button>
             ))}
           </div>
@@ -1421,12 +1458,16 @@ export function HomeFeed({
                 <strong>
                   {activeTab === "following"
                     ? HOME_COPY.followingEmpty
-                    : "이 탭에 표시할 글이 없습니다."}
+                    : communityOnly
+                      ? "아직 작성된 커뮤니티 글이 없습니다."
+                      : "이 탭에 표시할 글이 없습니다."}
                 </strong>
                 <p>
                   {activeTab === "following"
                     ? HOME_COPY.followingAction
-                    : "다른 탭을 선택하거나 첫 글을 작성해 주세요."}
+                    : communityOnly
+                      ? "커리어 고민이나 실제 업무 경험을 첫 글로 나눠보세요."
+                      : "다른 탭을 선택하거나 첫 글을 작성해 주세요."}
                 </p>
                 {activeTab === "following" && (
                   <button
@@ -1478,6 +1519,7 @@ export function HomeFeed({
           )}
         </section>
 
+        {!communityOnly && (
         <aside aria-label="채용 시장 요약" className={styles.rightRail}>
           <section className={styles.railCard} id="market-insights">
             <div className={styles.railHeadingRow}>
@@ -1536,6 +1578,7 @@ export function HomeFeed({
             onShowFollowing={showFollowingPosts}
           />
         </aside>
+        )}
       </div>
 
       {composerOpen && (

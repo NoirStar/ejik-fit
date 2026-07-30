@@ -1,7 +1,16 @@
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 import { skillIdentityKey } from "./skill-catalog";
 
-const KEY = "ejik-fit:owned-skills";
-const CHANGE_EVENT = "ejik-fit:owned-skills-change";
+const STORAGE_KEYS = {
+  current: "careerfit:owned-skills",
+  legacy: ["ejik-fit:owned-skills"],
+} as const;
+const CHANGE_EVENT = "careerfit:owned-skills-change";
 export const MAX_OWNED_SKILLS = 20;
 export const MAX_OWNED_SKILL_LENGTH = 100;
 
@@ -76,20 +85,21 @@ export function readOwnedSkills(storage = defaultStorage()): string[] {
   if (!storage) {
     return [];
   }
-  try {
-    const raw = storage.getItem(KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? boundedOwnedSkills(
-          parsed.filter((value): value is string => typeof value === "string"),
-        )
-      : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed)
+          ? boundedOwnedSkills(
+              parsed.filter((value): value is string => typeof value === "string"),
+            )
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifyOwnedSkillsChange(storage: Storage | null) {
@@ -107,10 +117,11 @@ export function writeOwnedSkills(
   storage = defaultStorage(),
 ): string[] {
   const normalized = boundedOwnedSkills(skills);
-  try {
-    storage?.setItem(KEY, JSON.stringify(normalized));
-  } catch {
-    return normalized;
+  if (storage) {
+    writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+      parse: () => normalized,
+      serialize: JSON.stringify,
+    });
   }
   notifyOwnedSkillsChange(storage);
   return normalized;
@@ -137,11 +148,7 @@ export function removeOwnedSkill(
 }
 
 export function clearOwnedSkills(storage = defaultStorage()): string[] {
-  try {
-    storage?.removeItem(KEY);
-  } catch {
-    return [];
-  }
+  if (storage) clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyOwnedSkillsChange(storage);
   return [];
 }
@@ -155,7 +162,7 @@ export function subscribeOwnedSkills(listener: OwnedSkillsListener) {
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrentSkills();

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "채용공고",
-  description: "기술·직무·기업으로 공고를 찾고 내 기술과 비교합니다.",
+  description: "수집된 기업 공식 채용 페이지의 공개 공고와 내 경력·기술의 연결 근거를 확인합니다.",
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;

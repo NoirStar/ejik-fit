@@ -11,7 +11,7 @@ import styles from "../trust-pages.module.css";
 
 export const metadata: Metadata = {
   title: "데이터 수집 정책",
-  description: "이직핏이 공식 채용공고를 수집하고 검증하며 마감 상태를 판단하는 원칙입니다.",
+  description: "커리어핏이 공식 채용공고를 수집하고 검증하며 마감 상태를 판단하는 원칙입니다.",
 };
 
 export const dynamic = "force-dynamic";

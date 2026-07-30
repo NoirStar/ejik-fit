@@ -10,7 +10,7 @@ import {
 } from "./smoke-public-deployment.mjs";
 
 const baseResponse = {
-  body: "<!doctype html><html><head><title>이직핏</title></head></html>",
+  body: "<!doctype html><html><head><title>커리어핏</title></head></html>",
   contentType: "text/html; charset=utf-8",
   expectedStatus: 200,
   finalUrl: "https://ejik.fit/",

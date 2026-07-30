@@ -19,7 +19,7 @@ test("keeps an account-authored question available after reload and safely delet
   try {
     const title = "내 질문 보관함에서 다시 보는 커리어 고민";
     await page.setViewportSize({ height: 900, width: 390 });
-    await signInCommunityViewer(page, "/?compose=1");
+    await signInCommunityViewer(page, "/community?compose=1");
 
     const composer = page.getByRole("dialog", { name: "커뮤니티 글쓰기" });
     await composer.getByText("커리어 고민", { exact: true }).click();

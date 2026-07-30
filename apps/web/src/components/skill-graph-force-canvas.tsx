@@ -700,6 +700,49 @@ export function SkillGraphForceCanvas({
       );
     }
 
+    function restoreGraphWhenOffscreen() {
+      const graph = graphRef.current;
+      const canvas = containerRef.current?.querySelector("canvas");
+      if (!graph || !canvas) return;
+
+      const positionedNodes = graph.graphData().nodes.filter(
+        (node) => typeof node.x === "number" && typeof node.y === "number",
+      );
+      if (positionedNodes.length === 0) return;
+
+      const bounds = canvas.getBoundingClientRect();
+      const hasVisibleNode = positionedNodes.some((node) => {
+        const point = graph.graph2ScreenCoords(node.x!, node.y!);
+        return (
+          point.x >= 0 &&
+          point.x <= bounds.width &&
+          point.y >= 0 &&
+          point.y <= bounds.height
+        );
+      });
+      if (hasVisibleNode) return;
+
+      const extent = positionedNodes.reduce(
+        (current, node) => ({
+          maxX: Math.max(current.maxX, node.x!),
+          maxY: Math.max(current.maxY, node.y!),
+          minX: Math.min(current.minX, node.x!),
+          minY: Math.min(current.minY, node.y!),
+        }),
+        {
+          maxX: Number.NEGATIVE_INFINITY,
+          maxY: Number.NEGATIVE_INFINITY,
+          minX: Number.POSITIVE_INFINITY,
+          minY: Number.POSITIVE_INFINITY,
+        },
+      );
+      graph.centerAt(
+        (extent.minX + extent.maxX) / 2,
+        (extent.minY + extent.maxY) / 2,
+        0,
+      );
+    }
+
     function startsOnGraphSurface(event: TouchEvent) {
       const target = event.target;
       if (target instanceof Element) {
@@ -778,8 +821,12 @@ export function SkillGraphForceCanvas({
     }
 
     function endTouch(event: TouchEvent) {
+      const endedPinch = event.touches.length < 2 && pinchStart !== null;
       if (event.touches.length < 2) {
         pinchStart = null;
+      }
+      if (endedPinch) {
+        window.requestAnimationFrame(restoreGraphWhenOffscreen);
       }
       if (event.touches.length > 0 || !touchTapStart) {
         return;

@@ -14,10 +14,7 @@ import Link from "next/link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-import {
-  accountStorageStatusCopy,
-  useAuthViewerContext,
-} from "@/features/auth/auth-viewer-context";
+import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { CompanyMark } from "@/features/home-feed/company-mark";
@@ -45,8 +42,15 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import { PRODUCT_TERMS } from "@/lib/labels";
-import { withObjectParticle } from "@/lib/korean-particles";
+import {
+  SAVED_JOB_GROUPS,
+  readSavedJobGroups,
+  savedJobGroupLabel,
+  setSavedJobGroup,
+  subscribeSavedJobGroups,
+  type SavedJobGroups,
+  type SavedJobGroupValue,
+} from "@/lib/saved-job-groups";
 import {
   EMPTY_SOCIAL_INTERACTIONS,
   readSocialInteractions,
@@ -74,19 +78,23 @@ type JobRequestState =
 
 const SCOPES = [
   { value: "all", label: "전체" },
-  { value: "jobs", label: "공식 공고" },
+  { value: "jobs", label: "채용공고" },
   { value: "applications", label: "지원 관리" },
   { value: "community", label: "커뮤니티" },
 ] as const satisfies ReadonlyArray<{ value: SavedScope; label: string }>;
 
 function SavedJobCard({
   item,
+  careerGroup,
   applicationStage,
+  onCareerGroupChange,
   onApplicationStageChange,
   onRemove,
 }: {
   item: SavedJobItem;
+  careerGroup: SavedJobGroupValue;
   applicationStage: JobApplicationStageValue;
+  onCareerGroupChange: (group: SavedJobGroupValue) => void;
   onApplicationStageChange: (stage: JobApplicationStageValue) => void;
   onRemove: () => void;
 }) {
@@ -102,7 +110,6 @@ function SavedJobCard({
       <div className={styles.jobIdentity}>
         <CompanyMark
           companyName={item.companyName}
-          companySlug={item.companySlug}
           size={48}
           sourceUrl={item.sourceUrl}
         />
@@ -110,7 +117,7 @@ function SavedJobCard({
           <div className={styles.jobTopline}>
             <span className={styles.actualBadge}>
               <ShieldCheck aria-hidden="true" size={13} weight="fill" />
-              {PRODUCT_TERMS.lastChecked}
+              현재 API 재확인
             </span>
             <span data-open={item.status === "open" ? "true" : undefined}>
               {item.statusLabel}
@@ -140,20 +147,36 @@ function SavedJobCard({
         <ul aria-label={`${item.title} 확인 기술`} className={styles.skillList}>
           {skills.map((skill) => (
             <li data-kind={skill.kind} key={`${skill.kind}-${skill.name}`}>
-              <Link href={`/skill-map?skill=${encodeURIComponent(skill.name)}`}>
+              <Link href={`/skills/graph?seed=${encodeURIComponent(skill.name)}`}>
                 {skill.label} {skill.name}
               </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <p className={styles.noSkills}>현재 공고에서 확인된 기술이 없습니다.</p>
+        <p className={styles.noSkills}>현재 응답에서 확인된 기술이 없습니다.</p>
       )}
 
       <div
         className={styles.applicationControl}
-        data-active={applicationStage ? "true" : undefined}
+        data-active={applicationStage || careerGroup ? "true" : undefined}
       >
+        <label>
+          <span>커리어 분류</span>
+          <select
+            aria-label={`${item.title} 커리어 분류`}
+            onChange={(event) =>
+              onCareerGroupChange(event.target.value as SavedJobGroupValue)
+            }
+            value={careerGroup}
+          >
+            {SAVED_JOB_GROUPS.map((group) => (
+              <option key={group.value || "unset"} value={group.value}>
+                {group.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           <span>지원 단계</span>
           <select
@@ -173,7 +196,7 @@ function SavedJobCard({
           </select>
         </label>
         <small id={removalNoteId}>
-          이 기기에 저장되며 로그인하면 계정 데이터와 합칩니다.
+          브라우저 저장 · 로그인 시 동기화
           {applicationStage ? " · 저장 해제 시 단계도 삭제" : ""}
         </small>
       </div>
@@ -184,7 +207,7 @@ function SavedJobCard({
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
         <a href={item.sourceUrl} rel="noreferrer" target="_blank">
-          공식 원문
+          공식 채용 페이지에서 지원
           <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
         </a>
         <button
@@ -209,15 +232,11 @@ export function SavedLibrary({
   initialScope?: SavedScope;
 }) {
   const {
-    accountSyncStatus,
     error: authError,
     ready: authReady,
     status: authStatus,
     viewer,
   } = useAuthViewerContext();
-  const storageStatus = accountStorageStatusCopy(
-    viewer ? accountSyncStatus : "local",
-  );
   const accountCommunity = useCommunityFeed({
     authReady,
     enabled: Boolean(viewer),
@@ -228,6 +247,7 @@ export function SavedLibrary({
   });
   const [hydrated, setHydrated] = useState(false);
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
+  const [savedJobGroups, setSavedJobGroups] = useState<SavedJobGroups>({});
   const [applicationStages, setApplicationStages] =
     useState<JobApplicationStages>({});
   const [socialInteractions, setSocialInteractions] =
@@ -241,11 +261,13 @@ export function SavedLibrary({
 
   useEffect(() => {
     setSavedJobIds(readSavedJobIds());
+    setSavedJobGroups(readSavedJobGroups());
     setApplicationStages(readJobApplicationStages());
     setSocialInteractions(readSocialInteractions());
     setLocalPosts(readLocalCommunityPosts());
     setHydrated(true);
     const unsubscribeJobs = subscribeSavedJobs(setSavedJobIds);
+    const unsubscribeJobGroups = subscribeSavedJobGroups(setSavedJobGroups);
     const unsubscribeApplications = subscribeJobApplicationStages(
       setApplicationStages,
     );
@@ -255,6 +277,7 @@ export function SavedLibrary({
     const unsubscribeLocalPosts = subscribeLocalCommunityPosts(setLocalPosts);
     return () => {
       unsubscribeJobs();
+      unsubscribeJobGroups();
       unsubscribeApplications();
       unsubscribeSocial();
       unsubscribeLocalPosts();
@@ -321,9 +344,23 @@ export function SavedLibrary({
   }, [accountCommunity.state.posts, accountCommunity.state.viewerState.savedPostIds]);
   const visibleSavedJobs = useMemo(() => {
     if (jobState.status !== "ready") return [];
-    if (activeScope !== "applications") return jobState.data.items;
-    return jobState.data.items.filter((item) => applicationStages[item.id]);
-  }, [activeScope, applicationStages, jobState]);
+    const items =
+      activeScope === "applications"
+        ? jobState.data.items.filter((item) => applicationStages[item.id])
+        : jobState.data.items;
+    const groupOrder: SavedJobGroupValue[] = [
+      "current",
+      "adjacent",
+      "interest",
+      "comparing",
+      "",
+    ];
+    return [...items].sort(
+      (left, right) =>
+        groupOrder.indexOf(savedJobGroups[left.id] ?? "") -
+        groupOrder.indexOf(savedJobGroups[right.id] ?? ""),
+    );
+  }, [activeScope, applicationStages, jobState, savedJobGroups]);
 
   const jobCount = savedJobIds.length;
   const applicationCount = savedJobIds.filter(
@@ -366,7 +403,7 @@ export function SavedLibrary({
     setSavedJobIds(toggleSavedJob(item.id));
     setApplicationStages(removeJobApplicationStage(item.id));
     setAnnouncement(
-      `${withObjectParticle(item.title)} 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
+      `${item.title}을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
     );
   }
 
@@ -384,8 +421,25 @@ export function SavedLibrary({
     }
     setAnnouncement(
       stage
-        ? `지원 단계를 ‘${applicationStageLabel(stage)}’로 저장했습니다.`
-        : "지원 단계 기록을 삭제했습니다.",
+        ? `${item.title}의 지원 단계를 ${applicationStageLabel(stage)}으로 저장했습니다.`
+        : `${item.title}의 지원 단계 기록을 삭제했습니다.`,
+    );
+  }
+
+  function updateCareerGroup(
+    item: SavedJobItem,
+    group: SavedJobGroupValue,
+  ) {
+    const nextGroups = setSavedJobGroup(item.id, group);
+    setSavedJobGroups(nextGroups);
+    if ((nextGroups[item.id] ?? "") !== group) {
+      setAnnouncement(`${item.title} 공고의 커리어 분류를 저장하지 못했습니다.`);
+      return;
+    }
+    setAnnouncement(
+      group
+        ? `${item.title} 공고를 ${savedJobGroupLabel(group)}로 분류했습니다.`
+        : `${item.title} 공고의 커리어 분류를 해제했습니다.`,
     );
   }
 
@@ -394,7 +448,7 @@ export function SavedLibrary({
     const removed = await accountCommunity.toggleSaved(item.id);
     setAnnouncement(
       removed
-        ? `${withObjectParticle(item.title)} 계정 저장 목록에서 제거했습니다.`
+        ? `${item.title}을 계정 저장 목록에서 제거했습니다.`
         : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
     );
   }
@@ -418,7 +472,7 @@ export function SavedLibrary({
     }
     setSavedJobIds(nextIds);
     setApplicationStages(readJobApplicationStages());
-    setAnnouncement("현재 확인할 수 없는 저장 공고를 정리했습니다.");
+    setAnnouncement("현재 API에서 확인되지 않는 저장 공고를 정리했습니다.");
   }
 
   function handleTabKeyDown(
@@ -443,22 +497,22 @@ export function SavedLibrary({
       <header className={styles.intro}>
         <div>
           <p className={styles.eyebrow}>내 커리어</p>
-          <h1>{PRODUCT_TERMS.savedItems}</h1>
+          <h1>저장 목록</h1>
           <p className={styles.description}>
-            공고와 지원 단계는 이 기기에 먼저 저장하고, 로그인하면 계정
-            데이터와 합칩니다. 커뮤니티 글은 계정에 저장한 글만 여러 기기에서
-            불러옵니다. 이전 기기에 남은 글은 별도 복구 영역에 표시합니다.
+            공고 저장, 커리어 분류와 지원 단계는 로그인 전에는 이 브라우저에
+            남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의 저장은
+            로그인 계정에서만 복원합니다. 이전 브라우저 글은 서버 저장과
+            섞지 않고 별도 복구 영역에 표시합니다.
           </p>
-          {storageStatus.error && (
-            <p className={styles.description} role="alert">
-              {storageStatus.error}
-            </p>
-          )}
         </div>
         <div className={styles.introActions}>
           <span>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            {storageStatus.label}
+            {viewer
+              ? "계정 저장 연결됨"
+              : authStatus === "error"
+                ? "계정 상태 확인 필요"
+                : "로그인 시 계정 연동"}
           </span>
           <Link href="/career">
             내 기술 비교
@@ -496,7 +550,7 @@ export function SavedLibrary({
         </div>
         <p>
           <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-          계정 저장과 이전 기기 기록을 구분해 표시
+          서버 저장과 이전 기기 기록을 구분해 표시
         </p>
       </section>
 
@@ -509,18 +563,22 @@ export function SavedLibrary({
       >
         {!hydrated ? (
           <div className={styles.loadingState} role="status">
-            저장 목록을 불러오는 중…
+            저장한 항목을 확인하고 있습니다.
           </div>
         ) : totalCount === 0 &&
           !accountCommunityUnavailable &&
           !accountCommunityLoading ? (
           <section className={styles.emptyState} role="status">
             <BookmarkSimple aria-hidden="true" size={28} />
-            <h2>저장한 항목이 없습니다.</h2>
-            <p>공고를 저장하면 이곳에서 다시 확인할 수 있습니다.</p>
+            <h2>아직 저장한 항목이 없습니다.</h2>
+            <p>관심 있는 채용공고와 커뮤니티 글을 저장하면 여기서 다시 볼 수 있습니다.</p>
             <div>
               <Link href="/jobs">
-                공고 보기
+                채용공고 둘러보기
+                <ArrowRight aria-hidden="true" size={15} weight="bold" />
+              </Link>
+              <Link href="/community">
+                커뮤니티 보기
                 <ArrowRight aria-hidden="true" size={15} weight="bold" />
               </Link>
             </div>
@@ -533,11 +591,11 @@ export function SavedLibrary({
                   <div>
                     <p>
                       {activeScope === "applications"
-                        ? "지원 단계를 기록한 공고"
-                        : "현재 공식 공고"}
+                        ? "지원 단계를 기록한 실제 공고"
+                        : "실제 공고 API"}
                     </p>
                     <h2 id="saved-jobs-title">
-                      {activeScope === "applications" ? "지원 관리" : "공식 공고"}
+                      {activeScope === "applications" ? "지원 관리" : "채용공고"}
                     </h2>
                   </div>
                   <span>
@@ -548,19 +606,19 @@ export function SavedLibrary({
                 </header>
                 <p className={styles.collectionNote}>
                   {activeScope === "applications"
-                    ? "지원 단계는 이 기기에 저장하며, 공고 정보는 현재 공식 공고와 다시 확인합니다."
-                    : "저장한 공고를 현재 공식 공고와 다시 확인합니다."}
+                    ? "사용자가 선택한 단계만 로컬에 저장하며, 공고 정보는 현재 공식 API와 다시 대조합니다."
+                    : "커리어 방향별로 분류한 뒤 현재 채용공고 상세 응답과 다시 대조합니다."}
                 </p>
 
                 {jobState.status === "idle" || jobState.status === "loading" ? (
                   <div className={styles.loadingState} role="status">
-                    저장한 공고를 불러오는 중…
+                    저장 공고를 현재 API에서 다시 확인하고 있습니다.
                   </div>
                 ) : jobState.status === "error" ? (
                   <div className={styles.errorState} role="alert">
                     <WarningCircle aria-hidden="true" size={22} weight="fill" />
                     <div>
-                      <strong>저장한 공식 공고를 불러오지 못했습니다.</strong>
+                      <strong>저장한 채용공고를 불러오지 못했습니다.</strong>
                       <p>다른 저장 영역은 계속 볼 수 있으며 공고 내용을 임의로 채우지 않습니다.</p>
                     </div>
                     <button onClick={() => setRetryVersion((value) => value + 1)} type="button">
@@ -573,9 +631,9 @@ export function SavedLibrary({
                       <div className={styles.dataNotice} role="status">
                         <div>
                           <strong>
-                            현재 확인할 수 없는 저장 공고 {jobState.data.unavailableIds.length}개
+                            현재 API에서 확인되지 않는 저장 공고 {jobState.data.unavailableIds.length}개
                           </strong>
-                          <p>삭제되었거나 현재 공식 공고에서 제공되지 않습니다.</p>
+                          <p>삭제되었거나 현재 API에서 제공되지 않는 ID입니다.</p>
                         </div>
                         <button onClick={removeUnavailableJobs} type="button">
                           확인 불가 항목 정리
@@ -592,7 +650,7 @@ export function SavedLibrary({
                           <strong>
                             저장 공고 {jobState.data.failedIds.length}개를 다시 확인하지 못했습니다.
                           </strong>
-                          <p>일시적인 연결 오류일 수 있어 저장 상태는 유지했습니다.</p>
+                          <p>일시적인 API 오류일 수 있어 저장 상태는 유지했습니다.</p>
                         </div>
                         <button onClick={() => setRetryVersion((value) => value + 1)} type="button">
                           공고 다시 확인
@@ -605,10 +663,14 @@ export function SavedLibrary({
                         {visibleSavedJobs.map((item) => (
                           <SavedJobCard
                             applicationStage={applicationStages[item.id] ?? ""}
+                            careerGroup={savedJobGroups[item.id] ?? ""}
                             item={item}
                             key={item.id}
                             onApplicationStageChange={(stage) =>
                               updateApplicationStage(item, stage)
+                            }
+                            onCareerGroupChange={(group) =>
+                              updateCareerGroup(item, group)
                             }
                             onRemove={() => removeJob(item)}
                           />
@@ -618,15 +680,15 @@ export function SavedLibrary({
                       <div className={styles.compactState} role="status">
                         <Briefcase aria-hidden="true" size={22} />
                         <div>
-                          <strong>현재 표시할 공식 공고가 없습니다.</strong>
+                          <strong>현재 표시할 채용공고가 없습니다.</strong>
                           <p>
                             {activeScope === "applications"
                               ? applicationCount === 0
                                 ? "지원 단계를 기록한 공고가 없습니다."
-                                : "지원 단계는 유지했지만 현재 확인할 수 있는 공고가 없습니다."
+                                : "지원 단계는 유지했지만 현재 API에서 확인 가능한 공고가 없습니다."
                               : jobCount === 0
                                 ? "공고에서 저장 버튼을 누르면 이곳에 표시됩니다."
-                                : "현재 확인할 수 있는 저장 공고가 없습니다."}
+                                : "현재 API에서 확인 가능한 저장 공고가 없습니다."}
                           </p>
                         </div>
                         <Link href="/jobs">공고 보기</Link>
@@ -644,16 +706,16 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>계정에 저장됨</p>
-                    <h2 id="saved-community-title">계정에 저장한 글</h2>
+                    <p>실제 서버 저장</p>
+                    <h2 id="saved-community-title">계정 저장 커뮤니티</h2>
                   </div>
                   <span>{serverCommunityCount}개 저장</span>
                 </header>
                 <div className={styles.sourceNotice}>
                   <ShieldCheck aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    계정에 저장한 게시물만 표시합니다. 이 기기에만 남은 글은 이
-                    개수에 포함하지 않습니다.
+                    서버가 확인한 계정 게시물만 표시하며 브라우저 글은 이 개수에
+                    포함하지 않습니다.
                   </p>
                 </div>
 
@@ -664,7 +726,7 @@ export function SavedLibrary({
                       <strong>로그인 상태를 확인하지 못했습니다.</strong>
                       <p>
                         {authError ||
-                          "연결을 확인한 뒤 새로고침해 주세요. 이 기기에 저장한 항목은 유지됩니다."}
+                          "연결을 확인한 뒤 새로고침해 주세요. 브라우저 저장 항목은 유지됩니다."}
                       </p>
                     </div>
                   </div>
@@ -673,7 +735,7 @@ export function SavedLibrary({
                     <ShieldCheck aria-hidden="true" size={22} />
                     <div>
                       <strong>로그인하면 계정에 저장한 글을 볼 수 있습니다.</strong>
-                      <p>이전 기기에 남은 기록은 아래 복구 영역에서만 표시합니다.</p>
+                      <p>브라우저에 남은 이전 기록은 아래 복구 영역에서만 표시합니다.</p>
                     </div>
                     <Link href="/login?next=%2Fcareer%2Fsaved">
                       로그인
@@ -681,7 +743,7 @@ export function SavedLibrary({
                   </div>
                 ) : accountCommunityLoading ? (
                   <div className={styles.loadingState} role="status">
-                    계정에 저장한 글을 불러오는 중…
+                    계정에 저장한 커뮤니티 글을 확인하고 있습니다.
                   </div>
                 ) : accountCommunityUnavailable ? (
                   <div className={styles.errorState} role="alert">
@@ -701,7 +763,7 @@ export function SavedLibrary({
                         <article aria-label={item.title} className={styles.communityCard} key={item.id}>
                         <div className={styles.communityTopline}>
                           <span>{item.category}</span>
-                          <small data-source="server">계정에 저장됨</small>
+                          <small data-source="server">계정 저장</small>
                         </div>
                         <h3>
                           <Link href={item.href}>{item.title}</Link>
@@ -759,7 +821,7 @@ export function SavedLibrary({
                     <CheckCircle aria-hidden="true" size={22} />
                     <div>
                       <strong>계정에 저장한 커뮤니티 글이 없습니다.</strong>
-                      <p>회원 글에서 저장을 누르면 모든 기기에서 다시 볼 수 있습니다.</p>
+                      <p>실제 회원 글에서 저장을 누르면 모든 기기에서 다시 볼 수 있습니다.</p>
                     </div>
                     <Link href="/">홈 보기</Link>
                   </div>
@@ -774,7 +836,7 @@ export function SavedLibrary({
               >
                 <header className={styles.collectionHeader}>
                   <div>
-                    <p>이 기기에서만 확인</p>
+                    <p>현재 브라우저에서만 확인</p>
                     <h2 id="legacy-saved-community-title">
                       이전 기기 저장 글
                     </h2>
@@ -784,7 +846,7 @@ export function SavedLibrary({
                 <div className={styles.sourceNotice} data-legacy="true">
                   <WarningCircle aria-hidden="true" size={18} weight="fill" />
                   <p>
-                    계정 활동이 아닙니다. 글을 확인하거나 오래된 저장
+                    서버 저장 활동이 아닙니다. 글 원본을 확인하거나 오래된 저장
                     표시만 지울 수 있습니다.
                   </p>
                 </div>
@@ -804,7 +866,7 @@ export function SavedLibrary({
                       </h3>
                       <p className={styles.communitySummary}>{item.summary}</p>
                       <p className={styles.communityAuthor}>
-                        이 기기에 남은 글 · {item.createdLabel}
+                        현재 브라우저 글 원본 · {item.createdLabel}
                       </p>
                       <footer className={styles.communityActions}>
                         <Link href={item.href}>

@@ -248,7 +248,7 @@ describe("HomeFeed", () => {
       screen.getByRole("link", { name: "수집 기준 확인" }),
     ).toHaveAttribute("href", "/data-policy");
     expect(
-      screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+      screen.queryByRole("region", { name: "커리어핏 커뮤니티 가이드" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("complementary", { name: "내 커리어 바로가기" }),
@@ -307,7 +307,7 @@ describe("HomeFeed", () => {
     render(<HomeFeed snapshot={buildSnapshot()} />);
 
     expect(
-      screen.queryByRole("region", { name: "이직핏 커뮤니티 가이드" }),
+      screen.queryByRole("region", { name: "커리어핏 커뮤니티 가이드" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("읽기 전용 커뮤니티 예시")).not.toBeInTheDocument();
   });
@@ -447,6 +447,58 @@ describe("HomeFeed", () => {
     expect(
       screen.queryByRole("button", { name: "커뮤니티 글 더 보기" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("waits for authentication initialization before observing the feed sentinel", async () => {
+    const observer = installIntersectionObserver();
+    const first: CommunityPost = {
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      author: {
+        id: "11111111-1111-4111-8111-111111111111",
+        nickname: "첫작성자",
+      },
+      category: "커리어 질문",
+      title: "인증 확인 전 서버 글",
+      body: "서버에서 먼저 렌더링한 글입니다.",
+      tags: ["백엔드"],
+      metrics: { reactions: 0, comments: 0, saves: 0 },
+      createdAt: "2026-07-21T04:00:00.000Z",
+      updatedAt: "2026-07-21T04:00:00.000Z",
+    };
+    const store = serverCommunityStore(first);
+    const initialCommunityFeed = {
+      status: "ready" as const,
+      page: {
+        items: [first],
+        nextCursor: { createdAt: first.createdAt, id: first.id },
+      },
+    };
+    const view = render(
+      <AuthViewerProvider ready={false} viewer={null}>
+        <HomeFeed
+          communityStore={store}
+          initialCommunityFeed={initialCommunityFeed}
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    expect(
+      screen.getByRole("article", { name: "인증 확인 전 서버 글" }),
+    ).toBeInTheDocument();
+    expect(observer.observe).not.toHaveBeenCalled();
+
+    view.rerender(
+      <AuthViewerProvider ready viewer={null}>
+        <HomeFeed
+          communityStore={store}
+          initialCommunityFeed={initialCommunityFeed}
+          snapshot={buildSnapshot()}
+        />
+      </AuthViewerProvider>,
+    );
+
+    await waitFor(() => expect(observer.observe).toHaveBeenCalledTimes(1));
   });
 
   it("uses the shell write action without repeating a central write button", () => {

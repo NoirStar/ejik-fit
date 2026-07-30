@@ -114,9 +114,9 @@ function DetailState({
 
   return (
     <main className={detailStyles.main}>
-      <Link className={detailStyles.backLink} href="/">
+      <Link className={detailStyles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
       <section className={detailStyles.localState} role="status">
         <p>{copy.eyebrow}</p>
@@ -423,9 +423,9 @@ export function ServerPostDetail({
         title={post.title}
         topicLabel={post.tags[0] ?? post.category}
       />
-      <Link className={detailStyles.backLink} href="/">
+      <Link className={detailStyles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
 
       <div className={detailStyles.workspace}>

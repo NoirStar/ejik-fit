@@ -102,6 +102,21 @@ export type CareerContextSummary = {
   configured: boolean;
 };
 
+export type CareerDirectionSummary = {
+  domain: string;
+  label: string;
+  coveredSkills: string[];
+  additionalRequirements: string[];
+  postingCount: number;
+  confirmedCompanyCount: number;
+  representativeJob: {
+    id: string;
+    title: string;
+    companyName: string;
+    href: string;
+  } | null;
+};
+
 export type FeedItem =
   | CommunityPostFeedItem
   | MarketInsightFeedItem
@@ -115,6 +130,7 @@ export type HomeFeedSnapshot = {
   skillDemand: SkillDemandSummary[];
   careerInsight: CareerInsightSummary;
   careerContext: CareerContextSummary;
+  careerDirections: CareerDirectionSummary[];
   ownedSkills: string[];
   personalizationFallback: boolean;
   postingCount: number;

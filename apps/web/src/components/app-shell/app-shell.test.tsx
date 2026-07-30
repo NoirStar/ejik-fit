@@ -122,7 +122,7 @@ describe("AppShell", () => {
     });
   });
 
-  it("exposes desktop and mobile access to five product destinations", () => {
+  it("exposes desktop and mobile access to six distinct product destinations", () => {
     render(
       <AppShell>
         <main>내용</main>
@@ -130,15 +130,12 @@ describe("AppShell", () => {
     );
 
     expect(screen.getAllByRole("link", { name: "홈" })[0]).toHaveAttribute("href", "/");
-    expect(screen.getAllByRole("link", { name: "시장" })[0]).toHaveAttribute("href", "/market");
-    expect(screen.getAllByRole("link", { name: "스킬맵" })[0]).toHaveAttribute("href", "/skill-map");
-    expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute("href", "/jobs");
     expect(screen.getAllByRole("link", { name: "내 커리어" })[0]).toHaveAttribute("href", "/career");
-    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute("href", "/?compose=1");
-    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
-      "aria-label",
-      "글쓰기",
-    );
+    expect(screen.getAllByRole("link", { name: "커리어맵" })[0]).toHaveAttribute("href", "/skill-map");
+    expect(screen.getAllByRole("link", { name: "시장" })[0]).toHaveAttribute("href", "/market");
+    expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute("href", "/jobs");
+    expect(screen.getAllByRole("link", { name: "커뮤니티" })[0]).toHaveAttribute("href", "/community");
+    expect(screen.queryByRole("link", { name: "글쓰기" })).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute("name", "q");
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute(
       "placeholder",
@@ -165,10 +162,23 @@ describe("AppShell", () => {
     const row = header?.firstElementChild;
     expect(row).not.toBeNull();
     expect(row?.querySelector('nav[aria-label="주요 탐색"]')).toBeInTheDocument();
-    expect(
-      row?.querySelector('img[src="/brand/ejik-fit-wordmark.svg"]'),
-    ).toBeInTheDocument();
+    expect(screen.getByText("커리어핏")).toBeInTheDocument();
     expect(screen.queryByText("EJIK FIT")).not.toBeInTheDocument();
+  });
+
+  it("offers the main writing action only inside the community", () => {
+    navigation.pathname = "/community";
+
+    render(
+      <AppShell>
+        <main>커뮤니티</main>
+      </AppShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
+      "href",
+      "/community?compose=1",
+    );
   });
 
   it("keeps the current query visible on the global search route", () => {
@@ -334,7 +344,7 @@ describe("AppShell", () => {
     );
 
     expect(container.querySelector('[data-immersive="true"]')).toBeInTheDocument();
-    for (const link of screen.getAllByRole("link", { name: "스킬맵" })) {
+    for (const link of screen.getAllByRole("link", { name: "커리어맵" })) {
       expect(link).toHaveAttribute("aria-current", "page");
     }
   });
@@ -482,9 +492,6 @@ describe("AppShell", () => {
       });
     });
     expect(navigation.replace).not.toHaveBeenCalled();
-    expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
-      "href",
-      "/?career_type=new_comer&target_domain=frontend&compose=1",
-    );
+    expect(screen.queryByRole("link", { name: "글쓰기" })).not.toBeInTheDocument();
   });
 });

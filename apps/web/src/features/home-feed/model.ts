@@ -7,6 +7,7 @@ import {
   normalizeCareerPreferences,
   type CareerPreferences,
 } from "@/lib/career-preferences";
+import { stableCompanyIdentity } from "@/lib/company-identity";
 import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
@@ -18,6 +19,7 @@ import type {
   FitAnalyzeResponse,
   PostingListResponse,
   PostingSummary,
+  SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
@@ -25,6 +27,7 @@ import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
   CareerContextSummary,
+  CareerDirectionSummary,
   CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
@@ -97,7 +100,7 @@ export function serverCommunityPostToFeedItem(
     type: "community_post",
     category: post.category,
     authorId: post.author.id,
-    authorName: post.author.nickname?.trim() || "이직핏 사용자",
+    authorName: post.author.nickname?.trim() || "커리어핏 사용자",
     authorHeadline: "커뮤니티 회원",
     authorTone: serverAuthorTone(post.author.id),
     createdAt: post.createdAt,
@@ -114,6 +117,7 @@ export function serverCommunityPostToFeedItem(
 export type BuildHomeFeedSnapshotInput = {
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
+  graph?: ResourceState<SkillGraphResponse>;
   fit: ResourceState<FitAnalyzeResponse> | null;
   careerPreferences?: CareerPreferences;
   ownedSkills: string[];
@@ -322,6 +326,83 @@ function buildCareerContext(
   };
 }
 
+function buildCareerDirections(
+  fit: ResourceState<FitAnalyzeResponse> | null,
+  graph: SkillGraphResponse | null,
+  postings: PostingListResponse | null,
+): CareerDirectionSummary[] {
+  if (!fit || fit.status !== "ready") return [];
+
+  const postingById = new Map(
+    (postings?.items ?? []).map((posting) => [posting.id, posting]),
+  );
+  const skillsByDomain = new Map<string, Set<string>>();
+  for (const node of graph?.nodes ?? []) {
+    for (const domain of node.domains) {
+      const skills = skillsByDomain.get(domain) ?? new Set<string>();
+      skills.add(skillIdentityKey(node.id));
+      skills.add(skillIdentityKey(node.label));
+      skillsByDomain.set(domain, skills);
+    }
+  }
+
+  return [...fit.data.domain_branches]
+    .sort(
+      (left, right) =>
+        right.supporting_posting_count - left.supporting_posting_count ||
+        left.domain.localeCompare(right.domain, "ko-KR"),
+    )
+    .slice(0, 5)
+    .map((branch) => {
+      const domainSkills = skillsByDomain.get(branch.domain) ?? new Set<string>();
+      const branchSkills = new Set(
+        [
+          ...branch.covered_skills,
+          ...branch.missing_required_skills,
+          ...branch.missing_preferred_skills,
+        ].map(skillIdentityKey),
+      );
+      const relevantEvidence = (graph?.evidence ?? []).filter((evidence) =>
+        evidence.skills.some((skill) => {
+          const key = skillIdentityKey(skill);
+          return domainSkills.has(key) || branchSkills.has(key);
+        }),
+      );
+      const representativeEvidence = relevantEvidence[0] ?? null;
+      const representativePosting = representativeEvidence
+        ? postingById.get(representativeEvidence.posting_id)
+        : null;
+
+      return {
+        domain: branch.domain,
+        label: formatDomainLabel(branch.domain),
+        coveredSkills: branch.covered_skills,
+        additionalRequirements: unique([
+          ...branch.missing_required_skills,
+          ...branch.missing_preferred_skills,
+        ]),
+        postingCount: branch.supporting_posting_count,
+        confirmedCompanyCount: new Set(
+          relevantEvidence.map((evidence) =>
+            stableCompanyIdentity(
+              postingById.get(evidence.posting_id),
+              evidence.company_name,
+            ),
+          ),
+        ).size,
+        representativeJob: representativeEvidence
+          ? {
+              id: representativeEvidence.posting_id,
+              title: representativePosting?.title ?? representativeEvidence.title,
+              companyName:
+                representativePosting?.company_name ?? representativeEvidence.company_name,
+              href: `/jobs/${encodeURIComponent(representativeEvidence.posting_id)}`,
+            }
+          : null,
+      };
+    });
+}
+
 function mergeFeed(
   jobs: RecommendedJobFeedItem[],
   insights: MarketInsightFeedItem[],
@@ -352,6 +433,7 @@ export function buildHomeFeedSnapshot(
 ): HomeFeedSnapshot {
   const postings = readyData(input.postings);
   const skillStats = readyData(input.skillStats);
+  const graph = input.graph ? readyData(input.graph) : null;
   const requestedOwnedSkills = unique(
     input.ownedSkills.map((skill) => skill.trim()).filter(Boolean),
   );
@@ -368,6 +450,7 @@ export function buildHomeFeedSnapshot(
   const resources = [
     input.postings,
     input.skillStats,
+    ...(input.graph ? [input.graph] : []),
     ...(input.fit ? [input.fit] : []),
   ];
   const resourceErrors = resources.flatMap(
@@ -388,6 +471,7 @@ export function buildHomeFeedSnapshot(
     skillDemand,
     careerInsight: buildCareerInsight(input.fit, ownedSkills),
     careerContext: buildCareerContext(input.careerPreferences),
+    careerDirections: buildCareerDirections(input.fit, graph, postings),
     ownedSkills,
     personalizationFallback: input.personalizationFallback ?? false,
     postingCount: postings?.total ?? 0,

@@ -8,6 +8,15 @@ import {
   type CareerPreferences,
 } from "./career-preferences";
 import {
+  clearCareerProfile,
+  EMPTY_CAREER_PROFILE,
+  normalizeCareerProfile,
+  readCareerProfile,
+  subscribeCareerProfile,
+  writeCareerProfile,
+  type CareerProfile,
+} from "./career-profile";
+import {
   clearJobApplicationStages,
   normalizeJobApplicationStages,
   readJobApplicationStages,
@@ -36,11 +45,21 @@ import {
   subscribeSavedJobs,
   writeSavedJobIds,
 } from "./saved-jobs";
+import {
+  clearSavedJobGroups,
+  normalizeSavedJobGroups,
+  readSavedJobGroups,
+  subscribeSavedJobGroups,
+  writeSavedJobGroups,
+  type SavedJobGroups,
+} from "./saved-job-groups";
 
 export type AccountCareerState = {
   ownedSkills: string[];
   careerPreferences: CareerPreferences;
+  careerProfile: CareerProfile;
   savedJobIds: string[];
+  savedJobGroups: SavedJobGroups;
   applicationStages: JobApplicationStages;
   followedCompanySlugs: string[];
 };
@@ -58,7 +77,9 @@ export type AccountCareerStateRow = {
 export const EMPTY_ACCOUNT_CAREER_STATE: AccountCareerState = {
   ownedSkills: [],
   careerPreferences: { ...EMPTY_CAREER_PREFERENCES },
+  careerProfile: { ...EMPTY_CAREER_PROFILE, skillUsage: {} },
   savedJobIds: [],
+  savedJobGroups: {},
   applicationStages: {},
   followedCompanySlugs: [],
 };
@@ -72,11 +93,16 @@ function stringArray(value: unknown) {
     : [];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export function normalizeAccountCareerState(value: unknown): AccountCareerState {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {
       ...EMPTY_ACCOUNT_CAREER_STATE,
       careerPreferences: { ...EMPTY_CAREER_PREFERENCES },
+      careerProfile: { ...EMPTY_CAREER_PROFILE, skillUsage: {} },
     };
   }
 
@@ -88,7 +114,9 @@ export function normalizeAccountCareerState(value: unknown): AccountCareerState 
       ),
     ).slice(0, MAX_ACCOUNT_SKILLS),
     careerPreferences: normalizeCareerPreferences(candidate.careerPreferences),
+    careerProfile: normalizeCareerProfile(candidate.careerProfile),
     savedJobIds: normalizeSavedJobIds(stringArray(candidate.savedJobIds)),
+    savedJobGroups: normalizeSavedJobGroups(candidate.savedJobGroups),
     applicationStages: normalizeJobApplicationStages(candidate.applicationStages),
     followedCompanySlugs: normalizeFollowedCompanySlugs(
       stringArray(candidate.followedCompanySlugs),
@@ -100,10 +128,15 @@ export function accountCareerStateFromRow(
   value: Partial<AccountCareerStateRow> | null,
 ): AccountCareerState {
   if (!value) return normalizeAccountCareerState(null);
+  const storedPreferences = isRecord(value.career_preferences)
+    ? value.career_preferences
+    : {};
   return normalizeAccountCareerState({
     ownedSkills: value.owned_skills,
-    careerPreferences: value.career_preferences,
+    careerPreferences: storedPreferences,
+    careerProfile: storedPreferences.profile,
     savedJobIds: value.saved_job_ids,
+    savedJobGroups: storedPreferences.savedJobGroups,
     applicationStages: value.application_stages,
     followedCompanySlugs: value.followed_company_slugs,
   });
@@ -115,6 +148,46 @@ export function mergeAccountCareerState(
 ): AccountCareerState {
   const browser = normalizeAccountCareerState(browserValue);
   const server = normalizeAccountCareerState(serverValue);
+
+  const careerProfile = normalizeCareerProfile({
+    currentRole: browser.careerProfile.currentRole || server.careerProfile.currentRole,
+    pastRoles: [...server.careerProfile.pastRoles, ...browser.careerProfile.pastRoles],
+    experienceYears:
+      browser.careerProfile.experienceYears ?? server.careerProfile.experienceYears,
+    responsibilities:
+      browser.careerProfile.responsibilities || server.careerProfile.responsibilities,
+    workTypes: [...server.careerProfile.workTypes, ...browser.careerProfile.workTypes],
+    industryExperience: [
+      ...server.careerProfile.industryExperience,
+      ...browser.careerProfile.industryExperience,
+    ],
+    currentDomain:
+      browser.careerProfile.currentDomain || server.careerProfile.currentDomain,
+    keepExperience:
+      browser.careerProfile.keepExperience || server.careerProfile.keepExperience,
+    interestDomains: [
+      ...server.careerProfile.interestDomains,
+      ...browser.careerProfile.interestDomains,
+    ],
+    excludedDomains: [
+      ...server.careerProfile.excludedDomains,
+      ...browser.careerProfile.excludedDomains,
+    ],
+    preferredLocations: [
+      ...server.careerProfile.preferredLocations,
+      ...browser.careerProfile.preferredLocations,
+    ],
+    employmentTypes: [
+      ...server.careerProfile.employmentTypes,
+      ...browser.careerProfile.employmentTypes,
+    ],
+    careerLevel:
+      browser.careerProfile.careerLevel || server.careerProfile.careerLevel,
+    skillUsage: {
+      ...server.careerProfile.skillUsage,
+      ...browser.careerProfile.skillUsage,
+    },
+  });
 
   return {
     ownedSkills: normalizeAccountCareerState({
@@ -128,10 +201,15 @@ export function mergeAccountCareerState(
         browser.careerPreferences.targetDomain ||
         server.careerPreferences.targetDomain,
     }),
+    careerProfile,
     savedJobIds: normalizeSavedJobIds([
       ...server.savedJobIds,
       ...browser.savedJobIds,
     ]),
+    savedJobGroups: normalizeSavedJobGroups({
+      ...server.savedJobGroups,
+      ...browser.savedJobGroups,
+    }),
     applicationStages: normalizeJobApplicationStages({
       ...server.applicationStages,
       ...browser.applicationStages,
@@ -149,7 +227,9 @@ export function readBrowserAccountState(
   return {
     ownedSkills: readOwnedSkills(storage),
     careerPreferences: readCareerPreferences(storage),
+    careerProfile: readCareerProfile(storage),
     savedJobIds: readSavedJobIds(storage),
+    savedJobGroups: readSavedJobGroups(storage),
     applicationStages: readJobApplicationStages(storage),
     followedCompanySlugs: readFollowedCompanySlugs(storage),
   };
@@ -162,7 +242,9 @@ export function subscribeBrowserAccountState(
   const unsubscribe = [
     subscribeOwnedSkills(emitCurrent),
     subscribeCareerPreferences(emitCurrent),
+    subscribeCareerProfile(emitCurrent),
     subscribeSavedJobs(emitCurrent),
+    subscribeSavedJobGroups(emitCurrent),
     subscribeJobApplicationStages(emitCurrent),
     subscribeFollowedCompanies(emitCurrent),
   ];
@@ -176,7 +258,9 @@ export function writeBrowserAccountState(
   const normalized = normalizeAccountCareerState(value);
   writeOwnedSkills(normalized.ownedSkills, storage);
   writeCareerPreferences(normalized.careerPreferences, storage);
+  writeCareerProfile(normalized.careerProfile, storage);
   writeSavedJobIds(normalized.savedJobIds, storage);
+  writeSavedJobGroups(normalized.savedJobGroups, storage);
   writeJobApplicationStages(normalized.applicationStages, storage);
   writeFollowedCompanySlugs(normalized.followedCompanySlugs, storage);
   return normalized;
@@ -185,7 +269,9 @@ export function writeBrowserAccountState(
 export function clearBrowserAccountState(storage?: Storage | null) {
   clearOwnedSkills(storage);
   clearCareerPreferences(storage);
+  clearCareerProfile(storage);
   clearSavedJobs(storage);
+  clearSavedJobGroups(storage);
   clearJobApplicationStages(storage);
   clearFollowedCompanies(storage);
 }
@@ -198,7 +284,11 @@ export function accountCareerStateToRow(
   return {
     user_id: userId,
     owned_skills: normalized.ownedSkills,
-    career_preferences: normalized.careerPreferences,
+    career_preferences: {
+      ...normalized.careerPreferences,
+      profile: normalized.careerProfile,
+      savedJobGroups: normalized.savedJobGroups,
+    },
     saved_job_ids: normalized.savedJobIds,
     application_stages: normalized.applicationStages,
     followed_company_slugs: normalized.followedCompanySlugs,

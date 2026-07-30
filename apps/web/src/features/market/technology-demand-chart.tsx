@@ -4,8 +4,6 @@ import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-import { PRODUCT_TERMS } from "@/lib/labels";
-
 import { ExplicitDemandBar } from "./explicit-demand-bar";
 import {
   sortMarketSkills,
@@ -53,21 +51,18 @@ export function TechnologyDemandChart({
     >
       <header className={styles.sectionHeader}>
         <div>
-          <h2 id="skill-demand-title">시장 기술 확산</h2>
-          <p>요구한 기업 수를 먼저 보고, 필수·우대 공고 규모를 함께 비교합니다.</p>
+          <h2 id="skill-demand-title">기술 수요 현황</h2>
+          <p>필수·우대로 확인된 공고 · 1위 대비 길이</p>
         </div>
         <div aria-label="요구 조건 범례" className={styles.legend}>
           <span data-legend="required">필수</span>
           <span data-legend="preferred">우대</span>
-          <span data-legend="unspecified">
-            {PRODUCT_TERMS.unspecifiedRequirementCompact}
-          </span>
         </div>
       </header>
       <div aria-hidden="true" className={styles.tableHeader}>
         <span>순위 · 기술</span>
-        <span>요구 기업 · 공고</span>
-        <span>필수 · 우대 · {PRODUCT_TERMS.unspecifiedRequirementCompact}</span>
+        <span>필수·우대 공고</span>
+        <span>필수 · 우대 · 조건 구분 없음</span>
         <span />
       </div>
       <ol className={styles.skillList} ref={listRef}>
@@ -94,11 +89,11 @@ export function TechnologyDemandChart({
                   <small>{skill.categoryLabel}</small>
                 </span>
               </span>
-              <span className={styles.breadthCount}>
-                <strong>
-                  요구 기업 {skill.companyCount.toLocaleString("ko-KR")}곳
-                </strong>
-                <small>공고 {skill.postingCount.toLocaleString("ko-KR")}건</small>
+              <span className={styles.explicitCount}>
+                <strong>{skill.explicitCount.toLocaleString("ko-KR")}건</strong>
+                <small>
+                  포함 공고 {skill.postingCount.toLocaleString("ko-KR")}건
+                </small>
               </span>
               <ExplicitDemandBar
                 descriptionId={descriptionId(skill)}

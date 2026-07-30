@@ -34,6 +34,11 @@ import {
   subscribeFollowedCompanies,
 } from "@/lib/followed-companies";
 import { notificationReason } from "@/lib/activity-notifications";
+import {
+  clearMigratedStorageValue,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "@/lib/browser-storage-migration";
 import { normalizePostingList } from "@/lib/posting-contract";
 import { flattenSavedSearchNotifications } from "@/lib/saved-search-notifications";
 import type { PostingSummary } from "@/lib/types";
@@ -52,14 +57,32 @@ type RecentCompanyJobsState =
   | { status: "ready"; items: PostingSummary[] }
   | { status: "error" };
 
-const COMPANY_JOBS_CHECKED_AT_KEY =
-  "ejik-fit:company-job-notifications-checked-at";
+const COMPANY_JOBS_CHECKED_AT_KEYS = {
+  current: "careerfit:company-job-notifications-checked-at",
+  legacy: ["ejik-fit:company-job-notifications-checked-at"],
+} as const;
+const checkpointCodec = {
+  parse(value: string) {
+    return Number.isFinite(Date.parse(value)) ? value : null;
+  },
+  serialize(value: string) {
+    return value;
+  },
+};
 const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1_000;
 const MAX_SAVED_SEARCH_NOTIFICATIONS = 5;
 
+export function clearActivityNotificationCheckpoint(storage: Storage) {
+  clearMigratedStorageValue(storage, COMPANY_JOBS_CHECKED_AT_KEYS);
+}
+
 function notificationCheckpoint(now: number) {
   try {
-    const value = window.localStorage.getItem(COMPANY_JOBS_CHECKED_AT_KEY);
+    const value = readMigratedStorageValue(
+      window.localStorage,
+      COMPANY_JOBS_CHECKED_AT_KEYS,
+      checkpointCodec,
+    );
     const parsed = value ? Date.parse(value) : Number.NaN;
     if (Number.isFinite(parsed) && parsed <= now) return parsed;
   } catch {
@@ -70,9 +93,11 @@ function notificationCheckpoint(now: number) {
 
 function saveNotificationCheckpoint(now: number) {
   try {
-    window.localStorage.setItem(
-      COMPANY_JOBS_CHECKED_AT_KEY,
+    writeMigratedStorageValue(
+      window.localStorage,
+      COMPANY_JOBS_CHECKED_AT_KEYS,
       new Date(now).toISOString(),
+      checkpointCodec,
     );
   } catch {
     // Notifications remain usable for the current open menu.
@@ -337,7 +362,7 @@ export function ActivityNotificationCenter({
               <strong>
                 {notification.job.company_name} · {notification.job.title}
               </strong>
-              <small>이직핏이 새로 확인</small>
+              <small>커리어핏이 새로 확인</small>
             </span>
           </Link>
         );

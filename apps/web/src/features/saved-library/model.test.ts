@@ -107,7 +107,7 @@ describe("saved library model", () => {
       {
         id: "local-browser-question",
         title: "브라우저에 저장한 내 질문",
-        body: "공식 공고를 비교한 뒤 남긴 질문입니다.",
+        body: "채용공고를 비교한 뒤 남긴 질문입니다.",
         tags: ["백엔드", "이직 준비"],
         createdAt: "2026-07-14T03:00:00.000Z",
       },

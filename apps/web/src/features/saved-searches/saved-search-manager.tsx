@@ -593,7 +593,7 @@ export function SavedSearchManager() {
         <p className={styles.eyebrow}>내 커리어</p>
         <h1>공고 알림</h1>
         <p>
-          알림 조건과 이직핏이 새로 확인한 기업 공식 공고를
+          알림 조건과 커리어핏이 새로 확인한 기업 공식 공고를
           관리합니다.
         </p>
         <Link href="/jobs">

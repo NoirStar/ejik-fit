@@ -3,9 +3,9 @@ import { MANIFEST_COLORS } from "@/styles/design-tokens";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "이직핏",
-    short_name: "이직핏",
-    description: "채용공고 기술 분석과 스킬맵",
+    name: "커리어핏",
+    short_name: "커리어핏",
+    description: "내 경력과 기술이 어떤 커리어 방향 및 채용공고와 연결되는지 확인합니다.",
     start_url: "/",
     display: "standalone",
     background_color: MANIFEST_COLORS.background,

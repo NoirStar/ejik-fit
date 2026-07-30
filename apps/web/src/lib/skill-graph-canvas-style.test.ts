@@ -93,6 +93,8 @@ describe("skill graph canvas styling", () => {
     expect(canvasSource).toContain("? 14 : node.seed ? 13 : 12");
     expect(canvasSource.match(/touchInputRef\.current \? 32 : 92/g))
       .toHaveLength(2);
-    expect(experienceSource).toContain("labelThreshold: 0.18");
+    expect(experienceSource).toContain(
+      'labelThreshold: graphMode === "all" ? 0.18',
+    );
   });
 });

@@ -33,7 +33,7 @@ describe("JobCard", () => {
     expect(internalDetailLink).toHaveAttribute("href", "/jobs/1");
     expect(internalDetailLink).not.toHaveAttribute("target");
     const companyPageLink = screen.getByRole("link", {
-      name: "기업 채용페이지 보기",
+      name: "공식 채용 페이지에서 확인",
     });
     expect(companyPageLink).toHaveAttribute("href", job.source_url);
     expect(companyPageLink).toHaveAttribute("target", "_blank");

@@ -257,7 +257,7 @@ describe("local community post storage", () => {
     const blocked = {
       ...fake,
       setItem: (key: string, value: string) => {
-        if (key === "ejik-fit:social-interactions") {
+        if (key === "careerfit:social-interactions") {
           throw new DOMException("blocked", "SecurityError");
         }
         fake.setItem(key, value);

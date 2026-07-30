@@ -1,5 +1,3 @@
-import { PRODUCT_TERMS } from "@/lib/labels";
-
 type SourceMetaProps = {
   sourceUrl: string;
   lastVerifiedAt: string;
@@ -27,10 +25,10 @@ export function SourceMeta({
 }: SourceMetaProps) {
   return (
     <div className="source-meta">
-      <span>{PRODUCT_TERMS.lastChecked} {formatVerifiedAt(lastVerifiedAt)}</span>
+      <span>최근 확인 {formatVerifiedAt(lastVerifiedAt)}</span>
       {showSourceLink && (
         <a href={sourceUrl} target="_blank" rel="noreferrer">
-          기업 채용페이지 보기
+          공식 채용 페이지에서 확인
           <span aria-hidden="true"> ↗</span>
         </a>
       )}

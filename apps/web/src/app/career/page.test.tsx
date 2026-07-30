@@ -101,8 +101,8 @@ describe("CareerPage", () => {
     expect(
       screen.getByRole("option", { name: "React Native 모바일" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveDisplayValue(
-      "전체 기술 분야",
+    expect(screen.getByLabelText("관심 커리어 분야")).toHaveDisplayValue(
+      "전체 분야",
     );
     expect(screen.getByRole("option", { name: "백엔드 · 연결 기술 1개" })).toBeInTheDocument();
   });
@@ -147,11 +147,11 @@ describe("CareerPage", () => {
     render(await CareerPage());
 
     expect(
-      screen.getByText("분야 목록을 불러오지 못해 전체 기술 분야로 비교합니다."),
+      screen.getByText("분야 목록을 불러오지 못해 전체 분야로 비교합니다."),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("희망 기술 분야")).toBeEnabled();
+    expect(screen.getByLabelText("관심 커리어 분야")).toBeEnabled();
     expect(
-      within(screen.getByLabelText("희망 기술 분야")).getAllByRole("option"),
+      within(screen.getByLabelText("관심 커리어 분야")).getAllByRole("option"),
     ).toHaveLength(1);
     expect(screen.queryByText("graph unavailable")).not.toBeInTheDocument();
     consoleError.mockRestore();

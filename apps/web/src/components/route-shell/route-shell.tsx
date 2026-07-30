@@ -17,7 +17,7 @@ export function RouteShell({
   action,
   children,
   description,
-  eyebrow = "이직핏",
+  eyebrow = "커리어핏",
   statusLabel = "준비 중",
   title,
 }: RouteShellProps) {

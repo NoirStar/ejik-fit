@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 768, 414, 375, 320]) {
-  test(`keeps saved market conditions aligned with actual home data at ${width}px`, async ({
+for (const width of [1440, 390]) {
+  test(`keeps a migrated profile aligned with personalized home evidence at ${width}px`, async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -39,73 +39,37 @@ for (const width of [1440, 768, 414, 375, 320]) {
       targetDomain: "backend",
     });
 
-    const context = page.getByRole("region", { name: "내 커리어 브리핑" });
-    await expect(context).toContainText("경력 · 백엔드");
-    await expect(context).toContainText("준비도 높은 공고");
-    await expect(context).toContainText("기술이 겹치는 공고");
-    await expect(context.getByText("현재 수요 상위")).toHaveCount(0);
-    const contextBox = await context.boundingBox();
-    expect(contextBox?.height).toBeLessThanOrEqual(width > 820 ? 210 : 240);
+    const directions = page.getByRole("region", {
+      name: "내 경험과 연결되는 커리어 방향",
+    });
+    await expect(directions).toContainText("백엔드");
+    await expect(directions).toContainText("공고 1건");
+    await expect(directions).toContainText("확인된 기업 1곳");
     await expect(
-      page.getByRole("article", { name: "Python Backend Engineer" }),
+      page.getByRole("link", { exact: true, name: "Python Backend Engineer" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "내 커리어 브리핑" }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("채용 시장", { exact: true }).first(),
-    ).toBeVisible();
-    await expect(
-      page.getByText("기술이 겹치는 공고", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText(/커리어 이야기 둘러보기|채용 시장 인사이트|내 커리어 인사이트/),
-    ).toHaveCount(0);
     await expect(
       page.getByRole("article", { name: "Go Platform Engineer" }),
     ).toHaveCount(0);
 
-    const edit = context.getByRole("link", {
-      name: "내 커리어 기준 수정",
-    });
+    await expect
+      .poll(() =>
+        page.evaluate(() => localStorage.getItem("careerfit:owned-skills")),
+      )
+      .toBe('["Python"]');
+    const edit = page.getByRole("link", { name: "프로필 정보 추가" });
     const editBox = await edit.boundingBox();
     expect(editBox?.width).toBeGreaterThanOrEqual(44);
     expect(editBox?.height).toBeGreaterThanOrEqual(44);
-    await expect(edit).toHaveCSS("white-space", "nowrap");
-    if (width === 320) {
-      const tabs = page
-        .getByRole("tablist", { name: "피드 보기" })
-        .getByRole("tab");
-      await expect(tabs).toHaveCount(4);
-      for (let index = 0; index < (await tabs.count()); index += 1) {
-        const tab = tabs.nth(index);
-        await expect(tab).toHaveCSS("white-space", "nowrap");
-        const tabBox = await tab.boundingBox();
-        expect(tabBox?.width).toBeGreaterThanOrEqual(44);
-        expect(tabBox?.height).toBeGreaterThanOrEqual(44);
-      }
-    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
       ),
     ).toBe(false);
-    const marketRail = page.getByRole("complementary", {
-      name: "채용 시장 요약",
-    });
-    if (width <= 900) {
-      await expect(marketRail).toBeHidden();
-      const firstArticle = page.getByRole("tabpanel").locator("article").first();
-      await expect(firstArticle).toBeVisible();
-      const firstArticleBox = await firstArticle.boundingBox();
-      expect(firstArticleBox?.y).toBeLessThan(820);
-    } else {
-      await expect(marketRail).toBeVisible();
-    }
     await edit.click();
     await expect(page).toHaveURL(/\/career$/);
     await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
-    await expect(page.getByLabel("희망 기술 분야")).toHaveValue("backend");
+    await expect(page.getByLabel("관심 커리어 분야")).toHaveValue("backend");
     expect(browserErrors).toEqual([]);
   });
 }

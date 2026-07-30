@@ -8,8 +8,18 @@ import {
   type CommunityCategory,
   type CreateCommunityPostInput,
 } from "@/lib/community-contract";
+import {
+  clearMigratedStorageValue,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "@/lib/browser-storage-migration";
 
-export const COMMUNITY_DRAFT_STORAGE_KEY = "ejik-fit:community-draft";
+export const COMMUNITY_DRAFT_STORAGE_KEY = "careerfit:community-draft";
+export const LEGACY_COMMUNITY_DRAFT_STORAGE_KEY = "ejik-fit:community-draft";
+const COMMUNITY_DRAFT_STORAGE_KEYS = {
+  current: COMMUNITY_DRAFT_STORAGE_KEY,
+  legacy: [LEGACY_COMMUNITY_DRAFT_STORAGE_KEY],
+} as const;
 
 const COMMUNITY_DRAFT_VERSION = 1 as const;
 const COMMUNITY_DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -76,7 +86,13 @@ export function saveCommunityDraft(
   });
 
   if (!draft) throw new CommunityDataError();
-  storage.setItem(COMMUNITY_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  const written = writeMigratedStorageValue(
+    storage,
+    COMMUNITY_DRAFT_STORAGE_KEYS,
+    draft,
+    { parse: normalizeDraft, serialize: JSON.stringify },
+  );
+  if (!written) throw new CommunityDataError();
   return draft;
 }
 
@@ -84,23 +100,16 @@ export function readCommunityDraft(
   storage: Storage,
   now = new Date(),
 ): CommunityDraft | null {
-  let stored: string | null;
-  try {
-    stored = storage.getItem(COMMUNITY_DRAFT_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-  if (!stored) return null;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stored);
-  } catch {
-    removeCommunityDraft(storage);
-    return null;
-  }
-
-  const draft = normalizeDraft(parsed);
+  const draft = readMigratedStorageValue(storage, COMMUNITY_DRAFT_STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        return normalizeDraft(JSON.parse(raw) as unknown);
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  });
   if (
     !draft ||
     now.getTime() - Date.parse(draft.savedAt) > COMMUNITY_DRAFT_MAX_AGE_MS
@@ -113,9 +122,5 @@ export function readCommunityDraft(
 }
 
 export function removeCommunityDraft(storage: Storage): void {
-  try {
-    storage.removeItem(COMMUNITY_DRAFT_STORAGE_KEY);
-  } catch {
-    // An unavailable storage area already behaves as though no draft exists.
-  }
+  clearMigratedStorageValue(storage, COMMUNITY_DRAFT_STORAGE_KEYS);
 }

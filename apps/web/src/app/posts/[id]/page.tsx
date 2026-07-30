@@ -26,8 +26,8 @@ export async function generateMetadata({
     };
   }
   if (isCommunityUuid(id)) {
-    const title = "이직핏 커뮤니티 글";
-    const description = "이직핏 사용자가 계정에 작성한 공개 커뮤니티 글입니다.";
+    const title = "커리어핏 커뮤니티 글";
+    const description = "커리어핏 사용자가 계정에 작성한 공개 커뮤니티 글입니다.";
     return {
       title,
       description,

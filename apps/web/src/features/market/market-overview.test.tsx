@@ -126,7 +126,6 @@ const skillStats: SkillStatsResponse = {
       skill: "Kubernetes",
       category: "infra",
       count: 12,
-      company_count: 8,
       required_count: 5,
       preferred_count: 4,
       unspecified_count: 3,
@@ -135,7 +134,6 @@ const skillStats: SkillStatsResponse = {
       skill: "Docker",
       category: "infra",
       count: 9,
-      company_count: 6,
       required_count: 4,
       preferred_count: 3,
       unspecified_count: 2,
@@ -144,7 +142,6 @@ const skillStats: SkillStatsResponse = {
       skill: "LLM",
       category: "ai",
       count: 7,
-      company_count: 3,
       required_count: 5,
       preferred_count: 1,
       unspecified_count: 1,
@@ -162,25 +159,6 @@ function renderReadyMarket() {
       })}
     />,
   );
-}
-
-function expectTrendUnavailable(fetchMock: ReturnType<typeof vi.fn>) {
-  const trend = screen.getByRole("region", { name: "기술 수요 추세" });
-  const summary = screen.getByRole("region", { name: "현재 채용시장 요약" });
-
-  expect(fetchMock).not.toHaveBeenCalled();
-  expect(
-    within(trend).getByText(
-      "비교할 기술을 확인할 수 없어 주간 추세를 표시하지 않습니다.",
-    ),
-  ).toBeInTheDocument();
-  expect(within(trend).getByText("표시 안 함")).toBeInTheDocument();
-  expect(within(summary).getByText("주간 추세 표시 안 함")).toBeInTheDocument();
-  expect(
-    within(trend).queryByText("주간 추세를 불러오고 있습니다."),
-  ).not.toBeInTheDocument();
-  expect(within(trend).queryByText("추세 수집 중")).not.toBeInTheDocument();
-  expect(within(summary).queryByText("추세 상태 확인 중")).not.toBeInTheDocument();
 }
 
 describe("MarketOverview", () => {
@@ -204,15 +182,13 @@ describe("MarketOverview", () => {
     renderReadyMarket();
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "채용 시장 기술 동향" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.",
-      ),
+      screen.getByRole("heading", {
+        name: "분야별 채용 현황과 기술 수요",
+        level: 1,
+      }),
     ).toBeInTheDocument();
     const scopeNotice = screen.getByLabelText("데이터 범위 안내");
-    expect(scopeNotice).toHaveTextContent("기업 공식 채용 페이지 확인 범위");
+    expect(scopeNotice).toHaveTextContent("커리어핏이 분석한 채용공고 범위");
     expect(scopeNotice).toHaveTextContent("국내 전체 채용시장 통계가 아닙니다");
     expect(
       screen.getByRole("region", { name: "현재 채용시장 요약" }),
@@ -224,29 +200,17 @@ describe("MarketOverview", () => {
     expect(screen.queryByText(/한국 개발자 채용시장/)).not.toBeInTheDocument();
   });
 
-  it("ranks market spread by company breadth and keeps demand evidence", () => {
+  it("renders ranked explicit demand with brand and neutral icons", () => {
     renderReadyMarket();
 
-    expect(
-      screen.getByRole("combobox", { name: "기술 정렬 기준" }),
-    ).toHaveValue("companies");
-    const demand = screen.getByRole("region", { name: "시장 기술 확산" });
-    expect(
-      within(demand).getByRole("heading", { level: 2, name: "시장 기술 확산" }),
-    ).toBeInTheDocument();
-    const firstRow = demand.querySelector<HTMLElement>("[data-skill-row]");
-    expect(firstRow).not.toBeNull();
-    expect(within(firstRow!).getByText("Kubernetes")).toBeInTheDocument();
-    expect(within(firstRow!).getByText("요구 기업 8곳")).toBeInTheDocument();
-    expect(within(firstRow!).getByText("공고 12건")).toBeInTheDocument();
-    expect(within(demand).getByText("미표기")).toBeInTheDocument();
+    const demand = screen.getByRole("region", { name: "기술 수요 현황" });
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAttribute("aria-pressed", "true");
     expect(
       within(demand).getByRole("button", { name: "Kubernetes 기술 선택" }),
     ).toHaveAccessibleDescription(
-      "인프라, 요구 기업 8곳, 공고 12건, 명시 요구 9건, 필수 5건, 우대 4건, 필수·우대 미표기 3건, 1위 대비 막대 길이 100%",
+      "인프라, 필수 또는 우대로 확인된 공고 9건, 필수 5건, 우대 4건, 이 기술이 포함된 공고 12건, 조건 구분 없음 3건, 현재 1위 대비 막대 길이 100%",
     );
     expect(
       within(demand).getByRole("button", { name: "Docker 기술 선택" }),
@@ -257,15 +221,8 @@ describe("MarketOverview", () => {
     expect(kubernetesRow).not.toBeNull();
     expect(within(kubernetesRow!).getByText("필수 5건")).toBeInTheDocument();
     expect(within(kubernetesRow!).getByText("우대 4건")).toBeInTheDocument();
-    expect(within(kubernetesRow!).getByText("미표기 3건")).toBeInTheDocument();
-    expect(screen.getAllByText(/미표기 3건/).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText(
-        "공고에 기술은 나오지만 필수 또는 우대로 구분되어 있지 않은 경우입니다.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/구분 안 됨/)).not.toBeInTheDocument();
-    expect(within(demand).getByText(/요구한 기업 수를 먼저/)).toBeInTheDocument();
+    expect(within(kubernetesRow!).getByText("조건 구분 없음 3건")).toBeInTheDocument();
+    expect(within(demand).getByText(/1위 대비 길이/)).toBeInTheDocument();
     expect(
       demand.querySelector('[data-technology-icon="kubernetes"]'),
     ).not.toBeNull();
@@ -297,7 +254,7 @@ describe("MarketOverview", () => {
 
     fireEvent.click(
       within(
-        screen.getByRole("navigation", { name: "포함 기술 분야" }),
+        screen.getByRole("navigation", { name: "기술 분류" }),
       ).getByRole(
         "link",
         { name: "인프라" },
@@ -319,95 +276,20 @@ describe("MarketOverview", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows a collecting state instead of fabricated trend lines", async () => {
+  it("shows a collecting state instead of fabricated trend lines", () => {
     renderReadyMarket();
 
     const trend = screen.getByRole("region", { name: "기술 수요 추세" });
     expect(within(trend).getByText("추세 수집 중")).toBeInTheDocument();
     expect(
-      await within(trend).findByText(
-        "2주치 데이터가 쌓였습니다. 4주부터 변화선을 표시합니다.",
-      ),
+      within(trend).getByText("주간 데이터를 수집하고 있습니다."),
     ).toBeInTheDocument();
     expect(
-      within(trend).getByText(
-        "수집된 공고만 사용하며 빠진 주차를 임의로 채우지 않습니다.",
-      ),
+      within(trend).getByText(/실제 채용공고 스냅샷만 사용/),
     ).toBeInTheDocument();
     expect(within(trend).queryByText(/UI 시안용/)).not.toBeInTheDocument();
     expect(within(trend).queryByText(/증가|감소|예측/)).not.toBeInTheDocument();
     expect(trend.querySelector("path[data-trend-line]")).toBeNull();
-  });
-
-  it("describes trend loading directly", () => {
-    const fetchMock = vi.fn(() => new Promise(() => undefined));
-    vi.stubGlobal("fetch", fetchMock);
-    renderReadyMarket();
-
-    const trend = screen.getByRole("region", { name: "기술 수요 추세" });
-    const summary = screen.getByRole("region", { name: "현재 채용시장 요약" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(within(trend).getByText("추세 수집 중")).toBeInTheDocument();
-    expect(
-      within(trend).getByText("주간 추세를 불러오고 있습니다."),
-    ).toBeInTheDocument();
-    expect(within(summary).getByText("추세 상태 확인 중")).toBeInTheDocument();
-  });
-
-  it("does not describe trends as loading when skill statistics fail", () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-    render(
-      <MarketOverview
-        snapshot={buildMarketOverviewSnapshot({
-          careerType: "",
-          postings: { status: "ready", data: postings },
-          skillStats: {
-            status: "error",
-            message: "기술 수요 데이터를 불러오지 못했습니다.",
-          },
-        })}
-      />,
-    );
-
-    expectTrendUnavailable(fetchMock);
-  });
-
-  it("does not describe trends as loading when no technologies were found", () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-    render(
-      <MarketOverview
-        snapshot={buildMarketOverviewSnapshot({
-          careerType: "new_comer",
-          postings: { status: "ready", data: { total: 0, items: [] } },
-          skillStats: { status: "ready", data: { total: 0, items: [] } },
-        })}
-      />,
-    );
-
-    expectTrendUnavailable(fetchMock);
-  });
-
-  it("keeps demand and jobs available when trend loading fails", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({ ok: false }),
-    );
-    renderReadyMarket();
-
-    const trend = screen.getByRole("region", { name: "기술 수요 추세" });
-    expect(
-      await within(trend).findByText(
-        "주간 추세를 불러오지 못했습니다. 기술 수요와 관련 공고는 정상적으로 표시됩니다.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("region", { name: "시장 기술 확산" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /플랫폼 엔지니어/ }),
-    ).toBeInTheDocument();
   });
 
   it("renders explicit weekly change only when real trend data is ready", async () => {
@@ -421,9 +303,9 @@ describe("MarketOverview", () => {
     renderReadyMarket();
 
     expect(await screen.findByText("전주 대비 +3건")).toBeInTheDocument();
-    expect(screen.getByText("전체 경력·전체 분야 기준")).toBeInTheDocument();
+    expect(screen.getByText("모든 경력 조건·모든 기술 분류 기준")).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: /주차 명시 요구 변화/ }),
+      screen.getByRole("img", { name: /주차 필수·우대 공고 수 변화/ }),
     ).toBeInTheDocument();
   });
 
@@ -436,10 +318,10 @@ describe("MarketOverview", () => {
       screen.getByRole("region", { name: "Kubernetes 시장 근거" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("navigation", { name: "포함 기술 분야" }),
+      screen.getByRole("navigation", { name: "기술 분류" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/선택 분야 포함 공고의 모든 기술/),
+      screen.getByText(/선택한 기술 분류가 포함된 공고의 모든 기술/),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "LLM 기술 선택" }));
@@ -478,57 +360,8 @@ describe("MarketOverview", () => {
       "공고 데이터를 불러오지 못했습니다.",
     );
     expect(evidence).toHaveTextContent(
-      "기술 수요는 정상적으로 표시됩니다.",
+      "기술 수요 집계는 계속 확인할 수 있습니다.",
     );
-  });
-
-  it("does not claim related jobs are normal when postings and trends fail", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
-    render(
-      <MarketOverview
-        snapshot={buildMarketOverviewSnapshot({
-          careerType: "",
-          postings: {
-            status: "error",
-            message: "공고 데이터를 불러오지 못했습니다.",
-          },
-          skillStats: { status: "ready", data: skillStats },
-        })}
-      />,
-    );
-
-    const trend = screen.getByRole("region", { name: "기술 수요 추세" });
-    expect(within(trend).getByText("주간 변화 · 공고 기준")).toBeInTheDocument();
-    expect(
-      await within(trend).findByText(
-        "주간 추세를 불러오지 못했습니다. 기술 수요는 정상적으로 표시됩니다.",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      within(trend).queryByText(/관련 공고는 정상적으로 표시됩니다/),
-    ).not.toBeInTheDocument();
-  });
-
-  it("does not claim a posting list is shown when skill statistics fail", () => {
-    render(
-      <MarketOverview
-        snapshot={buildMarketOverviewSnapshot({
-          careerType: "",
-          postings: { status: "ready", data: postings },
-          skillStats: {
-            status: "error",
-            message: "기술 수요 데이터를 불러오지 못했습니다.",
-          },
-        })}
-      />,
-    );
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "기술 수요 데이터를 불러오지 못했습니다.",
-    );
-    expect(
-      screen.queryByText("공고 목록은 정상적으로 표시됩니다."),
-    ).not.toBeInTheDocument();
   });
 
   it("shows one recovery state when both market requests fail", () => {

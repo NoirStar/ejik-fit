@@ -2,9 +2,18 @@ import {
   MAX_SAVED_JOB_ID_LENGTH,
   MAX_SAVED_JOB_IDS,
 } from "./saved-job-contract";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 
-const KEY = "ejik-fit:job-application-stages";
-const CHANGE_EVENT = "ejik-fit:job-application-stages-change";
+const STORAGE_KEYS = {
+  current: "careerfit:job-application-stages",
+  legacy: ["ejik-fit:job-application-stages"],
+} as const;
+const CHANGE_EVENT = "careerfit:job-application-stages-change";
 
 export const MAX_JOB_APPLICATION_STAGES = MAX_SAVED_JOB_IDS;
 
@@ -81,13 +90,19 @@ export function readJobApplicationStages(
   storage = defaultStorage(),
 ): JobApplicationStages {
   if (!storage) return {};
-  try {
-    const raw = storage.getItem(KEY);
-    if (!raw) return {};
-    return normalizeJobApplicationStages(JSON.parse(raw) as unknown);
-  } catch {
-    return {};
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? normalizeJobApplicationStages(parsed)
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? {};
 }
 
 function notifyJobApplicationStagesChange(storage: Storage | null) {
@@ -104,11 +119,7 @@ export function clearJobApplicationStages(
   storage = defaultStorage(),
 ): JobApplicationStages {
   if (!storage) return {};
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readJobApplicationStages(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyJobApplicationStagesChange(storage);
   return {};
 }
@@ -119,9 +130,11 @@ export function writeJobApplicationStages(
 ): JobApplicationStages {
   const normalized = normalizeJobApplicationStages(stages);
   if (!storage) return {};
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readJobApplicationStages(storage);
   }
   notifyJobApplicationStagesChange(storage);
@@ -159,7 +172,7 @@ export function subscribeJobApplicationStages(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

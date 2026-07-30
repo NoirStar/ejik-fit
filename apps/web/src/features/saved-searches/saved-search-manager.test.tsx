@@ -90,7 +90,7 @@ function posting(id: string): PostingSummary {
   return {
     id,
     title: `공고 ${id}`,
-    company_name: "이직핏 테스트",
+    company_name: "커리어핏 테스트",
     career_type: null,
     employment_type: null,
     career_min: null,

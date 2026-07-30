@@ -11,19 +11,12 @@ import styles from "@/app/jobs/[id]/job-detail.module.css";
 import { SourceMeta } from "@/components/source-meta";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { formatCareerRange } from "@/features/jobs/model";
-import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
+import { formatEmployment } from "@/lib/labels";
 import type { PostingDetail, SkillDetail } from "@/lib/types";
 
 import { JobDetailActions } from "./job-detail-actions";
-import {
-  groupJobSkills,
-  hasSubstantivePostingDetail,
-} from "./job-detail-model";
-import {
-  PostingDescription,
-  PostingDescriptionPending,
-} from "./job-description";
-import { JobDescriptionImages } from "./job-description-images";
+import { groupJobSkills } from "./job-detail-model";
+import { PostingDescription } from "./job-description";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -72,8 +65,8 @@ function SkillGroup({
         {skills.map((skill) => (
           <li key={`${skill.requirement_type}-${skill.skill}`}>
             <Link
-              aria-label={`${skill.skill} 스킬맵`}
-              href={`/skill-map?skill=${encodeURIComponent(skill.skill)}`}
+              aria-label={`${skill.skill} 기술 관계 보기`}
+              href={`/skills/graph?seed=${encodeURIComponent(skill.skill)}`}
               prefetch={false}
             >
               {skill.skill}
@@ -90,25 +83,18 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
   const skillDetails = job.skill_details ?? [];
   const groups = groupJobSkills(skillDetails);
   const isDelayed = job.status === "delayed";
-  const descriptionImages = job.description_images ?? [];
-  const hasDescriptionText = job.description_text.trim().length > 0;
-  const hasSubstantiveDetail = hasSubstantivePostingDetail(
-    job.description_text,
-    descriptionImages,
-  );
 
   return (
     <main className={styles.main}>
       <Link className={styles.backLink} href="/jobs">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        채용공고로 돌아가기
+        공고 탐색으로 돌아가기
       </Link>
 
       <article className={styles.article}>
         <header className={styles.hero}>
           <CompanyMark
             companyName={job.company_name}
-            companySlug={job.company_slug}
             size={56}
             sourceUrl={job.source_url}
           />
@@ -150,7 +136,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               <strong>공식 출처 확인이 지연되고 있습니다.</strong>
               <p>
                 최근 자동 수집에서 이 공고를 재확인하지 못했습니다. 현재 모집
-                여부를 공식 원문에서 다시 확인해 주세요.
+                여부를 공식 채용 페이지에서 다시 확인해 주세요.
               </p>
             </div>
           </section>
@@ -187,8 +173,8 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             className={styles.skills}
           >
             <header className={styles.sectionHeader}>
-              <p>기업 채용페이지에서 확인한 표현</p>
-              <h2 id="job-skills-title">기술 요건</h2>
+              <p>채용공고 내용에서 확인한 조건</p>
+              <h2 id="job-skills-title">기술 조건과 근거 문장</h2>
             </header>
             {skillDetails.length > 0 ? (
               <div className={styles.skillGroups}>
@@ -203,14 +189,14 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
                   tone="preferred"
                 />
                 <SkillGroup
-                  label={PRODUCT_TERMS.unspecifiedRequirement}
+                  label="공고 언급"
                   skills={groups.unspecified}
                   tone="mentioned"
                 />
               </div>
             ) : (
               <p className={styles.emptyEvidence}>
-                확인된 기술 요건이 없습니다.
+                채용공고 내용에서 구분해 표시할 기술 조건을 확인하지 못했습니다.
               </p>
             )}
           </section>
@@ -228,7 +214,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
               <ShieldCheck aria-hidden="true" size={21} weight="fill" />
               <div>
                 <h2>출처와 검증</h2>
-                <p>기업 채용페이지와 확인 시각을 함께 확인해 주세요.</p>
+                <p>출처와 검증 시각을 함께 확인하세요.</p>
                 <SourceMeta
                   lastVerifiedAt={job.last_verified_at}
                   sourceUrl={job.source_url}
@@ -253,32 +239,19 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             className={styles.description}
           >
             <header className={styles.sectionHeader}>
-              <p>
-                {hasSubstantiveDetail
-                  ? "제공된 공고 원문"
-                  : "상세 내용 확인"}
-              </p>
-              <h2 id="job-description-title">
-                {hasSubstantiveDetail ? "공고 원문" : "공고 상세"}
-              </h2>
+              <p>수집된 채용공고 내용</p>
+              <h2 id="job-description-title">채용공고 내용</h2>
             </header>
-            {hasSubstantiveDetail ? (
-              <>
-                {hasDescriptionText ? (
-                  <PostingDescription text={job.description_text} />
-                ) : null}
-                <JobDescriptionImages images={descriptionImages} />
-              </>
-            ) : (
-              <PostingDescriptionPending />
-            )}
+            <PostingDescription text={job.description_text} />
             <a
               className={styles.continueLink}
               href={job.source_url}
               rel="noreferrer"
               target="_blank"
             >
-              기업 채용페이지 보기
+              {job.status === "open"
+                ? "공식 채용 페이지에서 지원"
+                : "공식 채용 페이지에서 상태 확인"}
               <ArrowSquareOut aria-hidden="true" size={17} weight="bold" />
             </a>
           </section>

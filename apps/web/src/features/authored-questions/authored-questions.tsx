@@ -325,7 +325,7 @@ export function AuthoredQuestions({
           ) : (
             <span>계정 연결 전</span>
           )}
-          <Link href="/?compose=1">
+          <Link href="/community?compose=1">
             <NotePencil aria-hidden="true" size={17} weight="bold" />
             글쓰기
           </Link>

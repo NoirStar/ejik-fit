@@ -272,27 +272,28 @@ describe("public trust pages", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "개인정보와 계정 저장" })).toBeInTheDocument();
     expect(screen.getByText(/Supabase Auth/)).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:owned-skills/)).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:saved-job-ids/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:owned-skills/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:saved-job-ids/)).toBeInTheDocument();
     expect(
-      screen.getByText(/ejik-fit:job-application-stages/),
+      screen.getByText(/careerfit:job-application-stages/),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/ejik-fit:social-interactions/)).toHaveLength(1);
-    expect(screen.getByText(/ejik-fit:career-preferences/)).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:followed-company-slugs/)).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:local-community-posts/)).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:recent-community-topics/)).toBeInTheDocument();
+    expect(screen.getAllByText(/careerfit:social-interactions/)).toHaveLength(2);
+    expect(screen.getByText(/careerfit:career-preferences/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:followed-company-slugs/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:local-community-posts/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:recent-community-topics/)).toBeInTheDocument();
+    expect(screen.getByText(/ejik-fit:/)).toBeInTheDocument();
     expect(screen.getByText(/작성자 팔로우/)).toBeInTheDocument();
     expect(screen.getByText(/닉네임은 커뮤니티에 공개되는 프로필/)).toBeInTheDocument();
     expect(screen.getByText(/이메일은 비공개 로그인 식별자/)).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 2, name: "작성 중인 임시 글" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/ejik-fit:community-draft/)).toBeInTheDocument();
+    expect(screen.getByText(/careerfit:community-draft/)).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 2, name: "이전 브라우저 글" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/이 기기에 남은 글을 삭제합니다/)).toBeInTheDocument();
+    expect(screen.getByText(/이 브라우저에 남은 글을 삭제합니다/)).toBeInTheDocument();
     expect(screen.getByText(/재시도를 위해 그대로 보관합니다/)).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { level: 2, name: "내 기술 저장" }),

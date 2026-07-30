@@ -1,7 +1,7 @@
 # Company logo sources
 
 These files are shown only beside a posting to identify the company. They are
-not used as 이직핏 branding, endorsements, or promotional marks.
+not used as CareerFit branding, endorsements, or promotional marks.
 
 | File | Company | Official source | Retrieved | Usage note |
 | --- | --- | --- | --- | --- |

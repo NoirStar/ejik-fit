@@ -1,14 +1,8 @@
 import type { Metadata } from "next";
 
 import { SkillGraphExperience } from "@/components/skill-graph-experience";
-import { getSkillCatalog, getSkillGraph } from "@/lib/api";
-import { normalizeCareerPreferences } from "@/lib/career-preferences";
-import { PRODUCT_TERMS } from "@/lib/labels";
+import { getSkillGraph } from "@/lib/api";
 import { ownedSkillsFromSearchParams } from "@/lib/owned-skills";
-import {
-  graphContainsSkill,
-  mergeSkillGraphResponses,
-} from "@/lib/skill-graph-data";
 import type { SkillGraphResponse } from "@/lib/types";
 
 
@@ -16,8 +10,9 @@ export const dynamic = "force-dynamic";
 
 
 export const metadata: Metadata = {
-  title: PRODUCT_TERMS.skillMap,
-  description: "공개 채용 공고의 기술 관계와 다음 학습 방향을 한눈에 확인하세요.",
+  title: "기술 관계 보기",
+  description:
+    "같은 채용공고에 함께 등장한 기술과 실제 공고 근거를 확인합니다.",
 };
 
 type SkillGraphSearchParams = Record<
@@ -37,7 +32,7 @@ function emptyGraph(): SkillGraphResponse {
     edges: [],
     evidence: [],
     meta: {
-      limit: 60,
+      limit: 30,
       min_confidence: 0.8,
     },
   };
@@ -46,10 +41,6 @@ function emptyGraph(): SkillGraphResponse {
 
 function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function graphDepth(value: string | string[] | undefined): 1 | 2 {
-  return firstValue(value) === "2" ? 2 : 1;
 }
 
 function buildRetryHref(searchParams: SkillGraphSearchParams) {
@@ -69,52 +60,25 @@ export default async function SkillGraphPage({
 }: SkillGraphPageProps = {}) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const seed = firstValue(resolvedSearchParams.seed)?.trim() || undefined;
-  const careerType = normalizeCareerPreferences({
-    careerCondition: firstValue(resolvedSearchParams.career_type),
-    targetDomain: "",
-  }).careerCondition;
   const ownedSkills = ownedSkillsFromSearchParams(resolvedSearchParams);
-  const depth = graphDepth(resolvedSearchParams.depth);
   let graph = emptyGraph();
   let failed = false;
-  const catalogPromise = getSkillCatalog()
-    .then((catalog) => catalog.items)
-    .catch(() => []);
 
   try {
     graph = await getSkillGraph({
-      ...(careerType ? { career_type: careerType } : {}),
-      depth: 1,
-      limit: 60,
-      include_evidence: false,
+      ...(seed ? { seed } : {}),
+      include_evidence: true,
+      owned_skills: ownedSkills,
+      limit: 30,
     });
-    if (seed && !graphContainsSkill(graph, seed)) {
-      try {
-        const neighborhood = await getSkillGraph({
-          seed,
-          ...(careerType ? { career_type: careerType } : {}),
-          depth,
-          limit: 30,
-          include_evidence: false,
-        });
-        graph = mergeSkillGraphResponses(graph, neighborhood);
-      } catch {
-        // The public atlas is still useful when a rare seed cannot be expanded.
-      }
-    }
   } catch {
     failed = true;
   }
-  const catalog = await catalogPromise;
 
   return (
     <SkillGraphExperience
       initialGraph={graph}
-      initialSelectedSkill={seed}
-      initialSkillCatalog={catalog}
-      initialDepth={depth}
       initialOwnedSkills={ownedSkills}
-      careerType={careerType || undefined}
       loadFailed={failed}
       retryHref={buildRetryHref(resolvedSearchParams)}
     />

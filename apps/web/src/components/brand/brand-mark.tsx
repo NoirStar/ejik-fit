@@ -15,18 +15,8 @@ export function BrandMark({
       aria-hidden="true"
       className={`brand-lockup brand-lockup--${size} ${className}`.trim()}
     >
-      <img
-        alt=""
-        className="brand-lockup__asset"
-        draggable="false"
-        height={30}
-        src={
-          showWordmark
-            ? "/brand/ejik-fit-wordmark.svg"
-            : "/brand/ejik-fit-glyph.svg"
-        }
-        width={showWordmark ? 75 : 26}
-      />
+      <span className="brand-lockup__mark">C</span>
+      {showWordmark && <span className="brand-lockup__wordmark">커리어핏</span>}
     </span>
   );
 }

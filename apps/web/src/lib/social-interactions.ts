@@ -1,7 +1,16 @@
 import { isLocalCommunityMigrationLocked } from "./local-community-migration-lock";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 
-const KEY = "ejik-fit:social-interactions";
-const CHANGE_EVENT = "ejik-fit:social-interactions-change";
+const STORAGE_KEYS = {
+  current: "careerfit:social-interactions",
+  legacy: ["ejik-fit:social-interactions"],
+} as const;
+const CHANGE_EVENT = "careerfit:social-interactions-change";
 const MAX_IDS = 200;
 const MAX_POSTS_WITH_COMMENTS = 100;
 const MAX_COMMENTS_PER_POST = 50;
@@ -130,12 +139,17 @@ export function readSocialInteractions(
   storage = defaultStorage(),
 ): SocialInteractions {
   if (!storage) return normalizeSocialInteractions(null);
-  try {
-    const raw = storage.getItem(KEY);
-    return raw ? normalizeSocialInteractions(JSON.parse(raw)) : normalizeSocialInteractions(null);
-  } catch {
-    return normalizeSocialInteractions(null);
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return isRecord(parsed) ? normalizeSocialInteractions(parsed) : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? normalizeSocialInteractions(null);
 }
 
 function notifySocialInteractions(storage: Storage | null) {
@@ -152,11 +166,7 @@ export function clearSocialInteractions(
   storage = defaultStorage(),
 ): SocialInteractions {
   if (!storage) return normalizeSocialInteractions(null);
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readSocialInteractions(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifySocialInteractions(storage);
   return normalizeSocialInteractions(null);
 }
@@ -167,9 +177,11 @@ export function writeSocialInteractions(
 ): SocialInteractions {
   const normalized = normalizeSocialInteractions(value);
   if (!storage) return normalizeSocialInteractions(null);
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readSocialInteractions(storage);
   }
   notifySocialInteractions(storage);
@@ -294,7 +306,7 @@ export function subscribeSocialInteractions(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

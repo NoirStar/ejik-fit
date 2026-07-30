@@ -1,45 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 390, 320]) {
-  test(`removes built-in community examples at ${width}px`, async ({ page }) => {
-    const browserErrors: string[] = [];
-    page.on("console", (message) => {
-      if (message.type() === "error") browserErrors.push(message.text());
-    });
-    page.on("pageerror", (error) => browserErrors.push(error.message));
-
-    await page.setViewportSize({ height: 900, width });
-    await page.goto("/");
-
-    await expect(
-      page.getByRole("region", { name: "이직핏 커뮤니티 가이드" }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole("link", {
-        name: "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요? 예시 읽기",
-      }),
-    ).toHaveCount(0);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth > window.innerWidth,
-      ),
-    ).toBe(false);
-
-    await page.goto("/posts/career-move-3y-backend");
-    await expect(
-      page.getByRole("heading", {
-        level: 1,
-        name: "페이지를 찾을 수 없습니다.",
-      }),
-    ).toBeVisible();
-    expect(browserErrors).toEqual([]);
-  });
-}
-
 test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => {
   await page.setViewportSize({ height: 900, width: 390 });
-  await page.goto("/");
-  await page.evaluate(() => {
+  await page.addInitScript(() => {
     localStorage.setItem(
       "ejik-fit:local-community-posts",
       JSON.stringify([
@@ -62,9 +25,7 @@ test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => 
       name: "이전 브라우저에 남아 있던 이직 질문",
     }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
-  ).toBeVisible();
+  await expect(page.getByText("이 기기에 남은 글", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /공감|저장|팔로우|댓글 등록/ }),
@@ -84,12 +45,15 @@ test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => 
   await expect(page.getByRole("status")).toContainText("글을 삭제했습니다");
   await expect
     .poll(() =>
-      page.evaluate(() => localStorage.getItem("ejik-fit:local-community-posts")),
+      page.evaluate(() => ({
+        current: localStorage.getItem("careerfit:local-community-posts"),
+        legacy: localStorage.getItem("ejik-fit:local-community-posts"),
+      })),
     )
-    .toBe("[]");
+    .toEqual({ current: "[]", legacy: "[]" });
 });
 
-test("keeps a guest draft for login without publishing a local post", async ({
+test("keeps a guest community draft for login without publishing a local post", async ({
   page,
 }) => {
   const browserErrors: string[] = [];
@@ -98,30 +62,34 @@ test("keeps a guest draft for login without publishing a local post", async ({
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
   await page.setViewportSize({ height: 900, width: 390 });
-  await page.goto("/?compose=1");
+  await page.goto("/community?compose=1");
 
   const title = "로그인 후 올릴 커리어 질문";
   await page.getByLabel("제목").fill(title);
   await page
     .getByLabel("내용")
-    .fill("실제 공고 요구 기술을 비교한 뒤 무엇부터 준비할지 궁금합니다.");
+    .fill("실제 채용공고의 업무와 조건을 비교한 뒤 방향을 결정하고 싶습니다.");
   await page.getByLabel("태그 (선택)").fill("이직 준비, 백엔드");
   await page.getByRole("button", { name: "피드에 올리기" }).click();
 
-  await expect(page).toHaveURL(/\/login\?next=%2F%3Fcompose%3Dresume$/);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "로그인" }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(
+    /\/login\?next=%2Fcommunity%3Fcompose%3Dresume$/,
+  );
+  await expect(page.getByRole("heading", { exact: true, name: "로그인" })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => ({
-        draft: sessionStorage.getItem("ejik-fit:community-draft"),
-        localPosts: localStorage.getItem("ejik-fit:local-community-posts"),
+        currentDraft: sessionStorage.getItem("careerfit:community-draft"),
+        legacyDraft: sessionStorage.getItem("ejik-fit:community-draft"),
+        currentPosts: localStorage.getItem("careerfit:local-community-posts"),
+        legacyPosts: localStorage.getItem("ejik-fit:local-community-posts"),
       })),
     )
     .toEqual({
-      draft: expect.stringContaining(title),
-      localPosts: null,
+      currentDraft: expect.stringContaining(title),
+      legacyDraft: expect.stringContaining(title),
+      currentPosts: null,
+      legacyPosts: null,
     });
   expect(browserErrors).toEqual([]);
 });

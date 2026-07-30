@@ -1,5 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V4 */
-/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index / action briefing + mixed signal stream · theme: 이직핏 locked system · enrichment: none */
+/* Hallmark · genre: modern-minimal · macrostructure: Ecosystem Index / action briefing + mixed signal stream · theme: CareerFit locked system · enrichment: none */
 /* Hallmark · contrast: pass (40–41) · nav: N1b · footer: Ft2 · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · icons: pass (30) · mobile: pass (34, 49–57) */
 .page {
   width: 100%;
@@ -19,6 +19,52 @@
   align-items: start;
   gap: 1rem;
   margin-inline: auto;
+}
+
+.layout[data-community="true"] {
+  width: min(calc(100% - 3rem), 48rem);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layout[data-community="true"] .feedColumn {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.communityHeader {
+  padding: 1.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.communityHeader > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.communityHeader p,
+.communityHeader h1,
+.communityHeader span {
+  margin: 0;
+}
+
+.communityHeader p {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.communityHeader h1 {
+  font-size: clamp(1.65rem, 4vw, 2.15rem);
+  font-weight: 850;
+  letter-spacing: -0.05em;
+  line-height: 1.2;
+}
+
+.communityHeader span {
+  color: var(--color-muted);
+  line-height: 1.6;
 }
 
 .rightRail {

@@ -45,7 +45,7 @@ export function SiteHeader() {
   return (
     <header className={`site-header ${open ? "site-header--open" : ""}`}>
       <div className="site-header__inner site-header__shell">
-        <Link href="/" className="brand" aria-label="이직핏 홈">
+        <Link href="/" className="brand" aria-label="커리어핏 홈">
           <BrandMark size="sm" />
         </Link>
         <nav className="site-nav site-nav--desktop" aria-label="주요 탐색">
@@ -64,7 +64,7 @@ export function SiteHeader() {
           })}
         </nav>
         <p className="site-header__tagline">
-          내 기술이 맞는 시장을 찾다
+          내 경력과 채용공고를 함께 확인합니다
         </p>
         <button
           aria-controls="site-mobile-menu"

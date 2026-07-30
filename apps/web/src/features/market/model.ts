@@ -1,4 +1,6 @@
 import type { ResourceState } from "@/features/home-feed/resource-state";
+import { formatDomainLabel } from "@/features/career/model";
+import { stableCompanyIdentity } from "@/lib/company-identity";
 import { formatCareer, formatEmployment } from "@/lib/labels";
 import {
   SKILL_CATEGORIES,
@@ -6,7 +8,11 @@ import {
   skillCategoryLabel,
   type SkillCategory,
 } from "@/lib/skill-categories";
-import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
+import type {
+  PostingListResponse,
+  SkillGraphResponse,
+  SkillStatsResponse,
+} from "@/lib/types";
 
 export type MarketCareerType = "" | "new_comer" | "experienced" | "mixed";
 export type MarketSort =
@@ -52,6 +58,21 @@ export type MarketSkillCombination = {
   id: string;
   skills: [string, string];
   postingCount: number;
+};
+
+export type MarketField = {
+  domain: string;
+  label: string;
+  postingCount: number;
+  companyCount: number;
+  careerCounts: {
+    newComer: number;
+    experienced: number;
+    mixedOrUnknown: number;
+  };
+  topLocations: string[];
+  topSkills: string[];
+  jobs: MarketJob[];
 };
 
 export const MARKET_CAREER_FILTERS = [
@@ -167,14 +188,6 @@ export function sortMarketSkills(
     if (sort === "name") {
       return compareName(left, right);
     }
-    if (sort === "companies") {
-      return (
-        right.companyCount - left.companyCount ||
-        right.explicitCount - left.explicitCount ||
-        right.postingCount - left.postingCount ||
-        compareName(left, right)
-      );
-    }
     if (sort === "explicit") {
       return (
         right.explicitCount - left.explicitCount ||
@@ -187,6 +200,14 @@ export function sortMarketSkills(
     }
     if (sort === "preferred") {
       return right.preferredCount - left.preferredCount || compareName(left, right);
+    }
+    if (sort === "companies") {
+      return (
+        right.companyCount - left.companyCount ||
+        right.explicitCount - left.explicitCount ||
+        right.postingCount - left.postingCount ||
+        compareName(left, right)
+      );
     }
     return right.postingCount - left.postingCount || compareName(left, right);
   });
@@ -253,8 +274,10 @@ export function buildSkillCombinations(
 export function buildMarketOverviewSnapshot(input: {
   careerType: MarketCareerType;
   category?: SkillCategory;
+  field?: string;
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
+  graph?: ResourceState<SkillGraphResponse>;
 }) {
   const category = input.category ?? "";
   const postings = input.postings.status === "ready" ? input.postings.data : null;
@@ -274,10 +297,153 @@ export function buildMarketOverviewSnapshot(input: {
     1,
     ...orderedSkills.map((item) => item.company_count ?? 0),
   );
+  const jobs = (postings?.items ?? []).map((item): MarketJob => ({
+    id: item.id,
+    companyName: item.company_name,
+    ...(item.company_slug ? { companySlug: item.company_slug } : {}),
+    title: item.title,
+    careerLabel: formatCareer(item.career_type),
+    employmentLabel: formatEmployment(item.employment_type),
+    location: item.location ?? "근무지 미기재",
+    verifiedAt: item.last_verified_at,
+    sourceUrl: item.source_url,
+    skills: normalizedJobSkills([
+      item.required_skills,
+      item.preferred_skills,
+      item.unspecified_skills,
+    ]),
+    href: `/jobs/${encodeURIComponent(item.id)}`,
+  }));
+  const graph = input.graph?.status === "ready" ? input.graph.data : null;
+  const postingById = new Map(
+    (postings?.items ?? []).map((posting) => [posting.id, posting]),
+  );
+  const jobById = new Map(jobs.map((job) => [job.id, job]));
+  const domainsBySkill = new Map<string, Set<string>>();
+  for (const node of graph?.nodes ?? []) {
+    for (const skill of [node.id, node.label]) {
+      const key = skill.trim().toLocaleLowerCase("en-US");
+      const domains = domainsBySkill.get(key) ?? new Set<string>();
+      node.domains.forEach((domain) => domains.add(domain));
+      domainsBySkill.set(key, domains);
+    }
+  }
+
+  type FieldAccumulator = {
+    postingIds: Set<string>;
+    companies: Set<string>;
+    careerCounts: MarketField["careerCounts"];
+    locations: Map<string, number>;
+    skills: Map<string, number>;
+    jobs: MarketJob[];
+  };
+  const accumulators = new Map<string, FieldAccumulator>();
+  for (const evidence of graph?.evidence ?? []) {
+    const evidenceDomains = new Set<string>();
+    for (const skill of evidence.skills) {
+      for (const domain of
+        domainsBySkill.get(skill.trim().toLocaleLowerCase("en-US")) ?? []) {
+        evidenceDomains.add(domain);
+      }
+    }
+    const posting = postingById.get(evidence.posting_id);
+    const job = jobById.get(evidence.posting_id);
+    for (const domain of evidenceDomains) {
+      const accumulator = accumulators.get(domain) ?? {
+        postingIds: new Set<string>(),
+        companies: new Set<string>(),
+        careerCounts: { newComer: 0, experienced: 0, mixedOrUnknown: 0 },
+        locations: new Map<string, number>(),
+        skills: new Map<string, number>(),
+        jobs: [],
+      };
+      if (!accumulator.postingIds.has(evidence.posting_id)) {
+        accumulator.postingIds.add(evidence.posting_id);
+        accumulator.companies.add(
+          stableCompanyIdentity(posting, evidence.company_name),
+        );
+        if (posting?.career_type === "new_comer") {
+          accumulator.careerCounts.newComer += 1;
+        } else if (posting?.career_type === "experienced") {
+          accumulator.careerCounts.experienced += 1;
+        } else {
+          accumulator.careerCounts.mixedOrUnknown += 1;
+        }
+        if (posting?.location) {
+          accumulator.locations.set(
+            posting.location,
+            (accumulator.locations.get(posting.location) ?? 0) + 1,
+          );
+        }
+        if (job) accumulator.jobs.push(job);
+      }
+      for (const skill of evidence.skills) {
+        if (
+          domainsBySkill
+            .get(skill.trim().toLocaleLowerCase("en-US"))
+            ?.has(domain)
+        ) {
+          accumulator.skills.set(
+            skill,
+            (accumulator.skills.get(skill) ?? 0) + 1,
+          );
+        }
+      }
+      accumulators.set(domain, accumulator);
+    }
+  }
+  const fields: MarketField[] = [...accumulators.entries()]
+    .map(([domain, accumulator]) => ({
+      domain,
+      label: formatDomainLabel(domain),
+      postingCount: accumulator.postingIds.size,
+      companyCount: accumulator.companies.size,
+      careerCounts: accumulator.careerCounts,
+      topLocations: [...accumulator.locations.entries()]
+        .sort(
+          (left, right) =>
+            right[1] - left[1] || left[0].localeCompare(right[0], "ko-KR"),
+        )
+        .slice(0, 4)
+        .map(([location]) => location),
+      topSkills: [...accumulator.skills.entries()]
+        .sort(
+          (left, right) =>
+            right[1] - left[1] || left[0].localeCompare(right[0], "en"),
+        )
+        .slice(0, 6)
+        .map(([skill]) => skill),
+      jobs: accumulator.jobs
+        .sort(
+          (left, right) =>
+            Date.parse(right.verifiedAt) - Date.parse(left.verifiedAt),
+        )
+        .slice(0, 4),
+    }))
+    .sort(
+      (left, right) =>
+        right.postingCount - left.postingCount ||
+        left.label.localeCompare(right.label, "ko-KR"),
+    );
+  const requestedField = input.field?.trim() ?? "";
+  const selectedField = fields.some((field) => field.domain === requestedField)
+    ? requestedField
+    : fields[0]?.domain ?? "";
 
   return {
     careerType: input.careerType,
     category,
+    selectedField,
+    fields,
+    fieldError:
+      input.graph?.status === "error" ? input.graph.message : null,
+    fieldScope: {
+      evidencePostingCount: new Set(
+        (graph?.evidence ?? []).map((evidence) => evidence.posting_id),
+      ).size,
+      graphSkillCount: graph?.nodes.length ?? 0,
+      graphLimit: graph?.meta.limit ?? null,
+    },
     categoryLabel: skillCategoryLabel(category),
     jobsBrowseHref: buildMarketBrowseJobsHref(
       input.careerType,
@@ -314,7 +480,7 @@ export function buildMarketOverviewSnapshot(input: {
         relativeExplicitDemand: Math.round(
           (explicitCount / maxExplicitDemand) * 100,
         ),
-        skillHref: `/skill-map?skill=${encodeURIComponent(item.skill)}`,
+        skillHref: `/skills/graph?seed=${encodeURIComponent(item.skill)}`,
         jobsHref: buildMarketJobsHref(
           item.skill,
           input.careerType,
@@ -322,23 +488,7 @@ export function buildMarketOverviewSnapshot(input: {
         ),
       };
     }),
-    jobs: (postings?.items ?? []).map((item): MarketJob => ({
-      id: item.id,
-      companyName: item.company_name,
-      ...(item.company_slug ? { companySlug: item.company_slug } : {}),
-      title: item.title,
-      careerLabel: formatCareer(item.career_type),
-      employmentLabel: formatEmployment(item.employment_type),
-      location: item.location ?? "근무지 미기재",
-      verifiedAt: item.last_verified_at,
-      sourceUrl: item.source_url,
-      skills: normalizedJobSkills([
-        item.required_skills,
-        item.preferred_skills,
-        item.unspecified_skills,
-      ]),
-      href: `/jobs/${encodeURIComponent(item.id)}`,
-    })),
+    jobs,
   };
 }
 

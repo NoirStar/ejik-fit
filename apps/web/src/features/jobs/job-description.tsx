@@ -7,7 +7,7 @@ export function PostingDescription({ text }: { text: string }) {
   if (blocks.length === 0) {
     return (
       <p className={styles.descriptionEmpty}>
-        제공된 공고 원문이 없습니다. 기업 채용페이지를 확인해 주세요.
+        수집된 채용공고 내용이 없습니다. 공식 채용 페이지에서 확인해 주세요.
       </p>
     );
   }
@@ -39,13 +39,5 @@ export function PostingDescription({ text }: { text: string }) {
         return <p key={`paragraph-${index}`}>{block.text}</p>;
       })}
     </div>
-  );
-}
-
-export function PostingDescriptionPending() {
-  return (
-    <p className={styles.descriptionPending}>
-      상세 내용 수집을 점검 중입니다. 지원 요건은 공식 공고에서 확인해 주세요.
-    </p>
   );
 }

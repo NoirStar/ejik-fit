@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import SkillGraphPage from "./page";
 
-import { getSkillCatalog, getSkillGraph } from "@/lib/api";
+import { getSkillGraph } from "@/lib/api";
 
 const navigation = vi.hoisted(() => ({
   push: vi.fn(),
@@ -15,7 +15,6 @@ vi.mock("next/navigation", () => ({
 
 
 vi.mock("@/lib/api", () => ({
-  getSkillCatalog: vi.fn(),
   getSkillGraph: vi.fn(),
 }));
 
@@ -24,35 +23,9 @@ describe("SkillGraphPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     navigation.push.mockReset();
-    vi.mocked(getSkillCatalog).mockResolvedValue({ items: [], total: 0 });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            items: [
-              {
-                posting_id: "job-1",
-                title: "자율주행 SW 엔지니어",
-                company_name: "네이버랩스",
-                skills: ["C++", "ROS2"],
-                required: ["C++", "ROS2"],
-                preferred: [],
-                unspecified: [],
-              },
-            ],
-            total: 1,
-          }),
-          { status: 200, headers: { "content-type": "application/json" } },
-        ),
-      ),
-    );
   });
 
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
+  afterEach(() => cleanup());
 
   it("renders the skill graph product shell with initial evidence", async () => {
     vi.mocked(getSkillGraph).mockResolvedValue({
@@ -96,7 +69,17 @@ describe("SkillGraphPage", () => {
           supporting_posting_ids: ["job-1"],
         },
       ],
-      evidence: [],
+      evidence: [
+        {
+          posting_id: "job-1",
+          title: "자율주행 SW 엔지니어",
+          company_name: "네이버랩스",
+          skills: ["C++", "ROS2"],
+          required: ["C++", "ROS2"],
+          preferred: [],
+          unspecified: [],
+        },
+      ],
       meta: {
         limit: 30,
         min_confidence: 0.8,
@@ -105,134 +88,32 @@ describe("SkillGraphPage", () => {
 
     render(await SkillGraphPage());
 
+    expect(screen.getByRole("heading", { name: "기술 관계 보기" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 1, name: "스킬맵" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "공개 채용 공고에서 함께 요구되는 기술 관계를 보고 다음 학습 방향을 정해 보세요.",
-      ),
+      screen.getByText(/같은 채용공고에 함께 등장한 기술을 탐색하고/),
     ).toBeInTheDocument();
     expect(screen.queryByText("기술 채용 인텔리전스")).not.toBeInTheDocument();
     expect(screen.queryByText("Tech Hiring Intelligence")).not.toBeInTheDocument();
     expect(screen.getAllByText("C++").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ROS2").length).toBeGreaterThan(0);
     expect(
-      await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
+      screen.getByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
-    expect(screen.getByRole("button", { name: "내 기술 0" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    expect(screen.getByRole("group", { name: "지도 범위" })).toBeInTheDocument();
-    expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
-    expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
+    expect(screen.getByText("내 기술")).toBeInTheDocument();
+    expect(screen.getByText("그래프 필터")).toBeInTheDocument();
     expect(screen.getByText("언급 공고")).toBeInTheDocument();
     expect(screen.getByText("18건")).toBeInTheDocument();
-    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
+    expect(screen.getByText("조건 구분 없음")).toBeInTheDocument();
     expect(screen.getByText("2건")).toBeInTheDocument();
     expect(screen.queryByText("채용 캘린더")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "설정" })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "이직핏 기술 맵 홈" }),
+      screen.queryByRole("link", { name: "기술 관계 보기 홈" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("group", { name: "주변 깊이" }))
-      .not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "전체 지도" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByLabelText("주변 깊이")).toBeInTheDocument();
   });
 
   it("loads the graph with the requested seed", async () => {
-    vi.mocked(getSkillGraph)
-      .mockResolvedValueOnce({
-        seed: null,
-        nodes: [],
-        edges: [],
-        evidence: [],
-        meta: { limit: 60, min_confidence: 0.8 },
-      })
-      .mockResolvedValueOnce({
-      seed: "Kubernetes",
-      nodes: [{
-        id: "Kubernetes",
-        label: "Kubernetes",
-        category: "platform",
-        kind: "platform",
-        domains: ["cloud"],
-        demand_count: 12,
-        required_count: 8,
-        preferred_count: 4,
-        unspecified_count: 0,
-        owned: false,
-        seed: true,
-      }],
-      edges: [],
-      evidence: [],
-      meta: { limit: 30, min_confidence: 0.8 },
-    });
-
-    await SkillGraphPage({
-      searchParams: Promise.resolve({
-        seed: "Kubernetes",
-        owned_skills: "Linux",
-      }),
-    });
-
-    expect(getSkillGraph).toHaveBeenNthCalledWith(1, {
-      depth: 1,
-      limit: 60,
-      include_evidence: false,
-    });
-    expect(getSkillGraph).toHaveBeenNthCalledWith(2, {
-      seed: "Kubernetes",
-      depth: 1,
-      limit: 30,
-      include_evidence: false,
-    });
-  });
-
-  it("passes server-owned aliases to the graph experience", async () => {
-    vi.mocked(getSkillCatalog).mockResolvedValue({
-      items: [{
-        name: "Go",
-        category: "language",
-        kind: "language",
-        domains: ["backend"],
-        aliases: ["golang"],
-      }],
-      total: 1,
-    });
-    vi.mocked(getSkillGraph).mockResolvedValue({
-      seed: "Go",
-      nodes: [{
-        id: "Go",
-        label: "Go",
-        category: "language",
-        kind: "language",
-        domains: ["backend"],
-        demand_count: 10,
-        required_count: 8,
-        preferred_count: 2,
-        unspecified_count: 0,
-        owned: false,
-        seed: true,
-      }],
-      edges: [],
-      evidence: [],
-      meta: { limit: 30, min_confidence: 0.8 },
-    });
-
-    render(await SkillGraphPage({
-      searchParams: Promise.resolve({ owned_skills: "golang", seed: "Go" }),
-    }));
-
-    expect(screen.getByRole("button", { name: "Go 내 기술에서 제거" }))
-      .toBeInTheDocument();
-  });
-
-  it("normalizes and forwards the selected career scope", async () => {
     vi.mocked(getSkillGraph).mockResolvedValue({
       seed: "Kubernetes",
       nodes: [],
@@ -242,38 +123,14 @@ describe("SkillGraphPage", () => {
     });
 
     await SkillGraphPage({
-      searchParams: Promise.resolve({
-        seed: "Kubernetes",
-        career_type: "experienced",
-      }),
+      searchParams: Promise.resolve({ seed: "Kubernetes" }),
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
+      include_evidence: true,
       seed: "Kubernetes",
-      career_type: "experienced",
-      depth: 1,
+      owned_skills: [],
       limit: 30,
-      include_evidence: false,
-    });
-  });
-
-  it("drops an unsupported career scope", async () => {
-    vi.mocked(getSkillGraph).mockResolvedValue({
-      seed: null,
-      nodes: [],
-      edges: [],
-      evidence: [],
-      meta: { limit: 30, min_confidence: 0.8 },
-    });
-
-    await SkillGraphPage({
-      searchParams: Promise.resolve({ career_type: "executive" }),
-    });
-
-    expect(getSkillGraph).toHaveBeenCalledWith({
-      depth: 1,
-      limit: 60,
-      include_evidence: false,
     });
   });
 
@@ -290,16 +147,19 @@ describe("SkillGraphPage", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "스킬맵을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      "기술 관계 데이터를 불러오지 못했습니다.",
     );
-    expect(screen.getByText("지도 범위 확인 불가")).toBeInTheDocument();
-    expect(screen.getByText("기술·관계 수 확인 불가")).toBeInTheDocument();
-    expect(screen.queryByText(/0개 (스킬|기술)/)).not.toBeInTheDocument();
+    expect(screen.getByText(/임의 데이터로 채우지 않았습니다/)).toBeInTheDocument();
+    expect(screen.getByText("그래프 범위 확인 불가")).toBeInTheDocument();
+    expect(screen.queryByText(/0개 스킬/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "다시 시도" })).toHaveAttribute(
       "href",
       "/skills/graph?seed=Kubernetes&owned_skills=Linux",
     );
-    expect(screen.queryByText("표시할 기술이 없습니다. 분야 필터를 줄여 주세요."))
-      .not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("group", { name: "현재 그래프 규모" })).getAllByText(
+        "확인 불가",
+      ),
+    ).toHaveLength(3);
   });
 });

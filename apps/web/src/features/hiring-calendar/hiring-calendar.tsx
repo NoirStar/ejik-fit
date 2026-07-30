@@ -347,7 +347,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
       <section aria-label="채용 일정 데이터 기준" className={styles.notice}>
         <Info aria-hidden="true" size={18} weight="fill" />
         <div>
-          <strong>이직핏이 확인한 기업 공식 채용 공고 범위입니다.</strong>
+          <strong>커리어핏이 확인한 기업 공식 채용공고 범위입니다.</strong>
           <p>
             명시된 마감일만 달력에 표시합니다. 최초 확인일은 기업의 실제 게시일과
             다를 수 있습니다.
@@ -375,7 +375,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
           <div>
             <dt>최근 14일 활동 기업</dt>
             <dd>{model.activityCompanyTotal.toLocaleString("ko-KR")}곳</dd>
-            <span>이직핏 최초 확인 기준</span>
+            <span>커리어핏 최초 확인 기준</span>
           </div>
         </dl>
       </section>
@@ -578,7 +578,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
               </div>
             )}
             <p className={styles.sideFootnote}>
-              기업 공식 채용페이지에서 이직핏이 처음 확인한 시각입니다.
+              기업 공식 채용 페이지에서 커리어핏이 처음 확인한 시각입니다.
             </p>
           </section>
         </aside>

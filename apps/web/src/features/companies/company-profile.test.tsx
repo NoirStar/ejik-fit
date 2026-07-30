@@ -73,14 +73,14 @@ describe("CompanyProfile", () => {
     ).toHaveAttribute("href", "/jobs/job-backend");
     expect(within(jobs).getByText("경력 3~7년")).toBeInTheDocument();
     expect(within(jobs).getByText("7월 31일 마감")).toBeInTheDocument();
-    expect(within(jobs).getAllByRole("link", { name: "공식 원문" })).toHaveLength(2);
+    expect(within(jobs).getAllByRole("link", { name: "공식 채용 페이지" })).toHaveLength(2);
 
     const evidence = screen.getByRole("complementary", {
       name: "기업 채용 근거",
     });
-    expect(within(evidence).getByRole("link", { name: "Docker 스킬맵" })).toHaveAttribute(
+    expect(within(evidence).getByRole("link", { name: "Docker 기술 관계 보기" })).toHaveAttribute(
       "href",
-      "/skill-map?skill=Docker",
+      "/skills/graph?seed=Docker",
     );
     expect(within(evidence).getAllByText("2개 공고")).toHaveLength(2);
     expect(within(evidence).getByText("필수 1 · 우대 1")).toBeInTheDocument();

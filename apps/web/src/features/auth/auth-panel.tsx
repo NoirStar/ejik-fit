@@ -567,7 +567,7 @@ export function AuthPanel({ initialMode, nextPath }: AuthPanelProps) {
       <div className={styles.root}>
         {navigation}
         <form className={styles.form} noValidate onSubmit={handleSignUp}>
-          <FormHeader title="이직핏 계정 만들기">
+          <FormHeader title="커리어핏 계정 만들기">
             가입하려면 이메일 확인이 필요합니다.
           </FormHeader>
           <AuthField

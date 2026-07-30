@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { PostingListResponse, SkillStatsResponse } from "@/lib/types";
+import type {
+  PostingListResponse,
+  SkillGraphResponse,
+  SkillStatsResponse,
+} from "@/lib/types";
 
 import {
   MARKET_CAREER_FILTERS,
@@ -103,6 +107,73 @@ const explicitLeader: SkillStatsResponse = {
   ],
 };
 
+const fieldGraph: SkillGraphResponse = {
+  seed: null,
+  nodes: [
+    {
+      id: "kubernetes",
+      label: "Kubernetes",
+      category: "infra",
+      kind: "skill",
+      domains: ["cloud"],
+      demand_count: 12,
+      required_count: 5,
+      preferred_count: 4,
+      unspecified_count: 3,
+      owned: false,
+      seed: false,
+    },
+    {
+      id: "docker",
+      label: "Docker",
+      category: "infra",
+      kind: "skill",
+      domains: ["cloud"],
+      demand_count: 9,
+      required_count: 4,
+      preferred_count: 3,
+      unspecified_count: 2,
+      owned: false,
+      seed: false,
+    },
+    {
+      id: "go",
+      label: "Go",
+      category: "language",
+      kind: "skill",
+      domains: ["backend"],
+      demand_count: 8,
+      required_count: 0,
+      preferred_count: 0,
+      unspecified_count: 0,
+      owned: false,
+      seed: false,
+    },
+  ],
+  edges: [],
+  evidence: [
+    {
+      posting_id: "job-new",
+      title: "플랫폼 엔지니어",
+      company_name: "새회사",
+      skills: ["Kubernetes", "Docker"],
+      required: ["Kubernetes"],
+      preferred: ["Docker"],
+      unspecified: [],
+    },
+    {
+      posting_id: "job-old",
+      title: "백엔드 엔지니어",
+      company_name: "예시회사",
+      skills: ["Go"],
+      required: ["Go"],
+      preferred: [],
+      unspecified: [],
+    },
+  ],
+  meta: { limit: 100, min_confidence: 0.8 },
+};
+
 describe("market overview model", () => {
   it("normalizes only supported career filters", () => {
     expect(normalizeMarketCareerType("new_comer")).toBe("new_comer");
@@ -191,6 +262,75 @@ describe("market overview model", () => {
         location: "근무지 미기재",
       }),
     ]);
+  });
+
+  it("groups verified posting evidence by career field and counts companies separately", () => {
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      field: "cloud",
+      postings: { status: "ready", data: postings },
+      skillStats: { status: "ready", data: skillStats },
+      graph: { status: "ready", data: fieldGraph },
+    });
+
+    expect(snapshot.selectedField).toBe("cloud");
+    expect(snapshot.fields.find((field) => field.domain === "cloud")).toEqual({
+      domain: "cloud",
+      label: "클라우드",
+      postingCount: 1,
+      companyCount: 1,
+      careerCounts: { newComer: 0, experienced: 1, mixedOrUnknown: 0 },
+      topLocations: ["서울"],
+      topSkills: ["Docker", "Kubernetes"],
+      jobs: [expect.objectContaining({ id: "job-new", companyName: "새회사" })],
+    });
+    expect(snapshot.fields.find((field) => field.domain === "backend"))
+      .toMatchObject({ postingCount: 1, companyCount: 1 });
+    expect(snapshot.fieldScope).toEqual({
+      evidencePostingCount: 2,
+      graphSkillCount: 3,
+      graphLimit: 100,
+    });
+  });
+
+  it("deduplicates company counts by stable company slug when display names vary", () => {
+    const firstPosting = {
+      ...postings.items[0],
+      company_name: "새회사",
+      company_slug: "same-company",
+    };
+    const duplicatePosting = {
+      ...firstPosting,
+      id: "job-new-duplicate",
+      company_name: "새 회사",
+      source_url: "https://example.com/jobs/new-duplicate",
+    };
+    const firstEvidence = fieldGraph.evidence[0];
+    const snapshot = buildMarketOverviewSnapshot({
+      careerType: "",
+      postings: {
+        status: "ready",
+        data: { total: 2, items: [firstPosting, duplicatePosting] },
+      },
+      skillStats: { status: "ready", data: skillStats },
+      graph: {
+        status: "ready",
+        data: {
+          ...fieldGraph,
+          evidence: [
+            firstEvidence,
+            {
+              ...firstEvidence,
+              posting_id: duplicatePosting.id,
+              company_name: duplicatePosting.company_name,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(snapshot.fields.find((field) => field.domain === "cloud"))
+      .toMatchObject({ postingCount: 2, companyCount: 1 });
   });
 
   it("formats the database-backed filtered posting total", () => {

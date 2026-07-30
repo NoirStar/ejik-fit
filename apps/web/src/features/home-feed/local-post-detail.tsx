@@ -41,9 +41,9 @@ function LocalPostState({ status }: { status: "checking" | "missing" | "removed"
 
   return (
     <main className={styles.main}>
-      <Link className={styles.backLink} href="/">
+      <Link className={styles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
       <section className={styles.localState} role="status">
         <p>이 기기에 남은 글</p>
@@ -99,9 +99,9 @@ export function LocalPostDetail({ postId }: { postId: string }) {
         title={item.title}
         topicLabel={item.tags[0] ?? item.category}
       />
-      <Link className={styles.backLink} href="/">
+      <Link className={styles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
 
       <div className={styles.workspace}>

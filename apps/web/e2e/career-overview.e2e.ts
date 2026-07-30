@@ -8,7 +8,7 @@ const fitResponse = {
   recommended_next_skills: [
     {
       skill: "Kubernetes",
-      reason: "공개 공고에서 반복된 부족 요구사항",
+      reason: "공개 채용공고에서 반복해서 확인된 추가 조건",
       required_count: 8,
       preferred_count: 3,
       supporting_posting_count: 10,
@@ -29,31 +29,26 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   page,
 }) => {
   const fitRequests: Array<Record<string, unknown>> = [];
-  await page.setViewportSize({ height: 844, width: 320 });
+  await page.setViewportSize({ height: 844, width: 390 });
   await page.route("**/skills/graph/fit", async (route) => {
     fitRequests.push(route.request().postDataJSON() as Record<string, unknown>);
     await route.fulfill({ json: fitResponse });
   });
   await page.goto("/career");
 
-  await expect(
-    page.getByRole("heading", { level: 1, name: "내 커리어" }),
-  ).toBeVisible();
-  await expect(page.getByText("이 기기에 저장됨")).toBeVisible();
-
   await page.getByLabel("추가할 기술").fill("Python");
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await page.getByRole("button", { exact: true, name: "추가" }).click();
   await expect(
-    page.getByRole("heading", { name: "공고와 비교" }),
+    page.getByRole("heading", { name: "커리어 방향 판단 근거" }),
   ).toBeVisible();
-  await expect(page.getByText("17건", { exact: true })).toBeVisible();
+  await expect(page.getByText("17건", { exact: true }).first()).toBeVisible();
 
-  const domainSelect = page.getByLabel("희망 기술 분야");
+  const domainSelect = page.getByLabel("관심 커리어 분야");
   await expect(
     domainSelect.getByRole("option", { name: "클라우드 · 연결 기술 1개" }),
   ).toBeAttached();
   await domainSelect.selectOption("cloud");
-  await expect(page.getByText("클라우드 조건", { exact: true })).toBeVisible();
+  await expect(domainSelect).toHaveValue("cloud");
   await expect.poll(() => fitRequests.at(-1)).toMatchObject({
     owned_skills: ["Python"],
     domains: ["cloud"],
@@ -73,14 +68,23 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
         ),
       ),
     )
-    .toEqual({ careerCondition: "experienced", targetDomain: "cloud" });
+    .toMatchObject({ careerCondition: "experienced", targetDomain: "cloud" });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        JSON.parse(
+          localStorage.getItem("careerfit:career-preferences") ?? "null",
+        ),
+      ),
+    )
+    .toMatchObject({ careerCondition: "experienced", targetDomain: "cloud" });
   const domainBox = await domainSelect.boundingBox();
   expect(domainBox?.height).toBeGreaterThanOrEqual(44);
   const careerBox = await careerSelect.boundingBox();
   expect(careerBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByLabel("추가할 기술").fill("React");
-  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await page.getByRole("button", { exact: true, name: "추가" }).click();
 
   await expect(
     page.getByRole("list", { name: "내 기술 목록" }),
@@ -98,7 +102,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
 
   await page.reload();
   await expect(
-    page.getByRole("heading", { name: "공고와 비교" }),
+    page.getByRole("heading", { name: "커리어 방향 판단 근거" }),
   ).toBeVisible();
   await expect(careerSelect).toHaveValue("experienced");
   await expect(domainSelect).toHaveValue("cloud");

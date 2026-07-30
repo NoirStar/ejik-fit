@@ -14,7 +14,7 @@ export function TrustPageLayout({ title, intro, children }: TrustPageLayoutProps
     <main className={styles.main}>
       <Link className={styles.backLink} href="/">홈으로 돌아가기</Link>
       <header className={styles.header}>
-        <p>이직핏 운영 원칙</p>
+        <p>커리어핏 운영 원칙</p>
         <h1>{title}</h1>
         <span>{intro}</span>
       </header>

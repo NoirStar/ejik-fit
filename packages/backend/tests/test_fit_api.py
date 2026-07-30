@@ -27,7 +27,7 @@ class FakeFitAnalysisReader:
             "recommended_next_skills": [
                 {
                     "skill": "ROS",
-                    "reason": "보유 스킬과 함께 등장한 공고에서 2회 부족 요구사항으로 확인됨",
+                    "reason": "보유 기술과 같은 공고 2건에서 추가 요구사항으로 확인됨",
                     "required_count": 1,
                     "preferred_count": 1,
                     "supporting_posting_count": 2,

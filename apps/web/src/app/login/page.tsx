@@ -10,7 +10,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "로그인",
-  description: "이직핏에 로그인해 내 커리어 정보를 이어서 확인합니다.",
+  description: "커리어핏에 로그인해 내 커리어 정보를 이어서 확인합니다.",
   robots: { index: false, follow: false },
 };
 

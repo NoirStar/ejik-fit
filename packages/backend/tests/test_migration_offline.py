@@ -50,6 +50,25 @@ def test_offline_migration_includes_conditional_pgroonga_index() -> None:
     assert "search_community_posts" in sql
     assert "list_community_following_posts" in sql
     assert "list_community_saved_posts" in sql
+    assert "커리어핏 사용자" in sql
+    assert "community notification brand" in sql
     assert "SECURITY INVOKER" in sql
     assert "ix_community_posts_title_trgm" in sql
-    assert "'일반', '커리어 질문', '커리어 고민', '면접 후기'" in sql
+
+
+def test_offline_notification_brand_migration_has_a_down_path() -> None:
+    output = StringIO()
+    config = Config(
+        str(BACKEND_ROOT / "alembic.ini"),
+        output_buffer=output,
+    )
+
+    command.downgrade(
+        config,
+        "20260730_0026:20260727_0025",
+        sql=True,
+    )
+
+    sql = output.getvalue()
+    assert "position('커리어핏 사용자' IN definition)" in sql
+    assert "replace(definition, '커리어핏 사용자', '이직핏 사용자')" in sql

@@ -327,7 +327,7 @@ export function ServerCommentList({
                 <div>
                   <header>
                     <strong>
-                      {comment.author.nickname?.trim() || "이직핏 사용자"}
+                      {comment.author.nickname?.trim() || "커리어핏 사용자"}
                     </strong>
                     <span>{formatDate(comment.createdAt)}</span>
                   </header>

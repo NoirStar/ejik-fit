@@ -125,7 +125,7 @@ describe("career overview model", () => {
       requiredCount: 8,
       preferredCount: 3,
       supportingPostingCount: 10,
-      skillHref: "/skill-map?skill=Spring%20Boot%20%26%20Cloud",
+      skillHref: "/skills/graph?seed=Spring%20Boot%20%26%20Cloud",
       jobsHref:
         "/jobs?q=Spring+Boot+%26+Cloud&career_type=experienced",
     });

@@ -134,7 +134,7 @@ describe("AuthoredQuestions", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "글쓰기" })).toHaveAttribute(
       "href",
-      "/?compose=1",
+      "/community?compose=1",
     );
     expect(screen.getAllByRole("link", { name: "글쓰기" })).toHaveLength(1);
   });
@@ -289,7 +289,7 @@ describe("AuthoredQuestions", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:social-interactions") {
+      if (key === "careerfit:social-interactions") {
         throw new DOMException("blocked", "QuotaExceededError");
       }
       return originalSetItem.call(this, key, value);

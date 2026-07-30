@@ -89,9 +89,9 @@ describe("LocalPostDetail", () => {
         name: "이 기기에서 글을 찾을 수 없습니다.",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "커뮤니티로 돌아가기" })).toHaveAttribute(
       "href",
-      "/",
+      "/community",
     );
   });
 
@@ -129,7 +129,7 @@ describe("LocalPostDetail", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:local-community-posts") {
+      if (key === "careerfit:local-community-posts") {
         throw new DOMException("blocked", "SecurityError");
       }
       return originalSetItem.call(this, key, value);
@@ -167,7 +167,7 @@ describe("LocalPostDetail", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:social-interactions") {
+      if (key === "careerfit:social-interactions") {
         throw new DOMException("blocked", "SecurityError");
       }
       return originalSetItem.call(this, key, value);

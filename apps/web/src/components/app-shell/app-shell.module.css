@@ -1,5 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E4 S5 R5 V4 */
-/* Hallmark · genre: modern-minimal · macrostructure: persistent utility frame · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
+/* Hallmark · genre: modern-minimal · macrostructure: persistent utility frame · theme: CareerFit locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .shell {
   min-height: 100dvh;
   background: var(--color-bg);
@@ -19,7 +19,7 @@
   display: grid;
   width: min(calc(100% - 3rem), var(--content-max));
   height: 100%;
-  grid-template-columns: auto minmax(12rem, 20rem) minmax(24rem, 1fr) auto;
+  grid-template-columns: auto minmax(10rem, 18rem) minmax(30rem, 1fr) auto;
   align-items: center;
   gap: 1rem;
   margin: 0 auto;
@@ -335,7 +335,7 @@
 .navItem {
   position: relative;
   display: inline-flex;
-  min-width: 4.75rem;
+  min-width: 4.35rem;
   align-items: center;
   justify-content: center;
   gap: 0.4375rem;
@@ -567,7 +567,7 @@
     z-index: var(--layer-mobile-nav);
     display: grid;
     height: calc(var(--mobile-nav-height) + var(--mobile-safe-area-bottom));
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     padding-bottom: var(--mobile-safe-area-bottom);
     border-top: 1px solid var(--color-line);
     background: var(--color-surface);

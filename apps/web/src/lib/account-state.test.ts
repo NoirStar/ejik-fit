@@ -9,6 +9,7 @@ import {
   writeBrowserAccountState,
   type AccountCareerState,
 } from "./account-state";
+import { EMPTY_CAREER_PROFILE } from "./career-profile";
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>();
@@ -29,7 +30,13 @@ describe("account career state", () => {
     const browser: AccountCareerState = {
       ownedSkills: ["Kubernetes", "Python"],
       careerPreferences: { careerCondition: "", targetDomain: "backend" },
+      careerProfile: {
+        ...EMPTY_CAREER_PROFILE,
+        currentRole: "플랫폼 엔지니어",
+        interestDomains: ["security"],
+      },
       savedJobIds: ["job-2", "job-3"],
+      savedJobGroups: { "job-2": "interest", "job-3": "comparing" },
       applicationStages: { "job-2": "interview" },
       followedCompanySlugs: ["naver", "toss"],
     };
@@ -39,7 +46,14 @@ describe("account career state", () => {
         careerCondition: "experienced",
         targetDomain: "data",
       },
+      careerProfile: {
+        ...EMPTY_CAREER_PROFILE,
+        currentRole: "백엔드 개발자",
+        responsibilities: "API 개발",
+        interestDomains: ["cloud"],
+      },
       savedJobIds: ["job-1", "job-2"],
+      savedJobGroups: { "job-1": "current", "job-2": "adjacent" },
       applicationStages: { "job-1": "applied", "job-2": "preparing" },
       followedCompanySlugs: ["kakao-pay", "naver"],
     };
@@ -50,7 +64,18 @@ describe("account career state", () => {
         careerCondition: "experienced",
         targetDomain: "backend",
       },
+      careerProfile: {
+        ...EMPTY_CAREER_PROFILE,
+        currentRole: "플랫폼 엔지니어",
+        responsibilities: "API 개발",
+        interestDomains: ["cloud", "security"],
+      },
       savedJobIds: ["job-1", "job-2", "job-3"],
+      savedJobGroups: {
+        "job-1": "current",
+        "job-2": "interest",
+        "job-3": "comparing",
+      },
       applicationStages: { "job-1": "applied", "job-2": "interview" },
       followedCompanySlugs: ["kakao-pay", "naver", "toss"],
     });
@@ -65,7 +90,12 @@ describe("account career state", () => {
           careerCondition: "experienced",
           targetDomain: "backend",
         },
+        careerProfile: {
+          ...EMPTY_CAREER_PROFILE,
+          currentRole: " 데이터 엔지니어 ",
+        },
         savedJobIds: ["job-1"],
+        savedJobGroups: { "job-1": "adjacent" },
         applicationStages: { "job-1": "applied" },
         followedCompanySlugs: [" Naver ", "naver"],
       },
@@ -78,7 +108,12 @@ describe("account career state", () => {
         careerCondition: "experienced",
         targetDomain: "backend",
       },
+      careerProfile: {
+        ...EMPTY_CAREER_PROFILE,
+        currentRole: "데이터 엔지니어",
+      },
       savedJobIds: ["job-1"],
+      savedJobGroups: { "job-1": "adjacent" },
       applicationStages: { "job-1": "applied" },
       followedCompanySlugs: ["naver"],
     });
@@ -87,7 +122,9 @@ describe("account career state", () => {
     expect(readBrowserAccountState(storage)).toEqual({
       ownedSkills: [],
       careerPreferences: { careerCondition: "", targetDomain: "" },
+      careerProfile: EMPTY_CAREER_PROFILE,
       savedJobIds: [],
+      savedJobGroups: {},
       applicationStages: {},
       followedCompanySlugs: [],
     });
@@ -97,7 +134,12 @@ describe("account career state", () => {
     const state: AccountCareerState = {
       ownedSkills: ["Python"],
       careerPreferences: { careerCondition: "", targetDomain: "" },
+      careerProfile: {
+        ...EMPTY_CAREER_PROFILE,
+        currentRole: "보안 엔지니어",
+      },
       savedJobIds: [],
+      savedJobGroups: {},
       applicationStages: {},
       followedCompanySlugs: ["naver"],
     };
@@ -105,6 +147,10 @@ describe("account career state", () => {
     expect(accountCareerStateToRow("user-1", state)).toMatchObject({
       user_id: "user-1",
       followed_company_slugs: ["naver"],
+      career_preferences: expect.objectContaining({
+        profile: expect.objectContaining({ currentRole: "보안 엔지니어" }),
+        savedJobGroups: {},
+      }),
     });
     expect(accountCareerStateToLegacyRow("user-1", state)).not.toHaveProperty(
       "followed_company_slugs",

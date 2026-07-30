@@ -26,7 +26,7 @@ describe("MarketPulseSummary", () => {
     );
 
     expect(screen.getByText("Python · 330건")).toBeInTheDocument();
-    expect(screen.getByText("명시 요구 1위")).toBeInTheDocument();
+    expect(screen.getByText("필수·우대 공고 1위")).toBeInTheDocument();
     expect(screen.getByText("1,771건 · 69종")).toBeInTheDocument();
     expect(screen.getByText("2/4주 수집 중")).toBeInTheDocument();
     expect(screen.queryByText("Python · AWS · LLM")).not.toBeInTheDocument();

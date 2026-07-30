@@ -74,7 +74,9 @@ describe("SearchPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("검색어를 입력해 주세요.")).toBeInTheDocument();
     expect(
-      screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
+      screen.getByText(
+        "공식 채용 데이터와 전체 공개 커뮤니티 글을 출처별로 나눠 확인하세요.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -120,7 +122,7 @@ describe("SearchPage", () => {
       screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Kubernetes 스킬맵 보기" }),
+      screen.getByRole("link", { name: "Kubernetes 기술 관계 보기" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("link", {
@@ -156,9 +158,9 @@ describe("SearchPage", () => {
       screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "기업 채용페이지 보기" }),
+      screen.queryByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Python 기술 관계 보기" })).toBeInTheDocument();
     consoleError.mockRestore();
   });
 

@@ -13,6 +13,7 @@ import {
   SignOut,
   Stack,
   UserCircle,
+  UsersThree,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -64,10 +65,11 @@ const OwnedSkillsSheet = lazy(async () => {
 
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: House },
+  { href: "/career", label: "내 커리어", icon: UserCircle },
+  { href: "/skill-map", label: "커리어맵", icon: Graph },
   { href: "/market", label: "시장", icon: ChartLineUp },
-  { href: "/skill-map", label: "스킬맵", icon: Graph },
   { href: "/jobs", label: "공고", icon: Briefcase },
-  { href: "/career", label: "내 커리어", mobileLabel: "내 정보", icon: UserCircle },
+  { href: "/community", label: "커뮤니티", icon: UsersThree },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -198,10 +200,10 @@ function HeaderWriteLinkView({ href }: { href: string }) {
 function HeaderWriteLink({ pathname }: { pathname: string }) {
   const searchParams = useSearchParams();
   const writeParams = new URLSearchParams(
-    pathname === "/" ? searchParams.toString() : "",
+    pathname === "/community" ? searchParams.toString() : "",
   );
   writeParams.set("compose", "1");
-  return <HeaderWriteLinkView href={`/?${writeParams.toString()}`} />;
+  return <HeaderWriteLinkView href={`/community?${writeParams.toString()}`} />;
 }
 
 function UserMenuLoginLink({
@@ -343,7 +345,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Suspense>
       <header className={styles.header}>
         <div className={styles.utilityRow}>
-          <Link aria-label="이직핏 홈" className={styles.brand} href="/">
+          <Link aria-label="커리어핏 홈" className={styles.brand} href="/">
             <BrandMark size="sm" />
           </Link>
 
@@ -382,11 +384,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className={styles.utilities}>
-            <Suspense
-              fallback={<HeaderWriteLinkView href="/?compose=1" />}
-            >
-              <HeaderWriteLink pathname={pathname} />
-            </Suspense>
+            {pathname.startsWith("/community") && (
+              <Suspense
+                fallback={<HeaderWriteLinkView href="/community?compose=1" />}
+              >
+                <HeaderWriteLink pathname={pathname} />
+              </Suspense>
+            )}
 
             <button
               aria-label={`${PRODUCT_TERMS.ownedSkills} 열기`}
@@ -576,7 +580,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {children}
         <footer className={styles.footer}>
-          <p>공식 채용페이지의 공개 정보만 수집합니다.</p>
+          <p>커리어핏 · 수집된 기업 공식 채용 페이지의 공개 정보를 분석합니다.</p>
           <nav aria-label="서비스 정책">
             <Link href="/data-policy">데이터 정책</Link>
             <Link href="/methodology">분석 방법</Link>
@@ -603,7 +607,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={closeUtilityMenus}
             >
               <Icon aria-hidden="true" size={21} weight={active ? "fill" : "regular"} />
-              <span>{"mobileLabel" in item ? item.mobileLabel : item.label}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}

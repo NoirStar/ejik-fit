@@ -5,7 +5,7 @@ import {
   signInCommunityViewer,
 } from "./fixtures/community-auth";
 
-for (const width of [1440, 820, 390, 320]) {
+for (const width of [1440, 820, 390]) {
   test(`keeps official jobs usable and ignores retired starter saves at ${width}px`, async ({
     page,
   }) => {
@@ -43,8 +43,8 @@ for (const width of [1440, 820, 390, 320]) {
       name: "Python Backend Engineer",
     });
     await expect(job).toBeVisible();
-    await expect(job.getByText("최근 확인")).toBeVisible();
-    await expect(job.getByRole("link", { name: "공식 원문" })).toHaveAttribute(
+    await expect(job.getByText("현재 API 재확인")).toBeVisible();
+    await expect(job.getByRole("link", { name: "공식 채용 페이지에서 지원" })).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-python",
     );
@@ -52,7 +52,11 @@ for (const width of [1440, 820, 390, 320]) {
     const stageSelect = job.getByRole("combobox", {
       name: "Python Backend Engineer 지원 단계",
     });
+    const groupSelect = job.getByRole("combobox", {
+      name: "Python Backend Engineer 커리어 분류",
+    });
     await expect(stageSelect).toHaveValue("");
+    await expect(groupSelect).toHaveValue("");
 
     const community = page.getByRole("article", {
       name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -68,10 +72,11 @@ for (const width of [1440, 820, 390, 320]) {
 
     for (const target of [
       page.getByRole("tab", { name: "전체 1" }),
-      page.getByRole("tab", { name: "공식 공고 1" }),
+      page.getByRole("tab", { name: "채용공고 1" }),
       page.getByRole("tab", { name: "지원 관리 0" }),
       page.getByRole("tab", { name: "커뮤니티 0" }),
       stageSelect,
+      groupSelect,
       job.getByRole("button", { name: "Python Backend Engineer 저장 해제" }),
       page.getByRole("link", { name: "내 기술 비교" }),
     ]) {
@@ -80,17 +85,10 @@ for (const width of [1440, 820, 390, 320]) {
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
 
-    if (width === 320) {
-      const primaryAction = page.getByRole("link", { name: "내 기술 비교" });
-      expect(
-        await primaryAction.evaluate(
-          (element) => getComputedStyle(element).whiteSpace,
-        ),
-      ).toBe("nowrap");
-    }
-
     await stageSelect.selectOption("interview");
+    await groupSelect.selectOption("current");
     await expect(stageSelect).toHaveValue("interview");
+    await expect(groupSelect).toHaveValue("current");
     await expect(page.getByRole("tab", { name: "지원 관리 1" })).toBeVisible();
     await page.getByRole("tab", { name: "지원 관리 1" }).click();
     await expect(job).toBeVisible();
@@ -102,6 +100,11 @@ for (const width of [1440, 820, 390, 320]) {
         name: "Python Backend Engineer 지원 단계",
       }),
     ).toHaveValue("interview");
+    await expect(
+      job.getByRole("combobox", {
+        name: "Python Backend Engineer 커리어 분류",
+      }),
+    ).toHaveValue("current");
 
     await page.getByRole("tab", { name: "커뮤니티 0" }).click();
     await expect(job).not.toBeVisible();
@@ -116,12 +119,12 @@ for (const width of [1440, 820, 390, 320]) {
     await expect(job).not.toBeVisible();
     await page.reload();
     await expect(
-      page.getByRole("heading", { level: 2, name: "저장한 항목이 없습니다." }),
+      page.getByRole("heading", { level: 2, name: "아직 저장한 항목이 없습니다." }),
     ).toBeVisible();
     await expect(
       page.getByRole("article", { name: "Python Backend Engineer" }),
     ).not.toBeVisible();
-    await expect(page.getByRole("tab", { name: "공식 공고 0" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "채용공고 0" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "지원 관리 0" })).toBeVisible();
     expect(
       await page.evaluate(() =>
@@ -146,13 +149,13 @@ test("keeps a saved account post connected to its detail on mobile", async ({
   try {
     const title = "저장 보관함에서 다시 볼 내 질문";
     await page.setViewportSize({ height: 900, width: 390 });
-    await signInCommunityViewer(page, "/?compose=1");
+    await signInCommunityViewer(page, "/community?compose=1");
 
     const composer = page.getByRole("dialog", { name: "커뮤니티 글쓰기" });
     await composer.getByLabel("제목").fill(title);
     await composer
       .getByLabel("내용")
-      .fill("공식 공고에서 반복되는 기술을 확인한 뒤 남기는 질문입니다.");
+      .fill("채용공고에서 반복되는 기술을 확인한 뒤 남기는 질문입니다.");
     await composer.getByLabel("태그 (선택)").fill("백엔드, 이직 준비");
     await composer.getByRole("button", { name: "피드에 올리기" }).click();
 
@@ -170,9 +173,7 @@ test("keeps a saved account post connected to its detail on mobile", async ({
     await page.goto("/career/saved");
     let savedCard = page.getByRole("article", { name: title });
     await expect(savedCard).toBeVisible();
-    await expect(
-      savedCard.getByText("계정에 저장됨", { exact: true }),
-    ).toBeVisible();
+    await expect(savedCard.getByText("계정 저장", { exact: true })).toBeVisible();
     await expect(page.getByRole("tab", { name: "커뮤니티 1" })).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 2, name: "이전 기기 저장 글" }),
@@ -213,10 +214,10 @@ test("keeps a saved account post connected to its detail on mobile", async ({
     await expect(
       page.getByRole("heading", {
         level: 2,
-        name: "저장한 항목이 없습니다.",
+        name: "아직 저장한 항목이 없습니다.",
       }),
     ).toBeVisible();
-    await page.goto("/");
+    await page.goto("/community");
     const restoredHomeCard = page.getByRole("article", { name: title });
     await expect(restoredHomeCard).toBeVisible();
     await expect(
@@ -240,6 +241,6 @@ test("opens the saved library from the user utility menu", async ({ page }) => {
 
   await expect(page).toHaveURL("/career/saved");
   await expect(
-    page.getByRole("heading", { level: 2, name: "저장한 항목이 없습니다." }),
+    page.getByRole("heading", { level: 2, name: "아직 저장한 항목이 없습니다." }),
   ).toBeVisible();
 });

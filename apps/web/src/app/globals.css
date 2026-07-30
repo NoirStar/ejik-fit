@@ -1347,26 +1347,66 @@ main[aria-busy="true"] {
   }
 }
 
-/* Ejikfit Korean wordmark */
+/* CareerFit Korean wordmark */
 .brand-lockup {
   display: inline-flex;
-  height: 1.625rem;
+  min-height: 1.625rem;
   align-items: center;
+  gap: 0.5rem;
 }
 
-.brand-lockup__asset {
-  display: block;
-  width: auto;
-  height: 100%;
-  user-select: none;
+.brand-lockup__mark {
+  display: grid;
+  width: 1.625rem;
+  height: 1.625rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-family: var(--font-geist), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  transform: rotate(-3deg);
+}
+
+.brand-lockup__wordmark {
+  color: var(--color-text);
+  font-size: 1.0625rem;
+  font-weight: 820;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .brand-lockup--sm {
+  min-height: 1.5rem;
+}
+
+.brand-lockup--sm .brand-lockup__mark {
+  width: 1.5rem;
   height: 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.brand-lockup--sm .brand-lockup__wordmark {
+  font-size: 1rem;
 }
 
 .brand-lockup--lg {
+  min-height: 2rem;
+}
+
+.brand-lockup--lg .brand-lockup__mark {
+  width: 2rem;
   height: 2rem;
+}
+
+.brand-lockup--lg .brand-lockup__wordmark {
+  font-size: 1.25rem;
 }
 
 .brand:has(.brand-lockup) {

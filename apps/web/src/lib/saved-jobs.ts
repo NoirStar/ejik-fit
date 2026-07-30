@@ -1,11 +1,21 @@
 import { removeJobApplicationStage } from "./job-application-stages";
+import { removeSavedJobGroup } from "./saved-job-groups";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 import {
   MAX_SAVED_JOB_ID_LENGTH,
   MAX_SAVED_JOB_IDS,
 } from "./saved-job-contract";
 
-const KEY = "ejik-fit:saved-job-ids";
-const CHANGE_EVENT = "ejik-fit:saved-job-ids-change";
+const STORAGE_KEYS = {
+  current: "careerfit:saved-job-ids",
+  legacy: ["ejik-fit:saved-job-ids"],
+} as const;
+const CHANGE_EVENT = "careerfit:saved-job-ids-change";
 
 export { MAX_SAVED_JOB_ID_LENGTH, MAX_SAVED_JOB_IDS };
 
@@ -34,18 +44,21 @@ function defaultStorage(): Storage | null {
 
 export function readSavedJobIds(storage = defaultStorage()): string[] {
   if (!storage) return [];
-  try {
-    const raw = storage.getItem(KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? normalizeSavedJobIds(
-          parsed.filter((value): value is string => typeof value === "string"),
-        )
-      : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed)
+          ? normalizeSavedJobIds(
+              parsed.filter((value): value is string => typeof value === "string"),
+            )
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifySavedJobsChange(storage: Storage | null) {
@@ -64,9 +77,11 @@ export function writeSavedJobIds(
 ): string[] {
   const normalized = normalizeSavedJobIds(ids);
   if (!storage) return [];
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readSavedJobIds(storage);
   }
   notifySavedJobsChange(storage);
@@ -75,11 +90,7 @@ export function writeSavedJobIds(
 
 export function clearSavedJobs(storage = defaultStorage()): string[] {
   if (!storage) return [];
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readSavedJobIds(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifySavedJobsChange(storage);
   return [];
 }
@@ -103,7 +114,10 @@ export function toggleSavedJob(
   const toggleSucceeded = wasSaved
     ? !next.includes(normalizedId)
     : next.includes(normalizedId);
-  if (toggleSucceeded) removeJobApplicationStage(normalizedId, storage);
+  if (toggleSucceeded) {
+    removeJobApplicationStage(normalizedId, storage);
+    removeSavedJobGroup(normalizedId, storage);
+  }
   return next;
 }
 
@@ -114,7 +128,7 @@ export function subscribeSavedJobs(listener: SavedJobsListener) {
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

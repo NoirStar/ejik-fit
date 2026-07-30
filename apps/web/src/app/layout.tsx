@@ -19,24 +19,27 @@ const geist = Geist({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "이직핏 | 커리어 네트워크",
-    template: "%s | 이직핏",
+    default: "커리어핏 | 경력과 채용공고를 연결하는 커리어 분석",
+    template: "%s | 커리어핏",
   },
-  description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
-  applicationName: "이직핏",
+  description:
+    "내 기술과 경력을 바탕으로 이어갈 수 있는 커리어 방향과 관련 채용공고를 확인합니다.",
+  applicationName: "커리어핏",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "ko_KR",
     url: "/",
-    siteName: "이직핏",
-    title: "이직핏 | 커리어 네트워크",
-    description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
+    siteName: "커리어핏",
+    title: "커리어핏 | 경력과 채용공고를 연결하는 커리어 분석",
+    description:
+      "내 기술과 경력을 바탕으로 이어갈 수 있는 커리어 방향과 관련 채용공고를 확인합니다.",
   },
   twitter: {
     card: "summary",
-    title: "이직핏 | 커리어 네트워크",
-    description: "채용공고의 기술 수요와 내 기술을 비교하는 이직핏입니다.",
+    title: "커리어핏 | 경력과 채용공고를 연결하는 커리어 분석",
+    description:
+      "내 기술과 경력을 바탕으로 이어갈 수 있는 커리어 방향과 관련 채용공고를 확인합니다.",
   },
   icons: {
     icon: "/brand/ejik-fit-mascot.png",
