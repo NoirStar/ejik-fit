@@ -44,6 +44,9 @@ describe("skill graph visibility", () => {
 
     expect(shouldRenderSkillGraphLink("resting", visible, highlighted)).toBe(true);
     expect(shouldRenderSkillGraphLink("context", visible, highlighted)).toBe(true);
+    expect(
+      shouldRenderSkillGraphLink("context", visible, highlighted, false),
+    ).toBe(false);
     expect(shouldRenderSkillGraphLink("hidden", visible, highlighted)).toBe(false);
     expect(shouldRenderSkillGraphLink("hidden", undefined, highlighted)).toBe(true);
   });

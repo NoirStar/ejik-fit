@@ -568,10 +568,11 @@ for (const width of [1440, 820, 390, 320]) {
       page.getByRole("checkbox", { name: "관련 공고" }),
     ).toHaveCount(0);
 
-    const legendDisclosure = page.locator("details").filter({
-      hasText: "읽는 법",
+    const legendButton = page.getByRole("button", {
+      name: "읽는 법",
+      exact: true,
     });
-    await legendDisclosure.locator("summary").click();
+    await legendButton.click();
     const toolbarLegend = page.getByRole("note", { name: "스킬맵 범례" });
     await expect(graphFrame.getByRole("note", { name: "스킬맵 범례" })).toHaveCount(0);
     await expect(toolbarLegend).toBeVisible();
@@ -580,7 +581,7 @@ for (const width of [1440, 820, 390, 320]) {
     await expect(toolbarLegend).toContainText("테두리: 내 기술");
     await expect(toolbarLegend).toContainText("점: 학습 추천");
     await expect(toolbarLegend).toContainText("선 농도: 함께 요구");
-    await legendDisclosure.locator("summary").click();
+    await legendButton.click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth,
@@ -621,10 +622,10 @@ for (const width of [1440, 820, 390, 320]) {
 
     if (width <= 900) {
       const toolbar = page.getByRole("region", { name: "스킬맵 도구" });
-      const ownedSkillsDisclosure = page.locator("details").filter({
-        has: page.locator("summary").filter({ hasText: /^내 기술/ }),
+      const ownedSkillsButton = page.getByRole("button", {
+        name: /^내 기술 \d+$/,
       });
-      await expect(ownedSkillsDisclosure).not.toHaveAttribute("open", "");
+      await expect(ownedSkillsButton).toHaveAttribute("aria-expanded", "false");
 
       if (width <= 820) {
         const nextSkillHeading = page.getByRole("heading", {
@@ -654,12 +655,12 @@ for (const width of [1440, 820, 390, 320]) {
         );
       }
 
-      await ownedSkillsDisclosure.locator("summary").click();
+      await ownedSkillsButton.click();
       await expect(page.getByLabel("추가할 기술")).toBeVisible();
 
       if (width === 320) {
         for (const target of [
-          ownedSkillsDisclosure.getByRole("button", { name: "추가", exact: true }),
+          page.getByRole("button", { name: "추가", exact: true }),
           atlasButton,
           nearbyButton,
         ]) {
@@ -698,8 +699,8 @@ for (const width of [1440, 820, 390, 320]) {
         }
       }
 
-      await ownedSkillsDisclosure.locator("summary").click();
-      await expect(ownedSkillsDisclosure).not.toHaveAttribute("open", "");
+      await ownedSkillsButton.click();
+      await expect(ownedSkillsButton).toHaveAttribute("aria-expanded", "false");
     }
 
     if (width === 390) {
@@ -762,6 +763,98 @@ for (const width of [1440, 820, 390, 320]) {
     expect(browserErrors).toEqual([]);
   });
 }
+
+test("filters domains without rebuilding the canvas", async ({ page }) => {
+  const topologyRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/skills/graph/data")) {
+      topologyRequests.push(request.url());
+    }
+  });
+
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.goto("/skills/graph?seed=Kubernetes");
+
+  const graphFrame = page.locator('[data-testid="skill-graph-frame"]:visible');
+  const forceCanvas = graphFrame.locator(".force-canvas--ready");
+  const canvas = forceCanvas.locator("canvas");
+  const graphMetric = graphFrame.getByText(/^\d+개 기술 · \d+개 관계$/);
+
+  await expect(forceCanvas).toBeVisible();
+  const initialMetric = await graphMetric.textContent();
+  const initialCounts = initialMetric?.match(/^(\d+)개 기술 · (\d+)개 관계$/);
+  expect(initialCounts).not.toBeNull();
+  const initialFingerprint = await waitForCanvasStability(canvas);
+  const initialZoom = await waitForZoomStability(canvas);
+  const requestCountBeforeFilter = topologyRequests.length;
+
+  await forceCanvas.evaluate((element) => {
+    const canvasElement = element as HTMLElement & {
+      __skillMapReadyObserver?: MutationObserver;
+    };
+    canvasElement.dataset.readyDrops = "0";
+    canvasElement.__skillMapReadyObserver?.disconnect();
+    canvasElement.__skillMapReadyObserver = new MutationObserver(() => {
+      if (!canvasElement.classList.contains("force-canvas--ready")) {
+        canvasElement.dataset.readyDrops = String(
+          Number(canvasElement.dataset.readyDrops ?? "0") + 1,
+        );
+      }
+    });
+    canvasElement.__skillMapReadyObserver.observe(canvasElement, {
+      attributeFilter: ["class"],
+      attributes: true,
+    });
+  });
+
+  const domainButton = page.getByRole("button", {
+    name: "분야 전체",
+    exact: true,
+  });
+  await domainButton.click();
+  const domainDialog = page.getByRole("dialog", { name: "분야 필터" });
+  await expect(domainDialog).toBeVisible();
+  await domainDialog
+    .getByRole("button", { name: /^백엔드 \d+$/ })
+    .evaluate((element) => (element as HTMLButtonElement).click());
+  await page.waitForTimeout(40);
+  const middleFingerprint = await readCanvasFingerprint(canvas);
+
+  await expect(
+    page.getByRole("button", { name: "분야 백엔드", exact: true }),
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(graphMetric).not.toHaveText(initialMetric ?? "");
+  const filteredMetric = await graphMetric.textContent();
+  const filteredCounts = filteredMetric?.match(/^(\d+)개 기술 · (\d+)개 관계$/);
+  expect(filteredCounts).not.toBeNull();
+  expect(Number(filteredCounts?.[1])).toBeLessThan(Number(initialCounts?.[1]));
+  expect(Number(filteredCounts?.[2])).toBeLessThan(Number(initialCounts?.[2]));
+  await expect(domainDialog.getByRole("status")).toHaveText(
+    `현재 ${filteredCounts?.[1]}개 기술 표시`,
+  );
+  await expect(forceCanvas).toBeVisible();
+  await page.waitForTimeout(240);
+  const filteredFingerprint = await readCanvasFingerprint(canvas);
+  const filteredZoom = await readCanvasZoom(canvas);
+
+  expect(topologyRequests).toHaveLength(requestCountBeforeFilter);
+  expect(await forceCanvas.getAttribute("data-ready-drops")).toBe("0");
+  expect(initialFingerprint.hash).not.toBe(filteredFingerprint.hash);
+  expect(middleFingerprint.hash).not.toBe(filteredFingerprint.hash);
+  expect(filteredZoom?.k).toBeCloseTo(initialZoom?.k ?? 0, 4);
+  expect(filteredZoom?.x).toBeCloseTo(initialZoom?.x ?? 0, 1);
+  expect(filteredZoom?.y).toBeCloseTo(initialZoom?.y ?? 0, 1);
+
+  await domainDialog.getByRole("button", { name: /^전체 \d+$/ }).click();
+  await expect(graphMetric).toHaveText(initialMetric ?? "");
+  await page.waitForTimeout(240);
+  expect(topologyRequests).toHaveLength(requestCountBeforeFilter);
+  expect(await forceCanvas.getAttribute("data-ready-drops")).toBe("0");
+
+  await page.keyboard.press("Escape");
+  await expect(domainButton).toHaveAttribute("aria-expanded", "false");
+  await expect(domainButton).toBeFocused();
+});
 
 test("supports page scroll, pinch zoom, and node selection on touch", async ({ browser }) => {
   const context = await browser.newContext({

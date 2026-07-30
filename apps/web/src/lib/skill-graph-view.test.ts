@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { domainColor } from "./skill-graph";
-import { buildSkillGraphView } from "./skill-graph-view";
+import {
+  buildSkillGraphDisplayView,
+  buildSkillGraphView,
+  skillGraphPrimaryDomain,
+} from "./skill-graph-view";
 import type { SkillGraphResponse } from "./types";
 
 
@@ -57,6 +61,45 @@ function denseGraph(nodeCount = 30): SkillGraphResponse {
 
 
 describe("buildSkillGraphView", () => {
+  it("uses one stable fallback domain for uncategorized skills", () => {
+    const node = denseGraph(1).nodes[0]!;
+
+    expect(skillGraphPrimaryDomain({ ...node, domains: [] })).toBe("unknown");
+  });
+
+  it("derives compact domain results from the fixed layout topology", () => {
+    const graph = denseGraph(60);
+    graph.nodes = graph.nodes.map((node, index) => ({
+      ...node,
+      domains: [index >= 35 ? "rare" : "backend"],
+    }));
+    const layout = buildSkillGraphView(graph, {
+      linkLimit: 64,
+      mode: "all",
+      nodeLimit: 40,
+    });
+    const display = buildSkillGraphDisplayView(layout, {
+      enabledDomains: ["rare"],
+      linkLimit: 48,
+      nodeLimit: 30,
+    });
+    const layoutIds = new Set(layout.nodes.map(({ id }) => id));
+
+    expect(display.nodes).toHaveLength(5);
+    expect(display.nodes.every(({ id }) => layoutIds.has(id))).toBe(true);
+    expect(display.domains).toEqual([
+      expect.objectContaining({ domain: "backend", count: 35, enabled: false }),
+      expect.objectContaining({ domain: "rare", count: 5, enabled: true }),
+    ]);
+    expect(
+      display.links.every(
+        ({ source, target }) =>
+          display.nodes.some(({ id }) => id === source) &&
+          display.nodes.some(({ id }) => id === target),
+      ),
+    ).toBe(true);
+  });
+
   it("renders a broad but bounded desktop market atlas", () => {
     const view = buildSkillGraphView(denseGraph(60), { mode: "all" });
 

@@ -49,12 +49,21 @@ describe("skill graph layout CSS", () => {
     expect(graphCss).not.toMatch(
       /(?:padding(?:-[\w-]+)?|gap|margin(?:-[\w-]+)?):[^;]*(?:0\.125|0\.15|0\.1875|0\.2|0\.35|0\.375|0\.4|0\.625|0\.7|0\.875|2\.35)rem/,
     );
-    expect(graphCss).toContain(".page summary:active");
+    expect(graphCss).toContain(".toolbarMenuTrigger:active");
+    expect(graphCss).toContain("@keyframes skillGraphMenuReveal");
+    expect(graphCss).toContain("@keyframes skillGraphMetricSwap");
+    expect(graphCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*?transform: none;/,
+    );
     expect(searchCss).not.toMatch(
       /(?:padding(?:-[\w-]+)?|gap|margin(?:-[\w-]+)?):[^;]*(?:0\.125|0\.15|0\.1875|0\.2|0\.35|0\.375|0\.4|0\.625|0\.7|0\.875|2\.35)rem/,
     );
     expect(searchCss).toContain(".results li:active");
     expect(css).toContain(".force-canvas__surface");
+    expect(css).not.toContain("transition: opacity 520ms ease;");
+    expect(css).toContain(
+      "transition: opacity var(--dur-short) var(--ease-out);",
+    );
     expect(css).toMatch(
       /\.graph-empty-state__constellation\s*\{[\s\S]*?background: var\(--color-graph\);/,
     );

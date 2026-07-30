@@ -39,6 +39,7 @@ export type GraphRendererProps = {
   onReadyChange?: (ready: boolean) => void;
   reheatKey?: number;
   touchInteractionEnabled?: boolean;
+  visibleNodeIds?: ReadonlySet<string>;
   visibleLinkIds?: ReadonlySet<string>;
 };
 

@@ -4,7 +4,6 @@ import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
-import { SkillPicker } from "@/features/owned-skills/skill-picker";
 import { buildSearchScopeHref } from "@/features/search/model";
 import type { CareerCondition } from "@/lib/career-preferences";
 import { PRODUCT_TERMS } from "@/lib/labels";
@@ -22,13 +21,26 @@ import {
   skillNameKey,
 } from "@/lib/skill-catalog";
 import { summarizeGraph } from "@/lib/skill-graph";
-import { skillGraphTopologySignature } from "@/lib/skill-graph-canvas-data";
+import {
+  SKILL_GRAPH_DISPLAY_BUDGETS,
+  SKILL_GRAPH_LAYOUT_BUDGETS,
+  skillGraphTopologySignature,
+} from "@/lib/skill-graph-canvas-data";
 import {
   skillGraphLinkColor,
   skillGraphLinkWidth,
 } from "@/lib/skill-graph-canvas-style";
 import { findStrongestSkillGraphPath } from "@/lib/skill-graph-path";
-import { buildSkillGraphView } from "@/lib/skill-graph-view";
+import {
+  resolveSkillGraphEnabledDomains,
+  skillGraphDomainSummary,
+  toggleSkillGraphDomain,
+} from "@/lib/skill-graph-filters";
+import {
+  buildSkillGraphDisplayView,
+  buildSkillGraphView,
+  skillGraphPrimaryDomain,
+} from "@/lib/skill-graph-view";
 import type {
   SkillGraphViewMode,
   SkillGraphViewNode,
@@ -57,6 +69,7 @@ import type {
   SkillGraphForceSettings,
 } from "./skill-graph-force-canvas";
 import { SkillGraphSearch } from "./skill-graph-search";
+import { SkillGraphToolbarMenus } from "./skill-graph-toolbar-menus";
 import styles from "./skill-graph-atlas.module.css";
 
 
@@ -110,6 +123,7 @@ const DOMAIN_LABELS: Record<string, string> = {
   qa: "QA",
   robotics: "로보틱스",
   security: "보안",
+  unknown: "기타",
   web: "웹",
 };
 
@@ -280,13 +294,16 @@ export function SkillGraphExperience({
   const [ownedSkillInput, setOwnedSkillInput] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
+  const [layoutAnchorId, setLayoutAnchorId] = useState<string | null>(
+    initialSelection,
+  );
   const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("all");
   const [relationshipDensity, setRelationshipDensity] =
     useState<SkillGraphRelationshipDensity>("core");
   const [labelDensity, setLabelDensity] =
     useState<SkillGraphLabelDensity>("key");
   const [pathEmphasisEnabled, setPathEmphasisEnabled] = useState(false);
-  const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [compactGraph, setCompactGraph] = useState(false);
   const [forceReady, setForceReady] = useState(false);
   const [graphInteractionEnabled, setGraphInteractionEnabled] = useState(false);
@@ -406,40 +423,70 @@ export function SkillGraphExperience({
           resolvedSkillKey(selected.id, graphCatalog),
       )
     : false;
-  const allDomains = useMemo(() => buildSkillGraphView(graph).domains, [graph]);
-  const enabledDomains = useMemo(
-    () => allDomains
-      .map((domain) => domain.domain)
-      .filter((domain) => !disabledDomains.includes(domain)),
-    [allDomains, disabledDomains],
-  );
   const recommendedIds = useMemo(
     () => fitState === "idle"
       ? (fit?.recommended_next_skills ?? []).slice(0, 3).map(({ skill }) => skill)
       : [],
     [fit, fitState],
   );
-  const viewData = useMemo(() => {
-    const compactAtlas = compactGraph && graphMode === "all";
+  const layoutData = useMemo(() => {
+    const budget = compactGraph
+      ? SKILL_GRAPH_LAYOUT_BUDGETS.compact
+      : SKILL_GRAPH_LAYOUT_BUDGETS.regular;
     return buildSkillGraphView(graph, {
-      enabledDomains: allDomains.length > 0 ? enabledDomains : undefined,
-      linkLimit: compactAtlas ? 48 : undefined,
+      linkLimit: budget.links,
       mode: graphMode,
-      nodeLimit: compactAtlas ? 30 : undefined,
+      nodeLimit: budget.nodes,
       ownedIds: ownedSkills,
       recommendedIds,
-      selectedId,
+      selectedId: layoutAnchorId,
     });
   }, [
-    allDomains.length,
     compactGraph,
-    enabledDomains,
     graph,
     graphMode,
+    layoutAnchorId,
     ownedSkills,
     recommendedIds,
-    selectedId,
   ]);
+  const allDomains = useMemo(
+    () =>
+      buildSkillGraphDisplayView(layoutData, {
+        linkLimit: layoutData.links.length,
+        nodeLimit: layoutData.nodes.length,
+      }).domains,
+    [layoutData],
+  );
+  const availableDomainIds = useMemo(
+    () => allDomains.map(({ domain }) => domain),
+    [allDomains],
+  );
+  const effectiveSelectedDomains = useMemo(
+    () =>
+      resolveSkillGraphEnabledDomains(selectedDomains, availableDomainIds) ?? [],
+    [availableDomainIds, selectedDomains],
+  );
+  const enabledDomains = useMemo(
+    () =>
+      resolveSkillGraphEnabledDomains(
+        effectiveSelectedDomains,
+        availableDomainIds,
+      ),
+    [availableDomainIds, effectiveSelectedDomains],
+  );
+  const viewData = useMemo(() => {
+    const budget = graphMode === "focus"
+      ? SKILL_GRAPH_DISPLAY_BUDGETS.focus
+      : compactGraph
+        ? SKILL_GRAPH_DISPLAY_BUDGETS.compact
+        : SKILL_GRAPH_DISPLAY_BUDGETS.regular;
+    return buildSkillGraphDisplayView(layoutData, {
+      enabledDomains,
+      linkLimit: budget.links,
+      nodeLimit: budget.nodes,
+      selectedId,
+    });
+  }, [compactGraph, enabledDomains, graphMode, layoutData, selectedId]);
   const positionedNodes = useMemo(
     () => positionNodes(viewData.nodes.filter((node) => node.kind === "skill")),
     [viewData.nodes],
@@ -454,14 +501,21 @@ export function SkillGraphExperience({
   );
   const showFallbackGraph = positionedNodes.length > 0 && !forceReady;
   const isFilteredEmpty = graph.nodes.length > 0 && viewData.nodes.length === 0;
-  const visibleLinkIds = useMemo(
-    () => buildVisibleSkillGraphLinkIds(
+  const visibleNodeIds = useMemo(
+    () => new Set(viewData.nodes.map(({ id }) => id)),
+    [viewData.nodes],
+  );
+  const visibleLinkIds = useMemo(() => {
+    return buildVisibleSkillGraphLinkIds(
       viewData.links,
       viewData.stats.skillCount,
       relationshipDensity,
-    ),
-    [relationshipDensity, viewData.links, viewData.stats.skillCount],
-  );
+    );
+  }, [
+    relationshipDensity,
+    viewData.links,
+    viewData.stats.skillCount,
+  ]);
   const marketPath = useMemo(() => {
     if (!selectedId) return null;
     return findStrongestSkillGraphPath({
@@ -572,6 +626,7 @@ export function SkillGraphExperience({
     setDepth(initialDepth);
     depthRef.current = initialDepth;
     setSelectedId(initialSelection);
+    setLayoutAnchorId(initialSelection);
     selectedIdRef.current = initialSelection;
     const requestedNearby =
       new URL(window.location.href).searchParams.get("view") === "nearby" &&
@@ -579,7 +634,6 @@ export function SkillGraphExperience({
     const nextMode: SkillGraphViewMode = requestedNearby ? "focus" : "all";
     setGraphMode(nextMode);
     graphModeRef.current = nextMode;
-    setForceReady(false);
     setTopologyState("idle");
     if (requestedNearby) void loadTopology(initialSelection, initialDepth);
   }, [careerType, initialDepth, initialGraph, initialSelection, loadTopology]);
@@ -607,15 +661,14 @@ export function SkillGraphExperience({
       setDepth(requestedDepth);
       setGraphMode(nextMode);
       setSelectedId(nextSelection);
+      setLayoutAnchorId(nextSelection);
       if (nextMode === "focus") {
-        setForceReady(false);
         void loadTopology(nextSelection, requestedDepth);
       } else {
         const atlas = topologyCache.current.get(
           topologyCacheKey(null, careerTypeRef.current, requestedDepth),
         );
         if (atlas && atlas !== graph) {
-          setForceReady(false);
           setGraph(atlas);
         }
       }
@@ -775,6 +828,7 @@ export function SkillGraphExperience({
       (node) => resolvedSkillKey(node.id, graphCatalogRef.current) === requestedKey,
     );
     if (graphNode) {
+      setLayoutAnchorId(graphNode.id);
       selectSkill(graphNode.id);
       return;
     }
@@ -786,7 +840,7 @@ export function SkillGraphExperience({
     setDepth(1);
     setGraphMode("focus");
     setSelectedId(canonical);
-    setForceReady(false);
+    setLayoutAnchorId(canonical);
     writeSelectionUrl(canonical, "push", "focus");
     void loadTopology(canonical, 1);
     setAnnouncement(`${canonical} 주변 기술을 불러옵니다.`);
@@ -836,11 +890,43 @@ export function SkillGraphExperience({
   }
 
   function toggleDomain(domain: string) {
-    setDisabledDomains((current) =>
-      current.includes(domain)
-        ? current.filter((item) => item !== domain)
-        : [...current, domain],
+    const next = toggleSkillGraphDomain(
+      effectiveSelectedDomains,
+      domain,
+      availableDomainIds,
     );
+    setSelectedDomains(next);
+
+    const selectedNode = selectedIdRef.current
+      ? graphNodeMap.get(selectedIdRef.current)
+      : null;
+    const selectedDomain = selectedNode
+      ? skillGraphPrimaryDomain(selectedNode)
+      : "unknown";
+    if (
+      next.length > 0 &&
+      selectedIdRef.current &&
+      !next.includes(selectedDomain)
+    ) {
+      selectedIdRef.current = null;
+      setSelectedId(null);
+      writeSelectionUrl(null, "replace");
+    }
+
+    if (next.length === 0) {
+      setAnnouncement("전체 분야를 표시합니다.");
+    } else if (next.length === 1) {
+      setAnnouncement(
+        `${displayDomain(next[0]!)} 분야만 표시합니다. 다른 분야를 선택하면 함께 비교할 수 있습니다.`,
+      );
+    } else {
+      setAnnouncement(`${next.length}개 분야를 함께 비교합니다.`);
+    }
+  }
+
+  function clearDomainFilter() {
+    setSelectedDomains([]);
+    setAnnouncement("전체 분야를 표시합니다.");
   }
 
   function showAtlasGraph() {
@@ -849,7 +935,6 @@ export function SkillGraphExperience({
     graphModeRef.current = "all";
     setDepth(1);
     setGraphMode("all");
-    setForceReady(false);
     writeSelectionUrl(selectedIdRef.current, "push", "all");
     void loadTopology(null, 1);
     setAnnouncement("현재 수집 범위의 전체 기술 지도를 표시합니다.");
@@ -860,7 +945,6 @@ export function SkillGraphExperience({
     if (!currentSelection || graphModeRef.current === "focus") return;
     graphModeRef.current = "focus";
     setGraphMode("focus");
-    setForceReady(false);
     writeSelectionUrl(currentSelection, "push", "focus");
     void loadTopology(currentSelection, depthRef.current);
     setAnnouncement(`${currentSelection} 주변의 기술 관계를 표시합니다.`);
@@ -873,7 +957,6 @@ export function SkillGraphExperience({
     graphModeRef.current = "focus";
     setDepth(nextDepth);
     setGraphMode("focus");
-    setForceReady(false);
     writeSelectionUrl(currentSelection, "replace", "focus");
     void loadTopology(currentSelection, nextDepth);
     setAnnouncement(
@@ -899,13 +982,16 @@ export function SkillGraphExperience({
     graphModeRef.current = "all";
     setDepth(1);
     setGraphMode("all");
-    setDisabledDomains([]);
+    setSelectedDomains([]);
     setSearchInput("");
-    setForceReady(false);
     writeSelectionUrl(selectedIdRef.current, "replace", "all");
     void loadTopology(null, 1);
     setAnnouncement("분야 필터를 초기화하고 전체 지도를 표시합니다.");
   }
+
+  const graphMetric = loadFailed
+    ? "기술·관계 수 확인 불가"
+    : `${viewData.stats.skillCount}개 기술 · ${visibleLinkIds.size}개 관계`;
 
   return (
     <main className={styles.page}>
@@ -987,158 +1073,35 @@ export function SkillGraphExperience({
             </div>
           )}
 
-          <div className={styles.toolbarMenus}>
-            <details>
-              <summary>내 기술 <b>{ownedSkills.length}</b></summary>
-              <div className={styles.popover}>
-                <div className={styles.popoverHeader}>
-                  <div>
-                    <strong>{PRODUCT_TERMS.ownedSkills}</strong>
-                    <span>추천과 공고 매칭에 반영됩니다.</span>
-                  </div>
-                  <b>{ownedSkills.length}/{MAX_OWNED_SKILLS}</b>
-                </div>
-                <SkillPicker
-                  catalog={graphCatalog}
-                  catalogStatus="ready"
-                  excludedSkills={ownedSkills}
-                  id="skill-graph-owned-skill"
-                  onCommit={addSkill}
-                  onValueChange={setOwnedSkillInput}
-                  value={ownedSkillInput}
-                />
-                {ownedSkills.length > 0 ? (
-                  <div className={styles.skillChips}>
-                    {ownedSkills.map((skill) => (
-                      <span key={skill}>
-                        {skill}
-                        <button
-                          aria-label={`${skill} 제거`}
-                          onClick={() => removeSkill(skill)}
-                          type="button"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={styles.emptyCopy}>아직 추가한 기술이 없습니다.</p>
-                )}
-              </div>
-            </details>
-
-            <details>
-              <summary>분야 <b>{enabledDomains.length}/{allDomains.length}</b></summary>
-              <div className={styles.popover}>
-                <div className={styles.popoverHeader}>
-                  <div>
-                    <strong>분야 필터</strong>
-                    <span>관심 분야만 지도에 남겨 보세요.</span>
-                  </div>
-                  <button onClick={() => setDisabledDomains([])} type="button">
-                    모두 보기
-                  </button>
-                </div>
-                <div className={styles.domainFilters}>
-                  {allDomains.map((group) => {
-                    const enabled = !disabledDomains.includes(group.domain);
-                    return (
-                      <button
-                        aria-pressed={enabled}
-                        data-active={enabled ? "true" : undefined}
-                        key={group.domain}
-                        onClick={() => toggleDomain(group.domain)}
-                        type="button"
-                      >
-                        <i aria-hidden="true" style={{ backgroundColor: group.color }} />
-                        <span>{displayDomain(group.domain)}</span>
-                        <b>{group.count}</b>
-                      </button>
-                    );
-                  })}
-                  {allDomains.length === 0 && (
-                    <p className={styles.emptyCopy}>확인 가능한 분야가 없습니다.</p>
-                  )}
-                </div>
-              </div>
-            </details>
-
-            <details>
-              <summary>
-                보기 설정 <b>{RELATIONSHIP_DENSITY_LABELS[relationshipDensity]}</b>
-              </summary>
-              <div className={`${styles.popover} ${styles.displayPopover}`}>
-                <div className={styles.popoverHeader}>
-                  <div>
-                    <strong>그래프 표시</strong>
-                    <span>배치는 유지하고 표시 정보만 바뀝니다.</span>
-                  </div>
-                </div>
-                <div className={styles.displaySetting}>
-                  <span id="skill-graph-relationship-density">관계선</span>
-                  <div
-                    aria-labelledby="skill-graph-relationship-density"
-                    className={styles.settingSegmented}
-                    role="group"
-                  >
-                    {(
-                      Object.entries(RELATIONSHIP_DENSITY_LABELS) as [
-                        SkillGraphRelationshipDensity,
-                        string,
-                      ][]
-                    ).map(([value, label]) => (
-                      <button
-                        aria-pressed={relationshipDensity === value}
-                        data-active={relationshipDensity === value ? "true" : undefined}
-                        key={value}
-                        onClick={() => setRelationshipDensity(value)}
-                        type="button"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className={styles.displaySetting}>
-                  <span id="skill-graph-label-density">기술명</span>
-                  <div
-                    aria-labelledby="skill-graph-label-density"
-                    className={styles.settingSegmented}
-                    role="group"
-                  >
-                    <button
-                      aria-pressed={labelDensity === "key"}
-                      data-active={labelDensity === "key" ? "true" : undefined}
-                      onClick={() => setLabelDensity("key")}
-                      type="button"
-                    >
-                      주요만
-                    </button>
-                    <button
-                      aria-pressed={labelDensity === "more"}
-                      data-active={labelDensity === "more" ? "true" : undefined}
-                      onClick={() => setLabelDensity("more")}
-                      type="button"
-                    >
-                      더 많이
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <details>
-              <summary>읽는 법</summary>
-              <p aria-label="스킬맵 범례" className={styles.legend} role="note">
-                <span><i aria-hidden="true" data-kind="demand" />크기: 시장 수요</span>
-                <span><i aria-hidden="true" data-kind="domain" />색: 기술 분야</span>
-                <span><i aria-hidden="true" data-kind="owned" />테두리: 내 기술</span>
-                <span><i aria-hidden="true" data-kind="recommended" />점: 학습 추천</span>
-                <span><i aria-hidden="true" data-kind="link" />선 농도: 함께 요구</span>
-              </p>
-            </details>
-          </div>
+          <SkillGraphToolbarMenus
+            display={{
+              labelDensity,
+              onLabelDensityChange: setLabelDensity,
+              onRelationshipDensityChange: setRelationshipDensity,
+              relationshipDensity,
+              relationshipLabels: RELATIONSHIP_DENSITY_LABELS,
+            }}
+            domains={{
+              domains: allDomains,
+              formatLabel: displayDomain,
+              onClear: clearDomainFilter,
+              onToggle: toggleDomain,
+              resultCount: viewData.stats.skillCount,
+              selected: effectiveSelectedDomains,
+              summary: skillGraphDomainSummary(
+                effectiveSelectedDomains,
+                displayDomain,
+              ),
+            }}
+            owned={{
+              catalog: graphCatalog,
+              input: ownedSkillInput,
+              onCommit: addSkill,
+              onInputChange: setOwnedSkillInput,
+              onRemove: removeSkill,
+              skills: ownedSkills,
+            }}
+          />
         </section>
 
         <div className={styles.workspace}>
@@ -1150,20 +1113,21 @@ export function SkillGraphExperience({
             >
               <div className={styles.graphHud}>
                 <strong>{graphMode === "focus" ? "선택 주변" : "전체 지도"}</strong>
-                <span>
-                  {loadFailed
-                    ? "기술·관계 수 확인 불가"
-                    : `${viewData.stats.skillCount}개 기술 · ${visibleLinkIds.size}개 관계`}
+                <span className={styles.graphMetric} key={graphMetric}>
+                  {graphMetric}
                 </span>
                 {!loadFailed && (
-                  <b className={styles.graphDensityBadge}>
+                  <b
+                    className={`${styles.graphDensityBadge} ${styles.graphMetric}`}
+                    key={relationshipDensity}
+                  >
                     {RELATIONSHIP_DENSITY_LABELS[relationshipDensity]}
                   </b>
                 )}
               </div>
 
               <SkillGraphForceCanvas
-                data={viewData}
+                data={layoutData}
                 display={display}
                 emphasis={pathEmphasis}
                 forces={forces}
@@ -1173,6 +1137,7 @@ export function SkillGraphExperience({
                 selectedId={selectedId}
                 touchInteractionEnabled={graphInteractionEnabled}
                 visibleLinkIds={visibleLinkIds}
+                visibleNodeIds={visibleNodeIds}
               />
 
               <button
