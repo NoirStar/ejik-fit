@@ -22,7 +22,7 @@ import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "@/features/home-feed/model";
-import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
+import { formatCareer, formatEmployment } from "@/lib/labels";
 import {
   readLocalCommunityPosts,
   subscribeLocalCommunityPosts,
@@ -65,15 +65,6 @@ const ALL_SCOPE_LIMITS = {
   skills: 8,
   community: 4,
 } as const;
-
-const SEARCH_COPY = {
-  prompt: "검색어를 입력해 주세요.",
-  description: "공고와 커뮤니티 글을 나누어 보여줍니다.",
-  empty: "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.",
-  communityError: "커뮤니티 검색 결과를 불러오지 못했습니다.",
-} as const;
-
-const UNSPECIFIED_HELP_ID = "search-skill-unspecified-help";
 
 function formatVerifiedDate(value: string | null) {
   if (!value || Number.isNaN(Date.parse(value))) return "확인 시각 없음";
@@ -136,12 +127,11 @@ function CompanyResult({ company }: { company: CompanySearchResult }) {
     <article className={styles.companyResult}>
       <CompanyMark
         companyName={company.name}
-        companySlug={company.slug}
         size={52}
         sourceUrl={company.sourceUrl}
       />
       <div className={styles.companyCopy}>
-        <p>현재 검색 결과 공고 {company.postingCount}건</p>
+        <p>현재 검색 응답 공고 {company.postingCount}건</p>
         <h3>
           <Link aria-label={`${company.name} 기업 채용 현황`} href={company.href}>
             {company.name}
@@ -154,8 +144,8 @@ function CompanyResult({ company }: { company: CompanySearchResult }) {
           {company.skillNames.map((skill) => (
             <li key={skill}>
               <Link
-                aria-label={`${skill} 스킬맵`}
-                href={`/skill-map?skill=${encodeURIComponent(skill)}`}
+                aria-label={`${skill} 기술 관계 보기`}
+                href={`/skills/graph?seed=${encodeURIComponent(skill)}`}
               >
                 {skill}
               </Link>
@@ -179,17 +169,12 @@ function JobResult({ job }: { job: JobSearchResult }) {
       <div className={styles.resultTopline}>
         <span className={styles.officialBadge}>
           <ShieldCheck aria-hidden="true" size={15} weight="fill" />
-          공식 공고
+          채용공고
         </span>
         <span>{formatVerifiedDate(job.lastVerifiedAt)}</span>
       </div>
       <div className={styles.jobIdentity}>
-        <CompanyMark
-          companyName={job.companyName}
-          companySlug={job.companySlug}
-          size={48}
-          sourceUrl={job.sourceUrl}
-        />
+        <CompanyMark companyName={job.companyName} size={48} sourceUrl={job.sourceUrl} />
         <div>
           <p>
             {job.companyHref ? (
@@ -216,7 +201,7 @@ function JobResult({ job }: { job: JobSearchResult }) {
                 ? "필수"
                 : skill.kind === "preferred"
                   ? "우대"
-                  : PRODUCT_TERMS.unspecifiedRequirement}{" "}
+                  : "언급"}{" "}
               {skill.name}
             </li>
           ))}
@@ -224,11 +209,11 @@ function JobResult({ job }: { job: JobSearchResult }) {
       )}
       <footer className={styles.resultActions}>
         <Link href={job.href}>
-          공고 보기
+          공고 분석
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
         <a href={job.sourceUrl} rel="noreferrer" target="_blank">
-          기업 채용페이지 보기
+          공식 채용 페이지에서 지원
           <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
         </a>
       </footer>
@@ -240,20 +225,11 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
   const requirementCounts = [
     ["필수", skill.requiredCount],
     ["우대", skill.preferredCount],
-    [PRODUCT_TERMS.unspecifiedRequirementCompact, skill.unspecifiedCount],
+    ["조건 구분 없음", skill.unspecifiedCount],
   ] as const;
   const hasRequirementBreakdown = requirementCounts.some(
     ([, count]) => count !== null,
   );
-  const expandedRequirementLabel = requirementCounts
-    .map(([label, count]) =>
-      `${
-        label === PRODUCT_TERMS.unspecifiedRequirementCompact
-          ? PRODUCT_TERMS.unspecifiedRequirement
-          : label
-      } ${count === null ? "미제공" : `${count}건`}`,
-    )
-    .join(", ");
 
   return (
     <article className={styles.skillResult}>
@@ -267,20 +243,17 @@ function SkillResult({ skill }: { skill: SkillSearchResult }) {
       </div>
       <div className={styles.skillEvidence}>
         <strong>{skill.postingCount}건 공고</strong>
-        <span
-          aria-describedby={hasRequirementBreakdown ? UNSPECIFIED_HELP_ID : undefined}
-          aria-label={hasRequirementBreakdown ? expandedRequirementLabel : undefined}
-        >
+        <span>
           {hasRequirementBreakdown
             ? requirementCounts
                 .map(([label, count]) => `${label} ${count ?? "미제공"}`)
                 .join(" · ")
-            : PRODUCT_TERMS.unspecifiedRequirement}
+            : "필수·우대 분류 미제공"}
         </span>
       </div>
       <div className={styles.skillActions}>
-        <Link aria-label={`${skill.name} 스킬맵 보기`} href={skill.skillHref}>
-          스킬맵
+        <Link aria-label={`${skill.name} 기술 관계 보기`} href={skill.skillHref}>
+          기술 관계 보기
           <ArrowRight aria-hidden="true" size={14} weight="bold" />
         </Link>
         <Link href={skill.jobsHref}>관련 공고</Link>
@@ -298,7 +271,7 @@ function CommunityResult({
     <article aria-label={item.title} className={styles.communityResult}>
       <div className={styles.resultTopline}>
         <span className={styles.exampleBadge} data-source={item.source}>
-          {item.source === "local" ? "이 기기에 남은 글" : "커뮤니티"}
+          {item.source === "local" ? "이전 저장 글" : "커뮤니티"}
         </span>
         <span>{item.createdLabel}</span>
       </div>
@@ -406,7 +379,9 @@ export function SearchResults({
             "무엇을 찾고 있나요?"
           )}
         </h1>
-        <p className={styles.description}>{SEARCH_COPY.description}</p>
+        <p className={styles.description}>
+          공식 채용 데이터와 전체 공개 커뮤니티 글을 출처별로 나눠 확인하세요.
+        </p>
         <form action="/search" className={styles.searchForm} method="get" role="search">
           <MagnifyingGlass aria-hidden="true" size={20} />
           <input
@@ -427,10 +402,10 @@ export function SearchResults({
         <section className={styles.startState}>
           <MagnifyingGlass aria-hidden="true" size={28} />
           <div>
-            <h2>{SEARCH_COPY.prompt}</h2>
+            <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
             <p>
-              기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이
-              기기에 남은 글에서 찾습니다.
+              기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 서버의 공개
+              계정 글 전체와 이 브라우저에 남아 있는 이전 저장 글에서 찾습니다.
             </p>
           </div>
           <div className={styles.startLinks}>
@@ -463,7 +438,7 @@ export function SearchResults({
             <div className={styles.boundaryNote}>
               <CheckCircle aria-hidden="true" size={17} weight="fill" />
               <p>
-                기업·공고·기술 수치는 전체 검색량이 아니라 현재 검색 결과와 통계 표본
+                기업·공고·기술 수치는 전체 검색량이 아니라 현재 API 응답과 통계 표본
                 범위입니다.
               </p>
             </div>
@@ -493,17 +468,15 @@ export function SearchResults({
               <section className={styles.noResults} role="status">
                 <MagnifyingGlass aria-hidden="true" size={27} />
                 <h2>전체 공개 커뮤니티 글까지 검색하고 있습니다.</h2>
-                <p>
-                  공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는
-                  중입니다.
-                </p>
+                <p>공식 데이터 검색 결과는 유지한 채 서버 검색 결과를 합치는 중입니다.</p>
               </section>
             ) : snapshot.dataStatus === "ready" &&
               !snapshot.hasAnyResults &&
               !communityUnavailable ? (
               <section className={styles.noResults}>
                 <MagnifyingGlass aria-hidden="true" size={27} />
-                <h2>{SEARCH_COPY.empty}</h2>
+                <h2>검색 결과가 없습니다.</h2>
+                <p>표현을 줄이거나 기술·기업 이름으로 다시 검색해 보세요.</p>
                 <Link href="/search">검색어 지우기</Link>
               </section>
             ) : (
@@ -513,7 +486,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="company-results-title">기업</span>
                     <SectionHeader
                       count={snapshot.counts.companies}
-                      description="현재 공고 검색 결과에서 확인한 관련 기업입니다."
+                      description="검색된 채용공고 응답에서 확인한 관련 기업입니다."
                       query={query}
                       scope="companies"
                       title="기업"
@@ -521,7 +494,7 @@ export function SearchResults({
                     {snapshot.counts.companies === null ? (
                       <SectionState>공고 기반 기업 결과를 현재 확인할 수 없습니다.</SectionState>
                     ) : snapshot.companies.length === 0 ? (
-                      <SectionState>현재 공고 검색 결과에서 관련 기업을 찾지 못했습니다.</SectionState>
+                      <SectionState>현재 공고 응답에서 관련 기업을 찾지 못했습니다.</SectionState>
                     ) : (
                       <div className={styles.companyGrid}>
                         {snapshot.companies
@@ -539,15 +512,15 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="job-results-title">공고</span>
                     <SectionHeader
                       count={snapshot.counts.jobs}
-                      description="기업 채용페이지에서 확인한 현재 공개 공고 검색 결과입니다."
+                      description="공식 채용 페이지의 현재 공개 공고 검색 응답입니다."
                       query={query}
                       scope="jobs"
                       title="공고"
                     />
                     {snapshot.counts.jobs === null ? (
-                      <SectionState>공식 공고 검색 결과를 현재 확인할 수 없습니다.</SectionState>
+                      <SectionState>채용공고 검색 결과를 현재 확인할 수 없습니다.</SectionState>
                     ) : snapshot.jobs.length === 0 ? (
-                      <SectionState>현재 조건에서 확인된 공식 공고가 없습니다.</SectionState>
+                      <SectionState>현재 조건에서 확인된 채용공고가 없습니다.</SectionState>
                     ) : (
                       <div className={styles.jobGrid}>
                         {snapshot.jobs
@@ -565,7 +538,7 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="skill-results-title">기술</span>
                     <SectionHeader
                       count={snapshot.counts.skills}
-                      description="현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다."
+                      description="수요가 많이 확인된 기술 표본에서 이름이 일치한 기술입니다."
                       query={query}
                       scope="skills"
                       title="기술"
@@ -575,19 +548,13 @@ export function SearchResults({
                     ) : snapshot.skills.length === 0 ? (
                       <SectionState>현재 통계 표본에서 일치하는 기술이 없습니다.</SectionState>
                     ) : (
-                      <>
-                        <p className={styles.skillHelper} id={UNSPECIFIED_HELP_ID}>
-                          {PRODUCT_TERMS.unspecifiedRequirementCompact}: 공고에서 필수 또는
-                          우대로 구분하지 않은 기술
-                        </p>
-                        <div className={styles.skillList}>
-                          {snapshot.skills
-                            .slice(0, resultLimit(scope, "skills"))
-                            .map((skill) => (
-                              <SkillResult key={skill.name} skill={skill} />
-                            ))}
-                        </div>
-                      </>
+                      <div className={styles.skillList}>
+                        {snapshot.skills
+                          .slice(0, resultLimit(scope, "skills"))
+                          .map((skill) => (
+                            <SkillResult key={skill.name} skill={skill} />
+                          ))}
+                      </div>
                     )}
                   </section>
                 )}
@@ -597,14 +564,14 @@ export function SearchResults({
                     <span className={styles.anchorTitle} id="community-results-title">커뮤니티</span>
                     <SectionHeader
                       count={snapshot.counts.community}
-                      description="전체 공개 계정 글을 검색하고, 이 기기에 남은 글은 별도로 보여줍니다."
+                      description="전체 공개 계정 글을 검색하고, 이 브라우저의 이전 저장 글은 별도로 보여줍니다."
                       query={query}
                       scope="community"
                       title="커뮤니티"
                     />
-                    <p className={styles.communityDisclosure}>
-                      커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은
-                      계정 글과 구분해 표시합니다.
+                    <p className={styles.mockDisclosure}>
+                      공개 커뮤니티 결과는 서버 전체 글에서 찾습니다. 이전 저장 글은
+                      이 브라우저에서만 복구할 수 있습니다.
                     </p>
                     {accountCommunity.state.status === "loading" && (
                       <p className={styles.communityLoadNote} role="status">
@@ -613,7 +580,7 @@ export function SearchResults({
                     )}
                     {accountCommunity.state.error && (
                       <div className={styles.communityLoadNote} data-error="true" role="alert">
-                        <span>{SEARCH_COPY.communityError}</span>
+                        <span>{accountCommunity.state.error} 이전 저장 글은 계속 표시합니다.</span>
                         <button
                           onClick={() =>
                             void (accountCommunity.state.status === "error"
@@ -648,9 +615,7 @@ export function SearchResults({
                                 ))}
                             </div>
                           ) : accountCommunity.state.status === "ready" ? (
-                            <SectionState>
-                              공개 계정 글에서 일치하는 결과가 없습니다.
-                            </SectionState>
+                            <SectionState>서버 전체 글에서 일치하는 결과가 없습니다.</SectionState>
                           ) : null}
                           {scope === "community" &&
                             accountCommunity.state.nextCursor && (
@@ -661,7 +626,7 @@ export function SearchResults({
                                 type="button"
                               >
                                 {accountCommunity.state.loadingMore
-                                  ? "불러오는 중…"
+                                  ? "불러오는 중..."
                                   : "공개 글 더 보기"}
                               </button>
                             )}
@@ -669,12 +634,12 @@ export function SearchResults({
 
                         {localCommunityResults.length > 0 && (
                           <section
-                            aria-label="이 기기에 남은 글"
+                            aria-label="이전 기기 저장 글"
                             className={styles.communitySourceGroup}
                           >
                             <header>
-                              <h3>이 기기에 남은 글</h3>
-                              <p>계정에 게시되지 않고 이 기기에 남아 있는 글입니다.</p>
+                              <h3>이전 기기 저장 글</h3>
+                              <p>아직 계정으로 옮겨지지 않은 이 브라우저의 복구 대상입니다.</p>
                             </header>
                             <div className={styles.communityList}>
                               {localCommunityResults.map((item) => (

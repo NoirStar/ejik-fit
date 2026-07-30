@@ -1,9 +1,15 @@
-import { skillIdentityKey } from "./skill-catalog";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 
-const KEY = "ejik-fit:owned-skills";
-const CHANGE_EVENT = "ejik-fit:owned-skills-change";
-export const MAX_OWNED_SKILLS = 20;
-export const MAX_OWNED_SKILL_LENGTH = 100;
+const STORAGE_KEYS = {
+  current: "careerfit:owned-skills",
+  legacy: ["ejik-fit:owned-skills"],
+} as const;
+const CHANGE_EVENT = "careerfit:owned-skills-change";
 
 export const EMPTY_OWNED_SKILLS: readonly string[] = [];
 
@@ -12,27 +18,10 @@ type SearchParamsRecord = Record<string, SearchParamValue>;
 type OwnedSkillsListener = (skills: string[]) => void;
 
 
-function uniqueOwnedSkillsInOrder(skills: string[]) {
-  const byIdentity = new Map<string, string>();
-  for (const skill of skills) {
-    const trimmed = skill.trim();
-    const identity = skillIdentityKey(trimmed);
-    if (identity && !byIdentity.has(identity)) {
-      byIdentity.set(identity, trimmed);
-    }
-  }
-  return [...byIdentity.values()];
-}
-
 export function normalizeOwnedSkills(skills: string[]) {
-  return uniqueOwnedSkillsInOrder(skills).sort((a, b) => a.localeCompare(b));
-}
-
-function boundedOwnedSkills(skills: string[]) {
-  return uniqueOwnedSkillsInOrder(skills)
-    .filter((skill) => skill.length <= MAX_OWNED_SKILL_LENGTH)
-    .slice(0, MAX_OWNED_SKILLS)
-    .sort((a, b) => a.localeCompare(b));
+  return Array.from(
+    new Set(skills.map((skill) => skill.trim()).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b));
 }
 
 function splitSearchParam(value: SearchParamValue) {
@@ -45,7 +34,7 @@ function splitSearchParam(value: SearchParamValue) {
 export function ownedSkillsFromSearchParams(
   searchParams: SearchParamsRecord | undefined,
 ): string[] {
-  return boundedOwnedSkills(splitSearchParam(searchParams?.owned_skills));
+  return normalizeOwnedSkills(splitSearchParam(searchParams?.owned_skills));
 }
 
 export function ownedSkillsToDashboardHref(
@@ -54,7 +43,7 @@ export function ownedSkillsToDashboardHref(
 ) {
   const params = new URLSearchParams(currentSearch);
   params.delete("owned_skills");
-  boundedOwnedSkills(skills).forEach((skill) => {
+  normalizeOwnedSkills(skills).forEach((skill) => {
     params.append("owned_skills", skill);
   });
   const query = params.toString();
@@ -76,20 +65,21 @@ export function readOwnedSkills(storage = defaultStorage()): string[] {
   if (!storage) {
     return [];
   }
-  try {
-    const raw = storage.getItem(KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? boundedOwnedSkills(
-          parsed.filter((value): value is string => typeof value === "string"),
-        )
-      : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed)
+          ? normalizeOwnedSkills(
+              parsed.filter((value): value is string => typeof value === "string"),
+            )
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifyOwnedSkillsChange(storage: Storage | null) {
@@ -106,11 +96,12 @@ export function writeOwnedSkills(
   skills: string[],
   storage = defaultStorage(),
 ): string[] {
-  const normalized = boundedOwnedSkills(skills);
-  try {
-    storage?.setItem(KEY, JSON.stringify(normalized));
-  } catch {
-    return normalized;
+  const normalized = normalizeOwnedSkills(skills);
+  if (storage) {
+    writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+      parse: () => normalized,
+      serialize: JSON.stringify,
+    });
   }
   notifyOwnedSkillsChange(storage);
   return normalized;
@@ -127,21 +118,14 @@ export function removeOwnedSkill(
   skill: string,
   storage = defaultStorage(),
 ): string[] {
-  const targetKey = skillIdentityKey(skill);
   return writeOwnedSkills(
-    readOwnedSkills(storage).filter(
-      (item) => skillIdentityKey(item) !== targetKey,
-    ),
+    readOwnedSkills(storage).filter((item) => item !== skill),
     storage,
   );
 }
 
 export function clearOwnedSkills(storage = defaultStorage()): string[] {
-  try {
-    storage?.removeItem(KEY);
-  } catch {
-    return [];
-  }
+  if (storage) clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyOwnedSkillsChange(storage);
   return [];
 }
@@ -155,7 +139,7 @@ export function subscribeOwnedSkills(listener: OwnedSkillsListener) {
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrentSkills();

@@ -13,6 +13,7 @@ import {
   SignOut,
   Stack,
   UserCircle,
+  UsersThree,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -42,7 +43,6 @@ import {
   homeContextToDashboardHref,
 } from "@/lib/home-context";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
-import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   readOwnedSkills,
   writeOwnedSkills,
@@ -64,10 +64,11 @@ const OwnedSkillsSheet = lazy(async () => {
 
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: House },
+  { href: "/career", label: "내 커리어", icon: UserCircle },
+  { href: "/skill-map", label: "커리어맵", icon: Graph },
   { href: "/market", label: "시장", icon: ChartLineUp },
-  { href: "/skill-map", label: "스킬맵", icon: Graph },
   { href: "/jobs", label: "공고", icon: Briefcase },
-  { href: "/career", label: "내 커리어", mobileLabel: "내 정보", icon: UserCircle },
+  { href: "/community", label: "커뮤니티", icon: UsersThree },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -140,11 +141,9 @@ function StoredHomeContextSync() {
 
 function HeaderSearchFormView({
   currentQuery,
-  disabled = false,
   inputRef,
 }: {
   currentQuery: string;
-  disabled?: boolean;
   inputRef: RefObject<HTMLInputElement | null>;
 }) {
   return (
@@ -153,11 +152,10 @@ function HeaderSearchFormView({
       <input
         aria-label="통합 검색"
         defaultValue={currentQuery}
-        disabled={disabled}
         key={currentQuery || "global-search-empty"}
         maxLength={200}
         name="q"
-        placeholder="회사, 직무, 기술, 주제 검색"
+        placeholder="회사, 직무, 기술, 주제를 검색해보세요"
         ref={inputRef}
         type="search"
       />
@@ -198,10 +196,10 @@ function HeaderWriteLinkView({ href }: { href: string }) {
 function HeaderWriteLink({ pathname }: { pathname: string }) {
   const searchParams = useSearchParams();
   const writeParams = new URLSearchParams(
-    pathname === "/" ? searchParams.toString() : "",
+    pathname === "/community" ? searchParams.toString() : "",
   );
   writeParams.set("compose", "1");
-  return <HeaderWriteLinkView href={`/?${writeParams.toString()}`} />;
+  return <HeaderWriteLinkView href={`/community?${writeParams.toString()}`} />;
 }
 
 function UserMenuLoginLink({
@@ -343,17 +341,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Suspense>
       <header className={styles.header}>
         <div className={styles.utilityRow}>
-          <Link aria-label="이직핏 홈" className={styles.brand} href="/">
+          <Link aria-label="커리어핏 홈" className={styles.brand} href="/">
             <BrandMark size="sm" />
           </Link>
 
           <Suspense
             fallback={
-              <HeaderSearchFormView
-                currentQuery=""
-                disabled
-                inputRef={searchInputRef}
-              />
+              <HeaderSearchFormView currentQuery="" inputRef={searchInputRef} />
             }
           >
             <HeaderSearchForm inputRef={searchInputRef} />
@@ -382,14 +376,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className={styles.utilities}>
-            <Suspense
-              fallback={<HeaderWriteLinkView href="/?compose=1" />}
-            >
-              <HeaderWriteLink pathname={pathname} />
-            </Suspense>
+            {pathname.startsWith("/community") && (
+              <Suspense
+                fallback={<HeaderWriteLinkView href="/community?compose=1" />}
+              >
+                <HeaderWriteLink pathname={pathname} />
+              </Suspense>
+            )}
 
             <button
-              aria-label={`${PRODUCT_TERMS.ownedSkills} 열기`}
+              aria-label="내 기술 열기"
               className={styles.stackButton}
               disabled={!interactive}
               onClick={openSkillsSheet}
@@ -397,7 +393,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
             >
               <Stack aria-hidden="true" size={20} />
-              <span className={styles.utilityLabel}>{PRODUCT_TERMS.ownedSkills}</span>
+              <span className={styles.utilityLabel}>내 기술</span>
             </button>
 
             <div className={styles.menuAnchor} ref={notificationAnchorRef}>
@@ -435,7 +431,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <div className={styles.menuHeader}>
                     <strong>알림</strong>
-                    <span>새 공고와 지원 현황을 확인합니다.</span>
+                    <span>저장 검색과 관심 기업의 새 공고, 지원 현황을 보여드려요.</span>
                   </div>
                   <Suspense fallback={<p role="status">알림을 불러오는 중입니다.</p>}>
                     <ActivityNotificationCenter
@@ -479,13 +475,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <span aria-live={viewer ? "polite" : undefined}>
                       {viewer
                         ? accountSyncStatus === "synced"
-                          ? "내 기술과 저장 항목을 계정에 저장했습니다."
+                          ? "내 커리어·관심 기업·저장 공고가 동기화되었습니다."
                           : accountSyncStatus === "error"
-                            ? "계정에 저장하지 못했습니다. 이 기기의 데이터는 그대로 유지됩니다."
-                            : accountSyncStatus === "syncing"
-                              ? "내 커리어 정보를 계정에 저장 중입니다."
-                              : "내 커리어 정보는 이 기기에 저장됩니다."
-                        : "내 기술은 이 기기에 저장됩니다."}
+                            ? "계정 데이터를 동기화하지 못했습니다."
+                            : "내 커리어 정보를 동기화하고 있습니다."
+                        : "내 커리어 정보는 현재 이 브라우저에만 저장됩니다."}
                     </span>
                   </div>
                   {!viewer && (
@@ -508,13 +502,13 @@ export function AppShell({ children }: { children: ReactNode }) {
                     </Suspense>
                   )}
                   <Link href="/career/account" onClick={closeUtilityMenus}>
-                    계정
+                    계정 및 동기화
                   </Link>
                   <Link href="/career" onClick={closeUtilityMenus}>
                     내 커리어
                   </Link>
                   <Link href="/career/saved" onClick={closeUtilityMenus}>
-                    {PRODUCT_TERMS.savedItems}
+                    저장 보관함
                   </Link>
                   <Link href="/career/alerts" onClick={closeUtilityMenus}>
                     공고 알림
@@ -558,8 +552,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {communityMigration.phase === "failed" && (
         <div className={styles.migrationNotice} role="alert">
           <span>
-            이 기기에 남은 글 {communityMigration.failureCount}개를 계정으로 옮기지
-            못했습니다. 글은 이 기기에 그대로 남아 있습니다.
+            이전 브라우저 글 {communityMigration.failureCount}개를 계정으로 옮기지
+            못했습니다. 원본은 그대로 보관되어 있습니다.
           </span>
           <button
             onClick={() => void communityMigration.retry()}
@@ -576,7 +570,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {children}
         <footer className={styles.footer}>
-          <p>공식 채용페이지의 공개 정보만 수집합니다.</p>
+          <p>커리어핏 · 수집된 기업 공식 채용 페이지의 공개 정보를 분석합니다.</p>
           <nav aria-label="서비스 정책">
             <Link href="/data-policy">데이터 정책</Link>
             <Link href="/methodology">분석 방법</Link>
@@ -603,7 +597,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={closeUtilityMenus}
             >
               <Icon aria-hidden="true" size={21} weight={active ? "fill" : "regular"} />
-              <span>{"mobileLabel" in item ? item.mobileLabel : item.label}</span>
+              <span>{item.label}</span>
             </Link>
           );
         })}
@@ -624,7 +618,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <AuthViewerProvider
-      accountSyncStatus={accountSyncStatus}
       error={authError}
       ready={ready}
       status={authStatus}

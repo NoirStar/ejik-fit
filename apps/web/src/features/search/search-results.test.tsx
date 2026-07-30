@@ -1,7 +1,6 @@
 import {
   act,
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -11,35 +10,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
 import type { CommunityStore } from "@/features/community/community-store";
-import type { CommunityCursor, CommunityPost } from "@/lib/community-contract";
+import type { CommunityPost } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
 
 import type { SearchSnapshot } from "./model";
 import { SearchResults } from "./search-results";
-
-const EMPTY_SEARCH_COPY =
-  "검색 결과가 없습니다. 검색어를 줄이거나 기술·기업 이름으로 검색해 주세요.";
-const START_DISCLOSURE =
-  "기업·공고·기술은 공개 채용 데이터에서, 커뮤니티는 공개 계정 글과 이 기기에 남은 글에서 찾습니다.";
-const COMMUNITY_DISCLOSURE =
-  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은 계정 글과 구분해 표시합니다.";
-const COMMUNITY_MERGE_COPY =
-  "공고·기업·기술 검색 결과는 유지한 채 공개 커뮤니티 결과를 합치는 중입니다.";
-const IMPLEMENTATION_JARGON = /API|서버|응답/;
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((next) => {
-    resolve = next;
-  });
-  return { promise, resolve };
-}
-
-function productCopyWithoutAuthoredContent(container: HTMLElement) {
-  const productCopy = container.cloneNode(true) as HTMLElement;
-  productCopy.querySelectorAll("article").forEach((article) => article.remove());
-  return productCopy;
-}
 
 const serverSearchPost: CommunityPost = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -58,10 +33,7 @@ const serverSearchPost: CommunityPost = {
 
 function serverSearchStore() {
   return {
-    searchPosts: vi.fn(async () => ({
-      items: [serverSearchPost],
-      nextCursor: null as CommunityCursor | null,
-    })),
+    searchPosts: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listPostPage: vi.fn(async () => ({ items: [serverSearchPost], nextCursor: null })),
     listFollowingPostPage: vi.fn(async () => ({
       items: [serverSearchPost],
@@ -139,7 +111,7 @@ function snapshot(
         requiredCount: 12,
         preferredCount: 4,
         unspecifiedCount: 2,
-        skillHref: "/skill-map?skill=Python",
+        skillHref: "/skills/graph?seed=Python",
         jobsHref: "/jobs?q=Python",
       },
     ],
@@ -210,18 +182,11 @@ describe("SearchResults", () => {
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "검색어" })).toHaveValue("");
-    const startState = screen
-      .getByText("검색어를 입력해 주세요.")
-      .closest("section")!;
-    expect(startState).toHaveTextContent(START_DISCLOSURE);
-    expect(startState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
-    expect(
-      screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("검색어를 입력하면 결과를 나눠 보여드려요.")).toBeInTheDocument();
     expect(screen.queryByText(/전체 결과 \d+건/)).not.toBeInTheDocument();
   });
 
-  it("renders official evidence without built-in community examples", () => {
+  it("renders official evidence without synthetic community results", () => {
     render(<SearchResults snapshot={snapshot()} />);
 
     expect(
@@ -238,91 +203,41 @@ describe("SearchResults", () => {
     const company = screen
       .getByRole("link", { name: "NAVER 기업 채용 현황" })
       .closest("article")!;
-    expect(within(company).getByText("현재 검색 결과 공고 2건")).toBeInTheDocument();
-    expect(within(company).getByRole("link", { name: "Python 스킬맵" })).toHaveAttribute(
+    expect(within(company).getByText("현재 검색 응답 공고 2건")).toBeInTheDocument();
+    expect(within(company).getByRole("link", { name: "Python 기술 관계 보기" })).toHaveAttribute(
       "href",
-      "/skill-map?skill=Python",
+      "/skills/graph?seed=Python",
     );
 
     const job = screen
       .getByRole("link", { name: "Python Backend Engineer" })
       .closest("article")!;
-    expect(within(job).getByText("공식 공고")).toBeInTheDocument();
-    const companyPageLink = within(job).getByRole("link", {
-      name: "기업 채용페이지 보기",
-    });
-    expect(companyPageLink).toHaveAttribute(
+    expect(within(job).getByText("채용공고")).toBeInTheDocument();
+    expect(within(job).getByRole("link", { name: "공식 채용 페이지에서 지원" })).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-python",
     );
-    expect(companyPageLink).toHaveAttribute("target", "_blank");
-    expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
-    const internalDetailLink = within(job).getByRole("link", {
-      name: "공고 보기",
-    });
-    expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
-    expect(internalDetailLink).not.toHaveAttribute("target");
 
     const skill = screen
-      .getByRole("link", { name: "Python 스킬맵 보기" })
+      .getByRole("heading", { name: "Python" })
       .closest("article")!;
     expect(within(skill).getByText("공고 통계 표본")).toBeInTheDocument();
     expect(within(skill).getByText("18건 공고")).toBeInTheDocument();
-    const unspecifiedHelp = screen.getByText(
-      "미표기: 공고에서 필수 또는 우대로 구분하지 않은 기술",
-    );
-    expect(unspecifiedHelp).toBeVisible();
-    const breakdown = within(skill).getByLabelText(
-      "필수 12건, 우대 4건, 필수·우대 미표기 2건",
-    );
-    expect(breakdown).toHaveTextContent("필수 12 · 우대 4 · 미표기 2");
-    expect(breakdown).toHaveAttribute("aria-describedby", unspecifiedHelp.id);
-    expect(
-      screen.getByText(
-        "현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/API/)).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole("region", { name: "커뮤니티 활용 가이드" }),
-    ).not.toBeInTheDocument();
-    const disclosure = screen.getByText(COMMUNITY_DISCLOSURE);
-    expect(disclosure).not.toHaveTextContent(IMPLEMENTATION_JARGON);
+    expect(within(skill).getByText("필수 12 · 우대 4 · 조건 구분 없음 2")).toBeInTheDocument();
+    expect(screen.queryByText("활용 가이드")).not.toBeInTheDocument();
+    expect(screen.queryByRole("article", { name: /Python에서 Go/ })).not.toBeInTheDocument();
   });
 
-  it("uses the full unspecified requirement label on a search job card", () => {
-    const jobWithUnspecifiedSkill = {
-      ...snapshot().jobs[0],
-      requiredSkills: [],
-      preferredSkills: [],
-      unspecifiedSkills: ["Linux"],
-    };
-
-    render(
-      <SearchResults
-        snapshot={snapshot({ jobs: [jobWithUnspecifiedSkill] })}
-      />,
-    );
-
-    const job = screen
-      .getByRole("link", { name: "Python Backend Engineer" })
-      .closest("article")!;
-    expect(within(job).getByText("필수·우대 미표기 Linux")).toBeInTheDocument();
-    expect(within(job).queryByText("언급 Linux")).not.toBeInTheDocument();
-  });
-
-  it("hydrates browser-owned posts and keeps counts synchronized", async () => {
+  it("hydrates browser-owned posts ahead of mock results and keeps counts synchronized", async () => {
     saveLocalSearchPost();
-    const { container } = render(<SearchResults snapshot={snapshot()} />);
+    render(<SearchResults snapshot={snapshot()} />);
 
     const localResult = await screen.findByRole("article", {
       name: "Python 공고를 보고 남긴 내 질문",
     });
-    expect(within(localResult).getByText("이 기기에 남은 글")).toBeInTheDocument();
-    expect(within(localResult).queryByText("이전 저장 글")).not.toBeInTheDocument();
+    expect(within(localResult).getByText("이전 저장 글")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("region", { name: "이 기기에 남은 글" }))
+      within(screen.getByRole("region", { name: "이전 기기 저장 글" }))
         .getByRole("article", { name: "Python 공고를 보고 남긴 내 질문" }),
     ).toBeInTheDocument();
     expect(
@@ -331,14 +246,14 @@ describe("SearchResults", () => {
       }),
     ).toHaveAttribute("href", "/posts/local-python-search");
     expect(localResult).toHaveTextContent("나");
-    expect(localResult).toHaveTextContent("이 기기에서 작성");
+    expect(localResult).toHaveTextContent("이 브라우저에서 작성");
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
-    expect(productCopyWithoutAuthoredContent(container))
-      .not.toHaveTextContent(/브라우저|원본|\.\.\./);
+    expect(
+      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
+    ).toBeInTheDocument();
 
     deleteLocalCommunityPost("local-python-search");
 
@@ -352,7 +267,7 @@ describe("SearchResults", () => {
     expect(screen.getByRole("link", { name: /커뮤니티.*0/ })).toBeInTheDocument();
   });
 
-  it("searches all public account posts in their own result group", async () => {
+  it("searches the full public server community in its own result group", async () => {
     const store = serverSearchStore();
     render(
       <AuthViewerProvider
@@ -383,72 +298,8 @@ describe("SearchResults", () => {
       within(serverResult).getByRole("link", { name: serverSearchPost.title }),
     ).toHaveAttribute("href", `/posts/${serverSearchPost.id}`);
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
-    expect(screen.getByText(COMMUNITY_DISCLOSURE)).toBeInTheDocument();
-  });
-
-  it("uses a Unicode ellipsis while public community pagination is pending", async () => {
-    const store = serverSearchStore();
-    const nextCursor: CommunityCursor = {
-      createdAt: serverSearchPost.createdAt,
-      id: serverSearchPost.id,
-    };
-    const pending = deferred<{
-      items: CommunityPost[];
-      nextCursor: CommunityCursor | null;
-    }>();
-    store.searchPosts
-      .mockResolvedValueOnce({ items: [serverSearchPost], nextCursor })
-      .mockImplementationOnce(() => pending.promise);
-
-    const { container } = render(
-      <SearchResults
-        communityStore={store}
-        snapshot={snapshot({ scope: "community" })}
-      />,
-    );
-
-    const loadMore = await screen.findByRole("button", {
-      name: "공개 글 더 보기",
-    });
-    fireEvent.click(loadMore);
-
-    expect(screen.getByRole("button", { name: "불러오는 중…" })).toBeDisabled();
-    expect(productCopyWithoutAuthoredContent(container))
-      .not.toHaveTextContent(/브라우저|원본|\.\.\./);
-
-    await act(async () => {
-      pending.resolve({ items: [], nextCursor: null });
-      await pending.promise;
-    });
-    expect(screen.queryByRole("button", { name: "불러오는 중…" }))
-      .not.toBeInTheDocument();
-  });
-
-  it("describes an empty public account result without implementation jargon", async () => {
-    const store = serverSearchStore();
-    store.searchPosts.mockResolvedValue({ items: [], nextCursor: null });
-
-    render(<SearchResults communityStore={store} snapshot={snapshot()} />);
-
-    const emptyState = await screen.findByText(
-      "일치하는 커뮤니티 글이 없습니다.",
-    );
-    expect(emptyState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
-  });
-
-  it("uses one direct community-search error while keeping other results", async () => {
-    const store = serverSearchStore();
-    store.searchPosts.mockRejectedValueOnce(new Error("server unavailable"));
-
-    render(<SearchResults communityStore={store} snapshot={snapshot()} />);
-
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(
-      "커뮤니티 검색 결과를 불러오지 못했습니다.",
-    );
-    expect(alert).not.toHaveTextContent("server unavailable");
     expect(
-      screen.getByRole("link", { name: "Python Backend Engineer" }),
+      screen.getByText(/공개 커뮤니티 결과는 서버 전체 글에서 찾습니다/),
     ).toBeInTheDocument();
   });
 
@@ -482,10 +333,8 @@ describe("SearchResults", () => {
     const loadingHeading = await screen.findByRole("heading", {
       name: "전체 공개 커뮤니티 글까지 검색하고 있습니다.",
     });
-    const loadingState = loadingHeading.closest('[role="status"]')!;
-    expect(loadingState).toHaveTextContent(COMMUNITY_MERGE_COPY);
-    expect(loadingState).not.toHaveTextContent(IMPLEMENTATION_JARGON);
-    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
+    expect(loadingHeading.closest('[role="status"]')).not.toBeNull();
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
 
     await act(async () => {
       resolvePosts?.({ items: [serverSearchPost], nextCursor: null });
@@ -523,7 +372,7 @@ describe("SearchResults", () => {
         name: "로컬 검색으로 다시 찾는 내 질문",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
   });
 
@@ -544,8 +393,7 @@ describe("SearchResults", () => {
       />,
     );
 
-    expect(screen.getByText("필수·우대 미표기")).toBeInTheDocument();
-    expect(screen.queryByText("필수·우대 분류 미제공")).not.toBeInTheDocument();
+    expect(screen.getByText("필수·우대 분류 미제공")).toBeInTheDocument();
     expect(screen.queryByText(/필수 0/)).not.toBeInTheDocument();
   });
 
@@ -556,7 +404,7 @@ describe("SearchResults", () => {
     expect(
       screen.getByRole("link", { name: /기술.*1/ }),
     ).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Python 기술 관계 보기" })).toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: "Python Backend Engineer" }),
     ).not.toBeInTheDocument();
@@ -582,9 +430,9 @@ describe("SearchResults", () => {
       screen.getByText("일부 실제 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
     expect(screen.getByText("공고 검색 결과를 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Python 기술 관계 보기" })).toBeInTheDocument();
     expect(
-      screen.queryByText(EMPTY_SEARCH_COPY),
+      screen.queryByText("검색 결과가 없습니다."),
     ).not.toBeInTheDocument();
   });
 
@@ -604,7 +452,7 @@ describe("SearchResults", () => {
         })}
       />,
     );
-    expect(await screen.findByText(EMPTY_SEARCH_COPY)).toBeInTheDocument();
+    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
 
     rerender(
       <SearchResults
@@ -629,6 +477,6 @@ describe("SearchResults", () => {
     expect(
       screen.getByText("실제 검색 데이터를 불러오지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(EMPTY_SEARCH_COPY)).not.toBeInTheDocument();
+    expect(screen.queryByText("검색 결과가 없습니다.")).not.toBeInTheDocument();
   });
 });

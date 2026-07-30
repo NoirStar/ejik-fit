@@ -131,11 +131,9 @@ describe("design system foundation", () => {
   it("keeps the Korean wordmark visible without the retired symbol", () => {
     const globals = read("src/app/globals.css");
 
-    expect(globals).toContain(".brand-lockup__asset");
-    expect(globals).not.toContain(".brand-lockup__ink");
-    expect(globals).not.toContain(".brand-lockup__accent");
-    expect(globals).not.toContain(".brand-lockup__mark");
-    expect(globals).not.toContain(".brand-lockup__copy");
+    expect(globals).toContain(".brand-lockup__mark");
+    expect(globals).toContain(".brand-lockup__wordmark");
+    expect(globals).not.toContain(".brand-lockup__asset");
     expect(globals).not.toContain("@media (max-width: 340px)");
   });
 

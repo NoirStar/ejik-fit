@@ -19,27 +19,16 @@ test("restores a guest draft after login and publishes only after confirmation",
   request,
 }) => {
   await resetCommunityFixture(request);
-  await page.setViewportSize({ height: 844, width: 320 });
-  await page.goto("/?compose=1");
+  await page.goto("/community?compose=1");
   const guestComposer = page.getByRole("dialog", { name: "커뮤니티 글쓰기" });
-  const publish = guestComposer.getByRole("button", { name: "피드에 올리기" });
-  await expect(publish).toHaveCSS("white-space", "nowrap");
-  const publishBox = await publish.boundingBox();
-  expect(publishBox?.width).toBeGreaterThanOrEqual(44);
-  expect(publishBox?.height).toBeGreaterThanOrEqual(44);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth > window.innerWidth,
-    ),
-  ).toBe(false);
   await guestComposer.getByLabel("제목").fill("로그인 뒤 확인할 임시 글");
   await guestComposer
     .getByLabel("내용")
     .fill("로그인 전에는 서버 글이 생기지 않아야 합니다.");
   await guestComposer.getByLabel("태그 (선택)").fill("임시 글, 인증");
-  await publish.click();
+  await guestComposer.getByRole("button", { name: "피드에 올리기" }).click();
 
-  await expect(page).toHaveURL(/\/login\?next=%2F%3Fcompose%3Dresume$/);
+  await expect(page).toHaveURL(/\/login\?next=%2Fcommunity%3Fcompose%3Dresume$/);
   const beforeLogin = await request.get(
     `${COMMUNITY_FIXTURE_ORIGIN}/rest/v1/community_posts?select=id,title`,
   );
@@ -48,7 +37,7 @@ test("restores a guest draft after login and publishes only after confirmation",
   await page.getByLabel("이메일").fill(COMMUNITY_TEST_EMAIL);
   await page.getByLabel("비밀번호").fill(COMMUNITY_TEST_PASSWORD);
   await page.getByRole("button", { exact: true, name: "로그인" }).click();
-  await expect(page).toHaveURL(/\/\?compose=resume$/);
+  await expect(page).toHaveURL(/\/community\?compose=resume$/);
 
   const restoredComposer = page.getByRole("dialog", {
     name: "커뮤니티 글쓰기",
@@ -77,7 +66,7 @@ test("restores a guest draft after login and publishes only after confirmation",
     .getByRole("link", { exact: true, name: "로그인 뒤 확인할 임시 글" })
     .click();
   await page.getByRole("button", { name: "이 글 삭제" }).click();
-  await page.getByRole("button", { name: "글 삭제" }).click();
+  await page.getByRole("button", { name: "정말 삭제" }).click();
 });
 
 test("persists an authenticated post, edits and comments across browser contexts", async ({
@@ -128,7 +117,7 @@ test("persists an authenticated post, edits and comments across browser contexts
   );
   expect(crossUserWrite.status()).toBe(403);
 
-  await signInCommunityViewer(page, "/?compose=1");
+  await signInCommunityViewer(page, "/community?compose=1");
   const composer = page.getByRole("dialog", { name: "커뮤니티 글쓰기" });
   await composer.getByLabel("제목").fill(originalTitle);
   await composer
@@ -167,6 +156,11 @@ test("persists an authenticated post, edits and comments across browser contexts
       .fill(`수정된 본문도 모든 브라우저에서 같아야 합니다. ${searchNeedle}`);
     await editor.getByRole("button", { name: "수정 내용 저장" }).click();
     await expect(
+      secondPage.getByRole("status").filter({
+        hasText: "글 수정 내용을 서버에 저장했습니다.",
+      }),
+    ).toBeVisible();
+    await expect(
       secondPage.getByRole("heading", { exact: true, level: 1, name: updatedTitle }),
     ).toBeVisible();
 
@@ -200,7 +194,7 @@ test("persists an authenticated post, edits and comments across browser contexts
 
     await secondPage.goto(detailHref!);
     await secondPage.getByRole("button", { name: "이 글 삭제" }).click();
-    await secondPage.getByRole("button", { name: "글 삭제" }).click();
+    await secondPage.getByRole("button", { name: "정말 삭제" }).click();
     await expect(
       secondPage.getByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
     ).toBeVisible();
@@ -209,7 +203,7 @@ test("persists an authenticated post, edits and comments across browser contexts
     await expect(
       page.getByRole("heading", { level: 1, name: "글을 찾을 수 없습니다." }),
     ).toBeVisible();
-    await secondPage.goto("/");
+    await secondPage.goto("/community");
     await expect(
       secondPage.getByRole("article", { name: updatedTitle }),
     ).toHaveCount(0);

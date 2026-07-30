@@ -1,5 +1,15 @@
-const KEY = "ejik-fit:career-preferences";
-const CHANGE_EVENT = "ejik-fit:career-preferences-change";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
+
+const STORAGE_KEYS = {
+  current: "careerfit:career-preferences",
+  legacy: ["ejik-fit:career-preferences"],
+} as const;
+const CHANGE_EVENT = "careerfit:career-preferences-change";
 const MAX_DOMAIN_ID_LENGTH = 80;
 
 export type CareerCondition = "" | "new_comer" | "experienced" | "mixed";
@@ -65,14 +75,19 @@ export function readCareerPreferences(
   storage = defaultStorage(),
 ): CareerPreferences {
   if (!storage) return { ...EMPTY_CAREER_PREFERENCES };
-  try {
-    const raw = storage.getItem(KEY);
-    return raw
-      ? normalizeCareerPreferences(JSON.parse(raw) as unknown)
-      : { ...EMPTY_CAREER_PREFERENCES };
-  } catch {
-    return { ...EMPTY_CAREER_PREFERENCES };
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? normalizeCareerPreferences(parsed)
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? { ...EMPTY_CAREER_PREFERENCES };
 }
 
 function notifyCareerPreferencesChange(storage: Storage | null) {
@@ -91,9 +106,11 @@ export function writeCareerPreferences(
 ): CareerPreferences {
   const normalized = normalizeCareerPreferences(value);
   if (!storage) return { ...EMPTY_CAREER_PREFERENCES };
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readCareerPreferences(storage);
   }
   notifyCareerPreferencesChange(storage);
@@ -104,11 +121,7 @@ export function clearCareerPreferences(
   storage = defaultStorage(),
 ): CareerPreferences {
   if (!storage) return { ...EMPTY_CAREER_PREFERENCES };
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readCareerPreferences(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyCareerPreferencesChange(storage);
   return { ...EMPTY_CAREER_PREFERENCES };
 }
@@ -122,7 +135,7 @@ export function subscribeCareerPreferences(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

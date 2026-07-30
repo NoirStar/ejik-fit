@@ -216,7 +216,6 @@ function UpcomingDeadline({
         <span className={styles.upcomingIdentity}>
           <CompanyMark
             companyName={deadline.company_name}
-            companySlug={deadline.company_slug}
             size={34}
             sourceUrl={deadline.source_url}
           />
@@ -296,7 +295,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
         <header className={styles.intro}>
           <div>
             <h1>채용 일정</h1>
-            <p>공식 채용공고의 마감일과 최근 기업 활동을 확인합니다.</p>
+            <p>채용공고에 명시된 마감일과 최근 확인된 기업 활동을 살펴봅니다.</p>
           </div>
         </header>
         <section className={styles.errorState} role="alert">
@@ -336,10 +335,10 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
       <header className={styles.intro}>
         <div>
           <h1>채용 일정</h1>
-          <p>공식 채용공고의 마감일과 최근 기업 활동을 확인합니다.</p>
+          <p>채용공고에 명시된 마감일과 최근 확인된 기업 활동을 살펴봅니다.</p>
         </div>
         <Link className={styles.jobsLink} href="/jobs">
-          공고 보기
+          전체 공고
           <ArrowRight aria-hidden="true" size={15} weight="bold" />
         </Link>
       </header>
@@ -347,7 +346,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
       <section aria-label="채용 일정 데이터 기준" className={styles.notice}>
         <Info aria-hidden="true" size={18} weight="fill" />
         <div>
-          <strong>이직핏이 확인한 기업 공식 채용 공고 범위입니다.</strong>
+          <strong>커리어핏이 확인한 기업 공식 채용공고 범위입니다.</strong>
           <p>
             명시된 마감일만 달력에 표시합니다. 최초 확인일은 기업의 실제 게시일과
             다를 수 있습니다.
@@ -375,7 +374,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
           <div>
             <dt>최근 14일 활동 기업</dt>
             <dd>{model.activityCompanyTotal.toLocaleString("ko-KR")}곳</dd>
-            <span>이직핏 최초 확인 기준</span>
+            <span>커리어핏 최초 확인 기준</span>
           </div>
         </dl>
       </section>
@@ -450,7 +449,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
               <CalendarBlank aria-hidden="true" size={22} />
               <p>
                 {filter === "all"
-                  ? "표시할 채용 일정이 없습니다."
+                  ? "이 달에는 명시 마감일이 있는 공고가 없습니다."
                   : `${filterLabel}에 해당하는 명시 마감 공고가 없습니다.`}
               </p>
               {filter !== "all" && (
@@ -463,7 +462,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
 
           {model.truncated && (
             <p className={styles.truncatedNote}>
-              표시 한도를 넘은 공고가 있어 일부 일정만 표시합니다.
+              표시 한도를 넘은 공고가 있어 일부 일정만 보여드립니다.
             </p>
           )}
         </section>
@@ -524,7 +523,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
                     ? "이달에 남은 명시 마감 공고가 없습니다."
                     : "표시할 명시 마감 공고가 없습니다."}
                 </strong>
-                <p>다른 필터를 선택하거나 달력에서 이전 일정을 확인할 수 있습니다.</p>
+                <p>다른 필터를 선택하거나 달력에서 이전 일정을 확인해 보세요.</p>
               </div>
             )}
           </section>
@@ -578,7 +577,7 @@ export function HiringCalendar({ error = false, model }: HiringCalendarProps) {
               </div>
             )}
             <p className={styles.sideFootnote}>
-              기업 공식 채용페이지에서 이직핏이 처음 확인한 시각입니다.
+              기업 공식 채용 페이지에서 커리어핏이 처음 확인한 시각입니다.
             </p>
           </section>
         </aside>

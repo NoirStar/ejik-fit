@@ -205,7 +205,7 @@ describe("global search model", () => {
       requiredCount: 12,
       preferredCount: 4,
       unspecifiedCount: 2,
-      skillHref: "/skill-map?skill=Python",
+      skillHref: "/skills/graph?seed=Python",
       jobsHref: "/jobs?q=Python",
     });
   });

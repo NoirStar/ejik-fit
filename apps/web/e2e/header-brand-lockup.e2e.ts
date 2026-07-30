@@ -20,16 +20,13 @@ for (const width of viewports) {
     await page.setViewportSize({ height: 844, width });
     await page.goto("/privacy");
 
-    const brand = page.getByRole("link", { name: "이직핏 홈" });
-    const asset = brand.locator(".brand-lockup__asset");
+    const brand = page.getByRole("link", { name: "커리어핏 홈" });
+    const mark = brand.locator(".brand-lockup__mark");
 
     await expect(brand).toBeVisible();
-    await expect(asset).toBeVisible();
-    await expect(asset).toHaveAttribute(
-      "src",
-      "/brand/ejik-fit-wordmark.svg",
-    );
-    await expect(brand.locator(".brand-lockup__mark")).toHaveCount(0);
+    await expect(mark).toBeVisible();
+    await expect(mark).toHaveText("C");
+    await expect(brand.locator(".brand-lockup__wordmark")).toContainText("커리어핏");
     await expect(page.getByText("EJIK FIT")).toHaveCount(0);
 
     const targets = [
@@ -38,7 +35,6 @@ for (const width of viewports) {
         name: "search",
         target: page.getByRole("searchbox", { name: "통합 검색" }).locator(".."),
       },
-      { name: "write", target: page.getByRole("link", { name: "글쓰기" }) },
       {
         name: "notifications",
         target: page.getByRole("button", { name: "알림 열기" }),
@@ -124,7 +120,7 @@ for (const width of [981, 980, 940, 840, 821] as const) {
       );
       const navigationBox = await renderedBox(desktopNavigation);
       const firstUtilityBox = await renderedBox(
-        page.getByRole("link", { name: "글쓰기" }),
+        page.getByRole("button", { name: "내 기술 열기" }),
       );
       expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(
         navigationBox.x,

@@ -29,8 +29,8 @@ export default function CorrectionsPage() {
       <section>
         <h2>요청에 포함할 정보</h2>
         <ol>
-          <li>문제가 있는 이직핏 공고 URL</li>
-          <li>확인 가능한 기업 공식 채용페이지 URL</li>
+          <li>문제가 있는 커리어핏 채용공고 URL</li>
+          <li>확인 가능한 기업 공식 채용 페이지 URL</li>
           <li>잘못된 항목과 원하는 정정 내용</li>
           <li>기업 담당 요청인 경우 확인 가능한 설명</li>
         </ol>

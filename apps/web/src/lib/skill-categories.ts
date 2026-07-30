@@ -1,5 +1,5 @@
 export const SKILL_CATEGORIES = [
-  { value: "", label: "전체 기술 분야" },
+  { value: "", label: "전체 기술 분류" },
   { value: "language", label: "언어" },
   { value: "frontend", label: "프론트엔드" },
   { value: "backend", label: "백엔드" },
@@ -33,6 +33,6 @@ export function normalizeSkillCategory(
 export function skillCategoryLabel(category: SkillCategory) {
   return (
     SKILL_CATEGORIES.find((candidate) => candidate.value === category)?.label ??
-    "전체 기술 분야"
+    "전체 기술 분류"
   );
 }

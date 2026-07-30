@@ -1,0 +1,585 @@
+.page {
+  width: min(calc(100% - 2rem), 74rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4.75rem) 0 5rem;
+  color: var(--color-text);
+}
+
+.hero {
+  display: grid;
+  max-width: 56rem;
+  justify-items: start;
+  padding: clamp(2rem, 6vw, 5.5rem) 0 clamp(3rem, 7vw, 6.5rem);
+}
+
+.eyebrow,
+.sectionHeading > p,
+.marketStrip > div:first-child p {
+  margin: 0 0 0.8rem;
+  color: var(--color-accent-strong);
+  font-size: 0.77rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.hero h1,
+.profileHero h1 {
+  max-width: 52rem;
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 5.2rem);
+  font-weight: 790;
+  letter-spacing: -0.07em;
+  line-height: 1.03;
+  text-wrap: balance;
+}
+
+.heroDescription {
+  max-width: 43rem;
+  margin: 1.55rem 0 0;
+  color: var(--color-muted);
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.primaryAction {
+  display: inline-flex;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 2rem;
+  padding: 0 1.2rem;
+  border-radius: 0.75rem;
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: 0.95rem;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.primaryAction:hover {
+  background: var(--color-accent-strong);
+}
+
+.primaryAction:focus-visible,
+.sectionHeadingRow > a:focus-visible,
+.scope a:focus-visible,
+.marketStrip > a:focus-visible,
+.directionLinks a:focus-visible,
+.jobHeading a:focus-visible,
+.emptyState a:focus-visible,
+.profileActions a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.howItWorks,
+.section {
+  padding: clamp(2.5rem, 6vw, 5rem) 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.sectionHeading {
+  max-width: 43rem;
+}
+
+.sectionHeading h2,
+.scope h2,
+.marketStrip h2 {
+  margin: 0;
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  letter-spacing: -0.045em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.howItWorks ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 2rem 0 0;
+  padding: 0;
+  background: var(--color-line);
+  list-style: none;
+}
+
+.howItWorks li {
+  min-height: 15rem;
+  padding: 1.6rem;
+  background: var(--color-surface);
+}
+
+.howItWorks li > span {
+  display: block;
+  margin-bottom: 4rem;
+  color: var(--color-accent-strong);
+  font-family: var(--font-geist), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.howItWorks strong {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.howItWorks li p {
+  margin: 0.7rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.sampleSummary {
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.profileHero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: clamp(1.5rem, 4vw, 3.5rem) 0 clamp(3rem, 7vw, 6.5rem);
+}
+
+.profileHero h1 {
+  max-width: 48rem;
+  font-size: clamp(2.2rem, 5.5vw, 4.75rem);
+}
+
+.profileHero > div:first-child > p:last-child {
+  max-width: 41rem;
+  margin: 1.25rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.7;
+}
+
+.profileActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.profileActions span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-accent-strong);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.profileActions a,
+.sectionHeadingRow > a,
+.marketStrip > a,
+.scope > a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding-inline: 0.2rem;
+  color: var(--color-text);
+  font-size: 0.86rem;
+  font-weight: 740;
+  text-underline-offset: 0.25rem;
+}
+
+.sectionHeadingRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.directionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.directionCard {
+  display: flex;
+  min-height: 24rem;
+  flex-direction: column;
+  padding: clamp(1.35rem, 3vw, 2rem);
+  border: 1px solid var(--color-line);
+  border-radius: 1.1rem;
+  background: var(--color-surface);
+}
+
+.directionCard[data-primary="true"] {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-line));
+}
+
+.directionTopline,
+.jobTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-muted);
+  font-size: 0.74rem;
+  font-weight: 720;
+}
+
+.directionTopline span:first-child {
+  color: var(--color-accent-strong);
+}
+
+.directionCard h3 {
+  margin: 1.8rem 0 0;
+  font-size: clamp(1.7rem, 3vw, 2.55rem);
+  letter-spacing: -0.05em;
+}
+
+.directionReason {
+  min-height: 4.8rem;
+  margin: 0.85rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.directionCard dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+}
+
+.directionCard dl div {
+  padding: 0.9rem;
+  border-radius: 0.7rem;
+  background: var(--color-surface-muted);
+}
+
+.directionCard dt {
+  color: var(--color-faint);
+  font-size: 0.7rem;
+}
+
+.directionCard dd {
+  margin: 0.25rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.additionalRequirements,
+.jobReason,
+.unconfirmed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.additionalRequirements strong,
+.jobReason strong,
+.unconfirmed strong {
+  color: var(--color-text);
+  font-size: 0.72rem;
+}
+
+.directionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.directionLinks a {
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 740;
+  text-underline-offset: 0.23rem;
+}
+
+.marketStrip {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.1fr) minmax(24rem, 2fr) auto;
+  align-items: center;
+  gap: 2rem;
+  margin: 1rem 0;
+  padding: 1.6rem;
+  border-radius: 1rem;
+  background: var(--color-text);
+  color: var(--color-surface);
+}
+
+.marketStrip > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.marketStrip > div:first-child p {
+  margin-bottom: 0.3rem;
+  color: color-mix(in srgb, var(--color-surface) 68%, transparent);
+}
+
+.marketStrip h2 {
+  font-size: 1.15rem;
+}
+
+.marketStrip dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.marketStrip dt {
+  color: color-mix(in srgb, var(--color-surface) 58%, transparent);
+  font-size: 0.68rem;
+}
+
+.marketStrip dd {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.marketStrip > a {
+  color: var(--color-surface);
+}
+
+.jobGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.jobCard {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+
+.jobHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.jobHeading p {
+  margin: 0 0 0.4rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.jobHeading h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: -0.035em;
+}
+
+.jobHeading a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.jobMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.jobMeta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.scope {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.4fr) minmax(24rem, 2fr) auto;
+  align-items: center;
+  gap: 2rem;
+  margin-top: clamp(3rem, 8vw, 7rem);
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.scope > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.scope h2 {
+  font-size: 1rem;
+}
+
+.scope p {
+  margin: 0.45rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.scope dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.scope dt {
+  color: var(--color-faint);
+  font-size: 0.68rem;
+}
+
+.scope dd {
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.emptyState,
+.errorState,
+.partialState {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.9rem;
+  background: var(--color-surface);
+}
+
+.emptyState > div,
+.errorState > div {
+  flex: 1;
+}
+
+.emptyState h3,
+.errorState strong {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.emptyState p,
+.errorState p,
+.partialState p {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.emptyState a,
+.errorState a {
+  flex: 0 0 auto;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.errorState,
+.partialState {
+  margin-bottom: 1.25rem;
+  border-color: color-mix(in srgb, var(--color-warning) 40%, var(--color-line));
+}
+
+.partialState {
+  padding: 0.8rem 1rem;
+}
+
+.partialState p {
+  margin: 0;
+}
+
+@media (max-width: 860px) {
+  .profileHero,
+  .sectionHeadingRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profileActions {
+    align-items: flex-start;
+  }
+
+  .marketStrip,
+  .scope {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .page {
+    width: min(calc(100% - 1.25rem), 74rem);
+    padding-top: 1.25rem;
+  }
+
+  .hero {
+    padding-top: 2.5rem;
+  }
+
+  .hero h1,
+  .profileHero h1 {
+    font-size: clamp(2.25rem, 12vw, 3.7rem);
+    line-height: 1.06;
+  }
+
+  .howItWorks ol,
+  .directionGrid,
+  .jobGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .howItWorks li {
+    min-height: auto;
+  }
+
+  .howItWorks li > span {
+    margin-bottom: 2rem;
+  }
+
+  .directionCard {
+    min-height: 22rem;
+  }
+
+  .marketStrip dl,
+  .scope dl {
+    grid-template-columns: 1fr;
+  }
+
+  .emptyState,
+  .errorState {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .emptyState > svg,
+  .errorState > svg {
+    flex: 0 0 auto;
+  }
+
+  .emptyState > div,
+  .errorState > div {
+    min-width: calc(100% - 3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryAction {
+    transition: none;
+  }
+}

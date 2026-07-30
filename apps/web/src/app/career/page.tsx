@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "내 커리어",
-  description: "내 기술과 채용공고를 비교해 다음에 준비할 기술을 찾습니다.",
+  description: "직무와 업무 경험, 기술을 바탕으로 이어갈 커리어 방향과 실제 채용공고 근거를 확인합니다.",
 };
 
 function buildCareerSkillSuggestions(value: unknown): CareerSkillSuggestion[] {

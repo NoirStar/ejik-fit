@@ -11,10 +11,6 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  accountStorageStatusCopy,
-  useAuthViewerContext,
-} from "@/features/auth/auth-viewer-context";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import {
   clearFollowedCompanies,
@@ -22,15 +18,11 @@ import {
   subscribeFollowedCompanies,
   toggleFollowedCompany,
 } from "@/lib/followed-companies";
-import { PRODUCT_TERMS } from "@/lib/labels";
 import type {
   SourceDirectoryItem,
   SourceDirectoryResponse,
 } from "@/lib/types";
-import {
-  getSourceActivityCopy,
-  getSourcePreparationCopy,
-} from "@/lib/source-status";
+import { getSourcePreparationCopy } from "@/lib/source-status";
 
 import styles from "./followed-companies.module.css";
 
@@ -40,10 +32,10 @@ const DATE_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 });
 
 function collectedLabel(value: string | null) {
-  if (!value) return "첫 확인 준비 중…";
+  if (!value) return "첫 수집 준비 중";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return `${PRODUCT_TERMS.lastChecked} 시각 점검 중…`;
-  return `${PRODUCT_TERMS.lastChecked} ${DATE_FORMATTER.format(date)}`;
+  if (Number.isNaN(date.getTime())) return "최근 수집 시각 점검 중";
+  return `${DATE_FORMATTER.format(date)} 최근 수집`;
 }
 
 function FollowedCompanyRow({
@@ -53,15 +45,13 @@ function FollowedCompanyRow({
   item: SourceDirectoryItem;
   onRemove: () => void;
 }) {
-  const connected = item.collection_status === "collecting";
-  const activity = getSourceActivityCopy(item.activity_status);
+  const collecting = item.collection_status === "collecting";
   const preparation = getSourcePreparationCopy(item.preparation_reason);
 
   return (
     <li className={styles.companyRow}>
       <CompanyMark
         companyName={item.company_name}
-        companySlug={item.company_slug}
         size={42}
         sourceUrl={item.careers_url}
       />
@@ -70,19 +60,21 @@ function FollowedCompanyRow({
           {item.company_name}
         </Link>
         <span>
-          {connected ? collectedLabel(item.last_success_at) : preparation.detail}
+          {collecting ? collectedLabel(item.last_success_at) : preparation.detail}
         </span>
       </div>
       <div className={styles.companyStatus}>
-        <strong>{activity.label}</strong>
+        <strong>
+          {collecting ? `열린 공고 ${item.open_postings}건` : preparation.label}
+        </strong>
         <span>
-          {item.activity_status === "active"
-            ? `열린 공고 ${item.open_postings}건 · ${activity.detail}`
-            : activity.detail}
+          {collecting
+            ? "커리어핏이 공식 채용 페이지를 정기적으로 확인합니다."
+            : preparation.detail}
         </span>
       </div>
       <div className={styles.companyActions}>
-        {connected && (
+        {collecting && (
           <Link href={`/companies/${encodeURIComponent(item.company_slug)}`}>
             공고 보기
             <ArrowRight aria-hidden="true" size={15} weight="bold" />
@@ -112,10 +104,10 @@ function MissingCompanyRow({ slug, onRemove }: { slug: string; onRemove: () => v
       </span>
       <div className={styles.companyIdentity}>
         <strong>{slug}</strong>
-        <span>저장한 기업</span>
+        <span>저장한 기업 식별자</span>
       </div>
       <div className={styles.companyStatus}>
-        <strong>현재 확인 목록에 없음</strong>
+        <strong>현재 수집 목록에서 확인되지 않음</strong>
         <span>저장 상태는 유지하며, 공개 출처 목록이 복구되면 다시 연결합니다.</span>
       </div>
       <div className={styles.companyActions}>
@@ -138,10 +130,6 @@ export function FollowedCompanies({
   directory: SourceDirectoryResponse | null;
   directoryUnavailable: boolean;
 }) {
-  const { accountSyncStatus, viewer } = useAuthViewerContext();
-  const storageStatus = accountStorageStatusCopy(
-    viewer ? accountSyncStatus : "local",
-  );
   const [hydrated, setHydrated] = useState(false);
   const [followedSlugs, setFollowedSlugs] = useState<string[]>([]);
   const directoryBySlug = useMemo(
@@ -171,25 +159,20 @@ export function FollowedCompanies({
 
       <header className={styles.intro}>
         <div>
-          <p>내 커리어</p>
+          <p>공식 채용 페이지 다시 보기</p>
           <h1>관심 기업</h1>
           <span>
-            관심 기업의 현재 열린 공고와 확인 상태를 관리합니다.
+            저장한 기업의 현재 수집 상태와 열린 공고를 한곳에서 확인합니다.
           </span>
         </div>
-        <Link href="/data-policy">확인 중인 기업 보기</Link>
+        <Link href="/data-policy">전체 수집 기업 보기</Link>
       </header>
 
       <section aria-labelledby="followed-company-list-title" className={styles.panel}>
         <header className={styles.panelHeader}>
           <div>
-            <p>{storageStatus.label}</p>
+            <p>브라우저 저장 · 로그인 시 동기화</p>
             <h2 id="followed-company-list-title">저장한 기업</h2>
-            {storageStatus.error && (
-              <small className={styles.storageError} role="alert">
-                {storageStatus.error}
-              </small>
-            )}
           </div>
           <div>
             <span>{followedSlugs.length}개</span>
@@ -208,19 +191,19 @@ export function FollowedCompanies({
           <div className={styles.state} role="status">
             <span className={styles.loadingMark} aria-hidden="true" />
             <div>
-              <h3>관심 기업을 불러오는 중…</h3>
-              <p>이 기기에 저장한 관심 기업을 확인합니다.</p>
+              <h3>저장한 기업을 확인하고 있습니다.</h3>
+              <p>이 브라우저의 관심 기업 목록을 읽고 있습니다.</p>
             </div>
           </div>
         ) : followedSlugs.length === 0 ? (
           <div className={styles.state}>
             <BookmarkSimple aria-hidden="true" size={25} />
             <div>
-              <h3>관심 기업이 없습니다.</h3>
-              <p>공고에서 기업을 선택해 관심 기업으로 저장할 수 있습니다.</p>
+              <h3>아직 저장한 관심 기업이 없습니다.</h3>
+              <p>공고에서 기업명을 열고 관심 기업으로 저장해 보세요.</p>
             </div>
             <Link href="/jobs">
-              공고에서 기업 보기
+              공고에서 기업 찾기
               <ArrowRight aria-hidden="true" size={16} weight="bold" />
             </Link>
           </div>
@@ -228,7 +211,7 @@ export function FollowedCompanies({
           <>
             {directoryUnavailable && (
               <p className={styles.directoryWarning} role="status">
-                공식 확인 목록을 불러오지 못해 저장한 기업만 표시합니다. 저장
+                공식 수집 목록을 불러오지 못해 저장한 식별자만 표시합니다. 저장
                 상태는 유지됩니다.
               </p>
             )}
@@ -255,8 +238,8 @@ export function FollowedCompanies({
       </section>
 
       <p className={styles.scopeNote}>
-        열린 공고 수는 대한민국 전체 채용시장이 아니라 이직핏이 확인한 기업 공식
-        채용페이지 범위입니다. 공고를 확인하기 전인 기업은 공고 수에 포함하지 않습니다.
+        열린 공고 수는 대한민국 전체 채용시장이 아니라 커리어핏이 확인한 기업 공식
+        채용페이지 범위입니다. 연결 준비 중인 기업은 공고 수에 포함하지 않습니다.
       </p>
     </main>
   );

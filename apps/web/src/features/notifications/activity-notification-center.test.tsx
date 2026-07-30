@@ -257,7 +257,7 @@ describe("ActivityNotificationCenter", () => {
     expect(
       screen.getByText("NAVER · Backend Engineer").closest("a"),
     ).toHaveAttribute("href", "/jobs/new-job");
-    expect(screen.getByText("이직핏이 새로 확인")).toBeInTheDocument();
+    expect(screen.getByText("커리어핏이 새로 확인")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "공고 알림에서 더 보기" }),
     ).toHaveAttribute("href", "/career/alerts");

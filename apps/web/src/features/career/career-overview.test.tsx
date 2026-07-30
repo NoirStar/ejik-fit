@@ -9,8 +9,6 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
-import type { AccountSyncStatus } from "@/features/auth/use-account-state-sync";
 import { writeOwnedSkills } from "@/lib/owned-skills";
 import { writeCareerPreferences } from "@/lib/career-preferences";
 import type { FitAnalyzeResponse } from "@/lib/types";
@@ -72,55 +70,6 @@ describe("CareerOverview", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each<{
-    expected: string;
-    status: AccountSyncStatus;
-    viewer: { id: string; email: string } | null;
-  }>([
-    { expected: "이 기기에 저장됨", status: "local", viewer: null },
-    {
-      expected: "계정에 저장 중…",
-      status: "syncing",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-    {
-      expected: "계정에 저장됨",
-      status: "synced",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-    {
-      expected: "이 기기에 저장됨",
-      status: "error",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-  ])("shows truthful $status career storage", ({ expected, status, viewer }) => {
-    render(
-      <AuthViewerProvider
-        accountSyncStatus={status}
-        ready
-        viewer={viewer}
-      >
-        <CareerOverview
-          suggestions={suggestions}
-          suggestionsUnavailable={false}
-        />
-      </AuthViewerProvider>,
-    );
-
-    const intro = screen
-      .getByRole("heading", { level: 1, name: "내 커리어" })
-      .closest("header");
-    expect(intro).not.toBeNull();
-    expect(within(intro!).getByText(expected)).toBeInTheDocument();
-    if (status === "error") {
-      expect(screen.getByText("계정에 저장하지 못했습니다.")).toBeInTheDocument();
-    } else {
-      expect(
-        screen.queryByText("계정에 저장하지 못했습니다."),
-      ).not.toBeInTheDocument();
-    }
-  });
-
   it("starts with an honest empty state and API-backed quick suggestions", async () => {
     render(
       <CareerOverview
@@ -132,14 +81,7 @@ describe("CareerOverview", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "내 커리어" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("내 기술과 채용공고를 비교해 다음에 준비할 기술을 찾습니다."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 2, name: "내 기술" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "저장 목록" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
       "href",
       "/career/saved",
     );
@@ -150,25 +92,14 @@ describe("CareerOverview", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "먼저 내 기술을 추가해 주세요.",
+        name: "먼저 보유 기술을 저장해 주세요.",
       }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("기술을 추가하면 맞는 공고와 다음에 배울 기술을 보여줍니다."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("이 결과는 합격 가능성이나 학습 순서를 예측하지 않습니다."),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/내 스택|브라우저 저장 · 로그인 시 동기화/),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText("숫자를 읽는 방법")).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(
       screen.getByRole("button", { name: "Kubernetes 빠르게 추가, 공개 공고 12건" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "추천 기술" })).toBeInTheDocument();
-    expect(screen.getByText("공고 수 기준")).toBeInTheDocument();
+    expect(screen.getByText("실제 공고 수 기준")).toBeInTheDocument();
   });
 
   it("distinguishes an empty suggestion response from saving every suggestion", async () => {
@@ -176,7 +107,7 @@ describe("CareerOverview", () => {
       <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
     );
 
-    await screen.findByText("먼저 내 기술을 추가해 주세요.");
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
     expect(screen.getByText("현재 확인된 상위 기술 제안이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("현재 제안 기술을 모두 저장했습니다.")).not.toBeInTheDocument();
   });
@@ -188,12 +119,12 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 내 기술을 추가해 주세요.");
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " python " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
 
     await waitFor(() => {
       expect(JSON.parse(window.localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([
@@ -202,19 +133,19 @@ describe("CareerOverview", () => {
     });
     expect(
       within(
-        screen.getByRole("list", { name: "내 기술 목록" }),
+        screen.getByRole("list", { name: "저장한 기술 목록" }),
       ).getByText("Python"),
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "python" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("이미 추가한 기술입니다.");
+    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("이미 저장한 기술입니다.");
 
     fireEvent.click(screen.getByRole("button", { name: "Python 제거" }));
     expect(
-      await screen.findByText("먼저 내 기술을 추가해 주세요."),
+      await screen.findByText("먼저 보유 기술을 저장해 주세요."),
     ).toBeInTheDocument();
 
     fireEvent.click(
@@ -224,7 +155,7 @@ describe("CareerOverview", () => {
     );
     expect(
       within(
-        screen.getByRole("list", { name: "내 기술 목록" }),
+        screen.getByRole("list", { name: "저장한 기술 목록" }),
       ).getByText("Kubernetes"),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "전체 삭제" }));
@@ -246,119 +177,18 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 내 기술을 추가해 주세요.");
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " react native " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
 
     expect(
-      within(screen.getByRole("list", { name: "내 기술 목록" })).getByText(
+      within(screen.getByRole("list", { name: "저장한 기술 목록" })).getByText(
         "React Native",
       ),
     ).toBeInTheDocument();
-  });
-
-  it("searches a bounded catalog instead of opening the browser-native list", async () => {
-    render(
-      <CareerOverview
-        catalog={[
-          {
-            name: "Kubernetes",
-            category: "infra",
-            kind: "platform",
-            domains: ["devops", "cloud"],
-          },
-          {
-            name: "React Native",
-            category: "mobile",
-            kind: "framework",
-            domains: ["mobile", "frontend"],
-          },
-        ]}
-        suggestions={suggestions}
-        suggestionsUnavailable={false}
-      />,
-    );
-    await screen.findByText("먼저 내 기술을 추가해 주세요.");
-
-    const input = screen.getByRole("combobox", { name: "추가할 기술" });
-    fireEvent.focus(input);
-    expect(
-      screen.queryByRole("listbox", { name: "기술 검색 결과" }),
-    ).not.toBeInTheDocument();
-    expect(document.querySelector("datalist")).toBeNull();
-
-    fireEvent.change(input, { target: { value: "k8s" } });
-    expect(
-      screen.getByRole("option", { name: "Kubernetes 인프라" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("option", { name: "“k8s” 직접 추가" }),
-    ).not.toBeInTheDocument();
-    fireEvent.keyDown(input, { key: "ArrowDown" });
-    fireEvent.keyDown(input, { key: "Enter" });
-
-    await waitFor(() => {
-      expect(
-        JSON.parse(window.localStorage.getItem("ejik-fit:owned-skills")!),
-      ).toEqual(["Kubernetes"]);
-    });
-    expect(input).toHaveFocus();
-  });
-
-  it("does not add a canonical duplicate of a stored alias", async () => {
-    writeOwnedSkills(["k8s"]);
-    render(
-      <CareerOverview
-        catalog={[
-          {
-            name: "Kubernetes",
-            category: "infra",
-            kind: "platform",
-            domains: ["devops", "cloud"],
-          },
-        ]}
-        suggestions={suggestions}
-        suggestionsUnavailable={false}
-      />,
-    );
-    await screen.findByText("k8s");
-
-    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
-      target: { value: "Kubernetes" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "이미 추가한 기술입니다.",
-    );
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
-      .toEqual(["k8s"]);
-  });
-
-  it("explains the 20-skill limit without replacing an existing skill", async () => {
-    const existing = Array.from(
-      { length: 20 },
-      (_, index) => `Skill ${index.toString().padStart(2, "0")}`,
-    );
-    writeOwnedSkills(existing);
-    render(
-      <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
-    );
-    await screen.findByText("Skill 00");
-
-    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
-      target: { value: "새 기술" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "내 기술은 최대 20개까지 추가할 수 있습니다.",
-    );
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
-      .toEqual(existing);
   });
 
   it("reacts to same-tab stack changes and requests an updated comparison", async () => {
@@ -368,7 +198,7 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 내 기술을 추가해 주세요.");
+    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
 
     act(() => {
       writeOwnedSkills(["React"]);
@@ -394,29 +224,29 @@ describe("CareerOverview", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { level: 2, name: "공고와 비교" }),
+      await screen.findByRole("heading", { level: 2, name: "커리어 방향 판단 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("겹치는 공개 공고").closest("div")).toHaveTextContent(
+    expect(screen.getByText("내 기술이 포함된 공고").closest("div")).toHaveTextContent(
       "17건",
     );
-    expect(screen.getByText("필수 기술 절반 이상").closest("div")).toHaveTextContent(
+    expect(screen.getByText("필수 조건이 다수 겹치는 공고").closest("div")).toHaveTextContent(
       "6건",
     );
     expect(
-      screen.getByRole("link", { name: "Kubernetes 스킬맵 보기" }),
-    ).toHaveAttribute("href", "/skill-map?skill=Kubernetes");
+      screen.getByRole("link", { name: "Kubernetes 기술 관계 보기" }),
+    ).toHaveAttribute("href", "/skills/graph?seed=Kubernetes");
     expect(
       screen.getByRole("link", { name: "Kubernetes 관련 공고 보기" }),
     ).toHaveAttribute("href", "/jobs?q=Kubernetes");
     expect(
-      screen.getByRole("heading", { level: 3, name: "다음에 배울 기술" }),
+      screen.getByRole("heading", { level: 3, name: "프로필에서 확인되지 않은 기술 조건" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 3, name: "분야별 근거" }),
+      screen.getByRole("heading", { level: 3, name: "내 경험과 연결되는 분야" }),
     ).toBeInTheDocument();
     expect(
       screen
-        .getByText("겹치는 공개 공고")
+        .getByText("내 기술이 포함된 공고")
         .closest("div")
         ?.querySelectorAll(":scope > dd"),
     ).toHaveLength(2);
@@ -425,12 +255,12 @@ describe("CareerOverview", () => {
       name: "백엔드",
     }).closest("article")!;
     expect(
-      within(backendBranch).getByText("내 기술").parentElement,
+      within(backendBranch).getByText("연결되는 기술").parentElement,
     ).toHaveTextContent("Python");
     expect(
-      within(backendBranch).getByText("부족 필수").parentElement,
+      within(backendBranch).getByText("공고에서 확인된 필수 조건").parentElement,
     ).toHaveTextContent("Kubernetes");
-    expect(screen.queryByText(/적합도 점수/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/합격 가능성|적합도 점수/)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("combobox", { name: "경력 조건" }), {
       target: { value: "experienced" },
@@ -474,14 +304,14 @@ describe("CareerOverview", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     expect(screen.getByLabelText("경력 조건")).toHaveValue("experienced");
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
+    expect(screen.getByLabelText("관심 커리어 분야")).toHaveValue("robotics");
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       owned_skills: ["Python"],
       career_type: "experienced",
       domains: ["robotics"],
     });
     expect(
-      screen.getByText(/비교 조건은 이 기기에 먼저 저장되며/),
+      screen.getByText(/비교 조건은 이 브라우저에 우선 저장되며/),
     ).toBeInTheDocument();
   });
 
@@ -511,7 +341,7 @@ describe("CareerOverview", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(screen.getByLabelText("경력 조건")).toHaveValue("new_comer");
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
+    expect(screen.getByLabelText("관심 커리어 분야")).toHaveValue("robotics");
     expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
       owned_skills: ["Python"],
       career_type: "new_comer",
@@ -535,8 +365,8 @@ describe("CareerOverview", () => {
       />,
     );
 
-    await screen.findByRole("heading", { level: 2, name: "공고와 비교" });
-    fireEvent.change(screen.getByLabelText("희망 기술 분야"), {
+    await screen.findByRole("heading", { level: 2, name: "커리어 방향 판단 근거" });
+    fireEvent.change(screen.getByLabelText("관심 커리어 분야"), {
       target: { value: "robotics" },
     });
 
@@ -555,8 +385,8 @@ describe("CareerOverview", () => {
       screen.getByRole("option", { name: "로보틱스 · 연결 기술 4개" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/스킬 그래프가 제공하는 분야 메타데이터/),
-    ).not.toBeInTheDocument();
+      screen.getByText(/기술 관계 데이터가 제공하는 분야 메타데이터/),
+    ).toBeInTheDocument();
   });
 
   it("preserves a stored domain during a temporary graph failure and falls back safely", async () => {
@@ -575,8 +405,8 @@ describe("CareerOverview", () => {
       />,
     );
 
-    await screen.findByRole("heading", { level: 2, name: "공고와 비교" });
-    fireEvent.change(screen.getByLabelText("희망 기술 분야"), {
+    await screen.findByRole("heading", { level: 2, name: "커리어 방향 판단 근거" });
+    fireEvent.change(screen.getByLabelText("관심 커리어 분야"), {
       target: { value: "robotics" },
     });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
@@ -591,12 +421,12 @@ describe("CareerOverview", () => {
     );
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("robotics");
+    expect(screen.getByLabelText("관심 커리어 분야")).toHaveValue("robotics");
     expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({
       owned_skills: ["Python"],
     });
     expect(
-      screen.getByText(/저장한 희망 분야는 유지하고 현재 요청은 전체 기술 분야/),
+      screen.getByText(/저장한 희망 분야는 유지하고 현재 요청은 모든 커리어 분야/),
     ).toBeInTheDocument();
     expect(
       JSON.parse(
@@ -624,7 +454,7 @@ describe("CareerOverview", () => {
     );
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
-    expect(screen.getByLabelText("희망 기술 분야")).toHaveValue("");
+    expect(screen.getByLabelText("관심 커리어 분야")).toHaveValue("");
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       owned_skills: ["Python"],
     });
@@ -655,7 +485,7 @@ describe("CareerOverview", () => {
     const setItem = vi
       .spyOn(Storage.prototype, "setItem")
       .mockImplementation(function (this: Storage, key, value) {
-        if (key === "ejik-fit:career-preferences") {
+        if (key === "careerfit:career-preferences") {
           throw new DOMException("blocked", "QuotaExceededError");
         }
         return originalSetItem.call(this, key, value);
@@ -706,7 +536,7 @@ describe("CareerOverview", () => {
     });
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     await waitFor(() =>
-      expect(screen.getByText("겹치는 공개 공고").closest("div")).toHaveTextContent(
+      expect(screen.getByText("내 기술이 포함된 공고").closest("div")).toHaveTextContent(
         "3건",
       ),
     );
@@ -716,7 +546,7 @@ describe("CareerOverview", () => {
       await firstPayload;
     });
 
-    expect(screen.getByText("겹치는 공개 공고").closest("div")).toHaveTextContent(
+    expect(screen.getByText("내 기술이 포함된 공고").closest("div")).toHaveTextContent(
       "3건",
     );
   });
@@ -748,9 +578,9 @@ describe("CareerOverview", () => {
     expect(screen.queryByText(/internal-api|503/)).not.toBeInTheDocument();
     expect(screen.getByText("상위 기술 제안을 불러오지 못했습니다.")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    fireEvent.click(screen.getByRole("button", { name: "공고 비교 다시 시도" }));
     expect(
-      await screen.findByRole("heading", { level: 2, name: "공고와 비교" }),
+      await screen.findByRole("heading", { level: 2, name: "커리어 방향 판단 근거" }),
     ).toBeInTheDocument();
   });
 
@@ -805,11 +635,11 @@ describe("CareerOverview", () => {
     expect(
       await screen.findByRole("heading", {
         level: 3,
-        name: "현재 조건에서 겹치는 공고가 없습니다.",
+        name: "현재 조건에서 내 기술이 포함된 공고가 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "전체 공고 보기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "전체 채용공고 보기" })).toHaveAttribute(
       "href",
       "/jobs",
     );

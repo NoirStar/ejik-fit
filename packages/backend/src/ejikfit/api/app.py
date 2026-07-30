@@ -60,7 +60,7 @@ def create_app(
     dunamu_jobs_reader: DunamuJobsReader | None = None,
     hiring_overview_reader: HiringOverviewReader | None = None,
 ) -> FastAPI:
-    application = FastAPI(title="이직핏 API", version="0.1.0")
+    application = FastAPI(title="커리어핏 API", version="0.1.0")
 
     @application.get("/health")
     def health() -> dict[str, str]:

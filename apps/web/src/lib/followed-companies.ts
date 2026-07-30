@@ -1,8 +1,18 @@
 export const MAX_FOLLOWED_COMPANIES = 60;
 export const MAX_FOLLOWED_COMPANY_SLUG_LENGTH = 100;
 
-const KEY = "ejik-fit:followed-company-slugs";
-const CHANGE_EVENT = "ejik-fit:followed-company-slugs-change";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
+
+const STORAGE_KEYS = {
+  current: "careerfit:followed-company-slugs",
+  legacy: ["ejik-fit:followed-company-slugs"],
+} as const;
+const CHANGE_EVENT = "careerfit:followed-company-slugs-change";
 const COMPANY_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 type FollowedCompaniesListener = (slugs: string[]) => void;
@@ -38,18 +48,21 @@ export function readFollowedCompanySlugs(
   storage = defaultStorage(),
 ): string[] {
   if (!storage) return [];
-  try {
-    const raw = storage.getItem(KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? normalizeFollowedCompanySlugs(
-          parsed.filter((value): value is string => typeof value === "string"),
-        )
-      : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed)
+          ? normalizeFollowedCompanySlugs(
+              parsed.filter((value): value is string => typeof value === "string"),
+            )
+          : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifyFollowedCompaniesChange(storage: Storage | null) {
@@ -68,9 +81,11 @@ export function writeFollowedCompanySlugs(
 ): string[] {
   const normalized = normalizeFollowedCompanySlugs(slugs);
   if (!storage) return [];
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readFollowedCompanySlugs(storage);
   }
   notifyFollowedCompaniesChange(storage);
@@ -81,11 +96,7 @@ export function clearFollowedCompanies(
   storage = defaultStorage(),
 ): string[] {
   if (!storage) return [];
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readFollowedCompanySlugs(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyFollowedCompaniesChange(storage);
   return [];
 }
@@ -115,7 +126,7 @@ export function subscribeFollowedCompanies(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

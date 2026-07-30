@@ -1,5 +1,15 @@
-const KEY = "ejik-fit:recent-community-topics";
-const CHANGE_EVENT = "ejik-fit:recent-community-topics-change";
+import {
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
+
+const STORAGE_KEYS = {
+  current: "careerfit:recent-community-topics",
+  legacy: ["ejik-fit:recent-community-topics"],
+} as const;
+const CHANGE_EVENT = "careerfit:recent-community-topics-change";
 
 export const MAX_RECENT_COMMUNITY_TOPICS = 8;
 const MAX_POST_ID_LENGTH = 140;
@@ -106,12 +116,17 @@ export function readRecentCommunityTopics(
   storage = defaultStorage(),
 ): RecentCommunityTopic[] {
   if (!storage) return [];
-  try {
-    const raw = storage.getItem(KEY);
-    return raw ? normalizeRecentCommunityTopics(JSON.parse(raw) as unknown) : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? normalizeRecentCommunityTopics(parsed) : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifyRecentCommunityTopics(storage: Storage | null) {
@@ -130,9 +145,11 @@ function writeRecentCommunityTopics(
 ) {
   const normalized = normalizeRecentCommunityTopics(value);
   if (!storage) return [];
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readRecentCommunityTopics(storage);
   }
   notifyRecentCommunityTopics(storage);
@@ -176,11 +193,7 @@ export function clearRecentCommunityTopics(
   storage = defaultStorage(),
 ): RecentCommunityTopic[] {
   if (!storage) return [];
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readRecentCommunityTopics(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyRecentCommunityTopics(storage);
   return [];
 }
@@ -194,7 +207,7 @@ export function subscribeRecentCommunityTopics(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

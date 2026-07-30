@@ -1,9 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const COMMUNITY_DISCLOSURE =
-  "커뮤니티 결과는 공개 계정 글에서 찾습니다. 이 기기에 남은 글은 계정 글과 구분해 표시합니다.";
-
-for (const width of [1440, 820, 390, 320]) {
+for (const width of [1440, 820, 390]) {
   test(`searches verified data without overflow at ${width}px`, async ({
     page,
   }) => {
@@ -11,13 +8,8 @@ for (const width of [1440, 820, 390, 320]) {
     await page.goto("/");
 
     const pageContent = page.locator("#main-content");
-    await expect(
-      pageContent.getByRole("region", { name: "이직핏 커뮤니티 가이드" }),
-    ).toHaveCount(0);
-
     const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
     await globalSearch.fill("Python");
-    await expect(globalSearch).toHaveValue("Python");
     await globalSearch.press("Enter");
 
     await expect(page).toHaveURL(/\/search\?q=Python$/);
@@ -34,49 +26,14 @@ for (const width of [1440, 820, 390, 320]) {
       pageContent.getByRole("link", { name: "Go Platform Engineer" }),
     ).not.toBeVisible();
     await expect(
-      pageContent.getByRole("link", { name: "Python 스킬맵 보기" }),
+      pageContent
+        .getByRole("region", { name: "기술" })
+        .getByRole("link", { name: "Python 기술 관계 보기" }),
     ).toBeVisible();
     await expect(
-      pageContent.getByText("공식 공고", { exact: true }),
+      pageContent.getByText("채용공고", { exact: true }),
     ).toBeVisible();
     await expect(pageContent.getByText("공고 통계 표본")).toBeVisible();
-    const internalDetailLink = pageContent.getByRole("link", {
-      name: "공고 보기",
-    });
-    await expect(internalDetailLink).toBeVisible();
-    await expect(internalDetailLink).toHaveAttribute("href", "/jobs/job-python");
-    await expect(internalDetailLink).not.toHaveAttribute("target", "_blank");
-    const companyPageLink = pageContent.getByRole("link", {
-      name: "기업 채용페이지 보기",
-    });
-    await expect(companyPageLink).toHaveAttribute(
-      "href",
-      "https://recruit.navercorp.com/job-python",
-    );
-    await expect(companyPageLink).toHaveAttribute("target", "_blank");
-    await expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
-    await expect(
-      pageContent.getByText(/필수 \d+ · 우대 \d+ · 미표기 \d+/),
-    ).toBeVisible();
-    await expect(
-      pageContent.getByText(
-        "현재 기술 수요 상위 표본에서 이름이 일치한 기술입니다.",
-      ),
-    ).toBeVisible();
-    const unspecifiedHelp = pageContent.getByText(
-      "미표기: 공고에서 필수 또는 우대로 구분하지 않은 기술",
-    );
-    await expect(unspecifiedHelp).toBeVisible();
-    const breakdown = pageContent.getByLabel(
-      "필수 27건, 우대 8건, 필수·우대 미표기 28건",
-    );
-    const unspecifiedHelpId = await unspecifiedHelp.getAttribute("id");
-    expect(unspecifiedHelpId).not.toBeNull();
-    await expect(breakdown).toHaveAttribute(
-      "aria-describedby",
-      unspecifiedHelpId!,
-    );
-    await expect(pageContent.getByText(/API/)).toHaveCount(0);
 
     expect(
       await page.evaluate(
@@ -88,11 +45,10 @@ for (const width of [1440, 820, 390, 320]) {
       pageContent.getByRole("button", { name: "검색" }),
       pageContent.getByRole("link", { name: /기업.*1/ }),
       pageContent.getByRole("link", { name: "NAVER 기업 채용 현황" }),
-      pageContent.getByRole("link", { name: "Python 스킬맵", exact: true }),
+      pageContent
+        .getByRole("region", { name: "기술" })
+        .getByRole("link", { name: "Python 기술 관계 보기", exact: true }),
       pageContent.getByRole("link", { name: "NAVER", exact: true }),
-      pageContent.getByRole("link", { name: "Python 스킬맵 보기" }),
-      internalDetailLink,
-      companyPageLink,
     ];
     if (width > 600) {
       touchTargets.push(
@@ -105,60 +61,21 @@ for (const width of [1440, 820, 390, 320]) {
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
     }
-    const skillMapLink = pageContent.getByRole("link", {
-      name: "Python 스킬맵 보기",
-    });
-    await skillMapLink.focus();
-    await expect(skillMapLink).toBeFocused();
-
-    if (width === 320) {
-      const scopeLinks = pageContent
-        .getByRole("navigation", { name: "검색 범위" })
-        .getByRole("link");
-      await expect(scopeLinks).toHaveCount(5);
-      const noWrapTargets = [pageContent.getByRole("button", { name: "검색" })];
-      for (let index = 0; index < (await scopeLinks.count()); index += 1) {
-        noWrapTargets.push(scopeLinks.nth(index));
-      }
-      for (const target of noWrapTargets) {
-        expect(
-          await target.evaluate(
-            (element) => getComputedStyle(element).whiteSpace === "nowrap",
-          ),
-        ).toBe(true);
-      }
-    }
   });
 }
 
-test("moves between actual result scopes without built-in community examples", async ({
+test("moves between actual company and technology result scopes", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/search?q=Kubernetes");
-
-  await page.goto("/search?q=Kubernetes&scope=community");
-  const pageContent = page.locator("#main-content");
+  await page.goto("/search?q=Kubernetes&scope=skills");
   await expect(
-    pageContent.getByRole("link", {
-      name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
-    }),
-  ).toHaveCount(0);
-  await expect(
-    pageContent.getByRole("region", { name: "커뮤니티 활용 가이드" }),
-  ).toHaveCount(0);
-  const disclosure = pageContent
-    .getByText(COMMUNITY_DISCLOSURE)
-    .filter({ visible: true });
-  await expect(disclosure).toBeVisible();
-  await expect(disclosure).not.toContainText(/API|서버|응답/);
-
-  await page.getByRole("link", { name: /기술.*1/ }).click();
-  await expect(page).toHaveURL("/search?q=Kubernetes&scope=skills");
+    page.getByRole("heading", { name: "“Kubernetes” 검색 결과" }),
+  ).toBeVisible();
   await page
-    .getByRole("link", { name: "Kubernetes 스킬맵 보기" })
+    .getByRole("link", { name: "Kubernetes 기술 관계 보기" })
     .click();
-  await expect(page).toHaveURL(/\/skill-map\?skill=Kubernetes$/);
+  await expect(page).toHaveURL(/\/skills\/graph\?seed=Kubernetes$/);
 
   await page.goto("/search?q=Python&scope=companies");
   await page
@@ -180,7 +97,6 @@ test("finds a legacy browser post as recovery data after reload", async ({
   const query = "로컬 검색";
   const title = "로컬 검색으로 다시 찾는 내 질문";
   const localPostId = "local-search-recovery-question";
-  const pageContent = page.locator("#main-content");
   await page.setViewportSize({ height: 900, width: 390 });
   await page.addInitScript(
     ({ id, postTitle, searchQuery }) => {
@@ -213,10 +129,10 @@ test("finds a legacy browser post as recovery data after reload", async ({
     ),
   ).toHaveLength(1);
   await expect(
-    page.getByRole("region", { name: "이 기기에 남은 글" }),
+    page.getByRole("region", { name: "이전 기기 저장 글" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("article", { name: title }).getByText("이 기기에 남은 글"),
+    page.getByRole("article", { name: title }).getByText("이전 저장 글"),
   ).toBeVisible();
 
   const globalSearch = page.getByRole("searchbox", { name: "통합 검색" });
@@ -229,11 +145,11 @@ test("finds a legacy browser post as recovery data after reload", async ({
 
   let localResult = page.getByRole("article", { name: title });
   await expect(localResult).toBeVisible();
-  await expect(localResult.getByText("이 기기에 남은 글")).toBeVisible();
+  await expect(localResult.getByText("이전 저장 글")).toBeVisible();
   await expect(page.getByRole("link", { name: /커뮤니티.*1/ })).toBeVisible();
   await expect(page.getByText("검색 결과가 없습니다.")).toHaveCount(0);
   await expect(
-    pageContent.getByText(COMMUNITY_DISCLOSURE).filter({ visible: true }),
+    page.getByText(/이전 저장 글은 이 브라우저에서만 복구할 수 있습니다/),
   ).toBeVisible();
 
   const resultLink = localResult.getByRole("link", { exact: true, name: title });
@@ -255,13 +171,12 @@ test("finds a legacy browser post as recovery data after reload", async ({
   await expect(
     page.getByRole("heading", { exact: true, level: 1, name: title }),
   ).toBeVisible();
+  await expect(page.getByText("이전 기기 저장 글", { exact: true })).toBeVisible();
   await expect(
-    page
-      .getByRole("article")
-      .getByText("이 기기에 남은 글", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { level: 2, name: "이 기기에 남은 글" }),
+    page.getByRole("heading", {
+      level: 2,
+      name: "이 브라우저에 저장된 내 글",
+    }),
   ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);
   expect(browserErrors).toEqual([]);

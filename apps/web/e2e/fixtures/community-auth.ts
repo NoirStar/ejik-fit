@@ -28,7 +28,7 @@ export async function seedFollowingFixture(request: APIRequestContext) {
 
 export async function signInCommunityViewer(
   page: Page,
-  nextPath = "/",
+  nextPath = "/community",
 ) {
   await page.goto(`/login?next=${encodeURIComponent(nextPath)}`);
   await page.getByLabel("이메일").fill(COMMUNITY_TEST_EMAIL);

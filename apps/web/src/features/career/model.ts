@@ -160,7 +160,7 @@ export function buildCareerSnapshot(
     targetDomain,
     targetDomainLabel: targetDomain
       ? formatDomainLabel(targetDomain)
-      : "전체 기술 분야",
+      : "전체 분야",
     scopeLabel: careerScopeLabel(careerCondition, targetDomain),
     metrics: {
       matchingPostingCount: fit.coverage.matching_posting_count,
@@ -172,7 +172,7 @@ export function buildCareerSnapshot(
       requiredCount: item.required_count,
       preferredCount: item.preferred_count,
       supportingPostingCount: item.supporting_posting_count,
-      skillHref: `/skill-map?skill=${encodeURIComponent(item.skill)}`,
+      skillHref: `/skills/graph?seed=${encodeURIComponent(item.skill)}`,
       jobsHref: buildCareerJobsHref(item.skill, careerCondition),
     })),
     branches: [...fit.domain_branches]

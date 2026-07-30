@@ -65,7 +65,7 @@ const items: FeedItem[] = [
     id: "market-1",
     type: "market_insight",
     skillName: "Kubernetes",
-    title: "시장 인사이트",
+    title: "시장 변화",
     summary: "요약",
     postingCount: 14,
     requiredCount: 8,
@@ -73,7 +73,7 @@ const items: FeedItem[] = [
     unspecifiedCount: 2,
     sampleLabel: "14건",
     sourceLabel: "공식 채용페이지",
-    href: "/skill-map?skill=Kubernetes",
+    href: "/skills/graph?seed=Kubernetes",
     source: "api",
   },
 ];

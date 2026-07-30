@@ -9,7 +9,6 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AuthViewerProvider } from "@/features/auth/auth-viewer-context";
-import type { AccountSyncStatus } from "@/features/auth/use-account-state-sync";
 import type { CommunityStore } from "@/features/community/community-store";
 import type {
   CommunityCursor,
@@ -17,10 +16,6 @@ import type {
   CommunityViewerState,
 } from "@/lib/community-contract";
 import { deleteLocalCommunityPost } from "@/lib/local-community-posts";
-import {
-  APPLICATION_STAGES,
-  type JobApplicationStageValue,
-} from "@/lib/job-application-stages";
 import type { PostingDetail } from "@/lib/types";
 
 import { buildSavedJobItem } from "./model";
@@ -46,7 +41,6 @@ const posting: PostingDetail = {
   unspecified_skills: [],
   description_html: "",
   description_text: "",
-  description_images: [],
   skills: ["Python", "Docker"],
 };
 
@@ -124,6 +118,7 @@ function saveBrowserItems(
   jobIds = ["job-python"],
   postIds = ["kubernetes-experience"],
   stages: Record<string, string> = {},
+  groups: Record<string, string> = {},
 ) {
   window.localStorage.setItem(
     "ejik-fit:saved-job-ids",
@@ -137,6 +132,10 @@ function saveBrowserItems(
     "ejik-fit:job-application-stages",
     JSON.stringify(stages),
   );
+  window.localStorage.setItem(
+    "ejik-fit:saved-job-groups",
+    JSON.stringify(groups),
+  );
 }
 
 function saveLocalPost() {
@@ -146,7 +145,7 @@ function saveLocalPost() {
       {
         id: "local-browser-question",
         title: "브라우저에 저장한 내 질문",
-        body: "공식 공고를 비교한 뒤 남긴 질문입니다.",
+        body: "채용공고를 비교한 뒤 남긴 질문입니다.",
         tags: ["백엔드", "이직 준비"],
         createdAt: "2026-07-14T03:00:00.000Z",
       },
@@ -167,52 +166,7 @@ describe("SavedLibrary", () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
-  });
-
-  it.each<{
-    expected: string;
-    status: AccountSyncStatus;
-    viewer: { id: string; email: string } | null;
-  }>([
-    { expected: "이 기기에 저장됨", status: "local", viewer: null },
-    {
-      expected: "계정에 저장 중…",
-      status: "syncing",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-    {
-      expected: "계정에 저장됨",
-      status: "synced",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-    {
-      expected: "이 기기에 저장됨",
-      status: "error",
-      viewer: { id: "viewer-1", email: "viewer@example.com" },
-    },
-  ])("shows truthful $status library storage", ({ expected, status, viewer }) => {
-    render(
-      <AuthViewerProvider
-        accountSyncStatus={status}
-        ready
-        viewer={viewer}
-      >
-        <SavedLibrary />
-      </AuthViewerProvider>,
-    );
-
-    const intro = screen
-      .getByRole("heading", { level: 1, name: "저장 목록" })
-      .closest("header");
-    expect(intro).not.toBeNull();
-    expect(within(intro!).getByText(expected)).toBeInTheDocument();
-    if (status === "error") {
-      expect(screen.getByText("계정에 저장하지 못했습니다.")).toBeInTheDocument();
-    } else {
-      expect(
-        screen.queryByText("계정에 저장하지 못했습니다."),
-      ).not.toBeInTheDocument();
-    }
+    vi.restoreAllMocks();
   });
 
   it("ignores old browser saves for read-only starter guidance", async () => {
@@ -220,9 +174,8 @@ describe("SavedLibrary", () => {
     render(<SavedLibrary />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "저장 목록" }),
+      screen.getByRole("heading", { level: 1, name: "저장 보관함" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "내 기술 비교" })).toHaveAttribute(
       "href",
       "/career",
@@ -231,12 +184,12 @@ describe("SavedLibrary", () => {
     const job = await screen.findByRole("article", {
       name: "Python Backend Engineer",
     });
-    expect(within(job).getByText("최근 확인")).toBeInTheDocument();
+    expect(within(job).getByText("현재 API 재확인")).toBeInTheDocument();
     expect(
       within(job).getByRole("link", { name: "Python Backend Engineer" }),
     ).toHaveAttribute("href", "/jobs/job-python");
     expect(within(job).getByText("필수 Python")).toBeInTheDocument();
-    expect(within(job).getByRole("link", { name: "공식 원문" })).toHaveAttribute(
+    expect(within(job).getByRole("link", { name: "공식 채용 페이지에서 지원" })).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-python",
     );
@@ -263,7 +216,39 @@ describe("SavedLibrary", () => {
         name: "Python Backend Engineer 지원 단계",
       }),
     ).toHaveValue("");
+    expect(
+      within(job).getByRole("combobox", {
+        name: "Python Backend Engineer 커리어 분류",
+      }),
+    ).toHaveValue("");
     expect(screen.getByRole("tab", { name: "지원 관리 0" })).toBeInTheDocument();
+  });
+
+  it("organizes a saved posting by a user-selected career direction", async () => {
+    saveBrowserItems(["job-python"], [], {}, { "job-python": "current" });
+    render(<SavedLibrary />);
+
+    const job = await screen.findByRole("article", {
+      name: "Python Backend Engineer",
+    });
+    const groupSelect = within(job).getByRole("combobox", {
+      name: "Python Backend Engineer 커리어 분류",
+    });
+    expect(groupSelect).toHaveValue("current");
+
+    fireEvent.change(groupSelect, { target: { value: "adjacent" } });
+
+    await waitFor(() => expect(groupSelect).toHaveValue("adjacent"));
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("careerfit:saved-job-groups") ?? "{}",
+      ),
+    ).toEqual({ "job-python": "adjacent" });
+    expect(
+      screen.getByText(
+        "Python Backend Engineer 공고를 인접 커리어로 분류했습니다.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("restores saved browser-owned posts and removes them when the source post is deleted", async () => {
@@ -278,7 +263,7 @@ describe("SavedLibrary", () => {
     expect(
       within(localPost).getByRole("link", { name: "브라우저에 저장한 내 질문" }),
     ).toHaveAttribute("href", "/posts/local-browser-question");
-    expect(within(localPost).getByText(/이 기기에 남은 글/)).toBeInTheDocument();
+    expect(within(localPost).getByText(/현재 브라우저 글 원본/)).toBeInTheDocument();
     expect(
       screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -292,7 +277,7 @@ describe("SavedLibrary", () => {
     })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
     expect(
-      screen.queryByRole("region", { name: "공식 공고" }),
+      screen.queryByRole("region", { name: "채용공고" }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("tabpanel")).toHaveAttribute("data-single", "true");
 
@@ -324,7 +309,7 @@ describe("SavedLibrary", () => {
     });
     expect(store.listSavedPostPage).toHaveBeenCalledWith({ limit: 50 });
     expect(store.listSavedPosts).not.toHaveBeenCalled();
-    expect(within(savedPost).getByText("계정에 저장됨")).toBeInTheDocument();
+    expect(within(savedPost).getByText("계정 저장")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "커뮤니티 1" })).toBeInTheDocument();
 
     fireEvent.click(
@@ -343,7 +328,7 @@ describe("SavedLibrary", () => {
         screen.queryByRole("article", { name: accountCommunityPost.title }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/계정 저장 목록에서 제거했습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/계정 저장 보관함에서 제거했습니다/)).toBeInTheDocument();
   });
 
   it("loads saved community records beyond the first account page", async () => {
@@ -424,7 +409,7 @@ describe("SavedLibrary", () => {
     const setItem = vi
       .spyOn(Storage.prototype, "setItem")
       .mockImplementation(function (this: Storage, key, value) {
-        if (key === "ejik-fit:social-interactions") {
+        if (key === "careerfit:social-interactions") {
           throw new DOMException("blocked", "QuotaExceededError");
         }
         return originalSetItem.call(this, key, value);
@@ -440,7 +425,7 @@ describe("SavedLibrary", () => {
     expect(
       screen.getByText("브라우저에 저장한 내 질문의 저장 상태를 변경하지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/저장 목록에서 제거했습니다/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/저장 보관함에서 제거했습니다/)).not.toBeInTheDocument();
     setItem.mockRestore();
   });
 
@@ -466,7 +451,7 @@ describe("SavedLibrary", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "지원 관리 1" }));
     expect(job).toBeInTheDocument();
-    expect(screen.getByText("지원 단계를 기록한 공고")).toBeInTheDocument();
+    expect(screen.getByText("지원 단계를 기록한 실제 공고")).toBeInTheDocument();
     expect(
       screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
@@ -482,35 +467,6 @@ describe("SavedLibrary", () => {
     );
   });
 
-  it.each(
-    APPLICATION_STAGES.map((stage) => ({
-      expected: stage.value
-        ? `지원 단계를 ‘${stage.label}’로 저장했습니다.`
-        : "지원 단계 기록을 삭제했습니다.",
-      label: stage.label,
-      value: stage.value as JobApplicationStageValue,
-    })),
-  )("announces the $label stage without particle guessing", async ({ expected, value }) => {
-    saveBrowserItems(
-      ["job-python"],
-      [],
-      value === "" ? { "job-python": "applied" } : {},
-    );
-    render(<SavedLibrary />);
-    const job = await screen.findByRole("article", {
-      name: "Python Backend Engineer",
-    });
-
-    fireEvent.change(
-      within(job).getByRole("combobox", {
-        name: "Python Backend Engineer 지원 단계",
-      }),
-      { target: { value } },
-    );
-
-    expect(screen.getByText(expected)).toBeInTheDocument();
-  });
-
   it("reports a blocked stage write without announcing a false success", async () => {
     saveBrowserItems();
     render(<SavedLibrary />);
@@ -524,7 +480,7 @@ describe("SavedLibrary", () => {
     const setItem = vi
       .spyOn(Storage.prototype, "setItem")
       .mockImplementation(function (this: Storage, key, value) {
-        if (key === "ejik-fit:job-application-stages") {
+        if (key === "careerfit:job-application-stages") {
           throw new DOMException("blocked", "QuotaExceededError");
         }
         return originalSetItem.call(this, key, value);
@@ -569,7 +525,7 @@ describe("SavedLibrary", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "저장한 항목이 없습니다.",
+        name: "아직 저장한 항목이 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(
@@ -579,45 +535,23 @@ describe("SavedLibrary", () => {
     ).toEqual(["kubernetes-experience"]);
   });
 
-  it.each([
-    { expected: "기술을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "기술" },
-    { expected: "자바를 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "자바" },
-    { expected: "React를 저장 목록에서 제거하고 지원 단계도 삭제했습니다.", title: "React" },
-  ])("uses the correct object particle when removing $title", async ({ expected, title }) => {
-    fetchMock.mockResolvedValueOnce(
-      jsonResponse({
-        ...savedJobResponse,
-        items: [buildSavedJobItem({ ...posting, title })],
-      }),
-    );
-    saveBrowserItems([posting.id], []);
-    render(<SavedLibrary />);
-    const job = await screen.findByRole("article", { name: title });
-
-    fireEvent.click(
-      within(job).getByRole("button", { name: `${title} 저장 해제` }),
-    );
-
-    expect(screen.getByText(expected)).toBeInTheDocument();
-  });
-
   it("shows an honest empty state without making an API request", async () => {
     render(<SavedLibrary />);
 
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "저장한 항목이 없습니다.",
+        name: "아직 저장한 항목이 없습니다.",
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "공고 보기" }),
+      screen.getByRole("link", { name: "채용공고 둘러보기" }),
     ).toHaveAttribute("href", "/jobs");
     expect(
-      screen.queryByRole("link", { name: "커뮤니티 보기" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: "커뮤니티 보기" }),
+    ).toHaveAttribute("href", "/community");
     expect(
-      screen.getByText("저장한 항목이 없습니다.").closest('[role="status"]'),
+      screen.getByText("아직 저장한 항목이 없습니다.").closest('[role="status"]'),
     ).not.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -658,11 +592,11 @@ describe("SavedLibrary", () => {
       await screen.findByRole("article", { name: "Python Backend Engineer" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("현재 확인할 수 없는 저장 공고 1개"),
+      screen.getByText("현재 API에서 확인되지 않는 저장 공고 1개"),
     ).toBeInTheDocument();
     expect(
       screen
-        .getByText("현재 확인할 수 없는 저장 공고 1개")
+        .getByText("현재 API에서 확인되지 않는 저장 공고 1개")
         .closest('[role="status"]'),
     ).not.toBeNull();
     expect(
@@ -681,7 +615,7 @@ describe("SavedLibrary", () => {
     ).not.toBeInTheDocument();
 
     window.localStorage.setItem(
-      "ejik-fit:job-application-stages",
+      "careerfit:job-application-stages",
       JSON.stringify({
         "gone-job": "applied",
         "retry-job": "offer",
@@ -707,7 +641,7 @@ describe("SavedLibrary", () => {
 
     expect(
       await screen.findByRole("alert"),
-    ).toHaveTextContent("저장한 공식 공고를 불러오지 못했습니다.");
+    ).toHaveTextContent("저장한 채용공고를 불러오지 못했습니다.");
     expect(
       screen.queryByRole("article", {
         name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",

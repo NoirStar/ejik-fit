@@ -1,12 +1,13 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getPostings, getSkillStats } from "@/lib/api";
+import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 
 import MarketPage from "./page";
 
 vi.mock("@/lib/api", () => ({
   getPostings: vi.fn(),
+  getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
 
@@ -20,8 +21,16 @@ describe("MarketPage", () => {
   beforeEach(() => {
     vi.mocked(getPostings).mockReset();
     vi.mocked(getSkillStats).mockReset();
+    vi.mocked(getSkillGraph).mockReset();
     vi.mocked(getPostings).mockResolvedValue({ total: 0, items: [] });
     vi.mocked(getSkillStats).mockResolvedValue({ total: 0, items: [] });
+    vi.mocked(getSkillGraph).mockResolvedValue({
+      seed: null,
+      nodes: [],
+      edges: [],
+      evidence: [],
+      meta: { limit: 100, min_confidence: 0.8 },
+    });
   });
 
   it("loads both market resources with selected career and category filters", async () => {
@@ -42,22 +51,24 @@ describe("MarketPage", () => {
     expect(getSkillStats).toHaveBeenCalledWith({
       career_type: "experienced",
       category: "infra",
-      limit: 500,
+      limit: 100,
+    });
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      career_type: "experienced",
+      limit: 100,
     });
     expect(
-      screen.getByRole("heading", { level: 1, name: "채용 시장 기술 동향" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "기업 채용공고에 많이 나온 기술과 최근 변화를 보여줍니다.",
-      ),
+      screen.getByRole("heading", {
+        name: "분야별 채용 현황과 기술 수요",
+        level: 1,
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "인프라" })).toHaveAttribute(
       "aria-current",
       "page",
     );
     expect(
-      screen.getByText(/기업 공식 채용 페이지 확인 범위/),
+      screen.getByText(/커리어핏이 분석한 채용공고 범위/),
     ).toBeInTheDocument();
   });
 
@@ -72,10 +83,11 @@ describe("MarketPage", () => {
     );
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
-    expect(getSkillStats).toHaveBeenCalledWith({ limit: 500 });
+    expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
+    expect(getSkillGraph).toHaveBeenCalledWith({ limit: 100 });
     expect(
       within(
-        screen.getByRole("navigation", { name: "포함 기술 분야" }),
+        screen.getByRole("navigation", { name: "기술 분류" }),
       ).getByRole("link", { name: "전체" }),
     ).toHaveAttribute("aria-current", "page");
   });

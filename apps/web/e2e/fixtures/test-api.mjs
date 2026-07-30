@@ -253,11 +253,26 @@ const fitAnalysis = {
     matching_posting_count: 17,
     strong_fit_posting_count: 6,
   },
-  domain_branches: [],
+  domain_branches: [
+    {
+      domain: "backend",
+      covered_skills: ["Python", "Docker"],
+      missing_required_skills: [],
+      missing_preferred_skills: ["Kubernetes"],
+      supporting_posting_count: 1,
+    },
+    {
+      domain: "cloud",
+      covered_skills: ["Docker"],
+      missing_required_skills: ["Go"],
+      missing_preferred_skills: [],
+      supporting_posting_count: 1,
+    },
+  ],
   recommended_next_skills: [
     {
       skill: "Kubernetes",
-      reason: "보유 스킬과 함께 등장한 공고에서 10회 부족 요구사항으로 확인됨",
+      reason: "보유 기술이 포함된 채용공고 10건에서 추가 조건으로 확인됨",
       required_count: 8,
       preferred_count: 3,
       supporting_posting_count: 10,

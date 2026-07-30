@@ -531,8 +531,7 @@
 
 .matchEvidence {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   margin: 0.75rem 1rem 0;
   padding: 0.625rem 0 0;
@@ -540,6 +539,28 @@
   background: transparent;
   color: var(--color-accent-strong);
   font-size: 0.75rem;
+}
+
+.matchEvidence > svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.matchEvidence > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.matchEvidence p {
+  margin: 0;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.matchEvidence small {
+  color: var(--color-muted);
+  line-height: 1.5;
 }
 
 .matchEvidence strong {

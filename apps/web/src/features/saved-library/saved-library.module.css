@@ -1,5 +1,5 @@
 /* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V4 */
-/* Hallmark · genre: modern-minimal · macrostructure: filterable evidence archive · theme: 이직핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
+/* Hallmark · genre: modern-minimal · macrostructure: filterable evidence archive · theme: 커리어핏 locked system · enrichment: none · nav: N1b · footer: Ft2 */
 .page {
   width: min(100%, 80rem);
   margin: 0 auto;
@@ -372,6 +372,7 @@
 
 .applicationControl {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
   gap: 1rem;
@@ -389,6 +390,7 @@
 
 .applicationControl label {
   display: grid;
+  flex: 1 1 13rem;
   min-width: min(100%, 13rem);
   gap: 0.35rem;
 }
@@ -419,6 +421,7 @@
 }
 
 .applicationControl small {
+  margin-left: auto;
   max-width: 16rem;
   color: var(--color-muted);
   font-size: 0.66rem;
@@ -820,6 +823,7 @@
   }
 
   .applicationControl small {
+    margin-left: 0;
     max-width: none;
     text-align: left;
   }

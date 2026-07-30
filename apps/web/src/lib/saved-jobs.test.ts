@@ -101,12 +101,17 @@ describe("saved job storage", () => {
     const fake = storage();
     fake.setItem("ejik-fit:saved-job-ids", JSON.stringify(["job-a"]));
     fake.setItem(
+      "ejik-fit:saved-job-groups",
+      JSON.stringify({ "job-a": "current" }),
+    );
+    fake.setItem(
       "ejik-fit:job-application-stages",
       JSON.stringify({ "job-a": "interview" }),
     );
 
     expect(toggleSavedJob("job-a", fake)).toEqual([]);
     expect(fake.getItem("ejik-fit:job-application-stages")).toBe("{}");
+    expect(fake.getItem("ejik-fit:saved-job-groups")).toBe("{}");
 
     fake.setItem(
       "ejik-fit:job-application-stages",

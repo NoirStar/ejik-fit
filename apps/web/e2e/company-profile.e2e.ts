@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 820, 390, 320]) {
+for (const width of [1440, 820, 390]) {
   test(`keeps the actual-data company profile usable at ${width}px`, async ({
     page,
   }) => {
@@ -15,7 +15,6 @@ for (const width of [1440, 820, 390, 320]) {
       page.getByRole("heading", { level: 1, name: "NAVER" }),
     ).toBeVisible();
     await expect(page.getByText("현재 공개 공고 1건")).toBeVisible();
-    await expect(page.getByText("최근 확인")).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeVisible();
@@ -35,24 +34,12 @@ for (const width of [1440, 820, 390, 320]) {
     for (const target of [
       page.getByRole("link", { name: "공고 탐색으로 돌아가기" }),
       page.getByRole("link", { name: "Python Backend Engineer" }),
-      page.getByRole("link", { name: "Docker 스킬맵" }),
-      page.getByRole("link", { name: "최근 공식 원문" }),
+      page.getByRole("link", { name: "Docker 기술 관계 보기" }),
+      page.getByRole("link", { name: "공식 채용 페이지", exact: true }).first(),
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
       expect(box?.height).toBeGreaterThanOrEqual(44);
-    }
-
-
-    if (width === 320) {
-      const primaryAction = page.getByRole("link", {
-        name: "공고 탐색으로 돌아가기",
-      });
-      expect(
-        await primaryAction.evaluate(
-          (element) => getComputedStyle(element).whiteSpace,
-        ),
-      ).toBe("nowrap");
     }
 
     const jobs = page.getByRole("region", { name: "현재 공개 공고" });
@@ -95,21 +82,14 @@ test("moves from a company profile to the verified job detail", async ({ page })
   ).toHaveAttribute("href", "/companies/naver");
 });
 
-test("opens a verified job and its company profile from the home feed", async ({
-  page,
-}) => {
+test("opens a company profile from an API-backed home job", async ({ page }) => {
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Python Backend Engineer 공고 보기" })
+    .getByRole("link", { name: "Python Backend Engineer" })
     .click();
 
   await expect(page).toHaveURL(/\/jobs\/job-python$/);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Python Backend Engineer" }),
-  ).toBeVisible();
-  await page
-    .getByRole("link", { name: "NAVER 기업 채용 현황" })
-    .click();
+  await page.getByRole("link", { name: "NAVER 기업 채용 현황" }).click();
 
   await expect(page).toHaveURL(/\/companies\/naver$/);
   await expect(

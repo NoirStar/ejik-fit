@@ -9,7 +9,7 @@ function trendLabel(
 ) {
   if (trendUnavailable) return "주간 추세 표시 안 함";
   if (resource.status === "loading" || resource.status === "idle") {
-    return "추세 상태 확인 중";
+    return "주간 변화 확인 중";
   }
   if (resource.status === "error") return "추세 확인 불가";
   if (resource.data.status === "collecting") {
@@ -45,16 +45,16 @@ export function MarketPulseSummary({
   return (
     <section aria-label="현재 채용시장 요약" className={styles.pulsePanel}>
       <div className={styles.pulsePrimary}>
-        <span>명시 요구 1위</span>
+        <span>필수·우대 공고 1위</span>
         <strong>
           {leader
             ? `${leader.name} · ${leader.explicitCount.toLocaleString("ko-KR")}건`
             : "확인 불가"}
         </strong>
-        <small>필수·우대 명시</small>
+        <small>필수 또는 우대 조건</small>
       </div>
       <div>
-        <span>분석 범위</span>
+        <span>현재 포함된 공고</span>
         <strong>{postingLabel} · {skillLabel}</strong>
         <small>공고 · 기술</small>
       </div>

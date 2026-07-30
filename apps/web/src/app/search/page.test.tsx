@@ -72,10 +72,6 @@ describe("SearchPage", () => {
     expect(
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("검색어를 입력해 주세요.")).toBeInTheDocument();
-    expect(
-      screen.getByText("공고와 커뮤니티 글을 나누어 보여줍니다."),
-    ).toBeInTheDocument();
   });
 
   it("loads normalized actual posting and skill evidence in parallel", async () => {
@@ -93,12 +89,10 @@ describe("SearchPage", () => {
     expect(
       screen.getByRole("link", { name: "NAVER 기업 채용 현황" }),
     ).toHaveAttribute("href", "/companies/naver");
-    expect(
-      screen.queryByRole("link", { name: "Python 스킬맵 보기" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "기술" })).not.toBeInTheDocument();
   });
 
-  it("keeps skill results without inventing community posts when posting search fails", async () => {
+  it("keeps verified skill results when posting search fails", async () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -120,13 +114,9 @@ describe("SearchPage", () => {
       screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Kubernetes 스킬맵 보기" }),
+      screen.getByRole("link", { name: "Kubernetes 기술 관계 보기" }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", {
-        name: "Kubernetes 실무 경험은 어디서부터 쌓는 게 좋을까요?",
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kubernetes 실무 경험/)).not.toBeInTheDocument();
     expect(screen.queryByText(/internal-api|503/)).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
@@ -155,10 +145,8 @@ describe("SearchPage", () => {
     expect(
       screen.getByText("공고 검색 결과를 불러오지 못했습니다."),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "기업 채용페이지 보기" }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Python 스킬맵 보기" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "공식 채용 페이지에서 지원" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Python 기술 관계 보기" })).toBeInTheDocument();
     consoleError.mockRestore();
   });
 
@@ -191,9 +179,7 @@ describe("SearchPage", () => {
     expect(
       screen.getByRole("link", { name: "Python Backend Engineer" }),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Python 스킬맵 보기" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("공고 통계 표본")).not.toBeInTheDocument();
     consoleError.mockRestore();
   });
 
@@ -204,7 +190,8 @@ describe("SearchPage", () => {
       }),
     ).resolves.toMatchObject({
       title: "“Python” 검색",
-      description: "공고와 커뮤니티 글을 나누어 보여줍니다.",
+      description:
+        "“Python”와 관련된 공식 채용공고, 기업, 기술 수요와 전체 공개 커뮤니티 글을 구분해 확인합니다.",
       alternates: { canonical: "/search" },
       robots: { index: false, follow: true },
     });

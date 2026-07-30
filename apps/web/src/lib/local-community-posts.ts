@@ -3,12 +3,17 @@ import {
   removePostSocialInteractions,
 } from "./social-interactions";
 import {
-  COMMUNITY_CATEGORIES,
-  type CommunityCategory,
-} from "./community-contract";
+  clearMigratedStorageValue,
+  isMigratedStorageEventKey,
+  readMigratedStorageValue,
+  writeMigratedStorageValue,
+} from "./browser-storage-migration";
 
-const KEY = "ejik-fit:local-community-posts";
-const CHANGE_EVENT = "ejik-fit:local-community-posts-change";
+const STORAGE_KEYS = {
+  current: "careerfit:local-community-posts",
+  legacy: ["ejik-fit:local-community-posts"],
+} as const;
+const CHANGE_EVENT = "careerfit:local-community-posts-change";
 
 export const MAX_LOCAL_COMMUNITY_POSTS = 30;
 export const MAX_LOCAL_COMMUNITY_POST_TITLE_LENGTH = 80;
@@ -16,9 +21,15 @@ export const MAX_LOCAL_COMMUNITY_POST_BODY_LENGTH = 1200;
 export const MAX_LOCAL_COMMUNITY_POST_TAGS = 4;
 const MAX_TAG_LENGTH = 40;
 
-export const LOCAL_COMMUNITY_POST_CATEGORIES = COMMUNITY_CATEGORIES;
-export type LocalCommunityPostCategory = CommunityCategory;
-export const DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY = "일반" as const;
+export const LOCAL_COMMUNITY_POST_CATEGORIES = [
+  "커리어 질문",
+  "커리어 고민",
+  "면접 후기",
+] as const;
+export type LocalCommunityPostCategory =
+  (typeof LOCAL_COMMUNITY_POST_CATEGORIES)[number];
+export const DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY: LocalCommunityPostCategory =
+  "커리어 질문";
 
 export type LocalCommunityPost = {
   id: string;
@@ -94,10 +105,10 @@ function normalizePost(value: unknown): LocalCommunityPost | null {
   ) {
     return null;
   }
+  const category = normalizeCategory(value.category);
   return {
     id: value.id,
-    category:
-      normalizeCategory(value.category) ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
+    ...(category ? { category } : {}),
     title,
     body,
     tags: normalizeTags(value.tags),
@@ -138,12 +149,17 @@ export function readLocalCommunityPosts(
   storage = defaultStorage(),
 ): LocalCommunityPost[] {
   if (!storage) return [];
-  try {
-    const raw = storage.getItem(KEY);
-    return raw ? normalizeLocalCommunityPosts(JSON.parse(raw) as unknown) : [];
-  } catch {
-    return [];
-  }
+  return readMigratedStorageValue(storage, STORAGE_KEYS, {
+    parse(raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? normalizeLocalCommunityPosts(parsed) : null;
+      } catch {
+        return null;
+      }
+    },
+    serialize: JSON.stringify,
+  }) ?? [];
 }
 
 function notifyLocalCommunityPosts(storage: Storage | null) {
@@ -162,9 +178,11 @@ export function writeLocalCommunityPosts(
 ): LocalCommunityPost[] {
   const normalized = normalizeLocalCommunityPosts(value);
   if (!storage) return [];
-  try {
-    storage.setItem(KEY, JSON.stringify(normalized));
-  } catch {
+  const written = writeMigratedStorageValue(storage, STORAGE_KEYS, normalized, {
+    parse: () => normalized,
+    serialize: JSON.stringify,
+  });
+  if (!written) {
     return readLocalCommunityPosts(storage);
   }
   notifyLocalCommunityPosts(storage);
@@ -256,11 +274,7 @@ export function clearLocalCommunityPosts(
   storage = defaultStorage(),
 ): LocalCommunityPost[] {
   if (!storage) return [];
-  try {
-    storage.removeItem(KEY);
-  } catch {
-    return readLocalCommunityPosts(storage);
-  }
+  clearMigratedStorageValue(storage, STORAGE_KEYS);
   notifyLocalCommunityPosts(storage);
   return [];
 }
@@ -274,7 +288,7 @@ export function subscribeLocalCommunityPosts(
   const handleStorage = (event: StorageEvent) => {
     const browserStorage = defaultStorage();
     if (
-      (event.key === KEY || event.key === null) &&
+      isMigratedStorageEventKey(event.key, STORAGE_KEYS) &&
       (!event.storageArea || event.storageArea === browserStorage)
     ) {
       emitCurrent();

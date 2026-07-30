@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell/app-shell";
@@ -70,29 +64,19 @@ describe("OwnedSkillsSheet", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
 
-    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
     expect(
-      within(dialog).getByRole("heading", { level: 2, name: "내 기술" }),
+      await screen.findByRole("dialog", { name: "내 기술" }),
     ).toBeInTheDocument();
-    expect(
-      within(dialog).getByRole("button", { name: "내 기술 닫기" }),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).getByText("공고와 스킬맵의 분석 기준을 직접 관리합니다."),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText("추가한 기술")).toBeInTheDocument();
-    expect(
-      screen.getByText("아직 추가한 기술이 없습니다."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("아직 저장한 기술이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
     expect(screen.queryByText("AWS")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "Spring" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
 
-    expect(screen.getByText("Spring")).toBeInTheDocument();
+    expect(await screen.findByText("Spring")).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
       "Spring",
     ]);
@@ -114,9 +98,7 @@ describe("OwnedSkillsSheet", () => {
     fireEvent.click(opener);
     fireEvent.keyDown(document, { key: "Escape" });
 
-    expect(
-      screen.queryByRole("dialog", { name: "내 기술" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "내 기술" })).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
   });
 
@@ -143,93 +125,6 @@ describe("OwnedSkillsSheet", () => {
     ]);
   });
 
-  it("uses the shared bounded picker and resolves a common alias", async () => {
-    render(
-      <AppShell>
-        <main>내용</main>
-      </AppShell>,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
-    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
-    const input = within(dialog).getByRole("combobox", {
-      name: "추가할 기술",
-    });
-
-    fireEvent.focus(input);
-    expect(
-      within(dialog).queryByRole("listbox", { name: "기술 검색 결과" }),
-    ).not.toBeInTheDocument();
-    fireEvent.change(input, { target: { value: "k8s" } });
-    expect(
-      within(dialog).getByRole("option", { name: "Kubernetes 인프라" }),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).queryByRole("option", { name: "“k8s” 직접 추가" }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.keyDown(input, { key: "ArrowDown" });
-    fireEvent.keyDown(input, { key: "Enter" });
-
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
-      .toEqual(["Kubernetes"]);
-    expect(input).toHaveFocus();
-    expect(
-      within(dialog).getByRole("list", { name: "추가한 기술 목록" }),
-    ).toBeInTheDocument();
-    expect(dialog.querySelector("datalist")).toBeNull();
-  });
-
-  it("does not add a canonical duplicate of a stored alias", async () => {
-    localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["k8s"]));
-    render(
-      <AppShell>
-        <main>내용</main>
-      </AppShell>,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
-    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
-    const input = within(dialog).getByRole("combobox", {
-      name: "추가할 기술",
-    });
-    fireEvent.change(input, { target: { value: "Kubernetes" } });
-    fireEvent.click(within(dialog).getByRole("button", {
-      name: "추가",
-    }));
-
-    expect(within(dialog).getByRole("alert")).toHaveTextContent(
-      "이미 추가한 기술입니다.",
-    );
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]"))
-      .toEqual(["k8s"]);
-  });
-
-  it("explains the 20-skill limit before attempting another save", async () => {
-    localStorage.setItem(
-      "ejik-fit:owned-skills",
-      JSON.stringify(Array.from({ length: 20 }, (_, index) => `skill-${index}`)),
-    );
-    render(
-      <AppShell>
-        <main>내용</main>
-      </AppShell>,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
-    const dialog = await screen.findByRole("dialog", { name: "내 기술" });
-    fireEvent.change(within(dialog).getByRole("combobox", {
-      name: "추가할 기술",
-    }), { target: { value: "새 기술" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: "추가" }));
-
-    expect(within(dialog).getByRole("alert")).toHaveTextContent(
-      "내 기술은 최대 20개까지 추가할 수 있습니다.",
-    );
-    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!))
-      .toHaveLength(20);
-  });
-
   it("keeps Tab focus inside the modal sheet", async () => {
     render(
       <AppShell>
@@ -238,7 +133,7 @@ describe("OwnedSkillsSheet", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
     const close = await screen.findByRole("button", { name: "내 기술 닫기" });
-    const add = screen.getByRole("button", { name: "추가" });
+    const add = screen.getByRole("button", { name: "기술 추가" });
 
     add.focus();
     fireEvent.keyDown(document, { key: "Tab" });

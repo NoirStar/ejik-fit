@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function MethodologyPage() {
   return (
     <TrustPageLayout
-      intro="공고 원문에서 기술 요구를 규칙 기반으로 추출하고, 결과와 근거를 함께 제공합니다."
+      intro="채용공고 내용에서 기술 조건을 규칙 기반으로 추출하고, 결과와 근거를 함께 제공합니다."
       title="분석 방법"
     >
       <section>
@@ -27,7 +27,7 @@ export default function MethodologyPage() {
         <h2>필수와 우대 근거</h2>
         <p>
           공고의 자격요건, 우대사항과 기술 소개 구역을 구분해 필수, 우대, 단순 언급으로
-          분류합니다. 가능한 경우 각 기술과 함께 원문 근거 문장을 표시합니다.
+          분류합니다. 가능한 경우 각 기술과 함께 채용공고의 근거 문장을 표시합니다.
         </p>
       </section>
 
@@ -43,7 +43,7 @@ export default function MethodologyPage() {
       <section>
         <h2>수요와 연결 관계</h2>
         <p>
-          기술 수요는 현재 분석 범위에 포함된 공식 공고의 언급 건수입니다. 기술 연결은
+          기술 수요는 현재 분석 범위에 포함된 공식 채용공고의 언급 건수입니다. 기술 연결은
           같은 공고에서 함께 확인된 횟수를 사용합니다. 표본 수와 수집 범위가 작으면
           시장 전체의 추세로 일반화하지 않습니다.
         </p>

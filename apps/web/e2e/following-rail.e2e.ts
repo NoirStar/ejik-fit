@@ -6,8 +6,10 @@ import {
   signInCommunityViewer,
 } from "./fixtures/community-auth";
 
+const removedStarterTitle = "3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?";
+
 for (const width of [1440, 390]) {
-  test(`keeps legacy browser follows out of the real following feed at ${width}px`, async ({
+  test(`keeps legacy synthetic follows out of the community feed at ${width}px`, async ({
     page,
   }) => {
     const browserErrors: string[] = [];
@@ -27,11 +29,13 @@ for (const width of [1440, 390]) {
         }),
       );
     });
-    await page.goto("/");
+    await page.goto("/community");
 
     await expect(
-      page.getByRole("region", { name: "이직핏 커뮤니티 가이드" }),
-    ).toHaveCount(0);
+      page.getByRole("heading", { name: "커리어 커뮤니티" }),
+    ).toBeVisible();
+    await expect(page.getByText(removedStarterTitle)).toHaveCount(0);
+    await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);
     await expect(
       page.getByRole("region", { name: "팔로우 중인 글" }),
     ).toHaveCount(0);
@@ -43,11 +47,9 @@ for (const width of [1440, 390]) {
 
     const panel = page.getByRole("tabpanel");
     await expect(
-      panel.getByText("팔로우한 작성자의 글이 없습니다."),
+      panel.getByText("팔로우한 작성자가 없습니다."),
     ).toBeVisible();
-    await expect(
-      panel.getByText("3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?"),
-    ).toHaveCount(0);
+    await expect(panel.getByText(removedStarterTitle)).toHaveCount(0);
 
     expect(
       await page.evaluate(

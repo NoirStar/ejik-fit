@@ -289,7 +289,7 @@ describe("AuthoredQuestions", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:social-interactions") {
+      if (key === "careerfit:social-interactions") {
         throw new DOMException("blocked", "QuotaExceededError");
       }
       return originalSetItem.call(this, key, value);

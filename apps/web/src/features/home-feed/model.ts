@@ -7,17 +7,18 @@ import {
   normalizeCareerPreferences,
   type CareerPreferences,
 } from "@/lib/career-preferences";
-import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
+import { stableCompanyIdentity } from "@/lib/company-identity";
+import { formatCareer, formatEmployment } from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
 } from "@/lib/local-community-posts";
-import { skillIdentityKey } from "@/lib/skill-catalog";
 import type { CommunityPost } from "@/lib/community-contract";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
-  PostingSummary,
+  SkillGraphEvidence,
+  SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
@@ -25,6 +26,7 @@ import type { ResourceState } from "./resource-state";
 import type {
   DataStatus,
   CareerContextSummary,
+  CareerDirectionSummary,
   CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
@@ -36,7 +38,7 @@ import type {
 
 function formatCommunityCreatedLabel(createdAt: string, now: Date) {
   const created = new Date(createdAt);
-  if (Number.isNaN(created.getTime())) return "이 기기에서 작성";
+  if (Number.isNaN(created.getTime())) return "이 브라우저에서 작성";
   const elapsed = Math.max(0, now.getTime() - created.getTime());
   const minutes = Math.floor(elapsed / 60_000);
   if (minutes < 1) return "방금 전";
@@ -61,7 +63,7 @@ export function localCommunityPostToFeedItem(
     category: post.category ?? DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
     authorId: "local-browser-user",
     authorName: "나",
-    authorHeadline: "이 기기에서 작성",
+    authorHeadline: "이 브라우저에서 작성",
     authorTone: "violet",
     createdAt: post.createdAt,
     createdLabel: formatCommunityCreatedLabel(post.createdAt, now),
@@ -97,7 +99,7 @@ export function serverCommunityPostToFeedItem(
     type: "community_post",
     category: post.category,
     authorId: post.author.id,
-    authorName: post.author.nickname?.trim() || "이직핏 사용자",
+    authorName: post.author.nickname?.trim() || "커리어핏 사용자",
     authorHeadline: "커뮤니티 회원",
     authorTone: serverAuthorTone(post.author.id),
     createdAt: post.createdAt,
@@ -114,14 +116,18 @@ export function serverCommunityPostToFeedItem(
 export type BuildHomeFeedSnapshotInput = {
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
+  graph: ResourceState<SkillGraphResponse>;
   fit: ResourceState<FitAnalyzeResponse> | null;
   careerPreferences?: CareerPreferences;
   ownedSkills: string[];
-  personalizationFallback?: boolean;
 };
 
 function readyData<T>(resource: ResourceState<T>): T | null {
   return resource.status === "ready" ? resource.data : null;
+}
+
+function normalize(value: string) {
+  return value.trim().toLocaleLowerCase("en-US");
 }
 
 function unique(values: string[]) {
@@ -152,60 +158,85 @@ function latestVerifiedAt(values: string[]) {
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0] ?? null;
 }
 
+function evidenceByPostingId(graph: SkillGraphResponse | null) {
+  return new Map(
+    (graph?.evidence ?? []).map((evidence) => [evidence.posting_id, evidence]),
+  );
+}
+
 function skillMatches(
-  required: string[],
-  preferred: string[],
-  unspecified: string[],
+  evidence: SkillGraphEvidence | undefined,
   ownedSet: ReadonlySet<string>,
 ) {
+  if (!evidence) {
+    return {
+      matchedRequiredSkills: [],
+      missingRequiredSkills: [],
+      matchedPreferredSkills: [],
+    };
+  }
   return {
-    matchedRequiredSkills: required.filter((skill) =>
-      ownedSet.has(skillIdentityKey(skill)),
-    ),
-    missingRequiredSkills: required.filter(
-      (skill) => !ownedSet.has(skillIdentityKey(skill)),
-    ),
-    matchedPreferredSkills: preferred.filter((skill) =>
-      ownedSet.has(skillIdentityKey(skill)),
-    ),
-    matchedUnspecifiedSkills: unspecified.filter((skill) =>
-      ownedSet.has(skillIdentityKey(skill)),
-    ),
+    matchedRequiredSkills: evidence.required.filter((skill) => ownedSet.has(normalize(skill))),
+    missingRequiredSkills: evidence.required.filter((skill) => !ownedSet.has(normalize(skill))),
+    matchedPreferredSkills: evidence.preferred.filter((skill) => ownedSet.has(normalize(skill))),
   };
 }
 
-function recommendationReason(
-  matches: ReturnType<typeof skillMatches>,
-  hasOwnedSkills: boolean,
+function postingEvidenceRank(
+  evidence: SkillGraphEvidence | undefined,
+  ownedSet: ReadonlySet<string>,
 ) {
-  if (!hasOwnedSkills) return null;
-  const matched = [
-    ...matches.matchedRequiredSkills,
-    ...matches.matchedPreferredSkills,
-    ...matches.matchedUnspecifiedSkills,
-  ];
-  if (matched.length === 0) return "새로운 분야 탐색";
-  if (matched.length > 1) return `내 기술 ${matched.length}개 일치`;
-  const [skill] = matched;
-  if (matches.matchedRequiredSkills.length > 0) {
-    return `${skill} 필수 요건 일치`;
-  }
-  if (matches.matchedPreferredSkills.length > 0) {
-    return `${skill} 우대 요건 일치`;
-  }
-  return `${skill} 기술 포함`;
+  if (!evidence || ownedSet.size === 0) return null;
+  const matchedRequired = evidence.required.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  const matchedPreferred = evidence.preferred.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  const matchedUnspecified = evidence.unspecified.filter((skill) =>
+    ownedSet.has(normalize(skill)),
+  ).length;
+  if (matchedRequired + matchedPreferred + matchedUnspecified === 0) return null;
+
+  return {
+    matchedRequired,
+    matchedPreferred,
+    matchedUnspecified,
+    missingRequired: evidence.required.length - matchedRequired,
+  };
 }
 
-export function postingSummaryToFeedItem(
-  posting: PostingSummary,
+function buildJobs(
+  postings: PostingListResponse | null,
+  graph: SkillGraphResponse | null,
   ownedSkills: string[],
-): RecommendedJobFeedItem {
-  const ownedSet = new Set(ownedSkills.map(skillIdentityKey));
-  const required = posting.required_skills ?? [];
-  const preferred = posting.preferred_skills ?? [];
-  const unspecified = posting.unspecified_skills ?? [];
-  const matches = skillMatches(required, preferred, unspecified, ownedSet);
-  return {
+): RecommendedJobFeedItem[] {
+  const evidenceMap = evidenceByPostingId(graph);
+  const ownedSet = new Set(ownedSkills.map(normalize));
+  const rankedPostings = (postings?.items ?? [])
+    .map((posting, index) => ({
+      index,
+      posting,
+      rank: postingEvidenceRank(evidenceMap.get(posting.id), ownedSet),
+    }))
+    .sort((left, right) => {
+      if (left.rank === null && right.rank === null) {
+        return left.index - right.index;
+      }
+      if (left.rank === null) return 1;
+      if (right.rank === null) return -1;
+      return (
+        right.rank.matchedRequired - left.rank.matchedRequired ||
+        right.rank.matchedPreferred - left.rank.matchedPreferred ||
+        right.rank.matchedUnspecified - left.rank.matchedUnspecified ||
+        left.rank.missingRequired - right.rank.missingRequired ||
+        left.index - right.index
+      );
+    })
+    .slice(0, 2)
+    .map(({ posting }) => posting);
+
+  return rankedPostings.map((posting) => ({
     id: `job-${posting.id}`,
     postingId: posting.id,
     type: "recommended_job",
@@ -213,7 +244,6 @@ export function postingSummaryToFeedItem(
     ...(posting.company_slug
       ? {
           companyHref: `/companies/${encodeURIComponent(posting.company_slug)}`,
-          companySlug: posting.company_slug,
         }
       : {}),
     title: posting.title,
@@ -221,25 +251,11 @@ export function postingSummaryToFeedItem(
     careerLabel: formatCareer(posting.career_type),
     employmentLabel: formatEmployment(posting.employment_type),
     sourceUrl: posting.source_url,
-    firstSeenAt: posting.first_seen_at ?? null,
     verifiedLabel: formatVerifiedDate(posting.last_verified_at),
-    requiredSkills: required,
-    preferredSkills: preferred,
-    unspecifiedSkills: unspecified,
-    ...matches,
-    recommendationReason: recommendationReason(matches, ownedSet.size > 0),
+    ...skillMatches(evidenceMap.get(posting.id), ownedSet),
     href: `/jobs/${encodeURIComponent(posting.id)}`,
     source: "api",
-  };
-}
-
-function buildJobs(
-  postings: PostingListResponse | null,
-  ownedSkills: string[],
-): RecommendedJobFeedItem[] {
-  return (postings?.items ?? []).map((posting) =>
-    postingSummaryToFeedItem(posting, ownedSkills),
-  );
+  }));
 }
 
 function buildSkillDemand(skillStats: SkillStatsResponse | null): SkillDemandSummary[] {
@@ -256,18 +272,18 @@ function buildMarketInsights(
   skillDemand: SkillDemandSummary[],
 ): MarketInsightFeedItem[] {
   return skillDemand.slice(0, 2).map((skill) => ({
-    id: `market-${skillIdentityKey(skill.skillName).replaceAll(" ", "-")}`,
+    id: `market-${normalize(skill.skillName).replaceAll(" ", "-")}`,
     type: "market_insight",
     skillName: skill.skillName,
-    title: `${skill.skillName} 요구 공고`,
-    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건, ${PRODUCT_TERMS.unspecifiedRequirement} ${skill.unspecifiedCount}건으로 확인됐습니다.`,
+    title: `${skill.skillName}을 요구하는 채용공고를 확인했어요`,
+    summary: `분석된 공고에서 필수 ${skill.requiredCount}건, 우대 ${skill.preferredCount}건, 조건 구분 없음 ${skill.unspecifiedCount}건으로 확인됐습니다.`,
     postingCount: skill.postingCount,
     requiredCount: skill.requiredCount,
     preferredCount: skill.preferredCount,
     unspecifiedCount: skill.unspecifiedCount,
-    sampleLabel: `기술 언급 공고 ${skill.postingCount}건`,
-    sourceLabel: "공식 채용페이지 수집 데이터",
-    href: `/skill-map?skill=${encodeURIComponent(skill.skillName)}`,
+    sampleLabel: `이 기술이 포함된 공고 ${skill.postingCount}건`,
+    sourceLabel: "수집된 기업 공식 채용 페이지",
+    href: `/skills/graph?seed=${encodeURIComponent(skill.skillName)}`,
     source: "api",
   }));
 }
@@ -311,15 +327,92 @@ function buildCareerContext(
     careerCondition: preferences.careerCondition,
     careerConditionLabel: preferences.careerCondition
       ? careerConditionLabel(preferences.careerCondition)
-      : "전체 경력",
+      : "모든 경력 조건",
     targetDomain: preferences.targetDomain,
     targetDomainLabel: preferences.targetDomain
       ? formatDomainLabel(preferences.targetDomain)
-      : "전체 기술 분야",
+      : "모든 커리어 분야",
     configured: Boolean(
       preferences.careerCondition || preferences.targetDomain,
     ),
   };
+}
+
+function buildCareerDirections(
+  fit: ResourceState<FitAnalyzeResponse> | null,
+  graph: SkillGraphResponse | null,
+  postings: PostingListResponse | null,
+): CareerDirectionSummary[] {
+  if (!fit || fit.status !== "ready") return [];
+
+  const postingById = new Map(
+    (postings?.items ?? []).map((posting) => [posting.id, posting]),
+  );
+  const skillsByDomain = new Map<string, Set<string>>();
+  for (const node of graph?.nodes ?? []) {
+    for (const domain of node.domains) {
+      const skills = skillsByDomain.get(domain) ?? new Set<string>();
+      skills.add(normalize(node.id));
+      skills.add(normalize(node.label));
+      skillsByDomain.set(domain, skills);
+    }
+  }
+
+  return [...fit.data.domain_branches]
+    .sort(
+      (left, right) =>
+        right.supporting_posting_count - left.supporting_posting_count ||
+        left.domain.localeCompare(right.domain, "ko-KR"),
+    )
+    .slice(0, 5)
+    .map((branch) => {
+      const domainSkills = skillsByDomain.get(branch.domain) ?? new Set<string>();
+      const branchSkills = new Set(
+        [
+          ...branch.covered_skills,
+          ...branch.missing_required_skills,
+          ...branch.missing_preferred_skills,
+        ].map(normalize),
+      );
+      const relevantEvidence = (graph?.evidence ?? []).filter((evidence) =>
+        evidence.skills.some((skill) => {
+          const key = normalize(skill);
+          return domainSkills.has(key) || branchSkills.has(key);
+        }),
+      );
+      const representativeEvidence = relevantEvidence[0] ?? null;
+      const representativePosting = representativeEvidence
+        ? postingById.get(representativeEvidence.posting_id)
+        : null;
+
+      return {
+        domain: branch.domain,
+        label: formatDomainLabel(branch.domain),
+        coveredSkills: branch.covered_skills,
+        additionalRequirements: unique([
+          ...branch.missing_required_skills,
+          ...branch.missing_preferred_skills,
+        ]),
+        postingCount: branch.supporting_posting_count,
+        confirmedCompanyCount: new Set(
+          relevantEvidence.map((evidence) =>
+            stableCompanyIdentity(
+              postingById.get(evidence.posting_id),
+              evidence.company_name,
+            ),
+          ),
+        ).size,
+        representativeJob: representativeEvidence
+          ? {
+              id: representativeEvidence.posting_id,
+              title: representativePosting?.title ?? representativeEvidence.title,
+              companyName:
+                representativePosting?.company_name ?? representativeEvidence.company_name,
+              href: `/jobs/${encodeURIComponent(representativeEvidence.posting_id)}`,
+            }
+          : null,
+      };
+    });
 }
 
 function mergeFeed(
@@ -352,22 +445,15 @@ export function buildHomeFeedSnapshot(
 ): HomeFeedSnapshot {
   const postings = readyData(input.postings);
   const skillStats = readyData(input.skillStats);
-  const requestedOwnedSkills = unique(
-    input.ownedSkills.map((skill) => skill.trim()).filter(Boolean),
-  );
-  const canonicalOwnedSkills = postings?.canonical_owned_skills ?? [];
-  const ownedSkills = unique(
-    (canonicalOwnedSkills.length > 0
-      ? canonicalOwnedSkills
-      : requestedOwnedSkills
-    ).map((skill) => skill.trim()).filter(Boolean),
-  );
-  const recommendedJobs = buildJobs(postings, ownedSkills);
+  const graph = readyData(input.graph);
+  const ownedSkills = unique(input.ownedSkills.map((skill) => skill.trim()).filter(Boolean));
+  const recommendedJobs = buildJobs(postings, graph, ownedSkills);
   const skillDemand = buildSkillDemand(skillStats);
   const marketInsights = buildMarketInsights(skillDemand);
   const resources = [
     input.postings,
     input.skillStats,
+    input.graph,
     ...(input.fit ? [input.fit] : []),
   ];
   const resourceErrors = resources.flatMap(
@@ -375,6 +461,7 @@ export function buildHomeFeedSnapshot(
   );
   const hasVerifiedData = recommendedJobs.length > 0
     || skillDemand.length > 0
+    || (graph?.evidence.length ?? 0) > 0
     || input.fit?.status === "ready";
 
   return {
@@ -383,14 +470,15 @@ export function buildHomeFeedSnapshot(
       hasVerifiedData,
     ),
     feedItems: mergeFeed(recommendedJobs, marketInsights),
+    starterGuideItems: [],
     recommendedJobs,
     marketInsights,
     skillDemand,
     careerInsight: buildCareerInsight(input.fit, ownedSkills),
     careerContext: buildCareerContext(input.careerPreferences),
+    careerDirections: buildCareerDirections(input.fit, graph, postings),
     ownedSkills,
-    personalizationFallback: input.personalizationFallback ?? false,
-    postingCount: postings?.total ?? 0,
+    postingCount: postings?.items.length ?? 0,
     sourceCount: new Set(
       (postings?.items ?? []).map((posting) => safeHostname(posting.source_url)),
     ).size,

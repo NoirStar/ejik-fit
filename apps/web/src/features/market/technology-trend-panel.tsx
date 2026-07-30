@@ -24,18 +24,6 @@ type TrendSkillOption = {
   name: string;
 };
 
-const TREND_COPY = {
-  loading: "주간 추세를 불러오고 있습니다.",
-  unavailable:
-    "비교할 기술을 확인할 수 없어 주간 추세를 표시하지 않습니다.",
-  insufficient: (collectedWeeks: number, requiredWeeks: number) =>
-    `${collectedWeeks}주치 데이터가 쌓였습니다. ${requiredWeeks}주부터 변화선을 표시합니다.`,
-  error:
-    "주간 추세를 불러오지 못했습니다. 기술 수요와 관련 공고는 정상적으로 표시됩니다.",
-  errorWithoutRelatedJobs:
-    "주간 추세를 불러오지 못했습니다. 기술 수요는 정상적으로 표시됩니다.",
-};
-
 function formatWeek(value: string) {
   const date = new Date(`${value}T00:00:00+09:00`);
   if (Number.isNaN(date.getTime())) return value;
@@ -73,7 +61,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
   return (
     <div className={styles.trendChartWrap}>
       <svg
-        aria-label={`최근 ${pointCount}개 주차 명시 요구 변화`}
+        aria-label={`최근 ${pointCount}개 주차 필수·우대 공고 수 변화`}
         className={styles.trendChart}
         role="img"
         viewBox={`0 0 ${width} ${height}`}
@@ -139,7 +127,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
                     r="2.6"
                   >
                     <title>
-                      {item.skill} · {formatWeek(point.week_start)} · 명시 요구{" "}
+                      {item.skill} · {formatWeek(point.week_start)} · 필수·우대 공고{" "}
                       {count}건
                     </title>
                   </circle>
@@ -169,7 +157,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
         )}
       </svg>
       <ul
-        aria-label="기술별 최신 명시 요구"
+        aria-label="기술별 최신 필수·우대 공고 수"
         className={styles.trendLatestValues}
       >
         {series.map((item, index) => {
@@ -191,7 +179,7 @@ function TrendChart({ series }: { series: SkillTrendSeries[] }) {
         })}
       </ul>
       <table className={styles.srOnly}>
-        <caption>주차별 기술 명시 요구</caption>
+        <caption>주차별 기술 필수·우대 공고 수</caption>
         <tbody>
           {series.flatMap((item) =>
             item.points.map((point) => (
@@ -215,9 +203,7 @@ export function TechnologyTrendPanel({
   onAddSkill,
   onRemoveSkill,
   onRetry,
-  relatedJobsAvailable,
   resource,
-  trendUnavailable,
 }: {
   availableSkills: TrendSkillOption[];
   comparedSkills: string[];
@@ -225,9 +211,7 @@ export function TechnologyTrendPanel({
   onAddSkill: (skill: string) => void;
   onRemoveSkill: (skill: string) => void;
   onRetry: () => void;
-  relatedJobsAvailable: boolean;
   resource: MarketTrendResource;
-  trendUnavailable: boolean;
 }) {
   const categories = useMemo(
     () => new Map(availableSkills.map((skill) => [skill.name, skill.category])),
@@ -243,11 +227,9 @@ export function TechnologyTrendPanel({
     resource.data.series.length > 0;
   const badgeLabel = trendReady
     ? "주간 추세"
-    : trendUnavailable
-      ? "표시 안 함"
-      : resource.status === "error"
-        ? "확인 불가"
-        : "추세 수집 중";
+    : resource.status === "error"
+      ? "확인 불가"
+      : "추세 수집 중";
 
   return (
     <section
@@ -258,7 +240,7 @@ export function TechnologyTrendPanel({
       <header className={styles.sideHeader}>
         <div>
           <h2 id="technology-trend-title">기술 수요 추세</h2>
-          <span>주간 변화 · 공고 기준</span>
+          <span>최근 12주 · 주간 공개 공고 스냅샷</span>
         </div>
         <span
           className={styles.collectingBadge}
@@ -269,7 +251,7 @@ export function TechnologyTrendPanel({
         </span>
       </header>
       <p className={styles.trendScope}>
-        <span>전체 경력·전체 분야 기준</span>
+        <span>모든 경력 조건·모든 기술 분류 기준</span>
         {filterIsActive ? <small> · 위 필터와 별도</small> : null}
       </p>
 
@@ -322,19 +304,11 @@ export function TechnologyTrendPanel({
 
       {trendReady ? (
         <TrendChart series={resource.data.series} />
-      ) : trendUnavailable ? (
-        <div className={styles.collectingState}>
-          <ChartLine aria-hidden="true" size={24} weight="duotone" />
-          <strong>{TREND_COPY.unavailable}</strong>
-        </div>
       ) : resource.status === "error" ? (
         <div className={styles.collectingState}>
           <WarningCircle aria-hidden="true" size={24} weight="duotone" />
-          <strong>
-            {relatedJobsAvailable
-              ? TREND_COPY.error
-              : TREND_COPY.errorWithoutRelatedJobs}
-          </strong>
+          <strong>추세 수집 상태를 불러오지 못했어요.</strong>
+          <p>현재 수요 순위와 공고는 계속 확인할 수 있습니다.</p>
           <button onClick={onRetry} type="button">
             다시 시도
           </button>
@@ -342,18 +316,17 @@ export function TechnologyTrendPanel({
       ) : (
         <div className={styles.collectingState}>
           <ChartLine aria-hidden="true" size={24} weight="duotone" />
-          <strong>
+          <strong>주간 데이터를 수집하고 있어요.</strong>
+          <p>
             {resource.status === "ready"
-              ? TREND_COPY.insufficient(
-                  resource.data.collected_weeks,
-                  resource.data.minimum_weeks,
-                )
-              : TREND_COPY.loading}
-          </strong>
+              ? `현재 ${resource.data.collected_weeks}/${resource.data.minimum_weeks}주차입니다. 최소 ${resource.data.minimum_weeks}주가 쌓이면 실제 변화선을 표시합니다.`
+              : "현재 수집 주차를 확인하고 있습니다."}
+          </p>
         </div>
       )}
       <p className={styles.panelFootnote}>
-        수집된 공고만 사용하며 빠진 주차를 임의로 채우지 않습니다.
+        실제 채용공고 스냅샷만 사용하며, 누락된 주차나 예시 수치를 채워 넣지
+        않습니다.
       </p>
     </section>
   );

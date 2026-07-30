@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 
-import { PRODUCT_TERMS } from "@/lib/labels";
-
 import { TrustPageLayout } from "../trust-page-layout";
 import { ClearLocalData } from "./clear-local-data";
 
 export const metadata: Metadata = {
   title: "개인정보와 계정 저장",
-  description: "이직핏 로그인과 브라우저·계정 저장 데이터, 삭제 방법을 안내합니다.",
+  description: "커리어핏 로그인과 브라우저·계정 저장 데이터, 삭제 방법을 안내합니다.",
 };
 
 export default function PrivacyPage() {
@@ -21,7 +19,7 @@ export default function PrivacyPage() {
         <p>
           이메일, 비밀번호와 닉네임으로 가입하고 이메일 확인을 마친 뒤
           로그인합니다. 이메일 인증, 비밀번호 검증과 세션 쿠키는 Supabase Auth가
-          처리합니다. 이직핏 애플리케이션 데이터베이스와 로그에는 원문
+          처리합니다. 커리어핏 애플리케이션 데이터베이스와 로그에는 원문
           비밀번호를 저장하지 않습니다.
         </p>
       </section>
@@ -37,11 +35,26 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>브랜드 변경 전 저장 데이터</h2>
+        <p>
+          브라우저 저장 키는 <code>careerfit:</code> 접두사를 사용합니다. 이전
+          버전의 <code>ejik-fit:</code> 키도 계속 읽고, 유효한 데이터만 새 키로
+          복사합니다. 이전 키는 호환성과 복구를 위해 함께 유지하며, 저장 데이터
+          삭제 버튼은 두 접두사의 관리 대상 데이터를 모두 지웁니다.
+        </p>
+      </section>
+
+      <section>
         <h2>저장한 공고</h2>
         <p>
-          저장 버튼을 누른 공고 ID는 <code>ejik-fit:saved-job-ids</code> 키에
+          저장 버튼을 누른 공고 ID는 <code>careerfit:saved-job-ids</code> 키에
           저장됩니다. 로그인하면 공고 ID만 계정에 동기화하며, 공고 내용이나
           기업 정보는 사용자 데이터로 복사하지 않습니다.
+        </p>
+        <p>
+          공고별 커리어 분류는 <code>careerfit:saved-job-groups</code> 키에
+          저장됩니다. 현재 경력 유지, 인접 커리어, 관심 분야, 비교 중 가운데
+          사용자가 직접 선택한 값만 로그인 계정과 동기화합니다.
         </p>
       </section>
 
@@ -49,7 +62,7 @@ export default function PrivacyPage() {
         <h2>지원 단계</h2>
         <p>
           사용자가 직접 선택한 공고별 지원 단계는{" "}
-          <code>ejik-fit:job-application-stages</code> 키에 저장됩니다. 실제 지원
+          <code>careerfit:job-application-stages</code> 키에 저장됩니다. 실제 지원
           여부를 기업 시스템에서 확인하거나 자동으로 추정하지 않습니다. 로그인
           상태에서는 사용자가 선택한 단계만 계정에 동기화합니다.
         </p>
@@ -69,7 +82,7 @@ export default function PrivacyPage() {
         <h2>관심 기업</h2>
         <p>
           관심 기업으로 저장한 공식 기업 식별자는{" "}
-          <code>ejik-fit:followed-company-slugs</code> 키에 저장됩니다. 로그인하면
+          <code>careerfit:followed-company-slugs</code> 키에 저장됩니다. 로그인하면
           식별자만 계정에 동기화하며, 기업 공고 본문을 사용자 데이터로 복사하지
           않습니다.
         </p>
@@ -81,6 +94,9 @@ export default function PrivacyPage() {
           계정 커뮤니티 글의 공감·저장·댓글·작성자 팔로우는 로그인한 사용자 ID와
           함께 비공개 계정 관계 테이블에 저장됩니다. 글과 댓글의 본문, 공개
           닉네임, 집계된 반응 수는 커뮤니티 화면에서 다른 사용자에게 표시됩니다.
+          커뮤니티에는 서버에서 확인한 공개 글과 이 브라우저에 남아 있는 이전 저장
+          글만 표시합니다. 이전 버전의 체험 기록은
+          <code>careerfit:social-interactions</code> 키 정리 대상으로만 남습니다.
         </p>
       </section>
 
@@ -88,7 +104,7 @@ export default function PrivacyPage() {
         <h2>작성 중인 임시 글</h2>
         <p>
           로그인 전에 게시를 누른 글의 제목·본문·태그는 현재 탭의
-          <code>sessionStorage</code>에 <code>ejik-fit:community-draft</code> 키로
+          <code>sessionStorage</code>에 <code>careerfit:community-draft</code> 키로
           임시 저장됩니다. 로그인 복귀 뒤 내용을 다시 확인하고 게시해야 하며
           자동 게시되지 않습니다. 작성 취소 또는 서버 게시 성공 시 임시 글을
           삭제합니다.
@@ -99,18 +115,18 @@ export default function PrivacyPage() {
         <h2>이전 브라우저 글</h2>
         <p>
           이전 버전에서 이미 작성된 글과 연결 활동은
-          <code>ejik-fit:local-community-posts</code>와
-          <code>ejik-fit:social-interactions</code>에 복구 대상으로 남을 수
-          있습니다. 로그인하면 계정 이전을 시도하고, 글과 연결 활동을 계정으로
-          모두 옮긴 경우에만 이 기기에 남은 글을 삭제합니다. 실패하거나 이전 중
-          내용이 바뀐 글은 재시도를 위해 그대로 보관합니다.
+          <code>careerfit:local-community-posts</code>와
+          <code>careerfit:social-interactions</code>에 복구 대상으로 남을 수
+          있습니다. 로그인하면 계정 이전을 시도하고, 모든 서버 쓰기가 성공한
+          글만 브라우저 원본을 삭제합니다. 실패하거나 이전 중 변경된 원본은
+          재시도를 위해 그대로 보관합니다.
         </p>
       </section>
 
       <section>
         <h2>계정에 작성한 커뮤니티 글</h2>
         <p>
-          로그인 상태에서 게시한 글과 댓글은 이직핏 Supabase 커뮤니티 테이블에
+          로그인 상태에서 게시한 글과 댓글은 커리어핏 Supabase 커뮤니티 테이블에
           저장되어 다른 기기에서도 확인할 수 있습니다. 글 작성자는 자신의 글과
           댓글을 삭제할 수 있고, 신고 내역은 신고자 본인과 운영 검토 용도로만
           보관합니다. 계정 화면의 내 데이터 내보내기에는 내가 작성한 글·댓글,
@@ -122,18 +138,27 @@ export default function PrivacyPage() {
         <h2>최근 본 커뮤니티 주제</h2>
         <p>
           커뮤니티 상세에서 확인한 글 ID, 제목, 대표 태그, 출처와 마지막 열람
-          시각은 <code>ejik-fit:recent-community-topics</code> 키에 저장됩니다.
+          시각은 <code>careerfit:recent-community-topics</code> 키에 저장됩니다.
           본문·작성자·반응 수는 복사하지 않고 서버로 전송하지 않으며 다른
           브라우저와 동기화하지 않습니다.
         </p>
       </section>
 
       <section>
-        <h2>{PRODUCT_TERMS.ownedSkills} 저장</h2>
+        <h2>내 기술 저장</h2>
         <p>
-          선택한 기술은 브라우저 localStorage의 <code>ejik-fit:owned-skills</code> 키에
-          저장됩니다. 로그인하면 계정에 저장된 기술과 병합해 다른 기기에서도
-          불러옵니다.
+          선택한 기술은 브라우저 localStorage의 <code>careerfit:owned-skills</code> 키에
+          저장됩니다. 로그인하면 계정 데이터와 병합해 다른 기기에서도 불러옵니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>커리어 프로필</h2>
+        <p>
+          현재·과거 직무, 경력 기간, 업무와 책임, 산업 경험, 관심·제외 분야,
+          희망 지역·고용 형태와 기술 사용 정보는{" "}
+          <code>careerfit:career-profile</code> 키에 저장됩니다. 로그인하면 기존
+          커리어 설정의 비공개 프로필 항목으로 동기화합니다.
         </p>
       </section>
 
@@ -141,7 +166,7 @@ export default function PrivacyPage() {
         <h2>커리어 비교 조건</h2>
         <p>
           선택한 경력 조건과 희망 기술 분야는{" "}
-          <code>ejik-fit:career-preferences</code> 키에 저장됩니다. 비교할 때 실제
+          <code>careerfit:career-preferences</code> 키에 저장됩니다. 비교할 때 실제
           공고 분석 요청에 포함되며, 로그인 상태에서는 계정에 동기화합니다.
         </p>
       </section>
@@ -150,27 +175,28 @@ export default function PrivacyPage() {
         <h2>계정에 동기화하지 않는 정보</h2>
         <p>
           최근 본 커뮤니티 주제와 작성 중인 임시 글은 로그인 후에도 해당
-          브라우저 또는 현재 탭에만 남습니다.
+          브라우저 또는 현재 탭에만 남습니다. 계정에 게시한 글과 브라우저에만 남은
+          글은 화면에서 구분해 표시합니다.
         </p>
       </section>
 
       <section>
-        <h2>주소에 포함된 검색 조건</h2>
+        <h2>URL query</h2>
         <p>
-          공고 검색 조건과 일부 기술 선택은 주소에 포함될 수 있습니다. 주소를
-          공유하면 검색 조건도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
+          공고 검색 조건과 일부 기술 선택은 URL query에 포함될 수 있습니다. URL을
+          공유하면 query 값도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
         </p>
       </section>
 
       <section>
         <h2>저장 데이터 삭제</h2>
         <p>
-          아래 버튼은 {PRODUCT_TERMS.ownedSkills}, 커리어 비교 조건, 작성한 로컬 글,
-          최근 본 주제, 저장한 공고 ID, 지원 단계, 관심 기업, 이전 커뮤니티
-          상호작용, 현재 탭의 임시 글, 주소에 포함된 검색 조건을 이 브라우저에서
-          지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정 데이터를 삭제하지
-          않습니다. 서버 글은 내 글 화면에서 개별 삭제할 수 있고, 전체 계정
-          데이터는 계정 화면에서 내보내거나 계정과 함께 삭제할 수 있습니다.
+          아래 버튼은 내 기술과 커리어 프로필, 커리어 비교 조건, 작성한 로컬 글, 최근 본 주제,
+          저장한 공고 ID, 지원 단계, 관심 기업, 이전 커뮤니티 상호작용, 현재 탭의
+          임시 글, 현재 URL query를 이 브라우저에서 지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정
+          데이터를 삭제하지 않습니다. 서버 글은 내 글 화면에서 개별 삭제할 수
+          있고, 전체 계정 데이터는 계정 화면에서 내보내거나 계정과 함께 삭제할 수
+          있습니다.
         </p>
         <ClearLocalData />
       </section>

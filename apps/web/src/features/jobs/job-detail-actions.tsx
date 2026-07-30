@@ -10,6 +10,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import {
+  EMPTY_CAREER_PROFILE,
+  readCareerProfile,
+  subscribeCareerProfile,
+  type CareerProfile,
+} from "@/lib/career-profile";
+import {
   APPLICATION_STAGES,
   applicationStageLabel,
   readJobApplicationStages,
@@ -27,10 +33,10 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import { PRODUCT_TERMS } from "@/lib/labels";
 import type { SkillDetail } from "@/lib/types";
 
 import { matchOwnedJobSkills } from "./job-detail-model";
+import { buildJobConnection } from "./model";
 import styles from "./job-detail-actions.module.css";
 
 type JobDetailActionsProps = {
@@ -50,6 +56,7 @@ export function JobDetailActions({
 }: JobDetailActionsProps) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
+  const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
   const [applicationStages, setApplicationStages] =
     useState<JobApplicationStages>({});
   const [stageAnnouncement, setStageAnnouncement] = useState("");
@@ -57,16 +64,19 @@ export function JobDetailActions({
   useEffect(() => {
     setSavedIds(readSavedJobIds());
     setOwnedSkills(readOwnedSkills());
+    setProfile(readCareerProfile());
     setApplicationStages(readJobApplicationStages());
 
     const stopSavedSubscription = subscribeSavedJobs(setSavedIds);
     const stopOwnedSubscription = subscribeOwnedSkills(setOwnedSkills);
+    const stopProfileSubscription = subscribeCareerProfile(setProfile);
     const stopStageSubscription = subscribeJobApplicationStages(
       setApplicationStages,
     );
     return () => {
       stopSavedSubscription();
       stopOwnedSubscription();
+      stopProfileSubscription();
       stopStageSubscription();
     };
   }, []);
@@ -74,6 +84,26 @@ export function JobDetailActions({
   const matchedSkills = useMemo(
     () => matchOwnedJobSkills(skills, ownedSkills),
     [ownedSkills, skills],
+  );
+  const connection = useMemo(
+    () =>
+      buildJobConnection(
+        {
+          title: jobTitle,
+          required_skills: skills
+            .filter((skill) => skill.requirement_type === "required")
+            .map((skill) => skill.skill),
+          preferred_skills: skills
+            .filter((skill) => skill.requirement_type === "preferred")
+            .map((skill) => skill.skill),
+          unspecified_skills: skills
+            .filter((skill) => skill.requirement_type === "unspecified")
+            .map((skill) => skill.skill),
+        },
+        ownedSkills,
+        profile,
+      ),
+    [jobTitle, ownedSkills, profile, skills],
   );
   const saved = savedIds.includes(jobId);
   const applicationStage = applicationStages[jobId] ?? "";
@@ -112,8 +142,8 @@ export function JobDetailActions({
       <header className={styles.header}>
         <p>
           {acceptsApplications
-            ? "공식 원문에서 계속"
-            : "마감 여부를 공식 원문에서 확인"}
+            ? "공식 채용 페이지"
+            : "공식 채용 페이지에서 마감 여부 확인"}
         </p>
         <h2 id="job-actions-title">
           {acceptsApplications ? "지원 준비" : "공고 확인"}
@@ -127,7 +157,7 @@ export function JobDetailActions({
           rel="noreferrer"
           target="_blank"
         >
-          공식 채용페이지에서 {acceptsApplications ? "지원" : "확인"}
+          공식 채용 페이지에서 {acceptsApplications ? "지원" : "확인"}
           <ArrowSquareOut aria-hidden="true" size={18} weight="bold" />
         </a>
         <button
@@ -176,22 +206,23 @@ export function JobDetailActions({
           {stageAnnouncement ||
             (applicationStage
               ? `${applicationStageLabel(applicationStage)} · 로그인 시 계정과 동기화됩니다.`
-              : `선택하면 공고도 ${PRODUCT_TERMS.savedItems}에 함께 추가됩니다.`)}
+              : "선택하면 공고도 보관함에 함께 저장됩니다.")}
         </p>
       </div>
 
       <div aria-live="polite" className={styles.overlap}>
         <StackSimple aria-hidden="true" size={19} weight="bold" />
         <div>
-          <h3>{PRODUCT_TERMS.ownedSkills} 비교</h3>
-          {ownedSkills.length === 0 ? (
+          <h3>내 커리어와 연결되는 이유</h3>
+          {ownedSkills.length === 0 && !profile.currentRole ? (
             <>
-              <p>내 기술을 추가하면 공고의 기술 요건과 비교합니다.</p>
-              <Link href="/career">내 기술 추가</Link>
+              <p>{connection.reason}</p>
+              <Link href="/career">프로필 정보 추가</Link>
             </>
           ) : (
             <>
-              <strong>내 기술과 겹침 {matchedSkills.length}개</strong>
+              <strong>{connection.label}</strong>
+              <p>{connection.reason}</p>
               {matchedSkills.length > 0 ? (
                 <ul aria-label="공고와 겹치는 내 기술" role="list">
                   {matchedSkills.map((skill) => (
@@ -199,8 +230,14 @@ export function JobDetailActions({
                   ))}
                 </ul>
               ) : (
-                <p>확정 기술 중 정확히 일치하는 항목이 없습니다.</p>
+                <p>현재 프로필에서 정확히 일치하는 기술은 확인되지 않았습니다.</p>
               )}
+              {connection.unconfirmedRequiredSkills.length > 0 ? (
+                <p>
+                  현재 프로필에서 확인되지 않은 필수 조건:{" "}
+                  {connection.unconfirmedRequiredSkills.join(" · ")}
+                </p>
+              ) : null}
             </>
           )}
         </div>

@@ -82,7 +82,8 @@ describe("JobDetailActions", () => {
 
     render(<JobDetailActions {...props} />);
 
-    expect(await screen.findByText("내 기술과 겹침 1개")).toBeInTheDocument();
+    expect(await screen.findByText("기술 일부 연결")).toBeInTheDocument();
+    expect(screen.getByText(/Go 1개가 프로필과 겹칩니다/)).toBeInTheDocument();
     expect(screen.getByText("Go")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
   });
@@ -91,12 +92,8 @@ describe("JobDetailActions", () => {
     render(<JobDetailActions {...props} />);
 
     expect(
-      screen.getByText("내 기술을 추가하면 공고의 기술 요건과 비교합니다."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "내 기술 추가" }),
+      screen.getByRole("link", { name: "프로필 정보 추가" }),
     ).toHaveAttribute("href", "/career");
-    expect(screen.queryByText(/내 스택/)).not.toBeInTheDocument();
   });
 
   it("does not claim a save succeeded when browser storage rejects it", () => {
@@ -127,17 +124,17 @@ describe("JobDetailActions", () => {
         screen.getByRole("button", { name: "Backend Engineer 저장 해제" }),
       ).toHaveAttribute("aria-pressed", "true");
     });
-    expect(screen.getByText("내 기술과 겹침 1개")).toBeInTheDocument();
+    expect(screen.getByText("기술 일부 연결")).toBeInTheDocument();
   });
 
   it("opens only the validated official source in a new tab", () => {
     render(<JobDetailActions {...props} />);
 
     expect(
-      screen.getByRole("link", { name: "공식 채용페이지에서 지원" }),
+      screen.getByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).toHaveAttribute("href", props.sourceUrl);
     expect(
-      screen.getByRole("link", { name: "공식 채용페이지에서 지원" }),
+      screen.getByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).toHaveAttribute("target", "_blank");
   });
 
@@ -148,10 +145,10 @@ describe("JobDetailActions", () => {
       screen.getByRole("region", { name: "공고 확인" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "공식 채용페이지에서 확인" }),
+      screen.getByRole("link", { name: "공식 채용 페이지에서 확인" }),
     ).toHaveAttribute("href", props.sourceUrl);
     expect(
-      screen.queryByRole("link", { name: "공식 채용페이지에서 지원" }),
+      screen.queryByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).not.toBeInTheDocument();
   });
 });

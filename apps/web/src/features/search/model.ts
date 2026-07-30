@@ -257,7 +257,7 @@ function buildSkills(skillStats: SkillStatsResponse, query: string) {
         requiredCount: skill.required_count ?? null,
         preferredCount: skill.preferred_count ?? null,
         unspecifiedCount: skill.unspecified_count ?? null,
-        skillHref: `/skill-map?skill=${encodeURIComponent(skill.skill)}`,
+        skillHref: `/skills/graph?seed=${encodeURIComponent(skill.skill)}`,
         jobsHref: `/jobs?q=${encodeURIComponent(skill.skill)}`,
       }),
     );

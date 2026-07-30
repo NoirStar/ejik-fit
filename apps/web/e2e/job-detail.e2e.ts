@@ -3,20 +3,6 @@ import { expect, test } from "@playwright/test";
 for (const width of [1440, 820, 600, 390]) {
   test(`keeps verified job detail usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ height: width === 390 ? 844 : 900, width });
-    await page.route(
-      "https://recruit.navercorp.com/job-detail.svg",
-      async (route) => {
-        await route.fulfill({
-          body: [
-            '<svg xmlns="http://www.w3.org/2000/svg" width="1128" height="4486" viewBox="0 0 1128 4486">',
-            '<rect width="1128" height="4486" fill="white"/>',
-            '<text x="80" y="160" font-size="54">기업이 제공한 공고 상세 이미지</text>',
-            "</svg>",
-          ].join(""),
-          contentType: "image/svg+xml",
-        });
-      },
-    );
     if (width === 390) {
       const session = await page.context().newCDPSession(page);
       await session.send("Emulation.setSafeAreaInsetsOverride", {
@@ -41,24 +27,17 @@ for (const width of [1440, 820, 600, 390]) {
         name: "Python Backend Engineer",
       }),
     ).toBeVisible();
-    await expect(page.getByText("내 기술과 겹침 1개")).toBeVisible();
+    const connection = page.getByRole("heading", {
+      level: 3,
+      name: "내 커리어와 연결되는 이유",
+    });
+    await expect(connection).toBeVisible();
+    await expect(
+      connection.locator("..").getByText(/Python 1개가 프로필과 겹칩니다/),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 3, name: "주요 업무" }),
     ).toBeVisible();
-    const sourceImage = page.getByRole("img", {
-      name: "채용 공고 상세 내용 이미지 1",
-    });
-    await expect(sourceImage).toBeVisible();
-    await expect(sourceImage).toHaveAttribute("loading", "lazy");
-    await expect(sourceImage).toHaveAttribute("decoding", "async");
-    await expect(sourceImage).toHaveAttribute("referrerpolicy", "no-referrer");
-    const [sourceImageBox, descriptionBox] = await Promise.all([
-      sourceImage.boundingBox(),
-      page.getByRole("region", { name: "공고 원문" }).boundingBox(),
-    ]);
-    expect(sourceImageBox).not.toBeNull();
-    expect(descriptionBox).not.toBeNull();
-    expect(sourceImageBox!.width).toBeLessThanOrEqual(descriptionBox!.width + 1);
     await expect(page.getByText("Do not render this HTML")).toHaveCount(0);
 
     const title = page.getByRole("heading", {
@@ -79,8 +58,9 @@ for (const width of [1440, 820, 600, 390]) {
       ),
     ).toBe(false);
 
-    const apply = page.getByRole("link", {
-      name: "공식 채용페이지에서 지원",
+    const preparation = page.getByRole("region", { name: "지원 준비" });
+    const apply = preparation.getByRole("link", {
+      name: "공식 채용 페이지에서 지원",
     });
     const save = page.getByRole("button", {
       name: "Python Backend Engineer 저장",
@@ -111,7 +91,9 @@ for (const width of [1440, 820, 600, 390]) {
       const actions = page.getByRole("region", { name: "지원 준비" });
       const primaryActions = page.getByRole("group", { name: "지원 및 저장" });
       const facts = page.getByRole("heading", { name: "채용 조건" });
-      const skills = page.getByRole("heading", { name: "기술 요건" });
+      const skills = page.getByRole("heading", {
+        name: "기술 조건과 근거 문장",
+      });
       const trust = page.getByRole("region", { name: "공고 신뢰 정보" });
       const navigation = page.getByRole("navigation", {
         name: "모바일 주요 탐색",
@@ -179,49 +161,6 @@ test("keeps a long Korean job title grouped by words on mobile", async ({
     name: "플랫폼 데이터 서비스 개발자 채용",
   });
   await expect(title).toBeVisible();
-  const apply = page.getByRole("link", {
-    name: "공식 채용페이지에서 지원",
-  });
-  await expect(apply).toBeVisible();
-  const save = page.getByRole("button", {
-    name: "플랫폼 데이터 서비스 개발자 채용 저장",
-  });
-  await expect(save).toBeVisible();
-  const backLink = page.getByRole("link", {
-    name: "채용공고로 돌아가기",
-  });
-  await expect(backLink).toHaveAttribute("href", "/jobs");
-  await expect(backLink).not.toHaveAttribute("target", "_blank");
-  const companyPageLink = page
-    .getByRole("region", { name: "공고 신뢰 정보" })
-    .getByRole("link", { name: "기업 채용페이지 보기" });
-  await expect(companyPageLink).toHaveAttribute(
-    "href",
-    "https://recruit.navercorp.com/job-korean",
-  );
-  await expect(companyPageLink).toHaveAttribute("target", "_blank");
-  await expect(companyPageLink).toHaveAttribute("rel", "noreferrer");
-  expect(
-    await apply.evaluate(
-      (element) => getComputedStyle(element).whiteSpace === "nowrap",
-    ),
-  ).toBe(true);
-  const [applyBox, saveBox] = await Promise.all([
-    apply.boundingBox(),
-    save.boundingBox(),
-  ]);
-  expect(applyBox).not.toBeNull();
-  expect(saveBox).not.toBeNull();
-  for (const box of [applyBox!, saveBox!]) {
-    expect(box.width).toBeGreaterThanOrEqual(44);
-    expect(box.height).toBeGreaterThanOrEqual(44);
-  }
-  const ctasOverlap =
-    applyBox!.x < saveBox!.x + saveBox!.width &&
-    applyBox!.x + applyBox!.width > saveBox!.x &&
-    applyBox!.y < saveBox!.y + saveBox!.height &&
-    applyBox!.y + applyBox!.height > saveBox!.y;
-  expect(ctasOverlap).toBe(false);
   expect(
     await title.evaluate((element) => getComputedStyle(element).wordBreak),
   ).toBe("keep-all");

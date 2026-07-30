@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import type {
   FitAnalyzeResponse,
   PostingListResponse,
+  SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
 
 import {
   buildHomeFeedSnapshot,
   localCommunityPostToFeedItem,
-  postingSummaryToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
 import type { ResourceState } from "./resource-state";
@@ -30,9 +30,6 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://careers.toss.im/job-1",
       last_verified_at: "2026-07-12T15:00:00.000Z",
-      required_skills: ["Java", "Spring"],
-      preferred_skills: ["Kafka"],
-      unspecified_skills: ["Linux"],
     },
   ],
 };
@@ -51,16 +48,56 @@ const skillStats: SkillStatsResponse = {
   ],
 };
 
+const graph: SkillGraphResponse = {
+  seed: "Java",
+  nodes: [
+    {
+      id: "java",
+      label: "Java",
+      category: "language",
+      kind: "skill",
+      domains: ["backend"],
+      demand_count: 1,
+      required_count: 1,
+      preferred_count: 0,
+      unspecified_count: 0,
+      owned: true,
+      seed: true,
+    },
+  ],
+  edges: [],
+  evidence: [
+    {
+      posting_id: "job-1",
+      title: "Backend Engineer",
+      company_name: "토스",
+      skills: ["Java", "Spring", "Kafka"],
+      required: ["Java", "Spring"],
+      preferred: ["Kafka"],
+      unspecified: [],
+    },
+  ],
+  meta: { limit: 30, min_confidence: 0.8 },
+};
+
 const fit: FitAnalyzeResponse = {
   coverage: {
     matching_posting_count: 12,
     strong_fit_posting_count: 4,
   },
-  domain_branches: [],
+  domain_branches: [
+    {
+      domain: "backend",
+      covered_skills: ["Java", "Kafka"],
+      missing_required_skills: ["Spring"],
+      missing_preferred_skills: ["Kubernetes"],
+      supporting_posting_count: 12,
+    },
+  ],
   recommended_next_skills: [
     {
       skill: "Kubernetes",
-      reason: "보유 스킬과 함께 등장한 공고에서 8회 부족 요구사항으로 확인됨",
+      reason: "보유 기술과 같은 공고 8건에서 추가 요구사항으로 확인됨",
       required_count: 6,
       preferred_count: 2,
       supporting_posting_count: 8,
@@ -123,7 +160,7 @@ describe("buildHomeFeedSnapshot", () => {
       category: "커리어 고민",
       authorId: "local-browser-user",
       authorName: "나",
-      authorHeadline: "이 기기에서 작성",
+      authorHeadline: "이 브라우저에서 작성",
       authorTone: "violet",
       createdAt: "2026-07-14T01:00:00.000Z",
       createdLabel: "12분 전",
@@ -151,6 +188,7 @@ describe("buildHomeFeedSnapshot", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(sourceSpecificPostings),
       skillStats: ready(skillStats),
+      graph: ready(graph),
       fit: null,
       ownedSkills: [],
     });
@@ -161,52 +199,11 @@ describe("buildHomeFeedSnapshot", () => {
     });
   });
 
-  it("explains canonical matches when a saved skill uses a common alias", () => {
-    const item = postingSummaryToFeedItem(
-      {
-        ...postings.items[0],
-        required_skills: ["Kubernetes"],
-        preferred_skills: [],
-        unspecified_skills: [],
-      },
-      ["k8s"],
-    );
-
-    expect(item).toMatchObject({
-      matchedRequiredSkills: ["Kubernetes"],
-      missingRequiredSkills: [],
-      recommendationReason: "Kubernetes 필수 요건 일치",
-    });
-  });
-
-  it("uses the backend canonical identity for the full skill catalog", () => {
-    const snapshot = buildHomeFeedSnapshot({
-      postings: ready({
-        canonical_owned_skills: ["Go"],
-        total: 1,
-        items: [{
-          ...postings.items[0],
-          required_skills: ["Go"],
-          preferred_skills: [],
-          unspecified_skills: [],
-        }],
-      }),
-      skillStats: ready(skillStats),
-      fit: null,
-      ownedSkills: ["golang"],
-    });
-
-    expect(snapshot.ownedSkills).toEqual(["Go"]);
-    expect(snapshot.recommendedJobs[0]).toMatchObject({
-      matchedRequiredSkills: ["Go"],
-      recommendationReason: "Go 필수 요건 일치",
-    });
-  });
-
-  it("builds the action feed only from verified data", () => {
+  it("keeps starter guidance out of the verified action feed", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
+      graph: ready(graph),
       fit: ready(fit),
       careerPreferences: {
         careerCondition: "experienced",
@@ -220,21 +217,16 @@ describe("buildHomeFeedSnapshot", () => {
       "market_insight",
     ]);
     expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
-    expect(JSON.stringify(snapshot)).not.toContain('"mock"');
+    expect(snapshot.starterGuideItems).toEqual([]);
     expect(snapshot.recommendedJobs[0]).toMatchObject({
       companyName: "토스",
       companyHref: "/companies/toss",
-      requiredSkills: ["Java", "Spring"],
-      preferredSkills: ["Kafka"],
       matchedRequiredSkills: ["Java"],
       missingRequiredSkills: ["Spring"],
       matchedPreferredSkills: ["Kafka"],
     });
     expect(snapshot.marketInsights[0]).toMatchObject({
       skillName: "Kubernetes",
-      title: "Kubernetes 요구 공고",
-      summary:
-        "분석된 공고에서 필수 8건, 우대 4건, 필수·우대 미표기 2건으로 확인됐습니다.",
       postingCount: 14,
       requiredCount: 8,
       preferredCount: 4,
@@ -269,31 +261,27 @@ describe("buildHomeFeedSnapshot", () => {
       targetDomainLabel: "백엔드",
       configured: true,
     });
+    expect(snapshot.careerDirections).toEqual([
+      {
+        domain: "backend",
+        label: "백엔드",
+        coveredSkills: ["Java", "Kafka"],
+        additionalRequirements: ["Spring", "Kubernetes"],
+        postingCount: 12,
+        confirmedCompanyCount: 1,
+        representativeJob: {
+          id: "job-1",
+          title: "Backend Engineer",
+          companyName: "토스",
+          href: "/jobs/job-1",
+        },
+      },
+    ]);
     expect(JSON.stringify(snapshot)).not.toContain("trendPercent");
     expect(JSON.stringify(snapshot)).not.toContain("matchScore");
   });
 
-  it("keeps market insight titles natural for vowel-ending skill names", () => {
-    const snapshot = buildHomeFeedSnapshot({
-      postings: ready(postings),
-      skillStats: ready({
-        total: 2,
-        items: [
-          { ...skillStats.items[0], skill: "Java" },
-          { ...skillStats.items[0], skill: "Go" },
-        ],
-      }),
-      fit: null,
-      ownedSkills: [],
-    });
-
-    expect(snapshot.marketInsights.map((insight) => insight.title)).toEqual([
-      "Java 요구 공고",
-      "Go 요구 공고",
-    ]);
-  });
-
-  it("preserves backend recommendation order and explains confirmed matches", () => {
+  it("prioritizes a later posting when verified skill evidence matches my stack", () => {
     const rankedPostings: PostingListResponse = {
       total: 3,
       items: [
@@ -310,115 +298,92 @@ describe("buildHomeFeedSnapshot", () => {
         },
       ],
     };
-    const snapshot = buildHomeFeedSnapshot({
-      postings: ready(rankedPostings),
-      skillStats: ready(skillStats),
-      fit: ready(fit),
-      ownedSkills: ["Java", "Kafka"],
-    });
-
-    expect(snapshot.recommendedJobs.map((job) => job.postingId)).toEqual([
-      "job-1",
-      "job-2",
-      "job-3",
-    ]);
-    expect(snapshot.recommendedJobs[0]).toMatchObject({
-      matchedRequiredSkills: ["Java"],
-      missingRequiredSkills: ["Spring"],
-      matchedPreferredSkills: ["Kafka"],
-      matchedUnspecifiedSkills: [],
-      recommendationReason: "내 기술 2개 일치",
-    });
-  });
-
-  it("uses requirement-specific copy for one match and marks exploration quietly", () => {
-    const recommendationPostings: PostingListResponse = {
-      total: 3,
-      items: [
+    const rankedGraph: SkillGraphResponse = {
+      ...graph,
+      evidence: [
         {
-          ...postings.items[0],
-          id: "required",
-          required_skills: ["C++"],
-          preferred_skills: [],
-          unspecified_skills: [],
-        },
-        {
-          ...postings.items[0],
-          id: "unspecified",
-          required_skills: [],
-          preferred_skills: [],
-          unspecified_skills: ["C++"],
-        },
-        {
-          ...postings.items[0],
-          id: "explore",
-          required_skills: ["Python"],
-          preferred_skills: [],
-          unspecified_skills: [],
+          posting_id: "job-3",
+          title: "Java Platform Engineer",
+          company_name: "토스",
+          skills: ["Java", "Kafka", "Spring"],
+          required: ["Java", "Spring"],
+          preferred: ["Kafka"],
+          unspecified: [],
         },
       ],
     };
 
     const snapshot = buildHomeFeedSnapshot({
-      postings: ready(recommendationPostings),
+      postings: ready(rankedPostings),
       skillStats: ready(skillStats),
-      fit: null,
-      ownedSkills: ["C++"],
+      graph: ready(rankedGraph),
+      fit: ready(fit),
+      ownedSkills: ["Java", "Kafka"],
     });
 
-    expect(snapshot.recommendedJobs.map((job) => job.recommendationReason))
-      .toEqual([
-        "C++ 필수 요건 일치",
-        "C++ 기술 포함",
-        "새로운 분야 탐색",
-      ]);
-    expect(snapshot.recommendedJobs[1].matchedUnspecifiedSkills).toEqual([
-      "C++",
+    expect(snapshot.recommendedJobs.map((job) => job.postingId)).toEqual([
+      "job-3",
+      "job-1",
     ]);
+    expect(snapshot.recommendedJobs[0]).toMatchObject({
+      matchedRequiredSkills: ["Java"],
+      missingRequiredSkills: ["Spring"],
+      matchedPreferredSkills: ["Kafka"],
+    });
   });
 
-  it("keeps every fetched posting while reporting the backend total", () => {
-    const manyPostings: PostingListResponse = {
-      total: 125,
-      items: Array.from({ length: 25 }, (_, index) => ({
-        ...postings.items[0],
-        id: `job-${index + 1}`,
-        title: `Backend Engineer ${index + 1}`,
-      })),
+  it("deduplicates direction company evidence by stable posting company slug", () => {
+    const duplicatePosting = {
+      ...postings.items[0],
+      id: "job-2",
+      company_name: "토스 주식회사",
     };
-
     const snapshot = buildHomeFeedSnapshot({
-      postings: ready(manyPostings),
+      postings: ready({
+        total: 2,
+        items: [postings.items[0], duplicatePosting],
+      }),
       skillStats: ready(skillStats),
-      fit: null,
-      ownedSkills: [],
+      graph: ready({
+        ...graph,
+        evidence: [
+          graph.evidence[0],
+          {
+            ...graph.evidence[0],
+            posting_id: duplicatePosting.id,
+            company_name: duplicatePosting.company_name,
+          },
+        ],
+      }),
+      fit: ready(fit),
+      ownedSkills: ["Java"],
     });
 
-    expect(snapshot.recommendedJobs).toHaveLength(25);
-    expect(snapshot.postingCount).toBe(125);
+    expect(snapshot.careerDirections[0].confirmedCompanyCount).toBe(1);
   });
 
-  it("records a generic fallback without treating verified data as failed", () => {
+  it("keeps verified posting content and separate guidance when graph loading fails", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
+      graph: { status: "error", message: "graph offline" },
       fit: ready(fit),
       ownedSkills: ["Java"],
-      personalizationFallback: true,
     });
 
-    expect(snapshot.dataStatus).toBe("ready");
+    expect(snapshot.dataStatus).toBe("partial");
+    expect(snapshot.starterGuideItems).toEqual([]);
     expect(snapshot.feedItems.every((item) => item.source === "api")).toBe(true);
     expect(snapshot.recommendedJobs).toHaveLength(1);
-    expect(snapshot.recommendedJobs[0].matchedRequiredSkills).toEqual(["Java"]);
-    expect(snapshot.personalizationFallback).toBe(true);
-    expect(snapshot.resourceErrors).toEqual([]);
+    expect(snapshot.recommendedJobs[0].matchedRequiredSkills).toEqual([]);
+    expect(snapshot.resourceErrors).toEqual(["graph offline"]);
   });
 
   it("does not replace unavailable verified data with mock numbers", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: { status: "error", message: "postings offline" },
       skillStats: { status: "error", message: "stats offline" },
+      graph: { status: "error", message: "graph offline" },
       fit: null,
       ownedSkills: [],
     });
@@ -429,13 +394,14 @@ describe("buildHomeFeedSnapshot", () => {
     expect(snapshot.skillDemand).toEqual([]);
     expect(snapshot.careerInsight).toEqual({ status: "needs_skills" });
     expect(snapshot.feedItems).toEqual([]);
-    expect(JSON.stringify(snapshot)).not.toContain('"mock"');
+    expect(snapshot.starterGuideItems).toEqual([]);
   });
 
   it("marks only the personalized insight unavailable when fit analysis fails", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
       skillStats: ready(skillStats),
+      graph: ready(graph),
       fit: { status: "error", message: "fit offline" },
       ownedSkills: ["Java"],
     });
@@ -449,6 +415,13 @@ describe("buildHomeFeedSnapshot", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready({ items: [], total: 0 }),
       skillStats: ready({ items: [], total: 0 }),
+      graph: ready({
+        seed: "Unknown Tool",
+        nodes: [],
+        edges: [],
+        evidence: [],
+        meta: { limit: 30, min_confidence: 0.8 },
+      }),
       fit: ready({
         coverage: {
           matching_posting_count: 0,

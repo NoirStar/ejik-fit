@@ -1,0 +1,328 @@
+.panel {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-line);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border-bottom: 1px solid var(--color-line);
+}
+
+.header p {
+  margin: 0 0 0.35rem;
+  color: var(--color-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  letter-spacing: -0.04em;
+}
+
+.header > div > span {
+  display: block;
+  max-width: 42rem;
+  margin-top: 0.55rem;
+  color: var(--color-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.analysisLevel {
+  display: inline-flex;
+  min-height: 2rem;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+  font-size: 0.74rem;
+  font-weight: 760;
+}
+
+.form {
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.minimumGrid,
+.advancedGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(9rem, 1fr);
+  gap: 1rem;
+}
+
+.minimumGrid label,
+.advancedGrid label,
+.skillUsage label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 720;
+}
+
+.wideField {
+  grid-column: 1 / -1;
+}
+
+.form input,
+.form textarea,
+.form select {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 0.65rem;
+  outline: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 520;
+}
+
+.form textarea {
+  min-height: 5.25rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.form input:focus,
+.form textarea:focus,
+.form select:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 13%, transparent);
+}
+
+.numberInput {
+  position: relative;
+}
+
+.numberInput > span {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  transform: translateY(-50%);
+}
+
+.numberInput input {
+  padding-right: 2.2rem;
+}
+
+.disclosure {
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 0.7rem;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+.disclosure svg {
+  transition: transform 160ms var(--ease-standard);
+}
+
+.disclosure svg[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.disclosure:focus-visible,
+.footer button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.advanced {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.choiceGroup,
+.skillUsage {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choiceGroup legend,
+.skillUsage legend {
+  margin-bottom: 0.65rem;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 740;
+}
+
+.choiceGroup > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.choiceGroup label {
+  position: relative;
+  cursor: pointer;
+}
+
+.choiceGroup input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.choiceGroup label span {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  padding: 0 0.8rem;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+.choiceGroup input:checked + span {
+  border-color: var(--color-accent);
+  background: var(--color-brand-subtle);
+  color: var(--color-accent-strong);
+}
+
+.choiceGroup input:focus-visible + span {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.domainGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.skillUsage > p {
+  margin: -0.25rem 0 0.8rem;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+}
+
+.skillUsage > div {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.skillUsage section {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) repeat(2, minmax(8rem, 1fr));
+  align-items: end;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border-radius: 0.7rem;
+  background: var(--color-surface-muted);
+}
+
+.skillUsage section > strong {
+  align-self: center;
+  font-size: 0.84rem;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-line);
+}
+
+.footer p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.footer button {
+  min-height: 2.8rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  background: var(--color-text);
+  color: var(--color-surface);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.85rem 0 0;
+  color: var(--color-accent-strong);
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+@media (max-width: 680px) {
+  .header,
+  .footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .analysisLevel {
+    width: fit-content;
+  }
+
+  .minimumGrid,
+  .advancedGrid,
+  .domainGroups,
+  .skillUsage section {
+    grid-template-columns: 1fr;
+  }
+
+  .wideField {
+    grid-column: auto;
+  }
+
+  .footer button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure svg {
+    transition: none;
+  }
+}

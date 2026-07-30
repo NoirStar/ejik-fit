@@ -8,11 +8,7 @@ import Link from "next/link";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { buildJobEvidence, formatCareerRange, formatClosingDate, formatVerifiedDate } from "@/features/jobs/model";
-import { formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
-import {
-  getSourceActivityCopy,
-  getSourcePreparationCopy,
-} from "@/lib/source-status";
+import { formatEmployment } from "@/lib/labels";
 import type {
   PostingListResponse,
   PostingSummary,
@@ -44,34 +40,6 @@ function CompanyState({
   source?: SourceDirectoryItem | null;
 }) {
   const companyName = source?.company_name;
-  const activity = source
-    ? getSourceActivityCopy(source.activity_status)
-    : null;
-  const preparation = source
-    ? getSourcePreparationCopy(source.preparation_reason)
-    : null;
-  const needsAttention = source?.activity_status === "attention";
-  const preparing = source?.activity_status === "preparing";
-
-  const heading = error
-    ? "기업 공고 데이터를 불러오지 못했습니다."
-    : needsAttention
-      ? `${companyName ?? "기업"}의 수집 상태를 점검하고 있습니다.`
-      : preparing
-        ? `${companyName ?? "기업"}의 공식 채용페이지 연결을 준비하고 있습니다.`
-        : companyName
-          ? `${companyName}의 현재 공개 공고가 없습니다.`
-          : "현재 확인되는 공개 공고가 없습니다.";
-
-  const detail = error
-    ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
-    : needsAttention || source?.activity_status === "quiet"
-      ? activity?.detail
-      : preparing
-        ? preparation?.detail ?? activity?.detail
-        : source?.activity_status === "active"
-          ? "공고 목록과 수집 현황의 반영 시점이 다를 수 있습니다. 공식 채용페이지에서 최신 상태를 확인해 주세요."
-          : "최근 확인 기준으로 공식 채용페이지에서 공개 상태 공고가 확인되지 않았습니다.";
 
   return (
     <main className={styles.page}>
@@ -79,13 +47,20 @@ function CompanyState({
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
         공고 탐색으로 돌아가기
       </Link>
-      <section
-        className={styles.state}
-        role={error || needsAttention ? "alert" : undefined}
-      >
-        <p className={styles.eyebrow}>공식 채용 공고 기준</p>
-        <h1>{heading}</h1>
-        <p>{detail}</p>
+      <section className={styles.state} role={error ? "alert" : undefined}>
+        <p className={styles.eyebrow}>공식 채용공고 기준</p>
+        <h1>
+          {error
+            ? "기업 공고 데이터를 불러오지 못했습니다."
+            : companyName
+              ? `${companyName}의 현재 공개 공고가 없습니다.`
+              : "현재 확인되는 공개 공고가 없습니다."}
+        </h1>
+        <p>
+          {error
+            ? `${companyName ? `${companyName}의 ` : ""}현재 공고 수를 0건으로 단정하지 않습니다. 잠시 후 다시 확인해 주세요.`
+            : "최근 수집 기준으로 공식 채용 페이지에서 공개 상태 공고가 확인되지 않았습니다."}
+        </p>
         <nav aria-label="기업 공고 상태 안내">
           {error && (
             <Link href={`/companies/${encodeURIComponent(companySlug)}`}>
@@ -94,12 +69,12 @@ function CompanyState({
           )}
           {source && (
             <a
-              aria-label={`${source.company_name} 공식 채용페이지`}
+              aria-label={`${source.company_name} 공식 채용 페이지`}
               href={source.careers_url}
               rel="noreferrer"
               target="_blank"
             >
-              공식 채용페이지
+              공식 채용 페이지
               <ArrowSquareOut aria-hidden="true" size={14} weight="bold" />
             </a>
           )}
@@ -227,7 +202,7 @@ function CompanyJob({ job, index }: { job: PostingSummary; index: number }) {
               공고 분석
             </Link>
             <a href={job.source_url} rel="noreferrer" target="_blank">
-              공식 원문
+              공식 채용 페이지
               <ArrowSquareOut aria-hidden="true" size={15} weight="bold" />
             </a>
           </div>
@@ -273,14 +248,13 @@ export function CompanyProfile({
       <header className={styles.hero}>
         <CompanyMark
           companyName={companyName}
-          companySlug={companySlug}
           size={76}
           sourceUrl={primarySource}
         />
         <div className={styles.heroIdentity}>
           <h1>{companyName}</h1>
           <p>
-            현재 공개 상태로 확인된 채용 공고에서 기술과 채용 조건을 모았습니다.
+            현재 공개 상태로 확인된 채용공고에서 기술과 채용 조건을 모았습니다.
           </p>
         </div>
         <div className={styles.heroActions}>
@@ -294,7 +268,7 @@ export function CompanyProfile({
             rel="noreferrer"
             target="_blank"
           >
-            최근 공식 원문
+            공식 채용 페이지
             <ArrowSquareOut aria-hidden="true" size={16} weight="bold" />
           </a>
         </div>
@@ -318,7 +292,7 @@ export function CompanyProfile({
             <dd>근무 지역 {snapshot.locationCount}곳</dd>
           </div>
           <div>
-            <dt>{PRODUCT_TERMS.lastChecked}</dt>
+            <dt>최근 검증</dt>
             <dd>{formatVerifiedDate(snapshot.latestVerifiedAt)}</dd>
           </div>
         </dl>
@@ -362,8 +336,8 @@ export function CompanyProfile({
                     </span>
                     <div>
                       <Link
-                        aria-label={`${skill.name} 스킬맵`}
-                        href={`/skill-map?skill=${encodeURIComponent(skill.name)}`}
+                        aria-label={`${skill.name} 기술 관계 보기`}
+                        href={`/skills/graph?seed=${encodeURIComponent(skill.name)}`}
                         prefetch={false}
                       >
                         {skill.name}
@@ -393,7 +367,7 @@ export function CompanyProfile({
               <h2>이 수치를 읽는 기준</h2>
               <p>
                 {hasMorePostings
-                  ? `공개 공고 총수는 확인된 전체 공고 수이며, 기술과 채용 조건은 최근 ${snapshot.postingCount.toLocaleString("ko-KR")}개 공고를 기준으로 집계합니다. `
+                  ? `공개 공고 총수는 API의 전체 결과이며, 기술과 채용 조건은 최근 ${snapshot.postingCount.toLocaleString("ko-KR")}개 공고를 기준으로 집계합니다. `
                   : "공개 공고와 기술·채용 조건은 현재 확인된 공고를 기준으로 집계합니다. "}
                 기술은 공고별로 한 번만 세며 시장 전체나 기업 규모를 뜻하지 않습니다.
               </p>

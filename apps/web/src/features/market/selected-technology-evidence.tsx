@@ -2,7 +2,6 @@ import { ArrowRight } from "@phosphor-icons/react";
 import Link from "next/link";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
-import { PRODUCT_TERMS } from "@/lib/labels";
 
 import type {
   MarketJob,
@@ -33,12 +32,12 @@ export function SelectedTechnologyEvidence({
       <header className={styles.sideHeader}>
         <div>
           <h2>{selected.name}</h2>
-          <span>선택 기술의 시장 근거</span>
+          <span>선택한 기술이 포함된 공고 근거</span>
         </div>
       </header>
       <dl className={styles.evidenceMetrics}>
         <div>
-          <dt>명시 요구</dt>
+          <dt>필수·우대 공고</dt>
           <dd>{selected.explicitCount.toLocaleString("ko-KR")}건</dd>
         </div>
         <div>
@@ -50,7 +49,7 @@ export function SelectedTechnologyEvidence({
           <dd>{selected.preferredCount.toLocaleString("ko-KR")}건</dd>
         </div>
         <div>
-          <dt>{PRODUCT_TERMS.unspecifiedRequirement}</dt>
+          <dt>조건 구분 없음</dt>
           <dd>{selected.unspecifiedCount.toLocaleString("ko-KR")}건</dd>
         </div>
       </dl>
@@ -58,7 +57,7 @@ export function SelectedTechnologyEvidence({
       {error ? (
         <div className={styles.compactState} role="alert">
           <strong>{error}</strong>
-          <p>기술 수요는 정상적으로 표시됩니다.</p>
+          <p>기술 수요 집계는 계속 확인할 수 있습니다.</p>
         </div>
       ) : (
         <>
@@ -81,12 +80,12 @@ export function SelectedTechnologyEvidence({
                 })}
               </ul>
             ) : (
-              <p>반복해서 함께 나온 기술이 없습니다.</p>
+              <p>현재 불러온 범위에서 반복 관계를 확인하지 못했습니다.</p>
             )}
           </div>
 
           <div className={styles.evidenceSection}>
-            <h3>관련 공고</h3>
+            <h3>관련 채용공고</h3>
             {jobs.length > 0 ? (
               <ul className={styles.recentJobList}>
                 {jobs.map((job) => (
@@ -98,7 +97,6 @@ export function SelectedTechnologyEvidence({
                     >
                       <CompanyMark
                         companyName={job.companyName}
-                        companySlug={job.companySlug}
                         size={34}
                         sourceUrl={job.sourceUrl}
                       />
@@ -115,7 +113,7 @@ export function SelectedTechnologyEvidence({
                 ))}
               </ul>
             ) : (
-              <p>관련 공고가 없습니다.</p>
+              <p>현재 불러온 범위에 관련 공고가 없습니다.</p>
             )}
           </div>
         </>
@@ -126,11 +124,12 @@ export function SelectedTechnologyEvidence({
           관련 공고 전체 보기
         </Link>
         <Link href={selected.skillHref} prefetch={false}>
-          내 스킬맵에서 보기
+          기술 관계 보기
         </Link>
       </div>
       <p className={styles.panelFootnote}>
-        함께 나온 기술과 공고 예시는 최대 100개 공고를 기준으로 합니다.
+        함께 확인된 기술과 공고 예시는 현재 불러온 최대 100개 채용공고
+        기준입니다.
       </p>
     </section>
   );

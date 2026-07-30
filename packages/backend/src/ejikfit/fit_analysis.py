@@ -175,7 +175,7 @@ def analyze_fit(
         recommendations.append(
             RecommendedSkill(
                 skill=skill,
-                reason=f"보유 스킬과 함께 등장한 공고에서 {support_count}회 부족 요구사항으로 확인됨",
+                reason=f"보유 기술과 함께 등장한 공고 {support_count}건에서 추가 조건으로 확인됨",
                 required_count=missing_required[skill],
                 preferred_count=missing_preferred[skill],
                 supporting_posting_count=support_count,

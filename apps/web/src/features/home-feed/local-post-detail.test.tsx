@@ -129,7 +129,7 @@ describe("LocalPostDetail", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:local-community-posts") {
+      if (key === "careerfit:local-community-posts") {
         throw new DOMException("blocked", "SecurityError");
       }
       return originalSetItem.call(this, key, value);
@@ -167,7 +167,7 @@ describe("LocalPostDetail", () => {
       key,
       value,
     ) {
-      if (key === "ejik-fit:social-interactions") {
+      if (key === "careerfit:social-interactions") {
         throw new DOMException("blocked", "SecurityError");
       }
       return originalSetItem.call(this, key, value);
