@@ -21,7 +21,11 @@ import {
   skillNameKey,
 } from "@/lib/skill-catalog";
 import { summarizeGraph } from "@/lib/skill-graph";
-import { skillGraphTopologySignature } from "@/lib/skill-graph-canvas-data";
+import {
+  SKILL_GRAPH_DISPLAY_BUDGETS,
+  SKILL_GRAPH_LAYOUT_BUDGETS,
+  skillGraphTopologySignature,
+} from "@/lib/skill-graph-canvas-data";
 import {
   skillGraphLinkColor,
   skillGraphLinkWidth,
@@ -32,7 +36,11 @@ import {
   skillGraphDomainSummary,
   toggleSkillGraphDomain,
 } from "@/lib/skill-graph-filters";
-import { buildSkillGraphView } from "@/lib/skill-graph-view";
+import {
+  buildSkillGraphDisplayView,
+  buildSkillGraphView,
+  skillGraphPrimaryDomain,
+} from "@/lib/skill-graph-view";
 import type {
   SkillGraphViewMode,
   SkillGraphViewNode,
@@ -115,6 +123,7 @@ const DOMAIN_LABELS: Record<string, string> = {
   qa: "QA",
   robotics: "로보틱스",
   security: "보안",
+  unknown: "기타",
   web: "웹",
 };
 
@@ -414,7 +423,40 @@ export function SkillGraphExperience({
           resolvedSkillKey(selected.id, graphCatalog),
       )
     : false;
-  const allDomains = useMemo(() => buildSkillGraphView(graph).domains, [graph]);
+  const recommendedIds = useMemo(
+    () => fitState === "idle"
+      ? (fit?.recommended_next_skills ?? []).slice(0, 3).map(({ skill }) => skill)
+      : [],
+    [fit, fitState],
+  );
+  const layoutData = useMemo(() => {
+    const budget = compactGraph
+      ? SKILL_GRAPH_LAYOUT_BUDGETS.compact
+      : SKILL_GRAPH_LAYOUT_BUDGETS.regular;
+    return buildSkillGraphView(graph, {
+      linkLimit: budget.links,
+      mode: graphMode,
+      nodeLimit: budget.nodes,
+      ownedIds: ownedSkills,
+      recommendedIds,
+      selectedId: layoutAnchorId,
+    });
+  }, [
+    compactGraph,
+    graph,
+    graphMode,
+    layoutAnchorId,
+    ownedSkills,
+    recommendedIds,
+  ]);
+  const allDomains = useMemo(
+    () =>
+      buildSkillGraphDisplayView(layoutData, {
+        linkLimit: layoutData.links.length,
+        nodeLimit: layoutData.nodes.length,
+      }).domains,
+    [layoutData],
+  );
   const availableDomainIds = useMemo(
     () => allDomains.map(({ domain }) => domain),
     [allDomains],
@@ -432,51 +474,19 @@ export function SkillGraphExperience({
       ),
     [availableDomainIds, effectiveSelectedDomains],
   );
-  const recommendedIds = useMemo(
-    () => fitState === "idle"
-      ? (fit?.recommended_next_skills ?? []).slice(0, 3).map(({ skill }) => skill)
-      : [],
-    [fit, fitState],
-  );
   const viewData = useMemo(() => {
-    const compactAtlas = compactGraph && graphMode === "all";
-    return buildSkillGraphView(graph, {
+    const budget = graphMode === "focus"
+      ? SKILL_GRAPH_DISPLAY_BUDGETS.focus
+      : compactGraph
+        ? SKILL_GRAPH_DISPLAY_BUDGETS.compact
+        : SKILL_GRAPH_DISPLAY_BUDGETS.regular;
+    return buildSkillGraphDisplayView(layoutData, {
       enabledDomains,
-      linkLimit: compactAtlas ? 48 : undefined,
-      mode: graphMode,
-      nodeLimit: compactAtlas ? 30 : undefined,
-      ownedIds: ownedSkills,
-      recommendedIds,
+      linkLimit: budget.links,
+      nodeLimit: budget.nodes,
       selectedId,
     });
-  }, [
-    compactGraph,
-    enabledDomains,
-    graph,
-    graphMode,
-    ownedSkills,
-    recommendedIds,
-    selectedId,
-  ]);
-  const layoutData = useMemo(
-    () =>
-      buildSkillGraphView(graph, {
-        linkLimit: compactGraph ? 64 : 96,
-        mode: graphMode,
-        nodeLimit: compactGraph ? 40 : 60,
-        ownedIds: ownedSkills,
-        recommendedIds,
-        selectedId: layoutAnchorId,
-      }),
-    [
-      compactGraph,
-      graph,
-      graphMode,
-      ownedSkills,
-      recommendedIds,
-      layoutAnchorId,
-    ],
-  );
+  }, [compactGraph, enabledDomains, graphMode, layoutData, selectedId]);
   const positionedNodes = useMemo(
     () => positionNodes(viewData.nodes.filter((node) => node.kind === "skill")),
     [viewData.nodes],
@@ -496,15 +506,12 @@ export function SkillGraphExperience({
     [viewData.nodes],
   );
   const visibleLinkIds = useMemo(() => {
-    const layoutLinkIds = new Set(layoutData.links.map(({ id }) => id));
-    const filtered = buildVisibleSkillGraphLinkIds(
+    return buildVisibleSkillGraphLinkIds(
       viewData.links,
       viewData.stats.skillCount,
       relationshipDensity,
     );
-    return new Set([...filtered].filter((id) => layoutLinkIds.has(id)));
   }, [
-    layoutData.links,
     relationshipDensity,
     viewData.links,
     viewData.stats.skillCount,
@@ -893,7 +900,9 @@ export function SkillGraphExperience({
     const selectedNode = selectedIdRef.current
       ? graphNodeMap.get(selectedIdRef.current)
       : null;
-    const selectedDomain = selectedNode?.domains[0] ?? "other";
+    const selectedDomain = selectedNode
+      ? skillGraphPrimaryDomain(selectedNode)
+      : "unknown";
     if (
       next.length > 0 &&
       selectedIdRef.current &&
@@ -1077,6 +1086,7 @@ export function SkillGraphExperience({
               formatLabel: displayDomain,
               onClear: clearDomainFilter,
               onToggle: toggleDomain,
+              resultCount: viewData.stats.skillCount,
               selected: effectiveSelectedDomains,
               summary: skillGraphDomainSummary(
                 effectiveSelectedDomains,

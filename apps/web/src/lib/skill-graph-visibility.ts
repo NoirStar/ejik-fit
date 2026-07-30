@@ -41,10 +41,11 @@ export function shouldRenderSkillGraphLink(
   linkId: string,
   visibleLinkIds: ReadonlySet<string> | undefined,
   contextualLinkIds: ReadonlySet<string>,
+  contextualEndpointsVisible = true,
 ) {
   return visibleLinkIds === undefined ||
     visibleLinkIds.has(linkId) ||
-    contextualLinkIds.has(linkId);
+    (contextualEndpointsVisible && contextualLinkIds.has(linkId));
 }
 
 

@@ -5,6 +5,15 @@ export type VisibilityTransition = {
   duration: number;
 };
 
+const GRAPH_NODE_INTERACTION_THRESHOLD = 0.45;
+
+export function isSkillGraphNodeInteractive(
+  visibility: number,
+  targetVisible: boolean,
+) {
+  return targetVisible && visibility >= GRAPH_NODE_INTERACTION_THRESHOLD;
+}
+
 function clampVisibility(value: number) {
   return Math.max(0, Math.min(1, value));
 }

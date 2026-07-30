@@ -261,7 +261,11 @@
       "The first domain click removed a domain instead of isolating it, so the control did not match the user's filter mental model.",
       "Display filtering replaced graph topology, reset readiness, reheated the force simulation, and refit the camera.",
       "Independent disclosure elements allowed unclear menu state and exposed decorative arrow text in accessible button names.",
-      "An active single-domain filter was summarized only as a count, hiding which domain was applied."
+      "An active single-domain filter was summarized only as a count, hiding which domain was applied.",
+      "Mobile domain counts were derived from a larger graph than the canvas layout, so a rare domain could promise nodes that were not present.",
+      "Context highlighting could temporarily preserve a relationship whose opposite endpoint had already left the active domain.",
+      "The force-graph pointer canvas could retain a filtered node until its throttled refresh, leaving an invisible click target.",
+      "The domain menu did not state the actual number of technologies rendered after applying a filter."
     ],
     "implemented_contract": {
       "domain_selection": "empty means all; the first click isolates one domain; later clicks add or remove comparison domains; removing the last returns to all",
@@ -271,6 +275,10 @@
       "transition": "one requestAnimationFrame loop, 220ms opacity plus 0.88-to-1 node scale, with no React frame state",
       "reduced_motion": "no spatial transform and immediate graph visibility resolution",
       "menu_behavior": "one controlled menu at a time; outside pointer and Escape close; Escape restores trigger focus",
+      "filter_source_of_truth": "domain counts, displayed nodes, links, HUD metrics, and paths are derived from the same bounded canvas layout",
+      "pointer_safety": "the color-picking canvas is flushed when the visible node set changes and click, hover, cursor, and touch selection share the same visibility guard",
+      "relationship_safety": "context highlighting applies only while both link endpoints remain in the active node set",
+      "accessible_result_feedback": "the open domain menu reports the actual rendered technology count through a polite live region",
       "touch_target_floor_px": 44
     },
     "visual_review": {
@@ -279,6 +287,7 @@
       "popover_viewport_overflow_failures": 0,
       "console_or_page_errors": 0,
       "desktop_and_mobile_screenshots_reviewed": true,
+      "mobile_filter_popover_user_flow_reviewed": true,
       "purple_brand_language_preserved": true,
       "new_gradients_or_decorative_chrome": false
     },
@@ -289,12 +298,16 @@
       "visible_intermediate_animation_frame": "pass",
       "all_filter_restoration": "pass",
       "escape_focus_restoration": "pass",
+      "actual_filter_result_announcement": "pass",
+      "hidden_pointer_target_flush": "pass",
+      "cross_domain_context_link_guard": "pass",
       "desktop_browser_flow": "pass",
       "mobile_browser_flow": "pass"
     },
     "verification": {
       "related_test_files_passed": 17,
       "related_tests_passed": 89,
+      "review_regression_tests_passed": 57,
       "focused_browser_flows_passed": 3,
       "typescript": "pass",
       "production_build": "pass",

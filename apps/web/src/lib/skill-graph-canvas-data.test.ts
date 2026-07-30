@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  SKILL_GRAPH_DISPLAY_BUDGETS,
+  SKILL_GRAPH_LAYOUT_BUDGETS,
   skillGraphTopologySignature,
   skillGraphVisualSignature,
 } from "./skill-graph-canvas-data";
@@ -46,6 +48,18 @@ const view: SkillGraphViewData = {
 };
 
 describe("skill graph canvas data", () => {
+  it("keeps the full bounded layout on compact screens", () => {
+    expect(SKILL_GRAPH_LAYOUT_BUDGETS).toEqual({
+      compact: { links: 64, nodes: 40 },
+      regular: { links: 96, nodes: 60 },
+    });
+    expect(SKILL_GRAPH_DISPLAY_BUDGETS).toEqual({
+      compact: { links: 48, nodes: 30 },
+      focus: { links: 30, nodes: 18 },
+      regular: { links: 84, nodes: 48 },
+    });
+  });
+
   it("keeps topology stable when only the display masks change", () => {
     const firstMask = new Set([view.nodes[0]!.id]);
     const secondMask = new Set(view.nodes.map(({ id }) => id));

@@ -829,6 +829,9 @@ test("filters domains without rebuilding the canvas", async ({ page }) => {
   expect(filteredCounts).not.toBeNull();
   expect(Number(filteredCounts?.[1])).toBeLessThan(Number(initialCounts?.[1]));
   expect(Number(filteredCounts?.[2])).toBeLessThan(Number(initialCounts?.[2]));
+  await expect(domainDialog.getByRole("status")).toHaveText(
+    `현재 ${filteredCounts?.[1]}개 기술 표시`,
+  );
   await expect(forceCanvas).toBeVisible();
   await page.waitForTimeout(240);
   const filteredFingerprint = await readCanvasFingerprint(canvas);

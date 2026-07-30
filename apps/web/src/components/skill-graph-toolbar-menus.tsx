@@ -34,6 +34,7 @@ type DomainMenuProps = {
   formatLabel(domain: string): string;
   onClear(): void;
   onToggle(domain: string): void;
+  resultCount: number;
   selected: readonly string[];
   summary: string;
 };
@@ -217,6 +218,9 @@ export function SkillGraphToolbarMenus({
             <strong>분야 필터</strong>
             <span>한 분야를 고르거나 여러 분야를 비교해 보세요.</span>
           </div>
+          <b aria-atomic="true" aria-live="polite" role="status">
+            현재 {domains.resultCount}개 기술 표시
+          </b>
         </div>
         <div className={styles.domainFilters}>
           <button

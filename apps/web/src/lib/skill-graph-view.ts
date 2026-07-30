@@ -23,6 +23,14 @@ export type SkillGraphViewOptions = {
 };
 
 
+export type SkillGraphDisplayViewOptions = {
+  enabledDomains?: readonly string[];
+  linkLimit: number;
+  nodeLimit: number;
+  selectedId?: string | null;
+};
+
+
 export type SkillGraphViewNode = {
   id: string;
   label: string;
@@ -89,7 +97,7 @@ function normalizeQuery(query: string | undefined) {
 }
 
 
-function primaryDomain(node: SkillGraphNode) {
+export function skillGraphPrimaryDomain(node: SkillGraphNode) {
   return node.domains[0] ?? "unknown";
 }
 
@@ -158,7 +166,7 @@ function buildDomainStats(
 ): SkillGraphViewDomain[] {
   const counts = new Map<string, number>();
   graph.nodes.forEach((node) => {
-    const domain = primaryDomain(node);
+    const domain = skillGraphPrimaryDomain(node);
     counts.set(domain, (counts.get(domain) ?? 0) + 1);
   });
 
@@ -172,6 +180,87 @@ function buildDomainStats(
       color: domainColor(domain),
       enabled: enabledSet ? enabledSet.has(domain) : true,
     }));
+}
+
+
+function buildDisplayDomainStats(
+  nodes: readonly SkillGraphViewNode[],
+  enabledDomains: readonly string[] | undefined,
+) {
+  const counts = new Map<string, number>();
+  nodes.forEach((node) => {
+    counts.set(node.domain, (counts.get(node.domain) ?? 0) + 1);
+  });
+  const enabledSet = enabledDomains?.length
+    ? new Set(enabledDomains)
+    : null;
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || compareNames(left[0], right[0]))
+    .map(([domain, count]) => ({
+      domain,
+      label: formatDomainLabel(domain),
+      count,
+      color: domainColor(domain),
+      enabled: enabledSet ? enabledSet.has(domain) : true,
+    }));
+}
+
+
+export function buildSkillGraphDisplayView(
+  layout: SkillGraphViewData,
+  options: SkillGraphDisplayViewOptions,
+): SkillGraphViewData {
+  const enabledSet = options.enabledDomains?.length
+    ? new Set(options.enabledDomains)
+    : null;
+  const candidates = layout.nodes.filter(
+    (node) => !enabledSet || enabledSet.has(node.domain),
+  );
+  const nodeLimit = boundedLimit(options.nodeLimit, candidates.length || 1);
+  const nodes = candidates.slice(0, nodeLimit);
+  const selectedIdentity = options.selectedId
+    ? skillIdentityKey(options.selectedId)
+    : "";
+  if (
+    selectedIdentity &&
+    nodes.length > 0 &&
+    !nodes.some((node) => skillIdentityKey(node.id) === selectedIdentity)
+  ) {
+    const selected = candidates.find(
+      (node) => skillIdentityKey(node.id) === selectedIdentity,
+    );
+    if (selected) {
+      nodes[nodes.length - 1] = selected;
+      const layoutOrder = new Map(
+        layout.nodes.map((node, index) => [node.id, index] as const),
+      );
+      nodes.sort(
+        (left, right) =>
+          (layoutOrder.get(left.id) ?? Number.MAX_SAFE_INTEGER) -
+          (layoutOrder.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+  }
+
+  const visibleNodeIds = new Set(nodes.map(({ id }) => id));
+  const linkLimit = boundedLimit(options.linkLimit, layout.links.length || 1);
+  const links = layout.links
+    .filter(
+      (link) =>
+        visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
+    )
+    .slice(0, linkLimit);
+
+  return {
+    nodes,
+    links,
+    domains: buildDisplayDomainStats(layout.nodes, options.enabledDomains),
+    stats: {
+      skillCount: nodes.length,
+      evidenceCount: 0,
+      linkCount: links.length,
+    },
+  };
 }
 
 
@@ -469,7 +558,7 @@ export function buildSkillGraphView(
   const enabledSet =
     options.enabledDomains === undefined ? null : new Set(options.enabledDomains);
   const candidates = graph.nodes.filter((node) => {
-    const domain = primaryDomain(node);
+    const domain = skillGraphPrimaryDomain(node);
     return enabledSet ? enabledSet.has(domain) : true;
   });
   const candidateIds = new Set(candidates.map(({ id }) => id));
@@ -516,7 +605,7 @@ export function buildSkillGraphView(
     ? new Set(options.ownedIds.map(skillIdentityKey))
     : null;
   const nodes = selectedNodes.map<SkillGraphViewNode>((node) => {
-    const domain = primaryDomain(node);
+    const domain = skillGraphPrimaryDomain(node);
     const identityKey = skillIdentityKey(node.id);
     const recommendationRank = recommendationRanks.get(identityKey) ?? null;
     return {

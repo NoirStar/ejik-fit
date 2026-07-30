@@ -7,7 +7,7 @@ import type {
   ForceManyBody,
   SimulationLinkDatum,
 } from "d3-force";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type ForceGraph from "force-graph";
 import type { GraphData, NodeObject } from "force-graph";
 
@@ -44,6 +44,7 @@ import type {
   GraphRendererProps,
 } from "@/lib/graph-renderer";
 import { shouldRenderSkillGraphLink } from "@/lib/skill-graph-visibility";
+import { isSkillGraphNodeInteractive } from "@/lib/skill-graph-visibility-transition";
 import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
 import { useSkillGraphVisibility } from "./use-skill-graph-visibility";
 export {
@@ -481,6 +482,17 @@ function linkRelationRatio(
 }
 
 
+function linkEndpointsAreVisible(
+  link: SkillForceLink,
+  visibleNodeIds: ReadonlySet<string> | undefined,
+) {
+  return visibleNodeIds === undefined || (
+    visibleNodeIds.has(getNodeId(link.source)) &&
+    visibleNodeIds.has(getNodeId(link.target))
+  );
+}
+
+
 export function SkillGraphForceCanvas({
   data,
   display,
@@ -566,6 +578,17 @@ export function SkillGraphForceCanvas({
   visibleNodeIdsRef.current = visibleNodeIds;
   visibleLinkIdsRef.current = visibleLinkIds;
 
+  const nodeIsInteractive = useCallback((node: SkillForceNode) => {
+    const nodeId = String(node.id);
+    const targetVisible =
+      visibleNodeIdsRef.current === undefined ||
+      visibleNodeIdsRef.current.has(nodeId);
+    return isSkillGraphNodeInteractive(
+      nodeVisibilityRef.current.get(nodeId) ?? 1,
+      targetVisible,
+    );
+  }, [nodeVisibilityRef]);
+
   useEffect(() => {
     selectedIdRef.current = selectedId;
     if (hoveredIdRef.current) return;
@@ -589,7 +612,7 @@ export function SkillGraphForceCanvas({
     let resizeFrame = 0;
 
     function selectGraphNode(node: SkillForceNode, directTouch = false) {
-      if (node.kind !== "skill") {
+      if (node.kind !== "skill" || !nodeIsInteractive(node)) {
         return;
       }
       const nodeId = String(node.id);
@@ -630,7 +653,7 @@ export function SkillGraphForceCanvas({
         .filter(
           (node) =>
             node.kind === "skill" &&
-            (nodeVisibilityRef.current.get(String(node.id)) ?? 1) >= 0.45 &&
+            nodeIsInteractive(node) &&
             typeof node.x === "number" &&
             typeof node.y === "number",
         )
@@ -854,9 +877,17 @@ export function SkillGraphForceCanvas({
         })
         .onEngineTick(revealGraph)
         .onEngineStop(revealGraph)
-        .showPointerCursor((object) => Boolean(object))
+        .showPointerCursor((object) =>
+          Boolean(
+            object &&
+            !("source" in object) &&
+            nodeIsInteractive(object as SkillForceNode),
+          ),
+        )
         .onNodeHover((node) => {
-          const hoveredId = node ? String(node.id) : null;
+          const hoveredId = node && nodeIsInteractive(node)
+            ? String(node.id)
+            : null;
           hoveredIdRef.current = hoveredId;
           highlightRef.current = resolvedHighlight(
             selectedIdRef.current,
@@ -946,7 +977,7 @@ export function SkillGraphForceCanvas({
       setReady(false);
       onReadyChange?.(false);
     };
-  }, [onNodeSelect, onReadyChange]);
+  }, [nodeIsInteractive, onNodeSelect, onReadyChange]);
 
   useEffect(() => {
     const graph = graphRef.current;
@@ -1071,33 +1102,30 @@ export function SkillGraphForceCanvas({
         ),
       )
       .nodeCanvasObjectMode(() => "replace")
-      .nodePointerAreaPaint((node, color, ctx, globalScale) =>
-        paintPointerArea(
-          node,
-          color,
-          ctx,
-          touchInputRef.current,
-          globalScale,
-          nodeVisibilityRef.current.get(String(node.id)) ?? 1,
-        ),
-      )
       .linkWidth((link) => {
         const highlight = highlightRef.current;
         const animatedVisibility =
           linkVisibilityRef.current.get(link.id) ?? 1;
+        const contextualEndpointsVisible = linkEndpointsAreVisible(
+          link,
+          visibleNodeIdsRef.current,
+        );
+        const contextHighlighted =
+          contextualEndpointsVisible && highlight.linkIds.has(link.id);
         if (!shouldRenderSkillGraphLink(
           link.id,
           visibleLinkIdsRef.current,
           highlight.linkIds,
+          contextualEndpointsVisible,
         ) && animatedVisibility <= 0.01) {
           return 0;
         }
-        const visibility = highlight.linkIds.has(link.id)
+        const visibility = contextHighlighted
           ? Math.max(animatedVisibility, 1)
           : animatedVisibility;
         if (visibility <= 0.01) return 0;
         const focused =
-          highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
+          highlight.linkIds.size === 0 || contextHighlighted;
         return visibility * skillGraphLinkWidth(
           link.value,
           display.linkThickness,
@@ -1109,22 +1137,29 @@ export function SkillGraphForceCanvas({
         const highlight = highlightRef.current;
         const animatedVisibility =
           linkVisibilityRef.current.get(link.id) ?? 1;
+        const contextualEndpointsVisible = linkEndpointsAreVisible(
+          link,
+          visibleNodeIdsRef.current,
+        );
+        const contextHighlighted =
+          contextualEndpointsVisible && highlight.linkIds.has(link.id);
         if (!shouldRenderSkillGraphLink(
           link.id,
           visibleLinkIdsRef.current,
           highlight.linkIds,
+          contextualEndpointsVisible,
         ) && animatedVisibility <= 0.01) {
           return GRAPH_CANVAS_COLORS.transparent;
         }
-        const visibility = highlight.linkIds.has(link.id)
+        const visibility = contextHighlighted
           ? Math.max(animatedVisibility, 1)
           : animatedVisibility;
         const focused =
-          highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
+          highlight.linkIds.size === 0 || contextHighlighted;
         return skillGraphLinkColor(
           link.score,
           focused,
-          highlight.linkIds.size > 0 && highlight.linkIds.has(link.id),
+          highlight.linkIds.size > 0 && contextHighlighted,
           visibility,
         );
       })
@@ -1137,6 +1172,30 @@ export function SkillGraphForceCanvas({
 
     requestGraphRedraw(graph);
   }, [display, labelEligibleIds, mounted]);
+
+  useEffect(() => {
+    const graph = graphRef.current;
+    if (!graph) {
+      return;
+    }
+
+    // force-graph keeps a separate color-picking canvas for pointer hits.
+    // Replacing the painter flushes that canvas immediately, so a node that
+    // just left the active filter cannot remain clickable during its fade-out.
+    graph.nodePointerAreaPaint((node, color, ctx, globalScale) => {
+      const targetVisible =
+        visibleNodeIdsRef.current === undefined ||
+        visibleNodeIdsRef.current.has(String(node.id));
+      paintPointerArea(
+        node,
+        color,
+        ctx,
+        touchInputRef.current,
+        globalScale,
+        targetVisible ? 1 : 0,
+      );
+    });
+  }, [mounted, visibleNodeIds]);
 
   useEffect(() => {
     if (!hoveredIdRef.current) {

@@ -331,9 +331,14 @@ describe("SkillGraphExperience", () => {
 
     fireEvent.click(domainMenu);
     expect(domainMenu).toHaveAttribute("aria-expanded", "true");
+    const domainDialog = screen.getByRole("dialog", { name: "분야 필터" });
+    expect(within(domainDialog).getByRole("status"))
+      .toHaveTextContent("현재 4개 기술 표시");
     fireEvent.click(screen.getByRole("button", { name: /백엔드 1/ }));
 
     expect(screen.getByText("1개 기술 · 0개 관계")).toBeInTheDocument();
+    expect(within(domainDialog).getByRole("status"))
+      .toHaveTextContent("현재 1개 기술 표시");
     expect(screen.getByRole("button", { name: "분야 백엔드" })).toBeInTheDocument();
     expect(screen.getByText("기술 하나를 선택하세요")).toBeInTheDocument();
     expect(fetchMock.mock.calls.filter(([input]) =>
