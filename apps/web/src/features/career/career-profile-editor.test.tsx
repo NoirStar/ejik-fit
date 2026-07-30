@@ -31,7 +31,10 @@ describe("CareerProfileEditor", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "커리어 프로필 저장" }));
 
-    expect(screen.getByRole("status")).toHaveTextContent("커리어 프로필을 저장했습니다");
+    expect(screen.getByRole("status")).toHaveTextContent("프로필 저장 완료");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "추천 채용공고가 새 정보로 다시 계산됩니다",
+    );
     expect(screen.getByText("경력 기준 분석")).toBeInTheDocument();
     expect(readCareerProfile()).toMatchObject({
       currentRole: "백엔드 개발자",

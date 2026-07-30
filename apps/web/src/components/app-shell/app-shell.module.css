@@ -366,6 +366,16 @@
   color: var(--color-accent-strong);
 }
 
+.navItem[data-secondary="true"] {
+  color: var(--color-faint);
+  font-weight: 600;
+}
+
+.navItem[data-secondary="true"]:hover,
+.navItem[data-secondary="true"][data-active="true"] {
+  color: var(--color-text);
+}
+
 .navItem[data-active="true"]::after {
   background: var(--color-accent);
 }
@@ -602,6 +612,15 @@
 
   .mobileNavItem[data-active="true"] {
     color: var(--color-accent-strong);
+  }
+
+  .mobileNavItem[data-secondary="true"] {
+    color: var(--color-faint);
+    font-weight: 600;
+  }
+
+  .mobileNavItem[data-secondary="true"][data-active="true"] {
+    color: var(--color-text);
   }
 
   .mobileNavItem[data-active="true"]::before {

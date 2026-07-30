@@ -66,15 +66,20 @@ const OwnedSkillsSheet = lazy(async () => {
 const NAV_ITEMS = [
   { href: "/", label: "홈", icon: House },
   { href: "/career", label: "내 커리어", icon: UserCircle },
-  { href: "/skill-map", label: "커리어맵", icon: Graph },
+  { href: "/career-map", label: "커리어맵", icon: Graph },
   { href: "/market", label: "시장", icon: ChartLineUp },
   { href: "/jobs", label: "공고", icon: Briefcase },
-  { href: "/community", label: "커뮤니티", icon: UsersThree },
+  { href: "/community", label: "커뮤니티", icon: UsersThree, secondary: true },
 ] as const;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
-  if (href === "/skill-map" && pathname.startsWith("/skills/graph")) return true;
+  if (
+    href === "/career-map" &&
+    (pathname.startsWith("/skills/graph") || pathname === "/skill-map")
+  ) {
+    return true;
+  }
   if (href === "/jobs" && pathname.startsWith("/companies/")) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -371,6 +376,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     aria-current={active ? "page" : undefined}
                     className={styles.navItem}
                     data-active={active ? "true" : undefined}
+                    data-secondary={"secondary" in item ? "true" : undefined}
                     href={item.href}
                     key={item.href}
                     onClick={closeUtilityMenus}
@@ -602,6 +608,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               aria-current={active ? "page" : undefined}
               className={styles.mobileNavItem}
               data-active={active ? "true" : undefined}
+              data-secondary={"secondary" in item ? "true" : undefined}
               href={item.href}
               key={item.href}
               onClick={closeUtilityMenus}

@@ -1,6 +1,12 @@
 "use client";
 
-import { CaretDown, CheckCircle, IdentificationCard } from "@phosphor-icons/react";
+import {
+  CaretDown,
+  CheckCircle,
+  IdentificationCard,
+  Plus,
+  Trash,
+} from "@phosphor-icons/react";
 import type { FormEvent } from "react";
 import { useEffect, useId, useState } from "react";
 
@@ -12,6 +18,7 @@ import {
   subscribeCareerProfile,
   writeCareerProfile,
   type CareerEmploymentType,
+  type CareerExperienceHighlight,
   type CareerProfile,
   type CareerWorkType,
   type SkillLastUsed,
@@ -47,6 +54,14 @@ const EMPLOYMENT_OPTIONS: ReadonlyArray<{
   { label: "인턴", value: "intern" },
 ];
 
+const EMPTY_HIGHLIGHT: CareerExperienceHighlight = {
+  title: "",
+  responsibilities: "",
+  outcome: "",
+  domain: "",
+  skills: [],
+};
+
 function commaList(value: string) {
   return Array.from(
     new Set(
@@ -70,7 +85,7 @@ export function CareerProfileEditor({
 }: CareerProfileEditorProps) {
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<"" | "saved" | "error">("");
   const advancedId = useId();
 
   useEffect(() => {
@@ -95,8 +110,20 @@ export function CareerProfileEditor({
     setProfile(stored);
     setStatus(
       JSON.stringify(stored) === JSON.stringify(normalized)
-        ? "커리어 프로필을 저장했습니다. 분석 결과를 새 정보로 갱신합니다."
-        : "일부 커리어 정보를 저장하지 못했습니다. 기존 저장 정보는 유지됩니다.",
+        ? "saved"
+        : "error",
+    );
+  }
+
+  function updateHighlight(
+    index: number,
+    next: Partial<CareerExperienceHighlight>,
+  ) {
+    update(
+      "experienceHighlights",
+      profile.experienceHighlights.map((highlight, currentIndex) =>
+        currentIndex === index ? { ...highlight, ...next } : highlight,
+      ),
     );
   }
 
@@ -104,8 +131,8 @@ export function CareerProfileEditor({
     <section aria-labelledby="career-profile-title" className={styles.panel}>
       <header className={styles.header}>
         <div>
-          <p>1단계 · 내 경험 입력</p>
-          <h2 id="career-profile-title">커리어 프로필</h2>
+          <p>최소 입력</p>
+          <h2 id="career-profile-title">현재 경력</h2>
           <span>
             최소 정보로 시작할 수 있습니다. 업무와 선호 조건을 더할수록 경력 기준으로
             연결 근거를 보여드립니다.
@@ -225,6 +252,7 @@ export function CareerProfileEditor({
                 >
                   <option value="">선택하지 않음</option>
                   <option value="new_comer">신입</option>
+                  <option value="experienced">경력</option>
                   <option value="junior">주니어</option>
                   <option value="mid">중간 경력</option>
                   <option value="senior">시니어</option>
@@ -232,6 +260,125 @@ export function CareerProfileEditor({
                 </select>
               </label>
             </div>
+
+            <fieldset className={styles.highlights}>
+              <legend>프로젝트·성과 경험</legend>
+              <p>
+                공고의 주요 업무와 비교할 경험을 항목별로 입력해 주세요. 수치 성과가
+                없다면 맡은 역할과 결과만 적어도 됩니다.
+              </p>
+              <div className={styles.highlightList}>
+                {profile.experienceHighlights.map((highlight, index) => (
+                  <section
+                    aria-label={"프로젝트·성과 경험 " + (index + 1)}
+                    className={styles.highlightItem}
+                    key={"highlight-" + index}
+                  >
+                    <div className={styles.highlightHeading}>
+                      <strong>경험 {index + 1}</strong>
+                      <button
+                        aria-label={"프로젝트·성과 경험 " + (index + 1) + " 삭제"}
+                        onClick={() =>
+                          update(
+                            "experienceHighlights",
+                            profile.experienceHighlights.filter(
+                              (_, currentIndex) => currentIndex !== index,
+                            ),
+                          )
+                        }
+                        type="button"
+                      >
+                        <Trash aria-hidden="true" size={16} />
+                        삭제
+                      </button>
+                    </div>
+                    <div className={styles.highlightGrid}>
+                      <label>
+                        <span>프로젝트 또는 성과명</span>
+                        <input
+                          maxLength={120}
+                          onChange={(event) =>
+                            updateHighlight(index, { title: event.target.value })
+                          }
+                          placeholder="예: 결제 API 안정화"
+                          type="text"
+                          value={highlight.title}
+                        />
+                      </label>
+                      <label>
+                        <span>관련 분야</span>
+                        <select
+                          onChange={(event) =>
+                            updateHighlight(index, { domain: event.target.value })
+                          }
+                          value={highlight.domain}
+                        >
+                          <option value="">선택하지 않음</option>
+                          {domains.map((domain) => (
+                            <option key={domain.value} value={domain.value}>
+                              {domain.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className={styles.wideField}>
+                        <span>맡은 역할과 업무</span>
+                        <textarea
+                          maxLength={1200}
+                          onChange={(event) =>
+                            updateHighlight(index, {
+                              responsibilities: event.target.value,
+                            })
+                          }
+                          placeholder="예: 장애 원인 분석, 배포 자동화, 운영 절차 개선"
+                          rows={2}
+                          value={highlight.responsibilities}
+                        />
+                      </label>
+                      <label className={styles.wideField}>
+                        <span>결과 또는 변화</span>
+                        <textarea
+                          maxLength={1200}
+                          onChange={(event) =>
+                            updateHighlight(index, { outcome: event.target.value })
+                          }
+                          placeholder="예: 반복 장애 대응 절차를 표준화했습니다."
+                          rows={2}
+                          value={highlight.outcome}
+                        />
+                      </label>
+                      <label className={styles.wideField}>
+                        <span>사용 기술</span>
+                        <input
+                          onChange={(event) =>
+                            updateHighlight(index, {
+                              skills: commaList(event.target.value),
+                            })
+                          }
+                          placeholder="쉼표로 구분: Python, Kubernetes"
+                          type="text"
+                          value={highlight.skills.join(", ")}
+                        />
+                      </label>
+                    </div>
+                  </section>
+                ))}
+              </div>
+              <button
+                className={styles.addHighlight}
+                disabled={profile.experienceHighlights.length >= 8}
+                onClick={() =>
+                  update("experienceHighlights", [
+                    ...profile.experienceHighlights,
+                    { ...EMPTY_HIGHLIGHT, skills: [] },
+                  ])
+                }
+                type="button"
+              >
+                <Plus aria-hidden="true" size={16} />
+                프로젝트·성과 경험 추가
+              </button>
+            </fieldset>
 
             <fieldset className={styles.choiceGroup}>
               <legend>주요 업무 유형</legend>
@@ -423,7 +570,17 @@ export function CareerProfileEditor({
         {status && (
           <p className={styles.status} role="status">
             <CheckCircle aria-hidden="true" size={17} weight="fill" />
-            {status}
+            {status === "saved" ? (
+              <span>
+                <strong>프로필 저장 완료</strong>
+                홈, 커리어맵, 추천 채용공고가 새 정보로 다시 계산됩니다.
+              </span>
+            ) : (
+              <span>
+                <strong>일부 정보를 저장하지 못했습니다.</strong>
+                기존에 저장된 프로필은 유지됩니다.
+              </span>
+            )}
           </p>
         )}
       </form>

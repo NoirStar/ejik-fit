@@ -131,7 +131,7 @@ describe("AppShell", () => {
 
     expect(screen.getAllByRole("link", { name: "홈" })[0]).toHaveAttribute("href", "/");
     expect(screen.getAllByRole("link", { name: "내 커리어" })[0]).toHaveAttribute("href", "/career");
-    expect(screen.getAllByRole("link", { name: "커리어맵" })[0]).toHaveAttribute("href", "/skill-map");
+    expect(screen.getAllByRole("link", { name: "커리어맵" })[0]).toHaveAttribute("href", "/career-map");
     expect(screen.getAllByRole("link", { name: "시장" })[0]).toHaveAttribute("href", "/market");
     expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute("href", "/jobs");
     expect(screen.getAllByRole("link", { name: "커뮤니티" })[0]).toHaveAttribute("href", "/community");

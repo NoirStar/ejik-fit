@@ -5,7 +5,7 @@ import {
   formatClosingDate,
   formatVerifiedDate,
 } from "@/features/jobs/model";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, formatLocation } from "@/lib/labels";
 import { validatedHttpUrl } from "@/lib/safe-url";
 import {
   MAX_SAVED_JOB_IDS,
@@ -80,7 +80,7 @@ export function buildSavedJobItem(posting: PostingDetail): SavedJobItem {
     sourceUrl: posting.source_url,
     careerLabel: formatCareerRange(posting),
     employmentLabel: formatEmployment(posting.employment_type),
-    location: posting.location?.trim() || "지역 미기재",
+    location: formatLocation(posting.location),
     status: posting.status,
     statusLabel: statusLabel(posting.status),
     verifiedLabel: formatVerifiedDate(posting.last_verified_at),

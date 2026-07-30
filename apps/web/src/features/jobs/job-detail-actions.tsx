@@ -33,27 +33,25 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import type { SkillDetail } from "@/lib/types";
+import type { PostingSummary, SkillDetail } from "@/lib/types";
 
 import { matchOwnedJobSkills } from "./job-detail-model";
 import { buildJobConnection } from "./model";
 import styles from "./job-detail-actions.module.css";
 
 type JobDetailActionsProps = {
-  jobId: string;
-  jobTitle: string;
-  sourceUrl: string;
-  status: string;
+  job: PostingSummary;
   skills: SkillDetail[];
 };
 
 export function JobDetailActions({
-  jobId,
-  jobTitle,
-  sourceUrl,
-  status,
+  job,
   skills,
 }: JobDetailActionsProps) {
+  const jobId = job.id;
+  const jobTitle = job.title;
+  const sourceUrl = job.source_url;
+  const status = job.status;
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
@@ -89,7 +87,7 @@ export function JobDetailActions({
     () =>
       buildJobConnection(
         {
-          title: jobTitle,
+          ...job,
           required_skills: skills
             .filter((skill) => skill.requirement_type === "required")
             .map((skill) => skill.skill),
@@ -103,7 +101,7 @@ export function JobDetailActions({
         ownedSkills,
         profile,
       ),
-    [jobTitle, ownedSkills, profile, skills],
+    [job, ownedSkills, profile, skills],
   );
   const saved = savedIds.includes(jobId);
   const applicationStage = applicationStages[jobId] ?? "";

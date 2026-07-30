@@ -776,7 +776,7 @@ export function CareerOverview({
                 <h2>먼저 내 기술을 추가해 주세요.</h2>
                 <p>왼쪽에서 기술을 직접 입력하거나 실제 공고 기준 제안을 선택할 수 있습니다.</p>
               </div>
-              <Link className={styles.inlineLink} href="/skill-map">
+              <Link className={styles.inlineLink} href="/career-map">
                 커리어맵 살펴보기
                 <ArrowRight aria-hidden="true" size={16} weight="bold" />
               </Link>
@@ -820,7 +820,7 @@ export function CareerOverview({
             </p>
             <nav aria-label="커리어 분석 관련 페이지" className={styles.methodLinks}>
               <Link href="/methodology">분석 방법</Link>
-              <Link href="/skill-map">커리어맵</Link>
+              <Link href="/career-map">커리어맵</Link>
               <Link href="/jobs">공식 채용공고</Link>
             </nav>
           </section>

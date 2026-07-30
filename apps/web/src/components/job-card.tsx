@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer, formatEmployment, formatLocation } from "@/lib/labels";
 import type { PostingSummary } from "@/lib/types";
 
 import { SourceMeta } from "./source-meta";
@@ -12,7 +12,7 @@ export function JobCard({ job }: { job: PostingSummary }) {
       <div className="job-row__company">
         <span>{job.company_name}</span>
         <span className="job-row__location">
-          {job.location ?? "근무지 미정"}
+          {formatLocation(job.location)}
         </span>
       </div>
       <div className="job-row__main">

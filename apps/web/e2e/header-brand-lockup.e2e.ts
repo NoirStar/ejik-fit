@@ -25,7 +25,12 @@ for (const width of viewports) {
 
     await expect(brand).toBeVisible();
     await expect(mark).toBeVisible();
-    await expect(mark).toHaveText("C");
+    await expect(mark).not.toHaveText("C");
+    await expect(mark.locator("img")).toHaveAttribute(
+      "src",
+      /brand%2Fejik-fit-mascot\.png|brand\/ejik-fit-mascot\.png/,
+    );
+    await expect(mark.locator("img")).toHaveAttribute("alt", "");
     await expect(brand.locator(".brand-lockup__wordmark")).toContainText("커리어핏");
     await expect(page.getByText("EJIK FIT")).toHaveCount(0);
 

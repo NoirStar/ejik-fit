@@ -26,6 +26,16 @@ const posting = {
 };
 
 describe("posting contract company slug", () => {
+  it("preserves a bounded description excerpt while accepting an older backend", () => {
+    expect(
+      normalizePostingSummary({
+        ...posting,
+        description_excerpt: "  결제 API 개발과 운영 자동화  ",
+      }).description_excerpt,
+    ).toBe("결제 API 개발과 운영 자동화");
+    expect(normalizePostingSummary(posting).description_excerpt).toBeUndefined();
+  });
+
   it("preserves server-canonicalized owned skills on a list response", () => {
     expect(
       normalizePostingList({

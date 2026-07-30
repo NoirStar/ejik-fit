@@ -6,6 +6,7 @@ import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 import MarketPage from "./page";
 
 vi.mock("@/lib/api", () => ({
+  SKILL_GRAPH_MAX_LIMIT: 60,
   getPostings: vi.fn(),
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
@@ -29,7 +30,7 @@ describe("MarketPage", () => {
       nodes: [],
       edges: [],
       evidence: [],
-      meta: { limit: 100, min_confidence: 0.8 },
+      meta: { limit: 60, min_confidence: 0.8 },
     });
   });
 
@@ -56,7 +57,7 @@ describe("MarketPage", () => {
     expect(getSkillGraph).toHaveBeenCalledWith({
       career_type: "experienced",
       include_evidence: true,
-      limit: 100,
+      limit: 60,
     });
     expect(
       screen.getByRole("heading", {
@@ -87,7 +88,7 @@ describe("MarketPage", () => {
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
     expect(getSkillGraph).toHaveBeenCalledWith({
       include_evidence: true,
-      limit: 100,
+      limit: 60,
     });
     expect(
       within(

@@ -20,6 +20,16 @@ describe("career profile storage", () => {
         pastRoles: [" 서버 개발자 ", "서버 개발자", 42],
         experienceYears: 7.5,
         responsibilities: "  결제 API 운영과 장애 대응  ",
+        experienceHighlights: [
+          {
+            title: " 결제 안정화 ",
+            responsibilities: " 장애 원인 분석과 배포 자동화 ",
+            outcome: " 반복 장애 대응 절차 표준화 ",
+            domain: "backend",
+            skills: [" Python ", "Python", "Kubernetes"],
+          },
+          { title: "", responsibilities: "", outcome: "", domain: "", skills: [] },
+        ],
         workTypes: ["development", "operations", "unknown"],
         industryExperience: [" 핀테크 ", "커머스"],
         currentDomain: "backend",
@@ -39,6 +49,15 @@ describe("career profile storage", () => {
       pastRoles: ["서버 개발자"],
       experienceYears: 7.5,
       responsibilities: "결제 API 운영과 장애 대응",
+      experienceHighlights: [
+        {
+          title: "결제 안정화",
+          responsibilities: "장애 원인 분석과 배포 자동화",
+          outcome: "반복 장애 대응 절차 표준화",
+          domain: "backend",
+          skills: ["Python", "Kubernetes"],
+        },
+      ],
       workTypes: ["development", "operations"],
       industryExperience: ["핀테크", "커머스"],
       currentDomain: "backend",
@@ -86,6 +105,20 @@ describe("career profile storage", () => {
     expect(localStorage.getItem("ejik-fit:career-profile")).toContain(
       "클라우드 보안 엔지니어",
     );
+  });
+
+  it("preserves the legacy generic experienced career level", () => {
+    localStorage.setItem(
+      "ejik-fit:career-profile",
+      JSON.stringify({ ...EMPTY_CAREER_PROFILE, careerLevel: "experienced" }),
+    );
+
+    expect(readCareerProfile().careerLevel).toBe("experienced");
+    expect(
+      JSON.parse(localStorage.getItem("careerfit:career-profile") ?? "null")
+        .careerLevel,
+    ).toBe("experienced");
+    expect(localStorage.getItem("ejik-fit:career-profile")).not.toBeNull();
   });
 
   it("notifies subscribers and clears both branded keys", () => {

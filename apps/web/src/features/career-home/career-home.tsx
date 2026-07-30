@@ -5,19 +5,17 @@ import {
   Briefcase,
   ChartLineUp,
   CheckCircle,
-  Compass,
-  MapPin,
-  ShieldCheck,
   WarningCircle,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import type {
-  CareerDirectionSummary,
-  HomeFeedSnapshot,
-  RecommendedJobFeedItem,
-} from "@/features/home-feed/types";
+import {
+  buildCareerAnalysis,
+  type CareerDirection,
+  type CareerDirectionKind,
+} from "@/features/career-analysis/model";
+import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import {
   careerAnalysisLevel,
   EMPTY_CAREER_PROFILE,
@@ -25,406 +23,295 @@ import {
   subscribeCareerProfile,
   type CareerProfile,
 } from "@/lib/career-profile";
+import { formatEmployment, formatLocation } from "@/lib/labels";
+import {
+  readOwnedSkills,
+  subscribeOwnedSkills,
+} from "@/lib/owned-skills";
 
+import { formatCareerRange, formatVerifiedDate } from "../jobs/model";
 import styles from "./career-home.module.css";
 
 type CareerHomeProps = {
   snapshot: HomeFeedSnapshot;
 };
 
-type DirectionKind = "direct" | "adjacent" | "explore" | "transition";
-
-const DIRECTION_LABELS: Record<DirectionKind, string> = {
-  direct: "현재 경력을 직접 이어가는 방향",
-  adjacent: "경험 활용도가 높은 인접 커리어",
-  explore: "관심을 바탕으로 탐색 가능한 방향",
-  transition: "경력 전환 폭이 큰 방향",
+const DIRECTION_LABELS: Record<CareerDirectionKind, string> = {
+  direct: "직접 이어지는 방향",
+  adjacent: "인접 커리어",
+  interest: "관심 분야",
+  transition: "전환 폭이 큰 방향",
 };
 
-function hasProfile(profile: CareerProfile) {
+function hasProfile(profile: CareerProfile, ownedSkills: string[]) {
   return Boolean(
     profile.currentRole ||
       profile.responsibilities ||
-      profile.currentDomain ||
-      profile.interestDomains.length > 0,
+      profile.experienceHighlights.length > 0 ||
+      ownedSkills.length > 0,
   );
 }
 
-function directionKind(
-  direction: CareerDirectionSummary,
-  profile: CareerProfile,
-): DirectionKind {
-  if (profile.currentDomain && profile.currentDomain === direction.domain) {
-    return "direct";
-  }
-  if (profile.interestDomains.includes(direction.domain)) return "explore";
-  if (direction.coveredSkills.length >= 2) return "adjacent";
-  return "transition";
-}
-
 function formattedVerifiedAt(value: string | null) {
-  if (!value) return "최근 확인 시점 없음";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "최근 확인 시점 없음";
-  return `${new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Asia/Seoul",
-  }).format(date)} 확인`;
+  if (!value || Number.isNaN(Date.parse(value))) return "갱신 시점 확인 불가";
+  return (
+    new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Seoul",
+    }).format(new Date(value)) + " 기준"
+  );
 }
 
-function JobCard({ job }: { job: RecommendedJobFeedItem }) {
-  const overlap = [
-    ...job.matchedRequiredSkills,
-    ...job.matchedPreferredSkills,
-  ];
-  const limited = overlap.length <= 1;
-
+function DirectionCard({ direction }: { direction: CareerDirection }) {
   return (
-    <article className={styles.jobCard}>
-      <div className={styles.jobTopline}>
-        <span>{limited ? "연결 근거 제한적" : "내 경험과 연결되는 공고"}</span>
-        <span>{job.verifiedLabel} 확인</span>
-      </div>
-      <div className={styles.jobHeading}>
+    <article className={styles.directionCard} data-kind={direction.kind}>
+      <div className={styles.cardLabel}>{DIRECTION_LABELS[direction.kind]}</div>
+      <h3>{direction.label}</h3>
+      <p>
+        {direction.reasons[0] ??
+          "현재 프로필과 수집된 채용공고에서 확인할 근거가 제한적입니다."}
+      </p>
+      <dl>
         <div>
-          <p>{job.companyName}</p>
-          <h3>
-            <Link href={job.href}>{job.title}</Link>
-          </h3>
+          <dt>공고 수</dt>
+          <dd>{direction.postingCount.toLocaleString("ko-KR")}건</dd>
         </div>
-        <ArrowRight aria-hidden="true" size={20} />
+        <div>
+          <dt>기업 수</dt>
+          <dd>{direction.companyCount.toLocaleString("ko-KR")}곳</dd>
+        </div>
+      </dl>
+      <div className={styles.cardActions}>
+        <Link
+          href={
+            "/jobs?view=matched&direction=" +
+            encodeURIComponent(direction.domain)
+          }
+        >
+          관련 채용공고 보기
+        </Link>
+        {direction.representativeJob ? (
+          <Link href={direction.representativeJob.href}>
+            대표 공고: {direction.representativeJob.title}
+          </Link>
+        ) : (
+          <span>역할·업무 근거가 분명한 대표 공고는 아직 없습니다.</span>
+        )}
       </div>
-      <div className={styles.jobMeta}>
-        <span>
-          <MapPin aria-hidden="true" size={15} />
-          {job.location}
-        </span>
-        <span>{job.careerLabel}</span>
-        <span>{job.employmentLabel}</span>
-      </div>
-      {overlap.length > 0 ? (
-        <p className={styles.jobReason}>
-          <strong>연결되는 기술</strong>
-          {overlap.join(", ")}
-        </p>
-      ) : (
-        <p className={styles.jobReason}>
-          현재 프로필에서 겹치는 기술은 확인되지 않았습니다. 공고 상세에서 업무와
-          조건을 직접 확인해 주세요.
-        </p>
-      )}
-      {job.missingRequiredSkills.length > 0 && (
-        <p className={styles.unconfirmed}>
-          <strong>프로필에서 확인되지 않은 조건</strong>
-          {job.missingRequiredSkills.join(", ")}
-        </p>
-      )}
     </article>
   );
 }
 
-function DataScope({ snapshot }: CareerHomeProps) {
-  return (
-    <section aria-labelledby="data-scope-title" className={styles.scope}>
-      <div>
-        <ShieldCheck aria-hidden="true" size={20} weight="duotone" />
-        <div>
-          <h2 id="data-scope-title">분석 데이터의 범위</h2>
-          <p>
-            수집된 기업 공식 채용 페이지의 공개 공고를 기준으로 하며, 대한민국 전체
-            채용시장을 대표하지 않습니다.
-          </p>
-        </div>
-      </div>
-      <dl>
-        <div>
-          <dt>현재 분석에 포함된 공고</dt>
-          <dd>{snapshot.postingCount.toLocaleString("ko-KR")}건</dd>
-        </div>
-        <div>
-          <dt>확인한 출처</dt>
-          <dd>{snapshot.sourceCount.toLocaleString("ko-KR")}곳</dd>
-        </div>
-        <div>
-          <dt>데이터 시점</dt>
-          <dd>{formattedVerifiedAt(snapshot.lastVerifiedAt)}</dd>
-        </div>
-      </dl>
-      <Link href="/data-policy">수집 범위와 처리 기준 확인</Link>
-    </section>
-  );
-}
-
 function EmptyProfileHome({ snapshot }: CareerHomeProps) {
+  const postingsUnavailable =
+    snapshot.dataStatus === "error" || snapshot.dataStatus === "partial";
+
   return (
-    <>
-      <section className={styles.hero}>
-        <p className={styles.eyebrow}>경력과 채용공고를 함께 보는 커리어 분석</p>
-        <h1>내 경력과 기술이 이어지는 커리어 방향을 확인하세요</h1>
-        <p className={styles.heroDescription}>
-          현재 직무와 실제로 해온 일, 사용 기술을 입력하면 연결되는 커리어 분야와
-          그 판단에 사용한 채용공고를 함께 보여드립니다.
+    <section className={styles.onboarding}>
+      <div>
+        <h1>내 경험에서 이어갈 커리어 방향을 확인하세요</h1>
+        <p>
+          지금까지 맡은 업무와 사용 기술을 입력하면 이어갈 수 있는 분야와 관련
+          채용공고를 실제 공고 근거와 함께 보여드립니다.
         </p>
         <Link className={styles.primaryAction} href="/career">
           내 커리어 분석하기
           <ArrowRight aria-hidden="true" size={18} weight="bold" />
         </Link>
-      </section>
-
-      <section aria-labelledby="how-title" className={styles.howItWorks}>
-        <div className={styles.sectionHeading}>
-          <p>확인할 수 있는 것</p>
-          <h2 id="how-title">세 단계로 판단 근거까지 확인합니다</h2>
-        </div>
-        <ol>
-          <li>
-            <span>01</span>
-            <strong>경력과 기술 입력</strong>
-            <p>최소한의 기술부터 시작하고, 직무와 업무 경험은 나중에 더할 수 있습니다.</p>
-          </li>
-          <li>
-            <span>02</span>
-            <strong>커리어 방향과 연결 근거 확인</strong>
-            <p>직접 이어지는 분야와 인접 분야, 탐색 범위가 큰 분야를 구분합니다.</p>
-          </li>
-          <li>
-            <span>03</span>
-            <strong>관련 채용공고와 시장 확인</strong>
-            <p>실제 공고 수와 기업, 조건을 확인하고 공식 채용 페이지로 이동할 수 있습니다.</p>
-          </li>
-        </ol>
-      </section>
-
-      {snapshot.recommendedJobs.length > 0 && (
-        <section aria-labelledby="recent-jobs-title" className={styles.section}>
-          <div className={styles.sectionHeadingRow}>
-            <div className={styles.sectionHeading}>
-              <p>최근 확인한 공개 채용공고</p>
-              <h2 id="recent-jobs-title">프로필 없이도 공고 범위를 살펴볼 수 있습니다</h2>
-            </div>
-            <Link href="/jobs">전체 채용공고 보기</Link>
-          </div>
-          <div className={styles.jobGrid}>
-            {snapshot.recommendedJobs.slice(0, 2).map((job) => (
-              <JobCard job={job} key={job.id} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <p className={styles.sampleSummary}>
-        공개 채용공고 {snapshot.postingCount.toLocaleString("ko-KR")}건과 출처 {snapshot.sourceCount.toLocaleString("ko-KR")}곳을 현재 화면의 분석 범위에서 확인했습니다.
+      </div>
+      <aside aria-label="분석 결과 예시" className={styles.resultExample}>
+        <span>결과에서 확인할 내용</span>
+        <strong>직접 이어지는 방향 · 인접 커리어</strong>
+        <p>왜 이어지는지, 공고와 기업이 얼마나 확인되는지 함께 비교합니다.</p>
+      </aside>
+      <p className={styles.scopeLine}>
+        {postingsUnavailable
+          ? "채용공고 분석 범위를 불러오지 못했습니다. 잠시 뒤 다시 확인해 주세요."
+          : `현재 수집된 공식 채용공고 ${snapshot.postingCount.toLocaleString("ko-KR")}건 기준 · 대한민국 전체 채용시장을 대표하지 않습니다.`}
       </p>
-      <DataScope snapshot={snapshot} />
-    </>
+    </section>
   );
 }
 
-function ProfileHome({ profile, snapshot }: CareerHomeProps & { profile: CareerProfile }) {
-  const orderedDirections = useMemo(
+function ProfileHome({
+  profile,
+  snapshot,
+  ownedSkills,
+}: CareerHomeProps & { profile: CareerProfile; ownedSkills: string[] }) {
+  const analysis = useMemo(
     () =>
-      snapshot.careerDirections
-        .map((direction) => ({
-          ...direction,
-          kind: directionKind(direction, profile),
-        }))
-        .sort((left, right) => {
-          const rank: Record<DirectionKind, number> = {
-            direct: 0,
-            adjacent: 1,
-            explore: 2,
-            transition: 3,
-          };
-          return rank[left.kind] - rank[right.kind] || right.postingCount - left.postingCount;
-        }),
-    [profile, snapshot.careerDirections],
+      buildCareerAnalysis({
+        profile,
+        ownedSkills,
+        postings: snapshot.analysisPostings ?? [],
+      }),
+    [ownedSkills, profile, snapshot.analysisPostings],
   );
-  const title = profile.currentRole
-    ? `${profile.currentRole} 경험에서 이어갈 방향`
-    : "입력한 기술에서 이어갈 커리어 방향";
+  const directions = analysis.directions.slice(0, 2);
+  const jobs = analysis.recommendedJobs.slice(0, 4);
+  const postingsUnavailable =
+    snapshot.dataStatus === "error" || snapshot.dataStatus === "partial";
 
   return (
-    <>
-      <section className={styles.profileHero}>
+    <div
+      data-analysis-snapshot={analysis.snapshotId}
+      data-analysis-version={analysis.version}
+    >
+      <header className={styles.dashboardHeader}>
         <div>
-          <p className={styles.eyebrow}>내 커리어</p>
-          <h1>{title}</h1>
-          <p>
-            입력한 경험과 수집된 공개 채용공고를 비교한 결과입니다. 연결 근거와 확인
-            범위를 함께 보고 판단해 주세요.
-          </p>
-        </div>
-        <div className={styles.profileActions}>
-          <span>
-            <CheckCircle aria-hidden="true" size={16} weight="fill" />
+          <span className={styles.analysisLevel}>
+            <CheckCircle aria-hidden="true" size={15} weight="fill" />
             {careerAnalysisLevel(profile)}
           </span>
-          <Link href="/career">프로필 정보 추가</Link>
+          <h1>
+            {profile.currentRole
+              ? profile.currentRole + " 경험에서 이어갈 방향"
+              : "내 경험에서 이어갈 커리어 방향"}
+          </h1>
+          <p>입력한 경험과 같은 시점의 공개 채용공고를 비교한 결과입니다.</p>
         </div>
-      </section>
+        <Link href="/career">프로필 정보 추가</Link>
+      </header>
 
-      <section aria-labelledby="directions-title" className={styles.section}>
-        <div className={styles.sectionHeadingRow}>
-          <div className={styles.sectionHeading}>
-            <p>먼저 볼 결론</p>
-            <h2 id="directions-title">내 경험과 연결되는 커리어 방향</h2>
+      <section aria-labelledby="home-directions-title" className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 id="home-directions-title">먼저 확인할 커리어 방향</h2>
+            <p>역할과 업무 근거가 분명한 방향부터 표시합니다.</p>
           </div>
-          <Link href="/skill-map">커리어맵에서 비교하기</Link>
+          <Link href="/career-map">모든 방향 비교</Link>
         </div>
-
-        {orderedDirections.length > 0 ? (
+        {directions.length > 0 ? (
           <div className={styles.directionGrid}>
-            {orderedDirections.slice(0, 4).map((direction, index) => (
-              <article
-                className={styles.directionCard}
-                data-primary={index === 0 ? "true" : undefined}
-                key={direction.domain}
-              >
-                <div className={styles.directionTopline}>
-                  <span data-kind={direction.kind}>{DIRECTION_LABELS[direction.kind]}</span>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                </div>
-                <h3>{direction.label}</h3>
-                <p className={styles.directionReason}>
-                  {direction.coveredSkills.length > 0
-                    ? `${direction.coveredSkills.join(", ")} 경험이 포함된 공개 채용공고에서 연결 근거를 확인했습니다.`
-                    : "관심 분야와 연결된 공개 채용공고를 탐색 범위로 확인했습니다."}
-                </p>
-                <dl>
-                  <div>
-                    <dt>공고</dt>
-                    <dd>공고 {direction.postingCount.toLocaleString("ko-KR")}건</dd>
-                  </div>
-                  <div>
-                    <dt>기업</dt>
-                    <dd>확인된 기업 {direction.confirmedCompanyCount.toLocaleString("ko-KR")}곳</dd>
-                  </div>
-                </dl>
-                {direction.additionalRequirements.length > 0 && (
-                  <p className={styles.additionalRequirements}>
-                    <strong>공고에서 추가로 확인되는 요구사항</strong>
-                    {direction.additionalRequirements.slice(0, 4).join(", ")}
-                  </p>
-                )}
-                <div className={styles.directionLinks}>
-                  <Link href={`/jobs?q=${encodeURIComponent(direction.label)}`}>
-                    관련 공고 보기
-                  </Link>
-                  {direction.representativeJob && (
-                    <Link href={direction.representativeJob.href}>
-                      {direction.representativeJob.companyName} · {direction.representativeJob.title}
-                    </Link>
-                  )}
-                </div>
-              </article>
+            {directions.map((direction) => (
+              <DirectionCard direction={direction} key={direction.domain} />
             ))}
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <Compass aria-hidden="true" size={28} weight="duotone" />
-            <div>
-              <h3>현재 입력으로 연결되는 분야를 확인하지 못했습니다</h3>
-              <p>
-                분석에 포함된 공고가 없거나 기술 근거가 충분하지 않습니다. 해온 업무를
-                추가하면 경력 기준으로 다시 확인할 수 있습니다.
-              </p>
-            </div>
+            <strong>현재 공고 표본에서 이어지는 방향을 확인하지 못했습니다.</strong>
+            <p>
+              프로필의 주요 업무나 프로젝트·성과 경험을 추가하면 분석 범위를 넓힐
+              수 있습니다.
+            </p>
             <Link href="/career">프로필 정보 추가</Link>
           </div>
         )}
       </section>
 
-      <section aria-labelledby="market-summary-title" className={styles.marketStrip}>
-        <div>
-          <ChartLineUp aria-hidden="true" size={22} weight="duotone" />
+      <section aria-labelledby="home-jobs-title" className={styles.section}>
+        <div className={styles.sectionHeader}>
           <div>
-            <p>시장 근거</p>
-            <h2 id="market-summary-title">현재 분석 조건의 공개 채용공고</h2>
+            <h2 id="home-jobs-title">새로 확인할 관련 채용공고</h2>
+            <p>기술 하나가 아니라 역할·업무 근거가 함께 확인된 공고입니다.</p>
           </div>
+          <Link href="/jobs?view=matched">추천 채용공고 전체 보기</Link>
         </div>
-        <dl>
-          <div>
-            <dt>확인된 공고</dt>
-            <dd>{snapshot.postingCount.toLocaleString("ko-KR")}건</dd>
-          </div>
-          <div>
-            <dt>출처</dt>
-            <dd>{snapshot.sourceCount.toLocaleString("ko-KR")}곳</dd>
-          </div>
-          <div>
-            <dt>최근 확인</dt>
-            <dd>{formattedVerifiedAt(snapshot.lastVerifiedAt)}</dd>
-          </div>
-        </dl>
-        <Link href="/market">분야별 시장 확인</Link>
-      </section>
-
-      <section aria-labelledby="connected-jobs-title" className={styles.section}>
-        <div className={styles.sectionHeadingRow}>
-          <div className={styles.sectionHeading}>
-            <p>실제 채용공고</p>
-            <h2 id="connected-jobs-title">내 경험과 조건을 비교할 공고</h2>
-          </div>
-          <Link href="/jobs?view=matched">관련 채용공고 모두 보기</Link>
-        </div>
-        {snapshot.recommendedJobs.length > 0 ? (
-          <div className={styles.jobGrid}>
-            {snapshot.recommendedJobs.slice(0, 2).map((job) => (
-              <JobCard job={job} key={job.id} />
-            ))}
-          </div>
+        {jobs.length > 0 ? (
+          <ul className={styles.jobList}>
+            {jobs.map((job) => {
+              const connection = analysis.jobConnections[job.id];
+              return (
+                <li key={job.id}>
+                  <Link href={"/jobs/" + encodeURIComponent(job.id)}>
+                    <div>
+                      <span>{job.company_name}</span>
+                      <h3>{job.title}</h3>
+                    </div>
+                    <p>{connection.reasons[0]}</p>
+                    <div className={styles.jobMeta}>
+                      <span>{connection.directionLabel}</span>
+                      <span>{formatCareerRange(job)}</span>
+                      <span>{formatEmployment(job.employment_type)}</span>
+                      <span>{formatLocation(job.location)}</span>
+                      <span>{formatVerifiedDate(job.last_verified_at)}</span>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         ) : (
           <div className={styles.emptyState}>
-            <Briefcase aria-hidden="true" size={28} weight="duotone" />
-            <div>
-              <h3>현재 조건과 연결된 공개 채용공고가 없습니다</h3>
-              <p>수집 범위에 공고가 없거나 확인 중입니다. 전체 공고에서 조건을 바꿔 탐색할 수 있습니다.</p>
-            </div>
-            <Link href="/jobs">전체 채용공고 보기</Link>
+            <Briefcase aria-hidden="true" size={22} />
+            <strong>역할·업무 근거가 확인된 추천 공고가 없습니다.</strong>
+            <p>전체 채용공고는 직접 검색하고 조건을 비교할 수 있습니다.</p>
+            <Link href="/jobs">전체 채용공고 찾기</Link>
           </div>
         )}
       </section>
 
-      <DataScope snapshot={snapshot} />
-    </>
+      <section
+        aria-labelledby="home-market-title"
+        className={styles.marketSummary}
+      >
+        <ChartLineUp aria-hidden="true" size={20} />
+        <div>
+          <h2 id="home-market-title">현재 확인한 시장 표본</h2>
+          {postingsUnavailable ? (
+            <p>채용공고 집계를 확인할 수 없습니다. 저장된 프로필은 유지됩니다.</p>
+          ) : (
+            <p>
+              공개 채용공고 {snapshot.postingCount.toLocaleString("ko-KR")}건 · 출처{" "}
+              {snapshot.sourceCount.toLocaleString("ko-KR")}곳 ·{" "}
+              {formattedVerifiedAt(analysis.calculatedAt)}
+            </p>
+          )}
+        </div>
+        <Link href="/market">분야별 채용 현황 보기</Link>
+      </section>
+
+      {analysis.profileInformationNotConfirmed.length > 0 && (
+        <p className={styles.profileNotice}>
+          현재 프로필에서 확인되지 않은 정보:{" "}
+          {analysis.profileInformationNotConfirmed.join(", ")}. 입력하면 비교할 근거의
+          범위가 달라질 수 있습니다.
+        </p>
+      )}
+    </div>
   );
 }
 
 export function CareerHome({ snapshot }: CareerHomeProps) {
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
+  const [ownedSkills, setOwnedSkills] = useState(snapshot.ownedSkills);
 
   useEffect(() => {
     setProfile(readCareerProfile());
-    return subscribeCareerProfile(setProfile);
-  }, []);
+    const storedSkills = readOwnedSkills();
+    setOwnedSkills(storedSkills.length > 0 ? storedSkills : snapshot.ownedSkills);
+    const unsubscribeProfile = subscribeCareerProfile(setProfile);
+    const unsubscribeSkills = subscribeOwnedSkills(setOwnedSkills);
+    return () => {
+      unsubscribeProfile();
+      unsubscribeSkills();
+    };
+  }, [snapshot.ownedSkills]);
 
-  const configured = snapshot.ownedSkills.length > 0 || hasProfile(profile);
+  const configured = hasProfile(profile, ownedSkills);
+  const hasDataError =
+    snapshot.dataStatus === "error" || snapshot.dataStatus === "partial";
 
   return (
     <main className={styles.page}>
-      {snapshot.dataStatus === "error" && (
+      {hasDataError && (
         <section className={styles.errorState} role="alert">
-          <WarningCircle aria-hidden="true" size={22} weight="fill" />
+          <WarningCircle aria-hidden="true" size={20} weight="fill" />
           <div>
-            <strong>채용공고와 시장 데이터를 불러오지 못했습니다</strong>
-            <p>
-              브라우저에 저장된 커리어 정보는 유지됩니다. 잠시 후 다시 시도하거나 전체
-              채용공고를 직접 확인해 주세요.
-            </p>
-            <Link href="/jobs">전체 채용공고 직접 보기</Link>
+            <strong>채용공고를 불러오지 못했습니다.</strong>
+            <p>브라우저에 저장된 프로필은 유지됩니다. 잠시 뒤 다시 불러와 주세요.</p>
           </div>
-        </section>
-      )}
-      {snapshot.dataStatus === "partial" && (
-        <section className={styles.partialState} role="status">
-          <WarningCircle aria-hidden="true" size={19} />
-          <p>일부 데이터를 불러오지 못해 확인된 결과만 표시합니다.</p>
+          <Link href="/">채용공고 다시 불러오기</Link>
         </section>
       )}
       {configured ? (
-        <ProfileHome profile={profile} snapshot={snapshot} />
+        <ProfileHome
+          ownedSkills={ownedSkills}
+          profile={profile}
+          snapshot={snapshot}
+        />
       ) : (
         <EmptyProfileHome snapshot={snapshot} />
       )}

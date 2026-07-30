@@ -21,7 +21,7 @@ import {
   readFollowedCompanySlugs,
   subscribeFollowedCompanies,
 } from "@/lib/followed-companies";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, formatLocation } from "@/lib/labels";
 import {
   readSavedJobIds,
   subscribeSavedJobs,
@@ -233,7 +233,7 @@ function UpcomingDeadline({
           {deadline.location && (
             <>
               <span aria-hidden="true">/</span>
-              {deadline.location}
+              {formatLocation(deadline.location)}
             </>
           )}
           {saved && (

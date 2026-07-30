@@ -1555,3 +1555,12 @@
     transition: none;
   }
 }
+.partialNotice {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}

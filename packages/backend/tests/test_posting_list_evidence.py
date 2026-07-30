@@ -88,6 +88,7 @@ def test_database_list_exposes_confirmed_requirement_evidence() -> None:
     assert item["required_skills"] == ["Python"]
     assert item["preferred_skills"] == ["Docker"]
     assert item["unspecified_skills"] == ["Linux"]
+    assert item["description_excerpt"] == "Python, Docker, Linux"
 
 
 def test_database_list_orders_by_first_discovery_not_recrawl_time() -> None:

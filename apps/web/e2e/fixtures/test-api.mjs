@@ -645,6 +645,7 @@ let postReactions = new Set();
 let postSaves = new Set();
 let authorFollows = new Set();
 let careerState = null;
+let marketFailureResources = new Set();
 
 function resetSupabaseFixture() {
   communityPosts = new Map();
@@ -653,6 +654,14 @@ function resetSupabaseFixture() {
   postSaves = new Set();
   authorFollows = new Set();
   careerState = null;
+  marketFailureResources = new Set();
+}
+
+function failedMarketResource(pathname) {
+  if (pathname === "/api/postings") return "postings";
+  if (pathname === "/api/skills/stats") return "skills";
+  if (pathname === "/api/graph/skills") return "graph";
+  return null;
 }
 
 function fixtureAuthorNickname(authorId) {
@@ -1409,6 +1418,22 @@ const server = createServer(async (request, response) => {
     ) {
       seedFollowingFixture();
       sendJson(response, 200, { ok: true });
+      return;
+    }
+    if (
+      requestUrl.pathname === "/__test__/market-failures" &&
+      request.method === "POST"
+    ) {
+      const body = await readJson(request);
+      marketFailureResources = new Set(
+        Array.isArray(body.resources) ? body.resources : [],
+      );
+      sendJson(response, 200, { resources: [...marketFailureResources] });
+      return;
+    }
+    const failedResource = failedMarketResource(requestUrl.pathname);
+    if (failedResource && marketFailureResources.has(failedResource)) {
+      sendJson(response, 503, { detail: "fixture market resource unavailable" });
       return;
     }
     if (await handleAuth(request, response, requestUrl)) return;

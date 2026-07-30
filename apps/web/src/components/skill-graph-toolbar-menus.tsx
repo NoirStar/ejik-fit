@@ -171,7 +171,7 @@ export function SkillGraphToolbarMenus({
         <div className={styles.popoverHeader}>
           <div>
             <strong>{PRODUCT_TERMS.ownedSkills}</strong>
-            <span>추천과 공고 매칭에 반영됩니다.</span>
+            <span>내 프로필과 공고의 조건을 비교할 때 사용합니다.</span>
           </div>
           <b>{owned.skills.length}/{MAX_OWNED_SKILLS}</b>
         </div>
@@ -335,15 +335,15 @@ export function SkillGraphToolbarMenus({
         onToggle={toggleMenu}
         open={openMenu === "legend"}
         panelClassName={styles.legend}
-        panelLabel="스킬맵 읽는 법"
+        panelLabel="기술 관계 읽는 법"
         triggerLabel="읽는 법"
         triggerRef={triggerRef("legend")}
       >
-        <p aria-label="스킬맵 범례" role="note">
+        <p aria-label="기술 관계 범례" role="note">
           <span><i aria-hidden="true" data-kind="demand" />크기: 시장 수요</span>
           <span><i aria-hidden="true" data-kind="domain" />색: 기술 분야</span>
           <span><i aria-hidden="true" data-kind="owned" />테두리: 내 기술</span>
-          <span><i aria-hidden="true" data-kind="recommended" />점: 학습 추천</span>
+          <span><i aria-hidden="true" data-kind="recommended" />점: 공고에서 추가 확인</span>
           <span><i aria-hidden="true" data-kind="link" />선 농도: 함께 요구</span>
         </p>
       </ToolbarMenu>

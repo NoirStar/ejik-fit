@@ -30,6 +30,7 @@ COMPANY_DIVERSITY_BATCH_SIZE = 5
 PERSONALIZED_COMPANY_BATCH_SIZE = 2
 MAX_OWNED_SKILLS = 20
 PUBLIC_POSTINGS_CACHE = "public, s-maxage=60, stale-while-revalidate=300"
+POSTING_DESCRIPTION_EXCERPT_LENGTH = 1_200
 
 
 def _company_slugs(value: str | None) -> list[str]:
@@ -67,6 +68,10 @@ class PostingReader(Protocol):
 
 def _summary(posting: JobPosting) -> dict:
     skill_groups = confirmed_skill_groups(posting.skills)
+    description_excerpt = structured_plain_text(
+        posting.description_html,
+        posting.description_text,
+    )[:POSTING_DESCRIPTION_EXCERPT_LENGTH].strip()
     return {
         "id": posting.id,
         "title": posting.title,
@@ -86,6 +91,7 @@ def _summary(posting: JobPosting) -> dict:
         "required_skills": list(skill_groups.required),
         "preferred_skills": list(skill_groups.preferred),
         "unspecified_skills": list(skill_groups.unspecified),
+        "description_excerpt": description_excerpt or None,
     }
 
 

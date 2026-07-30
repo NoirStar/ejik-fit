@@ -254,18 +254,18 @@ describe("HomeFeed", () => {
       screen.queryByRole("complementary", { name: "내 커리어 바로가기" }),
     ).not.toBeInTheDocument();
     const briefing = screen.getByRole("region", { name: "내 커리어 브리핑" });
-    expect(within(briefing).getByText("다음에 준비할 기술")).toBeInTheDocument();
+    expect(within(briefing).getByText("공고에서 함께 확인된 조건")).toBeInTheDocument();
     expect(within(briefing).getByRole("link", {
-      name: "Kubernetes 추천 근거 보기",
+      name: "Kubernetes 관련 공고 근거 보기",
     }))
-      .toHaveAttribute("href", "/skill-map?skill=Kubernetes");
+      .toHaveAttribute("href", "/skills/graph?seed=Kubernetes");
     expect(within(briefing).getByText(
-      "관련 공고 8건에서 반복적으로 부족했습니다.",
+      "관련 공고 8건에서 추가 조건으로 확인됐습니다.",
     ))
       .toBeInTheDocument();
-    expect(within(briefing).getByText("준비도 높은 공고")).toBeInTheDocument();
+    expect(within(briefing).getByText("필수 기술 절반 이상 겹침")).toBeInTheDocument();
     expect(within(briefing).getByText("4건")).toBeInTheDocument();
-    expect(within(briefing).getByText("필수 기술 절반 이상 충족"))
+    expect(within(briefing).getByText("확인된 필수 기술 중 절반 이상 겹침"))
       .toBeInTheDocument();
     expect(within(briefing).getByText("기술이 겹치는 공고"))
       .toBeInTheDocument();
@@ -520,6 +520,27 @@ describe("HomeFeed", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("does not show social sorting tabs when the community is empty", async () => {
+    render(
+      <HomeFeed
+        communityOnly
+        initialCommunityFeed={{
+          status: "ready",
+          page: { items: [], nextCursor: null },
+        }}
+        snapshot={buildSnapshot()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "커리어 커뮤니티" }))
+      .toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("tabpanel", { name: "커뮤니티 글" }))
+      .toBeInTheDocument();
+  });
+
   it("uses an honest compact discovery state before personalization", () => {
     const snapshot = buildHomeFeedSnapshot({
       postings: ready(postings),
@@ -543,7 +564,7 @@ describe("HomeFeed", () => {
       .toHaveLength(1);
     expect(
       within(briefing).getByText(
-        "내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.",
+        "내 기술을 등록하면 공고의 기술 조건과 비교할 수 있습니다.",
       ),
     ).toBeInTheDocument();
     expect(

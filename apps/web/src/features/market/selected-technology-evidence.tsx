@@ -55,7 +55,7 @@ export function SelectedTechnologyEvidence({
       </dl>
 
       {error ? (
-        <div className={styles.compactState} role="alert">
+        <div className={styles.compactState} role="status">
           <strong>{error}</strong>
           <p>기술 수요 집계는 계속 확인할 수 있습니다.</p>
         </div>

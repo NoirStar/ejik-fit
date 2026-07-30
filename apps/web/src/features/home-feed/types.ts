@@ -1,4 +1,5 @@
 import type { CommunityCategory } from "@/lib/community-contract";
+import type { PostingSummary } from "@/lib/types";
 
 export type FeedTab = "recommended" | "following" | "latest" | "popular";
 export type DataStatus = "ready" | "partial" | "empty" | "error";
@@ -137,4 +138,6 @@ export type HomeFeedSnapshot = {
   sourceCount: number;
   lastVerifiedAt: string | null;
   resourceErrors: string[];
+  /** Canonical posting sample used by every career-analysis surface. */
+  analysisPostings?: PostingSummary[];
 };

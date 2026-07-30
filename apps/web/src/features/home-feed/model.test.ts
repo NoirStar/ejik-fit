@@ -234,7 +234,7 @@ describe("buildHomeFeedSnapshot", () => {
       skillName: "Kubernetes",
       title: "Kubernetes 요구 공고",
       summary:
-        "분석된 공고에서 필수 8건, 우대 4건, 필수·우대 미표기 2건으로 확인됐습니다.",
+        "분석된 공고에서 필수 8건, 우대 4건, 조건 구분 없음 2건으로 확인됐습니다.",
       postingCount: 14,
       requiredCount: 8,
       preferredCount: 4,

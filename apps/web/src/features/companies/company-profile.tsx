@@ -8,7 +8,7 @@ import Link from "next/link";
 
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { buildJobEvidence, formatCareerRange, formatClosingDate, formatVerifiedDate } from "@/features/jobs/model";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, formatLocation } from "@/lib/labels";
 import type {
   PostingListResponse,
   PostingSummary,
@@ -182,7 +182,7 @@ function CompanyJob({ job, index }: { job: PostingSummary; index: number }) {
           </div>
           <div>
             <dt>근무지</dt>
-            <dd>{job.location ?? "미기재"}</dd>
+            <dd>{formatLocation(job.location)}</dd>
           </div>
           <div>
             <dt>접수</dt>

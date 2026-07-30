@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 
 import {
+  SKILL_GRAPH_MAX_LIMIT,
   analyzeFit,
   getPostings,
   getSkillCatalog,
@@ -105,4 +106,11 @@ it("requests a lightweight graph and cancellable selected-skill evidence", async
     next: { revalidate: 60, tags: ["skill-graph-evidence"] },
     signal: expect.any(AbortSignal),
   });
+});
+
+it("keeps the web graph request inside the backend contract", async () => {
+  expect(SKILL_GRAPH_MAX_LIMIT).toBe(60);
+  expect(() => getSkillGraph({ limit: SKILL_GRAPH_MAX_LIMIT + 1 })).toThrow(
+    /60/,
+  );
 });

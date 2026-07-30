@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import { writeCareerProfile } from "@/lib/career-profile";
 import { writeOwnedSkills } from "@/lib/owned-skills";
+import type { PostingSummary } from "@/lib/types";
 
 import { CareerMap } from "./career-map";
 
@@ -13,6 +14,25 @@ vi.mock("next/navigation", () => ({
   useRouter: () => navigation,
   useSearchParams: () => new URLSearchParams("owned_skills=Java"),
 }));
+
+const backendPosting: PostingSummary = {
+  id: "job-1",
+  title: "Backend Engineer",
+  company_name: "토스",
+  company_slug: "toss",
+  career_type: "experienced",
+  employment_type: "FULL_TIME_WORKER",
+  career_min: 3,
+  career_max: 8,
+  location: "서울",
+  status: "open",
+  source_url: "https://careers.example.com/job-1",
+  last_verified_at: "2026-07-29T00:00:00.000Z",
+  description_excerpt: "API를 개발하고 서비스 운영과 배포 자동화를 담당합니다.",
+  required_skills: ["Java", "Spring"],
+  preferred_skills: ["Kafka"],
+  unspecified_skills: [],
+};
 
 const snapshot: HomeFeedSnapshot = {
   dataStatus: "ready",
@@ -55,6 +75,7 @@ const snapshot: HomeFeedSnapshot = {
   sourceCount: 6,
   lastVerifiedAt: "2026-07-29T00:00:00.000Z",
   resourceErrors: [],
+  analysisPostings: [backendPosting],
 };
 
 describe("CareerMap", () => {
@@ -65,13 +86,14 @@ describe("CareerMap", () => {
     navigation.refresh.mockReset();
   });
 
-  it("places the current profile at the center and opens evidence-backed directions", async () => {
+  it("compares evidence-backed directions in a list and detail panel", async () => {
     writeOwnedSkills(["Java"]);
     writeCareerProfile({
       currentRole: "백엔드 개발자",
       pastRoles: [],
       experienceYears: 5,
       responsibilities: "API 개발과 운영",
+      experienceHighlights: [],
       workTypes: ["development", "operations"],
       industryExperience: [],
       currentDomain: "backend",
@@ -87,23 +109,23 @@ describe("CareerMap", () => {
     render(<CareerMap snapshot={snapshot} />);
 
     await waitFor(() => {
-      expect(screen.getByText("백엔드 개발자")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /백엔드/ })).toBeInTheDocument();
     });
     expect(screen.getByRole("heading", { name: "커리어맵" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /백엔드/ })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-    expect(screen.getAllByText("현재 경력을 직접 이어가는 방향").length)
+    expect(screen.getAllByText("직접 이어지는 방향").length)
       .toBeGreaterThan(0);
-    expect(screen.getByText("관련 공고 9건")).toBeInTheDocument();
-    expect(screen.getByText("확인된 기업 4곳")).toBeInTheDocument();
-    expect(screen.getByText(/Java, Kafka/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "토스 · Backend Engineer" }))
+    expect(screen.getAllByText("1건").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1곳").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Java/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /대표 공고: 토스 · Backend Engineer/ }))
       .toHaveAttribute("href", "/jobs/job-1");
     expect(screen.getByRole("link", { name: "기술 관계 보기" }))
       .toHaveAttribute("href", "/skills/graph");
-    expect(screen.getByText(/커리어 경로나 학습 순서를 뜻하지 않습니다/))
+    expect(screen.getByText(/커리어 경로나 학습 순서가 아닙니다/))
       .toBeInTheDocument();
   });
 
@@ -126,7 +148,7 @@ describe("CareerMap", () => {
       />,
     );
 
-    expect(screen.getByText("커리어맵을 만들 정보가 아직 없습니다"))
+    expect(screen.getByText("커리어 방향을 비교할 정보가 아직 없습니다."))
       .toBeInTheDocument();
     expect(screen.getByRole("link", { name: "커리어 프로필 입력" }))
       .toHaveAttribute("href", "/career");

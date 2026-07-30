@@ -9,15 +9,29 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { writeOwnedSkills } from "@/lib/owned-skills";
+import { EMPTY_CAREER_PROFILE, writeCareerProfile } from "@/lib/career-profile";
 import { toggleSavedJob } from "@/lib/saved-jobs";
 
 import { JobDetailActions } from "./job-detail-actions";
 
 const props = {
-  jobId: "job-1",
-  jobTitle: "Backend Engineer",
-  sourceUrl: "https://careers.example.com/job-1",
-  status: "open",
+  job: {
+    id: "job-1",
+    title: "Backend Engineer",
+    company_name: "검증 기업",
+    career_type: "experienced",
+    employment_type: "FULL_TIME_WORKER",
+    career_min: 3,
+    career_max: null,
+    location: "서울",
+    status: "open",
+    source_url: "https://careers.example.com/job-1",
+    last_verified_at: "2026-07-30T00:00:00Z",
+    description_excerpt: "Go API를 개발하고 백엔드 서비스를 운영합니다.",
+    required_skills: ["Go"],
+    preferred_skills: [],
+    unspecified_skills: [],
+  },
   skills: [
     {
       skill: "Go",
@@ -82,10 +96,28 @@ describe("JobDetailActions", () => {
 
     render(<JobDetailActions {...props} />);
 
-    expect(await screen.findByText("기술 일부 연결")).toBeInTheDocument();
-    expect(screen.getByText(/Go 1개가 프로필과 겹칩니다/)).toBeInTheDocument();
+    expect(await screen.findByText("기술 일부만 확인됨")).toBeInTheDocument();
+    expect(screen.getByText(/Go 한 항목이 겹치지만/)).toBeInTheDocument();
     expect(screen.getByText("Go")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
+  });
+
+  it("uses the same role and responsibility evidence as job recommendations", async () => {
+    writeCareerProfile({
+      ...EMPTY_CAREER_PROFILE,
+      currentRole: "백엔드 개발자",
+      experienceYears: 5,
+      responsibilities: "Go API 개발과 백엔드 서비스 운영",
+      currentDomain: "backend",
+      workTypes: ["development", "operations"],
+    });
+    writeOwnedSkills(["Go"]);
+
+    render(<JobDetailActions {...props} />);
+
+    expect(await screen.findByText("현재 경력과 직접 이어짐"))
+      .toBeInTheDocument();
+    expect(screen.getByText(/백엔드 개발자 직무 경험/)).toBeInTheDocument();
   });
 
   it("guides an empty browser stack to career settings", () => {
@@ -124,7 +156,7 @@ describe("JobDetailActions", () => {
         screen.getByRole("button", { name: "Backend Engineer 저장 해제" }),
       ).toHaveAttribute("aria-pressed", "true");
     });
-    expect(screen.getByText("기술 일부 연결")).toBeInTheDocument();
+    expect(screen.getByText("기술 일부만 확인됨")).toBeInTheDocument();
   });
 
   it("opens only the validated official source in a new tab", () => {
@@ -132,21 +164,23 @@ describe("JobDetailActions", () => {
 
     expect(
       screen.getByRole("link", { name: "공식 채용 페이지에서 지원" }),
-    ).toHaveAttribute("href", props.sourceUrl);
+    ).toHaveAttribute("href", props.job.source_url);
     expect(
       screen.getByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).toHaveAttribute("target", "_blank");
   });
 
   it("uses verification language instead of application language when closed", () => {
-    render(<JobDetailActions {...props} status="closed" />);
+    render(
+      <JobDetailActions {...props} job={{ ...props.job, status: "closed" }} />,
+    );
 
     expect(
       screen.getByRole("region", { name: "공고 확인" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "공식 채용 페이지에서 확인" }),
-    ).toHaveAttribute("href", props.sourceUrl);
+    ).toHaveAttribute("href", props.job.source_url);
     expect(
       screen.queryByRole("link", { name: "공식 채용 페이지에서 지원" }),
     ).not.toBeInTheDocument();

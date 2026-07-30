@@ -43,8 +43,8 @@ test("connects a profile to a posting, its evidence, and a saved career group", 
   const recommendation = posting.getByRole("region", {
     name: "Python Backend Engineer 추천 근거",
   });
-  await expect(recommendation.getByText("경험 활용도가 높은 인접 분야")).toBeVisible();
-  await expect(recommendation).toContainText("Python, Docker");
+  await expect(recommendation.getByText(/현재 경력과 직접 이어짐/)).toBeVisible();
+  await expect(recommendation).toContainText("Python · Docker");
   await posting
     .getByRole("button", { name: "Python Backend Engineer 저장" })
     .click();

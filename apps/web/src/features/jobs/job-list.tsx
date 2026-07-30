@@ -14,6 +14,9 @@ import { useEffect, useMemo, useState } from "react";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
 import {
+  buildCareerAnalysis,
+} from "@/features/career-analysis/model";
+import {
   EMPTY_CAREER_PROFILE,
   readCareerProfile,
   subscribeCareerProfile,
@@ -28,7 +31,7 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, formatLocation } from "@/lib/labels";
 import { SKILL_CATEGORIES } from "@/lib/skill-categories";
 import type { PostingListResponse, PostingSummary } from "@/lib/types";
 
@@ -39,7 +42,6 @@ import {
   filterJobPostings,
   formatCareerRange,
   formatClosingDate,
-  formatDiscoveredDate,
   formatVerifiedDate,
   type JobView,
 } from "./model";
@@ -59,36 +61,10 @@ type JobListProps = {
   initialView?: JobView;
   pageSize?: number;
   saveSearchRequested?: boolean;
+  analysisPostings?: PostingSummary[];
+  initialDirection?: string;
+  analysisError?: boolean;
 };
-
-type SkillGroupProps = {
-  label: string;
-  skills: string[];
-  tone: "required" | "preferred" | "mentioned";
-};
-
-function SkillGroup({ label, skills, tone }: SkillGroupProps) {
-  if (skills.length === 0) return null;
-
-  return (
-    <div className={styles.skillGroup} data-tone={tone}>
-      <h4>{label}</h4>
-      <ul role="list">
-        {skills.slice(0, 5).map((skill) => (
-          <li key={skill}>
-            <Link
-              aria-label={`${skill} 기술 관계 보기`}
-              href={`/skills/graph?seed=${encodeURIComponent(skill)}`}
-              prefetch={false}
-            >
-              {skill}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 type JobItemProps = {
   job: PostingSummary;
@@ -102,7 +78,20 @@ function JobItem({ job, ownedSkills, profile, saved, onToggleSaved }: JobItemPro
   const evidence = buildJobEvidence(job, ownedSkills);
   const connection = buildJobConnection(job, ownedSkills, profile);
   const closingLabel = formatClosingDate(job.closes_at);
-  const discoveredLabel = formatDiscoveredDate(job.first_seen_at);
+  const conditions = [
+    ...evidence.requiredSkills.slice(0, 2).map((skill) => ({
+      label: skill,
+      type: "필수",
+    })),
+    ...evidence.preferredSkills.slice(0, 1).map((skill) => ({
+      label: skill,
+      type: "우대",
+    })),
+    ...evidence.unspecifiedSkills.slice(0, 1).map((skill) => ({
+      label: skill,
+      type: "조건",
+    })),
+  ].slice(0, 3);
 
   return (
     <article className={styles.jobCard}>
@@ -162,7 +151,7 @@ function JobItem({ job, ownedSkills, profile, saved, onToggleSaved }: JobItemPro
         </div>
         <div>
           <dt>근무지</dt>
-          <dd>{job.location ?? "미기재"}</dd>
+          <dd>{formatLocation(job.location)}</dd>
         </div>
         {closingLabel && (
           <div>
@@ -178,12 +167,17 @@ function JobItem({ job, ownedSkills, profile, saved, onToggleSaved }: JobItemPro
       >
           <StackSimple aria-hidden="true" size={17} weight="bold" />
           <div>
-            <strong>{connection.label}</strong>
+            <strong>
+              {connection.directionLabel
+                ? connection.directionLabel + " · " + connection.label
+                : connection.label}
+            </strong>
             <p>{connection.reason}</p>
             {connection.matchedSkills.length > 0 ? (
               <span>겹치는 기술: {connection.matchedSkills.join(" · ")}</span>
             ) : null}
-            {connection.unconfirmedRequiredSkills.length > 0 ? (
+            {connection.unconfirmedRequiredSkills.length > 0 &&
+            connection.recommendationEligible ? (
               <small>
                 현재 프로필에서 확인되지 않은 필수 조건:{" "}
                 {connection.unconfirmedRequiredSkills.slice(0, 3).join(" · ")}
@@ -193,24 +187,15 @@ function JobItem({ job, ownedSkills, profile, saved, onToggleSaved }: JobItemPro
           </div>
       </section>
 
-      {evidence.extractedSkillCount > 0 ? (
-        <div className={styles.skillEvidence}>
-          <SkillGroup
-            label="필수 기술"
-            skills={evidence.requiredSkills}
-            tone="required"
-          />
-          <SkillGroup
-            label="우대 기술"
-            skills={evidence.preferredSkills}
-            tone="preferred"
-          />
-          <SkillGroup
-            label="공고 언급"
-            skills={evidence.unspecifiedSkills}
-            tone="mentioned"
-          />
-        </div>
+      {conditions.length > 0 ? (
+        <ul aria-label="핵심 기술 조건" className={styles.conditionList}>
+          {conditions.map((condition) => (
+            <li key={condition.type + condition.label}>
+              <span>{condition.type}</span>
+              {condition.label}
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className={styles.noEvidence}>
           채용공고 내용에서 구분해 표시할 기술 조건을 확인하지 못했습니다.
@@ -220,14 +205,14 @@ function JobItem({ job, ownedSkills, profile, saved, onToggleSaved }: JobItemPro
       <footer className={styles.jobFooter}>
         <span>
           <CheckCircle aria-hidden="true" size={16} weight="fill" />
-          {discoveredLabel ?? formatVerifiedDate(job.last_verified_at)}
+          {formatVerifiedDate(job.last_verified_at)}
         </span>
         <div>
           <Link
             href={`/jobs/${encodeURIComponent(job.id)}`}
             prefetch={false}
           >
-            연결 근거와 공고 내용 보기
+            공고 근거와 내용 보기
           </Link>
           <a href={job.source_url} rel="noreferrer" target="_blank">
             공식 채용 페이지에서 지원
@@ -260,10 +245,10 @@ function ViewEmptyState({ view, hasProfile }: {
       <div className={styles.emptyState}>
         <StackSimple aria-hidden="true" size={24} />
         <div>
-          <h3>현재 결과에서 겹치는 기술이 없습니다.</h3>
-          <p>검색 조건을 넓히거나 내 기술을 추가해 다시 확인해 보세요.</p>
+          <h3>현재 조건에서 추천 근거가 충분한 공고가 없습니다.</h3>
+          <p>검색 조건을 넓히거나 주요 업무와 경력 정보를 확인해 주세요.</p>
         </div>
-        <Link href="/career">내 기술 관리</Link>
+        <Link href="/career">프로필 정보 확인</Link>
       </div>
     );
   }
@@ -306,30 +291,64 @@ export function JobList({
   currentPage = 1,
   error = false,
   initialView = "all",
-  pageSize = 20,
+  pageSize = 12,
   saveSearchRequested = false,
+  analysisPostings = [],
+  initialDirection = "",
+  analysisError = false,
 }: JobListProps) {
   const [hydrated, setHydrated] = useState(false);
   const [view, setView] = useState<JobView>(initialView);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [direction, setDirection] = useState(initialDirection);
   const items = useMemo(() => postings?.items ?? [], [postings]);
   const filtering = Boolean(
-    filters.query || filters.category || filters.careerType,
+    filters.query || filters.category || filters.careerType || direction,
   );
   const summary = useMemo(() => buildJobsSummary(items), [items]);
+  const careerAnalysis = useMemo(
+    () =>
+      buildCareerAnalysis({
+        profile,
+        ownedSkills,
+        postings: analysisPostings.length > 0 ? analysisPostings : items,
+      }),
+    [analysisPostings, items, ownedSkills, profile],
+  );
+  const pageAnalysis = useMemo(
+    () => buildCareerAnalysis({ profile, ownedSkills, postings: items }),
+    [items, ownedSkills, profile],
+  );
+  const directionItems = useMemo(
+    () =>
+      direction
+        ? items.filter(
+            (posting) =>
+              pageAnalysis.jobConnections[posting.id]?.directionId === direction,
+          )
+        : items,
+    [direction, items, pageAnalysis.jobConnections],
+  );
   const matchingCount = useMemo(
-    () => filterJobPostings(items, "matched", ownedSkills, savedIds, profile).length,
-    [items, ownedSkills, profile, savedIds],
+    () =>
+      filterJobPostings(
+        directionItems,
+        "matched",
+        ownedSkills,
+        savedIds,
+        profile,
+      ).length,
+    [directionItems, ownedSkills, profile, savedIds],
   );
   const savedCount = useMemo(
-    () => filterJobPostings(items, "saved", ownedSkills, savedIds).length,
-    [items, ownedSkills, savedIds],
+    () => filterJobPostings(directionItems, "saved", ownedSkills, savedIds).length,
+    [directionItems, ownedSkills, savedIds],
   );
   const visibleJobs = useMemo(
-    () => filterJobPostings(items, view, ownedSkills, savedIds, profile),
-    [items, ownedSkills, profile, savedIds, view],
+    () => filterJobPostings(directionItems, view, ownedSkills, savedIds, profile),
+    [directionItems, ownedSkills, profile, savedIds, view],
   );
   const total = postings?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -358,6 +377,8 @@ export function JobList({
 
   useEffect(() => setView(initialView), [initialView]);
 
+  useEffect(() => setDirection(initialDirection), [initialDirection]);
+
   function handleToggleSaved(id: string) {
     setSavedIds(toggleSavedJob(id));
   }
@@ -366,6 +387,7 @@ export function JobList({
   if (filters.query) retryParams.set("q", filters.query);
   if (filters.category) retryParams.set("category", filters.category);
   if (filters.careerType) retryParams.set("career_type", filters.careerType);
+  if (direction) retryParams.set("direction", direction);
   if (currentPage > 1) retryParams.set("page", String(currentPage));
   if (view !== "all") retryParams.set("view", view);
   const retryQuery = retryParams.toString();
@@ -387,6 +409,7 @@ export function JobList({
     if (filters.query) params.set("q", filters.query);
     if (filters.category) params.set("category", filters.category);
     if (filters.careerType) params.set("career_type", filters.careerType);
+    if (direction) params.set("direction", direction);
     if (view !== "all") params.set("view", view);
     if (page > 1) params.set("page", String(page));
     const query = params.toString();
@@ -394,7 +417,11 @@ export function JobList({
   }
 
   return (
-    <main className={styles.main}>
+    <main
+      className={styles.main}
+      data-analysis-snapshot={careerAnalysis.snapshotId}
+      data-analysis-version={careerAnalysis.version}
+    >
       <header className={styles.intro}>
         <h1>채용공고 찾기</h1>
         <p className={styles.description}>
@@ -495,6 +522,28 @@ export function JobList({
                 <option value="mixed">신입·경력</option>
               </select>
             </div>
+            <div className={styles.field}>
+              <label htmlFor="career-direction">커리어 방향</label>
+              <select
+                id="career-direction"
+                name="direction"
+                onChange={(event) => setDirection(event.target.value)}
+                value={direction}
+              >
+                <option value="">전체 방향</option>
+                {careerAnalysis.directions.map((item) => (
+                  <option key={item.domain} value={item.domain}>
+                    {item.label} · {item.kind === "direct"
+                      ? "직접"
+                      : item.kind === "adjacent"
+                        ? "인접"
+                        : item.kind === "interest"
+                          ? "관심"
+                          : "전환 폭 큼"}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className={styles.filterActions}>
               <button className={styles.searchButton} type="submit">
                 채용공고 검색
@@ -516,6 +565,11 @@ export function JobList({
               openOnReady={saveSearchRequested}
             />
           </div>
+          {analysisError ? (
+            <p className={styles.analysisNotice} role="status">
+              전체 분석 표본을 불러오지 못해 현재 페이지의 공고만 비교합니다.
+            </p>
+          ) : null}
           <div className={styles.trustNote}>
             <ShieldCheck aria-hidden="true" size={19} weight="fill" />
             <p>

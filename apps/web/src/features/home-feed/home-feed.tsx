@@ -563,7 +563,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           <span data-kind="unspecified">구분 없음 {item.unspecifiedCount}건</span>
         </div>
         <Link className={styles.marketLink} href={item.href} prefetch={false}>
-          스킬맵에서 공고 근거 보기
+          기술 관계에서 공고 근거 보기
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </div>
@@ -612,7 +612,7 @@ function CareerBriefing({
             <div className={styles.briefingLead}>
               <div className={styles.briefingRecommendation}>
                 <div className={styles.briefingRecommendationCopy}>
-                  <span>다음에 준비할 기술</span>
+                  <span>공고에서 함께 확인된 조건</span>
                   {readyInsight.matchingPostingCount === 0 ? (
                     <strong className={styles.briefingEmptyRecommendation}>
                       현재 공개 공고에서 일치 항목을 찾지 못했습니다.
@@ -621,19 +621,18 @@ function CareerBriefing({
                     <strong>{readyInsight.nextSkill.skillName}</strong>
                   ) : (
                     <strong className={styles.briefingEmptyRecommendation}>
-                      현재 반복되는 부족 기술이 없습니다.
+                      현재 반복해서 확인된 추가 조건이 없습니다.
                     </strong>
                   )}
                 </div>
                 {readyInsight.matchingPostingCount > 0 && readyInsight.nextSkill && (
                   <Link
-                    aria-label={`${readyInsight.nextSkill.skillName} 추천 근거 보기`}
+                    aria-label={`${readyInsight.nextSkill.skillName} 관련 공고 근거 보기`}
                     className={styles.briefingEvidenceLink}
-                    href={`/skill-map?skill=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
+                    href={`/skills/graph?seed=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
                     prefetch={false}
                   >
-                    <span className={styles.evidencePrefix}>추천 </span>
-                    근거 보기
+                    공고 근거 보기
                     <ArrowRight aria-hidden="true" size={14} weight="bold" />
                   </Link>
                 )}
@@ -642,7 +641,7 @@ function CareerBriefing({
                 <p>내 기술을 더 추가하거나 커리어 기준을 조정해 보세요.</p>
               ) : readyInsight.nextSkill ? (
                 <p>
-                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 반복적으로 부족했습니다.
+                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 추가 조건으로 확인됐습니다.
                 </p>
               ) : (
                 <p>현재 조건에서 확인된 공고를 계속 비교합니다.</p>
@@ -650,12 +649,12 @@ function CareerBriefing({
             </div>
             <dl aria-label="내 기술 공고 분석" className={styles.briefingFacts}>
               <div>
-                <dt>준비도 높은 공고</dt>
+                <dt>필수 기술 절반 이상 겹침</dt>
                 <dd>
                   <strong>
                     {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
                   </strong>
-                  <span>필수 기술 절반 이상 충족</span>
+                  <span>확인된 필수 기술 중 절반 이상 겹침</span>
                 </dd>
               </div>
               <div>
@@ -682,7 +681,7 @@ function CareerBriefing({
             prefetch={false}
           >
             <strong>
-              내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.
+              내 기술을 등록하면 공고의 기술 조건과 비교할 수 있습니다.
             </strong>
             <span>
               기술 등록
@@ -933,6 +932,11 @@ export function HomeFeed({
       ),
     [publicCommunity.state.posts],
   );
+  const showFeedTabs =
+    !communityOnly ||
+    !localPostsHydrated ||
+    publicCommunity.state.status !== "ready" ||
+    localFeedItems.length + publicServerFeedItems.length > 0;
   const followingServerFeedItems = useMemo(
     () =>
       followingCommunity.state.posts.map((post) =>
@@ -1278,7 +1282,6 @@ export function HomeFeed({
           >
             {communityOnly ? (
               <div>
-                <p>경험을 나누는 공간</p>
                 <h1 id="home-feed-title">커리어 커뮤니티</h1>
                 <span>
                   커리어 고민과 직무 전환, 실제 업무 경험을 질문하고 나눠보세요.
@@ -1335,28 +1338,30 @@ export function HomeFeed({
             </section>
           )}
 
-          <div aria-label="피드 보기" className={styles.tabs} role="tablist">
-            {TABS.map((tab, index) => (
-              <button
-                aria-controls="home-feed-panel"
-                aria-selected={activeTab === tab.id}
-                data-active={activeTab === tab.id ? "true" : undefined}
-                id={`feed-tab-${tab.id}`}
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                onKeyDown={(event) => handleTabKeyDown(event, index)}
-                role="tab"
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                type="button"
-              >
-                {communityOnly
-                  ? COMMUNITY_TAB_LABELS[tab.id]
-                  : hasPersonalization
-                    ? tab.label
-                    : tab.unconfiguredLabel ?? tab.label}
-              </button>
-            ))}
-          </div>
+          {showFeedTabs && (
+            <div aria-label="피드 보기" className={styles.tabs} role="tablist">
+              {TABS.map((tab, index) => (
+                <button
+                  aria-controls="home-feed-panel"
+                  aria-selected={activeTab === tab.id}
+                  data-active={activeTab === tab.id ? "true" : undefined}
+                  id={`feed-tab-${tab.id}`}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  onKeyDown={(event) => handleTabKeyDown(event, index)}
+                  role="tab"
+                  tabIndex={activeTab === tab.id ? 0 : -1}
+                  type="button"
+                >
+                  {communityOnly
+                    ? COMMUNITY_TAB_LABELS[tab.id]
+                    : hasPersonalization
+                      ? tab.label
+                      : tab.unconfiguredLabel ?? tab.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <p aria-live="polite" className={styles.srOnly}>
             {`${visibleItems.length}개의 콘텐츠를 표시합니다.`}
@@ -1369,7 +1374,8 @@ export function HomeFeed({
           )}
 
           <div
-            aria-labelledby={`feed-tab-${activeTab}`}
+            aria-label={!showFeedTabs ? "커뮤니티 글" : undefined}
+            aria-labelledby={showFeedTabs ? `feed-tab-${activeTab}` : undefined}
             className={styles.feedList}
             id="home-feed-panel"
             role="tabpanel"
@@ -1536,7 +1542,7 @@ export function HomeFeed({
                 {snapshot.skillDemand.map((skill) => (
                   <li key={skill.skillName}>
                     <Link
-                      href={`/skill-map?skill=${encodeURIComponent(skill.skillName)}`}
+                      href={`/career-map?skill=${encodeURIComponent(skill.skillName)}`}
                       prefetch={false}
                     >
                       <strong>{skill.skillName}</strong>

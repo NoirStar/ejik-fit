@@ -55,15 +55,16 @@ describe("JobsPage", () => {
       }),
     );
 
-    expect(getPostings).toHaveBeenCalledWith({
+    expect(getPostings).toHaveBeenNthCalledWith(1, {
       q: "Python",
       career_type: "experienced",
       category: "infra",
-      limit: 20,
+      limit: 12,
       offset: 0,
     });
+    expect(getPostings).toHaveBeenNthCalledWith(2, { limit: 60 });
     expect(screen.getByRole("link", { name: "Python Engineer" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Python 기술 관계 보기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "공고 근거와 내용 보기" })).toBeInTheDocument();
     expect(screen.getByLabelText("기술 분야")).toHaveValue("infra");
   });
 
@@ -76,9 +77,10 @@ describe("JobsPage", () => {
       }),
     );
 
-    expect(getPostings).toHaveBeenCalledWith({ limit: 20, offset: 40 });
+    expect(getPostings).toHaveBeenNthCalledWith(1, { limit: 12, offset: 24 });
+    expect(getPostings).toHaveBeenNthCalledWith(2, { limit: 60 });
     expect(screen.getByText("전체 채용공고 61건")).toBeInTheDocument();
-    expect(screen.getByText("41-41 / 61건")).toBeInTheDocument();
+    expect(screen.getByText("25-25 / 61건")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "2페이지" })).toHaveAttribute(
       "href",
       "/jobs?page=2",
@@ -120,7 +122,8 @@ describe("JobsPage", () => {
       }),
     );
 
-    expect(getPostings).toHaveBeenCalledWith({ limit: 20, offset: 0 });
+    expect(getPostings).toHaveBeenNthCalledWith(1, { limit: 12, offset: 0 });
+    expect(getPostings).toHaveBeenNthCalledWith(2, { limit: 60 });
     expect(screen.getByLabelText("기술 분야")).toHaveValue("");
   });
 

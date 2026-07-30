@@ -238,15 +238,29 @@ describe("MarketOverview", () => {
     expect(
       screen.getByRole("region", { name: "Kubernetes 시장 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /플랫폼 엔지니어/ })).toBeInTheDocument();
+    const kubernetesEvidence = screen.getByRole("region", {
+      name: "Kubernetes 시장 근거",
+    });
+    expect(
+      within(kubernetesEvidence).getByRole("link", { name: /플랫폼 엔지니어/ }),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Docker 기술 선택" }));
 
     expect(
       screen.getByRole("region", { name: "Docker 시장 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /컨테이너 인프라 개발자/ })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /플랫폼 엔지니어/ })).not.toBeInTheDocument();
+    const dockerEvidence = screen.getByRole("region", {
+      name: "Docker 시장 근거",
+    });
+    expect(
+      within(dockerEvidence).getByRole("link", {
+        name: /컨테이너 인프라 개발자/,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(dockerEvidence).queryByRole("link", { name: /플랫폼 엔지니어/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps current evidence visible while a filter route is pending", () => {

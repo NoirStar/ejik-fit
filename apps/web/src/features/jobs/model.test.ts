@@ -52,12 +52,15 @@ describe("jobs explorer model", () => {
         responsibilities: "플랫폼 운영 자동화와 배포 환경을 담당했습니다.",
       }),
     ).toEqual({
-      label: "현재 경력과 직접 연결",
-      reason:
-        "현재 직무와 공고 제목이 연결되고, 확인된 기술 조건 4개 중 2개가 프로필과 겹칩니다.",
+      label: "현재 경력과 직접 이어짐",
+      reason: "Platform Engineer 직무 경험이 DevOps·플랫폼 공고의 역할과 이어집니다.",
       matchedSkills: ["Python", "Kubernetes"],
       unconfirmedRequiredSkills: ["Docker"],
       extractedSkillCount: 4,
+      directionId: "devops",
+      directionLabel: "DevOps·플랫폼",
+      recommendationEligible: true,
+      evidenceTypes: ["role", "responsibility", "skill"],
     });
   });
 
@@ -76,10 +79,11 @@ describe("jobs explorer model", () => {
       EMPTY_CAREER_PROFILE,
     );
 
-    expect(connection.label).toBe("기술 일부 연결");
+    expect(connection.label).toBe("기술 일부만 확인됨");
     expect(connection.reason).toBe(
-      "확인된 기술 조건 8개 중 Linux 1개가 프로필과 겹칩니다. 이 한 항목만으로 강한 연결을 뜻하지 않습니다.",
+      "Linux 한 항목이 겹치지만 공고의 역할·업무와 이어지는 근거는 확인되지 않았습니다.",
     );
+    expect(connection.recommendationEligible).toBe(false);
     expect(connection.unconfirmedRequiredSkills).toHaveLength(7);
     expect(connection).not.toHaveProperty("score");
   });
@@ -95,27 +99,28 @@ describe("jobs explorer model", () => {
     };
 
     expect(filterJobPostings([posting, other], "all", ["Python"], [])).toHaveLength(2);
-    expect(filterJobPostings([posting, other], "matched", ["Python"], [])).toEqual([
-      posting,
-    ]);
+    expect(filterJobPostings([posting, other], "matched", ["Python"], [])).toEqual([]);
     expect(filterJobPostings([posting, other], "saved", [], ["job-2"])).toEqual([
       other,
     ]);
   });
 
-  it("keeps a role-title connection in recommendations without claiming skill overlap", () => {
+  it("does not recommend from a role title alone", () => {
     expect(
       filterJobPostings([posting], "matched", [], [], {
         ...EMPTY_CAREER_PROFILE,
         currentRole: "Platform Engineer",
       }),
-    ).toEqual([posting]);
+    ).toEqual([]);
     expect(
       buildJobConnection(posting, [], {
         ...EMPTY_CAREER_PROFILE,
         currentRole: "Platform Engineer",
-      }).label,
-    ).toBe("직무 경험 확인 필요");
+      }),
+    ).toMatchObject({
+      label: "추가 확인이 필요한 공고",
+      recommendationEligible: false,
+    });
   });
 
   it("formats only declared career ranges", () => {
@@ -138,7 +143,7 @@ describe("jobs explorer model", () => {
 
   it("formats verified and closing dates without inventing missing values", () => {
     expect(formatDiscoveredDate("2026-07-10T03:00:00Z")).toBe(
-      "7월 10일 커리어핏 최초 확인",
+      "7월 10일 처음 확인",
     );
     expect(formatDiscoveredDate("invalid")).toBeNull();
     expect(formatVerifiedDate(posting.last_verified_at)).toBe("7월 14일 확인");

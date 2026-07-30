@@ -982,3 +982,92 @@
     transform: none;
   }
 }
+
+.analysisNotice {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.conditionList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.55rem 1rem;
+  list-style: none;
+}
+
+.conditionList li {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.35rem;
+  color: var(--color-text);
+  font-size: 0.7rem;
+}
+
+.conditionList span {
+  color: var(--color-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.jobHeader {
+  padding-block: 0.65rem;
+}
+
+.facts {
+  padding-block: 0.5rem;
+}
+
+.facts dd {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+}
+
+.matchEvidence {
+  margin-top: 0.55rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.matchEvidence p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-muted);
+}
+
+.matchEvidence > div > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobFooter {
+  min-height: 2.75rem;
+  padding-block: 0;
+}
+
+@media (max-width: 520px) {
+  .conditionList {
+    padding: 0.5rem 1rem;
+  }
+
+  .jobFooter > span {
+    display: none;
+  }
+
+  .jobFooter > div {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -32,10 +32,8 @@
 }
 
 .communityHeader {
-  padding: 1.25rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
+  padding: 0.75rem 0 1rem;
+  border-bottom: 1px solid var(--color-line);
 }
 
 .communityHeader > div {
@@ -43,22 +41,15 @@
   gap: 0.35rem;
 }
 
-.communityHeader p,
 .communityHeader h1,
 .communityHeader span {
   margin: 0;
 }
 
-.communityHeader p {
-  color: var(--color-accent-strong);
-  font-size: 0.75rem;
-  font-weight: 800;
-}
-
 .communityHeader h1 {
-  font-size: clamp(1.65rem, 4vw, 2.15rem);
-  font-weight: 850;
-  letter-spacing: -0.05em;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 760;
+  letter-spacing: -0.04em;
   line-height: 1.2;
 }
 

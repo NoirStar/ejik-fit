@@ -116,9 +116,10 @@ def test_skill_graph_endpoint_returns_graph_contract() -> None:
 
 def test_skill_graph_endpoint_validates_limit_bounds() -> None:
     app = create_app(skill_graph_reader=FakeSkillGraphReader())
-    response = TestClient(app).get("/api/graph/skills?limit=1000")
+    client = TestClient(app)
 
-    assert response.status_code == 422
+    assert client.get("/api/graph/skills?limit=60").status_code == 200
+    assert client.get("/api/graph/skills?limit=61").status_code == 422
 
 
 def test_skill_graph_endpoint_forwards_bounded_local_depth() -> None:

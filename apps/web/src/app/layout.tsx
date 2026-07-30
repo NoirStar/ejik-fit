@@ -34,12 +34,21 @@ export const metadata: Metadata = {
     title: "커리어핏 | 경력과 채용공고를 연결하는 커리어 분석",
     description:
       "내 기술과 경력을 바탕으로 이어갈 수 있는 커리어 방향과 관련 채용공고를 확인합니다.",
+    images: [
+      {
+        url: "/brand/ejik-fit-mascot.png",
+        width: 512,
+        height: 512,
+        alt: "커리어핏",
+      },
+    ],
   },
   twitter: {
     card: "summary",
     title: "커리어핏 | 경력과 채용공고를 연결하는 커리어 분석",
     description:
       "내 기술과 경력을 바탕으로 이어갈 수 있는 커리어 방향과 관련 채용공고를 확인합니다.",
+    images: ["/brand/ejik-fit-mascot.png"],
   },
   icons: {
     icon: "/brand/ejik-fit-mascot.png",

@@ -11,6 +11,7 @@ type MarketFieldOverviewProps = {
   initialField: string;
   scope: MarketOverviewSnapshot["fieldScope"];
   error?: string | null;
+  retryHref?: string;
 };
 
 function formatVerifiedDate(value: string) {
@@ -53,6 +54,7 @@ export function MarketFieldOverview({
   initialField,
   scope,
   error = null,
+  retryHref = "/market",
 }: MarketFieldOverviewProps) {
   const firstField = fields[0]?.domain ?? "";
   const [selectedDomain, setSelectedDomain] = useState(
@@ -76,11 +78,10 @@ export function MarketFieldOverview({
     >
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>수집된 공개 채용공고 기준</p>
           <h2 id="market-field-heading">분야별 채용 현황</h2>
           <p>
-            기술이 실제 공고에 함께 나타난 근거를 직무·커리어 분야별로 묶었습니다.
-            공고 수와 서로 다른 기업 수를 함께 확인할 수 있습니다.
+            공고 제목과 주요 업무, 확인된 기술 조건으로 분야를 분류했습니다. 공고 수와
+            서로 다른 기업 수를 함께 확인할 수 있습니다.
           </p>
         </div>
         <Link className={styles.primaryLink} href="/jobs">
@@ -91,7 +92,8 @@ export function MarketFieldOverview({
       {error ? (
         <div className={styles.state} role="alert">
           <strong>분야별 채용 현황을 불러오지 못했습니다.</strong>
-          <p>{error} 기술 수요와 전체 채용공고는 계속 확인할 수 있습니다.</p>
+          <p>{error} 이 상태는 공고가 0건이라는 뜻이 아닙니다.</p>
+          <Link href={retryHref}>분야별 현황 다시 불러오기</Link>
         </div>
       ) : fields.length === 0 || !selected ? (
         <div className={styles.state}>
@@ -125,7 +127,7 @@ export function MarketFieldOverview({
           <article className={styles.fieldDetail}>
             <div className={styles.fieldSummary}>
               <div>
-                <p className={styles.eyebrow}>선택한 분야</p>
+                <p className={styles.selectionLabel}>선택한 분야</p>
                 <h3>{selected.label}</h3>
               </div>
               <FieldFacts field={selected} />
@@ -227,14 +229,15 @@ export function MarketFieldOverview({
         </>
       )}
 
-      <p className={styles.scopeNote}>
-        분석 근거: 연결 관계가 확인된 공개 채용공고{" "}
-        {scope.evidencePostingCount.toLocaleString("ko-KR")}건, 기술{" "}
-        {scope.graphSkillCount.toLocaleString("ko-KR")}개
-        {scope.graphLimit ? ` (한 번에 최대 ${scope.graphLimit}개 기술 분석)` : ""}. 같은
-        공고에 기술이 함께 등장한 관계를 분야별로 집계했으며, 학습 순서나 인과관계를
-        뜻하지 않습니다. 수집된 공개 공고 기준이므로 전체 채용시장을 대표하지 않습니다.
-      </p>
+      {!error && (
+        <p className={styles.scopeNote}>
+          분야 분류 근거가 확인된 공개 채용공고{" "}
+          {scope.evidencePostingCount.toLocaleString("ko-KR")}건을 집계했습니다. 기술
+          관계 보조 표본은 최대 {scope.graphLimit ?? 0}개 기술을 확인하며, 같은 공고의
+          동시 등장은 인과관계나 학습 순서를 뜻하지 않습니다. 수집된 공개 공고
+          기준이므로 전체 채용시장을 대표하지 않습니다.
+        </p>
+      )}
     </section>
   );
 }

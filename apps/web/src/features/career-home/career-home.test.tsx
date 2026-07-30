@@ -3,8 +3,28 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { writeCareerProfile } from "@/lib/career-profile";
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
+import type { PostingSummary } from "@/lib/types";
 
 import { CareerHome } from "./career-home";
+
+const backendPosting: PostingSummary = {
+  id: "job-1",
+  title: "Backend Engineer",
+  company_name: "토스",
+  company_slug: "toss",
+  career_type: "experienced",
+  employment_type: "FULL_TIME_WORKER",
+  career_min: 3,
+  career_max: 8,
+  location: "서울",
+  status: "open",
+  source_url: "https://careers.example.com/job-1",
+  last_verified_at: "2026-07-29T08:00:00.000Z",
+  description_excerpt: "결제 API를 개발하고 서비스 운영과 배포 자동화를 담당합니다.",
+  required_skills: ["Java", "Spring"],
+  preferred_skills: ["Kafka"],
+  unspecified_skills: [],
+};
 
 const baseSnapshot: HomeFeedSnapshot = {
   dataStatus: "ready",
@@ -27,6 +47,7 @@ const baseSnapshot: HomeFeedSnapshot = {
   sourceCount: 5,
   lastVerifiedAt: "2026-07-29T08:00:00.000Z",
   resourceErrors: [],
+  analysisPostings: [],
 };
 
 describe("CareerHome", () => {
@@ -39,17 +60,14 @@ describe("CareerHome", () => {
     render(<CareerHome snapshot={baseSnapshot} />);
 
     expect(
-      screen.getByRole("heading", {
-        name: "내 경력과 기술이 이어지는 커리어 방향을 확인하세요",
-      }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("link", { name: "내 커리어 분석하기" }),
     ).toHaveAttribute("href", "/career");
-    expect(screen.getByText("경력과 기술 입력")).toBeInTheDocument();
-    expect(screen.getByText("커리어 방향과 연결 근거 확인")).toBeInTheDocument();
-    expect(screen.getByText("관련 채용공고와 시장 확인")).toBeInTheDocument();
-    expect(screen.getByText(/공개 채용공고 18건/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", {
+      name: "내 경험에서 이어갈 커리어 방향을 확인하세요",
+    })).toBeInTheDocument();
+    expect(screen.getByText("결과에서 확인할 내용")).toBeInTheDocument();
+    expect(screen.getByText(/공식 채용공고 18건/)).toBeInTheDocument();
+    expect(screen.queryByText(/01|02|03/)).not.toBeInTheDocument();
   });
 
   it("puts a profiled user's conclusion, evidence, market and job in that order", async () => {
@@ -58,6 +76,7 @@ describe("CareerHome", () => {
       pastRoles: [],
       experienceYears: 5,
       responsibilities: "결제 API 개발과 운영 자동화",
+      experienceHighlights: [],
       workTypes: ["development", "operations"],
       industryExperience: ["핀테크"],
       currentDomain: "backend",
@@ -75,6 +94,7 @@ describe("CareerHome", () => {
         snapshot={{
           ...baseSnapshot,
           ownedSkills: ["Java", "Kafka"],
+          analysisPostings: [backendPosting],
           careerInsight: {
             status: "ready",
             matchingPostingCount: 12,
@@ -132,10 +152,10 @@ describe("CareerHome", () => {
     expect(
       screen.getByRole("heading", { name: "백엔드 개발자 경험에서 이어갈 방향" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("현재 경력을 직접 이어가는 방향")).toBeInTheDocument();
-    expect(screen.getByText("공고 12건")).toBeInTheDocument();
-    expect(screen.getByText("확인된 기업 3곳")).toBeInTheDocument();
-    expect(screen.getAllByText(/Java, Kafka/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("직접 이어지는 방향").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1건").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("1곳").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/결제 API|백엔드 개발자/).length).toBeGreaterThan(0);
     for (const link of screen.getAllByRole("link", { name: /Backend Engineer/ })) {
       expect(link).toHaveAttribute("href", "/jobs/job-1");
     }
@@ -157,10 +177,30 @@ describe("CareerHome", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "채용공고와 시장 데이터를 불러오지 못했습니다",
+      "채용공고를 불러오지 못했습니다",
     );
     expect(
-      screen.getByRole("link", { name: "전체 채용공고 직접 보기" }),
-    ).toHaveAttribute("href", "/jobs");
+      screen.getByRole("link", { name: "채용공고 다시 불러오기" }),
+    ).toHaveAttribute("href", "/");
+  });
+
+  it("does not turn a partial fetch failure into a zero-posting claim", () => {
+    render(
+      <CareerHome
+        snapshot={{
+          ...baseSnapshot,
+          dataStatus: "partial",
+          postingCount: 0,
+          sourceCount: 0,
+          lastVerifiedAt: null,
+          resourceErrors: ["공고 데이터를 불러오지 못했습니다."],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/채용공고 분석 범위를 불러오지 못했습니다/))
+      .toBeInTheDocument();
+    expect(screen.queryByText(/공식 채용공고 0건/)).not.toBeInTheDocument();
   });
 });

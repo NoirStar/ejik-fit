@@ -32,6 +32,7 @@ export type CareerEmploymentType = (typeof CAREER_EMPLOYMENT_TYPES)[number];
 export const CAREER_LEVELS = [
   "",
   "new_comer",
+  "experienced",
   "junior",
   "mid",
   "senior",
@@ -52,11 +53,20 @@ export type CareerSkillUsage = {
   lastUsed: SkillLastUsed;
 };
 
+export type CareerExperienceHighlight = {
+  title: string;
+  responsibilities: string;
+  outcome: string;
+  domain: string;
+  skills: string[];
+};
+
 export type CareerProfile = {
   currentRole: string;
   pastRoles: string[];
   experienceYears: number | null;
   responsibilities: string;
+  experienceHighlights: CareerExperienceHighlight[];
   workTypes: CareerWorkType[];
   industryExperience: string[];
   currentDomain: string;
@@ -74,6 +84,7 @@ export const EMPTY_CAREER_PROFILE: CareerProfile = {
   pastRoles: [],
   experienceYears: null,
   responsibilities: "",
+  experienceHighlights: [],
   workTypes: [],
   industryExperience: [],
   currentDomain: "",
@@ -160,6 +171,32 @@ function normalizeSkillUsage(value: unknown) {
   return result;
 }
 
+function normalizeExperienceHighlights(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  const result: CareerExperienceHighlight[] = [];
+  for (const item of value.slice(0, 8)) {
+    if (!isRecord(item)) continue;
+    const highlight = {
+      title: text(item.title, MAX_SHORT_TEXT),
+      responsibilities: text(item.responsibilities, MAX_LONG_TEXT),
+      outcome: text(item.outcome, MAX_LONG_TEXT),
+      domain: domain(item.domain),
+      skills: stringList(item.skills, 100),
+    };
+    if (
+      !highlight.title &&
+      !highlight.responsibilities &&
+      !highlight.outcome &&
+      !highlight.domain &&
+      highlight.skills.length === 0
+    ) {
+      continue;
+    }
+    result.push(highlight);
+  }
+  return result;
+}
+
 export function normalizeCareerProfile(value: unknown): CareerProfile {
   if (!isRecord(value)) return { ...EMPTY_CAREER_PROFILE, skillUsage: {} };
   return {
@@ -167,6 +204,9 @@ export function normalizeCareerProfile(value: unknown): CareerProfile {
     pastRoles: stringList(value.pastRoles),
     experienceYears: experienceYears(value.experienceYears),
     responsibilities: text(value.responsibilities, MAX_LONG_TEXT),
+    experienceHighlights: normalizeExperienceHighlights(
+      value.experienceHighlights,
+    ),
     workTypes: enumList(value.workTypes, CAREER_WORK_TYPES),
     industryExperience: stringList(value.industryExperience),
     currentDomain: domain(value.currentDomain),

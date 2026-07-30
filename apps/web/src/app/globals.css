@@ -1356,20 +1356,19 @@ main[aria-busy="true"] {
 }
 
 .brand-lockup__mark {
-  display: grid;
-  width: 1.625rem;
-  height: 1.625rem;
+  display: block;
+  width: 1.875rem;
+  height: 1.875rem;
   flex: 0 0 auto;
-  place-items: center;
-  border-radius: 0.55rem;
-  background: var(--color-accent);
-  color: var(--color-on-accent);
-  font-family: var(--font-geist), sans-serif;
-  font-size: 0.875rem;
-  font-weight: 850;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  transform: rotate(-3deg);
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.brand-lockup__mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-lockup__wordmark {
@@ -1386,10 +1385,8 @@ main[aria-busy="true"] {
 }
 
 .brand-lockup--sm .brand-lockup__mark {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 0.5rem;
-  font-size: 0.8125rem;
+  width: 1.875rem;
+  height: 1.875rem;
 }
 
 .brand-lockup--sm .brand-lockup__wordmark {
@@ -1401,8 +1398,8 @@ main[aria-busy="true"] {
 }
 
 .brand-lockup--lg .brand-lockup__mark {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
 .brand-lockup--lg .brand-lockup__wordmark {

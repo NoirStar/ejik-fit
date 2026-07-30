@@ -17,6 +17,7 @@ export type PostingSummary = {
   required_skills?: string[];
   preferred_skills?: string[];
   unspecified_skills?: string[];
+  description_excerpt?: string;
 };
 
 export type SkillDetail = {

@@ -8,7 +8,12 @@ import {
   type CareerPreferences,
 } from "@/lib/career-preferences";
 import { stableCompanyIdentity } from "@/lib/company-identity";
-import { formatCareer, formatEmployment, PRODUCT_TERMS } from "@/lib/labels";
+import {
+  formatCareer,
+  formatEmployment,
+  formatLocation,
+  PRODUCT_TERMS,
+} from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   type LocalCommunityPost,
@@ -221,7 +226,7 @@ export function postingSummaryToFeedItem(
         }
       : {}),
     title: posting.title,
-    location: posting.location ?? "근무지 미기재",
+    location: formatLocation(posting.location),
     careerLabel: formatCareer(posting.career_type),
     employmentLabel: formatEmployment(posting.employment_type),
     sourceUrl: posting.source_url,
@@ -271,7 +276,7 @@ function buildMarketInsights(
     unspecifiedCount: skill.unspecifiedCount,
     sampleLabel: `기술 언급 공고 ${skill.postingCount}건`,
     sourceLabel: "공식 채용페이지 수집 데이터",
-    href: `/skill-map?skill=${encodeURIComponent(skill.skillName)}`,
+    href: `/career-map?skill=${encodeURIComponent(skill.skillName)}`,
     source: "api",
   }));
 }
@@ -482,5 +487,6 @@ export function buildHomeFeedSnapshot(
       (postings?.items ?? []).map((posting) => posting.last_verified_at),
     ),
     resourceErrors,
+    analysisPostings: postings?.items ?? [],
   };
 }

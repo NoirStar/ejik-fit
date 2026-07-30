@@ -28,6 +28,8 @@ export { ApiError, ApiTimeoutError };
 const API_BASE_URL =
   process.env.API_BASE_URL ?? "http://localhost:8000";
 
+export const SKILL_GRAPH_MAX_LIMIT = 60;
+
 async function request<T>(
   path: string,
   options: RequestInit & {
@@ -185,6 +187,14 @@ export function getSkillGraph(filters: {
   limit?: number;
   include_evidence?: boolean;
 } = {}): Promise<SkillGraphResponse> {
+  if (
+    filters.limit !== undefined &&
+    (filters.limit < 5 || filters.limit > SKILL_GRAPH_MAX_LIMIT)
+  ) {
+    throw new RangeError(
+      `기술 관계 요청 limit은 5~${SKILL_GRAPH_MAX_LIMIT} 범위여야 합니다.`,
+    );
+  }
   const params = new URLSearchParams();
   if (filters.seed) {
     params.set("seed", filters.seed);

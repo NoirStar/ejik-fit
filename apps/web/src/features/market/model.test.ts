@@ -25,7 +25,7 @@ const postings: PostingListResponse = {
   items: [
     {
       id: "job-new",
-      title: "플랫폼 엔지니어",
+      title: "클라우드 엔지니어",
       company_name: "새회사",
       career_type: "experienced",
       employment_type: "FULL_TIME_WORKER",
@@ -35,6 +35,7 @@ const postings: PostingListResponse = {
       status: "open",
       source_url: "https://example.com/jobs/new",
       last_verified_at: "2026-07-14T03:00:00Z",
+      description_excerpt: "클라우드 인프라 운영과 자동화를 담당합니다.",
       required_skills: ["Kubernetes"],
       preferred_skills: ["Docker"],
       unspecified_skills: [],
@@ -154,7 +155,7 @@ const fieldGraph: SkillGraphResponse = {
   evidence: [
     {
       posting_id: "job-new",
-      title: "플랫폼 엔지니어",
+      title: "클라우드 엔지니어",
       company_name: "새회사",
       skills: ["Kubernetes", "Docker"],
       required: ["Kubernetes"],

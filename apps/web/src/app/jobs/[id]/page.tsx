@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { JobDetailView } from "@/features/jobs/job-detail-view";
 import { ApiError, getPosting } from "@/lib/api";
-import { formatCareer } from "@/lib/labels";
+import { formatCareer, formatLocation } from "@/lib/labels";
 import { normalizePostingDetail } from "@/lib/posting-contract";
 import type { PostingDetail } from "@/lib/types";
 
@@ -25,7 +25,7 @@ async function postingOrNotFound(id: string) {
 export async function generateMetadata({ params }: JobDetailProps): Promise<Metadata> {
   const { id } = await params;
   const job = await postingOrNotFound(id);
-  const location = job.location ?? "근무지 미기재";
+  const location = formatLocation(job.location);
   const career = formatCareer(job.career_type);
 
   return {

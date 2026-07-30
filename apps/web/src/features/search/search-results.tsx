@@ -22,7 +22,7 @@ import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "@/features/home-feed/model";
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer, formatEmployment, formatLocation } from "@/lib/labels";
 import {
   readLocalCommunityPosts,
   subscribeLocalCommunityPosts,
@@ -191,7 +191,7 @@ function JobResult({ job }: { job: JobSearchResult }) {
       <ul aria-label={`${job.title} 조건`} className={styles.jobFacts}>
         <li>{formatCareer(job.careerType)}</li>
         <li>{formatEmployment(job.employmentType)}</li>
-        <li>{job.location ?? "근무지 미기재"}</li>
+        <li>{formatLocation(job.location)}</li>
       </ul>
       {skills.length > 0 && (
         <ul aria-label={`${job.title} 기술`} className={styles.evidenceSkills}>

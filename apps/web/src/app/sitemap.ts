@@ -5,7 +5,7 @@ import { siteUrl } from "@/lib/site-url";
 const ROUTES = [
   "",
   "/market",
-  "/skill-map",
+  "/career-map",
   "/career",
   "/career/calendar",
   "/jobs",

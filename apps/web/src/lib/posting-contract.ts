@@ -43,6 +43,21 @@ function nullableString(record: Record<string, unknown>, key: string) {
   return value;
 }
 
+function optionalBoundedText(
+  record: Record<string, unknown>,
+  key: string,
+  maxLength: number,
+) {
+  const value = record[key];
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new Error(`Invalid posting field: ${key}`);
+  }
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  return normalized.slice(0, maxLength);
+}
+
 function nullableDate(record: Record<string, unknown>, key: string) {
   const value = nullableString(record, key);
   if (value !== null && Number.isNaN(Date.parse(value))) {
@@ -82,6 +97,11 @@ function optionalCompanySlug(record: Record<string, unknown>) {
 
 export function normalizePostingSummary(value: unknown): PostingSummary {
   if (!isRecord(value)) throw new Error("Invalid posting item");
+  const descriptionExcerpt = optionalBoundedText(
+    value,
+    "description_excerpt",
+    1_200,
+  );
 
   return {
     id: stringField(value, "id"),
@@ -102,6 +122,9 @@ export function normalizePostingSummary(value: unknown): PostingSummary {
     required_skills: strings(value, "required_skills"),
     preferred_skills: strings(value, "preferred_skills"),
     unspecified_skills: strings(value, "unspecified_skills"),
+    ...(descriptionExcerpt
+      ? { description_excerpt: descriptionExcerpt }
+      : {}),
   };
 }
 

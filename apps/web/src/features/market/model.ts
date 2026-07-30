@@ -1,7 +1,8 @@
 import type { ResourceState } from "@/features/home-feed/resource-state";
+import { classifyPostingDomains } from "@/features/career-analysis/model";
 import { formatDomainLabel } from "@/features/career/model";
 import { stableCompanyIdentity } from "@/lib/company-identity";
-import { formatCareer, formatEmployment } from "@/lib/labels";
+import { formatCareer, formatEmployment, formatLocation } from "@/lib/labels";
 import {
   SKILL_CATEGORIES,
   normalizeSkillCategory,
@@ -304,7 +305,7 @@ export function buildMarketOverviewSnapshot(input: {
     title: item.title,
     careerLabel: formatCareer(item.career_type),
     employmentLabel: formatEmployment(item.employment_type),
-    location: item.location ?? "근무지 미기재",
+    location: formatLocation(item.location),
     verifiedAt: item.last_verified_at,
     sourceUrl: item.source_url,
     skills: normalizedJobSkills([
@@ -315,19 +316,7 @@ export function buildMarketOverviewSnapshot(input: {
     href: `/jobs/${encodeURIComponent(item.id)}`,
   }));
   const graph = input.graph?.status === "ready" ? input.graph.data : null;
-  const postingById = new Map(
-    (postings?.items ?? []).map((posting) => [posting.id, posting]),
-  );
   const jobById = new Map(jobs.map((job) => [job.id, job]));
-  const domainsBySkill = new Map<string, Set<string>>();
-  for (const node of graph?.nodes ?? []) {
-    for (const skill of [node.id, node.label]) {
-      const key = skill.trim().toLocaleLowerCase("en-US");
-      const domains = domainsBySkill.get(key) ?? new Set<string>();
-      node.domains.forEach((domain) => domains.add(domain));
-      domainsBySkill.set(key, domains);
-    }
-  }
 
   type FieldAccumulator = {
     postingIds: Set<string>;
@@ -338,17 +327,13 @@ export function buildMarketOverviewSnapshot(input: {
     jobs: MarketJob[];
   };
   const accumulators = new Map<string, FieldAccumulator>();
-  for (const evidence of graph?.evidence ?? []) {
-    const evidenceDomains = new Set<string>();
-    for (const skill of evidence.skills) {
-      for (const domain of
-        domainsBySkill.get(skill.trim().toLocaleLowerCase("en-US")) ?? []) {
-        evidenceDomains.add(domain);
-      }
-    }
-    const posting = postingById.get(evidence.posting_id);
-    const job = jobById.get(evidence.posting_id);
-    for (const domain of evidenceDomains) {
+  const classifiedPostingIds = new Set<string>();
+  for (const posting of postings?.items ?? []) {
+    const job = jobById.get(posting.id);
+    const domains = classifyPostingDomains(posting);
+    if (domains.length > 0) classifiedPostingIds.add(posting.id);
+    for (const domainEvidence of domains) {
+      const domain = domainEvidence.domain;
       const accumulator = accumulators.get(domain) ?? {
         postingIds: new Set<string>(),
         companies: new Set<string>(),
@@ -357,37 +342,36 @@ export function buildMarketOverviewSnapshot(input: {
         skills: new Map<string, number>(),
         jobs: [],
       };
-      if (!accumulator.postingIds.has(evidence.posting_id)) {
-        accumulator.postingIds.add(evidence.posting_id);
+      if (!accumulator.postingIds.has(posting.id)) {
+        accumulator.postingIds.add(posting.id);
         accumulator.companies.add(
-          stableCompanyIdentity(posting, evidence.company_name),
+          stableCompanyIdentity(posting),
         );
-        if (posting?.career_type === "new_comer") {
+        if (posting.career_type === "new_comer") {
           accumulator.careerCounts.newComer += 1;
-        } else if (posting?.career_type === "experienced") {
+        } else if (posting.career_type === "experienced") {
           accumulator.careerCounts.experienced += 1;
         } else {
           accumulator.careerCounts.mixedOrUnknown += 1;
         }
-        if (posting?.location) {
+        if (posting.location) {
+          const location = formatLocation(posting.location);
           accumulator.locations.set(
-            posting.location,
-            (accumulator.locations.get(posting.location) ?? 0) + 1,
+            location,
+            (accumulator.locations.get(location) ?? 0) + 1,
           );
         }
         if (job) accumulator.jobs.push(job);
       }
-      for (const skill of evidence.skills) {
-        if (
-          domainsBySkill
-            .get(skill.trim().toLocaleLowerCase("en-US"))
-            ?.has(domain)
-        ) {
-          accumulator.skills.set(
-            skill,
-            (accumulator.skills.get(skill) ?? 0) + 1,
-          );
-        }
+      for (const skill of normalizedJobSkills([
+        posting.required_skills,
+        posting.preferred_skills,
+        posting.unspecified_skills,
+      ])) {
+        accumulator.skills.set(
+          skill,
+          (accumulator.skills.get(skill) ?? 0) + 1,
+        );
       }
       accumulators.set(domain, accumulator);
     }
@@ -436,11 +420,11 @@ export function buildMarketOverviewSnapshot(input: {
     selectedField,
     fields,
     fieldError:
+      input.postings.status === "error" ? input.postings.message : null,
+    graphError:
       input.graph?.status === "error" ? input.graph.message : null,
     fieldScope: {
-      evidencePostingCount: new Set(
-        (graph?.evidence ?? []).map((evidence) => evidence.posting_id),
-      ).size,
+      evidencePostingCount: classifiedPostingIds.size,
       graphSkillCount: graph?.nodes.length ?? 0,
       graphLimit: graph?.meta.limit ?? null,
     },

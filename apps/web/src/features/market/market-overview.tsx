@@ -98,12 +98,25 @@ export function MarketOverview({
         </div>
       </section>
 
-      <MarketFieldOverview
-        error={snapshot.fieldError}
-        fields={snapshot.fields}
-        initialField={snapshot.selectedField}
-        scope={snapshot.fieldScope}
-      />
+      {!marketUnavailable ? (
+        <MarketFieldOverview
+          error={snapshot.fieldError}
+          fields={snapshot.fields}
+          initialField={snapshot.selectedField}
+          retryHref={buildMarketFilterHref(
+            snapshot.careerType,
+            snapshot.category,
+          )}
+          scope={snapshot.fieldScope}
+        />
+      ) : null}
+
+      {snapshot.graphError && !snapshot.fieldError ? (
+        <p className={styles.partialNotice} role="status">
+          기술 관계 표본은 불러오지 못했지만, 분야별 현황과 기술 수요는 확인된 공고
+          데이터로 표시합니다.
+        </p>
+      ) : null}
 
       <header className={styles.technologyIntro}>
         <p>보조 분석</p>

@@ -10,6 +10,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { writeOwnedSkills } from "@/lib/owned-skills";
+import {
+  EMPTY_CAREER_PROFILE,
+  writeCareerProfile,
+} from "@/lib/career-profile";
 import type { PostingListResponse } from "@/lib/types";
 
 import { JobList } from "./job-list";
@@ -31,6 +35,7 @@ const postings: PostingListResponse = {
       source_url: "https://recruit.navercorp.com/job-1",
       last_verified_at: "2026-07-14T03:00:00.000Z",
       closes_at: "2026-07-31T03:00:00.000Z",
+      description_excerpt: "Python API를 개발하고 백엔드 서비스 운영을 담당합니다.",
       required_skills: ["Python", "Docker"],
       preferred_skills: ["Kubernetes"],
       unspecified_skills: [],
@@ -82,16 +87,9 @@ describe("JobList", () => {
     ).toHaveAttribute("href", "/companies/naver");
     expect(within(job).getByText("경력 3~7년")).toBeInTheDocument();
     expect(within(job).getByText("7월 31일 마감")).toBeInTheDocument();
-    expect(within(job).getByText("필수 기술").parentElement).toHaveTextContent(
-      "Python",
-    );
-    expect(within(job).getByText("우대 기술").parentElement).toHaveTextContent(
-      "Kubernetes",
-    );
-    expect(within(job).getByRole("link", { name: "Python 기술 관계 보기" })).toHaveAttribute(
-      "href",
-      "/skills/graph?seed=Python",
-    );
+    const conditions = within(job).getByRole("list", { name: "핵심 기술 조건" });
+    expect(conditions).toHaveTextContent("필수Python");
+    expect(conditions).toHaveTextContent("우대Kubernetes");
     expect(within(job).getByRole("link", { name: "공식 채용 페이지에서 지원" })).toHaveAttribute(
       "href",
       "https://recruit.navercorp.com/job-1",
@@ -124,11 +122,19 @@ describe("JobList", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("switches between skill overlap and browser-saved views", async () => {
+  it("switches between evidence-backed recommendations and saved views", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
       JSON.stringify(["Python"]),
     );
+    writeCareerProfile({
+      ...EMPTY_CAREER_PROFILE,
+      currentRole: "백엔드 개발자",
+      experienceYears: 5,
+      responsibilities: "Python API 개발과 백엔드 서비스 운영",
+      currentDomain: "backend",
+      workTypes: ["development", "operations"],
+    });
     render(
       <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
@@ -161,12 +167,29 @@ describe("JobList", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "추천 공고 1" }));
     act(() => writeOwnedSkills(["Go"]));
-    await waitFor(() =>
-      expect(screen.getByRole("link", { name: "Go Platform Engineer" })).toBeInTheDocument(),
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Go Platform Engineer" })).toBeInTheDocument();
+    });
+  });
+
+  it("normalizes combined employment enums instead of exposing raw values", () => {
+    render(
+      <JobList
+        filters={{ query: "", careerType: "", category: "" }}
+        postings={{
+          total: 1,
+          items: [{
+            ...postings.items[0],
+            employment_type: "FULL_TIME_WORKER, MILITARY_SERVICE_EXCEPTION",
+          }],
+        }}
+      />,
     );
-    expect(
-      screen.queryByRole("link", { name: "Backend Engineer" }),
-    ).not.toBeInTheDocument();
+
+    expect(screen.getByText("정규직 · 병역 특례")).toBeInTheDocument();
+    expect(screen.queryByText(/FULL_TIME_WORKER|MILITARY_SERVICE_EXCEPTION/))
+      .not.toBeInTheDocument();
   });
 
   it("keeps uncontrolled filter controls synchronized with URL props", () => {

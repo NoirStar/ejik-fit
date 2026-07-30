@@ -11,7 +11,7 @@ import styles from "@/app/jobs/[id]/job-detail.module.css";
 import { SourceMeta } from "@/components/source-meta";
 import { CompanyMark } from "@/features/home-feed/company-mark";
 import { formatCareerRange } from "@/features/jobs/model";
-import { formatEmployment } from "@/lib/labels";
+import { formatEmployment, formatLocation } from "@/lib/labels";
 import type { PostingDetail, SkillDetail } from "@/lib/types";
 
 import { JobDetailActions } from "./job-detail-actions";
@@ -158,7 +158,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
             </div>
             <div>
               <dt>근무지</dt>
-              <dd>{job.location ?? "미기재"}</dd>
+              <dd>{formatLocation(job.location)}</dd>
             </div>
             <div>
               <dt>접수 기간</dt>
@@ -203,11 +203,8 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
 
           <aside className={styles.sidebar}>
             <JobDetailActions
-              jobId={job.id}
-              jobTitle={job.title}
+              job={job}
               skills={skillDetails}
-              sourceUrl={job.source_url}
-              status={job.status}
             />
 
             <section aria-label="공고 신뢰 정보" className={styles.trust}>

@@ -53,7 +53,7 @@
   line-height: 1.6;
 }
 
-.eyebrow {
+.selectionLabel {
   margin: 0 0 0.3rem;
   color: var(--color-accent-strong);
   font-size: 0.6875rem;

@@ -24,6 +24,7 @@ class PostingSummary(BaseModel):
     required_skills: list[str] = []
     preferred_skills: list[str] = []
     unspecified_skills: list[str] = []
+    description_excerpt: str | None = Field(default=None, max_length=1200)
 
 
 class SkillDetail(BaseModel):
