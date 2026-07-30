@@ -285,6 +285,9 @@ export function SkillGraphExperience({
   const [ownedSkillInput, setOwnedSkillInput] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
+  const [layoutAnchorId, setLayoutAnchorId] = useState<string | null>(
+    initialSelection,
+  );
   const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("all");
   const [relationshipDensity, setRelationshipDensity] =
     useState<SkillGraphRelationshipDensity>("core");
@@ -463,7 +466,7 @@ export function SkillGraphExperience({
         nodeLimit: compactGraph ? 40 : 60,
         ownedIds: ownedSkills,
         recommendedIds,
-        selectedId,
+        selectedId: layoutAnchorId,
       }),
     [
       compactGraph,
@@ -471,7 +474,7 @@ export function SkillGraphExperience({
       graphMode,
       ownedSkills,
       recommendedIds,
-      selectedId,
+      layoutAnchorId,
     ],
   );
   const positionedNodes = useMemo(
@@ -616,6 +619,7 @@ export function SkillGraphExperience({
     setDepth(initialDepth);
     depthRef.current = initialDepth;
     setSelectedId(initialSelection);
+    setLayoutAnchorId(initialSelection);
     selectedIdRef.current = initialSelection;
     const requestedNearby =
       new URL(window.location.href).searchParams.get("view") === "nearby" &&
@@ -650,6 +654,7 @@ export function SkillGraphExperience({
       setDepth(requestedDepth);
       setGraphMode(nextMode);
       setSelectedId(nextSelection);
+      setLayoutAnchorId(nextSelection);
       if (nextMode === "focus") {
         void loadTopology(nextSelection, requestedDepth);
       } else {
@@ -816,6 +821,7 @@ export function SkillGraphExperience({
       (node) => resolvedSkillKey(node.id, graphCatalogRef.current) === requestedKey,
     );
     if (graphNode) {
+      setLayoutAnchorId(graphNode.id);
       selectSkill(graphNode.id);
       return;
     }
@@ -827,6 +833,7 @@ export function SkillGraphExperience({
     setDepth(1);
     setGraphMode("focus");
     setSelectedId(canonical);
+    setLayoutAnchorId(canonical);
     writeSelectionUrl(canonical, "push", "focus");
     void loadTopology(canonical, 1);
     setAnnouncement(`${canonical} 주변 기술을 불러옵니다.`);
@@ -973,6 +980,10 @@ export function SkillGraphExperience({
     setAnnouncement("분야 필터를 초기화하고 전체 지도를 표시합니다.");
   }
 
+  const graphMetric = loadFailed
+    ? "기술·관계 수 확인 불가"
+    : `${viewData.stats.skillCount}개 기술 · ${visibleLinkIds.size}개 관계`;
+
   return (
     <main className={styles.page}>
       <section aria-label={PRODUCT_TERMS.skillMap} className={styles.experience}>
@@ -1089,13 +1100,14 @@ export function SkillGraphExperience({
             >
               <div className={styles.graphHud}>
                 <strong>{graphMode === "focus" ? "선택 주변" : "전체 지도"}</strong>
-                <span>
-                  {loadFailed
-                    ? "기술·관계 수 확인 불가"
-                    : `${viewData.stats.skillCount}개 기술 · ${visibleLinkIds.size}개 관계`}
+                <span className={styles.graphMetric} key={graphMetric}>
+                  {graphMetric}
                 </span>
                 {!loadFailed && (
-                  <b className={styles.graphDensityBadge}>
+                  <b
+                    className={`${styles.graphDensityBadge} ${styles.graphMetric}`}
+                    key={relationshipDensity}
+                  >
                     {RELATIONSHIP_DENSITY_LABELS[relationshipDensity]}
                   </b>
                 )}

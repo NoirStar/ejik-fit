@@ -168,6 +168,9 @@
   font-weight: 750;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color var(--dur-instant) var(--ease-out),
+    color var(--dur-instant) var(--ease-out);
 }
 
 .segmented button[data-active="true"],
@@ -191,11 +194,11 @@
   margin-left: auto;
 }
 
-.toolbarMenus details {
+.toolbarMenu {
   position: relative;
 }
 
-.toolbarMenus summary {
+.toolbarMenuTrigger {
   display: inline-flex;
   min-height: var(--touch-target);
   align-items: center;
@@ -207,31 +210,34 @@
   color: var(--color-muted);
   font-size: 0.75rem;
   font-weight: 750;
-  list-style: none;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    border-color var(--dur-instant) var(--ease-out),
+    background-color var(--dur-instant) var(--ease-out),
+    color var(--dur-instant) var(--ease-out);
 }
 
-.toolbarMenus summary::-webkit-details-marker {
-  display: none;
-}
-
-.toolbarMenus summary::after {
+.toolbarMenuTrigger::after {
   color: var(--color-faint);
   content: "⌄";
   font-size: 0.75rem;
 }
 
-.toolbarMenus details[open] > summary {
+.toolbarMenu[data-open="true"] > .toolbarMenuTrigger {
   border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-line));
   background: var(--color-brand-subtle);
   color: var(--color-accent-strong);
 }
 
-.toolbarMenus summary b {
+.toolbarMenuTrigger b {
   color: var(--color-accent-strong);
   font-variant-numeric: tabular-nums;
   font-size: 0.6875rem;
+}
+
+.toolbarMenuTrigger:active {
+  transform: translateY(1px);
 }
 
 .popover,
@@ -247,6 +253,20 @@
   border-radius: 0.75rem;
   background: var(--color-surface);
   box-shadow: var(--shadow-overlay);
+  animation: skillGraphMenuReveal var(--dur-short) var(--ease-out) both;
+  transform-origin: top right;
+}
+
+@keyframes skillGraphMenuReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .popoverHeader {
@@ -278,19 +298,6 @@
 .popoverHeader > b {
   flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
-}
-
-.popoverHeader > button {
-  min-height: 2rem;
-  flex: 0 0 auto;
-  padding: 0 0.5rem;
-  border: 0;
-  background: transparent;
-  color: var(--color-accent-strong);
-  font: inherit;
-  font-size: 0.6875rem;
-  font-weight: 800;
-  cursor: pointer;
 }
 
 .displayPopover {
@@ -336,6 +343,9 @@
   font-weight: 760;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color var(--dur-instant) var(--ease-out),
+    color var(--dur-instant) var(--ease-out);
 }
 
 .settingSegmented button[data-active="true"] {
@@ -411,6 +421,10 @@
   font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
+  transition:
+    border-color var(--dur-instant) var(--ease-out),
+    background-color var(--dur-instant) var(--ease-out),
+    color var(--dur-instant) var(--ease-out);
 }
 
 .domainFilters button[data-active="true"] {
@@ -423,6 +437,10 @@
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
+}
+
+.domainFilters i[data-kind="all"] {
+  background: var(--color-accent);
 }
 
 .domainFilters span {
@@ -439,9 +457,13 @@
 }
 
 .legend {
-  display: grid;
   width: 15rem;
+}
+
+.legend > p {
+  display: grid;
   gap: 0.5rem;
+  margin: 0;
 }
 
 .legend span {
@@ -621,6 +643,22 @@
   font-size: 0.625rem;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
+}
+
+.graphMetric {
+  animation: skillGraphMetricSwap var(--dur-instant) var(--ease-out) both;
+}
+
+@keyframes skillGraphMetricSwap {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .graphDensityBadge {
@@ -1139,15 +1177,13 @@
 
 .page button:focus-visible,
 .page a:focus-visible,
-.page input:focus-visible,
-.page summary:focus-visible {
+.page input:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .page button:not(:disabled):active,
-.page a:active,
-.page summary:active {
+.page a:active {
   filter: brightness(0.96);
 }
 
@@ -1156,7 +1192,7 @@
     color: var(--color-accent-strong);
   }
 
-  .toolbarMenus summary:hover,
+  .toolbarMenuTrigger:hover,
   .selectedActions button:hover {
     border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-line));
     background: var(--color-brand-subtle);
@@ -1182,6 +1218,10 @@
 }
 
 @media (pointer: coarse) {
+  .domainFilters button {
+    min-height: var(--touch-target);
+  }
+
   .pointerHint {
     display: none !important;
   }
@@ -1256,11 +1296,11 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .toolbarMenus details {
+  .toolbarMenu {
     position: static;
   }
 
-  .toolbarMenus summary {
+  .toolbarMenuTrigger {
     width: 100%;
     justify-content: center;
     padding: 0 0.5rem;
@@ -1386,16 +1426,16 @@
     align-items: flex-start;
   }
 
-  .toolbarMenus summary::after {
+  .toolbarMenuTrigger::after {
     display: none;
   }
 
-  .toolbarMenus summary {
+  .toolbarMenuTrigger {
     padding: 0 0.25rem;
     gap: 0.25rem;
   }
 
-  .toolbarMenus summary b {
+  .toolbarMenuTrigger b {
     display: none;
   }
 
@@ -1410,6 +1450,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .popover,
+  .legend,
+  .graphMetric {
+    transform: none;
+  }
+
   .page *,
   .page *::before,
   .page *::after {

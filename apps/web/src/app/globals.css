@@ -965,7 +965,7 @@ main[aria-busy="true"] {
   z-index: 1;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 520ms ease;
+  transition: opacity var(--dur-short) var(--ease-out);
 }
 
 .force-canvas--ready {
@@ -1035,7 +1035,7 @@ main[aria-busy="true"] {
 
 @media (prefers-reduced-motion: reduce) {
   .force-canvas {
-    transition: none;
+    transition: opacity var(--dur-instant) linear;
   }
 }
 
