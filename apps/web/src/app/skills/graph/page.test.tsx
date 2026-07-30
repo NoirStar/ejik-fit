@@ -120,7 +120,10 @@ describe("SkillGraphPage", () => {
     expect(
       await screen.findByRole("link", { name: /자율주행 SW 엔지니어/ }),
     ).toHaveAttribute("href", "/jobs/job-1");
-    expect(screen.getByText("내 기술", { selector: "summary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "내 기술 0" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(screen.getByRole("group", { name: "지도 범위" })).toBeInTheDocument();
     expect(screen.getByText("다음에 배울 기술")).toBeInTheDocument();
     expect(screen.getByText("함께 요구되는 기술")).toBeInTheDocument();
