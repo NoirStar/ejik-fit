@@ -45,6 +45,7 @@ import type {
 } from "@/lib/graph-renderer";
 import { shouldRenderSkillGraphLink } from "@/lib/skill-graph-visibility";
 import { GRAPH_CANVAS_COLORS } from "@/styles/design-tokens";
+import { useSkillGraphVisibility } from "./use-skill-graph-visibility";
 export {
   FORCE_CANVAS_RENDERER as SKILL_GRAPH_FORCE_CANVAS_RENDERER,
 } from "@/lib/graph-renderer";
@@ -109,9 +110,27 @@ function canUseCanvas() {
 }
 
 
-function cloneGraphData(data: SkillGraphViewData): GraphData<SkillForceNode, SkillForceLink> {
+function cloneGraphData(
+  data: SkillGraphViewData,
+  previousNodes: readonly SkillForceNode[] = [],
+): GraphData<SkillForceNode, SkillForceLink> {
+  const previousById = new Map(
+    previousNodes.map((node) => [String(node.id), node] as const),
+  );
   return {
-    nodes: data.nodes.map((node) => ({ ...node })),
+    nodes: data.nodes.map((node) => {
+      const previous = previousById.get(node.id);
+      if (!previous) return { ...node };
+      return {
+        ...node,
+        fx: previous.fx,
+        fy: previous.fy,
+        vx: previous.vx,
+        vy: previous.vy,
+        x: previous.x,
+        y: previous.y,
+      };
+    }),
     links: data.links.map((link) => ({
       ...link,
       source: link.source,
@@ -169,7 +188,12 @@ function drawNode(
   highlight: HighlightState,
   labelEligibleIds: ReadonlySet<string>,
   renderedLabelBounds: LabelBounds[],
+  visibility: number,
+  labelVisibility: number,
+  reduceMotion: boolean,
 ) {
+  if (visibility <= 0.01) return;
+
   const nodeId = String(node.id);
   const isSelected = selectedId === nodeId;
   const isHovered = highlight.hoveredId === nodeId;
@@ -178,10 +202,11 @@ function drawNode(
     highlight.focusId && highlight.focusId !== nodeId
       ? 1 + (highlight.relationRatios.get(nodeId) ?? 0) * 0.22
       : 1;
+  const visibilityScale = reduceMotion ? 1 : 0.88 + visibility * 0.12;
   const radius = Math.max(
     3.4,
     (node.val ?? 4) * display.nodeScale * relationScale,
-  );
+  ) * visibilityScale;
   const shouldLabel =
     node.seed ||
     isSelected ||
@@ -195,7 +220,7 @@ function drawNode(
   const paint = skillGraphNodePaint(node, isSelected);
 
   ctx.save();
-  ctx.globalAlpha = dimmed ? 0.16 : 0.96;
+  ctx.globalAlpha = (dimmed ? 0.16 : 0.96) * visibility;
 
   if (paint.ring) {
     ctx.beginPath();
@@ -238,7 +263,11 @@ function drawNode(
     ctx.stroke();
   }
 
-  if (shouldLabel) {
+  const resolvedLabelVisibility =
+    isSelected || isHovered ? visibility : labelVisibility * visibility;
+  if (shouldLabel && resolvedLabelVisibility > 0.01) {
+    ctx.globalAlpha =
+      (dimmed ? 0.16 : 0.96) * resolvedLabelVisibility;
     const safeScale = Math.max(globalScale, 0.55);
     const screenFontSize = isSelected || isHovered ? 14 : node.seed ? 13 : 12;
     const fontSize = screenFontSize / safeScale;
@@ -282,7 +311,10 @@ function paintPointerArea(
   ctx: CanvasRenderingContext2D,
   touchInput: boolean,
   globalScale: number,
+  visibility: number,
 ) {
+  if (visibility < 0.45) return;
+
   const radius = skillGraphPointerRadius(
     node.val,
     globalScale,
@@ -459,6 +491,7 @@ export function SkillGraphForceCanvas({
   onReadyChange,
   reheatKey = 0,
   touchInteractionEnabled = false,
+  visibleNodeIds,
   visibleLinkIds,
 }: SkillGraphForceCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -475,12 +508,28 @@ export function SkillGraphForceCanvas({
     () => selectSkillGraphLabelIds(stableData.nodes, display.labelLimit),
     [display.labelLimit, stableData.nodes],
   );
+  const nodeIds = useMemo(
+    () => stableData.nodes.map(({ id }) => id),
+    [stableData.nodes],
+  );
+  const linkIds = useMemo(
+    () => stableData.links.map(({ id }) => id),
+    [stableData.links],
+  );
+  const labelIds = useMemo(
+    () =>
+      stableData.nodes
+        .filter((node) => node.seed || labelEligibleIds.has(node.id))
+        .map(({ id }) => id),
+    [labelEligibleIds, stableData.nodes],
+  );
   const adjacencyRef = useRef<SkillGraphAdjacency>(adjacency);
   const emphasisRef = useRef<GraphRendererEmphasis | null | undefined>(emphasis);
   const highlightRef = useRef<HighlightState>(emptyHighlight());
   const renderedLabelBoundsRef = useRef<LabelBounds[]>([]);
   const hoveredIdRef = useRef<string | null>(null);
   const selectedIdRef = useRef<string | null>(selectedId);
+  const visibleNodeIdsRef = useRef<ReadonlySet<string> | undefined>(visibleNodeIds);
   const visibleLinkIdsRef = useRef<ReadonlySet<string> | undefined>(visibleLinkIds);
   const reduceMotionRef = useRef(false);
   const touchInputRef = useRef(false);
@@ -491,9 +540,24 @@ export function SkillGraphForceCanvas({
   const revealGraphRef = useRef<() => void>(() => undefined);
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
+  const {
+    labelValuesRef: labelVisibilityRef,
+    linkValuesRef: linkVisibilityRef,
+    nodeValuesRef: nodeVisibilityRef,
+  } = useSkillGraphVisibility({
+    enabled: mounted,
+    labelIds,
+    linkIds,
+    nodeIds,
+    onFrame: () => requestGraphRedraw(graphRef.current),
+    reduceMotion: reduceMotionRef.current,
+    visibleLinkIds,
+    visibleNodeIds,
+  });
   adjacencyRef.current = adjacency;
   emphasisRef.current = emphasis;
   touchInteractionEnabledRef.current = touchInteractionEnabled;
+  visibleNodeIdsRef.current = visibleNodeIds;
   visibleLinkIdsRef.current = visibleLinkIds;
 
   useEffect(() => {
@@ -560,6 +624,7 @@ export function SkillGraphForceCanvas({
         .filter(
           (node) =>
             node.kind === "skill" &&
+            (nodeVisibilityRef.current.get(String(node.id)) ?? 1) >= 0.45 &&
             typeof node.x === "number" &&
             typeof node.y === "number",
         )
@@ -897,12 +962,15 @@ export function SkillGraphForceCanvas({
       return;
     }
 
-    initialViewReadyRef.current = false;
-    readyRef.current = false;
-    revealGenerationRef.current += 1;
-    setReady(false);
-    onReadyChange?.(false);
-    graph.graphData(cloneGraphData(stableData));
+    const wasReady = readyRef.current;
+    const previousNodes = graph.graphData().nodes;
+    if (!wasReady) {
+      initialViewReadyRef.current = false;
+      revealGenerationRef.current += 1;
+      setReady(false);
+      onReadyChange?.(false);
+    }
+    graph.graphData(cloneGraphData(stableData, previousNodes));
     configureForces(graph, forces);
     configureAnimation(graph, display.animate, reduceMotionRef.current);
     hoveredIdRef.current = null;
@@ -928,10 +996,15 @@ export function SkillGraphForceCanvas({
         if (stableData.nodes.length <= 3) {
           graphRef.current.centerAt(0, 0).zoom(1.35);
         } else {
-          graphRef.current.zoomToFit(0, touchInputRef.current ? 32 : 92);
+          graphRef.current.zoomToFit(
+            reduceMotionRef.current || !wasReady ? 0 : 180,
+            touchInputRef.current ? 32 : 92,
+          );
         }
-        initialViewReadyRef.current = true;
-        window.requestAnimationFrame(() => revealGraphRef.current());
+        if (!wasReady) {
+          initialViewReadyRef.current = true;
+          window.requestAnimationFrame(() => revealGraphRef.current());
+        }
       }, 80);
     }
 
@@ -986,6 +1059,9 @@ export function SkillGraphForceCanvas({
           highlightRef.current,
           labelEligibleIds,
           renderedLabelBoundsRef.current,
+          nodeVisibilityRef.current.get(String(node.id)) ?? 1,
+          labelVisibilityRef.current.get(String(node.id)) ?? 1,
+          reduceMotionRef.current,
         ),
       )
       .nodeCanvasObjectMode(() => "replace")
@@ -996,20 +1072,27 @@ export function SkillGraphForceCanvas({
           ctx,
           touchInputRef.current,
           globalScale,
+          nodeVisibilityRef.current.get(String(node.id)) ?? 1,
         ),
       )
       .linkWidth((link) => {
         const highlight = highlightRef.current;
+        const animatedVisibility =
+          linkVisibilityRef.current.get(link.id) ?? 1;
         if (!shouldRenderSkillGraphLink(
           link.id,
           visibleLinkIdsRef.current,
           highlight.linkIds,
-        )) {
+        ) && animatedVisibility <= 0.01) {
           return 0;
         }
+        const visibility = highlight.linkIds.has(link.id)
+          ? Math.max(animatedVisibility, 1)
+          : animatedVisibility;
+        if (visibility <= 0.01) return 0;
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
-        return skillGraphLinkWidth(
+        return visibility * skillGraphLinkWidth(
           link.value,
           display.linkThickness,
           focused,
@@ -1018,19 +1101,25 @@ export function SkillGraphForceCanvas({
       })
       .linkColor((link) => {
         const highlight = highlightRef.current;
+        const animatedVisibility =
+          linkVisibilityRef.current.get(link.id) ?? 1;
         if (!shouldRenderSkillGraphLink(
           link.id,
           visibleLinkIdsRef.current,
           highlight.linkIds,
-        )) {
+        ) && animatedVisibility <= 0.01) {
           return GRAPH_CANVAS_COLORS.transparent;
         }
+        const visibility = highlight.linkIds.has(link.id)
+          ? Math.max(animatedVisibility, 1)
+          : animatedVisibility;
         const focused =
           highlight.linkIds.size === 0 || highlight.linkIds.has(link.id);
         return skillGraphLinkColor(
           link.score,
           focused,
           highlight.linkIds.size > 0 && highlight.linkIds.has(link.id),
+          visibility,
         );
       })
       .linkDirectionalArrowLength((link) =>
@@ -1053,7 +1142,7 @@ export function SkillGraphForceCanvas({
       );
     }
     requestGraphRedraw(graphRef.current);
-  }, [emphasis, visibleLinkIds]);
+  }, [emphasis, visibleLinkIds, visibleNodeIds]);
 
   useEffect(() => {
     const graph = graphRef.current;
