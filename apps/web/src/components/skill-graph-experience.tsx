@@ -201,7 +201,7 @@ export function SkillGraphExperience({
   const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
   const [fitState, setFitState] = useState<"idle" | "loading" | "error">("idle");
   const [announcement, setAnnouncement] = useState("");
-  const [controlsOpen, setControlsOpen] = useState(true);
+  const [controlsOpen, setControlsOpen] = useState(false);
 
   const graphNodeMap = useMemo(
     () => new Map(initialGraph.nodes.map((node) => [node.id, node])),

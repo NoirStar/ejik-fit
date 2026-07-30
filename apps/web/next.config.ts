@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  output: process.env.VERCEL ? undefined : "standalone",
+  output: process.env.VERCEL || process.env.CI ? undefined : "standalone",
   turbopack: {
     root: projectRoot,
   },

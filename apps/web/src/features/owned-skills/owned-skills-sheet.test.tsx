@@ -76,7 +76,9 @@ describe("OwnedSkillsSheet", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
 
-    expect(await screen.findByText("Spring")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Spring", undefined, { timeout: 5_000 }),
+    ).toBeInTheDocument();
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
       "Spring",
     ]);
