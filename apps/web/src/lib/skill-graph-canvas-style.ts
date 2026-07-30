@@ -59,11 +59,13 @@ export function skillGraphLinkColor(
   score: number,
   focused: boolean,
   emphasized: boolean,
+  opacity = 1,
 ) {
+  const safeOpacity = Number.isFinite(opacity) ? clamp(opacity, 0, 1) : 0;
   if (!focused) {
-    return GRAPH_CANVAS_COLORS.dimmedLink;
+    return graphCanvasSkillLinkColor(0.06 * safeOpacity);
   }
   const safeScore = Number.isFinite(score) ? clamp(score, 0, 1) : 0;
   const alpha = clamp(0.18 + safeScore * 0.28 + (emphasized ? 0.12 : 0), 0.18, 0.58);
-  return graphCanvasSkillLinkColor(alpha);
+  return graphCanvasSkillLinkColor(alpha * safeOpacity);
 }

@@ -62,6 +62,12 @@ describe("skill graph canvas styling", () => {
     expect(skillGraphLinkColor(1, true, true)).toBe(
       GRAPH_CANVAS_COLORS.focusedLink,
     );
+    expect(skillGraphLinkColor(1, true, false, 0)).toBe(
+      "rgba(86, 56, 198, 0)",
+    );
+    expect(skillGraphLinkColor(1, true, false, 0.5)).toBe(
+      "rgba(86, 56, 198, 0.23)",
+    );
     expect(SKILL_GRAPH_LABEL_FONT_FAMILY).toContain("Pretendard");
 
     const source = readFileSync(
