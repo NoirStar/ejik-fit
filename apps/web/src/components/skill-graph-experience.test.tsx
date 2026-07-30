@@ -334,7 +334,7 @@ describe("SkillGraphExperience", () => {
     fireEvent.click(screen.getByRole("button", { name: /백엔드 1/ }));
 
     expect(screen.getByText("1개 기술 · 0개 관계")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "분야 1개" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분야 백엔드" })).toBeInTheDocument();
     expect(screen.getByText("기술 하나를 선택하세요")).toBeInTheDocument();
     expect(fetchMock.mock.calls.filter(([input]) =>
       String(input).startsWith("/skills/graph/data"),
@@ -401,10 +401,13 @@ describe("SkillGraphExperience", () => {
     )).toHaveLength(topologyCallsBefore);
 
     fireEvent.click(screen.getByRole("button", { name: "분야 전체" }));
-    fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
+    const embeddedFilter = within(
+      screen.getByRole("dialog", { name: "분야 필터" }),
+    ).getByRole("button", { name: /임베디드/ });
+    fireEvent.click(embeddedFilter);
     expect(screen.queryByRole("button", { name: "경로 강조 끄기" }))
       .not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
+    fireEvent.click(embeddedFilter);
     fireEvent.click(screen.getByRole("button", { name: "ROS2" }));
 
     expect(screen.getByRole("button", { name: "그래프에서 경로 보기" }))

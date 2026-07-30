@@ -33,7 +33,9 @@ export function resolveSkillGraphEnabledDomains(
 
 export function skillGraphDomainSummary(
   selection: SkillGraphDomainSelection,
+  formatDomain: (domain: string) => string = (domain) => domain,
 ) {
   if (selection.length === 0) return "전체";
+  if (selection.length === 1) return formatDomain(selection[0]!);
   return `${selection.length}개`;
 }

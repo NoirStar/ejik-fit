@@ -27,6 +27,11 @@ describe("skill graph domain filters", () => {
     ).toEqual(["backend"]);
     expect(resolveSkillGraphEnabledDomains([], domains)).toBeUndefined();
     expect(skillGraphDomainSummary([])).toBe("전체");
+    expect(
+      skillGraphDomainSummary(["backend"], (domain) =>
+        domain === "backend" ? "백엔드" : domain,
+      ),
+    ).toBe("백엔드");
     expect(skillGraphDomainSummary(["backend", "data"])).toBe("2개");
   });
 });

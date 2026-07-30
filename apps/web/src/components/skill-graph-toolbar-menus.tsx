@@ -63,6 +63,7 @@ type ToolbarMenuProps = {
   open: boolean;
   panelClassName?: string;
   panelLabel: string;
+  triggerLabel: string;
   triggerRef(node: HTMLButtonElement | null): void;
 };
 
@@ -75,6 +76,7 @@ function ToolbarMenu({
   open,
   panelClassName = styles.popover,
   panelLabel,
+  triggerLabel,
   triggerRef,
 }: ToolbarMenuProps) {
   const panelId = `skill-graph-${id}-menu`;
@@ -84,6 +86,7 @@ function ToolbarMenu({
         aria-controls={panelId}
         aria-expanded={open}
         aria-haspopup="dialog"
+        aria-label={triggerLabel}
         className={styles.toolbarMenuTrigger}
         onClick={() => onToggle(id)}
         ref={triggerRef}
@@ -161,6 +164,7 @@ export function SkillGraphToolbarMenus({
         onToggle={toggleMenu}
         open={openMenu === "owned"}
         panelLabel="내 기술 관리"
+        triggerLabel={`내 기술 ${owned.skills.length}`}
         triggerRef={triggerRef("owned")}
       >
         <div className={styles.popoverHeader}>
@@ -205,6 +209,7 @@ export function SkillGraphToolbarMenus({
         onToggle={toggleMenu}
         open={openMenu === "domains"}
         panelLabel="분야 필터"
+        triggerLabel={`분야 ${domains.summary}`}
         triggerRef={triggerRef("domains")}
       >
         <div className={styles.popoverHeader}>
@@ -257,6 +262,7 @@ export function SkillGraphToolbarMenus({
         open={openMenu === "display"}
         panelClassName={`${styles.popover} ${styles.displayPopover}`}
         panelLabel="그래프 보기 설정"
+        triggerLabel={`보기 설정 ${display.relationshipLabels[display.relationshipDensity]}`}
         triggerRef={triggerRef("display")}
       >
         <div className={styles.popoverHeader}>
@@ -326,6 +332,7 @@ export function SkillGraphToolbarMenus({
         open={openMenu === "legend"}
         panelClassName={styles.legend}
         panelLabel="스킬맵 읽는 법"
+        triggerLabel="읽는 법"
         triggerRef={triggerRef("legend")}
       >
         <p aria-label="스킬맵 범례" role="note">

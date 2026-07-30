@@ -1078,7 +1078,10 @@ export function SkillGraphExperience({
               onClear: clearDomainFilter,
               onToggle: toggleDomain,
               selected: effectiveSelectedDomains,
-              summary: skillGraphDomainSummary(effectiveSelectedDomains),
+              summary: skillGraphDomainSummary(
+                effectiveSelectedDomains,
+                displayDomain,
+              ),
             }}
             owned={{
               catalog: graphCatalog,
