@@ -118,8 +118,9 @@ export default function PrivacyPage() {
           <code>careerfit:local-community-posts</code>와
           <code>careerfit:social-interactions</code>에 복구 대상으로 남을 수
           있습니다. 로그인하면 계정 이전을 시도하고, 모든 서버 쓰기가 성공한
-          글만 브라우저 원본을 삭제합니다. 실패하거나 이전 중 변경된 원본은
-          재시도를 위해 그대로 보관합니다.
+          글과 연결 활동의 서버 저장이 모두 성공한 경우에만 이 브라우저에 남은
+          글을 삭제합니다. 실패하거나 이전 중 변경된 글은 재시도를 위해 그대로
+          보관합니다.
         </p>
       </section>
 
@@ -148,7 +149,8 @@ export default function PrivacyPage() {
         <h2>내 기술 저장</h2>
         <p>
           선택한 기술은 브라우저 localStorage의 <code>careerfit:owned-skills</code> 키에
-          저장됩니다. 로그인하면 계정 데이터와 병합해 다른 기기에서도 불러옵니다.
+          저장됩니다. 로그인하면 계정에 저장된 기술과 병합해 다른 기기에서도
+          불러옵니다.
         </p>
       </section>
 
@@ -181,10 +183,10 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>URL query</h2>
+        <h2>주소에 포함된 검색 조건</h2>
         <p>
-          공고 검색 조건과 일부 기술 선택은 URL query에 포함될 수 있습니다. URL을
-          공유하면 query 값도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
+          공고 검색 조건과 일부 기술 선택은 주소에 포함될 수 있습니다. 주소를
+          공유하면 검색 조건도 함께 전달되므로 공유 전에 주소를 확인해 주세요.
         </p>
       </section>
 
@@ -193,7 +195,7 @@ export default function PrivacyPage() {
         <p>
           아래 버튼은 내 기술과 커리어 프로필, 커리어 비교 조건, 작성한 로컬 글, 최근 본 주제,
           저장한 공고 ID, 지원 단계, 관심 기업, 이전 커뮤니티 상호작용, 현재 탭의
-          임시 글, 현재 URL query를 이 브라우저에서 지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정
+          임시 글, 주소에 포함된 검색 조건을 이 브라우저에서 지웁니다. 이 버튼은 서버에 게시된 커뮤니티 글이나 계정
           데이터를 삭제하지 않습니다. 서버 글은 내 글 화면에서 개별 삭제할 수
           있고, 전체 계정 데이터는 계정 화면에서 내보내거나 계정과 함께 삭제할 수
           있습니다.

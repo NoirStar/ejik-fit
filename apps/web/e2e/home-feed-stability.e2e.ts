@@ -15,7 +15,7 @@ test.afterEach(async ({ request }) => {
   await resetCommunityFixture(request);
 });
 
-test("renders community posts before hydration without reordering the home feed", async ({
+test("renders community posts before hydration without mixing in home jobs", async ({
   page,
   request,
 }) => {
@@ -50,13 +50,13 @@ test("renders community posts before hydration without reordering the home feed"
   );
   expect(postResponse.status()).toBe(201);
 
-  const serverResponse = await request.get("http://127.0.0.1:3102/");
+  const serverResponse = await request.get("http://127.0.0.1:3102/community");
   expect(serverResponse.ok()).toBe(true);
   const serverHtml = await serverResponse.text();
   const communityPosition = serverHtml.indexOf(communityTitle);
   const jobPosition = serverHtml.indexOf("Python Backend Engineer");
   expect(communityPosition).toBeGreaterThanOrEqual(0);
-  expect(jobPosition).toBeGreaterThan(communityPosition);
+  expect(jobPosition).toBe(-1);
 
   const browserCommunityReads: string[] = [];
   page.on("request", (browserRequest) => {
@@ -70,7 +70,7 @@ test("renders community posts before hydration without reordering the home feed"
   });
 
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/community", { waitUntil: "domcontentloaded" });
 
   const feedPanel = page.getByRole("tabpanel");
   const communityArticle = feedPanel.getByRole("article", {
@@ -80,6 +80,9 @@ test("renders community posts before hydration without reordering the home feed"
     communityTitle,
   );
   await expect(communityArticle).toBeVisible();
+  await expect(
+    page.getByRole("link", { exact: true, name: "Python Backend Engineer" }),
+  ).toHaveCount(0);
   const tagList = communityArticle.getByRole("list", {
     name: `${communityTitle} 태그`,
   });
@@ -98,14 +101,14 @@ test("renders community posts before hydration without reordering the home feed"
   ).toBe(false);
 });
 
-test("continues the mixed home feed when the user reaches its end", async ({
+test("continues the community feed when the user reaches its end", async ({
   page,
   request,
 }) => {
   await resetCommunityFixture(request);
   await seedFollowingFixture(request);
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/community", { waitUntil: "domcontentloaded" });
 
   const panel = page.getByRole("tabpanel");
   await expect(

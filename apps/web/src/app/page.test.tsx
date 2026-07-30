@@ -117,6 +117,7 @@ describe("Home", () => {
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 8 });
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Java",
+      include_evidence: true,
       owned_skills: ["Java", "Spring"],
       limit: 30,
     });
@@ -147,6 +148,7 @@ describe("Home", () => {
     });
     expect(getSkillGraph).toHaveBeenCalledWith({
       seed: "Java",
+      include_evidence: true,
       owned_skills: ["Java"],
       career_type: "experienced",
       limit: 30,
@@ -166,6 +168,7 @@ describe("Home", () => {
     render(await Home());
 
     expect(getSkillGraph).toHaveBeenCalledWith({
+      include_evidence: true,
       owned_skills: [],
       limit: 30,
     });

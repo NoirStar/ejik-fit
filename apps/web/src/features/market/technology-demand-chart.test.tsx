@@ -11,11 +11,13 @@ function skill(index: number): MarketSkill {
     category: "language",
     categoryLabel: "언어",
     postingCount: 20 - index,
+    companyCount: 15 - index,
     explicitCount: 18 - index,
     requiredCount: 10 - Math.floor(index / 2),
     preferredCount: 8 - Math.ceil(index / 2),
     unspecifiedCount: 2,
     relativeExplicitDemand: Math.round(((18 - index) / 18) * 100),
+    relativeCompanyBreadth: Math.round(((15 - index) / 15) * 100),
     skillHref: `/skills/graph?seed=Skill%20${index}`,
     jobsHref: `/jobs?q=Skill%20${index}`,
   };

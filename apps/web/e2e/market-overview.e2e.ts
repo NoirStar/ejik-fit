@@ -67,7 +67,7 @@ for (const { height, width } of viewports) {
 
     const trend = page.getByRole("region", { name: "기술 수요 추세" });
     await expect(trend.getByText("추세 수집 중")).toBeVisible();
-    await expect(trend.getByText(/주간 데이터를 수집하고 있어요/)).toBeVisible();
+    await expect(trend.getByText(/주간 데이터를 수집하고 있습니다/)).toBeVisible();
     await expect(
       trend.getByText("모든 경력 조건·모든 기술 분류 기준"),
     ).toBeVisible();

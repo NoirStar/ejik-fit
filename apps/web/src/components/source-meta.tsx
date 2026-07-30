@@ -25,7 +25,7 @@ export function SourceMeta({
 }: SourceMetaProps) {
   return (
     <div className="source-meta">
-      <span>마지막 확인 {formatVerifiedAt(lastVerifiedAt)}</span>
+      <span>최근 확인 {formatVerifiedAt(lastVerifiedAt)}</span>
       {showSourceLink && (
         <a href={sourceUrl} target="_blank" rel="noreferrer">
           공식 채용 페이지에서 확인

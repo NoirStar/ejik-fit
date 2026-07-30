@@ -1,7 +1,7 @@
 """Use the CareerFit brand in community notification fallbacks.
 
-Revision ID: 20260730_0025
-Revises: 20260723_0024
+Revision ID: 20260730_0026
+Revises: 20260727_0025
 Create Date: 2026-07-30
 """
 
@@ -10,8 +10,8 @@ from collections.abc import Sequence
 from alembic import op
 
 
-revision: str = "20260730_0025"
-down_revision: str | None = "20260723_0024"
+revision: str = "20260730_0026"
+down_revision: str | None = "20260727_0025"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

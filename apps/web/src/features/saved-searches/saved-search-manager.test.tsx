@@ -181,7 +181,7 @@ describe("SavedSearchManager", () => {
       screen.getByRole("list", { name: "Python 백엔드 알림 조건" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Python 백엔드")).toBeInTheDocument();
-    expect(screen.getByText("현재 채용공고 23건")).toBeInTheDocument();
+    expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
     expect(screen.getByText("새로 확인 2건")).toBeInTheDocument();
     expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "공고 보기" })).toHaveAttribute(
@@ -312,7 +312,7 @@ describe("SavedSearchManager", () => {
 
     render(<SavedSearchManager />);
 
-    expect(screen.getByText("현재 채용공고 12건")).toBeInTheDocument();
+    expect(screen.getByText("현재 공식 공고 12건")).toBeInTheDocument();
     expect(screen.getAllByText("일시 중지")).toHaveLength(2);
     expect(screen.queryByText("새로 확인 2건")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시작" }));
@@ -478,7 +478,7 @@ describe("SavedSearchManager", () => {
         "일부 공고 알림 결과를 확인하지 못했습니다. 확인한 결과는 그대로 유지됩니다.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("현재 채용공고 23건")).toBeInTheDocument();
+    expect(screen.getByText("현재 공식 공고 23건")).toBeInTheDocument();
     expect(screen.getByText("새로 확인 1건")).toBeInTheDocument();
     expect(screen.getByText("공고 수 확인 실패")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "공고 수 다시 확인" }));

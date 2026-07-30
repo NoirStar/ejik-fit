@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { LocalPostDetail } from "@/features/home-feed/local-post-detail";
 import { ServerPostDetail } from "@/features/community/server-post-detail";
-import { isLocalCommunityPostId } from "@/lib/local-community-posts";
+import { LocalPostDetail } from "@/features/home-feed/local-post-detail";
 import { isCommunityUuid } from "@/lib/community-contract";
+import { isLocalCommunityPostId } from "@/lib/local-community-posts";
 
 type PostPageProps = {
   params: Promise<{ id: string }>;
@@ -15,9 +15,9 @@ export async function generateMetadata({
 }: PostPageProps): Promise<Metadata> {
   const { id } = await params;
   if (isLocalCommunityPostId(id)) {
-    const title = "이 브라우저에 저장한 커뮤니티 글";
+    const title = "이 기기에 남은 커뮤니티 글";
     const description =
-      "사용자가 작성해 현재 브라우저에만 저장한 커뮤니티 글입니다.";
+      "작성했지만 계정에 게시되지 않아 이 기기에만 남아 있는 커뮤니티 글입니다.";
     return {
       title,
       description,

@@ -82,7 +82,11 @@ test("migrates an existing profile and refreshes home and career map decisions",
   await expect(page.getByLabel("현재 직무")).toHaveValue("플랫폼 엔지니어");
   await page.getByLabel("현재 직무").fill("클라우드 플랫폼 엔지니어");
   await page.getByRole("button", { name: "커리어 프로필 저장" }).click();
-  await expect(page.getByRole("status")).toContainText("커리어 프로필을 저장했습니다");
+  await expect(
+    page.getByRole("status").filter({
+      hasText: "커리어 프로필을 저장했습니다",
+    }),
+  ).toBeVisible();
   expect(
     await page.evaluate(() => {
       const current = JSON.parse(

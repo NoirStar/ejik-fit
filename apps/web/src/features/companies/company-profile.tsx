@@ -292,7 +292,7 @@ export function CompanyProfile({
             <dd>근무 지역 {snapshot.locationCount}곳</dd>
           </div>
           <div>
-            <dt>최근 검증</dt>
+            <dt>최근 확인</dt>
             <dd>{formatVerifiedDate(snapshot.latestVerifiedAt)}</dd>
           </div>
         </dl>

@@ -167,7 +167,7 @@ export function MarketFieldOverview({
                         <strong>{job.title}</strong>
                         <span>{job.companyName}</span>
                         <small>
-                          {job.careerLabel} · {job.location} · 마지막 확인{" "}
+                          {job.careerLabel} · {job.location} · 최근 확인{" "}
                           {formatVerifiedDate(job.verifiedAt)}
                         </small>
                       </Link>

@@ -37,7 +37,7 @@ for (const width of [1440, 820, 390]) {
     await page.goto("/career/saved");
 
     await expect(
-      page.getByRole("heading", { level: 1, name: "저장 보관함" }),
+      page.getByRole("heading", { level: 1, name: "저장 목록" }),
     ).toBeVisible();
     const job = page.getByRole("article", {
       name: "Python Backend Engineer",
@@ -236,7 +236,7 @@ test("opens the saved library from the user utility menu", async ({ page }) => {
   await page.getByRole("button", { name: "사용자 메뉴 열기" }).click();
   await page
     .locator('[aria-label="사용자 메뉴"]')
-    .getByRole("link", { name: "저장 보관함" })
+    .getByRole("link", { name: "저장 목록" })
     .click();
 
   await expect(page).toHaveURL("/career/saved");

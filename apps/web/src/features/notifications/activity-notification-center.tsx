@@ -267,7 +267,7 @@ export function ActivityNotificationCenter({
   if (!hydrated) {
     return (
       <div className={styles.state} role="status">
-        <strong>내 활동을 확인하고 있습니다.</strong>
+        <strong>알림을 불러오는 중…</strong>
       </div>
     );
   }
@@ -275,8 +275,7 @@ export function ActivityNotificationCenter({
   if (!hasActivity) {
     return (
       <div className={styles.state} role="status">
-        <strong>아직 확인할 활동이 없습니다.</strong>
-        <span>기술이나 공고를 저장하면 여기에서 바로 이어볼 수 있어요.</span>
+        <strong>새 알림이 없습니다.</strong>
       </div>
     );
   }
@@ -352,12 +351,13 @@ export function ActivityNotificationCenter({
           >
             <CompanyMark
               companyName={notification.job.company_name}
+              companySlug={notification.job.company_slug}
               size={32}
               sourceUrl={notification.job.source_url}
             />
             <span className={styles.savedSearchCopy}>
               <span className={styles.savedSearchName}>
-                저장 검색 · {searchName}
+                공고 알림 · {searchName}
               </span>
               <strong>
                 {notification.job.company_name} · {notification.job.title}
@@ -404,7 +404,7 @@ export function ActivityNotificationCenter({
           </span>
           <span className={styles.copy}>
             <strong>지원 기록 {applicationCount}건</strong>
-            <small>{stageSummary || "저장한 지원 단계를 확인하세요."}</small>
+            <small>{stageSummary || "지원 단계별 현황을 봅니다."}</small>
           </span>
         </Link>
       )}
@@ -416,7 +416,7 @@ export function ActivityNotificationCenter({
           </span>
           <span className={styles.copy}>
             <strong>저장한 공고 {savedJobIds.length}건</strong>
-            <small>공고 상태와 마감일을 다시 확인해 보세요.</small>
+            <small>공고 상태와 마감일을 확인합니다.</small>
           </span>
         </Link>
       )}
@@ -428,7 +428,7 @@ export function ActivityNotificationCenter({
           </span>
           <span className={styles.copy}>
             <strong>관심 기업 {followedCompanySlugs.length}개</strong>
-            <small>현재 공개 중인 채용공고를 다시 확인해 보세요.</small>
+            <small>현재 열린 공식 공고를 확인합니다.</small>
           </span>
         </Link>
       )}
@@ -440,14 +440,14 @@ export function ActivityNotificationCenter({
           </span>
           <span className={styles.copy}>
             <strong>내 기술 {ownedSkills.length}개</strong>
-            <small>현재 공고에서 기술별 수요를 비교해 보세요.</small>
+            <small>현재 공고의 기술 수요를 비교합니다.</small>
           </span>
         </Link>
       )}
 
       {recentCompanyJobs.status === "loading" && (
         <p className={styles.jobAlertStatus} role="status">
-          관심 기업의 새 공고를 확인하고 있습니다.
+          관심 기업의 새 공고를 불러오는 중…
         </p>
       )}
       {recentCompanyJobs.status === "error" && (
@@ -457,7 +457,7 @@ export function ActivityNotificationCenter({
       )}
       {savedSearchesLoading && (
         <p className={styles.jobAlertStatus} role="status">
-          저장 검색의 새 공고를 확인하고 있습니다.
+          공고 알림의 새 공고를 불러오는 중…
         </p>
       )}
       {savedSearches.state.status === "error" && (
@@ -486,7 +486,7 @@ export function ActivityNotificationCenter({
       )}
       {notifications?.state.status === "loading" && (
         <p className={styles.jobAlertStatus} role="status">
-          계정 알림을 불러오고 있습니다.
+          계정 알림을 불러오는 중…
         </p>
       )}
       {notifications?.state.status === "error" && (

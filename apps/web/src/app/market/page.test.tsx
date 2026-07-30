@@ -55,6 +55,7 @@ describe("MarketPage", () => {
     });
     expect(getSkillGraph).toHaveBeenCalledWith({
       career_type: "experienced",
+      include_evidence: true,
       limit: 100,
     });
     expect(
@@ -84,7 +85,10 @@ describe("MarketPage", () => {
 
     expect(getPostings).toHaveBeenCalledWith({ limit: 100 });
     expect(getSkillStats).toHaveBeenCalledWith({ limit: 100 });
-    expect(getSkillGraph).toHaveBeenCalledWith({ limit: 100 });
+    expect(getSkillGraph).toHaveBeenCalledWith({
+      include_evidence: true,
+      limit: 100,
+    });
     expect(
       within(
         screen.getByRole("navigation", { name: "기술 분류" }),

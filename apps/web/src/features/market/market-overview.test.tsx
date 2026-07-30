@@ -282,7 +282,7 @@ describe("MarketOverview", () => {
     const trend = screen.getByRole("region", { name: "기술 수요 추세" });
     expect(within(trend).getByText("추세 수집 중")).toBeInTheDocument();
     expect(
-      within(trend).getByText("주간 데이터를 수집하고 있어요."),
+      within(trend).getByText("주간 데이터를 수집하고 있습니다."),
     ).toBeInTheDocument();
     expect(
       within(trend).getByText(/실제 채용공고 스냅샷만 사용/),

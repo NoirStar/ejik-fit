@@ -11,9 +11,17 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import type { FormEvent } from "react";
 import { useEffect, useId, useMemo, useState } from "react";
 
+import {
+  accountStorageStatusCopy,
+  useAuthViewerContext,
+} from "@/features/auth/auth-viewer-context";
+import {
+  resolvedSkillKey,
+  resolveSkillInput,
+  SkillPicker,
+} from "@/features/owned-skills/skill-picker";
 import {
   EMPTY_CAREER_PREFERENCES,
   readCareerPreferences,
@@ -24,15 +32,13 @@ import {
 import {
   addOwnedSkill,
   clearOwnedSkills,
+  MAX_OWNED_SKILL_LENGTH,
+  MAX_OWNED_SKILLS,
   readOwnedSkills,
   removeOwnedSkill,
   subscribeOwnedSkills,
 } from "@/lib/owned-skills";
-import {
-  normalizeSkillCategory,
-  skillCategoryLabel,
-} from "@/lib/skill-categories";
-import { canonicalSkillName, skillNameKey } from "@/lib/skill-catalog";
+import { skillNameKey } from "@/lib/skill-catalog";
 import type { FitAnalyzeResponse, SkillCatalogItem } from "@/lib/types";
 
 import {
@@ -303,11 +309,10 @@ export function CareerOverview({
   domainSuggestions = [],
   domainSuggestionsUnavailable = false,
 }: CareerOverviewProps) {
+  const { accountSyncStatus, viewer } = useAuthViewerContext();
+  const effectiveAccountSyncStatus = viewer ? accountSyncStatus : "local";
+  const storageStatus = accountStorageStatusCopy(effectiveAccountSyncStatus);
   const inputId = useId();
-  const inputErrorId = useId();
-  const catalogHintId = useId();
-  const catalogSuffix = useId().replace(/:/g, "");
-  const catalogId = `career-skill-catalog-${catalogSuffix}`;
   const conditionId = useId();
   const targetDomainId = useId();
   const [hydrated, setHydrated] = useState(false);
@@ -334,10 +339,6 @@ export function CareerOverview({
       )
       .slice(0, 8);
   }, [ownedSkills, suggestions]);
-  const availableCatalog = useMemo(() => {
-    const owned = new Set(ownedSkills.map(skillNameKey));
-    return catalog.filter((skill) => !owned.has(skillNameKey(skill.name)));
-  }, [catalog, ownedSkills]);
   const targetDomainIsAvailable =
     Boolean(targetDomain) &&
     domainSuggestions.some((domain) => domain.value === targetDomain);
@@ -460,34 +461,43 @@ export function CareerOverview({
     const trimmed = skill.trim();
     if (!trimmed) {
       setInputError("기술 이름을 입력해 주세요.");
-      return;
+      return false;
     }
-    const normalized = canonicalSkillName(
+    if (trimmed.length > MAX_OWNED_SKILL_LENGTH) {
+      setInputError(
+        `기술 이름은 ${MAX_OWNED_SKILL_LENGTH}자 이하로 입력해 주세요.`,
+      );
+      return false;
+    }
+    const normalized = resolveSkillInput(
       suggestions.find(
         (suggestion) =>
           skillNameKey(suggestion.name) === skillNameKey(trimmed),
       )?.name ?? trimmed,
       catalog,
     );
+    const normalizedKey = resolvedSkillKey(normalized, catalog);
     if (
       ownedSkills.some(
         (ownedSkill) =>
-          skillNameKey(ownedSkill) === skillNameKey(normalized),
+          resolvedSkillKey(ownedSkill, catalog) === normalizedKey,
       )
     ) {
-      setInputError("이미 저장한 기술입니다.");
-      return;
+      setInputError("이미 추가한 기술입니다.");
+      return false;
+    }
+    if (ownedSkills.length >= MAX_OWNED_SKILLS) {
+      setInputError(
+        `내 기술은 최대 ${MAX_OWNED_SKILLS}개까지 추가할 수 있습니다.`,
+      );
+      return false;
     }
 
     const nextSkills = addOwnedSkill(normalized);
     setOwnedSkills(nextSkills);
     setDraft("");
     setInputError("");
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    saveSkill(draft);
+    return true;
   }
 
   function handleRemove(skill: string) {
@@ -517,7 +527,7 @@ export function CareerOverview({
     activeTargetDomain,
   );
   const announcement = !hydrated || !preferencesHydrated
-    ? "저장한 기술을 확인하고 있습니다."
+    ? "내 기술을 확인하고 있습니다."
     : comparison.status === "loading"
       ? `${selectedScopeLabel} 조건의 공개 공고를 비교하고 있습니다.`
       : comparison.status === "error"
@@ -536,11 +546,11 @@ export function CareerOverview({
         <div className={styles.introMeta}>
           <span className={styles.privacyBadge}>
             <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-            브라우저 저장 · 로그인 시 동기화
+            {storageStatus.label}
           </span>
           <Link className={styles.savedLibraryLink} href="/career/saved">
             <BookmarkSimple aria-hidden="true" size={16} weight="fill" />
-            저장 보관함
+            저장 목록
           </Link>
           <Link className={styles.savedLibraryLink} href="/career/companies">
             <Buildings aria-hidden="true" size={16} weight="fill" />
@@ -551,6 +561,11 @@ export function CareerOverview({
             채용 일정
           </Link>
         </div>
+        {storageStatus.error && (
+          <p className={styles.localNote} role="alert">
+            {storageStatus.error}
+          </p>
+        )}
       </header>
 
       <div aria-live="polite" className={styles.srOnly}>
@@ -576,61 +591,33 @@ export function CareerOverview({
           </header>
 
           <p className={styles.localNote}>
-            로그인 전에는 이 브라우저에서 관리하고, 로그인하면 계정과 동기화합니다.
+            {effectiveAccountSyncStatus === "synced"
+              ? "내 기술과 비교 조건을 이 브라우저와 계정에 저장합니다."
+              : effectiveAccountSyncStatus === "syncing"
+                ? "내 기술과 비교 조건을 계정에 저장하고 있습니다."
+                : viewer
+                  ? "내 기술과 비교 조건을 이 브라우저에 저장합니다."
+                  : "내 기술과 비교 조건을 이 브라우저에 저장합니다. 로그인하면 계정과 동기화합니다."}
           </p>
 
-          <form className={styles.skillForm} onSubmit={handleSubmit}>
-            <label htmlFor={inputId}>추가할 기술</label>
-            <div className={styles.inputRow}>
-              <input
-                aria-describedby={
-                  [
-                    inputError ? inputErrorId : "",
-                    catalogUnavailable ? catalogHintId : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ") || undefined
-                }
-                autoComplete="off"
-                id={inputId}
-                list={availableCatalog.length > 0 ? catalogId : undefined}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder="예: Spring, React"
-                type="text"
-                value={draft}
-              />
-              {availableCatalog.length > 0 && (
-                <datalist id={catalogId}>
-                  {availableCatalog.map((skill) => (
-                    <option
-                      key={skill.name}
-                      label={skillCategoryLabel(
-                        normalizeSkillCategory(skill.category),
-                      )}
-                      value={skill.name}
-                    />
-                  ))}
-                </datalist>
-              )}
-              <button className={styles.addButton} type="submit">
-                <Plus aria-hidden="true" size={17} weight="bold" />
-                기술 추가
-              </button>
-            </div>
-            {inputError && (
-              <p className={styles.inputError} id={inputErrorId} role="alert">
-                {inputError}
-              </p>
-            )}
-            {!inputError && catalogUnavailable && (
-              <p className={styles.catalogHint} id={catalogHintId}>
-                표준 기술명 목록을 불러오지 못했지만 직접 입력할 수 있습니다.
-              </p>
-            )}
-          </form>
+          <div className={styles.skillPicker}>
+            <SkillPicker
+              catalog={catalog}
+              catalogStatus={catalogUnavailable ? "error" : "ready"}
+              error={inputError}
+              excludedSkills={ownedSkills}
+              id={inputId}
+              onCommit={saveSkill}
+              onValueChange={(nextValue) => {
+                setDraft(nextValue);
+                setInputError("");
+              }}
+              value={draft}
+            />
+          </div>
 
           <div className={styles.savedHeader}>
-            <h3>저장한 기술</h3>
+            <h3>내 기술</h3>
             {ownedSkills.length > 0 && (
               <button className={styles.clearButton} onClick={handleClear} type="button">
                 전체 삭제
@@ -639,11 +626,11 @@ export function CareerOverview({
           </div>
 
           {!hydrated ? (
-            <p className={styles.stackState}>저장한 기술을 확인하고 있습니다.</p>
+            <p className={styles.stackState}>내 기술을 확인하고 있습니다.</p>
           ) : ownedSkills.length === 0 ? (
-            <p className={styles.stackState}>아직 저장한 기술이 없습니다.</p>
+            <p className={styles.stackState}>아직 추가한 기술이 없습니다.</p>
           ) : (
-            <ul aria-label="저장한 기술 목록" className={styles.savedSkills} role="list">
+            <ul aria-label="내 기술 목록" className={styles.savedSkills} role="list">
               {ownedSkills.map((skill) => (
                 <li key={skill}>
                   <span>{skill}</span>
@@ -778,7 +765,7 @@ export function CareerOverview({
             <section className={styles.messagePanel} role="status">
               <span className={styles.loadingMark} aria-hidden="true" />
               <div>
-                <h2>저장한 기술을 확인하고 있습니다.</h2>
+                <h2>내 기술을 확인하고 있습니다.</h2>
                 <p>이 기기에 저장하고 계정과 동기화한 기술을 불러옵니다.</p>
               </div>
             </section>
@@ -786,7 +773,7 @@ export function CareerOverview({
             <section className={styles.messagePanel}>
               <Plus aria-hidden="true" size={24} />
               <div>
-                <h2>먼저 보유 기술을 저장해 주세요.</h2>
+                <h2>먼저 내 기술을 추가해 주세요.</h2>
                 <p>왼쪽에서 기술을 직접 입력하거나 실제 공고 기준 제안을 선택할 수 있습니다.</p>
               </div>
               <Link className={styles.inlineLink} href="/skill-map">
@@ -806,7 +793,7 @@ export function CareerOverview({
             <section className={styles.errorPanel} role="alert">
               <div>
                 <h2>공고 비교를 불러오지 못했습니다.</h2>
-                <p>저장한 기술은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.</p>
+                <p>내 기술은 그대로 유지됩니다. 잠시 후 다시 시도해 주세요.</p>
               </div>
               <button
                 className={styles.retryButton}

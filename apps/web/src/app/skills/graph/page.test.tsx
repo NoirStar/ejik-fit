@@ -127,6 +127,7 @@ describe("SkillGraphPage", () => {
     });
 
     expect(getSkillGraph).toHaveBeenCalledWith({
+      include_evidence: true,
       seed: "Kubernetes",
       owned_skills: [],
       limit: 30,

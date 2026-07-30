@@ -403,7 +403,7 @@ export function SavedLibrary({
     setSavedJobIds(toggleSavedJob(item.id));
     setApplicationStages(removeJobApplicationStage(item.id));
     setAnnouncement(
-      `${item.title}을 저장 보관함에서 제거하고 지원 단계도 삭제했습니다.`,
+      `${item.title}을 저장 목록에서 제거하고 지원 단계도 삭제했습니다.`,
     );
   }
 
@@ -448,7 +448,7 @@ export function SavedLibrary({
     const removed = await accountCommunity.toggleSaved(item.id);
     setAnnouncement(
       removed
-        ? `${item.title}을 계정 저장 보관함에서 제거했습니다.`
+        ? `${item.title}을 계정 저장 목록에서 제거했습니다.`
         : `${item.title}의 계정 저장 상태를 변경하지 못했습니다.`,
     );
   }
@@ -496,8 +496,8 @@ export function SavedLibrary({
     <main className={styles.page}>
       <header className={styles.intro}>
         <div>
-          <p className={styles.eyebrow}>내 커리어 보관함</p>
-          <h1>저장 보관함</h1>
+          <p className={styles.eyebrow}>내 커리어</p>
+          <h1>저장 목록</h1>
           <p className={styles.description}>
             공고 저장, 커리어 분류와 지원 단계는 로그인 전에는 이 브라우저에
             남고, 로그인하면 계정과 동기화됩니다. 실제 커뮤니티 글의 저장은
@@ -811,7 +811,7 @@ export function SavedLibrary({
                         type="button"
                       >
                         {accountCommunity.state.loadingMore
-                          ? "저장 글 불러오는 중..."
+                          ? "저장 글 불러오는 중…"
                           : "계정 저장 글 더 보기"}
                       </button>
                     )}

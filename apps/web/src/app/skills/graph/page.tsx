@@ -67,6 +67,7 @@ export default async function SkillGraphPage({
   try {
     graph = await getSkillGraph({
       ...(seed ? { seed } : {}),
+      include_evidence: true,
       owned_skills: ownedSkills,
       limit: 30,
     });

@@ -32,6 +32,7 @@ const job = {
   description_html: "<p>서버 개발</p>",
   description_text:
     "제품 소개입니다. ### 주요 업무 * 안정적인 서버를 개발합니다. * 장애 원인을 분석합니다.",
+  description_images: [],
   opens_at: "2026-07-01T00:00:00.000Z",
   closes_at: "2026-07-31T14:59:59.000Z",
   skills: ["Go"],
@@ -73,7 +74,7 @@ describe("JobDetail", () => {
       "href",
       job.source_url,
     );
-    expect(screen.getByText(/마지막 확인/)).toBeInTheDocument();
+    expect(screen.getByText(/최근 확인/)).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "기술 조건과 근거 문장" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "분석 방법" })).toHaveAttribute(
       "href",

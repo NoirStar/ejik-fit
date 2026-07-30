@@ -316,7 +316,7 @@ export function TechnologyTrendPanel({
       ) : (
         <div className={styles.collectingState}>
           <ChartLine aria-hidden="true" size={24} weight="duotone" />
-          <strong>주간 데이터를 수집하고 있어요.</strong>
+          <strong>주간 데이터를 수집하고 있습니다.</strong>
           <p>
             {resource.status === "ready"
               ? `현재 ${resource.data.collected_weeks}/${resource.data.minimum_weeks}주차입니다. 최소 ${resource.data.minimum_weeks}주가 쌓이면 실제 변화선을 표시합니다.`

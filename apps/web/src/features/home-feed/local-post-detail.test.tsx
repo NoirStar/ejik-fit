@@ -89,9 +89,9 @@ describe("LocalPostDetail", () => {
         name: "이 기기에서 글을 찾을 수 없습니다.",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "커뮤니티로 돌아가기" })).toHaveAttribute(
       "href",
-      "/",
+      "/community",
     );
   });
 

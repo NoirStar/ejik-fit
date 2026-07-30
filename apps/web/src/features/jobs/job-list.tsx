@@ -429,7 +429,7 @@ export function JobList({
               </li>
               <li>
                 <strong>{summary.latestVerifiedLabel}</strong>
-                <span>가장 최근 확인</span>
+                <span>최근 확인</span>
               </li>
             </>
           )}

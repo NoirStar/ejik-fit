@@ -81,7 +81,7 @@ describe("CareerOverview", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "내 커리어" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "저장 보관함" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "저장 목록" })).toHaveAttribute(
       "href",
       "/career/saved",
     );
@@ -92,7 +92,7 @@ describe("CareerOverview", () => {
     expect(
       await screen.findByRole("heading", {
         level: 2,
-        name: "먼저 보유 기술을 저장해 주세요.",
+        name: "먼저 내 기술을 추가해 주세요.",
       }),
     ).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe("CareerOverview", () => {
       <CareerOverview suggestions={[]} suggestionsUnavailable={false} />,
     );
 
-    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+    await screen.findByText("먼저 내 기술을 추가해 주세요.");
     expect(screen.getByText("현재 확인된 상위 기술 제안이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("현재 제안 기술을 모두 저장했습니다.")).not.toBeInTheDocument();
   });
@@ -119,12 +119,12 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+    await screen.findByText("먼저 내 기술을 추가해 주세요.");
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " python " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     await waitFor(() => {
       expect(JSON.parse(window.localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([
@@ -133,19 +133,19 @@ describe("CareerOverview", () => {
     });
     expect(
       within(
-        screen.getByRole("list", { name: "저장한 기술 목록" }),
+        screen.getByRole("list", { name: "내 기술 목록" }),
       ).getByText("Python"),
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "python" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
-    expect(screen.getByRole("alert")).toHaveTextContent("이미 저장한 기술입니다.");
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("이미 추가한 기술입니다.");
 
     fireEvent.click(screen.getByRole("button", { name: "Python 제거" }));
     expect(
-      await screen.findByText("먼저 보유 기술을 저장해 주세요."),
+      await screen.findByText("먼저 내 기술을 추가해 주세요."),
     ).toBeInTheDocument();
 
     fireEvent.click(
@@ -155,7 +155,7 @@ describe("CareerOverview", () => {
     );
     expect(
       within(
-        screen.getByRole("list", { name: "저장한 기술 목록" }),
+        screen.getByRole("list", { name: "내 기술 목록" }),
       ).getByText("Kubernetes"),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "전체 삭제" }));
@@ -177,15 +177,15 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+    await screen.findByText("먼저 내 기술을 추가해 주세요.");
 
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: " react native " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "기술 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
     expect(
-      within(screen.getByRole("list", { name: "저장한 기술 목록" })).getByText(
+      within(screen.getByRole("list", { name: "내 기술 목록" })).getByText(
         "React Native",
       ),
     ).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe("CareerOverview", () => {
         suggestionsUnavailable={false}
       />,
     );
-    await screen.findByText("먼저 보유 기술을 저장해 주세요.");
+    await screen.findByText("먼저 내 기술을 추가해 주세요.");
 
     act(() => {
       writeOwnedSkills(["React"]);

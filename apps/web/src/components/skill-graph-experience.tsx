@@ -76,6 +76,7 @@ const PREVIEW_NODES = [
 const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
   animate: true,
   arrows: false,
+  labelLimit: 14,
   labelThreshold: 1.08,
   linkThickness: 0.76,
   nodeScale: 0.9,
@@ -84,6 +85,8 @@ const DEFAULT_DISPLAY: SkillGraphDisplaySettings = {
 
 const DEFAULT_FORCES: SkillGraphForceSettings = {
   center: 0.04,
+  cluster: 0.075,
+  clusterSpread: 210,
   link: 0.28,
   linkDistance: 82,
   repel: 240,
@@ -189,11 +192,10 @@ export function SkillGraphExperience({
   const [input, setInput] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(initialSelection);
   const [forceReady, setForceReady] = useState(false);
-  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("local");
+  const [graphMode, setGraphMode] = useState<SkillGraphViewMode>("focus");
   const [localDepth, setLocalDepth] = useState(2);
   const [filterQuery, setFilterQuery] = useState("");
   const [showEvidence, setShowEvidence] = useState(true);
-  const [showIsolated, setShowIsolated] = useState(false);
   const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
   const [reheatKey, setReheatKey] = useState(0);
   const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
@@ -218,16 +220,26 @@ export function SkillGraphExperience({
     [allDomains, disabledDomains],
   );
   const viewData = useMemo(
-    () =>
-      buildSkillGraphView(initialGraph, {
+    () => {
+      const focusLimits = {
+        1: { links: 18, nodes: 12 },
+        2: { links: 30, nodes: 18 },
+        3: { links: 48, nodes: 30 },
+      } as const;
+      const limits = graphMode === "focus"
+        ? focusLimits[localDepth as keyof typeof focusLimits]
+        : { links: 84, nodes: 48 };
+
+      return buildSkillGraphView(initialGraph, {
         enabledDomains: allDomains.length > 0 ? enabledDomains : undefined,
-        localDepth,
+        linkLimit: limits.links,
         mode: graphMode,
+        nodeLimit: limits.nodes,
+        ownedIds: ownedSkills,
         query: filterQuery,
         selectedId,
-        showEvidence,
-        showIsolated,
-      }),
+      });
+    },
     [
       allDomains.length,
       enabledDomains,
@@ -235,9 +247,8 @@ export function SkillGraphExperience({
       graphMode,
       initialGraph,
       localDepth,
+      ownedSkills,
       selectedId,
-      showEvidence,
-      showIsolated,
     ],
   );
   const visibleSkillNodes = useMemo(
@@ -301,15 +312,15 @@ export function SkillGraphExperience({
     () => ({
       ...DEFAULT_DISPLAY,
       animate: !isLargeGraph,
-      labelThreshold: graphMode === "global" ? 1.28 : DEFAULT_DISPLAY.labelThreshold,
+      labelThreshold: graphMode === "all" ? 0.18 : DEFAULT_DISPLAY.labelThreshold,
     }),
     [graphMode, isLargeGraph],
   );
   const forces = useMemo<SkillGraphForceSettings>(
     () => ({
       ...DEFAULT_FORCES,
-      linkDistance: graphMode === "global" ? 62 : DEFAULT_FORCES.linkDistance,
-      repel: graphMode === "global" ? 190 : DEFAULT_FORCES.repel,
+      linkDistance: graphMode === "all" ? 62 : DEFAULT_FORCES.linkDistance,
+      repel: graphMode === "all" ? 190 : DEFAULT_FORCES.repel,
     }),
     [graphMode],
   );
@@ -331,7 +342,7 @@ export function SkillGraphExperience({
 
   useEffect(() => {
     setSelectedId(initialSelection);
-    setGraphMode("local");
+    setGraphMode("focus");
     setForceReady(false);
   }, [initialGraph.seed, initialSelection]);
 
@@ -382,7 +393,7 @@ export function SkillGraphExperience({
     (nodeId: string) => {
       if (nodeId === initialGraph.seed) {
         setSelectedId(nodeId);
-        setGraphMode("local");
+        setGraphMode("focus");
         return;
       }
       setAnnouncement(`${nodeId} 중심의 공고 관계를 불러옵니다.`);
@@ -420,11 +431,10 @@ export function SkillGraphExperience({
   }
 
   function resetGraphView() {
-    setGraphMode("local");
+    setGraphMode("focus");
     setSelectedId(initialSelection);
     setFilterQuery("");
     setShowEvidence(true);
-    setShowIsolated(false);
     setDisabledDomains([]);
     setLocalDepth(2);
   }
@@ -521,7 +531,7 @@ export function SkillGraphExperience({
               <summary>
                 <span>내 기술과 분석 조건</span>
                 <small>
-                  {ownedSkills.length}개 · {graphMode === "local" ? "주변" : "현재 범위"}
+                  {ownedSkills.length}개 · {graphMode === "focus" ? "선택 주변" : "전체 범위"}
                 </small>
               </summary>
 
@@ -589,17 +599,17 @@ export function SkillGraphExperience({
 
                   <div aria-label="그래프 범위" className={styles.segmented}>
                     <button
-                      aria-pressed={graphMode === "local"}
-                      data-active={graphMode === "local" ? "true" : undefined}
-                      onClick={() => setGraphMode("local")}
+                      aria-pressed={graphMode === "focus"}
+                      data-active={graphMode === "focus" ? "true" : undefined}
+                      onClick={() => setGraphMode("focus")}
                       type="button"
                     >
                       선택 주변
                     </button>
                     <button
-                      aria-pressed={graphMode === "global"}
-                      data-active={graphMode === "global" ? "true" : undefined}
-                      onClick={() => setGraphMode("global")}
+                      aria-pressed={graphMode === "all"}
+                      data-active={graphMode === "all" ? "true" : undefined}
+                      onClick={() => setGraphMode("all")}
                       type="button"
                     >
                       현재 범위
@@ -612,7 +622,7 @@ export function SkillGraphExperience({
                     </span>
                     <input
                       aria-label="주변 깊이"
-                      disabled={graphMode !== "local"}
+                      disabled={graphMode !== "focus"}
                       id="graph-local-depth"
                       max="3"
                       min="1"
@@ -630,15 +640,7 @@ export function SkillGraphExperience({
                         onChange={(event) => setShowEvidence(event.target.checked)}
                         type="checkbox"
                       />
-                      공고 근거 노드
-                    </label>
-                    <label>
-                      <input
-                        checked={showIsolated}
-                        onChange={(event) => setShowIsolated(event.target.checked)}
-                        type="checkbox"
-                      />
-                      연결 없는 기술
+                      관련 공고 표시
                     </label>
                   </div>
                 </section>
@@ -703,10 +705,11 @@ export function SkillGraphExperience({
                 onReadyChange={setForceReady}
                 reheatKey={reheatKey}
                 selectedId={selectedId}
+                touchInteractionEnabled
               />
 
               <div className={styles.graphStatus}>
-                <span>{graphMode === "local" ? "선택 주변" : "현재 범위"}</span>
+                <span>{graphMode === "focus" ? "선택 주변" : "전체 범위"}</span>
                 <span className={styles.pointerHint}>드래그 · 확대 · 선택</span>
                 <span className={styles.touchHint}>
                   이동 · 핀치 확대 · 탭 선택

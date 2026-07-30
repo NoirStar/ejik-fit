@@ -27,15 +27,21 @@ import {
   removeCommunityDraft,
   saveCommunityDraft,
 } from "@/features/community/community-draft";
-import type { CommunityStore } from "@/features/community/community-store";
+import {
+  COMMUNITY_FAILURE_COPY,
+  type CommunityStore,
+} from "@/features/community/community-store";
+import type { InitialCommunityFeed } from "@/features/community/community-feed-initial";
 import { useCommunityFeed } from "@/features/community/use-community-feed";
 import { buildSearchScopeHref } from "@/features/search/model";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import {
+  COMMUNITY_CATEGORIES,
   MAX_COMMUNITY_POST_TAGS,
   MAX_COMMUNITY_TAG_LENGTH,
 } from "@/lib/community-contract";
 import { trapTabKey } from "@/lib/focus-trap";
+import { PRODUCT_TERMS } from "@/lib/labels";
 import {
   DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
   deleteLocalCommunityPost,
@@ -52,20 +58,22 @@ import {
 import { removeRecentCommunityTopic } from "@/lib/recent-community-topics";
 
 import { CompanyMark } from "./company-mark";
-import { itemsForTab } from "./feed-order";
+import { groupFeedForDisplay } from "./feed-display-groups";
+import { appendOnlyItemsForTab, itemsForTab } from "./feed-order";
 import { FollowingPostList } from "./following-post-list";
 import {
   localCommunityPostToFeedItem,
   serverCommunityPostToFeedItem,
 } from "./model";
-import { RecentTopicList } from "./recent-topic-list";
 import styles from "./home-feed.module.css";
+import { useHomeFeedPagination } from "./use-home-feed-pagination";
 import type {
+  CareerContextSummary,
+  CareerInsightSummary,
   CommunityPostFeedItem,
   FeedItem,
   FeedTab,
   HomeFeedSnapshot,
-  InterviewReviewFeedItem,
   MarketInsightFeedItem,
   RecommendedJobFeedItem,
 } from "./types";
@@ -73,6 +81,8 @@ import type {
 export type HomeFeedProps = {
   snapshot: HomeFeedSnapshot;
   composeMode?: "new" | "resume" | null;
+  communityOnly?: boolean;
+  initialCommunityFeed?: InitialCommunityFeed;
   communityStore?: CommunityStore;
 };
 
@@ -85,7 +95,7 @@ type LocalPostDraft = {
 type DraftErrors = Partial<
   Record<"title" | "body" | "storage" | "tags", string>
 >;
-type SocialItem = CommunityPostFeedItem | InterviewReviewFeedItem;
+type SocialItem = CommunityPostFeedItem;
 
 const TABS: Array<{
   id: FeedTab;
@@ -98,14 +108,17 @@ const TABS: Array<{
   { id: "popular", label: "인기" },
 ];
 
-const POST_KIND_OPTIONS: ReadonlyArray<{
-  label: string;
-  value: LocalCommunityPostCategory;
-}> = [
-  { label: "질문", value: "커리어 질문" },
-  { label: "커리어 고민", value: "커리어 고민" },
-  { label: "면접 후기", value: "면접 후기" },
-];
+const COMMUNITY_TAB_LABELS: Record<FeedTab, string> = {
+  recommended: "전체 글",
+  following: "팔로잉",
+  latest: "최신 글",
+  popular: "공감 많은 글",
+};
+
+const POST_KIND_OPTIONS = COMMUNITY_CATEGORIES.map((value) => ({
+  label: value,
+  value,
+}));
 
 const EMPTY_DRAFT: LocalPostDraft = {
   category: DEFAULT_LOCAL_COMMUNITY_POST_CATEGORY,
@@ -113,6 +126,25 @@ const EMPTY_DRAFT: LocalPostDraft = {
   body: "",
   tags: "",
 };
+
+const HOME_COPY = {
+  title: "추천 피드",
+  market: "채용 시장",
+  followingEmpty: "팔로우한 작성자의 글이 없습니다.",
+  followingAction: "다른 글에서 관심 있는 작성자를 팔로우해 주세요.",
+} as const;
+
+function formatLatestVerifiedLabel(value: string | null) {
+  if (!value) return "최신 확인 시각 미상";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "최신 확인 시각 미상";
+  const formatted = new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Seoul",
+  }).format(date);
+  return `최신 확인 ${formatted}`;
+}
 
 function draftTags(value: string) {
   const tags: string[] = [];
@@ -130,7 +162,19 @@ function draftTags(value: string) {
 }
 
 function isSocialItem(item: FeedItem): item is SocialItem {
-  return item.type === "community_post" || item.type === "interview_review";
+  return item.type === "community_post";
+}
+
+function mergeLiveFeedItems(primary: FeedItem[], live: CommunityPostFeedItem[]) {
+  const merged: FeedItem[] = [...live];
+  const seen = new Set(live.map(({ id }) => id));
+  for (const item of primary) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      merged.push(item);
+    }
+  }
+  return merged;
 }
 
 function SocialCard({
@@ -161,9 +205,6 @@ function SocialCard({
   saved: boolean;
 }) {
   const titleId = `feed-${item.id}-title`;
-  const body = item.type === "community_post" ? item.body : item.summary;
-  const visibleTags = item.tags.slice(0, 3);
-  const hiddenTagCount = item.tags.length - visibleTags.length;
   const persistedMetrics = item.source === "server";
   const reactionCount =
     item.metrics.reactions + (persistedMetrics ? 0 : reacted ? 1 : 0);
@@ -225,36 +266,22 @@ function SocialCard({
             </Link>
           </h2>
         </div>
-        {item.type === "interview_review" && (
-          <div className={styles.reviewMeta}>
-            <span>{item.companyType}</span>
-            <span>{item.role}</span>
-            <span>{item.stage}</span>
-          </div>
-        )}
-        <p>{body}</p>
+        <p>{item.body}</p>
       </div>
 
       <ul aria-label={`${item.title} 태그`} className={styles.tags}>
-        {visibleTags.map((tag) => (
+        {item.tags.map((tag) => (
           <li key={tag}>
             <Link
               aria-label={`${tag} 커뮤니티 검색`}
               href={buildSearchScopeHref(tag, "community")}
               prefetch={false}
+              title={tag}
             >
-              {tag}
+              <span>{tag}</span>
             </Link>
           </li>
         ))}
-        {hiddenTagCount > 0 && (
-          <li
-            aria-label={`태그 ${hiddenTagCount}개 더 있음`}
-            className={styles.moreTag}
-          >
-            +{hiddenTagCount}
-          </li>
-        )}
       </ul>
 
       <footer className={styles.cardActions}>
@@ -302,129 +329,198 @@ function SocialCard({
 }
 
 function JobCard({
+  compact,
   item,
   onSave,
   ownedSkills,
   saved,
 }: {
+  compact: boolean;
   item: RecommendedJobFeedItem;
   onSave(): void;
   ownedSkills: string[];
   saved: boolean;
 }) {
   const titleId = `feed-${item.id}-title`;
-  const hasEvidence =
-    item.matchedRequiredSkills.length > 0 ||
-    item.missingRequiredSkills.length > 0 ||
-    item.matchedPreferredSkills.length > 0;
+  const hasOwnedSkills = ownedSkills.length > 0;
+  const matchedRequired = new Set(item.matchedRequiredSkills);
+  const matchedPreferred = new Set(item.matchedPreferredSkills);
+  const matchedUnspecified = new Set(item.matchedUnspecifiedSkills);
+  const required = item.requiredSkills.map((skill) => ({
+    kind: hasOwnedSkills
+      ? matchedRequired.has(skill)
+        ? "matched"
+        : "missing"
+      : "neutral",
+    skill,
+  }));
+  const requiredNames = new Set(item.requiredSkills);
+  const preferred = item.preferredSkills
+    .filter((skill) => !requiredNames.has(skill))
+    .map((skill) => ({
+      kind: matchedPreferred.has(skill) ? "matched" : "preferred",
+      skill,
+    }));
+  const knownNames = new Set([
+    ...item.requiredSkills,
+    ...item.preferredSkills,
+  ]);
+  const unspecified = item.unspecifiedSkills
+    .filter((skill) => !knownNames.has(skill))
+    .map((skill) => ({
+      kind: matchedUnspecified.has(skill) ? "matched" : "neutral",
+      skill,
+    }));
+  const skills = [...required, ...preferred, ...unspecified];
+  const visibleSkills = skills.slice(0, compact ? 3 : 4);
+  const hiddenSkillCount = Math.max(0, skills.length - visibleSkills.length);
 
   return (
-    <article aria-labelledby={titleId} className={styles.jobCard}>
-      <div className={styles.jobTopline}>
-        <span className={styles.verifiedBadge}>
-          <ShieldCheck aria-hidden="true" size={16} weight="fill" />
-          공식 채용공고
-        </span>
-        <span>{item.verifiedLabel} 확인</span>
-      </div>
-
-      <div className={styles.jobIdentity}>
-        <CompanyMark
-          companyName={item.companyName}
-          priority
-          size={52}
-          sourceUrl={item.sourceUrl}
-        />
-        <div>
-          <p>
-            {item.companyHref ? (
-              <Link
-                aria-label={`${item.companyName} 기업 채용 현황`}
-                className={styles.companyLink}
-                href={item.companyHref}
-                prefetch={false}
-              >
-                {item.companyName}
-              </Link>
-            ) : (
-              item.companyName
-            )}
-          </p>
-          <h2 id={titleId}>
-            <Link href={item.href} prefetch={false}>
-              {item.title}
-            </Link>
-          </h2>
-        </div>
-      </div>
-
-      <div className={styles.jobMeta}>
-        <span>
-          <MapPin aria-hidden="true" size={16} />
-          {item.location}
-        </span>
-        <span>{item.careerLabel}</span>
-        <span>{item.employmentLabel}</span>
-      </div>
-
-      {ownedSkills.length === 0 ? (
-        <div className={styles.stackPrompt}>
-          <span>내 기술을 추가하면 관련 공고의 연결 근거를 비교합니다.</span>
-          <Link href="/career">내 기술 추가</Link>
-        </div>
-      ) : hasEvidence ? (
-        <div className={styles.skillEvidence}>
-          {item.matchedRequiredSkills.map((skill) => (
-            <span data-kind="matched" key={`matched-${skill}`}>
-              <CheckCircle aria-hidden="true" size={15} weight="fill" />
-              보유 필수 {skill}
-            </span>
-          ))}
-          {item.missingRequiredSkills.map((skill) => (
-            <span data-kind="missing" key={`missing-${skill}`}>
-              확인 필요 {skill}
-            </span>
-          ))}
-          {item.matchedPreferredSkills.map((skill) => (
-            <span data-kind="preferred" key={`preferred-${skill}`}>
-              보유 우대 {skill}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className={styles.stackPrompt}>이 공고의 기술 근거가 그래프 응답에 없습니다.</p>
-      )}
-
-      <footer className={styles.jobActions}>
-        <Link href={item.href} prefetch={false}>
-          공고 상세
-          <ArrowRight aria-hidden="true" size={16} />
-        </Link>
-        <a href={item.sourceUrl} rel="noreferrer" target="_blank">
-          공식 채용 페이지에서 지원
-          <ArrowSquareOut aria-hidden="true" size={15} />
-        </a>
-        <button
-          aria-label={`${item.title} 저장`}
-          aria-pressed={saved}
-          data-active={saved ? "true" : undefined}
-          onClick={onSave}
-          type="button"
+    <article
+      aria-labelledby={titleId}
+      className={styles.jobCard}
+      data-compact={compact ? "true" : undefined}
+    >
+      <div className={styles.jobShell}>
+        <Link
+          aria-label={`${item.title} 공고 보기`}
+          className={styles.jobMainLink}
+          href={item.href}
+          prefetch={false}
         >
-          <BookmarkSimple
-            aria-hidden="true"
-            size={19}
-            weight={saved ? "fill" : "regular"}
-          />
-          <span>저장</span>
-        </button>
-      </footer>
+          <div className={styles.jobIdentity}>
+            <CompanyMark
+              companyName={item.companyName}
+              companySlug={item.companySlug}
+              priority={!compact}
+              size={compact ? 40 : 44}
+              sourceUrl={item.sourceUrl}
+            />
+            <div>
+              <p>{item.companyName}</p>
+              <h2 id={titleId}>{item.title}</h2>
+              <div className={styles.jobMeta}>
+                <span>
+                  <MapPin aria-hidden="true" size={14} />
+                  {item.location}
+                </span>
+                <span>{item.careerLabel}</span>
+                <span>{item.employmentLabel}</span>
+                <span>{item.verifiedLabel} 확인</span>
+              </div>
+            </div>
+          </div>
+
+          {(visibleSkills.length > 0 || item.recommendationReason) && (
+            <div className={styles.jobSignalRow}>
+              {item.recommendationReason && (
+                <strong
+                  className={styles.matchSummary}
+                  data-kind={
+                    item.recommendationReason === "새로운 분야 탐색"
+                      ? "exploration"
+                      : "matched"
+                  }
+                >
+                  {item.recommendationReason}
+                </strong>
+              )}
+              {visibleSkills.length > 0 && (
+                <div
+                  aria-label={`${item.title} 기술 요건`}
+                  className={styles.jobSkills}
+                >
+                  {visibleSkills.map(({ kind, skill }) => (
+                    <span data-kind={kind} key={`${kind}-${skill}`}>
+                      {skill}
+                    </span>
+                  ))}
+                  {hiddenSkillCount > 0 && <small>외 {hiddenSkillCount}개</small>}
+                </div>
+              )}
+            </div>
+          )}
+        </Link>
+
+        <div className={styles.jobTools}>
+          <a
+            aria-label={`${item.title} 공식 원문`}
+            className={styles.jobTool}
+            href={item.sourceUrl}
+            rel="noreferrer"
+            target="_blank"
+            title="공식 원문"
+          >
+            <ArrowSquareOut aria-hidden="true" size={18} />
+          </a>
+          <button
+            aria-label={`${item.title} ${saved ? "저장 해제" : "저장"}`}
+            aria-pressed={saved}
+            className={styles.jobTool}
+            data-active={saved ? "true" : undefined}
+            onClick={onSave}
+            title={saved ? "저장 해제" : "저장"}
+            type="button"
+          >
+            <BookmarkSimple
+              aria-hidden="true"
+              size={19}
+              weight={saved ? "fill" : "regular"}
+            />
+          </button>
+        </div>
+      </div>
     </article>
+  );
+}
+
+function JobCluster({
+  items,
+  onSave,
+  ownedSkills,
+  savedJobIds,
+}: {
+  items: RecommendedJobFeedItem[];
+  onSave(postingId: string): void;
+  ownedSkills: string[];
+  savedJobIds: string[];
+}) {
+  const compact = items.length > 1;
+
+  return (
+    <section
+      aria-label={`추천 공고 ${items.length}개`}
+      className={styles.jobCluster}
+    >
+      <header className={styles.jobClusterHeader}>
+        <span>
+          <ShieldCheck aria-hidden="true" size={16} weight="fill" />
+          추천 공고
+        </span>
+        <small>공식 채용 페이지 · {items.length}개</small>
+      </header>
+      <div className={styles.jobClusterList}>
+        {items.map((item) => (
+          <JobCard
+            compact={compact}
+            item={item}
+            key={item.id}
+            onSave={() => onSave(item.postingId)}
+            ownedSkills={ownedSkills}
+            saved={savedJobIds.includes(item.postingId)}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
 function MarketCard({ item }: { item: MarketInsightFeedItem }) {
   const titleId = `feed-${item.id}-title`;
+  const totalCount = Math.max(
+    1,
+    item.requiredCount + item.preferredCount + item.unspecifiedCount,
+  );
 
   return (
     <article aria-labelledby={titleId} className={styles.marketCard}>
@@ -433,7 +529,7 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
       </div>
       <div className={styles.marketBody}>
         <div className={styles.marketTopline}>
-          <span>기술 수요 현황</span>
+          <span>{HOME_COPY.market}</span>
           <small>{item.sourceLabel}</small>
         </div>
         <h2 id={titleId}>
@@ -442,18 +538,160 @@ function MarketCard({ item }: { item: MarketInsightFeedItem }) {
           </Link>
         </h2>
         <p>{item.summary}</p>
-        <div aria-label={`${item.skillName} 채용 수요`} className={styles.marketCounts}>
+        <div
+          aria-label={`${item.skillName} 채용 수요 구성`}
+          className={styles.demandDistribution}
+          role="img"
+        >
+          <span
+            data-kind="required"
+            style={{ width: `${(item.requiredCount / totalCount) * 100}%` }}
+          />
+          <span
+            data-kind="preferred"
+            style={{ width: `${(item.preferredCount / totalCount) * 100}%` }}
+          />
+          <span
+            data-kind="unspecified"
+            style={{ width: `${(item.unspecifiedCount / totalCount) * 100}%` }}
+          />
+        </div>
+        <div className={styles.marketLegend}>
           <strong>{item.sampleLabel}</strong>
-          <span>필수 {item.requiredCount}건</span>
-          <span>우대 {item.preferredCount}건</span>
-          <span>조건 구분 없음 {item.unspecifiedCount}건</span>
+          <span data-kind="required">필수 {item.requiredCount}건</span>
+          <span data-kind="preferred">우대 {item.preferredCount}건</span>
+          <span data-kind="unspecified">구분 없음 {item.unspecifiedCount}건</span>
         </div>
         <Link className={styles.marketLink} href={item.href} prefetch={false}>
-          기술 관계와 관련 공고 보기
+          스킬맵에서 공고 근거 보기
           <ArrowRight aria-hidden="true" size={16} />
         </Link>
       </div>
     </article>
+  );
+}
+
+function CareerBriefing({
+  context,
+  insight,
+  ownedSkillCount,
+}: {
+  context: CareerContextSummary;
+  insight: CareerInsightSummary;
+  ownedSkillCount: number;
+}) {
+  const titleId = "home-career-briefing-title";
+  const readyInsight =
+    ownedSkillCount > 0 && insight.status === "ready" ? insight : null;
+  const unavailableInsight =
+    ownedSkillCount > 0 && insight.status === "unavailable";
+
+  return (
+    <section aria-labelledby={titleId} className={styles.careerBriefing}>
+      <header className={styles.briefingHeader}>
+        <div>
+          <h1 id={titleId}>내 커리어 브리핑</h1>
+          <p>
+            {context.careerConditionLabel} · {context.targetDomainLabel}
+          </p>
+        </div>
+        <Link
+          aria-label="내 커리어 기준 수정"
+          className={styles.briefingSettings}
+          href="/career"
+          prefetch={false}
+        >
+          기준 수정
+          <ArrowRight aria-hidden="true" size={14} weight="bold" />
+        </Link>
+      </header>
+
+      <div className={styles.briefingBody}>
+        {readyInsight ? (
+          <>
+            <div className={styles.briefingLead}>
+              <div className={styles.briefingRecommendation}>
+                <div className={styles.briefingRecommendationCopy}>
+                  <span>다음에 준비할 기술</span>
+                  {readyInsight.matchingPostingCount === 0 ? (
+                    <strong className={styles.briefingEmptyRecommendation}>
+                      현재 공개 공고에서 일치 항목을 찾지 못했습니다.
+                    </strong>
+                  ) : readyInsight.nextSkill ? (
+                    <strong>{readyInsight.nextSkill.skillName}</strong>
+                  ) : (
+                    <strong className={styles.briefingEmptyRecommendation}>
+                      현재 반복되는 부족 기술이 없습니다.
+                    </strong>
+                  )}
+                </div>
+                {readyInsight.matchingPostingCount > 0 && readyInsight.nextSkill && (
+                  <Link
+                    aria-label={`${readyInsight.nextSkill.skillName} 추천 근거 보기`}
+                    className={styles.briefingEvidenceLink}
+                    href={`/skill-map?skill=${encodeURIComponent(readyInsight.nextSkill.skillName)}`}
+                    prefetch={false}
+                  >
+                    <span className={styles.evidencePrefix}>추천 </span>
+                    근거 보기
+                    <ArrowRight aria-hidden="true" size={14} weight="bold" />
+                  </Link>
+                )}
+              </div>
+              {readyInsight.matchingPostingCount === 0 ? (
+                <p>내 기술을 더 추가하거나 커리어 기준을 조정해 보세요.</p>
+              ) : readyInsight.nextSkill ? (
+                <p>
+                  관련 공고 {readyInsight.nextSkill.supportingPostingCount.toLocaleString("ko-KR")}건에서 반복적으로 부족했습니다.
+                </p>
+              ) : (
+                <p>현재 조건에서 확인된 공고를 계속 비교합니다.</p>
+              )}
+            </div>
+            <dl aria-label="내 기술 공고 분석" className={styles.briefingFacts}>
+              <div>
+                <dt>준비도 높은 공고</dt>
+                <dd>
+                  <strong>
+                    {readyInsight.strongFitPostingCount.toLocaleString("ko-KR")}건
+                  </strong>
+                  <span>필수 기술 절반 이상 충족</span>
+                </dd>
+              </div>
+              <div>
+                <dt>기술이 겹치는 공고</dt>
+                <dd>
+                  <strong>
+                    {readyInsight.matchingPostingCount.toLocaleString("ko-KR")}건
+                  </strong>
+                  <span>내 기술 한 개 이상 포함</span>
+                </dd>
+              </div>
+            </dl>
+          </>
+        ) : unavailableInsight ? (
+          <div className={styles.briefingState} role="status">
+            <strong>내 기술 분석을 불러오지 못했습니다.</strong>
+            <small>잠시 후 다시 확인해 주세요.</small>
+          </div>
+        ) : (
+          <Link
+            aria-label="내 기술 등록"
+            className={styles.briefingSetup}
+            href="/career"
+            prefetch={false}
+          >
+            <strong>
+              내 기술을 등록하면 부족 기술과 준비도 높은 공고를 바로 찾을 수 있습니다.
+            </strong>
+            <span>
+              기술 등록
+              <ArrowRight aria-hidden="true" size={15} weight="bold" />
+            </span>
+          </Link>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -467,13 +705,12 @@ function LegacyPostRecovery({
   if (posts.length === 0) return null;
 
   return (
-    <section aria-label="이전 기기 저장 글" className={styles.legacyRecovery}>
+    <section aria-label="이 기기에 남은 글" className={styles.legacyRecovery}>
       <header>
         <div>
-          <h2>이전 기기 저장 글</h2>
+          <h2>이 기기에 남은 글</h2>
           <p>
-            이전 버전이 이 브라우저에 남긴 글입니다. 서버에 게시된 활동이 아니며,
-            내용을 확인한 뒤 계정으로 복구하거나 삭제할 수 있습니다.
+            계정에 게시되지 않은 글입니다. 내용을 확인하거나 삭제해 주세요.
           </p>
         </div>
         <span>{posts.length.toLocaleString("ko-KR")}개</span>
@@ -484,11 +721,11 @@ function LegacyPostRecovery({
             <div>
               <span>{post.category}</span>
               <h3 id={`legacy-${post.id}-title`}>{post.title}</h3>
-              <small>{post.createdLabel} · 현재 브라우저에만 있음</small>
+              <small>{post.createdLabel} · 이 기기에만 있음</small>
             </div>
             <div className={styles.legacyRecoveryActions}>
               <Link
-                aria-label={`${post.title} 복구 내용 확인`}
+                aria-label={`${post.title} 내용 확인`}
                 href={post.href}
                 prefetch={false}
               >
@@ -560,7 +797,13 @@ function FeedCard({
 
   if (item.type === "recommended_job") {
     return (
-      <JobCard item={item} onSave={onSave} ownedSkills={ownedSkills} saved={saved} />
+      <JobCard
+        compact={false}
+        item={item}
+        onSave={onSave}
+        ownedSkills={ownedSkills}
+        saved={saved}
+      />
     );
   }
 
@@ -569,7 +812,9 @@ function FeedCard({
 
 export function HomeFeed({
   composeMode = null,
+  communityOnly = false,
   communityStore,
+  initialCommunityFeed,
   snapshot,
 }: HomeFeedProps) {
   const router = useRouter();
@@ -580,12 +825,25 @@ export function HomeFeed({
     viewer,
   } = useAuthViewerContext();
   const [activeTab, setActiveTab] = useState<FeedTab>("recommended");
-  const community = useCommunityFeed({
+  const publicCommunityDirtyRef = useRef(false);
+  const publicCommunity = useCommunityFeed({
     authReady,
-    followingOnly: activeTab === "following",
+    initialFeed: initialCommunityFeed,
+    limit: 10,
     store: communityStore,
     viewer,
   });
+  const followingCommunity = useCommunityFeed({
+    authReady,
+    enabled: activeTab === "following",
+    followingOnly: true,
+    limit: 10,
+    store: communityStore,
+    viewer,
+  });
+  const community = activeTab === "following"
+    ? followingCommunity
+    : publicCommunity;
   const [savedJobIds, setSavedJobIds] = useState<string[]>([]);
   const [localPosts, setLocalPosts] = useState<LocalCommunityPost[]>([]);
   const [localPostsHydrated, setLocalPostsHydrated] = useState(false);
@@ -596,6 +854,8 @@ export function HomeFeed({
   const [announcement, setAnnouncement] = useState("");
   const composerTitleRef = useRef<HTMLInputElement>(null);
   const composerRef = useRef<HTMLElement>(null);
+  const feedSentinelRef = useRef<HTMLDivElement>(null);
+  const tabOrderRef = useRef<Partial<Record<FeedTab, string[]>>>({});
   const hasPersonalization =
     snapshot.careerContext.configured || snapshot.ownedSkills.length > 0;
 
@@ -666,37 +926,167 @@ export function HomeFeed({
     () => localPosts.map((post) => localCommunityPostToFeedItem(post)),
     [localPosts],
   );
-  const serverFeedItems = useMemo(
-    () => community.state.posts.map((post) => serverCommunityPostToFeedItem(post)),
-    [community.state.posts],
+  const publicServerFeedItems = useMemo(
+    () =>
+      publicCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [publicCommunity.state.posts],
   );
+  const followingServerFeedItems = useMemo(
+    () =>
+      followingCommunity.state.posts.map((post) =>
+        serverCommunityPostToFeedItem(post),
+      ),
+    [followingCommunity.state.posts],
+  );
+  const serverFeedItems = activeTab === "following"
+    ? followingServerFeedItems
+    : publicServerFeedItems;
+  const loadMorePublicCommunity = publicCommunity.loadMore;
+  const loadNextPublicCommunityPage = useCallback(async () => {
+    const page = await loadMorePublicCommunity();
+    if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
+    return {
+      items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
+      hasMore: page.nextCursor !== null,
+    };
+  }, [loadMorePublicCommunity]);
+  const loadMoreFollowingCommunity = followingCommunity.loadMore;
+  const loadNextFollowingCommunityPage = useCallback(async () => {
+    const page = await loadMoreFollowingCommunity();
+    if (!page) throw new Error(COMMUNITY_FAILURE_COPY.load);
+    return {
+      items: page.items.map((post) => serverCommunityPostToFeedItem(post)),
+      hasMore: page.nextCursor !== null,
+    };
+  }, [loadMoreFollowingCommunity]);
+  const publicPagination = useHomeFeedPagination({
+    activeTab: activeTab === "following" ? "recommended" : activeTab,
+    careerType: snapshot.careerContext.careerCondition,
+    communityStatus: publicCommunity.state.status,
+    enabled: activeTab !== "following",
+    initialCommunity: publicServerFeedItems,
+    initialCommunityHasMore:
+      activeTab !== "following" &&
+      publicCommunity.state.nextCursor !== null,
+    initialInsights: snapshot.marketInsights,
+    initialJobs: snapshot.recommendedJobs,
+    initialPersonalizationFallback: snapshot.personalizationFallback,
+    jobTotal: snapshot.postingCount,
+    liveCommunity: publicServerFeedItems,
+    loadCommunity:
+      activeTab !== "following" ? loadNextPublicCommunityPage : undefined,
+    ownedSkills: snapshot.ownedSkills,
+  });
+  const followingPagination = useHomeFeedPagination({
+    activeTab: "following",
+    communityStatus: followingCommunity.state.status,
+    enabled: activeTab === "following",
+    initialCommunity: [],
+    initialCommunityHasMore:
+      activeTab === "following" &&
+      followingCommunity.state.nextCursor !== null,
+    initialInsights: [],
+    initialJobs: [],
+    jobTotal: 0,
+    liveCommunity: followingServerFeedItems,
+    loadCommunity:
+      activeTab === "following"
+        ? loadNextFollowingCommunityPage
+        : undefined,
+    ownedSkills: snapshot.ownedSkills,
+  });
+  const pagination = activeTab === "following"
+    ? followingPagination
+    : publicPagination;
+
+  useEffect(() => {
+    if (activeTab === "following" || !publicCommunityDirtyRef.current) return;
+    publicCommunityDirtyRef.current = false;
+    void publicCommunity.reload();
+  }, [activeTab, publicCommunity.reload]);
   const followingRailItems = useMemo(
     () => serverFeedItems,
     [serverFeedItems],
   );
   const followedAuthorIds = community.state.viewerState.followedAuthorIds;
-  const visibleItems = useMemo(
-    () =>
-      itemsForTab(
-        [...serverFeedItems, ...snapshot.feedItems],
-        activeTab,
-        followedAuthorIds,
-      ),
-    [
+  const paginationItems = useMemo(() => {
+    const hasServerRenderedCommunity = initialCommunityFeed?.status === "ready";
+    return activeTab === "recommended" && hasServerRenderedCommunity
+      ? pagination.items
+      : mergeLiveFeedItems(pagination.items, serverFeedItems);
+  }, [activeTab, initialCommunityFeed?.status, pagination.items, serverFeedItems]);
+  const visibleItems = useMemo(() => {
+    const scopedItems = communityOnly
+      ? paginationItems.filter(isSocialItem)
+      : paginationItems;
+    if (activeTab === "recommended") {
+      return itemsForTab(scopedItems, activeTab, followedAuthorIds);
+    }
+    const result = appendOnlyItemsForTab(
+      scopedItems,
       activeTab,
-      serverFeedItems,
-      snapshot.feedItems,
+      tabOrderRef.current[activeTab] ?? [],
       followedAuthorIds,
-    ],
+    );
+    tabOrderRef.current[activeTab] = result.orderIds;
+    return result.items;
+  }, [activeTab, communityOnly, followedAuthorIds, paginationItems]);
+  const displayGroups = useMemo(
+    () => groupFeedForDisplay(visibleItems),
+    [visibleItems],
+  );
+  const maximumDemandCount = Math.max(
+    1,
+    ...snapshot.skillDemand.map((skill) => skill.postingCount),
   );
 
-  function requestLoginForCommunity(nextPath = "/community") {
+  useEffect(() => {
+    const target = feedSentinelRef.current;
+    if (
+      !target ||
+      !authReady ||
+      typeof IntersectionObserver === "undefined" ||
+      pagination.complete ||
+      pagination.error ||
+      pagination.loading ||
+      community.state.status === "idle" ||
+      community.state.status === "loading" ||
+      (activeTab === "following" && community.state.status !== "ready")
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void pagination.loadNext(activeTab);
+        }
+      },
+      { root: null, rootMargin: "800px 0px", threshold: 0 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    activeTab,
+    authReady,
+    community.state.status,
+    pagination.complete,
+    pagination.error,
+    pagination.items.length,
+    pagination.loadNext,
+    pagination.loading,
+  ]);
+
+  function requestLoginForCommunity(
+    nextPath = communityOnly ? "/community" : "/",
+  ) {
     if (authStatus !== "unauthenticated") {
       setAnnouncement(
         authStatus === "loading"
-          ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
-          : authError ||
-              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+          ? "로그인 상태를 확인하는 중…"
+          : authError || COMMUNITY_FAILURE_COPY.authCheck,
       );
       return;
     }
@@ -711,14 +1101,11 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
-    const wasFollowed =
-      community.state.viewerState.followedAuthorIds.includes(item.authorId);
+    setAnnouncement("");
     const changed = await community.toggleFollowed(item.authorId);
-    setAnnouncement(
-      changed
-        ? `${item.authorName} ${wasFollowed ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`
-        : "팔로우 상태를 변경하지 못했습니다. 다시 시도해주세요.",
-    );
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   function handleTabKeyDown(
@@ -754,21 +1141,26 @@ export function HomeFeed({
     if (result.status !== "removed") {
       setAnnouncement(
         result.status === "interactions_failed"
-          ? "글의 로컬 반응을 정리하지 못해 삭제를 중단했습니다."
-          : "작성한 글을 삭제하지 못했습니다.",
+          ? "글과 반응·댓글을 함께 삭제하지 못했습니다. 글은 그대로 두었습니다."
+          : "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
       );
       return;
     }
     removeRecentCommunityTopic(post.id);
-    setAnnouncement("작성한 글을 이 브라우저에서 삭제했습니다.");
+    setAnnouncement("글을 삭제했습니다.");
   }
 
   async function deleteServerPost(post: CommunityPostFeedItem) {
     const deleted = await community.deletePost(post.id);
+    if (deleted) {
+      if (activeTab === "following") publicCommunityDirtyRef.current = true;
+      publicPagination.remove(post.id);
+      followingPagination.remove(post.id);
+    }
     setAnnouncement(
       deleted
-        ? "작성한 글을 계정에서 삭제했습니다."
-        : "작성한 글을 삭제하지 못했습니다. 다시 시도해주세요.",
+        ? "글을 삭제했습니다."
+        : "글을 삭제하지 못했습니다. 글은 그대로 두었습니다.",
     );
   }
 
@@ -778,8 +1170,11 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
+    setAnnouncement("");
     const changed = await community.toggleReaction(item.id);
-    if (!changed) setAnnouncement("공감을 반영하지 못했습니다. 다시 시도해주세요.");
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function handleSocialSave(item: SocialItem) {
@@ -788,8 +1183,11 @@ export function HomeFeed({
       requestLoginForCommunity();
       return;
     }
+    setAnnouncement("");
     const changed = await community.toggleSaved(item.id);
-    if (!changed) setAnnouncement("저장 상태를 반영하지 못했습니다. 다시 시도해주세요.");
+    if (changed && activeTab === "following") {
+      publicCommunityDirtyRef.current = true;
+    }
   }
 
   async function submitPost(event: FormEvent<HTMLFormElement>) {
@@ -814,26 +1212,26 @@ export function HomeFeed({
       setDraftErrors({
         storage:
           authStatus === "loading"
-            ? "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
-            : authError ||
-              "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해주세요.",
+            ? "로그인 상태를 확인하는 중…"
+            : authError || COMMUNITY_FAILURE_COPY.authCheck,
       });
       return;
     }
 
     if (viewer) {
-      const post = await community.createPost({
+      const result = await publicCommunity.createPost({
         category: draft.category,
         title,
         body,
         tags,
       });
-      if (!post) {
+      if (!result.post) {
         setDraftErrors({
-          storage: "글을 계정에 저장하지 못했습니다. 잠시 후 다시 시도해주세요.",
+          storage: result.error || COMMUNITY_FAILURE_COPY.create,
         });
         return;
       }
+      publicPagination.prepend(serverCommunityPostToFeedItem(result.post));
       setActiveTab("recommended");
       setDraft(EMPTY_DRAFT);
       if (typeof window !== "undefined") {
@@ -841,7 +1239,7 @@ export function HomeFeed({
       }
       setDraftRestored(false);
       closeComposer();
-      setAnnouncement("작성한 글을 계정에 저장했습니다.");
+      setAnnouncement("글을 게시했습니다.");
       return;
     }
 
@@ -851,26 +1249,78 @@ export function HomeFeed({
         window.sessionStorage,
       );
     } catch {
-      setDraftErrors({ storage: "임시 글을 저장하지 못했습니다." });
+      setDraftErrors({ storage: COMMUNITY_FAILURE_COPY.create });
       return;
     }
-    setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시를 확인해주세요.");
-    requestLoginForCommunity("/community?compose=resume");
+    setAnnouncement("작성 내용을 임시 저장했습니다. 로그인 후 게시 내용을 확인해 주세요.");
+    requestLoginForCommunity(
+      communityOnly ? "/community?compose=resume" : "/?compose=resume",
+    );
   }
 
   return (
     <main className={styles.page}>
-      <div className={styles.layout}>
-        <aside aria-label="커뮤니티 탐색" className={styles.leftRail}>
-          <RecentTopicList />
-        </aside>
+      <div
+        className={styles.layout}
+        data-community={communityOnly ? "true" : undefined}
+      >
+        {!communityOnly && (
+          <CareerBriefing
+            context={snapshot.careerContext}
+            insight={snapshot.careerInsight}
+            ownedSkillCount={snapshot.ownedSkills.length}
+          />
+        )}
 
         <section aria-labelledby="home-feed-title" className={styles.feedColumn}>
-          <header className={styles.feedHeader}>
-            <h1 id="home-feed-title">
-              커리어 커뮤니티
-            </h1>
+          <header
+            className={`${styles.feedHeader} ${communityOnly ? styles.communityHeader : ""}`}
+          >
+            {communityOnly ? (
+              <div>
+                <p>경험을 나누는 공간</p>
+                <h1 id="home-feed-title">커리어 커뮤니티</h1>
+                <span>
+                  커리어 고민과 직무 전환, 실제 업무 경험을 질문하고 나눠보세요.
+                </span>
+              </div>
+            ) : (
+              <h2 id="home-feed-title">{HOME_COPY.title}</h2>
+            )}
           </header>
+
+          {!communityOnly && snapshot.dataStatus !== "ready" && (
+            <section className={styles.dataNotice} role="status">
+              <WarningCircle aria-hidden="true" size={20} weight="fill" />
+              <div>
+                <strong>
+                  {snapshot.dataStatus === "partial"
+                    ? "일부 정보를 불러오지 못했습니다."
+                    : snapshot.dataStatus === "empty"
+                      ? "표시할 정보가 없습니다."
+                      : "정보를 불러오지 못했습니다."}
+                </strong>
+                <p>불러온 정보만 표시합니다.</p>
+                {snapshot.resourceErrors.length > 0 && (
+                  <ul aria-label="데이터 오류">
+                    {snapshot.resourceErrors.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                )}
+                <button onClick={() => window.location.reload()} type="button">
+                  다시 불러오기
+                </button>
+              </div>
+            </section>
+          )}
+
+          {!communityOnly && (snapshot.personalizationFallback ||
+            pagination.personalizationFallback) && (
+            <p className={styles.personalizationNotice} role="status">
+              맞춤 추천을 불러오지 못했습니다. 최신 공고를 대신 표시합니다.
+            </p>
+          )}
 
           {community.state.status === "error" && (
             <section className={styles.dataNotice} role="status">
@@ -885,7 +1335,7 @@ export function HomeFeed({
             </section>
           )}
 
-          <div aria-label="피드 정렬" className={styles.tabs} role="tablist">
+          <div aria-label="피드 보기" className={styles.tabs} role="tablist">
             {TABS.map((tab, index) => (
               <button
                 aria-controls="home-feed-panel"
@@ -899,15 +1349,17 @@ export function HomeFeed({
                 tabIndex={activeTab === tab.id ? 0 : -1}
                 type="button"
               >
-                {hasPersonalization
-                  ? tab.label
-                  : tab.unconfiguredLabel ?? tab.label}
+                {communityOnly
+                  ? COMMUNITY_TAB_LABELS[tab.id]
+                  : hasPersonalization
+                    ? tab.label
+                    : tab.unconfiguredLabel ?? tab.label}
               </button>
             ))}
           </div>
 
           <p aria-live="polite" className={styles.srOnly}>
-            {`${visibleItems.length}개의 글을 표시합니다.`}
+            {`${visibleItems.length}개의 콘텐츠를 표시합니다.`}
           </p>
           {announcement && (
             <p aria-live="polite" className={styles.confirmation} role="status">
@@ -923,8 +1375,22 @@ export function HomeFeed({
             role="tabpanel"
           >
             {visibleItems.length > 0 ? (
-              visibleItems.map((item) => {
-                const recommendedJob = item.type === "recommended_job";
+              displayGroups.map((group) => {
+                if (group.kind === "jobs") {
+                  return (
+                    <JobCluster
+                      items={group.items}
+                      key={`jobs-${group.items[0]?.id ?? "empty"}`}
+                      onSave={(postingId) => {
+                        setSavedJobIds(toggleSavedJob(postingId));
+                      }}
+                      ownedSkills={snapshot.ownedSkills}
+                      savedJobIds={savedJobIds}
+                    />
+                  );
+                }
+
+                const item = group.item;
                 const serverItem =
                   item.type === "community_post" && item.source === "server";
                 const serverPending =
@@ -969,9 +1435,7 @@ export function HomeFeed({
                       if (isSocialItem(item)) void handleAuthorFollow(item);
                     }}
                     onSave={() => {
-                      if (recommendedJob) {
-                        setSavedJobIds(toggleSavedJob(item.postingId));
-                      } else if (isSocialItem(item)) {
+                      if (isSocialItem(item)) {
                         void handleSocialSave(item);
                       }
                     }}
@@ -982,9 +1446,7 @@ export function HomeFeed({
                         : false
                     }
                     saved={
-                      recommendedJob
-                        ? savedJobIds.includes(item.postingId)
-                        : serverItem
+                      serverItem
                           ? community.state.viewerState.savedPostIds.includes(item.id)
                           : false
                     }
@@ -995,13 +1457,17 @@ export function HomeFeed({
               <div className={styles.emptyFeed}>
                 <strong>
                   {activeTab === "following"
-                    ? "팔로우한 작성자가 없습니다."
-                    : "이 탭에 표시할 글이 없습니다."}
+                    ? HOME_COPY.followingEmpty
+                    : communityOnly
+                      ? "아직 작성된 커뮤니티 글이 없습니다."
+                      : "이 탭에 표시할 글이 없습니다."}
                 </strong>
                 <p>
                   {activeTab === "following"
-                    ? "관심 있는 작성자를 팔로우하면 이 탭에서 모아볼 수 있어요."
-                    : "다른 탭을 선택하거나 첫 글을 작성해 보세요."}
+                    ? HOME_COPY.followingAction
+                    : communityOnly
+                      ? "커리어 고민이나 실제 업무 경험을 첫 글로 나눠보세요."
+                      : "다른 탭을 선택하거나 첫 글을 작성해 주세요."}
                 </p>
                 {activeTab === "following" && (
                   <button
@@ -1015,23 +1481,35 @@ export function HomeFeed({
             )}
           </div>
 
-          {community.state.nextCursor && (
-            <div className={styles.feedPagination}>
-              <button
-                aria-busy={community.state.loadingMore}
-                disabled={community.state.loadingMore}
-                onClick={() => void community.loadMore()}
-                type="button"
-              >
-                {community.state.loadingMore
-                  ? "커뮤니티 글 불러오는 중…"
-                  : "커뮤니티 글 더 보기"}
-              </button>
-              {community.state.actionError && (
-                <p role="alert">{community.state.actionError}</p>
+          <div
+            aria-busy={pagination.loading}
+            className={styles.feedPagination}
+            data-testid="home-feed-sentinel"
+            ref={feedSentinelRef}
+          >
+            {pagination.loading && <p role="status">새 글을 불러오는 중…</p>}
+            {pagination.error && (
+              <div className={styles.feedPaginationError}>
+                <p role="alert">{pagination.error}</p>
+                <button
+                  onClick={() => void pagination.retry(activeTab)}
+                  type="button"
+                >
+                  다시 시도
+                </button>
+              </div>
+            )}
+            {community.state.actionError && (
+              <p role="alert">{community.state.actionError}</p>
+            )}
+            {pagination.complete &&
+              visibleItems.length > 0 &&
+              !pagination.error && (
+                <p className={styles.feedComplete} role="status">
+                  모든 콘텐츠를 확인했습니다.
+                </p>
               )}
-            </div>
-          )}
+          </div>
 
           {localPostsHydrated && (
             <LegacyPostRecovery
@@ -1041,7 +1519,58 @@ export function HomeFeed({
           )}
         </section>
 
-        <aside aria-label="팔로우한 작성자" className={styles.rightRail}>
+        {!communityOnly && (
+        <aside aria-label="채용 시장 요약" className={styles.rightRail}>
+          <section className={styles.railCard} id="market-insights">
+            <div className={styles.railHeadingRow}>
+              <h2>현재 기술 수요</h2>
+              <Link href="/market" prefetch={false}>
+                더보기
+              </Link>
+            </div>
+            <p className={styles.railScope}>
+              공고 {snapshot.postingCount.toLocaleString("ko-KR")}개 분석 · {formatLatestVerifiedLabel(snapshot.lastVerifiedAt)}
+            </p>
+            {snapshot.skillDemand.length > 0 ? (
+              <ol className={styles.skillDemand}>
+                {snapshot.skillDemand.map((skill) => (
+                  <li key={skill.skillName}>
+                    <Link
+                      href={`/skill-map?skill=${encodeURIComponent(skill.skillName)}`}
+                      prefetch={false}
+                    >
+                      <strong>{skill.skillName}</strong>
+                      <span>{skill.postingCount}건</span>
+                      <i aria-hidden="true" className={styles.skillDemandTrack}>
+                        <b
+                          style={{
+                            width: `${Math.max(
+                              6,
+                              (skill.postingCount / maximumDemandCount) * 100,
+                            )}%`,
+                          }}
+                        />
+                      </i>
+                      <small>
+                        필수 {skill.requiredCount} · 우대 {skill.preferredCount} ·
+                        구분 없음 {skill.unspecifiedCount}
+                      </small>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className={styles.railEmpty}>확인된 기술 수요가 없습니다.</p>
+            )}
+            <p className={styles.railFootnote}>
+              ‘구분 없음’은 공고에 기술이 나오지만 필수·우대로
+              구분되지 않은 경우입니다.
+              <Link href="/data-policy" prefetch={false}>
+                수집 기준 확인
+              </Link>
+            </p>
+          </section>
+
           <FollowingPostList
             followedAuthorIds={followedAuthorIds}
             hydrated={community.state.status === "ready"}
@@ -1049,6 +1578,7 @@ export function HomeFeed({
             onShowFollowing={showFollowingPosts}
           />
         </aside>
+        )}
       </div>
 
       {composerOpen && (
@@ -1063,13 +1593,6 @@ export function HomeFeed({
           >
             <header className={styles.composerHeader}>
               <div>
-                <p>
-                  {viewer
-                    ? "계정에 저장되는 글"
-                    : authReady
-                      ? "로그인 후 계정에 저장되는 글"
-                      : "로그인 상태 확인 중"}
-                </p>
                 <h2 id="community-composer-title">커뮤니티 글쓰기</h2>
               </div>
               <button aria-label="글쓰기 닫기" onClick={closeComposer} type="button">
@@ -1138,7 +1661,7 @@ export function HomeFeed({
                 onChange={(event) =>
                   setDraft((current) => ({ ...current, body: event.target.value }))
                 }
-                placeholder="상황과 궁금한 점을 구체적으로 적어주세요."
+                placeholder="상황과 궁금한 점을 구체적으로 적어 주세요."
                 rows={7}
                 value={draft.body}
               />
@@ -1180,14 +1703,11 @@ export function HomeFeed({
               <div className={styles.composerNote}>
                 <ShieldCheck aria-hidden="true" size={18} />
                 {viewer ? (
-                  <p>
-                    게시한 글은 계정에 안전하게 저장되며 다른 사용자가 볼 수
-                    있습니다. 개인정보가 포함되지 않았는지 확인해주세요.
-                  </p>
+                  <p>개인정보와 회사 기밀은 적지 말아 주세요.</p>
                 ) : (
                   <p>
                     게시하려면 로그인이 필요합니다. 작성 내용은 로그인하는 동안
-                    이 탭에 임시 저장되며, 로그인 후 다시 확인하고 게시합니다.
+                    이 탭에 남아 있습니다.
                   </p>
                 )}
               </div>
@@ -1206,13 +1726,15 @@ export function HomeFeed({
                   disabled={
                     !authReady ||
                     !localPostsHydrated ||
-                    Boolean(viewer && community.state.status !== "ready") ||
-                    community.state.pendingKeys.includes("create:post")
+                    Boolean(
+                      viewer && publicCommunity.state.status !== "ready",
+                    ) ||
+                    publicCommunity.state.pendingKeys.includes("create:post")
                   }
                   type="submit"
                 >
-                  {community.state.pendingKeys.includes("create:post")
-                    ? "게시 중..."
+                  {publicCommunity.state.pendingKeys.includes("create:post")
+                    ? "게시 중…"
                     : "피드에 올리기"}
                 </button>
               </div>

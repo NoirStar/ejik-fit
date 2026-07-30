@@ -63,9 +63,9 @@ function directionKind(
 }
 
 function formattedVerifiedAt(value: string | null) {
-  if (!value) return "마지막 확인 시점 없음";
+  if (!value) return "최근 확인 시점 없음";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "마지막 확인 시점 없음";
+  if (Number.isNaN(date.getTime())) return "최근 확인 시점 없음";
   return `${new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
     month: "long",
@@ -354,7 +354,7 @@ function ProfileHome({ profile, snapshot }: CareerHomeProps & { profile: CareerP
             <dd>{snapshot.sourceCount.toLocaleString("ko-KR")}곳</dd>
           </div>
           <div>
-            <dt>마지막 확인</dt>
+            <dt>최근 확인</dt>
             <dd>{formattedVerifiedAt(snapshot.lastVerifiedAt)}</dd>
           </div>
         </dl>

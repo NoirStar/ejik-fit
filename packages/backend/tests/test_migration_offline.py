@@ -65,7 +65,7 @@ def test_offline_notification_brand_migration_has_a_down_path() -> None:
 
     command.downgrade(
         config,
-        "20260730_0025:20260723_0024",
+        "20260730_0026:20260727_0025",
         sql=True,
     )
 

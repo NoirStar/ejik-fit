@@ -25,7 +25,7 @@ test("keeps a legacy browser post recovery-only on mobile", async ({ page }) => 
       name: "이전 브라우저에 남아 있던 이직 질문",
     }),
   ).toBeVisible();
-  await expect(page.getByText("이전 기기 저장 글", { exact: true })).toBeVisible();
+  await expect(page.getByText("이 기기에 남은 글", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /공감|저장|팔로우|댓글 등록/ }),
@@ -75,7 +75,7 @@ test("keeps a guest community draft for login without publishing a local post", 
   await expect(page).toHaveURL(
     /\/login\?next=%2Fcommunity%3Fcompose%3Dresume$/,
   );
-  await expect(page.getByRole("heading", { name: "커리어핏 계정" })).toBeVisible();
+  await expect(page.getByRole("heading", { exact: true, name: "로그인" })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => ({

@@ -52,6 +52,7 @@ describe("CompanyPage", () => {
           homepage_url: "https://example.com",
           careers_url: "https://careers.example.com",
           collection_status: "collecting",
+          activity_status: "active",
           preparation_reason: null,
           open_postings: 1,
           last_success_at: "2026-07-14T03:00:00Z",

@@ -67,7 +67,7 @@ describe("OwnedSkillsSheet", () => {
     expect(
       await screen.findByRole("dialog", { name: "내 기술" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("아직 저장한 기술이 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("아직 추가한 기술이 없습니다.")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
     expect(screen.queryByText("AWS")).not.toBeInTheDocument();
 

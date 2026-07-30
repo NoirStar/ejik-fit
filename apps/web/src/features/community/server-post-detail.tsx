@@ -35,6 +35,8 @@ import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 import {
+  COMMUNITY_FAILURE_COPY,
+  communityFailureMessage,
   createSupabaseCommunityStore,
   type CommunityStore,
 } from "./community-store";
@@ -89,14 +91,14 @@ function DetailState({
     status === "loading"
       ? {
           eyebrow: "커뮤니티",
-          title: "글을 불러오고 있습니다.",
-          body: "계정에 저장된 공개 글을 확인하고 있어요.",
+          title: "글 불러오는 중…",
+          body: "잠시만 기다려 주세요.",
         }
       : status === "removed"
         ? {
             eyebrow: "삭제 완료",
             title: "글을 삭제했습니다.",
-            body: "홈 피드와 내 글 목록에서도 더 이상 표시되지 않습니다.",
+            body: "댓글과 반응도 함께 삭제했습니다.",
           }
         : status === "missing"
           ? {
@@ -106,15 +108,15 @@ function DetailState({
             }
           : {
               eyebrow: "연결 오류",
-              title: "커뮤니티 글을 불러오지 못했습니다.",
+              title: "글을 불러오지 못했습니다.",
               body: "잠시 후 다시 시도해 주세요.",
             };
 
   return (
     <main className={detailStyles.main}>
-      <Link className={detailStyles.backLink} href="/">
+      <Link className={detailStyles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
       <section className={detailStyles.localState} role="status">
         <p>{copy.eyebrow}</p>
@@ -148,6 +150,7 @@ export function ServerPostDetail({
   const [pending, setPending] = useState("");
   const [actionError, setActionError] = useState("");
   const [announcement, setAnnouncement] = useState("");
+  const [editAnnouncement, setEditAnnouncement] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -182,6 +185,7 @@ export function ServerPostDetail({
 
     setStatus("loading");
     setActionError("");
+    setEditAnnouncement("");
     try {
       const loadedPost = await store.getPost(postId);
       if (request.current !== currentRequest) return;
@@ -221,15 +225,12 @@ export function ServerPostDetail({
 
   function loginRequiredMessage() {
     if (authStatus === "loading") {
-      return "로그인 상태를 확인하고 있습니다. 잠시 후 다시 시도해 주세요.";
+      return "로그인 상태를 확인하는 중…";
     }
     if (authStatus === "error") {
-      return (
-        authError ||
-        "로그인 상태를 확인하지 못했습니다. 연결을 확인한 뒤 다시 시도해 주세요."
-      );
+      return authError || COMMUNITY_FAILURE_COPY.authCheck;
     }
-    return "로그인하면 커뮤니티 활동을 계정에 저장할 수 있습니다.";
+    return COMMUNITY_FAILURE_COPY.auth;
   }
 
   function requireViewer() {
@@ -251,6 +252,7 @@ export function ServerPostDetail({
     setPending("reaction");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setPostReaction(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -271,9 +273,10 @@ export function ServerPostDetail({
             }
           : current,
       );
-      setAnnouncement(active ? "공감을 취소했습니다." : "이 글에 공감했습니다.");
-    } catch {
-      setActionError("공감을 반영하지 못했습니다. 다시 시도해 주세요.");
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
+      );
     } finally {
       setPending("");
     }
@@ -287,6 +290,7 @@ export function ServerPostDetail({
     setPending("save");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setPostSaved(viewer.id, post.id, !active);
       setViewerState((current) => ({
@@ -304,9 +308,10 @@ export function ServerPostDetail({
             }
           : current,
       );
-      setAnnouncement(active ? "저장을 해제했습니다." : "내 저장 목록에 추가했습니다.");
-    } catch {
-      setActionError("저장 상태를 반영하지 못했습니다. 다시 시도해 주세요.");
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
+      );
     } finally {
       setPending("");
     }
@@ -321,17 +326,17 @@ export function ServerPostDetail({
     setPending("follow");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.setAuthorFollowed(viewer.id, post.author.id, !active);
       setViewerState((current) => ({
         ...current,
         followedAuthorIds: active ? [] : [post.author.id],
       }));
-      setAnnouncement(
-        `${item?.authorName ?? "작성자"} ${active ? "팔로우를 해제했습니다." : "팔로우를 시작했습니다."}`,
+    } catch (error) {
+      setActionError(
+        communityFailureMessage(error, COMMUNITY_FAILURE_COPY.action),
       );
-    } catch {
-      setActionError("팔로우 상태를 반영하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setPending("");
     }
@@ -343,6 +348,7 @@ export function ServerPostDetail({
     if (!store) return;
     setPending("delete");
     setActionError("");
+    setEditAnnouncement("");
     try {
       await store.deletePost(viewer.id, post.id);
       setStatus("removed");
@@ -352,7 +358,9 @@ export function ServerPostDetail({
         setDeleteConfirm(false);
         setStatus("missing");
       } else {
-        setActionError("글을 삭제하지 못했습니다. 다시 시도해 주세요.");
+        setActionError(
+          "글을 삭제하지 못했습니다. 글은 그대로 두었습니다. 다시 시도해 주세요.",
+        );
       }
     } finally {
       setPending("");
@@ -367,6 +375,7 @@ export function ServerPostDetail({
     setPending("report");
     setActionError("");
     setAnnouncement("");
+    setEditAnnouncement("");
     try {
       await store.createReport(viewer.id, {
         targetType: "post",
@@ -414,9 +423,9 @@ export function ServerPostDetail({
         title={post.title}
         topicLabel={post.tags[0] ?? post.category}
       />
-      <Link className={detailStyles.backLink} href="/">
+      <Link className={detailStyles.backLink} href="/community">
         <ArrowLeft aria-hidden="true" size={16} weight="bold" />
-        홈 피드로 돌아가기
+        커뮤니티로 돌아가기
       </Link>
 
       <div className={detailStyles.workspace}>
@@ -473,7 +482,7 @@ export function ServerPostDetail({
                 setPost(updated);
                 setEditorOpen(false);
                 setActionError("");
-                setAnnouncement("글 수정 내용을 서버에 저장했습니다.");
+                setEditAnnouncement("글 수정을 저장했습니다.");
               }}
               post={post}
               store={store}
@@ -538,13 +547,14 @@ export function ServerPostDetail({
                 <span>저장 {post.metrics.saves}</span>
               </button>
             </div>
-            <p className={actionStyles.metricNote}>
-              반응과 댓글은 로그인 계정에 저장되며 모든 사용자에게 같은 수치로
-              표시됩니다.
-            </p>
             {actionError && (
               <p className={actionStyles.commentActionError} role="alert">
                 {actionError}
+              </p>
+            )}
+            {editAnnouncement && (
+              <p className={actionStyles.srOnly} role="status">
+                {editAnnouncement}
               </p>
             )}
             {announcement && (
@@ -585,8 +595,7 @@ export function ServerPostDetail({
             <Info aria-hidden="true" size={21} weight="fill" />
             <div>
               <p>커뮤니티 안내</p>
-              <h2>계정에 저장된 공개 글</h2>
-              <p>이 글과 댓글, 반응은 커리어핏 커뮤니티 서버에 저장됩니다.</p>
+              <h2>공개 글</h2>
               <p>신고된 콘텐츠는 운영 정책에 따라 검토합니다.</p>
             </div>
           </section>
@@ -594,14 +603,12 @@ export function ServerPostDetail({
           {owner ? (
             <section className={detailStyles.localManagement}>
               <h2>내 글 관리</h2>
-              <p>
-                내용을 수정하거나, 글과 연결된 댓글·반응을 함께 삭제할 수
-                있습니다.
-              </p>
+              <p>글을 삭제하면 댓글과 반응도 함께 삭제됩니다.</p>
               <div className={detailStyles.ownerActions}>
                 <button
                   className={detailStyles.ownerEdit}
                   onClick={() => {
+                    setEditAnnouncement("");
                     setEditorOpen((current) => !current);
                     setDeleteConfirm(false);
                   }}
@@ -636,7 +643,7 @@ export function ServerPostDetail({
                     onClick={() => void deletePost()}
                     type="button"
                   >
-                    {pending === "delete" ? "삭제 중..." : "정말 삭제"}
+                    {pending === "delete" ? "삭제 중…" : "글 삭제"}
                   </button>
                 </div>
               )}
@@ -677,7 +684,7 @@ export function ServerPostDetail({
                     value={reportDetails}
                   />
                   <button disabled={pending === "report"} type="submit">
-                    {pending === "report" ? "접수 중..." : "신고 접수"}
+                    {pending === "report" ? "접수 중…" : "신고 접수"}
                   </button>
                 </form>
               )}

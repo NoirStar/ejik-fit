@@ -171,11 +171,11 @@ test("finds a legacy browser post as recovery data after reload", async ({
   await expect(
     page.getByRole("heading", { exact: true, level: 1, name: title }),
   ).toBeVisible();
-  await expect(page.getByText("이전 기기 저장 글", { exact: true })).toBeVisible();
+  await expect(page.getByText("이 기기에 남은 글", { exact: true }).first()).toBeVisible();
   await expect(
     page.getByRole("heading", {
       level: 2,
-      name: "이 브라우저에 저장된 내 글",
+      name: "이 기기에 남은 글",
     }),
   ).toBeVisible();
   await expect(page.getByText("예시 콘텐츠")).toHaveCount(0);

@@ -41,6 +41,7 @@ const posting: PostingDetail = {
   unspecified_skills: [],
   description_html: "",
   description_text: "",
+  description_images: [],
   skills: ["Python", "Docker"],
 };
 
@@ -174,7 +175,7 @@ describe("SavedLibrary", () => {
     render(<SavedLibrary />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "저장 보관함" }),
+      screen.getByRole("heading", { level: 1, name: "저장 목록" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "내 기술 비교" })).toHaveAttribute(
       "href",
@@ -328,7 +329,7 @@ describe("SavedLibrary", () => {
         screen.queryByRole("article", { name: accountCommunityPost.title }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/계정 저장 보관함에서 제거했습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/계정 저장 목록에서 제거했습니다/)).toBeInTheDocument();
   });
 
   it("loads saved community records beyond the first account page", async () => {
@@ -425,7 +426,7 @@ describe("SavedLibrary", () => {
     expect(
       screen.getByText("브라우저에 저장한 내 질문의 저장 상태를 변경하지 못했습니다."),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/저장 보관함에서 제거했습니다/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/저장 목록에서 제거했습니다/)).not.toBeInTheDocument();
     setItem.mockRestore();
   });
 

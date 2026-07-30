@@ -40,6 +40,7 @@ export async function loadHomeSnapshot(
     settledResource(
       getSkillGraph({
         ...(seed ? { seed } : {}),
+        include_evidence: true,
         owned_skills: ownedSkills,
         ...careerFilter,
         limit: 30,

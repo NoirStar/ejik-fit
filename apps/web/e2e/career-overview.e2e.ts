@@ -37,7 +37,7 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   await page.goto("/career");
 
   await page.getByLabel("추가할 기술").fill("Python");
-  await page.getByRole("button", { name: "기술 추가" }).click();
+  await page.getByRole("button", { exact: true, name: "추가" }).click();
   await expect(
     page.getByRole("heading", { name: "커리어 방향 판단 근거" }),
   ).toBeVisible();
@@ -84,10 +84,10 @@ test("keeps career evidence and the shared stack synchronized on mobile", async 
   expect(careerBox?.height).toBeGreaterThanOrEqual(44);
 
   await page.getByLabel("추가할 기술").fill("React");
-  await page.getByRole("button", { name: "기술 추가" }).click();
+  await page.getByRole("button", { exact: true, name: "추가" }).click();
 
   await expect(
-    page.getByRole("list", { name: "저장한 기술 목록" }),
+    page.getByRole("list", { name: "내 기술 목록" }),
   ).toContainText("React");
   await expect.poll(() => fitRequests.at(-1)).toMatchObject({
     owned_skills: ["Python", "React"],

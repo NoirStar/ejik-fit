@@ -17,7 +17,6 @@ vi.mock("next/navigation", () => ({
 const snapshot: HomeFeedSnapshot = {
   dataStatus: "ready",
   feedItems: [],
-  starterGuideItems: [],
   recommendedJobs: [],
   marketInsights: [],
   skillDemand: [],
@@ -51,6 +50,7 @@ const snapshot: HomeFeedSnapshot = {
     },
   ],
   ownedSkills: ["Java"],
+  personalizationFallback: false,
   postingCount: 20,
   sourceCount: 6,
   lastVerifiedAt: "2026-07-29T00:00:00.000Z",

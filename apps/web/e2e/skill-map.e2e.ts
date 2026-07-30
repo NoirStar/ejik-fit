@@ -321,7 +321,7 @@ async function tapBackendNode(
         return (
           clickable &&
           selectableBackendSkills.some((skill) =>
-            tooltipText?.startsWith(`${skill} /`),
+            tooltipText?.startsWith(`${skill} ·`),
           )
         );
       },
@@ -368,7 +368,7 @@ test("keeps fixture graph scope aligned with the production API contract", async
   request,
 }) => {
   const unseededResponse = await request.get(
-    "http://127.0.0.1:8011/api/graph/skills?limit=30",
+    "http://127.0.0.1:8011/api/graph/skills?limit=30&include_evidence=true",
   );
   const unknownResponse = await request.get(
     "http://127.0.0.1:8011/api/graph/skills?seed=UnknownSkill&limit=30",
@@ -521,7 +521,7 @@ for (const width of [1440, 820, 390]) {
           page.getByRole("button", { name: "Rust 제거" }),
           page.getByRole("button", { name: "초기화" }),
           page.getByRole("button", { name: "선택 주변" }),
-          page.getByText("공고 근거 노드", { exact: true }).locator(".."),
+          page.getByRole("checkbox", { name: "관련 공고 표시" }).locator(".."),
           page.getByRole("button", { name: /클라우드/ }),
         ]) {
           const box = await target.boundingBox();

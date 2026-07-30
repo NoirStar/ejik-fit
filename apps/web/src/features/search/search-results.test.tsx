@@ -182,7 +182,9 @@ describe("SearchResults", () => {
       screen.getByRole("heading", { name: "무엇을 찾고 있나요?" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "검색어" })).toHaveValue("");
-    expect(screen.getByText("검색어를 입력하면 결과를 나눠 보여드려요.")).toBeInTheDocument();
+    expect(
+      screen.getByText(/기업·공고·기술은 실제 공개 채용 데이터에서/),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/전체 결과 \d+건/)).not.toBeInTheDocument();
   });
 
@@ -246,7 +248,7 @@ describe("SearchResults", () => {
       }),
     ).toHaveAttribute("href", "/posts/local-python-search");
     expect(localResult).toHaveTextContent("나");
-    expect(localResult).toHaveTextContent("이 브라우저에서 작성");
+    expect(localResult).toHaveTextContent("이 기기에서 작성");
     expect(screen.getByRole("link", { name: /커뮤니티.*1/ })).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Python Backend Engineer" }),

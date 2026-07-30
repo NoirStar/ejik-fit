@@ -326,7 +326,7 @@ describe("ServerPostDetail", () => {
     expect(retryStatus?.className).toContain("srOnly");
   });
 
-  it("keeps the home-feed route available after an author deletes a post", async () => {
+  it("keeps the community route available after an author deletes a post", async () => {
     const store = createStore();
     render(
       <AuthViewerProvider
@@ -345,8 +345,8 @@ describe("ServerPostDetail", () => {
       await screen.findByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
     ).toBeInTheDocument();
     expect(store.deletePost).toHaveBeenCalledWith(AUTHOR_ID, POST_ID);
-    expect(screen.getByRole("link", { name: "홈 피드로 돌아가기" }))
-      .toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "커뮤니티로 돌아가기" }))
+      .toHaveAttribute("href", "/community");
   });
 
   it("treats an already-removed post as missing instead of reporting a retryable failure", async () => {

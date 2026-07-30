@@ -47,7 +47,7 @@ for (const width of [1440, 390]) {
 
     const panel = page.getByRole("tabpanel");
     await expect(
-      panel.getByText("팔로우한 작성자가 없습니다."),
+      panel.getByText("팔로우한 작성자의 글이 없습니다."),
     ).toBeVisible();
     await expect(panel.getByText(removedStarterTitle)).toHaveCount(0);
 

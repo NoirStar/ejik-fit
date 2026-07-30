@@ -16,6 +16,7 @@ import type {
 
 export type MarketCareerType = "" | "new_comer" | "experienced" | "mixed";
 export type MarketSort =
+  | "companies"
   | "explicit"
   | "demand"
   | "required"
@@ -27,11 +28,13 @@ export type MarketSkill = {
   name: string;
   category: string;
   categoryLabel: string;
+  companyCount: number;
   postingCount: number;
   explicitCount: number;
   requiredCount: number;
   preferredCount: number;
   unspecifiedCount: number;
+  relativeCompanyBreadth: number;
   relativeExplicitDemand: number;
   skillHref: string;
   jobsHref: string;
@@ -40,6 +43,7 @@ export type MarketSkill = {
 export type MarketJob = {
   id: string;
   companyName: string;
+  companySlug?: string;
   title: string;
   careerLabel: string;
   employmentLabel: string;
@@ -197,6 +201,14 @@ export function sortMarketSkills(
     if (sort === "preferred") {
       return right.preferredCount - left.preferredCount || compareName(left, right);
     }
+    if (sort === "companies") {
+      return (
+        right.companyCount - left.companyCount ||
+        right.explicitCount - left.explicitCount ||
+        right.postingCount - left.postingCount ||
+        compareName(left, right)
+      );
+    }
     return right.postingCount - left.postingCount || compareName(left, right);
   });
 }
@@ -281,9 +293,14 @@ export function buildMarketOverviewSnapshot(input: {
       (item) => (item.required_count ?? 0) + (item.preferred_count ?? 0),
     ),
   );
+  const maxCompanyCount = Math.max(
+    1,
+    ...orderedSkills.map((item) => item.company_count ?? 0),
+  );
   const jobs = (postings?.items ?? []).map((item): MarketJob => ({
     id: item.id,
     companyName: item.company_name,
+    ...(item.company_slug ? { companySlug: item.company_slug } : {}),
     title: item.title,
     careerLabel: formatCareer(item.career_type),
     employmentLabel: formatEmployment(item.employment_type),
@@ -451,11 +468,15 @@ export function buildMarketOverviewSnapshot(input: {
         name: item.skill,
         category: item.category,
         categoryLabel: skillCategoryLabel(normalizeSkillCategory(item.category)),
+        companyCount: item.company_count ?? 0,
         postingCount: item.count,
         explicitCount,
         requiredCount,
         preferredCount,
         unspecifiedCount: item.unspecified_count ?? 0,
+        relativeCompanyBreadth: Math.round(
+          ((item.company_count ?? 0) / maxCompanyCount) * 100,
+        ),
         relativeExplicitDemand: Math.round(
           (explicitCount / maxExplicitDemand) * 100,
         ),

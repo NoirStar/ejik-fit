@@ -402,7 +402,7 @@ export function SearchResults({
         <section className={styles.startState}>
           <MagnifyingGlass aria-hidden="true" size={28} />
           <div>
-            <h2>검색어를 입력하면 결과를 나눠 보여드려요.</h2>
+            <h2>검색어를 입력해 주세요.</h2>
             <p>
               기업·공고·기술은 실제 공개 채용 데이터에서, 커뮤니티는 서버의 공개
               계정 글 전체와 이 브라우저에 남아 있는 이전 저장 글에서 찾습니다.
@@ -626,7 +626,7 @@ export function SearchResults({
                                 type="button"
                               >
                                 {accountCommunity.state.loadingMore
-                                  ? "불러오는 중..."
+                                  ? "불러오는 중…"
                                   : "공개 글 더 보기"}
                               </button>
                             )}

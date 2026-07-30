@@ -66,7 +66,7 @@ test("restores a guest draft after login and publishes only after confirmation",
     .getByRole("link", { exact: true, name: "로그인 뒤 확인할 임시 글" })
     .click();
   await page.getByRole("button", { name: "이 글 삭제" }).click();
-  await page.getByRole("button", { name: "정말 삭제" }).click();
+  await page.getByRole("button", { exact: true, name: "글 삭제" }).click();
 });
 
 test("persists an authenticated post, edits and comments across browser contexts", async ({
@@ -157,7 +157,7 @@ test("persists an authenticated post, edits and comments across browser contexts
     await editor.getByRole("button", { name: "수정 내용 저장" }).click();
     await expect(
       secondPage.getByRole("status").filter({
-        hasText: "글 수정 내용을 서버에 저장했습니다.",
+        hasText: "글 수정을 저장했습니다.",
       }),
     ).toBeVisible();
     await expect(
@@ -194,7 +194,9 @@ test("persists an authenticated post, edits and comments across browser contexts
 
     await secondPage.goto(detailHref!);
     await secondPage.getByRole("button", { name: "이 글 삭제" }).click();
-    await secondPage.getByRole("button", { name: "정말 삭제" }).click();
+    await secondPage
+      .getByRole("button", { exact: true, name: "글 삭제" })
+      .click();
     await expect(
       secondPage.getByRole("heading", { level: 1, name: "글을 삭제했습니다." }),
     ).toBeVisible();

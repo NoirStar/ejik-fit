@@ -22,11 +22,13 @@ describe("SelectedTechnologyEvidence", () => {
           category: "infra",
           categoryLabel: "인프라",
           postingCount: 12,
+          companyCount: 7,
           explicitCount: 9,
           requiredCount: 5,
           preferredCount: 4,
           unspecifiedCount: 3,
           relativeExplicitDemand: 100,
+          relativeCompanyBreadth: 100,
           skillHref: "/skills/graph?seed=Kubernetes",
           jobsHref: "/jobs?q=Kubernetes",
         }}

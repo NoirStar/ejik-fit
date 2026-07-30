@@ -45,7 +45,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
       "기술 수요 데이터를 불러오지 못했습니다.",
     ),
     settledResource(
-      getSkillGraph({ ...careerFilter, limit: 100 }),
+      getSkillGraph({ ...careerFilter, include_evidence: true, limit: 100 }),
       "분야별 채용 현황을 불러오지 못했습니다.",
     ),
   ]);
