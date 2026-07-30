@@ -72,6 +72,29 @@ const graph: SkillGraphResponse = {
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
+const filterGraph: SkillGraphResponse = {
+  ...graph,
+  nodes: [
+    ...graph.nodes,
+    {
+      ...graph.nodes[0]!,
+      id: "Node.js",
+      label: "Node.js",
+      domains: ["backend"],
+      demand_count: 13,
+      owned: false,
+    },
+    {
+      ...graph.nodes[0]!,
+      id: "Pandas",
+      label: "Pandas",
+      domains: ["data"],
+      demand_count: 11,
+      owned: false,
+    },
+  ],
+};
+
 const fitResponse: FitAnalyzeResponse = {
   coverage: {
     matching_posting_count: 17,
@@ -198,8 +221,10 @@ describe("SkillGraphExperience", () => {
         "공개 채용 공고에서 함께 요구되는 기술 관계를 보고 다음 학습 방향을 정해 보세요.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("내 기술", { selector: "summary" })).toBeInTheDocument();
-    expect(screen.getByText("보기 설정", { selector: "summary" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "내 기술 0" })).toBeInTheDocument();
+    const displayMenu = screen.getByRole("button", { name: "보기 설정 핵심" });
+    expect(displayMenu).toBeInTheDocument();
+    fireEvent.click(displayMenu);
     expect(screen.getByRole("button", { name: "핵심" })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -242,6 +267,7 @@ describe("SkillGraphExperience", () => {
     expect(
       screen.queryByText(/내 스택|기술 맵|다음 준비|미분류/),
     ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "읽는 법" }));
     const legend = screen.getByRole("note", { name: "스킬맵 범례" });
     expect(legend).toHaveTextContent("크기: 시장 수요");
     expect(legend).toHaveTextContent("색: 기술 분야");
@@ -273,6 +299,7 @@ describe("SkillGraphExperience", () => {
       String(input).startsWith("/skills/graph/data"),
     ).length;
 
+    fireEvent.click(screen.getByRole("button", { name: "보기 설정 핵심" }));
     fireEvent.click(screen.getByRole("button", { name: "자세히" }));
     fireEvent.click(screen.getByRole("button", { name: "더 많이" }));
 
@@ -287,6 +314,57 @@ describe("SkillGraphExperience", () => {
     expect(fetchMock.mock.calls.filter(([input]) =>
       String(input).startsWith("/skills/graph/data"),
     )).toHaveLength(topologyCallsBefore);
+  });
+
+  it("filters directly, compares domains, and keeps topology stable", () => {
+    render(
+      <SkillGraphExperience
+        initialGraph={filterGraph}
+        initialOwnedSkills={[]}
+        initialSelectedSkill="C++"
+      />,
+    );
+    const topologyCallsBefore = fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    ).length;
+    const domainMenu = screen.getByRole("button", { name: "분야 전체" });
+
+    fireEvent.click(domainMenu);
+    expect(domainMenu).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("button", { name: /백엔드 1/ }));
+
+    expect(screen.getByText("1개 기술 · 0개 관계")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분야 1개" })).toBeInTheDocument();
+    expect(screen.getByText("기술 하나를 선택하세요")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([input]) =>
+      String(input).startsWith("/skills/graph/data"),
+    )).toHaveLength(topologyCallsBefore);
+
+    fireEvent.click(screen.getByRole("button", { name: /데이터 1/ }));
+    expect(screen.getByText("2개 기술 · 0개 관계")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /전체 4/ }));
+    expect(screen.getByText("4개 기술 · 1개 관계")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분야 전체" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.getByRole("button", { name: "분야 전체" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "보기 설정 핵심" }));
+    expect(screen.getByRole("button", { name: "핵심" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.pointerDown(document.body);
+    expect(screen.getByRole("button", { name: "보기 설정 핵심" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
   it("shows and toggles an owned-skill market connection without refetching", () => {
@@ -322,10 +400,12 @@ describe("SkillGraphExperience", () => {
       String(input).startsWith("/skills/graph/data"),
     )).toHaveLength(topologyCallsBefore);
 
+    fireEvent.click(screen.getByRole("button", { name: "분야 전체" }));
     fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
     expect(screen.queryByRole("button", { name: "경로 강조 끄기" }))
       .not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /임베디드/ }));
+    fireEvent.click(screen.getByRole("button", { name: "ROS2" }));
 
     expect(screen.getByRole("button", { name: "그래프에서 경로 보기" }))
       .toHaveAttribute("aria-pressed", "false");
@@ -959,6 +1039,7 @@ describe("SkillGraphExperience", () => {
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 0" }));
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "Kubernetes" },
     });
@@ -1019,6 +1100,7 @@ describe("SkillGraphExperience", () => {
         "true",
       );
     });
+    fireEvent.click(screen.getByRole("button", { name: "읽는 법" }));
     expect(screen.getByRole("note", { name: "스킬맵 범례" })).toHaveTextContent(
       "점: 학습 추천",
     );
@@ -1149,6 +1231,7 @@ describe("SkillGraphExperience", () => {
       ),
     ).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "내 기술 1" }));
     fireEvent.change(screen.getByLabelText("추가할 기술"), {
       target: { value: "ROS2" },
     });

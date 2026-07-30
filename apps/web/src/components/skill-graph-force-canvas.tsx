@@ -505,8 +505,14 @@ export function SkillGraphForceCanvas({
     [stableData.links],
   );
   const labelEligibleIds = useMemo(
-    () => selectSkillGraphLabelIds(stableData.nodes, display.labelLimit),
-    [display.labelLimit, stableData.nodes],
+    () =>
+      selectSkillGraphLabelIds(
+        stableData.nodes.filter(
+          (node) => visibleNodeIds === undefined || visibleNodeIds.has(node.id),
+        ),
+        display.labelLimit,
+      ),
+    [display.labelLimit, stableData.nodes, visibleNodeIds],
   );
   const nodeIds = useMemo(
     () => stableData.nodes.map(({ id }) => id),
