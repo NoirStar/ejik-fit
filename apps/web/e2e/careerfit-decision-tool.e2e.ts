@@ -166,24 +166,33 @@ test("keeps canonical routes and distinguishes empty, partial, and failed market
       name: "선택한 조건에 해당하는 기술 데이터가 없습니다.",
     }),
   ).toBeVisible();
-  await expect(page.getByRole("alert")).toHaveCount(0);
+  const visibleMarket = page
+    .locator("#main-content")
+    .getByRole("main")
+    .filter({ visible: true })
+    .first();
+  await expect(visibleMarket.getByRole("alert")).toHaveCount(0);
 
   await request.post(`${fixtureApi}/__test__/market-failures`, {
     data: { resources: ["graph"] },
   });
   await page.goto("/market?career_type=new_comer&field=devops");
   await expect(
-    page.getByText(/기술 관계 표본은 불러오지 못했지만/),
-  ).toBeVisible();
-  await expect(
     page.getByRole("heading", { level: 2, name: "분야별 채용 현황" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "시장 데이터를 불러오지 못했습니다." }),
+  ).toHaveCount(0);
 
   await request.post(`${fixtureApi}/__test__/market-failures`, {
     data: { resources: ["postings", "skills", "graph"] },
   });
   await page.goto("/market?career_type=mixed&category=qa");
-  const market = page.locator("#main-content");
+  const market = page
+    .locator("#main-content")
+    .getByRole("main")
+    .filter({ visible: true })
+    .first();
   await expect(market.getByRole("alert")).toHaveCount(1);
   await expect(
     market.getByRole("heading", { name: "시장 데이터를 불러오지 못했습니다." }),

@@ -19,7 +19,13 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByRole("link", { name: "내 커리어 분석하기" }),
     ).toHaveAttribute("href", "/career");
-    await expect(page.getByText(/대한민국 전체 채용시장을 대표하지 않습니다/)).toBeVisible();
+    await expect(
+      page
+        .locator("#main-content")
+        .getByText(/대한민국 전체 채용시장을 대표하지 않습니다/)
+        .filter({ visible: true })
+        .first(),
+    ).toBeVisible();
     await expect(page.getByRole("heading", { name: "커리어 커뮤니티" })).toHaveCount(0);
 
     expect(
@@ -77,7 +83,10 @@ test("migrates an existing profile and refreshes home and career map decisions",
 
   await page.goto("/career");
   await page.getByText("프로필과 기술 수정", { exact: true }).click();
-  const currentRole = page.getByLabel("현재 직무");
+  const currentRole = page
+    .getByLabel("현재 직무")
+    .filter({ visible: true })
+    .first();
   await expect(currentRole).toHaveValue("플랫폼 엔지니어");
   await currentRole.fill("클라우드 플랫폼 엔지니어");
   await page

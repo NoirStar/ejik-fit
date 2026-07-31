@@ -51,7 +51,10 @@ test("keeps career results and the shared profile synchronized on mobile", async
     page.getByRole("list", { name: "사용 기술 목록" }),
   ).toContainText("React");
 
-  const currentRole = page.getByLabel("현재 직무");
+  const currentRole = page
+    .getByLabel("현재 직무")
+    .filter({ visible: true })
+    .first();
   await currentRole.fill("클라우드 백엔드 개발자");
   await page.getByRole("button", { name: "커리어 프로필 저장" }).click();
   await expect(page.getByRole("status")).toContainText("프로필 저장 완료");
@@ -92,7 +95,9 @@ test("keeps career results and the shared profile synchronized on mobile", async
     }),
   ).toBeVisible();
   await page.getByText("프로필과 기술 수정", { exact: true }).click();
-  await expect(page.getByLabel("현재 직무")).toHaveValue(
+  await expect(
+    page.getByLabel("현재 직무").filter({ visible: true }).first(),
+  ).toHaveValue(
     "클라우드 백엔드 개발자",
   );
   await expect(
