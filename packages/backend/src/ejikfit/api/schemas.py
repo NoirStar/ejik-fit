@@ -57,6 +57,110 @@ class PostingListResponse(BaseModel):
     canonical_owned_skills: list[str] = Field(default_factory=list)
 
 
+class CareerSkillUsageInput(BaseModel):
+    years: float | None = Field(default=None, ge=0, le=80)
+    last_used: str | None = Field(default=None, max_length=40)
+
+
+class CareerExperienceInput(BaseModel):
+    title: str = Field(default="", max_length=200)
+    responsibilities: str = Field(default="", max_length=4_000)
+    outcome: str = Field(default="", max_length=2_000)
+    domain: str = Field(default="", max_length=80)
+    skills: list[str] = Field(default_factory=list, max_length=50)
+
+
+class CareerProfileInput(BaseModel):
+    current_role: str = Field(default="", max_length=200)
+    past_roles: list[str] = Field(default_factory=list, max_length=20)
+    experience_years: float | None = Field(default=None, ge=0, le=80)
+    responsibilities: str = Field(default="", max_length=6_000)
+    keep_experience: str = Field(default="", max_length=2_000)
+    experience_highlights: list[CareerExperienceInput] = Field(
+        default_factory=list,
+        max_length=30,
+    )
+    work_types: list[str] = Field(default_factory=list, max_length=20)
+    industry_experience: list[str] = Field(default_factory=list, max_length=30)
+    current_domain: str = Field(default="", max_length=80)
+    interest_domains: list[str] = Field(default_factory=list, max_length=30)
+    excluded_domains: list[str] = Field(default_factory=list, max_length=30)
+    preferred_locations: list[str] = Field(default_factory=list, max_length=30)
+    employment_types: list[str] = Field(default_factory=list, max_length=20)
+    career_level: str = Field(default="", max_length=40)
+    skill_usage: dict[str, CareerSkillUsageInput] = Field(default_factory=dict)
+
+
+class CareerAnalyzeRequest(BaseModel):
+    profile: CareerProfileInput = Field(default_factory=CareerProfileInput)
+    owned_skills: list[str] = Field(default_factory=list, max_length=100)
+    direction: str | None = Field(default=None, max_length=80)
+    q: str | None = Field(default=None, max_length=200)
+    career_type: str | None = Field(default=None, max_length=100)
+    limit: int = Field(default=12, ge=1, le=100)
+    offset: int = Field(default=0, ge=0, le=100_000)
+
+
+class CareerJobConnection(BaseModel):
+    direction_id: str | None = None
+    direction_label: str | None = None
+    direction_kind: Literal["direct", "adjacent", "interest", "transition"] | None = None
+    connection_level: Literal["direct", "adjacent", "interest", "limited"]
+    label: str
+    recommendation_eligible: bool
+    reasons: list[str] = Field(default_factory=list)
+    evidence_types: list[str] = Field(default_factory=list)
+    matched_skills: list[str] = Field(default_factory=list)
+    matched_responsibilities: list[str] = Field(default_factory=list)
+    unconfirmed_conditions: list[str] = Field(default_factory=list)
+    career_condition: Literal["continues", "check", "changes"]
+    employment_condition: Literal["continues", "check", "changes"]
+
+
+class CareerRepresentativeJob(BaseModel):
+    id: str
+    title: str
+    company_name: str
+
+
+class CareerDirection(BaseModel):
+    domain: str
+    label: str
+    kind: Literal["direct", "adjacent", "interest", "transition"]
+    reasons: list[str] = Field(default_factory=list)
+    evidence_types: list[str] = Field(default_factory=list)
+    matched_skills: list[str] = Field(default_factory=list)
+    posting_count: int
+    company_count: int
+    additional_conditions: list[str] = Field(default_factory=list)
+    representative_job: CareerRepresentativeJob | None = None
+
+
+class CareerRecommendationItem(BaseModel):
+    posting: PostingSummary
+    connection: CareerJobConnection
+
+
+class CareerRecommendationPage(BaseModel):
+    items: list[CareerRecommendationItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class CareerAnalyzeResponse(BaseModel):
+    version: str
+    snapshot_id: str
+    calculated_at: datetime | None = None
+    analyzed_posting_count: int
+    analyzed_company_count: int
+    directions: list[CareerDirection]
+    recommendations: CareerRecommendationPage
+    connections: dict[str, CareerJobConnection]
+    profile_evidence_used: list[str] = Field(default_factory=list)
+    profile_information_not_confirmed: list[str] = Field(default_factory=list)
+
+
 class HiringCompanyActivity(BaseModel):
     company_name: str
     company_slug: str

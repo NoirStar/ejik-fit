@@ -27,6 +27,10 @@ _HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 
 REQUIRED_HEADINGS = {
     "minimum qualifications",
+    "basic qualifications",
+    "required qualifications",
+    "requirements",
+    "qualifications",
     "자격 요건",
     "자격요건",
     "필수 자격 요건",
@@ -49,7 +53,12 @@ PREFERRED_HEADINGS = {
     "이런 분이라면 더 좋아요",
     "이런 점이 있으면 더 좋아요",
     "preferred",
+    "preferred qualifications",
+    "preferred experience",
     "nice to have",
+    "nice to haves",
+    "bonus qualifications",
+    "what will help you succeed",
 }
 TECHNICAL_HEADINGS = {
     "사용중인 기술",
@@ -60,8 +69,27 @@ TECHNICAL_HEADINGS = {
     "tech stack",
 }
 
-_LOCAL_PREFERRED = re.compile(r"(우대|선호|있으면\s+(?:더\s+)?좋)")
-_LOCAL_REQUIRED = re.compile(r"(필수|반드시)")
+_LOCAL_PREFERRED = re.compile(
+    r"(우대|선호|있으면\s+(?:더\s+)?좋|\bpreferred\b|\bnice[- ]to[- ]have\b|\ba plus\b)",
+    re.IGNORECASE,
+)
+_LOCAL_REQUIRED = re.compile(
+    r"(필수|반드시|\brequired\b|\bmust\b)",
+    re.IGNORECASE,
+)
+
+_PLAIN_RESET_HEADINGS = {
+    "responsibilities",
+    "key responsibilities",
+    "what you will do",
+    "what you'll do",
+    "주요 업무",
+    "담당 업무",
+    "복리 후생",
+    "benefits",
+    "about the role",
+    "about us",
+}
 
 
 class RequirementType(str, Enum):
@@ -196,17 +224,32 @@ def _html_blocks(description_html: str) -> list[EvidenceBlock]:
 
 def _plain_blocks(description_text: str, start: int = 0) -> list[EvidenceBlock]:
     parts = re.split(r"(?:\r?\n)+|(?<=[.!?。])\s+", description_text)
-    return [
-        EvidenceBlock(
-            text=cleaned,
-            requirement_type=_local_requirement(
-                cleaned, RequirementType.UNSPECIFIED
-            ),
-            position=start + index,
+    blocks: list[EvidenceBlock] = []
+    current_type = RequirementType.UNSPECIFIED
+    current_technical = False
+    position = start
+    for part in parts:
+        cleaned = _clean_text(part)
+        if not cleaned:
+            continue
+        heading = _heading_kind(cleaned)
+        if heading is not None and len(cleaned) <= 100:
+            current_type, current_technical = heading
+            continue
+        if _normalize_heading(cleaned) in _PLAIN_RESET_HEADINGS:
+            current_type = RequirementType.UNSPECIFIED
+            current_technical = False
+            continue
+        blocks.append(
+            EvidenceBlock(
+                text=cleaned,
+                requirement_type=_local_requirement(cleaned, current_type),
+                position=position,
+                technical_section=current_technical,
+            )
         )
-        for index, part in enumerate(parts)
-        if (cleaned := _clean_text(part))
-    ]
+        position += 1
+    return blocks
 
 
 def _evidence_blocks(

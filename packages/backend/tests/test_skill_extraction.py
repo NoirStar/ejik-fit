@@ -401,6 +401,49 @@ def test_unrecognized_real_heading_resets_previous_section() -> None:
     assert matches["Docker"].requirement_type is RequirementType.UNSPECIFIED
 
 
+def test_classifies_common_english_qualification_headings() -> None:
+    html = """
+    <h2>Required Qualifications</h2><ul><li>Python backend development</li></ul>
+    <h2>Preferred Qualifications</h2><ul><li>Docker deployment experience</li></ul>
+    """
+
+    matches = by_skill(html)
+
+    assert matches["Python"].requirement_type is RequirementType.REQUIRED
+    assert matches["Docker"].requirement_type is RequirementType.PREFERRED
+
+
+def test_plain_text_keeps_english_section_context_until_the_next_heading() -> None:
+    matches = {
+        match.skill: match
+        for match in extract_skill_matches(
+            title="",
+            description_html="",
+            description_text=(
+                "Minimum Qualifications\n"
+                "Python backend development\n"
+                "Preferred Qualifications\n"
+                "Docker deployment experience\n"
+                "Responsibilities\n"
+                "Kubernetes platform operations"
+            ),
+        )
+        if match.confidence >= 0.80
+    }
+
+    assert matches["Python"].requirement_type is RequirementType.REQUIRED
+    assert matches["Docker"].requirement_type is RequirementType.PREFERRED
+    assert matches["Kubernetes"].requirement_type is RequirementType.UNSPECIFIED
+
+
+def test_local_english_preference_overrides_required_section() -> None:
+    matches = by_skill(
+        "<h2>Requirements</h2><ul><li>Docker experience is preferred</li></ul>"
+    )
+
+    assert matches["Docker"].requirement_type is RequirementType.PREFERRED
+
+
 @pytest.mark.parametrize(
     "text",
     [

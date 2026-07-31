@@ -1,5 +1,10 @@
 from fastapi import FastAPI
 
+from ejikfit.api.career import (
+    CareerAnalysisReader,
+    DatabaseCareerAnalysisReader,
+    create_career_router,
+)
 from ejikfit.api.fit import (
     DatabaseFitAnalysisReader,
     FitAnalysisReader,
@@ -59,6 +64,7 @@ def create_app(
     source_directory_reader: SourceDirectoryReader | None = None,
     dunamu_jobs_reader: DunamuJobsReader | None = None,
     hiring_overview_reader: HiringOverviewReader | None = None,
+    career_analysis_reader: CareerAnalysisReader | None = None,
 ) -> FastAPI:
     application = FastAPI(title="커리어핏 API", version="0.1.0")
 
@@ -70,6 +76,10 @@ def create_app(
         settings = get_settings()
         posting_reader = create_default_posting_reader(settings)
     application.include_router(create_postings_router(posting_reader))
+
+    if career_analysis_reader is None:
+        career_analysis_reader = DatabaseCareerAnalysisReader()
+    application.include_router(create_career_router(career_analysis_reader))
 
     if skill_stats_reader is None:
         skill_stats_reader = DatabaseSkillStatsReader()
