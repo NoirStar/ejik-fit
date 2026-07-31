@@ -3,6 +3,8 @@ import type { CareerAnalyzeRequest } from "@/lib/types";
 
 const MAX_BODY_BYTES = 64_000;
 
+export const maxDuration = 30;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

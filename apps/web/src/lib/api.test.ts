@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import {
   SKILL_GRAPH_MAX_LIMIT,
+  analyzeCareer,
   analyzeFit,
   getPostings,
   getSkillCatalog,
@@ -68,6 +69,38 @@ it("sends saved skills as a private repeated postings query", async () => {
   expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ cache: "no-store" });
 });
 
+it("allows the full-snapshot career analysis to outlive the shared API timeout", async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ ok: true }), { status: 200 }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const timeoutSpy = vi.spyOn(AbortSignal, "timeout");
+
+  await analyzeCareer({
+    profile: {
+      current_role: "",
+      past_roles: [],
+      experience_years: null,
+      responsibilities: "",
+      keep_experience: "",
+      experience_highlights: [],
+      work_types: [],
+      industry_experience: [],
+      current_domain: "",
+      interest_domains: [],
+      excluded_domains: [],
+      preferred_locations: [],
+      employment_types: [],
+      career_level: "",
+      skill_usage: {},
+    },
+    owned_skills: [],
+    limit: 12,
+    offset: 0,
+  });
+
+  expect(timeoutSpy).toHaveBeenCalledWith(30_000);
+});
 
 it("requests a lightweight graph and cancellable selected-skill evidence", async () => {
   const fetchMock = vi

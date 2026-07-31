@@ -31,6 +31,8 @@ export { ApiError, ApiTimeoutError };
 const API_BASE_URL =
   process.env.API_BASE_URL ?? "http://localhost:8000";
 
+const CAREER_ANALYSIS_TIMEOUT_MS = 30_000;
+
 export const SKILL_GRAPH_MAX_LIMIT = 60;
 
 async function request<T>(
@@ -38,13 +40,15 @@ async function request<T>(
   options: RequestInit & {
     policy?: RequestPolicy;
     tags?: string[];
+    timeoutMs?: number;
   } = {},
 ): Promise<T> {
-  const { policy = "public", tags = [], ...init } = options;
+  const { policy = "public", tags = [], timeoutMs, ...init } = options;
   return requestJson<T>(API_BASE_URL, path, {
     ...init,
     policy,
     tags,
+    timeoutMs,
   });
 }
 
@@ -101,6 +105,7 @@ export function analyzeCareer(
     headers: { "Content-Type": "application/json" },
     policy: "private",
     tags: ["career-analysis"],
+    timeoutMs: CAREER_ANALYSIS_TIMEOUT_MS,
   });
 }
 
