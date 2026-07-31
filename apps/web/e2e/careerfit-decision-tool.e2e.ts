@@ -79,12 +79,12 @@ test("uses one analysis snapshot across home, career map, and recommended jobs",
   const homeAnalysis = page.locator("[data-analysis-snapshot]");
   await expect(homeAnalysis).toHaveAttribute(
     "data-analysis-version",
-    "career-evidence-v2.0",
+    "career-evidence-v3.0",
   );
   const snapshot = await homeAnalysis.getAttribute("data-analysis-snapshot");
 
   await page.goto("/career-map");
-  await expect(page.getByRole("heading", { level: 1, name: "커리어맵" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "커리어 방향 비교" })).toBeVisible();
   await expect(page.locator("[data-analysis-snapshot]")).toHaveAttribute(
     "data-analysis-snapshot",
     snapshot!,

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 
-import {
-  CareerOverview,
-  type CareerSkillSuggestion,
-} from "@/features/career/career-overview";
+import { CareerWorkspace } from "@/features/career/career-workspace";
 import { buildCareerDomainSuggestions } from "@/features/career/model";
 import { settledResource } from "@/features/home-feed/resource-state";
-import { getSkillCatalog, getSkillGraph, getSkillStats } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 import { parseSkillCatalogResponse } from "@/lib/skill-catalog";
 
 export const dynamic = "force-dynamic";
@@ -16,44 +13,8 @@ export const metadata: Metadata = {
   description: "직무와 업무 경험, 기술을 바탕으로 이어갈 커리어 방향과 실제 채용공고 근거를 확인합니다.",
 };
 
-function buildCareerSkillSuggestions(value: unknown): CareerSkillSuggestion[] {
-  if (!value || typeof value !== "object") {
-    throw new Error("invalid skill suggestion response");
-  }
-  const items = (value as { items?: unknown }).items;
-  if (!Array.isArray(items)) {
-    throw new Error("invalid skill suggestion response");
-  }
-
-  const seen = new Set<string>();
-  return items.flatMap((item) => {
-    if (!item || typeof item !== "object") {
-      throw new Error("invalid skill suggestion item");
-    }
-    const candidate = item as { skill?: unknown; count?: unknown };
-    if (
-      typeof candidate.skill !== "string" ||
-      typeof candidate.count !== "number" ||
-      !Number.isSafeInteger(candidate.count) ||
-      candidate.count < 0
-    ) {
-      throw new Error("invalid skill suggestion item");
-    }
-
-    const name = candidate.skill.trim();
-    const key = name.toLocaleLowerCase("en-US");
-    if (!name || seen.has(key)) return [];
-    seen.add(key);
-    return [{ name, postingCount: candidate.count }];
-  });
-}
-
 export default async function CareerPage() {
-  const [skillSuggestions, skillCatalog, domainSuggestions] = await Promise.all([
-    settledResource(
-      getSkillStats({ limit: 12 }).then(buildCareerSkillSuggestions),
-      "상위 기술 제안을 불러오지 못했습니다.",
-    ),
+  const [skillCatalog, domainSuggestions] = await Promise.all([
     settledResource(
       getSkillCatalog().then(
         (response) => parseSkillCatalogResponse(response).items,
@@ -67,17 +28,12 @@ export default async function CareerPage() {
   ]);
 
   return (
-    <CareerOverview
+    <CareerWorkspace
       catalog={skillCatalog.status === "ready" ? skillCatalog.data : []}
       catalogUnavailable={skillCatalog.status === "error"}
-      domainSuggestions={
+      domains={
         domainSuggestions.status === "ready" ? domainSuggestions.data : []
       }
-      domainSuggestionsUnavailable={domainSuggestions.status === "error"}
-      suggestions={
-        skillSuggestions.status === "ready" ? skillSuggestions.data : []
-      }
-      suggestionsUnavailable={skillSuggestions.status === "error"}
     />
   );
 }

@@ -644,7 +644,7 @@ export function buildSkillGraphView(
     domains: buildDomainStats(graph, options.enabledDomains),
     stats: {
       skillCount: nodes.length,
-      evidenceCount: 0,
+      evidenceCount: graph.evidence.length,
       linkCount: links.length,
     },
   };

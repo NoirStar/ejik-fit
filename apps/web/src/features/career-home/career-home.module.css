@@ -107,7 +107,10 @@
 .marketSummary > a,
 .emptyState > a,
 .errorState > a {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
+  min-height: var(--touch-target);
   color: var(--color-accent-strong);
   font-size: 0.84rem;
   font-weight: 750;

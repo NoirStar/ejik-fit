@@ -31,7 +31,9 @@ for (const width of [1440, 820, 390]) {
         .getByRole("link", { name: "Python 기술 관계 보기" }),
     ).toBeVisible();
     await expect(
-      pageContent.getByText("채용공고", { exact: true }),
+      pageContent
+        .getByRole("region", { name: "공고" })
+        .getByText("채용공고", { exact: true }),
     ).toBeVisible();
     await expect(pageContent.getByText("공고 통계 표본")).toBeVisible();
 

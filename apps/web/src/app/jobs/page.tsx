@@ -18,7 +18,6 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const SUPPORTED_CAREER_TYPES = new Set(["new_comer", "experienced", "mixed"]);
 const SUPPORTED_VIEWS = new Set<JobView>(["all", "matched", "saved"]);
 const JOBS_PER_PAGE = 12;
-const ANALYSIS_POSTING_LIMIT = 60;
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -55,26 +54,17 @@ export default async function JobsPage({
     : "";
 
   try {
-    const [postingResult, analysisResult] = await Promise.allSettled([
-      getPostings({
+    const postings = normalizePostingList(
+      await getPostings({
         ...(query ? { q: query } : {}),
         ...(careerType ? { career_type: careerType } : {}),
         ...(category ? { category } : {}),
         limit: JOBS_PER_PAGE,
         offset: (page - 1) * JOBS_PER_PAGE,
       }),
-      getPostings({ limit: ANALYSIS_POSTING_LIMIT }),
-    ]);
-    if (postingResult.status === "rejected") throw postingResult.reason;
-    const postings = normalizePostingList(postingResult.value);
-    const analysisPostings =
-      analysisResult.status === "fulfilled"
-        ? normalizePostingList(analysisResult.value).items
-        : postings.items;
+    );
     return (
       <JobList
-        analysisError={analysisResult.status === "rejected"}
-        analysisPostings={analysisPostings}
         filters={{ query, careerType, category }}
         currentPage={page}
         initialDirection={direction}
@@ -89,7 +79,6 @@ export default async function JobsPage({
     return (
       <JobList
         error
-        analysisError
         filters={{ query, careerType, category }}
         currentPage={page}
         initialDirection={direction}

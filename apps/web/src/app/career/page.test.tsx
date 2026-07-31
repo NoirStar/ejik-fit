@@ -1,33 +1,30 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getSkillCatalog, getSkillGraph, getSkillStats } from "@/lib/api";
+import { getSkillCatalog, getSkillGraph } from "@/lib/api";
 
 import CareerPage from "./page";
 
 vi.mock("@/lib/api", () => ({
   getSkillCatalog: vi.fn(),
   getSkillGraph: vi.fn(),
-  getSkillStats: vi.fn(),
 }));
 
 const graphResponse = {
   seed: null,
-  nodes: [
-    {
-      id: "Python",
-      label: "Python",
-      category: "language",
-      kind: "language",
-      domains: ["backend", "data"],
-      demand_count: 10,
-      required_count: 7,
-      preferred_count: 2,
-      unspecified_count: 1,
-      owned: false,
-      seed: false,
-    },
-  ],
+  nodes: [{
+    id: "Python",
+    label: "Python",
+    category: "language",
+    kind: "language",
+    domains: ["backend", "data"],
+    demand_count: 10,
+    required_count: 7,
+    preferred_count: 2,
+    unspecified_count: 1,
+    owned: false,
+    seed: false,
+  }],
   edges: [],
   evidence: [],
   meta: { limit: 60, min_confidence: 0.8 },
@@ -36,124 +33,52 @@ const graphResponse = {
 describe("CareerPage", () => {
   beforeEach(() => {
     window.localStorage.clear();
-    vi.mocked(getSkillCatalog).mockReset();
-    vi.mocked(getSkillGraph).mockReset();
-    vi.mocked(getSkillStats).mockReset();
     vi.mocked(getSkillCatalog).mockResolvedValue({
       total: 2,
       items: [
-        {
-          name: "Kubernetes",
-          category: "infra",
-          kind: "platform",
-          domains: ["devops", "cloud", "mlops"],
-        },
-        {
-          name: "React Native",
-          category: "mobile",
-          kind: "framework",
-          domains: ["mobile", "frontend"],
-        },
+        { name: "Kubernetes", category: "infra", kind: "platform", domains: ["devops"] },
+        { name: "React Native", category: "mobile", kind: "framework", domains: ["mobile"] },
       ],
     });
     vi.mocked(getSkillGraph).mockResolvedValue(graphResponse);
   });
 
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
-  it("loads actual top skills for browser-owned skill suggestions", async () => {
-    vi.mocked(getSkillStats).mockResolvedValue({
-      total: 2,
-      items: [
-        { skill: "Kubernetes", category: "infra", count: 12 },
-        { skill: "Python", category: "language", count: 10 },
-      ],
-    });
-
+  it("starts with the minimum career profile and keeps skills inside that flow", async () => {
     render(await CareerPage());
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "내 커리어" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 2, name: "내 기술" }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole("heading", {
-        level: 2,
-        name: "먼저 내 기술을 추가해 주세요.",
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("이 기기에 저장됨")).toBeInTheDocument();
-    expect(
-      screen.queryByText(/내 스택|브라우저 저장 · 로그인 시 동기화/),
-    ).not.toBeInTheDocument();
-    expect(getSkillStats).toHaveBeenCalledWith({ limit: 12 });
+    expect(screen.getByRole("heading", { level: 1, name: "내 커리어" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "최소 프로필부터 입력해 주세요." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "현재 경력" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "실제로 사용한 기술" })).toBeInTheDocument();
+    expect(screen.getByLabelText("현재 직무")).toBeInTheDocument();
+    expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
     expect(getSkillCatalog).toHaveBeenCalledOnce();
     expect(getSkillGraph).toHaveBeenCalledWith({ limit: 60 });
-    expect(
-      screen.getByRole("button", { name: "Kubernetes 빠르게 추가, 공개 공고 12건" }),
-    ).toBeInTheDocument();
-    const skillInput = screen.getByRole("combobox", { name: "추가할 기술" });
-    expect(skillInput).not.toHaveAttribute("list");
-    expect(document.querySelector("datalist")).toBeNull();
-    fireEvent.change(skillInput, { target: { value: "react" } });
-    expect(
-      screen.getByRole("option", { name: "React Native 모바일" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("관심 커리어 분야")).toHaveDisplayValue(
-      "전체 분야",
-    );
-    expect(screen.getByRole("option", { name: "백엔드 · 연결 기술 1개" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "추가할 기술" }), {
+      target: { value: "react" },
+    });
+    expect(screen.getByRole("option", { name: "React Native 모바일" })).toBeInTheDocument();
   });
 
-  it("keeps direct skill entry available when suggestions fail", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    vi.mocked(getSkillStats).mockRejectedValue(new Error("backend unavailable"));
-
+  it("keeps direct skill entry available when the catalog fails", async () => {
+    vi.mocked(getSkillCatalog).mockRejectedValue(new Error("catalog unavailable"));
     render(await CareerPage());
 
-    expect(screen.getByText("상위 기술 제안을 불러오지 못했습니다.")).toBeInTheDocument();
     expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
-    expect(screen.queryByText("backend unavailable")).not.toBeInTheDocument();
-    consoleError.mockRestore();
+    expect(screen.queryByText("catalog unavailable")).not.toBeInTheDocument();
   });
 
-  it("treats a malformed successful suggestion payload as unavailable", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    vi.mocked(getSkillStats).mockResolvedValue({
-      items: null,
-      total: 1,
-    } as unknown as Awaited<ReturnType<typeof getSkillStats>>);
-
-    render(await CareerPage());
-
-    expect(screen.getByText("상위 기술 제안을 불러오지 못했습니다.")).toBeInTheDocument();
-    expect(screen.getByLabelText("추가할 기술")).toBeInTheDocument();
-    consoleError.mockRestore();
-  });
-
-  it("keeps career comparison usable when graph domains fail", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => undefined);
-    vi.mocked(getSkillStats).mockResolvedValue({ total: 0, items: [] });
+  it("keeps the minimum profile usable when domain data fails", async () => {
     vi.mocked(getSkillGraph).mockRejectedValue(new Error("graph unavailable"));
-
     render(await CareerPage());
 
-    expect(
-      screen.getByText("분야 목록을 불러오지 못해 전체 분야로 비교합니다."),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("관심 커리어 분야")).toBeEnabled();
-    expect(
-      within(screen.getByLabelText("관심 커리어 분야")).getAllByRole("option"),
-    ).toHaveLength(1);
-    expect(screen.queryByText("graph unavailable")).not.toBeInTheDocument();
-    consoleError.mockRestore();
+    expect(screen.getByLabelText("현재 직무")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "커리어 프로필 저장" })).toBeInTheDocument();
   });
 });

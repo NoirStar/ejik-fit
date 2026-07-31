@@ -1,8 +1,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { type ReactNode, useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AppShell } from "@/components/app-shell/app-shell";
 import { CareerOverview } from "@/features/career/career-overview";
+import { OwnedSkillsSheet } from "./owned-skills-sheet";
 
 const navigation = vi.hoisted(() => ({
   search: "",
@@ -18,6 +19,24 @@ vi.mock("next/navigation", () => ({
     refresh: navigation.refresh,
   }),
 }));
+
+function SheetHarness({ children }: { children?: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} ref={openerRef} type="button">
+        내 기술 열기
+      </button>
+      <OwnedSkillsSheet
+        onClose={() => setOpen(false)}
+        open={open}
+        openerRef={openerRef}
+      />
+      {children}
+    </>
+  );
+}
 
 describe("OwnedSkillsSheet", () => {
   afterEach(() => {
@@ -57,9 +76,9 @@ describe("OwnedSkillsSheet", () => {
 
   it("starts empty on first visit and persists an added skill", async () => {
     render(
-      <AppShell>
+      <SheetHarness>
         <main>내용</main>
-      </AppShell>,
+      </SheetHarness>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
@@ -82,18 +101,13 @@ describe("OwnedSkillsSheet", () => {
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills") ?? "[]")).toEqual([
       "Spring",
     ]);
-    expect(navigation.replace).toHaveBeenCalledWith(
-      "/?owned_skills=Spring#my-stack",
-      { scroll: false },
-    );
-    expect(navigation.refresh).toHaveBeenCalled();
   });
 
   it("closes with Escape and returns focus to the opener", () => {
     render(
-      <AppShell>
+      <SheetHarness>
         <main>내용</main>
-      </AppShell>,
+      </SheetHarness>,
     );
     const opener = screen.getByRole("button", { name: "내 기술 열기" });
 
@@ -106,9 +120,9 @@ describe("OwnedSkillsSheet", () => {
 
   it("suggests canonical skills and supports keyboard selection", async () => {
     render(
-      <AppShell>
+      <SheetHarness>
         <main>내용</main>
-      </AppShell>,
+      </SheetHarness>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
@@ -129,9 +143,9 @@ describe("OwnedSkillsSheet", () => {
 
   it("keeps Tab focus inside the modal sheet", async () => {
     render(
-      <AppShell>
+      <SheetHarness>
         <main>내용</main>
-      </AppShell>,
+      </SheetHarness>,
     );
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));
     const close = await screen.findByRole("button", { name: "내 기술 닫기" });
@@ -148,9 +162,9 @@ describe("OwnedSkillsSheet", () => {
 
   it("keeps the dialog label unique on the career page", async () => {
     render(
-      <AppShell>
+      <SheetHarness>
         <CareerOverview suggestions={[]} suggestionsUnavailable={false} />
-      </AppShell>,
+      </SheetHarness>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "내 기술 열기" }));

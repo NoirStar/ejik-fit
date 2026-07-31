@@ -7,8 +7,9 @@ import {
   StackSimple,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useCareerAnalysis } from "@/features/career-analysis/use-career-analysis";
 import {
   EMPTY_CAREER_PROFILE,
   readCareerProfile,
@@ -33,20 +34,15 @@ import {
   subscribeSavedJobs,
   toggleSavedJob,
 } from "@/lib/saved-jobs";
-import type { PostingSummary, SkillDetail } from "@/lib/types";
-
-import { matchOwnedJobSkills } from "./job-detail-model";
-import { buildJobConnection } from "./model";
+import type { PostingSummary } from "@/lib/types";
 import styles from "./job-detail-actions.module.css";
 
 type JobDetailActionsProps = {
   job: PostingSummary;
-  skills: SkillDetail[];
 };
 
 export function JobDetailActions({
   job,
-  skills,
 }: JobDetailActionsProps) {
   const jobId = job.id;
   const jobTitle = job.title;
@@ -55,6 +51,7 @@ export function JobDetailActions({
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [ownedSkills, setOwnedSkills] = useState<string[]>([]);
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
+  const [hydrated, setHydrated] = useState(false);
   const [applicationStages, setApplicationStages] =
     useState<JobApplicationStages>({});
   const [stageAnnouncement, setStageAnnouncement] = useState("");
@@ -64,6 +61,7 @@ export function JobDetailActions({
     setOwnedSkills(readOwnedSkills());
     setProfile(readCareerProfile());
     setApplicationStages(readJobApplicationStages());
+    setHydrated(true);
 
     const stopSavedSubscription = subscribeSavedJobs(setSavedIds);
     const stopOwnedSubscription = subscribeOwnedSkills(setOwnedSkills);
@@ -79,30 +77,19 @@ export function JobDetailActions({
     };
   }, []);
 
-  const matchedSkills = useMemo(
-    () => matchOwnedJobSkills(skills, ownedSkills),
-    [ownedSkills, skills],
+  const profileConfigured = Boolean(
+    profile.currentRole ||
+      profile.responsibilities ||
+      profile.experienceHighlights.length > 0 ||
+      ownedSkills.length > 0,
   );
-  const connection = useMemo(
-    () =>
-      buildJobConnection(
-        {
-          ...job,
-          required_skills: skills
-            .filter((skill) => skill.requirement_type === "required")
-            .map((skill) => skill.skill),
-          preferred_skills: skills
-            .filter((skill) => skill.requirement_type === "preferred")
-            .map((skill) => skill.skill),
-          unspecified_skills: skills
-            .filter((skill) => skill.requirement_type === "unspecified")
-            .map((skill) => skill.skill),
-        },
-        ownedSkills,
-        profile,
-      ),
-    [job, ownedSkills, profile, skills],
-  );
+  const analysis = useCareerAnalysis(profile, ownedSkills, {
+    enabled: hydrated && profileConfigured,
+    connectionIds: [jobId],
+    limit: 1,
+  });
+  const connection =
+    analysis.status === "ready" ? analysis.data.connections[jobId] : null;
   const saved = savedIds.includes(jobId);
   const applicationStage = applicationStages[jobId] ?? "";
   const acceptsApplications = status === "open";
@@ -212,28 +199,37 @@ export function JobDetailActions({
         <StackSimple aria-hidden="true" size={19} weight="bold" />
         <div>
           <h3>내 커리어와 연결되는 이유</h3>
-          {ownedSkills.length === 0 && !profile.currentRole ? (
+          {!profileConfigured ? (
             <>
-              <p>{connection.reason}</p>
+              <p>프로필을 입력하면 직무, 업무, 경력과 기술 조건을 함께 비교합니다.</p>
               <Link href="/career">프로필 정보 추가</Link>
             </>
+          ) : analysis.status === "loading" || analysis.status === "idle" ? (
+            <p role="status">이 공고와 내 경험을 비교하고 있습니다.</p>
+          ) : analysis.status === "error" ? (
+            <>
+              <p>연결 근거를 불러오지 못했습니다. 저장한 프로필은 유지됩니다.</p>
+              <button onClick={analysis.retry} type="button">근거 다시 불러오기</button>
+            </>
+          ) : !connection ? (
+            <p>현재 분석 범위에서 이 공고의 연결 근거를 확인하지 못했습니다.</p>
           ) : (
             <>
               <strong>{connection.label}</strong>
-              <p>{connection.reason}</p>
-              {matchedSkills.length > 0 ? (
+              <p>{connection.reasons[0]}</p>
+              {connection.matched_skills.length > 0 ? (
                 <ul aria-label="공고와 겹치는 내 기술" role="list">
-                  {matchedSkills.map((skill) => (
+                  {connection.matched_skills.map((skill) => (
                     <li key={skill}>{skill}</li>
                   ))}
                 </ul>
               ) : (
                 <p>현재 프로필에서 정확히 일치하는 기술은 확인되지 않았습니다.</p>
               )}
-              {connection.unconfirmedRequiredSkills.length > 0 ? (
+              {connection.unconfirmed_conditions.length > 0 ? (
                 <p>
                   현재 프로필에서 확인되지 않은 필수 조건:{" "}
-                  {connection.unconfirmedRequiredSkills.join(" · ")}
+                  {connection.unconfirmed_conditions.join(" · ")}
                 </p>
               ) : null}
             </>

@@ -171,12 +171,20 @@
   color: var(--color-text);
 }
 
-.overlap a {
+.overlap a,
+.overlap button {
   display: inline-flex;
   min-height: var(--touch-target);
   align-items: center;
   color: var(--color-accent-strong);
   font-weight: 600;
+}
+
+.overlap button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .overlap ul {
@@ -201,7 +209,8 @@
 .apply:focus-visible,
 .save:focus-visible,
 .applicationTracker select:focus-visible,
-.overlap a:focus-visible {
+.overlap a:focus-visible,
+.overlap button:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }

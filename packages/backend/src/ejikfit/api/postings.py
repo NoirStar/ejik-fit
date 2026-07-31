@@ -91,6 +91,13 @@ def _summary(posting: JobPosting) -> dict:
         "required_skills": list(skill_groups.required),
         "preferred_skills": list(skill_groups.preferred),
         "unspecified_skills": list(skill_groups.unspecified),
+        "skill_categories": sorted(
+            {
+                skill.category
+                for skill in posting.skills
+                if skill.confidence >= CONFIRMED_CONFIDENCE
+            }
+        ),
         "description_excerpt": description_excerpt or None,
     }
 

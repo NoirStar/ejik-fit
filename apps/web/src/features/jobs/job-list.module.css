@@ -286,10 +286,11 @@
   display: none;
 }
 
-.viewTabs button {
+.viewTabs a {
   position: relative;
   display: inline-flex;
-  min-width: max-content;
+  width: max-content;
+  min-width: var(--touch-target);
   min-height: var(--touch-target);
   align-items: center;
   gap: 0.375rem;
@@ -304,7 +305,7 @@
   white-space: nowrap;
 }
 
-.viewTabs button::after {
+.viewTabs a::after {
   position: absolute;
   right: 0;
   bottom: -1px;
@@ -314,11 +315,11 @@
   content: "";
 }
 
-.viewTabs button[aria-pressed="true"] {
+.viewTabs a[aria-current="page"] {
   color: var(--color-accent-strong);
 }
 
-.viewTabs button[aria-pressed="true"]::after {
+.viewTabs a[aria-current="page"]::after {
   background: var(--color-accent);
 }
 
@@ -750,7 +751,7 @@
 
 .searchButton:focus-visible,
 .resetLink:focus-visible,
-.viewTabs button:focus-visible,
+.viewTabs a:focus-visible,
 .saveButton:focus-visible,
 .identity a:focus-visible,
 .skillGroup a:focus-visible,

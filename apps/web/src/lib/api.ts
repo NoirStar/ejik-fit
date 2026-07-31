@@ -1,7 +1,10 @@
 import type {
+  CareerAnalyzeRequest,
+  CareerAnalyzeResponse,
   FitAnalyzeRequest,
   FitAnalyzeResponse,
   HiringOverviewResponse,
+  MarketCareerFieldsResponse,
   PostingDetail,
   PostingListResponse,
   SkillCatalogResponse,
@@ -86,6 +89,32 @@ export async function getPostings(filters: {
       policy: filters.owned_skills?.length ? "private" : "public",
       tags: ["postings"],
     }),
+  );
+}
+
+export function analyzeCareer(
+  input: CareerAnalyzeRequest,
+): Promise<CareerAnalyzeResponse> {
+  return request<CareerAnalyzeResponse>("/api/career/analyze", {
+    method: "POST",
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    policy: "private",
+    tags: ["career-analysis"],
+  });
+}
+
+export function getMarketCareerFields(filters: {
+  career_type?: string;
+  category?: string;
+} = {}): Promise<MarketCareerFieldsResponse> {
+  const params = new URLSearchParams();
+  if (filters.career_type) params.set("career_type", filters.career_type);
+  if (filters.category) params.set("category", filters.category);
+  const query = params.toString();
+  return request<MarketCareerFieldsResponse>(
+    `/api/career/market${query ? `?${query}` : ""}`,
+    { policy: "public", tags: ["career-market"] },
   );
 }
 

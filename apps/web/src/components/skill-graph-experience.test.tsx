@@ -3,13 +3,12 @@ import {
   fireEvent,
   render,
   screen,
-  waitFor,
   within,
 } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { FitAnalyzeResponse, SkillGraphResponse } from "@/lib/types";
+import type { SkillGraphResponse } from "@/lib/types";
 
 import { SkillGraphExperience } from "./skill-graph-experience";
 
@@ -76,47 +75,10 @@ const graph: SkillGraphResponse = {
   meta: { limit: 30, min_confidence: 0.8 },
 };
 
-const fitResponse: FitAnalyzeResponse = {
-  coverage: {
-    matching_posting_count: 17,
-    strong_fit_posting_count: 6,
-  },
-  recommended_next_skills: [
-    {
-      skill: "Kubernetes",
-      reason: "공개 공고에서 인프라 운영 요구와 함께 확인됐습니다.",
-      required_count: 8,
-      preferred_count: 3,
-      supporting_posting_count: 10,
-    },
-  ],
-  domain_branches: [
-    {
-      domain: "backend",
-      covered_skills: ["C++"],
-      missing_required_skills: ["Kubernetes"],
-      missing_preferred_skills: [],
-      supporting_posting_count: 9,
-    },
-  ],
-};
-
-function jsonResponse(body: FitAnalyzeResponse, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
-}
-
 describe("SkillGraphExperience", () => {
-  const fetchMock = vi.fn<typeof fetch>();
-
   beforeEach(() => {
     localStorage.clear();
     navigation.push.mockReset();
-    fetchMock.mockReset();
-    fetchMock.mockImplementation(async () => jsonResponse(fitResponse));
-    vi.stubGlobal("fetch", fetchMock);
   });
 
   afterEach(() => {
@@ -146,7 +108,7 @@ describe("SkillGraphExperience", () => {
     );
   });
 
-  it("persists owned skills and renders API-backed next-skill evidence", async () => {
+  it("persists owned skills without turning co-occurrence into a learning recommendation", () => {
     render(
       <SkillGraphExperience initialGraph={graph} initialOwnedSkills={[]} />,
     );
@@ -156,29 +118,16 @@ describe("SkillGraphExperience", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "추가" }));
 
-    await waitFor(() => {
-      expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([
-        "Kubernetes",
-      ]);
-    });
+    expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([
+      "Kubernetes",
+    ]);
     expect(
       screen.getByText("Kubernetes 기술을 현재 목록에 추가했습니다."),
     ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/skills/graph/fit",
-      expect.objectContaining({
-        body: JSON.stringify({ owned_skills: ["Kubernetes"] }),
-        method: "POST",
-      }),
-    );
     expect(
-      await screen.findByRole("link", {
-        name: "Kubernetes 10개 공고에서 추가 확인",
-      }),
-    ).toHaveAttribute("href", "/skills/graph?seed=Kubernetes");
-    expect(
-      screen.getByText("10개 공개 공고에서 추가로 확인된 기술입니다."),
+      screen.getByText(/필수 여부나 학습 순서를 뜻하지 않습니다/),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/다음에 배울 기술/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Kubernetes 제거" }));
     expect(JSON.parse(localStorage.getItem("ejik-fit:owned-skills")!)).toEqual([]);
@@ -218,49 +167,12 @@ describe("SkillGraphExperience", () => {
     expect(screen.getByText("확인 가능한 관련 공고가 없습니다.")).toBeInTheDocument();
   });
 
-  it("clears an earlier recommendation while an updated stack fails to load", async () => {
-    let resolveSecondRequest: ((response: Response) => void) | undefined;
-    fetchMock
-      .mockResolvedValueOnce(jsonResponse(fitResponse))
-      .mockImplementationOnce(
-        () =>
-          new Promise<Response>((resolve) => {
-            resolveSecondRequest = resolve;
-          }),
-      );
+  it("summarizes the selected skill from graph evidence", () => {
+    render(<SkillGraphExperience initialGraph={graph} initialOwnedSkills={["C++"]} />);
 
-    render(
-      <SkillGraphExperience initialGraph={graph} initialOwnedSkills={["C++"]} />,
-    );
-
+    expect(screen.getByText("선택 기술 근거")).toBeInTheDocument();
     expect(
-      await screen.findByText(
-        "10개 공개 공고에서 추가로 확인된 기술입니다.",
-      ),
+      screen.getByText("관련 공고 1건과 반복해서 함께 나온 기술 1개를 확인했습니다."),
     ).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText("기술 추가"), {
-      target: { value: "ROS2" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "추가" }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(
-      screen.queryByText(
-        "10개 공개 공고에서 추가로 확인된 기술입니다.",
-      ),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText("보유 기술 비교 중")).toBeInTheDocument();
-
-    resolveSecondRequest?.(jsonResponse(fitResponse, 503));
-
-    expect(
-      await screen.findByText("보유 기술 비교 불가"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        "10개 공개 공고에서 추가로 확인된 기술입니다.",
-      ),
-    ).not.toBeInTheDocument();
   });
 });

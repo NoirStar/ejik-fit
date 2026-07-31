@@ -12,7 +12,6 @@ import { domainColor, summarizeGraph } from "@/lib/skill-graph";
 import { buildSkillGraphView } from "@/lib/skill-graph-view";
 import type { SkillGraphViewMode } from "@/lib/skill-graph-view";
 import type {
-  FitAnalyzeResponse,
   SkillGraphEvidence,
   SkillGraphNode,
   SkillGraphResponse,
@@ -198,8 +197,6 @@ export function SkillGraphExperience({
   const [showEvidence, setShowEvidence] = useState(true);
   const [disabledDomains, setDisabledDomains] = useState<string[]>([]);
   const [reheatKey, setReheatKey] = useState(0);
-  const [fit, setFit] = useState<FitAnalyzeResponse | null>(null);
-  const [fitState, setFitState] = useState<"idle" | "loading" | "error">("idle");
   const [announcement, setAnnouncement] = useState("");
   const [controlsOpen, setControlsOpen] = useState(false);
 
@@ -303,8 +300,6 @@ export function SkillGraphExperience({
     ];
     return Array.from(new Set(suggested)).slice(0, 8);
   }, [initialGraph.nodes, ownedSkills]);
-  const topNextSkill =
-    fitState === "idle" ? fit?.recommended_next_skills[0] ?? null : null;
   const isFilteredEmpty = initialGraph.nodes.length > 0 && viewData.nodes.length === 0;
   const showFallbackGraph = nodes.length > 0 && !forceReady;
   const isLargeGraph = viewData.nodes.length > 1500;
@@ -345,49 +340,6 @@ export function SkillGraphExperience({
     setGraphMode("focus");
     setForceReady(false);
   }, [initialGraph.seed, initialSelection]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function requestFit() {
-      if (ownedSkills.length === 0) {
-        setFit(null);
-        setFitState("idle");
-        return;
-      }
-
-      setFit(null);
-      setFitState("loading");
-      try {
-        const response = await fetch("/skills/graph/fit", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ owned_skills: ownedSkills }),
-        });
-        if (!response.ok) {
-          throw new Error("fit request failed");
-        }
-        const payload = (await response.json()) as FitAnalyzeResponse;
-        if (!cancelled) {
-          setFit(payload);
-          setFitState("idle");
-        }
-      } catch {
-        if (!cancelled) {
-          setFit(null);
-          setFitState("error");
-        }
-      }
-    }
-
-    requestFit();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [ownedSkills]);
 
   const selectSkill = useCallback(
     (nodeId: string) => {
@@ -808,36 +760,20 @@ export function SkillGraphExperience({
               )}
             </div>
 
-            <section aria-label="공고에서 추가로 확인된 조건" className={styles.signals}>
+            <section aria-label="기술 관계를 읽는 방법" className={styles.signals}>
               <article>
                 <header className={styles.sectionHeader}>
                   <div>
-                    <p>보유 기술과 공고 비교</p>
-                    <h2>공고에서 추가로 확인된 기술</h2>
+                    <p>관계 해석</p>
+                    <h2>같은 공고에 나온 기술</h2>
                   </div>
-                  <span>{fitState === "loading" ? "분석 중" : "공고 근거"}</span>
+                  <span>공고 동시 등장</span>
                 </header>
                 <div className={styles.nextSkills}>
-                  {fitState === "loading" && <p role="status">공고 요구 기술을 비교하고 있습니다.</p>}
-                  {fitState === "error" && (
-                    <p role="alert">보유 기술 비교를 불러오지 못했습니다.</p>
-                  )}
-                  {fitState === "idle" &&
-                    (fit?.recommended_next_skills ?? []).slice(0, 4).map((skill) => (
-                      <Link
-                        href={`/skills/graph?seed=${encodeURIComponent(skill.skill)}`}
-                        key={skill.skill}
-                      >
-                        <strong>{skill.skill}</strong>
-                        <span>{skill.supporting_posting_count}개 공고에서 추가 확인</span>
-                      </Link>
-                    ))}
-                  {fitState === "idle" && !fit && ownedSkills.length === 0 && (
-                    <p>보유 기술을 추가하면 현재 프로필에서 확인되지 않은 공고 조건을 구분합니다.</p>
-                  )}
-                  {fitState === "idle" && fit?.recommended_next_skills.length === 0 && (
-                    <p>현재 공개 공고에서 추가로 구분할 기술 조건이 없습니다.</p>
-                  )}
+                  <p>
+                    선은 두 기술이 같은 채용공고에 나온 관계입니다. 선의 강도는
+                    함께 나온 공고 수를 반영하며, 필수 여부나 학습 순서를 뜻하지 않습니다.
+                  </p>
                 </div>
               </article>
 
@@ -942,22 +878,12 @@ export function SkillGraphExperience({
             </section>
 
             <section className={styles.recommendation}>
-              <p className={styles.eyebrow}>공고 조건 요약</p>
-              <strong>
-                {fitState === "loading"
-                  ? "보유 기술 비교 중"
-                  : fitState === "error"
-                    ? "보유 기술 비교 불가"
-                    : topNextSkill?.skill ?? "비교할 조건 확인 대기"}
-              </strong>
+              <p className={styles.eyebrow}>선택 기술 근거</p>
+              <strong>{selected?.label ?? "기술을 선택해 주세요"}</strong>
               <span>
-                {fitState === "loading"
-                  ? "변경된 내 기술을 공개 공고 조건과 다시 비교하고 있습니다."
-                  : fitState === "error"
-                    ? "현재 비교 데이터를 불러오지 못했습니다. 잠시 후 다시 변경해 주세요."
-                    : topNextSkill
-                      ? `${topNextSkill.supporting_posting_count}개 공개 공고에서 추가로 확인된 기술입니다.`
-                      : "보유 기술을 추가하면 공개 공고에서 추가로 확인되는 조건을 보여드립니다."}
+                {selected
+                  ? `관련 공고 ${relatedEvidence.length}건과 반복해서 함께 나온 기술 ${strongestConnections.length}개를 확인했습니다.`
+                  : "기술을 선택하면 같은 공고에 나온 기술과 공식 공고 근거를 확인할 수 있습니다."}
               </span>
             </section>
           </aside>

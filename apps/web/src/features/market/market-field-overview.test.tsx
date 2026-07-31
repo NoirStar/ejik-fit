@@ -48,7 +48,7 @@ describe("MarketFieldOverview", () => {
       <MarketFieldOverview
         fields={fields}
         initialField="cloud"
-        scope={{ evidencePostingCount: 20, graphSkillCount: 14, graphLimit: 100 }}
+        scope={{ evidencePostingCount: 20, analyzedPostingCount: 24, analyzedCompanyCount: 8, graphSkillCount: 14, graphLimit: 100 }}
       />,
     );
 
@@ -69,7 +69,7 @@ describe("MarketFieldOverview", () => {
       <MarketFieldOverview
         fields={fields}
         initialField="cloud"
-        scope={{ evidencePostingCount: 20, graphSkillCount: 14, graphLimit: 100 }}
+        scope={{ evidencePostingCount: 20, analyzedPostingCount: 24, analyzedCompanyCount: 8, graphSkillCount: 14, graphLimit: 100 }}
       />,
     );
 

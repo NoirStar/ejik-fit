@@ -133,13 +133,22 @@ export function MarketFieldOverview({
               <FieldFacts field={selected} />
             </div>
 
+            {selected.sampleStatus === "limited" ? (
+              <p className={styles.comparisonEmpty} role="status">
+                이 분야는 확인된 공고나 기업이 적어 다른 분야와 단정적으로 비교하기 어렵습니다.
+              </p>
+            ) : null}
+
             <div className={styles.detailGrid}>
               <section>
                 <h4>공고에서 자주 확인된 기술</h4>
-                {selected.topSkills.length > 0 ? (
+                {selected.topSkillDemand?.length ? (
                   <ul className={styles.chips}>
-                    {selected.topSkills.map((skill) => (
-                      <li key={skill}>{skill}</li>
+                    {selected.topSkillDemand.map((item) => (
+                      <li key={item.skill}>
+                        {item.skill} · 기업 {item.companyCount.toLocaleString("ko-KR")}곳 ·
+                        공고 {item.postingCount.toLocaleString("ko-KR")}건
+                      </li>
                     ))}
                   </ul>
                 ) : (
@@ -231,8 +240,9 @@ export function MarketFieldOverview({
 
       {!error && (
         <p className={styles.scopeNote}>
-          분야 분류 근거가 확인된 공개 채용공고{" "}
-          {scope.evidencePostingCount.toLocaleString("ko-KR")}건을 집계했습니다. 기술
+          분석 가능한 공개 채용공고 {scope.analyzedPostingCount.toLocaleString("ko-KR")}건 중
+          분야 분류 근거가 확인된 공고 {scope.evidencePostingCount.toLocaleString("ko-KR")}건,
+          서로 다른 기업 {scope.analyzedCompanyCount.toLocaleString("ko-KR")}곳을 집계했습니다. 기술
           관계 보조 표본은 최대 {scope.graphLimit ?? 0}개 기술을 확인하며, 같은 공고의
           동시 등장은 인과관계나 학습 순서를 뜻하지 않습니다. 수집된 공개 공고
           기준이므로 전체 채용시장을 대표하지 않습니다.

@@ -24,6 +24,7 @@ class PostingSummary(BaseModel):
     required_skills: list[str] = []
     preferred_skills: list[str] = []
     unspecified_skills: list[str] = []
+    skill_categories: list[str] = []
     description_excerpt: str | None = Field(default=None, max_length=1200)
 
 
@@ -97,6 +98,8 @@ class CareerAnalyzeRequest(BaseModel):
     direction: str | None = Field(default=None, max_length=80)
     q: str | None = Field(default=None, max_length=200)
     career_type: str | None = Field(default=None, max_length=100)
+    category: str | None = Field(default=None, max_length=64)
+    connection_ids: list[str] = Field(default_factory=list, max_length=100)
     limit: int = Field(default=12, ge=1, le=100)
     offset: int = Field(default=0, ge=0, le=100_000)
 
@@ -115,6 +118,7 @@ class CareerJobConnection(BaseModel):
     unconfirmed_conditions: list[str] = Field(default_factory=list)
     career_condition: Literal["continues", "check", "changes"]
     employment_condition: Literal["continues", "check", "changes"]
+    location_condition: Literal["continues", "check", "changes"]
 
 
 class CareerRepresentativeJob(BaseModel):
@@ -133,6 +137,8 @@ class CareerDirection(BaseModel):
     posting_count: int
     company_count: int
     additional_conditions: list[str] = Field(default_factory=list)
+    career_counts: dict[Literal["new_comer", "experienced", "mixed_or_unknown"], int]
+    representative_tasks: list[str] = Field(default_factory=list)
     representative_job: CareerRepresentativeJob | None = None
 
 
@@ -159,6 +165,38 @@ class CareerAnalyzeResponse(BaseModel):
     connections: dict[str, CareerJobConnection]
     profile_evidence_used: list[str] = Field(default_factory=list)
     profile_information_not_confirmed: list[str] = Field(default_factory=list)
+
+
+class MarketFieldLocation(BaseModel):
+    label: str
+    posting_count: int
+
+
+class MarketFieldSkill(BaseModel):
+    skill: str
+    posting_count: int
+    company_count: int
+
+
+class MarketCareerField(BaseModel):
+    domain: str
+    label: str
+    posting_count: int
+    company_count: int
+    career_counts: dict[Literal["new_comer", "experienced", "mixed_or_unknown"], int]
+    top_locations: list[MarketFieldLocation]
+    top_skills: list[MarketFieldSkill]
+    jobs: list[PostingSummary]
+    sample_status: Literal["comparable", "limited"]
+
+
+class MarketCareerFieldsResponse(BaseModel):
+    version: str
+    calculated_at: datetime | None = None
+    analyzed_posting_count: int
+    analyzed_company_count: int
+    classified_posting_count: int
+    fields: list[MarketCareerField]
 
 
 class HiringCompanyActivity(BaseModel):

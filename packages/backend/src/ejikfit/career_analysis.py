@@ -168,6 +168,33 @@ GENERIC_WORDS = {
     "개발", "경험", "업무", "담당", "운영", "관리", "서비스", "시스템",
     "engineer", "developer", "development", "software", "기술", "지원",
 }
+WORK_TYPE_LABELS = {
+    "development": "개발",
+    "operations": "운영",
+    "analysis": "분석",
+    "automation": "자동화",
+    "planning": "기획",
+    "leadership": "리더십",
+}
+LOCATION_ALIASES = {
+    "서울": "seoul",
+    "seoul": "seoul",
+    "경기": "gyeonggi",
+    "성남": "gyeonggi",
+    "분당": "gyeonggi",
+    "판교": "gyeonggi",
+    "수원": "gyeonggi",
+    "gyeonggi": "gyeonggi",
+    "인천": "incheon",
+    "incheon": "incheon",
+    "부산": "busan",
+    "busan": "busan",
+    "대전": "daejeon",
+    "daejeon": "daejeon",
+    "원격": "remote",
+    "재택": "remote",
+    "remote": "remote",
+}
 
 
 def _text(*values: Any) -> str:
@@ -269,6 +296,18 @@ def _profile_domain(
     skills = _unique(owned_skills + highlight_skills)
     strong_skills = _skill_matches(skills, definition.strong_skills)
     supporting_skills = _skill_matches(skills, definition.supporting_skills)
+    matched_work_types = [
+        value
+        for value in (profile.get("work_types") or [])
+        if value in definition.work_types
+    ]
+    skill_usage = profile.get("skill_usage") or {}
+    recent_matched_skills = [
+        skill
+        for skill in _unique(strong_skills + supporting_skills)
+        if (skill_usage.get(skill) or skill_usage.get(_skill_key(skill)) or {}).get("last_used")
+        in {"current", "within_1y"}
+    ]
     current_domain = profile.get("current_domain") == definition.id
     interested = definition.id in (profile.get("interest_domains") or [])
 
@@ -312,7 +351,17 @@ def _profile_domain(
     matched_skills = _unique(strong_skills + supporting_skills)
     if matched_skills:
         evidence_types.append("skill")
-        reasons.append(f"{', '.join(matched_skills[:3])} 사용 경험을 관련 공고와 비교했습니다.")
+        if recent_matched_skills:
+            evidence_types.append("recent_skill")
+            reasons.append(
+                f"최근 사용한 {', '.join(recent_matched_skills[:3])} 경험이 관련 공고에서 확인됩니다."
+            )
+        else:
+            reasons.append(f"{', '.join(matched_skills[:3])} 사용 경험을 관련 공고와 비교했습니다.")
+    if matched_work_types and evidence_types:
+        evidence_types.append("work_type")
+        labels = [WORK_TYPE_LABELS.get(value, value) for value in matched_work_types]
+        reasons.append(f"{', '.join(labels[:3])} 업무 경험을 이 분야의 역할과 비교했습니다.")
     if interested and kind == "interest":
         evidence_types.append("interest")
         reasons.append(f"관심 분야로 선택한 {definition.label} 공고를 탐색 범위에 포함했습니다.")
@@ -325,6 +374,8 @@ def _profile_domain(
         "evidence_types": _unique(evidence_types),
         "responsibility_terms": responsibility_terms,
         "matched_skills": matched_skills,
+        "recent_matched_skills": recent_matched_skills,
+        "matched_work_types": matched_work_types,
     }
 
 
@@ -392,6 +443,28 @@ def _employment_condition(posting: dict[str, Any], profile: dict[str, Any]) -> s
     return "changes"
 
 
+def _location_keys(value: str) -> set[str]:
+    normalized = _text(value)
+    keys = {
+        alias
+        for token, alias in LOCATION_ALIASES.items()
+        if token in normalized
+    }
+    if not keys and normalized:
+        keys.add(re.sub(r"\s+", "", normalized))
+    return keys
+
+
+def _location_condition(posting: dict[str, Any], profile: dict[str, Any]) -> str:
+    preferences = profile.get("preferred_locations") or []
+    raw = str(posting.get("location") or "").strip()
+    if not preferences or not raw:
+        return "check"
+    posting_keys = _location_keys(raw)
+    preference_keys = set().union(*(_location_keys(value) for value in preferences))
+    return "continues" if posting_keys & preference_keys else "changes"
+
+
 def _connection(
     posting: dict[str, Any],
     profile: dict[str, Any],
@@ -413,20 +486,26 @@ def _connection(
     ][:3]
     career_condition = _career_condition(posting, profile)
     employment_condition = _employment_condition(posting, profile)
+    location_condition = _location_condition(posting, profile)
 
-    ranked: list[tuple[tuple[int, int, int, int], dict[str, Any], dict[str, Any]]] = []
+    ranked: list[tuple[tuple[int, int, int, int, int], dict[str, Any], dict[str, Any]]] = []
     for posting_domain in posting_domains:
         evidence = profile_domains[posting_domain["domain"]]
+        work_type_support = bool(
+            evidence["matched_work_types"] and posting_domain["responsibility_terms"]
+        )
         support_count = (
             bool(matched_skills)
             + bool(matched_responsibilities)
             + bool(industries)
             + bool(posting_domain["responsibility_terms"] and evidence["responsibility_terms"])
+            + work_type_support
         )
         rank = (
             KIND_RANK[evidence["kind"]],
             -int(posting_domain["explicit_role"]),
             -support_count,
+            -len([skill for skill in matched_skills if skill in evidence["recent_matched_skills"]]),
             -len(matched_required),
         )
         ranked.append((rank, posting_domain, evidence))
@@ -453,6 +532,7 @@ def _connection(
             "unconfirmed_conditions": unconfirmed_required,
             "career_condition": career_condition,
             "employment_condition": employment_condition,
+            "location_condition": location_condition,
         }
 
     _, posting_domain, evidence = best
@@ -463,6 +543,7 @@ def _connection(
         or matched_responsibilities
         or industries
         or (posting_domain["responsibility_terms"] and evidence["responsibility_terms"])
+        or (posting_domain["responsibility_terms"] and evidence["matched_work_types"])
     )
     eligible = (
         kind != "transition"
@@ -478,11 +559,26 @@ def _connection(
         evidence_types.append("responsibility")
     if industries:
         evidence_types.append("industry")
+    if posting_domain["responsibility_terms"] and evidence["matched_work_types"]:
+        evidence_types.append("work_type")
     reasons = list(evidence["reasons"])
     if matched_responsibilities:
-        reasons.append(f"{', '.join(matched_responsibilities)} 표현이 공고의 주요 업무와 겹칩니다.")
+        reasons.insert(
+            1 if reasons else 0,
+            f"{', '.join(matched_responsibilities)} 표현이 공고의 주요 업무와 겹칩니다.",
+        )
     if matched_skills:
-        reasons.append(f"{', '.join(matched_skills[:4])} 기술 경험이 공고 조건과 겹칩니다.")
+        recent = [skill for skill in matched_skills if skill in evidence["recent_matched_skills"]]
+        if recent:
+            reasons.insert(
+                1 if reasons else 0,
+                f"최근 사용한 {', '.join(recent[:4])} 경험이 공고 조건과 겹칩니다.",
+            )
+        else:
+            reasons.insert(
+                1 if reasons else 0,
+                f"{', '.join(matched_skills[:4])} 기술 경험이 공고 조건과 겹칩니다.",
+            )
     if career_condition == "changes":
         reasons.insert(0, "입력한 경력 기간과 공고의 경력 조건이 다릅니다.")
     if employment_condition == "changes":
@@ -511,6 +607,7 @@ def _connection(
         "unconfirmed_conditions": unconfirmed_required,
         "career_condition": career_condition,
         "employment_condition": employment_condition,
+        "location_condition": location_condition,
         "matched_required_count": len(matched_required),
         "required_count": len(required),
     }
@@ -578,6 +675,7 @@ def analyze_career(
             KIND_RANK[connections[str(posting["id"])]["direction_kind"]],
             connections[str(posting["id"])]["required_count"]
             - connections[str(posting["id"])]["matched_required_count"],
+            connections[str(posting["id"])]["location_condition"] == "changes",
             -len(connections[str(posting["id"])]["evidence_types"]),
             -_datetime_value(posting.get("last_verified_at")),
             str(posting["id"]),
@@ -621,6 +719,22 @@ def analyze_career(
                 for condition in connection["unconfirmed_conditions"]
             ]
         )[:6]
+        career_counts = {"new_comer": 0, "experienced": 0, "mixed_or_unknown": 0}
+        representative_tasks: list[str] = []
+        for posting in field_postings:
+            posting_career = (posting.get("career_type") or "").casefold()
+            if posting_career in {"new_comer", "newcomer"}:
+                career_counts["new_comer"] += 1
+            elif posting_career == "experienced":
+                career_counts["experienced"] += 1
+            else:
+                career_counts["mixed_or_unknown"] += 1
+            representative_tasks.extend(
+                term
+                for classified in classify_posting(posting)
+                if classified["domain"] == domain
+                for term in classified["responsibility_terms"]
+            )
         directions.append(
             {
                 "domain": domain,
@@ -632,6 +746,8 @@ def analyze_career(
                 "posting_count": len(field_postings),
                 "company_count": len(companies),
                 "additional_conditions": additional,
+                "career_counts": career_counts,
+                "representative_tasks": _unique(representative_tasks)[:4],
                 "representative_job": (
                     {
                         "id": str(representative["id"]),
@@ -702,4 +818,119 @@ def analyze_career(
             )
             if profile.get(field) in (None, "", [])
         ],
+    }
+
+
+def build_market_fields(postings: list[dict[str, Any]]) -> dict[str, Any]:
+    accumulators: dict[str, dict[str, Any]] = {}
+    classified_posting_ids: set[str] = set()
+    for posting in postings:
+        classifications = classify_posting(posting)
+        if classifications:
+            classified_posting_ids.add(str(posting["id"]))
+        for classified in classifications:
+            domain = classified["domain"]
+            field = accumulators.setdefault(
+                domain,
+                {
+                    "posting_ids": set(),
+                    "companies": set(),
+                    "career_counts": {
+                        "new_comer": 0,
+                        "experienced": 0,
+                        "mixed_or_unknown": 0,
+                    },
+                    "locations": {},
+                    "skill_postings": {},
+                    "skill_companies": {},
+                    "jobs": [],
+                },
+            )
+            posting_id = str(posting["id"])
+            if posting_id in field["posting_ids"]:
+                continue
+            field["posting_ids"].add(posting_id)
+            company = posting.get("company_slug") or posting.get("company_name")
+            field["companies"].add(company)
+            career = (posting.get("career_type") or "").casefold()
+            if career in {"new_comer", "newcomer"}:
+                field["career_counts"]["new_comer"] += 1
+            elif career == "experienced":
+                field["career_counts"]["experienced"] += 1
+            else:
+                field["career_counts"]["mixed_or_unknown"] += 1
+            location = str(posting.get("location") or "").strip()
+            if location:
+                field["locations"][location] = field["locations"].get(location, 0) + 1
+            for skill in _posting_skills(posting):
+                field["skill_postings"][skill] = field["skill_postings"].get(skill, 0) + 1
+                field["skill_companies"].setdefault(skill, set()).add(company)
+            field["jobs"].append(posting)
+
+    fields: list[dict[str, Any]] = []
+    for domain, field in accumulators.items():
+        posting_count = len(field["posting_ids"])
+        company_count = len(field["companies"])
+        locations = sorted(
+            field["locations"].items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:5]
+        skills = sorted(
+            field["skill_postings"],
+            key=lambda skill: (
+                -len(field["skill_companies"][skill]),
+                -field["skill_postings"][skill],
+                skill.casefold(),
+            ),
+        )[:8]
+        jobs = sorted(
+            field["jobs"],
+            key=lambda posting: (
+                -_datetime_value(posting.get("last_verified_at")),
+                str(posting["id"]),
+            ),
+        )[:5]
+        fields.append(
+            {
+                "domain": domain,
+                "label": DEFINITION_BY_ID[domain].label,
+                "posting_count": posting_count,
+                "company_count": company_count,
+                "career_counts": field["career_counts"],
+                "top_locations": [
+                    {"label": location, "posting_count": count}
+                    for location, count in locations
+                ],
+                "top_skills": [
+                    {
+                        "skill": skill,
+                        "posting_count": field["skill_postings"][skill],
+                        "company_count": len(field["skill_companies"][skill]),
+                    }
+                    for skill in skills
+                ],
+                "jobs": jobs,
+                "sample_status": "comparable"
+                if posting_count >= 10 and company_count >= 3
+                else "limited",
+            }
+        )
+    fields.sort(key=lambda item: (-item["company_count"], -item["posting_count"], item["label"]))
+    calculated = max(
+        (posting.get("last_verified_at") for posting in postings),
+        key=_datetime_value,
+        default=None,
+    )
+    return {
+        "version": ANALYSIS_VERSION,
+        "calculated_at": calculated,
+        "analyzed_posting_count": len(postings),
+        "analyzed_company_count": len(
+            {
+                posting.get("company_slug") or posting.get("company_name")
+                for posting in postings
+            }
+        ),
+        "classified_posting_count": len(classified_posting_ids),
+        "fields": fields,
     }

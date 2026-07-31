@@ -162,9 +162,12 @@ describe("public trust pages", () => {
 
     render(<MethodologyPage />);
     expect(screen.getByRole("heading", { level: 1, name: "분석 방법" })).toBeInTheDocument();
-    expect(screen.getByText(/채용 가능성을 예측하지 않습니다/)).toBeInTheDocument();
-    expect(screen.getByText(/서류 통과 확률이나 합격률/)).toBeInTheDocument();
-    expect(screen.getByText(/시장 전체의 추세로 일반화하지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/백분율 적합도나 합격 가능성을 사용하지 않습니다/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/기술 하나 또는 일반적인 단어 하나만 겹치는 공고는 추천하지 않습니다/))
+      .toBeInTheDocument();
+    expect(screen.getByText(/비교용 시장 정보나 추세로 일반화하지 않습니다/))
+      .toBeInTheDocument();
     expect(screen.getByText(/0.80/)).toBeInTheDocument();
   });
 

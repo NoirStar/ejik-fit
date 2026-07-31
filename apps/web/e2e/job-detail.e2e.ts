@@ -33,7 +33,7 @@ for (const width of [1440, 820, 600, 390]) {
     });
     await expect(connection).toBeVisible();
     await expect(
-      connection.locator("..").getByText(/Python 1개가 프로필과 겹칩니다/),
+      connection.locator("..").getByText(/공고 역할과 이어지는 근거를 확인하지 못했습니다/),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 3, name: "주요 업무" }),

@@ -11,6 +11,7 @@ import {
 } from "@/lib/skill-categories";
 import type {
   PostingListResponse,
+  MarketCareerFieldsResponse,
   SkillGraphResponse,
   SkillStatsResponse,
 } from "@/lib/types";
@@ -74,6 +75,12 @@ export type MarketField = {
   topLocations: string[];
   topSkills: string[];
   jobs: MarketJob[];
+  sampleStatus?: "comparable" | "limited";
+  topSkillDemand?: Array<{
+    skill: string;
+    postingCount: number;
+    companyCount: number;
+  }>;
 };
 
 export const MARKET_CAREER_FILTERS = [
@@ -279,6 +286,7 @@ export function buildMarketOverviewSnapshot(input: {
   postings: ResourceState<PostingListResponse>;
   skillStats: ResourceState<SkillStatsResponse>;
   graph?: ResourceState<SkillGraphResponse>;
+  careerFields?: ResourceState<MarketCareerFieldsResponse>;
 }) {
   const category = input.category ?? "";
   const postings = input.postings.status === "ready" ? input.postings.data : null;
@@ -376,7 +384,7 @@ export function buildMarketOverviewSnapshot(input: {
       accumulators.set(domain, accumulator);
     }
   }
-  const fields: MarketField[] = [...accumulators.entries()]
+  const legacyFields: MarketField[] = [...accumulators.entries()]
     .map(([domain, accumulator]) => ({
       domain,
       label: formatDomainLabel(domain),
@@ -409,6 +417,49 @@ export function buildMarketOverviewSnapshot(input: {
         right.postingCount - left.postingCount ||
         left.label.localeCompare(right.label, "ko-KR"),
     );
+  const careerFields = input.careerFields?.status === "ready"
+    ? input.careerFields.data
+    : null;
+  const fields: MarketField[] = careerFields
+    ? careerFields.fields.map((field) => ({
+        domain: field.domain,
+        label: field.label,
+        postingCount: field.posting_count,
+        companyCount: field.company_count,
+        careerCounts: {
+          newComer: field.career_counts.new_comer,
+          experienced: field.career_counts.experienced,
+          mixedOrUnknown: field.career_counts.mixed_or_unknown,
+        },
+        topLocations: field.top_locations.map((item) => formatLocation(item.label)),
+        topSkills: field.top_skills.map((item) => item.skill),
+        topSkillDemand: field.top_skills.map((item) => ({
+          skill: item.skill,
+          postingCount: item.posting_count,
+          companyCount: item.company_count,
+        })),
+        sampleStatus: field.sample_status,
+        jobs: field.jobs.map((item) => ({
+          id: item.id,
+          companyName: item.company_name,
+          ...(item.company_slug ? { companySlug: item.company_slug } : {}),
+          title: item.title,
+          careerLabel: formatCareer(item.career_type),
+          employmentLabel: formatEmployment(item.employment_type),
+          location: formatLocation(item.location),
+          verifiedAt: item.last_verified_at,
+          sourceUrl: item.source_url,
+          skills: normalizedJobSkills([
+            item.required_skills,
+            item.preferred_skills,
+            item.unspecified_skills,
+          ]),
+          href: `/jobs/${encodeURIComponent(item.id)}`,
+        })),
+      }))
+    : input.careerFields
+      ? []
+      : legacyFields;
   const requestedField = input.field?.trim() ?? "";
   const selectedField = fields.some((field) => field.domain === requestedField)
     ? requestedField
@@ -420,11 +471,20 @@ export function buildMarketOverviewSnapshot(input: {
     selectedField,
     fields,
     fieldError:
-      input.postings.status === "error" ? input.postings.message : null,
+      input.careerFields?.status === "error"
+        ? input.careerFields.message
+        : input.postings.status === "error"
+          ? input.postings.message
+          : null,
     graphError:
       input.graph?.status === "error" ? input.graph.message : null,
     fieldScope: {
-      evidencePostingCount: classifiedPostingIds.size,
+      evidencePostingCount:
+        careerFields?.classified_posting_count ?? classifiedPostingIds.size,
+      analyzedPostingCount:
+        careerFields?.analyzed_posting_count ?? postings?.items.length ?? 0,
+      analyzedCompanyCount:
+        careerFields?.analyzed_company_count ?? 0,
       graphSkillCount: graph?.nodes.length ?? 0,
       graphLimit: graph?.meta.limit ?? null,
     },
@@ -433,10 +493,12 @@ export function buildMarketOverviewSnapshot(input: {
       input.careerType,
       category,
     ),
-    postingTotal: postings?.total ?? null,
-    postingCountLabel: formatPostingCoverage(postings?.total ?? null),
+    postingTotal: careerFields?.analyzed_posting_count ?? postings?.total ?? null,
+    postingCountLabel: formatPostingCoverage(
+      careerFields?.analyzed_posting_count ?? postings?.total ?? null,
+    ),
     skillTotal: skillStats?.total ?? null,
-    latestVerifiedAt: latestValidDate(
+    latestVerifiedAt: careerFields?.calculated_at ?? latestValidDate(
       (postings?.items ?? []).map((item) => item.last_verified_at),
     ),
     postingError:

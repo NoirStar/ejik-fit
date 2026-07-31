@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { careerAnalysisFixture } from "@/features/career-analysis/test-fixture";
 import { writeOwnedSkills } from "@/lib/owned-skills";
 import { EMPTY_CAREER_PROFILE, writeCareerProfile } from "@/lib/career-profile";
 import { toggleSavedJob } from "@/lib/saved-jobs";
@@ -45,11 +46,36 @@ const props = {
 };
 
 describe("JobDetailActions", () => {
-  beforeEach(() => window.localStorage.clear());
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async (_input: unknown, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body ?? "{}")) as {
+        owned_skills?: string[];
+        profile?: { current_role?: string };
+      };
+      const hasRole = Boolean(request.profile?.current_role);
+      const response = careerAnalysisFixture([props.job], {
+        eligibleIds: hasRole ? [props.job.id] : [],
+      });
+      const connection = response.connections[props.job.id];
+      const hasGo = (request.owned_skills ?? []).some(
+        (skill) => skill.toLocaleLowerCase("en") === "go",
+      );
+      connection.matched_skills = hasGo ? ["Go"] : [];
+      connection.unconfirmed_conditions = hasGo ? [] : ["Go"];
+      connection.reasons = [
+        hasRole
+          ? "현재 직무와 공고의 주요 업무가 겹칩니다."
+          : "Go 한 항목은 겹치지만 공고 역할과 이어지는 근거는 확인되지 않았습니다.",
+      ];
+      return Response.json(response);
+    }));
+  });
 
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("persists the same saved job id used by the list and home", () => {
@@ -96,8 +122,8 @@ describe("JobDetailActions", () => {
 
     render(<JobDetailActions {...props} />);
 
-    expect(await screen.findByText("기술 일부만 확인됨")).toBeInTheDocument();
-    expect(screen.getByText(/Go 한 항목이 겹치지만/)).toBeInTheDocument();
+    expect(await screen.findByText("추가 확인이 필요한 공고")).toBeInTheDocument();
+    expect(screen.getByText(/Go 한 항목은 겹치지만/)).toBeInTheDocument();
     expect(screen.getByText("Go")).toBeInTheDocument();
     expect(screen.queryByText("Java")).not.toBeInTheDocument();
   });
@@ -117,7 +143,7 @@ describe("JobDetailActions", () => {
 
     expect(await screen.findByText("현재 경력과 직접 이어짐"))
       .toBeInTheDocument();
-    expect(screen.getByText(/백엔드 개발자 직무 경험/)).toBeInTheDocument();
+    expect(screen.getByText(/현재 직무와 공고의 주요 업무/)).toBeInTheDocument();
   });
 
   it("guides an empty browser stack to career settings", () => {
@@ -156,7 +182,7 @@ describe("JobDetailActions", () => {
         screen.getByRole("button", { name: "Backend Engineer 저장 해제" }),
       ).toHaveAttribute("aria-pressed", "true");
     });
-    expect(screen.getByText("기술 일부만 확인됨")).toBeInTheDocument();
+    expect(await screen.findByText("추가 확인이 필요한 공고")).toBeInTheDocument();
   });
 
   it("opens only the validated official source in a new tab", () => {

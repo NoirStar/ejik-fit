@@ -40,14 +40,11 @@ for (const width of [1440, 390]) {
       page.getByRole("region", { name: "팔로우 중인 글" }),
     ).toHaveCount(0);
 
-    const followingTab = page.getByRole("tab", { name: "팔로잉" });
-    await followingTab.click();
-    await expect(followingTab).toHaveAttribute("aria-selected", "true");
-    await expect(followingTab).toBeFocused();
-
-    const panel = page.getByRole("tabpanel");
+    // 콘텐츠가 없을 때는 의미 없는 정렬 탭을 노출하지 않습니다.
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    const panel = page.getByRole("tabpanel", { name: "커뮤니티 글" });
     await expect(
-      panel.getByText("팔로우한 작성자의 글이 없습니다."),
+      panel.getByText("아직 작성된 커뮤니티 글이 없습니다."),
     ).toBeVisible();
     await expect(panel.getByText(removedStarterTitle)).toHaveCount(0);
 

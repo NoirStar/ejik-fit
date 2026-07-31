@@ -128,7 +128,7 @@ describe("buildSkillGraphView", () => {
     expect(view.links.length).toBeLessThanOrEqual(48);
   });
 
-  it("bounds the market overview and never renders posting evidence", () => {
+  it("bounds the market overview and reports the supporting evidence count", () => {
     const view = buildSkillGraphView(denseGraph(60), { mode: "overview" });
 
     expect(view.nodes).toHaveLength(36);
@@ -137,7 +137,7 @@ describe("buildSkillGraphView", () => {
     expect(view.links.every((link) => link.kind === "skill")).toBe(true);
     expect(view.stats).toEqual({
       skillCount: 36,
-      evidenceCount: 0,
+      evidenceCount: 1,
       linkCount: view.links.length,
     });
   });

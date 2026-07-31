@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPostings } from "@/lib/api";
 import { EMPTY_CAREER_PROFILE, writeCareerProfile } from "@/lib/career-profile";
+import { careerAnalysisFixture } from "@/features/career-analysis/test-fixture";
 
 import Home, { metadata } from "./page";
 
@@ -36,10 +37,15 @@ describe("Home", () => {
   beforeEach(() => {
     vi.mocked(getPostings).mockResolvedValue(response);
     localStorage.clear();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(careerAnalysisFixture(response.items))),
+    );
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -88,13 +94,14 @@ describe("Home", () => {
       .toHaveAttribute("href", "/jobs/job-1");
     expect(screen.queryByRole("tab", { name: "둘러보기" }))
       .not.toBeInTheDocument();
-    expect(getPostings).toHaveBeenCalledTimes(1);
     expect(getPostings).toHaveBeenCalledWith({ limit: 60 });
   });
 
-  it("keeps the saved profile and a retry action when postings fail", async () => {
+  it("keeps the saved profile and a retry action when analysis fails", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    vi.mocked(getPostings).mockRejectedValue(new Error("private API detail"));
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new Error("private API detail");
+    }));
     writeCareerProfile({
       ...EMPTY_CAREER_PROFILE,
       currentRole: "보안 엔지니어",
@@ -104,9 +111,11 @@ describe("Home", () => {
     render(await Home());
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "채용공고를 불러오지 못했습니다",
+      "커리어 분석을 불러오지 못했습니다",
     );
-    expect(screen.getByText(/브라우저에 저장된 프로필은 유지됩니다/))
+    expect(screen.getByText(/저장된 프로필은 유지됩니다/))
+      .toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분석 다시 불러오기" }))
       .toBeInTheDocument();
     expect(screen.queryByText("private API detail")).not.toBeInTheDocument();
     log.mockRestore();

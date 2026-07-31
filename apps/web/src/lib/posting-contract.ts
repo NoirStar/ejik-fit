@@ -122,6 +122,9 @@ export function normalizePostingSummary(value: unknown): PostingSummary {
     required_skills: strings(value, "required_skills"),
     preferred_skills: strings(value, "preferred_skills"),
     unspecified_skills: strings(value, "unspecified_skills"),
+    ...(value.skill_categories === undefined
+      ? {}
+      : { skill_categories: strings(value, "skill_categories") }),
     ...(descriptionExcerpt
       ? { description_excerpt: descriptionExcerpt }
       : {}),

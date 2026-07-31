@@ -125,7 +125,7 @@ for (const width of [981, 980, 940, 840, 821] as const) {
       );
       const navigationBox = await renderedBox(desktopNavigation);
       const firstUtilityBox = await renderedBox(
-        page.getByRole("button", { name: "내 기술 열기" }),
+        page.getByRole("button", { name: "알림 열기" }),
       );
       expect(searchBox.x + searchBox.width).toBeLessThanOrEqual(
         navigationBox.x,

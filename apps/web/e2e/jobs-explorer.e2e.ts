@@ -37,7 +37,7 @@ for (const width of [1440, 820, 600, 390]) {
 
     for (const target of [
       page.getByRole("button", { name: "채용공고 검색", exact: true }),
-      page.getByRole("link", { name: "Python 기술 관계 보기" }),
+      page.getByRole("link", { name: "전체 공고 2" }),
     ]) {
       const box = await target.boundingBox();
       expect(box?.width).toBeGreaterThanOrEqual(44);
@@ -69,18 +69,38 @@ test("syncs owned skills, saved jobs, and URL filter resets on mobile", async ({
   await page.setViewportSize({ height: 844, width: 390 });
   await page.addInitScript(() => {
     localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["Go"]));
+    localStorage.setItem(
+      "ejik-fit:career-profile",
+      JSON.stringify({
+        currentRole: "플랫폼 엔지니어",
+        pastRoles: [],
+        experienceYears: 0,
+        responsibilities: "Go 서비스와 Linux 플랫폼 개발",
+        experienceHighlights: [],
+        workTypes: ["development", "operations"],
+        industryExperience: [],
+        currentDomain: "devops",
+        keepExperience: "플랫폼 운영",
+        interestDomains: [],
+        excludedDomains: [],
+        preferredLocations: ["성남"],
+        employmentTypes: ["full_time"],
+        careerLevel: "new_comer",
+        skillUsage: {},
+      }),
+    );
   });
   await page.goto("/jobs?q=Go&career_type=new_comer");
 
   await expect(page.getByLabel("공고 검색")).toHaveValue("Go");
   await expect(page.getByLabel("경력 조건")).toHaveValue("new_comer");
-  await page.getByRole("button", { name: "추천 공고 1" }).click();
+  await page.getByRole("link", { name: "추천 공고 1" }).click();
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Go Platform Engineer 저장" }).click();
-  await page.getByRole("button", { name: "저장한 공고 1" }).click();
+  await page.getByRole("link", { name: "저장한 공고 1" }).click();
   await expect(
     page.getByRole("link", { name: "Go Platform Engineer" }),
   ).toBeVisible();

@@ -16,19 +16,15 @@ for (const viewport of [
 
     const heading = page.getByRole("heading", {
       level: 1,
-      name: "내 경력과 기술이 이어지는 커리어 방향을 확인하세요",
+      name: "내 경험에서 이어갈 커리어 방향을 확인하세요",
     });
     const primaryAction = page.getByRole("link", { name: "내 커리어 분석하기" });
     await expect(heading).toBeVisible();
     await expect(primaryAction).toBeVisible();
     await expect(
-      page.getByRole("region", { name: "세 단계로 판단 근거까지 확인합니다" }),
+      page.getByRole("complementary", { name: "분석 결과 예시" }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("region", {
-        name: "프로필 없이도 공고 범위를 살펴볼 수 있습니다",
-      }),
-    ).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveCount(0);
     await expect(page.getByText("3년차 백엔드 개발자, 지금 이직하는 게 맞을까요?"))
       .toHaveCount(0);
 

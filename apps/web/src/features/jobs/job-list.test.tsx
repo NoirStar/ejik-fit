@@ -7,8 +7,9 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { careerAnalysisFixture } from "@/features/career-analysis/test-fixture";
 import { writeOwnedSkills } from "@/lib/owned-skills";
 import {
   EMPTY_CAREER_PROFILE,
@@ -61,8 +62,21 @@ const postings: PostingListResponse = {
 };
 
 describe("JobList", () => {
-  beforeEach(() => window.localStorage.clear());
-  afterEach(() => cleanup());
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.stubGlobal("fetch", vi.fn(async (_input: unknown, init?: RequestInit) => {
+      const request = JSON.parse(String(init?.body ?? "{}")) as { owned_skills?: string[] };
+      return Response.json(careerAnalysisFixture(postings.items, {
+        eligibleIds: request.owned_skills?.includes("Go")
+          ? ["job-1", "job-2"]
+          : ["job-1"],
+      }));
+    }));
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
 
   it("renders URL filters and verified requirement evidence", async () => {
     render(
@@ -122,7 +136,7 @@ describe("JobList", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("switches between evidence-backed recommendations and saved views", async () => {
+  it("links to paginated recommendation and saved result sets", async () => {
     window.localStorage.setItem(
       "ejik-fit:owned-skills",
       JSON.stringify(["Python"]),
@@ -135,37 +149,43 @@ describe("JobList", () => {
       currentDomain: "backend",
       workTypes: ["development", "operations"],
     });
-    render(
+    const { rerender } = render(
       <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
     );
 
-    expect(screen.getByRole("button", { name: "전체 공고 2" })).toHaveTextContent(
+    expect(screen.getByRole("link", { name: "전체 공고 2" })).toHaveTextContent(
       /^전체\s*2$/,
     );
     expect(
-      await screen.findByRole("button", { name: "추천 공고 1" }),
-    ).toHaveTextContent(/^추천 공고\s*1$/);
-    expect(screen.getByRole("button", { name: "저장한 공고 0" })).toHaveTextContent(
+      await screen.findByRole("link", { name: "추천 공고 1" }),
+    ).toHaveAttribute("href", "/jobs?view=matched");
+    expect(screen.getByRole("link", { name: "저장한 공고 0" })).toHaveTextContent(
       /^저장한 공고\s*0$/,
     );
     expect(screen.queryByText("이 페이지")).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "추천 공고 1" }),
+    rerender(
+      <JobList
+        filters={{ query: "", careerType: "", category: "" }}
+        initialView="matched"
+        postings={postings}
+      />,
     );
-    expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Go Platform Engineer" }),
-    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "추천 공고 1" }))
+        .toHaveAttribute("aria-current", "page");
+      expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: "Go Platform Engineer" }))
+        .not.toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Backend Engineer 저장" }));
     expect(
       JSON.parse(window.localStorage.getItem("ejik-fit:saved-job-ids")!),
     ).toEqual(["job-1"]);
-    fireEvent.click(screen.getByRole("button", { name: "저장한 공고 1" }));
-    expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "저장한 공고 1" }))
+      .toHaveAttribute("href", "/jobs?view=saved");
 
-    fireEvent.click(screen.getByRole("button", { name: "추천 공고 1" }));
     act(() => writeOwnedSkills(["Go"]));
     await waitFor(() => {
       expect(screen.getByRole("link", { name: "Backend Engineer" })).toBeInTheDocument();
@@ -281,12 +301,14 @@ describe("JobList", () => {
     expect(screen.queryByText("공고 데이터를 불러오지 못했습니다.")).not.toBeInTheDocument();
 
     rerender(
-      <JobList filters={{ query: "", careerType: "", category: "" }} postings={postings} />,
+      <JobList
+        filters={{ query: "", careerType: "", category: "" }}
+        initialView="matched"
+        postings={postings}
+      />,
     );
-    fireEvent.click(
-      await screen.findByRole("button", { name: "추천 공고 0" }),
-    );
-    expect(screen.getByText("먼저 커리어 프로필을 입력해 주세요.")).toBeInTheDocument();
+    expect(await screen.findByText("먼저 커리어 프로필을 입력해 주세요."))
+      .toBeInTheDocument();
     expect(screen.getByRole("link", { name: "내 커리어에서 기술 추가" })).toHaveAttribute(
       "href",
       "/career",

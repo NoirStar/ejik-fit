@@ -61,3 +61,17 @@ def test_career_analysis_contract_is_private_and_uses_full_profile() -> None:
     assert body["connections"]["00000000-0000-0000-0000-000000000001"][
         "career_condition"
     ] == "continues"
+
+
+def test_market_contract_is_public_and_uses_the_same_classifier() -> None:
+    client = TestClient(create_app(career_analysis_reader=FakeCareerReader()))
+
+    response = client.get("/api/career/market?career_type=experienced")
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"].startswith("public")
+    body = response.json()
+    assert body["analyzed_posting_count"] == 1
+    assert body["classified_posting_count"] == 1
+    assert body["fields"][0]["domain"] == "backend"
+    assert body["fields"][0]["jobs"][0]["title"] == "Backend Engineer"

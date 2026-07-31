@@ -83,9 +83,35 @@ test("moves from a company profile to the verified job detail", async ({ page })
 });
 
 test("opens a company profile from an API-backed home job", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "careerfit:owned-skills",
+      JSON.stringify(["Python", "Docker"]),
+    );
+    localStorage.setItem(
+      "careerfit:career-profile",
+      JSON.stringify({
+        currentRole: "백엔드 개발자",
+        pastRoles: [],
+        experienceYears: 4,
+        responsibilities: "Python API 개발과 Docker 기반 서비스 운영",
+        experienceHighlights: [],
+        workTypes: ["development", "operations"],
+        industryExperience: [],
+        currentDomain: "backend",
+        keepExperience: "API 개발과 운영",
+        interestDomains: [],
+        excludedDomains: [],
+        preferredLocations: ["서울"],
+        employmentTypes: ["full_time"],
+        careerLevel: "experienced",
+        skillUsage: {},
+      }),
+    );
+  });
   await page.goto("/");
   await page
-    .getByRole("link", { name: "Python Backend Engineer" })
+    .getByRole("link", { name: "NAVER Python Backend Engineer" })
     .click();
 
   await expect(page).toHaveURL(/\/jobs\/job-python$/);

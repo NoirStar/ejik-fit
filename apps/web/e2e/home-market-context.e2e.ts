@@ -22,6 +22,26 @@ for (const width of [1440, 390]) {
           targetDomain: "backend",
         }),
       );
+      localStorage.setItem(
+        "ejik-fit:career-profile",
+        JSON.stringify({
+          currentRole: "백엔드 개발자",
+          pastRoles: [],
+          experienceYears: 4,
+          responsibilities: "Python API 개발과 서비스 운영",
+          experienceHighlights: [],
+          workTypes: ["development", "operations"],
+          industryExperience: [],
+          currentDomain: "backend",
+          keepExperience: "API 개발",
+          interestDomains: [],
+          excludedDomains: [],
+          preferredLocations: ["서울"],
+          employmentTypes: ["full_time"],
+          careerLevel: "experienced",
+          skillUsage: {},
+        }),
+      );
     });
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
@@ -40,13 +60,13 @@ for (const width of [1440, 390]) {
     });
 
     const directions = page.getByRole("region", {
-      name: "내 경험과 연결되는 커리어 방향",
+      name: "먼저 확인할 커리어 방향",
     });
     await expect(directions).toContainText("백엔드");
-    await expect(directions).toContainText("공고 1건");
-    await expect(directions).toContainText("확인된 기업 1곳");
+    await expect(directions).toContainText("공고 수");
+    await expect(directions).toContainText("기업 수");
     await expect(
-      page.getByRole("link", { exact: true, name: "Python Backend Engineer" }),
+      page.getByRole("link", { name: "NAVER Python Backend Engineer" }),
     ).toBeVisible();
     await expect(
       page.getByRole("article", { name: "Go Platform Engineer" }),
@@ -68,8 +88,10 @@ for (const width of [1440, 390]) {
     ).toBe(false);
     await edit.click();
     await expect(page).toHaveURL(/\/career$/);
-    await expect(page.getByLabel("경력 조건")).toHaveValue("experienced");
-    await expect(page.getByLabel("관심 커리어 분야")).toHaveValue("backend");
+    await page.getByText("프로필과 기술 수정", { exact: true }).click();
+    await page.getByRole("button", { name: "경력 정보 더 추가" }).click();
+    await expect(page.getByLabel("경력 수준")).toHaveValue("experienced");
+    await expect(page.getByLabel("현재 분야")).toHaveValue("backend");
     expect(browserErrors).toEqual([]);
   });
 }

@@ -1,9 +1,10 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import { writeCareerProfile } from "@/lib/career-profile";
 import { writeOwnedSkills } from "@/lib/owned-skills";
+import { careerAnalysisFixture } from "@/features/career-analysis/test-fixture";
 import type { PostingSummary } from "@/lib/types";
 
 import { CareerMap } from "./career-map";
@@ -79,11 +80,15 @@ const snapshot: HomeFeedSnapshot = {
 };
 
 describe("CareerMap", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(careerAnalysisFixture([backendPosting]))));
+  });
   afterEach(() => {
     cleanup();
     localStorage.clear();
     navigation.replace.mockReset();
     navigation.refresh.mockReset();
+    vi.unstubAllGlobals();
   });
 
   it("compares evidence-backed directions in a list and detail panel", async () => {
@@ -111,7 +116,7 @@ describe("CareerMap", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /백엔드/ })).toBeInTheDocument();
     });
-    expect(screen.getByRole("heading", { name: "커리어맵" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "커리어 방향 비교" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /백엔드/ })).toHaveAttribute(
       "aria-pressed",
       "true",
@@ -130,6 +135,7 @@ describe("CareerMap", () => {
   });
 
   it("explains the empty state and next action without fabricating a map", () => {
+    localStorage.clear();
     render(
       <CareerMap
         snapshot={{

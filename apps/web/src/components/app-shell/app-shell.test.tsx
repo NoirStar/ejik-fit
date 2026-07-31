@@ -122,19 +122,19 @@ describe("AppShell", () => {
     });
   });
 
-  it("exposes desktop and mobile access to six distinct product destinations", () => {
+  it("keeps four primary destinations and uses the brand link for home", () => {
     render(
       <AppShell>
         <main>내용</main>
       </AppShell>,
     );
 
-    expect(screen.getAllByRole("link", { name: "홈" })[0]).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "커리어핏 홈" })).toHaveAttribute("href", "/");
     expect(screen.getAllByRole("link", { name: "내 커리어" })[0]).toHaveAttribute("href", "/career");
-    expect(screen.getAllByRole("link", { name: "커리어맵" })[0]).toHaveAttribute("href", "/career-map");
-    expect(screen.getAllByRole("link", { name: "시장" })[0]).toHaveAttribute("href", "/market");
-    expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute("href", "/jobs");
-    expect(screen.getAllByRole("link", { name: "커뮤니티" })[0]).toHaveAttribute("href", "/community");
+    expect(screen.getAllByRole("link", { name: "방향 비교" })[0]).toHaveAttribute("href", "/career-map");
+    expect(screen.getAllByRole("link", { name: "채용 시장" })[0]).toHaveAttribute("href", "/market");
+    expect(screen.getAllByRole("link", { name: "채용공고" })[0]).toHaveAttribute("href", "/jobs");
+    expect(screen.getByRole("link", { name: "커뮤니티" })).toHaveAttribute("href", "/community");
     expect(screen.queryByRole("link", { name: "글쓰기" })).not.toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute("name", "q");
     expect(screen.getByRole("searchbox", { name: "통합 검색" })).toHaveAttribute(
@@ -146,9 +146,7 @@ describe("AppShell", () => {
       "/search",
     );
     expect(screen.queryByText("김민준")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "내 기술 열기" })).toHaveTextContent(
-      "내 기술",
-    );
+    expect(screen.queryByRole("button", { name: "내 기술 열기" })).not.toBeInTheDocument();
   });
 
   it("places the desktop navigation inside the single header row", () => {
@@ -220,11 +218,11 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    expect(screen.getAllByRole("link", { name: "공고" })[0]).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "채용공고" })[0]).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getAllByRole("link", { name: "홈" })[0]).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: "커리어핏 홈" })).not.toHaveAttribute(
       "aria-current",
     );
   });
@@ -238,7 +236,7 @@ describe("AppShell", () => {
       </AppShell>,
     );
 
-    for (const link of screen.getAllByRole("link", { name: "공고" })) {
+    for (const link of screen.getAllByRole("link", { name: "채용공고" })) {
       expect(link).toHaveAttribute("aria-current", "page");
     }
   });
@@ -344,8 +342,8 @@ describe("AppShell", () => {
     );
 
     expect(container.querySelector('[data-immersive="true"]')).toBeInTheDocument();
-    for (const link of screen.getAllByRole("link", { name: "커리어맵" })) {
-      expect(link).toHaveAttribute("aria-current", "page");
+    for (const link of screen.getAllByRole("link", { name: "방향 비교" })) {
+      expect(link).not.toHaveAttribute("aria-current");
     }
   });
 

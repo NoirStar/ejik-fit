@@ -13,15 +13,12 @@ for (const width of [1440, 390]) {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "내 경력과 기술이 이어지는 커리어 방향을 확인하세요",
+        name: "내 경험에서 이어갈 커리어 방향을 확인하세요",
       }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "내 커리어 분석하기" }),
     ).toHaveAttribute("href", "/career");
-    await expect(
-      page.getByRole("heading", { name: "분석 데이터의 범위" }),
-    ).toBeVisible();
     await expect(page.getByText(/대한민국 전체 채용시장을 대표하지 않습니다/)).toBeVisible();
     await expect(page.getByRole("heading", { name: "커리어 커뮤니티" })).toHaveCount(0);
 
@@ -79,19 +76,16 @@ test("migrates an existing profile and refreshes home and career map decisions",
   ).not.toBeNull();
 
   await page.goto("/career");
-  const migratedProfile = page
-    .getByRole("region", { name: "커리어 프로필" })
-    .filter({ hasText: "경력 기준 분석" });
-  await expect(migratedProfile).toHaveCount(1);
-  const currentRole = migratedProfile.getByLabel("현재 직무");
+  await page.getByText("프로필과 기술 수정", { exact: true }).click();
+  const currentRole = page.getByLabel("현재 직무");
   await expect(currentRole).toHaveValue("플랫폼 엔지니어");
   await currentRole.fill("클라우드 플랫폼 엔지니어");
-  await migratedProfile
+  await page
     .getByRole("button", { name: "커리어 프로필 저장" })
     .click();
   await expect(
     page.getByRole("status").filter({
-      hasText: "커리어 프로필을 저장했습니다",
+      hasText: "프로필 저장 완료",
     }),
   ).toBeVisible();
   expect(
@@ -107,9 +101,9 @@ test("migrates an existing profile and refreshes home and career map decisions",
   ).toEqual(["클라우드 플랫폼 엔지니어", "클라우드 플랫폼 엔지니어"]);
 
   await page.goto("/skill-map");
-  await expect(page.getByRole("heading", { level: 1, name: "커리어맵" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "내 커리어 방향 지도" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "관계의 의미" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "커리어 방향 비교" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "비교할 커리어 방향" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "분석 기준" })).toBeVisible();
   await expect(page.getByRole("link", { name: "기술 관계 보기" })).toHaveAttribute(
     "href",
     "/skills/graph",

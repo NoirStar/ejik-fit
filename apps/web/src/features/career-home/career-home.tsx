@@ -8,13 +8,9 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  buildCareerAnalysis,
-  type CareerDirection,
-  type CareerDirectionKind,
-} from "@/features/career-analysis/model";
+import { useCareerAnalysis } from "@/features/career-analysis/use-career-analysis";
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import {
   careerAnalysisLevel,
@@ -28,6 +24,10 @@ import {
   readOwnedSkills,
   subscribeOwnedSkills,
 } from "@/lib/owned-skills";
+import type {
+  CareerAnalysisDirection,
+  CareerDirectionKind,
+} from "@/lib/types";
 
 import { formatCareerRange, formatVerifiedDate } from "../jobs/model";
 import styles from "./career-home.module.css";
@@ -64,7 +64,7 @@ function formattedVerifiedAt(value: string | null) {
   );
 }
 
-function DirectionCard({ direction }: { direction: CareerDirection }) {
+function DirectionCard({ direction }: { direction: CareerAnalysisDirection }) {
   return (
     <article className={styles.directionCard} data-kind={direction.kind}>
       <div className={styles.cardLabel}>{DIRECTION_LABELS[direction.kind]}</div>
@@ -76,11 +76,11 @@ function DirectionCard({ direction }: { direction: CareerDirection }) {
       <dl>
         <div>
           <dt>공고 수</dt>
-          <dd>{direction.postingCount.toLocaleString("ko-KR")}건</dd>
+          <dd>{direction.posting_count.toLocaleString("ko-KR")}건</dd>
         </div>
         <div>
           <dt>기업 수</dt>
-          <dd>{direction.companyCount.toLocaleString("ko-KR")}곳</dd>
+          <dd>{direction.company_count.toLocaleString("ko-KR")}곳</dd>
         </div>
       </dl>
       <div className={styles.cardActions}>
@@ -92,9 +92,9 @@ function DirectionCard({ direction }: { direction: CareerDirection }) {
         >
           관련 채용공고 보기
         </Link>
-        {direction.representativeJob ? (
-          <Link href={direction.representativeJob.href}>
-            대표 공고: {direction.representativeJob.title}
+        {direction.representative_job ? (
+          <Link href={`/jobs/${encodeURIComponent(direction.representative_job.id)}`}>
+            대표 공고: {direction.representative_job.title}
           </Link>
         ) : (
           <span>역할·업무 근거가 분명한 대표 공고는 아직 없습니다.</span>
@@ -140,23 +140,36 @@ function ProfileHome({
   snapshot,
   ownedSkills,
 }: CareerHomeProps & { profile: CareerProfile; ownedSkills: string[] }) {
-  const analysis = useMemo(
-    () =>
-      buildCareerAnalysis({
-        profile,
-        ownedSkills,
-        postings: snapshot.analysisPostings ?? [],
-      }),
-    [ownedSkills, profile, snapshot.analysisPostings],
-  );
+  const analysisState = useCareerAnalysis(profile, ownedSkills, { limit: 4 });
+
+  if (analysisState.status === "loading" || analysisState.status === "idle") {
+    return (
+      <section className={styles.emptyState} role="status">
+        <strong>내 경험과 전체 채용공고를 비교하고 있습니다.</strong>
+        <p>직무, 업무, 경력 조건과 확인된 기술 조건을 함께 살펴봅니다.</p>
+      </section>
+    );
+  }
+  if (analysisState.status === "error") {
+    return (
+      <section className={styles.errorState} role="alert">
+        <WarningCircle aria-hidden="true" size={20} weight="fill" />
+        <div>
+          <strong>커리어 분석을 불러오지 못했습니다.</strong>
+          <p>저장된 프로필은 유지됩니다. 전체 채용공고는 계속 확인할 수 있습니다.</p>
+        </div>
+        <button onClick={analysisState.retry} type="button">분석 다시 불러오기</button>
+      </section>
+    );
+  }
+
+  const analysis = analysisState.data!;
   const directions = analysis.directions.slice(0, 2);
-  const jobs = analysis.recommendedJobs.slice(0, 4);
-  const postingsUnavailable =
-    snapshot.dataStatus === "error" || snapshot.dataStatus === "partial";
+  const jobs = analysis.recommendations.items.slice(0, 4);
 
   return (
     <div
-      data-analysis-snapshot={analysis.snapshotId}
+      data-analysis-snapshot={analysis.snapshot_id}
       data-analysis-version={analysis.version}
     >
       <header className={styles.dashboardHeader}>
@@ -211,8 +224,7 @@ function ProfileHome({
         </div>
         {jobs.length > 0 ? (
           <ul className={styles.jobList}>
-            {jobs.map((job) => {
-              const connection = analysis.jobConnections[job.id];
+            {jobs.map(({ posting: job, connection }) => {
               return (
                 <li key={job.id}>
                   <Link href={"/jobs/" + encodeURIComponent(job.id)}>
@@ -222,7 +234,7 @@ function ProfileHome({
                     </div>
                     <p>{connection.reasons[0]}</p>
                     <div className={styles.jobMeta}>
-                      <span>{connection.directionLabel}</span>
+                      <span>{connection.direction_label}</span>
                       <span>{formatCareerRange(job)}</span>
                       <span>{formatEmployment(job.employment_type)}</span>
                       <span>{formatLocation(job.location)}</span>
@@ -250,23 +262,19 @@ function ProfileHome({
         <ChartLineUp aria-hidden="true" size={20} />
         <div>
           <h2 id="home-market-title">현재 확인한 시장 표본</h2>
-          {postingsUnavailable ? (
-            <p>채용공고 집계를 확인할 수 없습니다. 저장된 프로필은 유지됩니다.</p>
-          ) : (
-            <p>
-              공개 채용공고 {snapshot.postingCount.toLocaleString("ko-KR")}건 · 출처{" "}
-              {snapshot.sourceCount.toLocaleString("ko-KR")}곳 ·{" "}
-              {formattedVerifiedAt(analysis.calculatedAt)}
-            </p>
-          )}
+          <p>
+            분석 가능한 공개 채용공고 {analysis.analyzed_posting_count.toLocaleString("ko-KR")}건 ·
+            서로 다른 기업 {analysis.analyzed_company_count.toLocaleString("ko-KR")}곳 ·{" "}
+            {formattedVerifiedAt(analysis.calculated_at)}
+          </p>
         </div>
         <Link href="/market">분야별 채용 현황 보기</Link>
       </section>
 
-      {analysis.profileInformationNotConfirmed.length > 0 && (
+      {analysis.profile_information_not_confirmed.length > 0 && (
         <p className={styles.profileNotice}>
           현재 프로필에서 확인되지 않은 정보:{" "}
-          {analysis.profileInformationNotConfirmed.join(", ")}. 입력하면 비교할 근거의
+          {analysis.profile_information_not_confirmed.join(", ")}. 입력하면 비교할 근거의
           범위가 달라질 수 있습니다.
         </p>
       )}
@@ -296,7 +304,7 @@ export function CareerHome({ snapshot }: CareerHomeProps) {
 
   return (
     <main className={styles.page}>
-      {hasDataError && (
+      {hasDataError && !configured && (
         <section className={styles.errorState} role="alert">
           <WarningCircle aria-hidden="true" size={20} weight="fill" />
           <div>

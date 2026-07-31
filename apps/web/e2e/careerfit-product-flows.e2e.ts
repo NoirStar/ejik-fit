@@ -32,7 +32,7 @@ test("connects a profile to a posting, its evidence, and a saved career group", 
 
   await page.goto("/jobs");
   await expect(page.getByRole("heading", { level: 1, name: "채용공고 찾기" })).toBeVisible();
-  await page.getByRole("button", { name: /추천 공고/ }).click();
+  await page.getByRole("link", { name: /추천 공고/ }).click();
   const posting = page.locator("article").filter({
     has: page.getByRole("link", {
       exact: true,

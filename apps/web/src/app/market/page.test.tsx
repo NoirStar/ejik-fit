@@ -1,13 +1,14 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
+import { getMarketCareerFields, getPostings, getSkillGraph, getSkillStats } from "@/lib/api";
 
 import MarketPage from "./page";
 
 vi.mock("@/lib/api", () => ({
   SKILL_GRAPH_MAX_LIMIT: 60,
   getPostings: vi.fn(),
+  getMarketCareerFields: vi.fn(),
   getSkillGraph: vi.fn(),
   getSkillStats: vi.fn(),
 }));
@@ -23,6 +24,7 @@ describe("MarketPage", () => {
     vi.mocked(getPostings).mockReset();
     vi.mocked(getSkillStats).mockReset();
     vi.mocked(getSkillGraph).mockReset();
+    vi.mocked(getMarketCareerFields).mockReset();
     vi.mocked(getPostings).mockResolvedValue({ total: 0, items: [] });
     vi.mocked(getSkillStats).mockResolvedValue({ total: 0, items: [] });
     vi.mocked(getSkillGraph).mockResolvedValue({
@@ -31,6 +33,14 @@ describe("MarketPage", () => {
       edges: [],
       evidence: [],
       meta: { limit: 60, min_confidence: 0.8 },
+    });
+    vi.mocked(getMarketCareerFields).mockResolvedValue({
+      version: "career-evidence-v3.0",
+      calculated_at: null,
+      analyzed_posting_count: 0,
+      analyzed_company_count: 0,
+      classified_posting_count: 0,
+      fields: [],
     });
   });
 
@@ -58,6 +68,10 @@ describe("MarketPage", () => {
       career_type: "experienced",
       include_evidence: true,
       limit: 60,
+    });
+    expect(getMarketCareerFields).toHaveBeenCalledWith({
+      career_type: "experienced",
+      category: "infra",
     });
     expect(
       screen.getByRole("heading", {
@@ -90,6 +104,7 @@ describe("MarketPage", () => {
       include_evidence: true,
       limit: 60,
     });
+    expect(getMarketCareerFields).toHaveBeenCalledWith({});
     expect(
       within(
         screen.getByRole("navigation", { name: "기술 분류" }),

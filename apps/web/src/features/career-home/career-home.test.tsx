@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { careerAnalysisFixture } from "@/features/career-analysis/test-fixture";
 import { writeCareerProfile } from "@/lib/career-profile";
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import type { PostingSummary } from "@/lib/types";
@@ -51,9 +52,13 @@ const baseSnapshot: HomeFeedSnapshot = {
 };
 
 describe("CareerHome", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json(careerAnalysisFixture([backendPosting]))));
+  });
   afterEach(() => {
     cleanup();
     localStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it("explains the product and next action before a profile exists", () => {

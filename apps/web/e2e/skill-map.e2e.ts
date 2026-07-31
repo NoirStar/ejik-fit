@@ -454,8 +454,8 @@ for (const width of [1440, 820, 390]) {
       name: width <= 820 ? "모바일 주요 탐색" : "주요 탐색",
     });
     await expect(
-      productNavigation.getByRole("link", { name: "커리어맵" }),
-    ).toHaveAttribute("aria-current", "page");
+      productNavigation.getByRole("link", { name: "방향 비교" }),
+    ).not.toHaveAttribute("aria-current", "page");
 
     const inspector = page.getByRole("complementary", {
       name: "선택 기술 분석",

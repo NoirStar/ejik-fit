@@ -5,15 +5,12 @@ import {
   Briefcase,
   CaretDown,
   ChartLineUp,
-  Graph,
-  House,
+  Compass,
   MagnifyingGlass,
   NotePencil,
   SignIn,
   SignOut,
-  Stack,
   UserCircle,
-  UsersThree,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -58,25 +55,18 @@ const ActivityNotificationCenter = lazy(async () => {
   return { default: module.ActivityNotificationCenter };
 });
 
-const OwnedSkillsSheet = lazy(async () => {
-  const module = await import("@/features/owned-skills/owned-skills-sheet");
-  return { default: module.OwnedSkillsSheet };
-});
-
 const NAV_ITEMS = [
-  { href: "/", label: "홈", icon: House },
   { href: "/career", label: "내 커리어", icon: UserCircle },
-  { href: "/career-map", label: "커리어맵", icon: Graph },
-  { href: "/market", label: "시장", icon: ChartLineUp },
-  { href: "/jobs", label: "공고", icon: Briefcase },
-  { href: "/community", label: "커뮤니티", icon: UsersThree, secondary: true },
+  { href: "/career-map", label: "방향 비교", icon: Compass },
+  { href: "/jobs", label: "채용공고", icon: Briefcase },
+  { href: "/market", label: "채용 시장", icon: ChartLineUp },
 ] as const;
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   if (
     href === "/career-map" &&
-    (pathname.startsWith("/skills/graph") || pathname === "/skill-map")
+    pathname === "/skill-map"
   ) {
     return true;
   }
@@ -238,7 +228,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [interactive, setInteractive] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const {
@@ -253,12 +242,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const communityMigration = useCommunityLegacyMigration(viewer);
   const activityNotifications = useActivityNotifications(viewer);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const stackButtonRef = useRef<HTMLButtonElement>(null);
   const notificationAnchorRef = useRef<HTMLDivElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
   const userAnchorRef = useRef<HTMLDivElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
-  const closeSheet = useCallback(() => setSheetOpen(false), []);
 
   const closeUtilityMenus = useCallback(() => {
     setNotificationOpen(false);
@@ -272,10 +259,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        if (sheetOpen) {
-          setSheetOpen(false);
-          stackButtonRef.current?.focus();
-        }
         if (notificationOpen) notificationButtonRef.current?.focus();
         if (userMenuOpen) userButtonRef.current?.focus();
         closeUtilityMenus();
@@ -296,7 +279,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeUtilityMenus, notificationOpen, sheetOpen, userMenuOpen]);
+  }, [closeUtilityMenus, notificationOpen, userMenuOpen]);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -318,28 +301,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     closeUtilityMenus();
   }, [closeUtilityMenus, pathname]);
-
-  function handleSkillsChange(skills: string[]) {
-    if (pathname === "/") {
-      const currentSearch = typeof window === "undefined" ? "" : window.location.search;
-      router.replace(
-        homeContextToDashboardHref(
-          {
-            ownedSkills: skills,
-            careerPreferences: readCareerPreferences(),
-          },
-          currentSearch,
-        ),
-        { scroll: false },
-      );
-    }
-    router.refresh();
-  }
-
-  function openSkillsSheet() {
-    closeUtilityMenus();
-    setSheetOpen(true);
-  }
 
   const viewerLabel = viewer?.email.split("@")[0] || "로그인";
 
@@ -397,18 +358,6 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <HeaderWriteLink pathname={pathname} />
               </Suspense>
             )}
-
-            <button
-              aria-label={`${PRODUCT_TERMS.ownedSkills} 열기`}
-              className={styles.stackButton}
-              disabled={!interactive}
-              onClick={openSkillsSheet}
-              ref={stackButtonRef}
-              type="button"
-            >
-              <Stack aria-hidden="true" size={20} />
-              <span className={styles.utilityLabel}>{PRODUCT_TERMS.ownedSkills}</span>
-            </button>
 
             <div className={styles.menuAnchor} ref={notificationAnchorRef}>
               <button
@@ -538,6 +487,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link href="/career/questions" onClick={closeUtilityMenus}>
                     내 글
                   </Link>
+                  <Link href="/community" onClick={closeUtilityMenus}>
+                    커뮤니티
+                  </Link>
                   <Link href="/data-policy" onClick={closeUtilityMenus}>
                     데이터 정책
                   </Link>
@@ -592,6 +544,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href="/methodology">분석 방법</Link>
             <Link href="/privacy">개인정보</Link>
             <Link href="/corrections">정정 요청</Link>
+            <Link href="/community">커뮤니티</Link>
             <a href="https://github.com/NoirStar/ejik-fit" rel="noreferrer" target="_blank">
               GitHub
             </a>
@@ -620,16 +573,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      {sheetOpen && (
-        <Suspense fallback={null}>
-          <OwnedSkillsSheet
-            onClose={closeSheet}
-            onSkillsChange={handleSkillsChange}
-            open
-            openerRef={stackButtonRef}
-          />
-        </Suspense>
-      )}
     </div>
   );
 

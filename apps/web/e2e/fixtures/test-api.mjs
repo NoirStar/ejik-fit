@@ -280,6 +280,205 @@ const fitAnalysis = {
   ],
 };
 
+const careerDomainLabels = {
+  backend: "백엔드",
+  cloud: "클라우드",
+  devops: "DevOps·플랫폼",
+};
+
+function fixtureCareerConnection(posting, profile, ownedSkills) {
+  const domain = posting.id === "job-python" ? "backend" : "devops";
+  const profileDomain = profile.current_domain || "";
+  const interested = (profile.interest_domains || []).includes(domain);
+  const excluded = (profile.excluded_domains || []).includes(domain);
+  const postingSkills = [
+    ...posting.required_skills,
+    ...posting.preferred_skills,
+    ...posting.unspecified_skills,
+  ];
+  const owned = new Set(ownedSkills.map((skill) => skill.toLocaleLowerCase("en")));
+  const matched = postingSkills.filter((skill) =>
+    owned.has(skill.toLocaleLowerCase("en")),
+  );
+  const careerMismatch =
+    profile.career_level &&
+    profile.career_level !== "new_comer" &&
+    posting.career_type === "new_comer";
+  const kind = profileDomain === domain ? "direct" : interested ? "interest" : null;
+  const eligible = Boolean(kind && matched.length > 0 && !excluded && !careerMismatch);
+  return {
+    direction_id: kind ? domain : null,
+    direction_label: kind ? careerDomainLabels[domain] : null,
+    direction_kind: kind,
+    connection_level: eligible ? kind : "limited",
+    label: eligible
+      ? kind === "direct"
+        ? "현재 경력과 직접 이어짐"
+        : "관심 분야에서 확인한 공고"
+      : "추가 확인이 필요한 공고",
+    recommendation_eligible: eligible,
+    reasons: [
+      careerMismatch
+        ? "입력한 경력 기간과 공고의 경력 조건이 다릅니다."
+        : eligible
+          ? `${matched.join(", ")} 경험과 공고의 주요 업무가 겹칩니다.`
+          : "현재 프로필에서 공고 역할과 이어지는 근거를 확인하지 못했습니다.",
+    ],
+    evidence_types: eligible ? ["role", "responsibility", "skill"] : [],
+    matched_skills: matched,
+    matched_responsibilities: eligible ? ["API", "운영"] : [],
+    unconfirmed_conditions: posting.required_skills.filter(
+      (skill) => !owned.has(skill.toLocaleLowerCase("en")),
+    ),
+    career_condition: careerMismatch ? "changes" : "continues",
+    employment_condition: "continues",
+    location_condition: "continues",
+  };
+}
+
+function careerAnalysisForRequest(payload) {
+  const profile = payload.profile || {};
+  const ownedSkills = Array.isArray(payload.owned_skills) ? payload.owned_skills : [];
+  const excluded = new Set(profile.excluded_domains || []);
+  const postingDomains = new Map([
+    ["job-python", "backend"],
+    ["job-go", "devops"],
+  ]);
+  const connections = Object.fromEntries(
+    postings.items.map((posting) => [
+      posting.id,
+      fixtureCareerConnection(posting, profile, ownedSkills),
+    ]),
+  );
+  const eligible = postings.items.filter((posting) => {
+    const connection = connections[posting.id];
+    return (
+      connection.recommendation_eligible &&
+      (!payload.direction || connection.direction_id === payload.direction)
+    );
+  });
+  const profileDomain = profile.current_domain || "";
+  const directionDomains = new Set([
+    ...(profileDomain ? [profileDomain] : []),
+    ...(profile.interest_domains || []),
+  ]);
+  const directions = [...directionDomains]
+    .filter((domain) => careerDomainLabels[domain] && !excluded.has(domain))
+    .map((domain) => {
+      const jobs = postings.items.filter((posting) => postingDomains.get(posting.id) === domain);
+      const representative = eligible.find((posting) => postingDomains.get(posting.id) === domain);
+      return {
+        domain,
+        label: careerDomainLabels[domain],
+        kind: domain === profileDomain ? "direct" : "interest",
+        reasons: [
+          domain === profileDomain
+            ? `${profile.current_role || careerDomainLabels[domain]} 경험이 이 분야 역할과 겹칩니다.`
+            : `관심 분야로 선택한 ${careerDomainLabels[domain]} 공고를 탐색 범위에 포함했습니다.`,
+        ],
+        evidence_types: domain === profileDomain ? ["role", "responsibility"] : ["interest"],
+        matched_skills: ownedSkills,
+        posting_count: jobs.length,
+        company_count: new Set(jobs.map((posting) => posting.company_slug)).size,
+        additional_conditions: [],
+        career_counts: {
+          new_comer: jobs.filter((posting) => posting.career_type === "new_comer").length,
+          experienced: jobs.filter((posting) => posting.career_type === "experienced").length,
+          mixed_or_unknown: 0,
+        },
+        representative_tasks: domain === "backend" ? ["API 개발"] : ["플랫폼 운영"],
+        representative_job: representative
+          ? {
+              id: representative.id,
+              title: representative.title,
+              company_name: representative.company_name,
+            }
+          : null,
+      };
+    });
+  const offset = Number.isInteger(payload.offset) ? payload.offset : 0;
+  const limit = Number.isInteger(payload.limit) ? payload.limit : 12;
+  const page = eligible.slice(offset, offset + limit);
+  const snapshotKey = JSON.stringify({ profile, ownedSkills });
+  let snapshotHash = 0;
+  for (const character of snapshotKey) {
+    snapshotHash = (snapshotHash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return {
+    version: "career-evidence-v3.0",
+    snapshot_id: `career-fixture-${snapshotHash.toString(16)}`,
+    calculated_at: postings.items[0].last_verified_at,
+    analyzed_posting_count: postings.total,
+    analyzed_company_count: 2,
+    directions,
+    recommendations: {
+      items: page.map((posting) => ({ posting, connection: connections[posting.id] })),
+      total: eligible.length,
+      limit,
+      offset,
+    },
+    connections,
+    profile_evidence_used: [
+      ...(profile.current_role ? ["current_role"] : []),
+      ...(profile.responsibilities ? ["responsibilities"] : []),
+    ],
+    profile_information_not_confirmed: [
+      ...(!profile.current_role ? ["현재 직무"] : []),
+      ...(!profile.responsibilities ? ["주요 업무 또는 프로젝트·성과 경험"] : []),
+    ],
+  };
+}
+
+function marketCareerFieldsForRequest(requestUrl) {
+  if (requestUrl.searchParams.get("category") === "mobile") {
+    return {
+      version: "career-evidence-v3.0",
+      calculated_at: postings.items[0].last_verified_at,
+      analyzed_posting_count: 0,
+      analyzed_company_count: 0,
+      classified_posting_count: 0,
+      fields: [],
+    };
+  }
+  return {
+    version: "career-evidence-v3.0",
+    calculated_at: postings.items[0].last_verified_at,
+    analyzed_posting_count: postings.total,
+    analyzed_company_count: 2,
+    classified_posting_count: 2,
+    fields: [
+      {
+        domain: "backend",
+        label: "백엔드",
+        posting_count: 1,
+        company_count: 1,
+        career_counts: { new_comer: 0, experienced: 1, mixed_or_unknown: 0 },
+        top_locations: [{ label: "서울", posting_count: 1 }],
+        top_skills: [
+          { skill: "Python", posting_count: 1, company_count: 1 },
+          { skill: "Docker", posting_count: 1, company_count: 1 },
+        ],
+        jobs: [postings.items[0]],
+        sample_status: "limited",
+      },
+      {
+        domain: "devops",
+        label: "DevOps·플랫폼",
+        posting_count: 1,
+        company_count: 1,
+        career_counts: { new_comer: 1, experienced: 0, mixed_or_unknown: 0 },
+        top_locations: [{ label: "성남", posting_count: 1 }],
+        top_skills: [
+          { skill: "Go", posting_count: 1, company_count: 1 },
+          { skill: "Docker", posting_count: 1, company_count: 1 },
+        ],
+        jobs: [postings.items[1]],
+        sample_status: "limited",
+      },
+    ],
+  };
+}
+
 const skillTrends = {
   status: "collecting",
   collected_weeks: 1,
@@ -659,6 +858,7 @@ function resetSupabaseFixture() {
 
 function failedMarketResource(pathname) {
   if (pathname === "/api/postings") return "postings";
+  if (pathname === "/api/career/market") return "postings";
   if (pathname === "/api/skills/stats") return "skills";
   if (pathname === "/api/graph/skills") return "graph";
   return null;
@@ -1376,6 +1576,8 @@ function apiBody(request, requestUrl) {
       ? { status: "ok", service: "ejik-fit-api" }
     : pathname === "/api/postings"
       ? postingsForRequest(requestUrl)
+      : pathname === "/api/career/market"
+        ? marketCareerFieldsForRequest(requestUrl)
       : pathname === "/api/skills/stats"
         ? skillStatsForRequest(requestUrl)
         : pathname === "/api/skills/catalog"
@@ -1438,6 +1640,14 @@ const server = createServer(async (request, response) => {
     }
     if (await handleAuth(request, response, requestUrl)) return;
     if (await handleRest(request, response, requestUrl)) return;
+
+    if (
+      requestUrl.pathname === "/api/career/analyze" &&
+      request.method === "POST"
+    ) {
+      sendJson(response, 200, careerAnalysisForRequest(await readJson(request)));
+      return;
+    }
 
     const body = apiBody(request, requestUrl);
     if (body === null) {

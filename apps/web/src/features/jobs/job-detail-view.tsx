@@ -202,10 +202,7 @@ export function JobDetailView({ job }: { job: PostingDetail }) {
           </section>
 
           <aside className={styles.sidebar}>
-            <JobDetailActions
-              job={job}
-              skills={skillDetails}
-            />
+            <JobDetailActions job={job} />
 
             <section aria-label="공고 신뢰 정보" className={styles.trust}>
               <ShieldCheck aria-hidden="true" size={21} weight="fill" />

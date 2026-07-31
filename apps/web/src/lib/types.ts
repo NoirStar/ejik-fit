@@ -17,6 +17,7 @@ export type PostingSummary = {
   required_skills?: string[];
   preferred_skills?: string[];
   unspecified_skills?: string[];
+  skill_categories?: string[];
   description_excerpt?: string;
 };
 
@@ -48,6 +49,136 @@ export type PostingListResponse = {
   items: PostingSummary[];
   total: number;
   canonical_owned_skills?: string[];
+};
+
+export type CareerDirectionKind =
+  | "direct"
+  | "adjacent"
+  | "interest"
+  | "transition";
+
+export type CareerAnalysisProfileInput = {
+  current_role: string;
+  past_roles: string[];
+  experience_years: number | null;
+  responsibilities: string;
+  keep_experience: string;
+  experience_highlights: Array<{
+    title: string;
+    responsibilities: string;
+    outcome: string;
+    domain: string;
+    skills: string[];
+  }>;
+  work_types: string[];
+  industry_experience: string[];
+  current_domain: string;
+  interest_domains: string[];
+  excluded_domains: string[];
+  preferred_locations: string[];
+  employment_types: string[];
+  career_level: string;
+  skill_usage: Record<string, { years: number | null; last_used: string }>;
+};
+
+export type CareerAnalyzeRequest = {
+  profile: CareerAnalysisProfileInput;
+  owned_skills: string[];
+  direction?: string;
+  q?: string;
+  career_type?: string;
+  category?: string;
+  connection_ids?: string[];
+  limit: number;
+  offset: number;
+};
+
+export type CareerJobConnection = {
+  direction_id: string | null;
+  direction_label: string | null;
+  direction_kind: CareerDirectionKind | null;
+  connection_level: "direct" | "adjacent" | "interest" | "limited";
+  label: string;
+  recommendation_eligible: boolean;
+  reasons: string[];
+  evidence_types: string[];
+  matched_skills: string[];
+  matched_responsibilities: string[];
+  unconfirmed_conditions: string[];
+  career_condition: "continues" | "check" | "changes";
+  employment_condition: "continues" | "check" | "changes";
+  location_condition: "continues" | "check" | "changes";
+};
+
+export type CareerAnalysisDirection = {
+  domain: string;
+  label: string;
+  kind: CareerDirectionKind;
+  reasons: string[];
+  evidence_types: string[];
+  matched_skills: string[];
+  posting_count: number;
+  company_count: number;
+  additional_conditions: string[];
+  career_counts: {
+    new_comer: number;
+    experienced: number;
+    mixed_or_unknown: number;
+  };
+  representative_tasks: string[];
+  representative_job: {
+    id: string;
+    title: string;
+    company_name: string;
+  } | null;
+};
+
+export type CareerAnalyzeResponse = {
+  version: string;
+  snapshot_id: string;
+  calculated_at: string | null;
+  analyzed_posting_count: number;
+  analyzed_company_count: number;
+  directions: CareerAnalysisDirection[];
+  recommendations: {
+    items: Array<{
+      posting: PostingSummary;
+      connection: CareerJobConnection;
+    }>;
+    total: number;
+    limit: number;
+    offset: number;
+  };
+  connections: Record<string, CareerJobConnection>;
+  profile_evidence_used: string[];
+  profile_information_not_confirmed: string[];
+};
+
+export type MarketCareerFieldsResponse = {
+  version: string;
+  calculated_at: string | null;
+  analyzed_posting_count: number;
+  analyzed_company_count: number;
+  classified_posting_count: number;
+  fields: Array<{
+    domain: string;
+    label: string;
+    posting_count: number;
+    company_count: number;
+    career_counts: {
+      new_comer: number;
+      experienced: number;
+      mixed_or_unknown: number;
+    };
+    top_locations: Array<{ label: string; posting_count: number }>;
+    top_skills: Array<{
+      skill: string;
+      posting_count: number;
+      company_count: number;
+    }>;
+    jobs: PostingSummary[];
+    sample_status: "comparable" | "limited";
+  }>;
 };
 
 export type HiringCompanyActivity = {

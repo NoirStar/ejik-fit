@@ -9,6 +9,7 @@ import {
 import { settledResource } from "@/features/home-feed/resource-state";
 import {
   getPostings,
+  getMarketCareerFields,
   getSkillGraph,
   getSkillStats,
   SKILL_GRAPH_MAX_LIMIT,
@@ -40,7 +41,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
   const careerFilter = careerType ? { career_type: careerType } : {};
   const categoryFilter = category ? { category } : {};
 
-  const [postings, skillStats, graph] = await Promise.all([
+  const [postings, skillStats, graph, careerFields] = await Promise.all([
     settledResource(
       getPostings({ ...careerFilter, ...categoryFilter, limit: 100 }),
       "공고 데이터를 불러오지 못했습니다.",
@@ -57,6 +58,10 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
       }),
       "분야별 채용 현황을 불러오지 못했습니다.",
     ),
+    settledResource(
+      getMarketCareerFields({ ...careerFilter, ...categoryFilter }),
+      "분야별 채용 현황을 불러오지 못했습니다.",
+    ),
   ]);
 
   return (
@@ -68,6 +73,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps = {})
         postings,
         skillStats,
         graph,
+        careerFields,
       })}
     />
   );

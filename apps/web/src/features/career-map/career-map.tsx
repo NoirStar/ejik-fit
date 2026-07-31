@@ -11,13 +11,9 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
-import {
-  buildCareerAnalysis,
-  type CareerDirectionKind,
-} from "@/features/career-analysis/model";
+import { useCareerAnalysis } from "@/features/career-analysis/use-career-analysis";
 import type { HomeFeedSnapshot } from "@/features/home-feed/types";
 import {
   EMPTY_CAREER_PROFILE,
@@ -26,6 +22,7 @@ import {
   type CareerProfile,
 } from "@/lib/career-profile";
 import { readOwnedSkills, subscribeOwnedSkills } from "@/lib/owned-skills";
+import type { CareerDirectionKind } from "@/lib/types";
 
 import styles from "./career-map.module.css";
 
@@ -40,29 +37,11 @@ const KIND_LABEL: Record<CareerDirectionKind, string> = {
   transition: "전환 폭이 큰 방향",
 };
 
-function normalized(values: string[]) {
-  return values.map((value) => value.trim()).filter(Boolean);
-}
-
-function sameValues(left: string[], right: string[]) {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
 export function CareerMap({ snapshot }: CareerMapProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const serializedSearch = searchParams.toString();
   const [profile, setProfile] = useState<CareerProfile>(EMPTY_CAREER_PROFILE);
   const [ownedSkills, setOwnedSkills] = useState(snapshot.ownedSkills);
-  const analysis = useMemo(
-    () =>
-      buildCareerAnalysis({
-        profile,
-        ownedSkills,
-        postings: snapshot.analysisPostings ?? [],
-      }),
-    [ownedSkills, profile, snapshot.analysisPostings],
-  );
+  const analysisState = useCareerAnalysis(profile, ownedSkills, { limit: 5 });
+  const analysis = analysisState.status === "ready" ? analysisState.data! : null;
   const [selectedDomain, setSelectedDomain] = useState("");
 
   useEffect(() => {
@@ -78,29 +57,18 @@ export function CareerMap({ snapshot }: CareerMapProps) {
   }, [snapshot.ownedSkills]);
 
   useEffect(() => {
-    const storedSkills = normalized(ownedSkills);
-    if (sameValues(storedSkills, snapshot.ownedSkills)) return;
-    const next = new URLSearchParams(serializedSearch);
-    next.delete("owned_skills");
-    for (const skill of storedSkills) next.append("owned_skills", skill);
-    const query = next.toString();
-    router.replace("/career-map" + (query ? "?" + query : ""), { scroll: false });
-    router.refresh();
-  }, [ownedSkills, router, serializedSearch, snapshot.ownedSkills]);
-
-  useEffect(() => {
     if (
       selectedDomain &&
-      analysis.directions.some((direction) => direction.domain === selectedDomain)
+      analysis?.directions.some((direction) => direction.domain === selectedDomain)
     ) {
       return;
     }
-    setSelectedDomain(analysis.directions[0]?.domain ?? "");
-  }, [analysis.directions, selectedDomain]);
+    setSelectedDomain(analysis?.directions[0]?.domain ?? "");
+  }, [analysis, selectedDomain]);
 
   const selected =
-    analysis.directions.find((direction) => direction.domain === selectedDomain) ??
-    analysis.directions[0] ??
+    analysis?.directions.find((direction) => direction.domain === selectedDomain) ??
+    analysis?.directions[0] ??
     null;
   const hasInput = Boolean(
     profile.currentRole ||
@@ -112,12 +80,12 @@ export function CareerMap({ snapshot }: CareerMapProps) {
   return (
     <main
       className={styles.page}
-      data-analysis-snapshot={analysis.snapshotId}
-      data-analysis-version={analysis.version}
+      data-analysis-snapshot={analysis?.snapshot_id}
+      data-analysis-version={analysis?.version}
     >
       <header className={styles.intro}>
         <div>
-          <h1>커리어맵</h1>
+          <h1>커리어 방향 비교</h1>
           <p>
             내 경험에서 이어지는 분야를 같은 기준으로 비교하고, 실제 채용공고까지
             확인합니다.
@@ -129,11 +97,11 @@ export function CareerMap({ snapshot }: CareerMapProps) {
         </Link>
       </header>
 
-      {snapshot.dataStatus === "error" && (
+      {analysisState.status === "error" && (
         <div className={styles.notice} role="alert">
           <WarningCircle aria-hidden="true" size={18} />
-          채용공고를 불러오지 못했습니다. 저장한 프로필은 유지됩니다.
-          <Link href="/career-map">다시 불러오기</Link>
+          분석을 불러오지 못했습니다. 저장한 프로필은 유지됩니다.
+          <button onClick={analysisState.retry} type="button">다시 불러오기</button>
         </div>
       )}
 
@@ -146,7 +114,15 @@ export function CareerMap({ snapshot }: CareerMapProps) {
           </div>
           <Link href="/career">커리어 프로필 입력</Link>
         </section>
-      ) : analysis.directions.length === 0 ? (
+      ) : analysisState.status === "loading" || analysisState.status === "idle" ? (
+        <section className={styles.emptyState} role="status">
+          <Compass aria-hidden="true" size={30} />
+          <div>
+            <h2>전체 채용공고와 내 경험을 비교하고 있습니다.</h2>
+            <p>같은 기준으로 직접·인접·관심 방향을 정리합니다.</p>
+          </div>
+        </section>
+      ) : analysisState.status === "error" ? null : analysis!.directions.length === 0 ? (
         <section className={styles.emptyState}>
           <Compass aria-hidden="true" size={30} />
           <div>
@@ -163,7 +139,7 @@ export function CareerMap({ snapshot }: CareerMapProps) {
               <p>분류, 공고 수, 기업 수를 같은 위치에서 비교합니다.</p>
             </header>
             <div className={styles.directionList}>
-              {analysis.directions.map((direction) => (
+              {analysis!.directions.map((direction) => (
                 <button
                   aria-pressed={selected?.domain === direction.domain}
                   data-selected={
@@ -176,8 +152,8 @@ export function CareerMap({ snapshot }: CareerMapProps) {
                   <span>{KIND_LABEL[direction.kind]}</span>
                   <strong>{direction.label}</strong>
                   <small>
-                    공고 {direction.postingCount.toLocaleString("ko-KR")}건 · 기업{" "}
-                    {direction.companyCount.toLocaleString("ko-KR")}곳
+                    공고 {direction.posting_count.toLocaleString("ko-KR")}건 · 기업{" "}
+                    {direction.company_count.toLocaleString("ko-KR")}곳
                   </small>
                 </button>
               ))}
@@ -194,11 +170,11 @@ export function CareerMap({ snapshot }: CareerMapProps) {
                 <dl>
                   <div>
                     <dt><Briefcase aria-hidden="true" size={15} /> 공고 수</dt>
-                    <dd>{selected.postingCount.toLocaleString("ko-KR")}건</dd>
+                    <dd>{selected.posting_count.toLocaleString("ko-KR")}건</dd>
                   </div>
                   <div>
                     <dt><Buildings aria-hidden="true" size={15} /> 기업 수</dt>
-                    <dd>{selected.companyCount.toLocaleString("ko-KR")}곳</dd>
+                    <dd>{selected.company_count.toLocaleString("ko-KR")}곳</dd>
                   </div>
                 </dl>
               </header>
@@ -222,23 +198,23 @@ export function CareerMap({ snapshot }: CareerMapProps) {
                   <dl>
                     <div>
                       <dt>신입</dt>
-                      <dd>{selected.careerCounts.newComer}건</dd>
+                      <dd>{selected.career_counts.new_comer}건</dd>
                     </div>
                     <div>
                       <dt>경력</dt>
-                      <dd>{selected.careerCounts.experienced}건</dd>
+                      <dd>{selected.career_counts.experienced}건</dd>
                     </div>
                     <div>
                       <dt>신입·경력 또는 미기재</dt>
-                      <dd>{selected.careerCounts.mixedOrUnknown}건</dd>
+                      <dd>{selected.career_counts.mixed_or_unknown}건</dd>
                     </div>
                   </dl>
                 </section>
                 <section>
                   <h3>공고에서 확인된 대표 업무</h3>
                   <p>
-                    {selected.representativeTasks.length > 0
-                      ? selected.representativeTasks.join(" · ")
+                    {selected.representative_tasks.length > 0
+                      ? selected.representative_tasks.join(" · ")
                       : "공고 요약에서 반복 업무를 확인하지 못했습니다."}
                   </p>
                 </section>
@@ -248,16 +224,16 @@ export function CareerMap({ snapshot }: CareerMapProps) {
                 <section>
                   <h3>활용 가능한 기술</h3>
                   <p>
-                    {selected.matchedSkills.length > 0
-                      ? selected.matchedSkills.join(" · ")
+                    {selected.matched_skills.length > 0
+                      ? selected.matched_skills.join(" · ")
                       : "현재 프로필에서 확인된 기술 근거가 없습니다."}
                   </p>
                 </section>
                 <section>
                   <h3>공고에서 추가로 확인된 조건</h3>
                   <p>
-                    {selected.additionalRequirements.length > 0
-                      ? selected.additionalRequirements.join(" · ")
+                    {selected.additional_conditions.length > 0
+                      ? selected.additional_conditions.join(" · ")
                       : "반복해서 확인된 추가 기술 조건이 없습니다."}
                   </p>
                 </section>
@@ -278,10 +254,10 @@ export function CareerMap({ snapshot }: CareerMapProps) {
                   <ChartLineUp aria-hidden="true" size={16} />
                   분야별 시장 확인
                 </Link>
-                {selected.representativeJob ? (
-                  <Link href={selected.representativeJob.href}>
-                    대표 공고: {selected.representativeJob.companyName} ·{" "}
-                    {selected.representativeJob.title}
+                {selected.representative_job ? (
+                  <Link href={`/jobs/${encodeURIComponent(selected.representative_job.id)}`}>
+                    대표 공고: {selected.representative_job.company_name} ·{" "}
+                    {selected.representative_job.title}
                   </Link>
                 ) : (
                   <span>역할·업무 근거가 분명한 대표 공고는 아직 없습니다.</span>

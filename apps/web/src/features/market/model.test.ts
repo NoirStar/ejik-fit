@@ -289,6 +289,8 @@ describe("market overview model", () => {
       .toMatchObject({ postingCount: 1, companyCount: 1 });
     expect(snapshot.fieldScope).toEqual({
       evidencePostingCount: 2,
+      analyzedPostingCount: 2,
+      analyzedCompanyCount: 0,
       graphSkillCount: 3,
       graphLimit: 100,
     });
