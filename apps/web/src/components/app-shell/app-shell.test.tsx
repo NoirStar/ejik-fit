@@ -12,6 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SavedSearchComposer } from "@/features/saved-searches/saved-search-composer";
 import { useSavedJobSearches } from "@/features/saved-searches/use-saved-job-searches";
 import { useAuthViewerContext } from "@/features/auth/auth-viewer-context";
+import { readCareerPreferences } from "@/lib/career-preferences";
+import { readOwnedSkills } from "@/lib/owned-skills";
 
 import { AppShell } from "./app-shell";
 
@@ -428,7 +430,7 @@ describe("AppShell", () => {
     expect(search).toHaveFocus();
   });
 
-  it("hydrates browser-stored skills into a direct home visit", async () => {
+  it("restores browser-stored skills without navigating away from the home analysis", async () => {
     localStorage.setItem("ejik-fit:owned-skills", JSON.stringify(["Kubernetes"]));
 
     render(
@@ -438,15 +440,13 @@ describe("AppShell", () => {
     );
 
     await waitFor(() => {
-      expect(navigation.replace).toHaveBeenCalledWith(
-        "/?owned_skills=Kubernetes#my-stack",
-        { scroll: false },
-      );
+      expect(readOwnedSkills()).toEqual(["Kubernetes"]);
     });
-    expect(navigation.refresh).toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.refresh).not.toHaveBeenCalled();
   });
 
-  it("hydrates browser-stored career preferences into a direct home visit", async () => {
+  it("restores browser-stored preferences without restarting the home request", async () => {
     localStorage.setItem(
       "ejik-fit:career-preferences",
       JSON.stringify({
@@ -462,12 +462,13 @@ describe("AppShell", () => {
     );
 
     await waitFor(() => {
-      expect(navigation.replace).toHaveBeenCalledWith(
-        "/?career_type=experienced&target_domain=backend#my-stack",
-        { scroll: false },
-      );
+      expect(readCareerPreferences()).toEqual({
+        careerCondition: "experienced",
+        targetDomain: "backend",
+      });
     });
-    expect(navigation.refresh).toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.refresh).not.toHaveBeenCalled();
   });
 
   it("persists an explicit home career context from the URL", async () => {

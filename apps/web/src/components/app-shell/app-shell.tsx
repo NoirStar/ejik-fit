@@ -37,7 +37,6 @@ import {
 import {
   hasHomeCareerPreferenceParams,
   homeContextFromUrlSearchParams,
-  homeContextToDashboardHref,
 } from "@/lib/home-context";
 import { safeAuthNextPath } from "@/lib/auth/redirect";
 import { PRODUCT_TERMS } from "@/lib/labels";
@@ -87,50 +86,33 @@ function sameSkills(left: string[], right: string[]) {
 
 function StoredHomeContextSync() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const serializedSearch = searchParams.toString();
 
   useEffect(() => {
     if (pathname !== "/") return;
     const queryContext = homeContextFromUrlSearchParams(searchParams);
-    const storedSkills = readOwnedSkills();
-    const storedPreferences = readCareerPreferences();
     const hasSkillParams = searchParams.has("owned_skills");
     const hasPreferenceParams = hasHomeCareerPreferenceParams(searchParams);
 
-    const ownedSkills = hasSkillParams
-      ? queryContext.ownedSkills
-      : storedSkills;
-    const careerPreferences = hasPreferenceParams
-      ? queryContext.careerPreferences
-      : storedPreferences;
-
-    if (hasSkillParams && !sameSkills(queryContext.ownedSkills, storedSkills)) {
-      writeOwnedSkills(queryContext.ownedSkills);
+    if (hasSkillParams) {
+      const storedSkills = readOwnedSkills();
+      if (!sameSkills(queryContext.ownedSkills, storedSkills)) {
+        writeOwnedSkills(queryContext.ownedSkills);
+      }
     }
-    if (
-      hasPreferenceParams &&
-      (queryContext.careerPreferences.careerCondition !==
-        storedPreferences.careerCondition ||
+    if (hasPreferenceParams) {
+      const storedPreferences = readCareerPreferences();
+      if (
+        queryContext.careerPreferences.careerCondition !==
+          storedPreferences.careerCondition ||
         queryContext.careerPreferences.targetDomain !==
-          storedPreferences.targetDomain)
-    ) {
-      writeCareerPreferences(queryContext.careerPreferences);
+          storedPreferences.targetDomain
+      ) {
+        writeCareerPreferences(queryContext.careerPreferences);
+      }
     }
-
-    const nextHref = homeContextToDashboardHref(
-      { ownedSkills, careerPreferences },
-      serializedSearch,
-    );
-    const nextSearch = new URL(nextHref, "https://ejik.fit").searchParams.toString();
-    if (nextSearch === serializedSearch) return;
-
-    router.replace(nextHref, {
-      scroll: false,
-    });
-    router.refresh();
-  }, [pathname, router, searchParams, serializedSearch]);
+  }, [pathname, searchParams, serializedSearch]);
 
   return null;
 }
