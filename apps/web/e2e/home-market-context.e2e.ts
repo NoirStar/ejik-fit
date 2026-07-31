@@ -5,10 +5,18 @@ for (const width of [1440, 390]) {
     page,
   }) => {
     const browserErrors: string[] = [];
+    let analysisRequest: Record<string, unknown> | null = null;
     page.on("console", (message) => {
       if (message.type() === "error") browserErrors.push(message.text());
     });
     page.on("pageerror", (error) => browserErrors.push(error.message));
+    page.on("request", (request) => {
+      if (!request.url().includes("/api/career-analysis")) return;
+      const body = request.postDataJSON();
+      if (body && typeof body === "object") {
+        analysisRequest = body as Record<string, unknown>;
+      }
+    });
 
     await page.addInitScript(() => {
       localStorage.setItem(
@@ -46,17 +54,14 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ height: 900, width });
     await page.goto("/");
 
-    await expect.poll(() => {
-      const url = new URL(page.url());
-      return {
-        careerType: url.searchParams.get("career_type"),
-        ownedSkills: url.searchParams.getAll("owned_skills"),
-        targetDomain: url.searchParams.get("target_domain"),
-      };
-    }).toEqual({
-      careerType: "experienced",
-      ownedSkills: ["Python"],
-      targetDomain: "backend",
+    await expect(page).toHaveURL(/\/$/);
+    await expect.poll(() => analysisRequest).toMatchObject({
+      owned_skills: ["Python"],
+      profile: {
+        career_level: "experienced",
+        current_domain: "backend",
+        current_role: "백엔드 개발자",
+      },
     });
 
     const directions = page.getByRole("region", {
@@ -74,9 +79,29 @@ for (const width of [1440, 390]) {
 
     await expect
       .poll(() =>
-        page.evaluate(() => localStorage.getItem("careerfit:owned-skills")),
+        page.evaluate(() => ({
+          currentPreferences: localStorage.getItem(
+            "careerfit:career-preferences",
+          ),
+          currentSkills: localStorage.getItem("careerfit:owned-skills"),
+          legacyPreferences: localStorage.getItem(
+            "ejik-fit:career-preferences",
+          ),
+          legacySkills: localStorage.getItem("ejik-fit:owned-skills"),
+        })),
       )
-      .toBe('["Python"]');
+      .toEqual({
+        currentPreferences: JSON.stringify({
+          careerCondition: "experienced",
+          targetDomain: "backend",
+        }),
+        currentSkills: '["Python"]',
+        legacyPreferences: JSON.stringify({
+          careerCondition: "experienced",
+          targetDomain: "backend",
+        }),
+        legacySkills: '["Python"]',
+      });
     const edit = page.getByRole("link", { name: "프로필 정보 추가" });
     const editBox = await edit.boundingBox();
     expect(editBox?.width).toBeGreaterThanOrEqual(44);

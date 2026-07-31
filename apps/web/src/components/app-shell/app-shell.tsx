@@ -94,15 +94,15 @@ function StoredHomeContextSync() {
     const queryContext = homeContextFromUrlSearchParams(searchParams);
     const hasSkillParams = searchParams.has("owned_skills");
     const hasPreferenceParams = hasHomeCareerPreferenceParams(searchParams);
+    const storedSkills = readOwnedSkills();
+    const storedPreferences = readCareerPreferences();
 
     if (hasSkillParams) {
-      const storedSkills = readOwnedSkills();
       if (!sameSkills(queryContext.ownedSkills, storedSkills)) {
         writeOwnedSkills(queryContext.ownedSkills);
       }
     }
     if (hasPreferenceParams) {
-      const storedPreferences = readCareerPreferences();
       if (
         queryContext.careerPreferences.careerCondition !==
           storedPreferences.careerCondition ||
